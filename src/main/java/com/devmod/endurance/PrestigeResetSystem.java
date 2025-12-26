@@ -5,7 +5,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
@@ -398,35 +402,35 @@ public class PrestigeResetSystem {
         RewardSystem.INSTANCE.savePlayerWallet(wallet);
 
         // Visual/audio feedback
-        player.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.2f);
-        player.playSound(SoundEvents.PLAYER_LEVELUP, 1.0f, 0.5f);
+        SoundEvent ascendSound = Objects.requireNonNull(
+            SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
+            "SoundEvents.UI_TOAST_CHALLENGE_COMPLETE"
+        );
+        SoundEvent levelUpSound = Objects.requireNonNull(
+            SoundEvents.PLAYER_LEVELUP,
+            "SoundEvents.PLAYER_LEVELUP"
+        );
+        player.playSound(ascendSound, 1.0f, 1.2f);
+        player.playSound(levelUpSound, 1.0f, 0.5f);
 
         // Send messages
-        player.sendSystemMessage(Component.literal("═══════════════════════════════════════")
-            .withStyle(ChatFormatting.GOLD));
-        player.sendSystemMessage(Component.literal("  ✦ ASCENSION COMPLETE ✦")
-            .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
-        player.sendSystemMessage(Component.literal("  Level " + newLevel + " - " + newTitle)
-            .withStyle(ChatFormatting.YELLOW));
-        player.sendSystemMessage(Component.literal("═══════════════════════════════════════")
-            .withStyle(ChatFormatting.GOLD));
+        player.sendSystemMessage(styledMessage("═══════════════════════════════════════", ChatFormatting.GOLD));
+        player.sendSystemMessage(styledMessage("  ✦ ASCENSION COMPLETE ✦", ChatFormatting.GOLD, ChatFormatting.BOLD));
+        player.sendSystemMessage(styledMessage("  Level " + newLevel + " - " + newTitle, ChatFormatting.YELLOW));
+        player.sendSystemMessage(styledMessage("═══════════════════════════════════════", ChatFormatting.GOLD));
 
         if (!newBonusDescriptions.isEmpty()) {
-            player.sendSystemMessage(Component.literal("New Bonuses:")
-                .withStyle(ChatFormatting.GREEN));
+            player.sendSystemMessage(styledMessage("New Bonuses:", ChatFormatting.GREEN));
             for (String desc : newBonusDescriptions) {
-                player.sendSystemMessage(Component.literal("  • " + desc)
-                    .withStyle(ChatFormatting.WHITE));
+                player.sendSystemMessage(styledMessage("  • " + desc, ChatFormatting.WHITE));
             }
         }
 
         if (!newPerks.isEmpty()) {
-            player.sendSystemMessage(Component.literal("New Exclusive Perks:")
-                .withStyle(ChatFormatting.LIGHT_PURPLE));
+            player.sendSystemMessage(styledMessage("New Exclusive Perks:", ChatFormatting.LIGHT_PURPLE));
             for (String perkId : newPerks) {
                 String perkName = getPerkDisplayName(perkId);
-                player.sendSystemMessage(Component.literal("  • " + perkName)
-                    .withStyle(ChatFormatting.WHITE));
+                player.sendSystemMessage(styledMessage("  • " + perkName, ChatFormatting.WHITE));
             }
         }
 
@@ -434,6 +438,14 @@ public class PrestigeResetSystem {
             player.getName().getString(), newLevel, cost);
 
         return AscensionResult.success(newLevel, cost, newBonusDescriptions, newPerks, newTitle);
+    }
+
+    @Nonnull
+    private static Component styledMessage(@Nonnull String text, @Nonnull ChatFormatting... styles) {
+        return Objects.requireNonNull(
+            Component.literal(text).withStyle(styles),
+            "prestige message"
+        );
     }
 
     /**

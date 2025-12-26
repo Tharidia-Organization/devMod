@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.components;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
@@ -51,6 +53,7 @@ public class LeftColumnComponent {
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
 
     // Callbacks
+    @Nullable
     private Consumer<SlotSelector.SlotInfo> onSlotSelect;
 
     // ═══════════════════════════════════════════════════════════════
@@ -362,10 +365,12 @@ public class LeftColumnComponent {
         return bounds;
     }
 
+    @Nullable
     public SlotSelector.SlotInfo getSelectedSlot() {
         return slotSelector.getSelectedSlot();
     }
 
+    @Nullable
     public EquipmentSlot getSelectedEquipmentSlot() {
         SlotSelector.SlotInfo info = slotSelector.getSelectedSlot();
         return info != null ? info.slot() : null;

@@ -458,6 +458,13 @@ public class EnduranceEventTick {
 
             // Send to player
             PacketDistributor.sendToPlayer(player, payload);
+
+            // Also send LVC (Last Value Cache) telemetry sync
+            com.devmod.telemetry.network.LVCSyncPayload lvcPayload =
+                com.devmod.telemetry.duckdb.lvc.TelemetryLVC.INSTANCE.buildSyncPayload(playerId);
+            if (lvcPayload.hasData()) {
+                com.devmod.network.NetworkHandler.sendLvcSync(player, lvcPayload);
+            }
         }
     }
 

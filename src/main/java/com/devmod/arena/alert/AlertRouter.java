@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 public class AlertRouter implements AutoCloseable {
 
     private static final Logger LOGGER = Logger.getLogger(AlertRouter.class.getName());
+    private static volatile boolean loggingEnabled = true;
 
     /**
      * DD19: Maximum retry attempts for critical channels.
@@ -39,6 +40,10 @@ public class AlertRouter implements AutoCloseable {
      * Retry queue capacity.
      */
     public static final int RETRY_QUEUE_CAPACITY = 1000;
+
+    public static void setLoggingEnabled(boolean enabled) {
+        loggingEnabled = enabled;
+    }
 
     private final Map<String, AlertChannel> channels;
     private final BlockingQueue<RetryableAlert> retryQueue;
@@ -110,7 +115,9 @@ public class AlertRouter implements AutoCloseable {
                 handler.accept(context);
                 return true;
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Failed to deliver to channel " + id, e);
+                if (loggingEnabled) {
+                    LOGGER.log(Level.WARNING, "Failed to deliver to channel " + id, e);
+                }
                 return false;
             }
         }

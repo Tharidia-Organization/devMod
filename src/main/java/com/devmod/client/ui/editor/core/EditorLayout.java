@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,6 +113,7 @@ public class EditorLayout {
      * @param sectionId The ID of the section.
      * @return The Bounds of the section, or null if not found.
      */
+    @Nullable
     public Bounds getSectionBounds(String columnId, String sectionId) {
         List<SectionBounds> boundsList = columnSections.get(columnId);
         if (boundsList != null) {
@@ -128,6 +131,7 @@ public class EditorLayout {
      * @param columnId The ID of the column.
      * @return A list of SectionBounds, or null if the column is not found.
      */
+    @Nullable
     public List<SectionBounds> getSectionsForColumn(String columnId) {
         return columnSections.get(columnId);
     }

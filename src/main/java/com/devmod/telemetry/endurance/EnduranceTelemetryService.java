@@ -458,7 +458,7 @@ public class EnduranceTelemetryService {
     public void recordPerkSelected(UUID playerId, UUID questId, String perkId, String perkName,
                                     PerkSystem.PerkTier tier, PerkSystem.PerkCategory category,
                                     int stackCount, int totalPerks) {
-        QuestSessionStats stats = questStats.get(questId);
+        QuestSessionStats stats = questId != null ? questStats.get(questId) : null;
         StringBuilder json = new StringBuilder(240);
         json.append("{\"ts\":\"").append(Instant.now()).append("\",");
         json.append("\"type\":\"perk_selected\",");
@@ -498,7 +498,7 @@ public class EnduranceTelemetryService {
      */
     public void recordPerkChoicesOffered(UUID playerId, UUID questId, int waveNumber,
                                           List<PerkSystem.Perk> choices) {
-        QuestSessionStats stats = questStats.get(questId);
+        QuestSessionStats stats = questId != null ? questStats.get(questId) : null;
         StringBuilder choicesJson = new StringBuilder("[");
         for (int i = 0; i < choices.size(); i++) {
             PerkSystem.Perk perk = choices.get(i);

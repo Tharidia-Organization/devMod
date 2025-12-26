@@ -397,8 +397,13 @@ public class MultiplayerDataIsolationTest {
             MockPlayerImpactStorage.store(player1, new MockImpactData(player1, "Mob1", 10.0f));
             MockPlayerImpactStorage.store(player2, new MockImpactData(player2, "Mob2", 20.0f));
 
-            assertEquals("Mob1", MockPlayerImpactStorage.get(player1).getTargetName());
-            assertEquals("Mob2", MockPlayerImpactStorage.get(player2).getTargetName());
+            MockImpactData retrieved1 = MockPlayerImpactStorage.get(player1);
+            assertNotNull(retrieved1);
+            assertEquals("Mob1", retrieved1.getTargetName());
+
+            MockImpactData retrieved2 = MockPlayerImpactStorage.get(player2);
+            assertNotNull(retrieved2);
+            assertEquals("Mob2", retrieved2.getTargetName());
         }
     }
 

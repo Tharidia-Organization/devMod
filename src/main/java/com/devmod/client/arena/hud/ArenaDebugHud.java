@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -24,6 +26,7 @@ public class ArenaDebugHud {
     private static final int HEADER_COLOR = 0x00FF00;
 
     /** Current arena debug info */
+    @Nullable
     private ArenaDebugInfo currentInfo;
 
     private ArenaDebugHud() {}
@@ -164,14 +167,14 @@ public class ArenaDebugHud {
      * DD30: Extended with arenaId and instanceId for full context.
      */
     public record ArenaDebugInfo(
-        ResourceLocation templateId,
-        String arenaId,
-        String instanceId,
+        @Nullable ResourceLocation templateId,
+        @Nullable String arenaId,
+        @Nullable String instanceId,
         String arenaState,
         int playerCount,
         long durationSeconds,
         boolean isOverridden,
-        List<String> extraInfo
+        @Nullable List<String> extraInfo
     ) {
         public static Builder builder() {
             return new Builder();
@@ -180,6 +183,7 @@ public class ArenaDebugHud {
         /**
          * Returns a short form of the arenaId (first 8 chars).
          */
+        @Nullable
         public String arenaIdShort() {
             if (arenaId == null || arenaId.length() < 8) return arenaId;
             return arenaId.substring(0, 8);
@@ -188,14 +192,18 @@ public class ArenaDebugHud {
         /**
          * Returns a short form of the instanceId (first 8 chars).
          */
+        @Nullable
         public String instanceIdShort() {
             if (instanceId == null || instanceId.length() < 8) return instanceId;
             return instanceId.substring(0, 8);
         }
 
         public static class Builder {
+            @Nullable
             private ResourceLocation templateId;
+            @Nullable
             private String arenaId;
+            @Nullable
             private String instanceId;
             private String arenaState = "UNKNOWN";
             private int playerCount = 0;

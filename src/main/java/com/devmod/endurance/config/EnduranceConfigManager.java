@@ -3,8 +3,10 @@ package com.devmod.endurance.config;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,103 @@ public class EnduranceConfigManager {
     private final Map<UUID, GameplayOverrides> activeArenaOverrides = new ConcurrentHashMap<>();
 
     private EnduranceConfigManager() {}
+
+    @Nullable
+    private <T> T resolveOverride(UUID questId,
+            Function<RuntimeOverrides, T> runtimeGetter,
+            Function<GameplayOverrides, T> arenaGetter) {
+        RuntimeOverrides runtime = questOverrides.get(questId);
+        if (runtime != null) {
+            T value = runtimeGetter.apply(runtime);
+            if (value != null) {
+                return value;
+            }
+        }
+
+        GameplayOverrides arena = activeArenaOverrides.get(questId);
+        if (arena != null) {
+            T value = arenaGetter.apply(arena);
+            if (value != null) {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    @Nullable
+    private static <T, R> R resolveNested(@Nullable T overrides, Function<T, R> getter) {
+        return overrides != null ? getter.apply(overrides) : null;
+    }
+
+    // Safe accessor helpers for nullable sub-configs (avoids NullAway warnings in lambdas)
+    @Nullable
+    private static <R> R safeSeasonPass(GameplayOverrides arena, Function<SeasonPassOverrides, R> getter) {
+        var sp = arena.seasonPass();
+        return sp != null ? getter.apply(sp) : null;
+    }
+
+    @Nullable
+    private static <R> R safeGuild(GameplayOverrides arena, Function<GuildOverrides, R> getter) {
+        var g = arena.guild();
+        return g != null ? getter.apply(g) : null;
+    }
+
+    @Nullable
+    private static <R> R safeAscension(GameplayOverrides arena, Function<AscensionOverrides, R> getter) {
+        var a = arena.ascension();
+        return a != null ? getter.apply(a) : null;
+    }
+
+    @Nullable
+    private static <R> R safeTension(GameplayOverrides arena, Function<TensionOverrides, R> getter) {
+        var t = arena.tension();
+        return t != null ? getter.apply(t) : null;
+    }
+
+    @Nullable
+    private static <R> R safePerkRarity(GameplayOverrides arena, Function<PerkRarityOverrides, R> getter) {
+        var pr = arena.perkRarity();
+        return pr != null ? getter.apply(pr) : null;
+    }
+
+    @Nullable
+    private static <R> R safeChallenges(GameplayOverrides arena, Function<ChallengeOverrides, R> getter) {
+        var c = arena.challenges();
+        return c != null ? getter.apply(c) : null;
+    }
+
+    @Nullable
+    private static <R> R safeCombo(GameplayOverrides arena, Function<ComboOverrides, R> getter) {
+        var c = arena.combo();
+        return c != null ? getter.apply(c) : null;
+    }
+
+    @Nullable
+    private static <R> R safeStyleRank(GameplayOverrides arena, Function<StyleRankOverrides, R> getter) {
+        var sr = arena.styleRank();
+        return sr != null ? getter.apply(sr) : null;
+    }
+
+    private static int resolveIntOverride(@Nullable Integer overrideValue, @Nullable Integer configValue, String label) {
+        if (overrideValue != null) {
+            return overrideValue.intValue();
+        }
+        if (configValue == null) {
+            throw new IllegalStateException(label + " is null");
+        }
+        return configValue.intValue();
+    }
+
+    private static double resolveDoubleOverride(@Nullable Double overrideValue, @Nullable Double configValue, String label) {
+        if (overrideValue != null) {
+            return overrideValue.doubleValue();
+        }
+        if (configValue == null) {
+            throw new IllegalStateException(label + " is null");
+        }
+        return configValue.doubleValue();
+    }
 
     // ========== Runtime Override Management ==========
 
@@ -92,197 +191,117 @@ public class EnduranceConfigManager {
     // ========== SEASON PASS CONFIG ==========
 
     public int getSeasonMaxTier(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.maxTier() != null) {
-            return runtime.seasonPass.maxTier();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().maxTier() != null) {
-            return arena.seasonPass().maxTier();
-        }
-        return GameMechanicsConfig.SEASON_MAX_TIER.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::maxTier),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::maxTier));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_MAX_TIER.get(), "SEASON_MAX_TIER");
     }
 
     public int getSeasonXpPerTier(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpPerTier() != null) {
-            return runtime.seasonPass.xpPerTier();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpPerTier() != null) {
-            return arena.seasonPass().xpPerTier();
-        }
-        return GameMechanicsConfig.SEASON_XP_PER_TIER.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpPerTier),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpPerTier));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_PER_TIER.get(), "SEASON_XP_PER_TIER");
     }
 
     public int getSeasonXpPerKill(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpPerKill() != null) {
-            return runtime.seasonPass.xpPerKill();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpPerKill() != null) {
-            return arena.seasonPass().xpPerKill();
-        }
-        return GameMechanicsConfig.SEASON_XP_PER_KILL.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpPerKill),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpPerKill));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_PER_KILL.get(), "SEASON_XP_PER_KILL");
     }
 
     public int getSeasonXpPerWave(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpPerWave() != null) {
-            return runtime.seasonPass.xpPerWave();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpPerWave() != null) {
-            return arena.seasonPass().xpPerWave();
-        }
-        return GameMechanicsConfig.SEASON_XP_PER_WAVE.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpPerWave),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpPerWave));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_PER_WAVE.get(), "SEASON_XP_PER_WAVE");
     }
 
     public int getSeasonXpPerBoss(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpPerBoss() != null) {
-            return runtime.seasonPass.xpPerBoss();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpPerBoss() != null) {
-            return arena.seasonPass().xpPerBoss();
-        }
-        return GameMechanicsConfig.SEASON_XP_PER_BOSS.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpPerBoss),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpPerBoss));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_PER_BOSS.get(), "SEASON_XP_PER_BOSS");
     }
 
     public int getSeasonXpDailyChallenge(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpDailyChallenge() != null) {
-            return runtime.seasonPass.xpDailyChallenge();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpDailyChallenge() != null) {
-            return arena.seasonPass().xpDailyChallenge();
-        }
-        return GameMechanicsConfig.SEASON_XP_DAILY_CHALLENGE.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpDailyChallenge),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpDailyChallenge));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_DAILY_CHALLENGE.get(), "SEASON_XP_DAILY_CHALLENGE");
     }
 
     public int getSeasonXpWeeklyChallenge(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpWeeklyChallenge() != null) {
-            return runtime.seasonPass.xpWeeklyChallenge();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpWeeklyChallenge() != null) {
-            return arena.seasonPass().xpWeeklyChallenge();
-        }
-        return GameMechanicsConfig.SEASON_XP_WEEKLY_CHALLENGE.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpWeeklyChallenge),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpWeeklyChallenge));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_WEEKLY_CHALLENGE.get(), "SEASON_XP_WEEKLY_CHALLENGE");
     }
 
     public int getSeasonXpStyleS(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpStyleS() != null) {
-            return runtime.seasonPass.xpStyleS();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpStyleS() != null) {
-            return arena.seasonPass().xpStyleS();
-        }
-        return GameMechanicsConfig.SEASON_XP_STYLE_S.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpStyleS),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpStyleS));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_STYLE_S.get(), "SEASON_XP_STYLE_S");
     }
 
     public int getSeasonXpStyleSS(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpStyleSS() != null) {
-            return runtime.seasonPass.xpStyleSS();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpStyleSS() != null) {
-            return arena.seasonPass().xpStyleSS();
-        }
-        return GameMechanicsConfig.SEASON_XP_STYLE_SS.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpStyleSS),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpStyleSS));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_STYLE_SS.get(), "SEASON_XP_STYLE_SS");
     }
 
     public int getSeasonXpStyleSSS(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpStyleSSS() != null) {
-            return runtime.seasonPass.xpStyleSSS();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpStyleSSS() != null) {
-            return arena.seasonPass().xpStyleSSS();
-        }
-        return GameMechanicsConfig.SEASON_XP_STYLE_SSS.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpStyleSSS),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpStyleSSS));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_STYLE_SSS.get(), "SEASON_XP_STYLE_SSS");
     }
 
     public int getSeasonXpFlawlessWave(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpFlawlessWave() != null) {
-            return runtime.seasonPass.xpFlawlessWave();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpFlawlessWave() != null) {
-            return arena.seasonPass().xpFlawlessWave();
-        }
-        return GameMechanicsConfig.SEASON_XP_FLAWLESS_WAVE.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpFlawlessWave),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpFlawlessWave));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_FLAWLESS_WAVE.get(), "SEASON_XP_FLAWLESS_WAVE");
     }
 
     public int getSeasonXpHighCombo50(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpHighCombo50() != null) {
-            return runtime.seasonPass.xpHighCombo50();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpHighCombo50() != null) {
-            return arena.seasonPass().xpHighCombo50();
-        }
-        return GameMechanicsConfig.SEASON_XP_HIGH_COMBO_50.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpHighCombo50),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpHighCombo50));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_HIGH_COMBO_50.get(), "SEASON_XP_HIGH_COMBO_50");
     }
 
     public int getSeasonXpHighCombo100(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.seasonPass != null && runtime.seasonPass.xpHighCombo100() != null) {
-            return runtime.seasonPass.xpHighCombo100();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.seasonPass() != null && arena.seasonPass().xpHighCombo100() != null) {
-            return arena.seasonPass().xpHighCombo100();
-        }
-        return GameMechanicsConfig.SEASON_XP_HIGH_COMBO_100.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.seasonPass, SeasonPassOverrides::xpHighCombo100),
+            arena -> safeSeasonPass(arena, SeasonPassOverrides::xpHighCombo100));
+        return resolveIntOverride(override, GameMechanicsConfig.SEASON_XP_HIGH_COMBO_100.get(), "SEASON_XP_HIGH_COMBO_100");
     }
 
     // ========== GUILD CONFIG ==========
 
     public int getGuildMaxSize(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.guild != null && runtime.guild.maxSize() != null) {
-            return runtime.guild.maxSize();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.guild() != null && arena.guild().maxSize() != null) {
-            return arena.guild().maxSize();
-        }
-        return GameMechanicsConfig.GUILD_MAX_SIZE.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.guild, GuildOverrides::maxSize),
+            arena -> safeGuild(arena, GuildOverrides::maxSize));
+        return resolveIntOverride(override, GameMechanicsConfig.GUILD_MAX_SIZE.get(), "GUILD_MAX_SIZE");
     }
 
     public int getGuildMaxLevel(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.guild != null && runtime.guild.maxLevel() != null) {
-            return runtime.guild.maxLevel();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.guild() != null && arena.guild().maxLevel() != null) {
-            return arena.guild().maxLevel();
-        }
-        return GameMechanicsConfig.GUILD_MAX_LEVEL.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.guild, GuildOverrides::maxLevel),
+            arena -> safeGuild(arena, GuildOverrides::maxLevel));
+        return resolveIntOverride(override, GameMechanicsConfig.GUILD_MAX_LEVEL.get(), "GUILD_MAX_LEVEL");
     }
 
     public int getGuildCreateCost(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.guild != null && runtime.guild.createCost() != null) {
-            return runtime.guild.createCost();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.guild() != null && arena.guild().createCost() != null) {
-            return arena.guild().createCost();
-        }
-        return GameMechanicsConfig.GUILD_CREATE_COST.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.guild, GuildOverrides::createCost),
+            arena -> safeGuild(arena, GuildOverrides::createCost));
+        return resolveIntOverride(override, GameMechanicsConfig.GUILD_CREATE_COST.get(), "GUILD_CREATE_COST");
     }
 
     /**
@@ -290,16 +309,11 @@ public class EnduranceConfigManager {
      * @return The token bonus multiplier (1.0 = no bonus, 1.1 = 10% bonus)
      */
     public double getGuildBonusTokensMultiplier(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.guild != null && runtime.guild.bonusTokensMultiplier() != null) {
-            return runtime.guild.bonusTokensMultiplier();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.guild() != null && arena.guild().bonusTokensMultiplier() != null) {
-            return arena.guild().bonusTokensMultiplier();
-        }
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.guild, GuildOverrides::bonusTokensMultiplier),
+            arena -> safeGuild(arena, GuildOverrides::bonusTokensMultiplier));
         // Default: use the base 5% bonus value
-        return GameMechanicsConfig.GUILD_BONUS_TOKENS_5.get();
+        return resolveDoubleOverride(override, GameMechanicsConfig.GUILD_BONUS_TOKENS_5.get(), "GUILD_BONUS_TOKENS_5");
     }
 
     /**
@@ -307,484 +321,289 @@ public class EnduranceConfigManager {
      * @return The XP bonus multiplier (1.0 = no bonus, 1.1 = 10% bonus)
      */
     public double getGuildBonusXpMultiplier(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.guild != null && runtime.guild.bonusXpMultiplier() != null) {
-            return runtime.guild.bonusXpMultiplier();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.guild() != null && arena.guild().bonusXpMultiplier() != null) {
-            return arena.guild().bonusXpMultiplier();
-        }
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.guild, GuildOverrides::bonusXpMultiplier),
+            arena -> safeGuild(arena, GuildOverrides::bonusXpMultiplier));
         // Default: use the base 5% bonus value
-        return GameMechanicsConfig.GUILD_BONUS_XP_5.get();
+        return resolveDoubleOverride(override, GameMechanicsConfig.GUILD_BONUS_XP_5.get(), "GUILD_BONUS_XP_5");
     }
 
     // ========== ASCENSION CONFIG ==========
 
     public int getAscensionMaxLevel(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.ascension != null && runtime.ascension.maxLevel() != null) {
-            return runtime.ascension.maxLevel();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.ascension() != null && arena.ascension().maxLevel() != null) {
-            return arena.ascension().maxLevel();
-        }
-        return GameMechanicsConfig.ASCENSION_MAX_LEVEL.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.ascension, AscensionOverrides::maxLevel),
+            arena -> safeAscension(arena, AscensionOverrides::maxLevel));
+        return resolveIntOverride(override, GameMechanicsConfig.ASCENSION_MAX_LEVEL.get(), "ASCENSION_MAX_LEVEL");
     }
 
     public int getAscensionMinPrestige(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.ascension != null && runtime.ascension.minPrestige() != null) {
-            return runtime.ascension.minPrestige();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.ascension() != null && arena.ascension().minPrestige() != null) {
-            return arena.ascension().minPrestige();
-        }
-        return GameMechanicsConfig.ASCENSION_MIN_PRESTIGE.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.ascension, AscensionOverrides::minPrestige),
+            arena -> safeAscension(arena, AscensionOverrides::minPrestige));
+        return resolveIntOverride(override, GameMechanicsConfig.ASCENSION_MIN_PRESTIGE.get(), "ASCENSION_MIN_PRESTIGE");
     }
 
     public int getAscensionCostScaling(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.ascension != null && runtime.ascension.costScaling() != null) {
-            return runtime.ascension.costScaling();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.ascension() != null && arena.ascension().costScaling() != null) {
-            return arena.ascension().costScaling();
-        }
-        return GameMechanicsConfig.ASCENSION_COST_SCALING.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.ascension, AscensionOverrides::costScaling),
+            arena -> safeAscension(arena, AscensionOverrides::costScaling));
+        return resolveIntOverride(override, GameMechanicsConfig.ASCENSION_COST_SCALING.get(), "ASCENSION_COST_SCALING");
     }
 
     public double getAscensionDamageBonusPerLevel(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.ascension != null && runtime.ascension.damageBonusPerLevel() != null) {
-            return runtime.ascension.damageBonusPerLevel();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.ascension() != null && arena.ascension().damageBonusPerLevel() != null) {
-            return arena.ascension().damageBonusPerLevel();
-        }
-        return GameMechanicsConfig.ASCENSION_DAMAGE_BONUS_PER_LEVEL.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.ascension, AscensionOverrides::damageBonusPerLevel),
+            arena -> safeAscension(arena, AscensionOverrides::damageBonusPerLevel));
+        return resolveDoubleOverride(override, GameMechanicsConfig.ASCENSION_DAMAGE_BONUS_PER_LEVEL.get(), "ASCENSION_DAMAGE_BONUS_PER_LEVEL");
     }
 
     public double getAscensionDefenseBonusPerLevel(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.ascension != null && runtime.ascension.defenseBonusPerLevel() != null) {
-            return runtime.ascension.defenseBonusPerLevel();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.ascension() != null && arena.ascension().defenseBonusPerLevel() != null) {
-            return arena.ascension().defenseBonusPerLevel();
-        }
-        return GameMechanicsConfig.ASCENSION_DEFENSE_BONUS_PER_LEVEL.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.ascension, AscensionOverrides::defenseBonusPerLevel),
+            arena -> safeAscension(arena, AscensionOverrides::defenseBonusPerLevel));
+        return resolveDoubleOverride(override, GameMechanicsConfig.ASCENSION_DEFENSE_BONUS_PER_LEVEL.get(), "ASCENSION_DEFENSE_BONUS_PER_LEVEL");
     }
 
     public double getAscensionTokenMultiplierPerLevel(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.ascension != null && runtime.ascension.tokenMultiplierPerLevel() != null) {
-            return runtime.ascension.tokenMultiplierPerLevel();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.ascension() != null && arena.ascension().tokenMultiplierPerLevel() != null) {
-            return arena.ascension().tokenMultiplierPerLevel();
-        }
-        return GameMechanicsConfig.ASCENSION_TOKEN_MULTIPLIER_PER_LEVEL.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.ascension, AscensionOverrides::tokenMultiplierPerLevel),
+            arena -> safeAscension(arena, AscensionOverrides::tokenMultiplierPerLevel));
+        return resolveDoubleOverride(override, GameMechanicsConfig.ASCENSION_TOKEN_MULTIPLIER_PER_LEVEL.get(), "ASCENSION_TOKEN_MULTIPLIER_PER_LEVEL");
     }
 
     // ========== TENSION SYSTEM CONFIG ==========
 
     public double getTensionBaseWaveGain(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.tension != null && runtime.tension.baseWaveGain() != null) {
-            return runtime.tension.baseWaveGain();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.tension() != null && arena.tension().baseWaveGain() != null) {
-            return arena.tension().baseWaveGain();
-        }
-        return GameMechanicsConfig.TENSION_BASE_WAVE_GAIN.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.tension, TensionOverrides::baseWaveGain),
+            arena -> safeTension(arena, TensionOverrides::baseWaveGain));
+        return resolveDoubleOverride(override, GameMechanicsConfig.TENSION_BASE_WAVE_GAIN.get(), "TENSION_BASE_WAVE_GAIN");
     }
 
     public double getTensionNoHitBonus(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.tension != null && runtime.tension.noHitBonus() != null) {
-            return runtime.tension.noHitBonus();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.tension() != null && arena.tension().noHitBonus() != null) {
-            return arena.tension().noHitBonus();
-        }
-        return GameMechanicsConfig.TENSION_NO_HIT_BONUS.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.tension, TensionOverrides::noHitBonus),
+            arena -> safeTension(arena, TensionOverrides::noHitBonus));
+        return resolveDoubleOverride(override, GameMechanicsConfig.TENSION_NO_HIT_BONUS.get(), "TENSION_NO_HIT_BONUS");
     }
 
     public double getTensionMinThreshold(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.tension != null && runtime.tension.minThreshold() != null) {
-            return runtime.tension.minThreshold();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.tension() != null && arena.tension().minThreshold() != null) {
-            return arena.tension().minThreshold();
-        }
-        return GameMechanicsConfig.TENSION_MIN_THRESHOLD.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.tension, TensionOverrides::minThreshold),
+            arena -> safeTension(arena, TensionOverrides::minThreshold));
+        return resolveDoubleOverride(override, GameMechanicsConfig.TENSION_MIN_THRESHOLD.get(), "TENSION_MIN_THRESHOLD");
     }
 
     public double getTensionMaxThreshold(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.tension != null && runtime.tension.maxThreshold() != null) {
-            return runtime.tension.maxThreshold();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.tension() != null && arena.tension().maxThreshold() != null) {
-            return arena.tension().maxThreshold();
-        }
-        return GameMechanicsConfig.TENSION_MAX_THRESHOLD.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.tension, TensionOverrides::maxThreshold),
+            arena -> safeTension(arena, TensionOverrides::maxThreshold));
+        return resolveDoubleOverride(override, GameMechanicsConfig.TENSION_MAX_THRESHOLD.get(), "TENSION_MAX_THRESHOLD");
     }
 
     public int getTensionMinWavesBeforeBoss(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.tension != null && runtime.tension.minWavesBeforeBoss() != null) {
-            return runtime.tension.minWavesBeforeBoss();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.tension() != null && arena.tension().minWavesBeforeBoss() != null) {
-            return arena.tension().minWavesBeforeBoss();
-        }
-        return GameMechanicsConfig.TENSION_MIN_WAVES_BEFORE_BOSS.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.tension, TensionOverrides::minWavesBeforeBoss),
+            arena -> safeTension(arena, TensionOverrides::minWavesBeforeBoss));
+        return resolveIntOverride(override, GameMechanicsConfig.TENSION_MIN_WAVES_BEFORE_BOSS.get(), "TENSION_MIN_WAVES_BEFORE_BOSS");
     }
 
     public int getTensionMaxWavesWithoutBoss(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.tension != null && runtime.tension.maxWavesWithoutBoss() != null) {
-            return runtime.tension.maxWavesWithoutBoss();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.tension() != null && arena.tension().maxWavesWithoutBoss() != null) {
-            return arena.tension().maxWavesWithoutBoss();
-        }
-        return GameMechanicsConfig.TENSION_MAX_WAVES_WITHOUT_BOSS.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.tension, TensionOverrides::maxWavesWithoutBoss),
+            arena -> safeTension(arena, TensionOverrides::maxWavesWithoutBoss));
+        return resolveIntOverride(override, GameMechanicsConfig.TENSION_MAX_WAVES_WITHOUT_BOSS.get(), "TENSION_MAX_WAVES_WITHOUT_BOSS");
     }
 
     // ========== PERK RARITY CONFIG ==========
 
     public int getPerkCommonWeight(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.perkRarity != null && runtime.perkRarity.commonWeight() != null) {
-            return runtime.perkRarity.commonWeight();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.perkRarity() != null && arena.perkRarity().commonWeight() != null) {
-            return arena.perkRarity().commonWeight();
-        }
-        return GameMechanicsConfig.PERK_COMMON_WEIGHT.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.perkRarity, PerkRarityOverrides::commonWeight),
+            arena -> safePerkRarity(arena, PerkRarityOverrides::commonWeight));
+        return resolveIntOverride(override, GameMechanicsConfig.PERK_COMMON_WEIGHT.get(), "PERK_COMMON_WEIGHT");
     }
 
     public int getPerkUncommonWeight(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.perkRarity != null && runtime.perkRarity.uncommonWeight() != null) {
-            return runtime.perkRarity.uncommonWeight();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.perkRarity() != null && arena.perkRarity().uncommonWeight() != null) {
-            return arena.perkRarity().uncommonWeight();
-        }
-        return GameMechanicsConfig.PERK_UNCOMMON_WEIGHT.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.perkRarity, PerkRarityOverrides::uncommonWeight),
+            arena -> safePerkRarity(arena, PerkRarityOverrides::uncommonWeight));
+        return resolveIntOverride(override, GameMechanicsConfig.PERK_UNCOMMON_WEIGHT.get(), "PERK_UNCOMMON_WEIGHT");
     }
 
     public int getPerkRareWeight(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.perkRarity != null && runtime.perkRarity.rareWeight() != null) {
-            return runtime.perkRarity.rareWeight();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.perkRarity() != null && arena.perkRarity().rareWeight() != null) {
-            return arena.perkRarity().rareWeight();
-        }
-        return GameMechanicsConfig.PERK_RARE_WEIGHT.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.perkRarity, PerkRarityOverrides::rareWeight),
+            arena -> safePerkRarity(arena, PerkRarityOverrides::rareWeight));
+        return resolveIntOverride(override, GameMechanicsConfig.PERK_RARE_WEIGHT.get(), "PERK_RARE_WEIGHT");
     }
 
     public int getPerkEpicWeight(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.perkRarity != null && runtime.perkRarity.epicWeight() != null) {
-            return runtime.perkRarity.epicWeight();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.perkRarity() != null && arena.perkRarity().epicWeight() != null) {
-            return arena.perkRarity().epicWeight();
-        }
-        return GameMechanicsConfig.PERK_EPIC_WEIGHT.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.perkRarity, PerkRarityOverrides::epicWeight),
+            arena -> safePerkRarity(arena, PerkRarityOverrides::epicWeight));
+        return resolveIntOverride(override, GameMechanicsConfig.PERK_EPIC_WEIGHT.get(), "PERK_EPIC_WEIGHT");
     }
 
     public int getPerkLegendaryWeight(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.perkRarity != null && runtime.perkRarity.legendaryWeight() != null) {
-            return runtime.perkRarity.legendaryWeight();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.perkRarity() != null && arena.perkRarity().legendaryWeight() != null) {
-            return arena.perkRarity().legendaryWeight();
-        }
-        return GameMechanicsConfig.PERK_LEGENDARY_WEIGHT.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.perkRarity, PerkRarityOverrides::legendaryWeight),
+            arena -> safePerkRarity(arena, PerkRarityOverrides::legendaryWeight));
+        return resolveIntOverride(override, GameMechanicsConfig.PERK_LEGENDARY_WEIGHT.get(), "PERK_LEGENDARY_WEIGHT");
     }
 
     public int getPerkChoicesPerSelection(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.perkRarity != null && runtime.perkRarity.choicesPerSelection() != null) {
-            return runtime.perkRarity.choicesPerSelection();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.perkRarity() != null && arena.perkRarity().choicesPerSelection() != null) {
-            return arena.perkRarity().choicesPerSelection();
-        }
-        return GameMechanicsConfig.PERK_CHOICES_PER_SELECTION.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.perkRarity, PerkRarityOverrides::choicesPerSelection),
+            arena -> safePerkRarity(arena, PerkRarityOverrides::choicesPerSelection));
+        return resolveIntOverride(override, GameMechanicsConfig.PERK_CHOICES_PER_SELECTION.get(), "PERK_CHOICES_PER_SELECTION");
     }
 
     public int getPerkRerollCostBase(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.perkRarity != null && runtime.perkRarity.rerollCostBase() != null) {
-            return runtime.perkRarity.rerollCostBase();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.perkRarity() != null && arena.perkRarity().rerollCostBase() != null) {
-            return arena.perkRarity().rerollCostBase();
-        }
-        return GameMechanicsConfig.PERK_REROLL_COST_BASE.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.perkRarity, PerkRarityOverrides::rerollCostBase),
+            arena -> safePerkRarity(arena, PerkRarityOverrides::rerollCostBase));
+        return resolveIntOverride(override, GameMechanicsConfig.PERK_REROLL_COST_BASE.get(), "PERK_REROLL_COST_BASE");
     }
 
     // ========== CHALLENGE CONFIG ==========
 
     public int getChallengeDailyCount(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.challenges != null && runtime.challenges.dailyCount() != null) {
-            return runtime.challenges.dailyCount();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.challenges() != null && arena.challenges().dailyCount() != null) {
-            return arena.challenges().dailyCount();
-        }
-        return GameMechanicsConfig.CHALLENGE_DAILY_COUNT.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.challenges, ChallengeOverrides::dailyCount),
+            arena -> safeChallenges(arena, ChallengeOverrides::dailyCount));
+        return resolveIntOverride(override, GameMechanicsConfig.CHALLENGE_DAILY_COUNT.get(), "CHALLENGE_DAILY_COUNT");
     }
 
     public int getChallengeWeeklyCount(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.challenges != null && runtime.challenges.weeklyCount() != null) {
-            return runtime.challenges.weeklyCount();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.challenges() != null && arena.challenges().weeklyCount() != null) {
-            return arena.challenges().weeklyCount();
-        }
-        return GameMechanicsConfig.CHALLENGE_WEEKLY_COUNT.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.challenges, ChallengeOverrides::weeklyCount),
+            arena -> safeChallenges(arena, ChallengeOverrides::weeklyCount));
+        return resolveIntOverride(override, GameMechanicsConfig.CHALLENGE_WEEKLY_COUNT.get(), "CHALLENGE_WEEKLY_COUNT");
     }
 
     public int getChallengeDailyTokenReward(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.challenges != null && runtime.challenges.dailyTokenReward() != null) {
-            return runtime.challenges.dailyTokenReward();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.challenges() != null && arena.challenges().dailyTokenReward() != null) {
-            return arena.challenges().dailyTokenReward();
-        }
-        return GameMechanicsConfig.CHALLENGE_DAILY_TOKEN_REWARD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.challenges, ChallengeOverrides::dailyTokenReward),
+            arena -> safeChallenges(arena, ChallengeOverrides::dailyTokenReward));
+        return resolveIntOverride(override, GameMechanicsConfig.CHALLENGE_DAILY_TOKEN_REWARD.get(), "CHALLENGE_DAILY_TOKEN_REWARD");
     }
 
     public int getChallengeWeeklyTokenReward(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.challenges != null && runtime.challenges.weeklyTokenReward() != null) {
-            return runtime.challenges.weeklyTokenReward();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.challenges() != null && arena.challenges().weeklyTokenReward() != null) {
-            return arena.challenges().weeklyTokenReward();
-        }
-        return GameMechanicsConfig.CHALLENGE_WEEKLY_TOKEN_REWARD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.challenges, ChallengeOverrides::weeklyTokenReward),
+            arena -> safeChallenges(arena, ChallengeOverrides::weeklyTokenReward));
+        return resolveIntOverride(override, GameMechanicsConfig.CHALLENGE_WEEKLY_TOKEN_REWARD.get(), "CHALLENGE_WEEKLY_TOKEN_REWARD");
     }
 
     public int getChallengeDailyXpReward(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.challenges != null && runtime.challenges.dailyXpReward() != null) {
-            return runtime.challenges.dailyXpReward();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.challenges() != null && arena.challenges().dailyXpReward() != null) {
-            return arena.challenges().dailyXpReward();
-        }
-        return GameMechanicsConfig.CHALLENGE_DAILY_XP_REWARD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.challenges, ChallengeOverrides::dailyXpReward),
+            arena -> safeChallenges(arena, ChallengeOverrides::dailyXpReward));
+        return resolveIntOverride(override, GameMechanicsConfig.CHALLENGE_DAILY_XP_REWARD.get(), "CHALLENGE_DAILY_XP_REWARD");
     }
 
     public int getChallengeWeeklyXpReward(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.challenges != null && runtime.challenges.weeklyXpReward() != null) {
-            return runtime.challenges.weeklyXpReward();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.challenges() != null && arena.challenges().weeklyXpReward() != null) {
-            return arena.challenges().weeklyXpReward();
-        }
-        return GameMechanicsConfig.CHALLENGE_WEEKLY_XP_REWARD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.challenges, ChallengeOverrides::weeklyXpReward),
+            arena -> safeChallenges(arena, ChallengeOverrides::weeklyXpReward));
+        return resolveIntOverride(override, GameMechanicsConfig.CHALLENGE_WEEKLY_XP_REWARD.get(), "CHALLENGE_WEEKLY_XP_REWARD");
     }
 
     // ========== COMBO SYSTEM CONFIG ==========
 
     public int getComboTimeoutTicks(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.combo != null && runtime.combo.timeoutTicks() != null) {
-            return runtime.combo.timeoutTicks();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.combo() != null && arena.combo().timeoutTicks() != null) {
-            return arena.combo().timeoutTicks();
-        }
-        return GameMechanicsConfig.COMBO_TIMEOUT_TICKS.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.combo, ComboOverrides::timeoutTicks),
+            arena -> safeCombo(arena, ComboOverrides::timeoutTicks));
+        return resolveIntOverride(override, GameMechanicsConfig.COMBO_TIMEOUT_TICKS.get(), "COMBO_TIMEOUT_TICKS");
     }
 
     public int getComboBasePoints(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.combo != null && runtime.combo.basePoints() != null) {
-            return runtime.combo.basePoints();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.combo() != null && arena.combo().basePoints() != null) {
-            return arena.combo().basePoints();
-        }
-        return GameMechanicsConfig.COMBO_BASE_POINTS.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.combo, ComboOverrides::basePoints),
+            arena -> safeCombo(arena, ComboOverrides::basePoints));
+        return resolveIntOverride(override, GameMechanicsConfig.COMBO_BASE_POINTS.get(), "COMBO_BASE_POINTS");
     }
 
     public double getComboMultiplierIncrement(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.combo != null && runtime.combo.multiplierIncrement() != null) {
-            return runtime.combo.multiplierIncrement();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.combo() != null && arena.combo().multiplierIncrement() != null) {
-            return arena.combo().multiplierIncrement();
-        }
-        return GameMechanicsConfig.COMBO_MULTIPLIER_INCREMENT.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.combo, ComboOverrides::multiplierIncrement),
+            arena -> safeCombo(arena, ComboOverrides::multiplierIncrement));
+        return resolveDoubleOverride(override, GameMechanicsConfig.COMBO_MULTIPLIER_INCREMENT.get(), "COMBO_MULTIPLIER_INCREMENT");
     }
 
     public double getComboMaxMultiplier(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.combo != null && runtime.combo.maxMultiplier() != null) {
-            return runtime.combo.maxMultiplier();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.combo() != null && arena.combo().maxMultiplier() != null) {
-            return arena.combo().maxMultiplier();
-        }
-        return GameMechanicsConfig.COMBO_MAX_MULTIPLIER.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.combo, ComboOverrides::maxMultiplier),
+            arena -> safeCombo(arena, ComboOverrides::maxMultiplier));
+        return resolveDoubleOverride(override, GameMechanicsConfig.COMBO_MAX_MULTIPLIER.get(), "COMBO_MAX_MULTIPLIER");
     }
 
     // ========== STYLE RANK CONFIG ==========
 
     public double getStyleDecayRate(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.styleRank != null && runtime.styleRank.decayRate() != null) {
-            return runtime.styleRank.decayRate();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.styleRank() != null && arena.styleRank().decayRate() != null) {
-            return arena.styleRank().decayRate();
-        }
-        return GameMechanicsConfig.STYLE_DECAY_RATE.get();
+        Double override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.styleRank, StyleRankOverrides::decayRate),
+            arena -> safeStyleRank(arena, StyleRankOverrides::decayRate));
+        return resolveDoubleOverride(override, GameMechanicsConfig.STYLE_DECAY_RATE.get(), "STYLE_DECAY_RATE");
     }
 
     public int getStyleDecayDelayTicks(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.styleRank != null && runtime.styleRank.decayDelayTicks() != null) {
-            return runtime.styleRank.decayDelayTicks();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.styleRank() != null && arena.styleRank().decayDelayTicks() != null) {
-            return arena.styleRank().decayDelayTicks();
-        }
-        return GameMechanicsConfig.STYLE_DECAY_DELAY_TICKS.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.styleRank, StyleRankOverrides::decayDelayTicks),
+            arena -> safeStyleRank(arena, StyleRankOverrides::decayDelayTicks));
+        return resolveIntOverride(override, GameMechanicsConfig.STYLE_DECAY_DELAY_TICKS.get(), "STYLE_DECAY_DELAY_TICKS");
     }
 
     public int getStyleRankDThreshold(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.styleRank != null && runtime.styleRank.dThreshold() != null) {
-            return runtime.styleRank.dThreshold();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.styleRank() != null && arena.styleRank().dThreshold() != null) {
-            return arena.styleRank().dThreshold();
-        }
-        return GameMechanicsConfig.STYLE_RANK_D_THRESHOLD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.styleRank, StyleRankOverrides::dThreshold),
+            arena -> safeStyleRank(arena, StyleRankOverrides::dThreshold));
+        return resolveIntOverride(override, GameMechanicsConfig.STYLE_RANK_D_THRESHOLD.get(), "STYLE_RANK_D_THRESHOLD");
     }
 
     public int getStyleRankCThreshold(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.styleRank != null && runtime.styleRank.cThreshold() != null) {
-            return runtime.styleRank.cThreshold();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.styleRank() != null && arena.styleRank().cThreshold() != null) {
-            return arena.styleRank().cThreshold();
-        }
-        return GameMechanicsConfig.STYLE_RANK_C_THRESHOLD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.styleRank, StyleRankOverrides::cThreshold),
+            arena -> safeStyleRank(arena, StyleRankOverrides::cThreshold));
+        return resolveIntOverride(override, GameMechanicsConfig.STYLE_RANK_C_THRESHOLD.get(), "STYLE_RANK_C_THRESHOLD");
     }
 
     public int getStyleRankBThreshold(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.styleRank != null && runtime.styleRank.bThreshold() != null) {
-            return runtime.styleRank.bThreshold();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.styleRank() != null && arena.styleRank().bThreshold() != null) {
-            return arena.styleRank().bThreshold();
-        }
-        return GameMechanicsConfig.STYLE_RANK_B_THRESHOLD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.styleRank, StyleRankOverrides::bThreshold),
+            arena -> safeStyleRank(arena, StyleRankOverrides::bThreshold));
+        return resolveIntOverride(override, GameMechanicsConfig.STYLE_RANK_B_THRESHOLD.get(), "STYLE_RANK_B_THRESHOLD");
     }
 
     public int getStyleRankAThreshold(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.styleRank != null && runtime.styleRank.aThreshold() != null) {
-            return runtime.styleRank.aThreshold();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.styleRank() != null && arena.styleRank().aThreshold() != null) {
-            return arena.styleRank().aThreshold();
-        }
-        return GameMechanicsConfig.STYLE_RANK_A_THRESHOLD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.styleRank, StyleRankOverrides::aThreshold),
+            arena -> safeStyleRank(arena, StyleRankOverrides::aThreshold));
+        return resolveIntOverride(override, GameMechanicsConfig.STYLE_RANK_A_THRESHOLD.get(), "STYLE_RANK_A_THRESHOLD");
     }
 
     public int getStyleRankSThreshold(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.styleRank != null && runtime.styleRank.sThreshold() != null) {
-            return runtime.styleRank.sThreshold();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.styleRank() != null && arena.styleRank().sThreshold() != null) {
-            return arena.styleRank().sThreshold();
-        }
-        return GameMechanicsConfig.STYLE_RANK_S_THRESHOLD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.styleRank, StyleRankOverrides::sThreshold),
+            arena -> safeStyleRank(arena, StyleRankOverrides::sThreshold));
+        return resolveIntOverride(override, GameMechanicsConfig.STYLE_RANK_S_THRESHOLD.get(), "STYLE_RANK_S_THRESHOLD");
     }
 
     public int getStyleRankSSThreshold(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.styleRank != null && runtime.styleRank.ssThreshold() != null) {
-            return runtime.styleRank.ssThreshold();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.styleRank() != null && arena.styleRank().ssThreshold() != null) {
-            return arena.styleRank().ssThreshold();
-        }
-        return GameMechanicsConfig.STYLE_RANK_SS_THRESHOLD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.styleRank, StyleRankOverrides::ssThreshold),
+            arena -> safeStyleRank(arena, StyleRankOverrides::ssThreshold));
+        return resolveIntOverride(override, GameMechanicsConfig.STYLE_RANK_SS_THRESHOLD.get(), "STYLE_RANK_SS_THRESHOLD");
     }
 
     public int getStyleRankSSSThreshold(UUID questId) {
-        RuntimeOverrides runtime = questOverrides.get(questId);
-        if (runtime != null && runtime.styleRank != null && runtime.styleRank.sssThreshold() != null) {
-            return runtime.styleRank.sssThreshold();
-        }
-        GameplayOverrides arena = activeArenaOverrides.get(questId);
-        if (arena != null && arena.styleRank() != null && arena.styleRank().sssThreshold() != null) {
-            return arena.styleRank().sssThreshold();
-        }
-        return GameMechanicsConfig.STYLE_RANK_SSS_THRESHOLD.get();
+        Integer override = resolveOverride(questId,
+            runtime -> resolveNested(runtime.styleRank, StyleRankOverrides::sssThreshold),
+            arena -> safeStyleRank(arena, StyleRankOverrides::sssThreshold));
+        return resolveIntOverride(override, GameMechanicsConfig.STYLE_RANK_SSS_THRESHOLD.get(), "STYLE_RANK_SSS_THRESHOLD");
     }
 
     // ========== GLOBAL GETTERS (no quest context) ==========
@@ -794,27 +613,27 @@ public class EnduranceConfigManager {
      * Use when not in a quest context.
      */
     public static int getGlobalSeasonMaxTier() {
-        return GameMechanicsConfig.SEASON_MAX_TIER.get();
+        return resolveIntOverride(null, GameMechanicsConfig.SEASON_MAX_TIER.get(), "SEASON_MAX_TIER");
     }
 
     public static int getGlobalSeasonXpPerTier() {
-        return GameMechanicsConfig.SEASON_XP_PER_TIER.get();
+        return resolveIntOverride(null, GameMechanicsConfig.SEASON_XP_PER_TIER.get(), "SEASON_XP_PER_TIER");
     }
 
     public static int getGlobalGuildMaxSize() {
-        return GameMechanicsConfig.GUILD_MAX_SIZE.get();
+        return resolveIntOverride(null, GameMechanicsConfig.GUILD_MAX_SIZE.get(), "GUILD_MAX_SIZE");
     }
 
     public static int getGlobalGuildMaxLevel() {
-        return GameMechanicsConfig.GUILD_MAX_LEVEL.get();
+        return resolveIntOverride(null, GameMechanicsConfig.GUILD_MAX_LEVEL.get(), "GUILD_MAX_LEVEL");
     }
 
     public static int getGlobalAscensionMaxLevel() {
-        return GameMechanicsConfig.ASCENSION_MAX_LEVEL.get();
+        return resolveIntOverride(null, GameMechanicsConfig.ASCENSION_MAX_LEVEL.get(), "ASCENSION_MAX_LEVEL");
     }
 
     public static int getGlobalAscensionMinPrestige() {
-        return GameMechanicsConfig.ASCENSION_MIN_PRESTIGE.get();
+        return resolveIntOverride(null, GameMechanicsConfig.ASCENSION_MIN_PRESTIGE.get(), "ASCENSION_MIN_PRESTIGE");
     }
 
     // ========== CLEANUP ==========

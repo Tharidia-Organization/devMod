@@ -91,6 +91,7 @@ public enum ChannelId {
     // ============================================================================
     STAMINA_SYNC(66, Direction.SERVER_TO_CLIENT, "StaminaSyncPayload"),
     ABILITY_ACTION(67, Direction.CLIENT_TO_SERVER, "AbilityActionPayload"),
+    LVC_SYNC(68, Direction.SERVER_TO_CLIENT, "LVCSyncPayload"),
 
     // ============================================================================
     // ARENA CHANNELS (76-85)
@@ -104,10 +105,15 @@ public enum ChannelId {
     CHALLENGE_COMPLETE(87, Direction.SERVER_TO_CLIENT, "ChallengeCompletePayload"),
 
     // ============================================================================
-    // DEBUG CHANNELS (90-99)
+    // DEBUG CHANNELS (90-91)
     // ============================================================================
     DEBUG_TOGGLE(90, Direction.CLIENT_TO_SERVER, "DebugTogglePayload"),
-    DEBUG_SYNC(91, Direction.SERVER_TO_CLIENT, "DebugSyncPayload");
+    DEBUG_SYNC(91, Direction.SERVER_TO_CLIENT, "DebugSyncPayload"),
+
+    // ============================================================================
+    // SEASON PASS CHANNELS (92-99)
+    // ============================================================================
+    SEASON_TIER_UP(92, Direction.SERVER_TO_CLIENT, "SeasonTierUpPayload");
 
     // ============================================================================
     // ENUM INFRASTRUCTURE

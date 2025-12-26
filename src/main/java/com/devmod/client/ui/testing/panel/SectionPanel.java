@@ -93,7 +93,7 @@ public record SectionPanel(
         private final String id;
         private final String title;
         private int titleColor = UIConstants.Text.PRIMARY();
-        private String description;
+        private String description = "";
         private boolean showSeparator = false;
         private final ArrayList<ButtonRow> rows = new ArrayList<>();
 

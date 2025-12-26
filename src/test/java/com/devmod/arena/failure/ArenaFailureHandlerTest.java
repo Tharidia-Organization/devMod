@@ -17,6 +17,7 @@ class ArenaFailureHandlerTest {
     @BeforeEach
     void setUp() {
         handler = new ArenaFailureHandler();
+        handler.setLoggingEnabled(false);
     }
 
     @Test

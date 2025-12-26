@@ -1,50 +1,60 @@
 # Verification Runbook
 
-**Last Updated:** 2025-12-25  
-**Purpose:** Dedicated server readiness checks
+> **Audit Date**: 2025-12-26
+> **Status**: CURRENT (manual runbook; aligned to repo scripts/tests)
+> **Purpose**: Dedicated server readiness checks
 
 ## Build + Smoke
 
 ```bash
 ./gradlew build
-./gradlew runServer
-./gradlew runClient
 ./gradlew test
+./gradlew runGameTestServer   # server-side validation (recommended)
+./gradlew runServer           # manual server sanity (optional)
+./gradlew runClient           # client sanity (optional)
 ```
 
 ## Guardrails
 
-### 1) Client import boundary
+### 1) Client import boundary (fast)
 
 ```bash
 tools/check-client-imports.sh
 ```
 
-### 2) Mixin side lists
+### 2) Client boundary regression (stricter)
 
 ```bash
-grep -A20 '"client"' src/main/resources/devmod.mixins.json
-grep -A10 '"mixins"' src/main/resources/devmod.mixins.json
+scripts/check-client-boundary.sh
 ```
 
-### 3) Network ID uniqueness
+### 3) Mixin side lists
 
 ```bash
-./gradlew test --tests com.devmod.network.ChannelIdCollisionTest
+rg -n '"client"' src/main/resources/devmod.mixins.json
+rg -n '"mixins"' src/main/resources/devmod.mixins.json
 ```
 
-### 4) No legacy namespace
+### 4) Network ID uniqueness
 
 ```bash
-grep -rn "com\\.frenkvs" src/
+./gradlew test --tests 'com.devmod.network.ChannelIdCollisionTest'
+```
+
+### 5) Namespace checks
+
+```bash
+scripts/architecture-check.sh
 ```
 
 ## Expected Logs (Server)
 
 ```bash
-grep "SpongePowered MIXIN" run/logs/latest.log | grep "Env=SERVER"
-grep -c "ClassNotFoundException.*com\\.devmod" run/logs/latest.log
-grep -n "RuntimeDistCleaner" run/logs/latest.log
+LOG=run/logs/latest.log  # Gradle run tasks
+# LOG=logs/latest.log    # Packaged server
+rg "SpongePowered MIXIN" "$LOG" | rg "Env=SERVER"
+rg -c "ClassNotFoundException.*com\\.devmod" "$LOG"
+rg -n "RuntimeDistCleaner" "$LOG"
 ```
 
 Expected:

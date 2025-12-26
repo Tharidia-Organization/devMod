@@ -2,6 +2,8 @@ package com.devmod.client;
 
 import java.lang.reflect.Method;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,9 +23,13 @@ public final class ClientVFXProxy {
 
     // Cached reflection methods (initialized lazily on client only)
     private static boolean initialized = false;
+    @Nullable
     private static Method addImpactVFXMethod;
+    @Nullable
     private static Method spawnMeleeEvasionMethod;
+    @Nullable
     private static Method spawnArrowEvasionMethod;
+    @Nullable
     private static Method addDamageShakeMethod;
 
     private ClientVFXProxy() {}

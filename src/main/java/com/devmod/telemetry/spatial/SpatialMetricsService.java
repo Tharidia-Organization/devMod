@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -112,8 +114,9 @@ public class SpatialMetricsService {
      * Get entity density info for a room.
      *
      * @param roomId Room identifier
-     * @return Optional density info
+     * @return Density info or null when unavailable
      */
+    @Nullable
     public EntityDensityInfo getDensityInfo(String roomId) {
         EntityDensityTracker tracker = entityDensity.get(roomId);
         if (tracker == null) return null;

@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -37,6 +39,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
     private final String title;
     private final ItemStack item;
     private final List<EnchantmentEntry> entries = new ArrayList<>();
+    @Nullable
     private final Consumer<String> onModify;
 
     /**
@@ -47,7 +50,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
      * @param item     Item to read/write enchantments from
      * @param onModify Callback when an enchantment is modified
      */
-    public EnchantmentListSection(String id, String title, ItemStack item, Consumer<String> onModify) {
+    public EnchantmentListSection(String id, String title, ItemStack item, @Nullable Consumer<String> onModify) {
         this.id = id;
         this.title = title;
         this.item = item;
@@ -100,7 +103,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
             Optional<Holder.Reference<Enchantment>> optHolder = enchantRegistry.getHolder(Objects.requireNonNull(key));
 
             if (optHolder.isPresent()) {
-                Holder<Enchantment> holder = Objects.requireNonNull(optHolder.get());
+                Holder<Enchantment> holder = optHolder.get();
                 // Only add if not already in the list
                 boolean alreadyAdded = entries.stream()
                     .anyMatch(e -> e.holder.equals(holder));

@@ -7,11 +7,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
@@ -59,7 +61,7 @@ public class ExecutionSystem {
     private static final double DEFAULT_EXECUTION_INTERRUPT_VULNERABILITY = 2.0;
     private static final double DEFAULT_EXECUTION_RANGE = 4.0;
 
-    private ExecutionOverrides currentOverrides = null;
+    private @Nullable ExecutionOverrides currentOverrides = null;
 
     /**
      * Set per-instance overrides (called when entering an arena with custom config).
@@ -75,22 +77,32 @@ public class ExecutionSystem {
         this.currentOverrides = null;
     }
 
-    private static double resolveDoubleOverride(Double overrideValue, Double configValue, double fallback) {
+    private static double resolveDoubleOverride(
+        @Nullable Double overrideValue,
+        @Nullable Double configValue,
+        double fallback
+    ) {
         if (overrideValue != null) {
-            return overrideValue;
+            return overrideValue.doubleValue();
         }
-        return configValue != null ? configValue : fallback;
+        if (configValue != null) {
+            return configValue.doubleValue();
+        }
+        return fallback;
     }
 
-    private static int resolveIntOverride(Integer overrideValue, Integer configValue, int fallback) {
+    private static int resolveIntOverride(@Nullable Integer overrideValue, @Nullable Integer configValue, int fallback) {
         if (overrideValue != null) {
-            return overrideValue;
+            return overrideValue.intValue();
         }
-        return configValue != null ? configValue : fallback;
+        if (configValue != null) {
+            return configValue.intValue();
+        }
+        return fallback;
     }
 
     private float getExecutionThreshold() {
-        Double overrideValue = currentOverrides != null ? currentOverrides.hpThreshold() : null;
+        @Nullable Double overrideValue = currentOverrides != null ? currentOverrides.hpThreshold() : null;
         double value = resolveDoubleOverride(
             overrideValue,
             GameMechanicsConfig.EXECUTION_HP_THRESHOLD.get(),
@@ -100,7 +112,7 @@ public class ExecutionSystem {
     }
 
     private int getExecutionDurationTicks() {
-        Integer overrideValue = currentOverrides != null ? currentOverrides.durationTicks() : null;
+        @Nullable Integer overrideValue = currentOverrides != null ? currentOverrides.durationTicks() : null;
         return resolveIntOverride(
             overrideValue,
             GameMechanicsConfig.EXECUTION_DURATION_TICKS.get(),
@@ -109,7 +121,7 @@ public class ExecutionSystem {
     }
 
     private int getCooldownTicks() {
-        Integer overrideValue = currentOverrides != null ? currentOverrides.cooldownTicks() : null;
+        @Nullable Integer overrideValue = currentOverrides != null ? currentOverrides.cooldownTicks() : null;
         return resolveIntOverride(
             overrideValue,
             GameMechanicsConfig.EXECUTION_COOLDOWN_TICKS.get(),
@@ -118,7 +130,7 @@ public class ExecutionSystem {
     }
 
     private int getStyleReward() {
-        Integer overrideValue = currentOverrides != null ? currentOverrides.styleReward() : null;
+        @Nullable Integer overrideValue = currentOverrides != null ? currentOverrides.styleReward() : null;
         return resolveIntOverride(
             overrideValue,
             GameMechanicsConfig.EXECUTION_STYLE_REWARD.get(),
@@ -127,7 +139,7 @@ public class ExecutionSystem {
     }
 
     private float getHpRegenPercent() {
-        Double overrideValue = currentOverrides != null ? currentOverrides.hpRegenPercent() : null;
+        @Nullable Double overrideValue = currentOverrides != null ? currentOverrides.hpRegenPercent() : null;
         double value = resolveDoubleOverride(
             overrideValue,
             GameMechanicsConfig.EXECUTION_HP_REGEN_PERCENT.get(),
@@ -137,7 +149,7 @@ public class ExecutionSystem {
     }
 
     private float getDropBoost() {
-        Double overrideValue = currentOverrides != null ? currentOverrides.dropBoost() : null;
+        @Nullable Double overrideValue = currentOverrides != null ? currentOverrides.dropBoost() : null;
         double value = resolveDoubleOverride(
             overrideValue,
             GameMechanicsConfig.EXECUTION_DROP_BOOST.get(),
@@ -147,7 +159,7 @@ public class ExecutionSystem {
     }
 
     private float getInterruptVulnerability() {
-        Double overrideValue = currentOverrides != null ? currentOverrides.interruptVulnerability() : null;
+        @Nullable Double overrideValue = currentOverrides != null ? currentOverrides.interruptVulnerability() : null;
         double value = resolveDoubleOverride(
             overrideValue,
             GameMechanicsConfig.EXECUTION_INTERRUPT_VULNERABILITY.get(),
@@ -157,12 +169,20 @@ public class ExecutionSystem {
     }
 
     private double getExecutionRange() {
-        Double overrideValue = currentOverrides != null ? currentOverrides.range() : null;
+        @Nullable Double overrideValue = currentOverrides != null ? currentOverrides.range() : null;
         return resolveDoubleOverride(
             overrideValue,
             GameMechanicsConfig.EXECUTION_RANGE.get(),
             DEFAULT_EXECUTION_RANGE
         );
+    }
+
+    private static UUID requirePlayerId(ServerPlayer player) {
+        UUID playerId = player.getUUID();
+        if (playerId == null) {
+            throw new IllegalStateException("player.getUUID() returned null");
+        }
+        return playerId;
     }
 
     // Active execution state
@@ -184,8 +204,8 @@ public class ExecutionSystem {
         public boolean interrupted = false;
 
         public ExecutionState(@Nonnull UUID playerId, @Nonnull UUID targetId, int durationTicks) {
-            this.playerId = Objects.requireNonNull(playerId, "playerId");
-            this.targetId = Objects.requireNonNull(targetId, "targetId");
+            this.playerId = requireNonNull(playerId, "playerId");
+            this.targetId = requireNonNull(targetId, "targetId");
             this.startTime = System.currentTimeMillis();
             this.durationTicks = durationTicks;
             this.ticksRemaining = durationTicks;
@@ -234,7 +254,7 @@ public class ExecutionSystem {
      * Check if a player can perform an execution right now.
      */
     public boolean canExecute(ServerPlayer player) {
-        UUID playerId = player.getUUID();
+        UUID playerId = requirePlayerId(player);
 
         // Check if already executing
         if (activeExecutions.containsKey(playerId)) {
@@ -257,8 +277,14 @@ public class ExecutionSystem {
     public Optional<Mob> getExecutableTarget(ServerPlayer player) {
         if (!canExecute(player)) return Optional.empty();
 
-        AABB searchBounds = Objects.requireNonNull(player.getBoundingBox(), "player.getBoundingBox()")
-            .inflate(getExecutionRange());
+        AABB bounds = player.getBoundingBox();
+        if (bounds == null) {
+            return Optional.empty();
+        }
+        AABB searchBounds = bounds.inflate(getExecutionRange());
+        if (searchBounds == null) {
+            return Optional.empty();
+        }
 
         return player.level().getEntitiesOfClass(Mob.class, searchBounds)
             .stream()
@@ -277,6 +303,9 @@ public class ExecutionSystem {
         return EnduranceQuestManager.INSTANCE.getActiveSession(player)
             .map(session -> {
                 UUID mobQuestId = data.getUUID("endurance_quest_id");
+                if (mobQuestId == null) {
+                    return false;
+                }
                 return mobQuestId.equals(session.getQuest().getQuestId());
             })
             .orElse(false);
@@ -286,7 +315,7 @@ public class ExecutionSystem {
      * Start an execution attempt.
      */
     public ExecutionResult startExecution(ServerPlayer player, Mob target) {
-        UUID playerId = player.getUUID();
+        UUID playerId = requirePlayerId(player);
 
         // Validate
         if (!canExecute(player)) {
@@ -299,36 +328,29 @@ public class ExecutionSystem {
 
         // Start execution
         int durationTicks = getExecutionDurationTicks();
-        ExecutionState state = new ExecutionState(playerId, target.getUUID(), durationTicks);
+        UUID targetId = target.getUUID();
+        if (targetId == null) {
+            return ExecutionResult.fail("Target missing identity!");
+        }
+        ExecutionState state = new ExecutionState(playerId, targetId, durationTicks);
         activeExecutions.put(playerId, state);
 
         // Apply invincibility
-        Holder<MobEffect> resistance = Objects.requireNonNull(
-            MobEffects.DAMAGE_RESISTANCE,
-            "MobEffects.DAMAGE_RESISTANCE"
-        );
-        player.addEffect(new MobEffectInstance(resistance, durationTicks, 4, false, false));
+        Holder<MobEffect> resistance = MobEffects.DAMAGE_RESISTANCE;
+        if (resistance != null) {
+            player.addEffect(new MobEffectInstance(resistance, durationTicks, 4, false, false));
+        }
 
         // Lock target in place
         target.setNoAi(true);
 
         // Visual/audio feedback
         if (player.level() instanceof ServerLevel level) {
-            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
-            SoundEvent chargeSound = Objects.requireNonNull(
-                SoundEvents.WARDEN_SONIC_CHARGE,
-                "SoundEvents.WARDEN_SONIC_CHARGE"
-            );
-            level.playSound(null, playerPos, chargeSound, SoundSource.PLAYERS, 1.0f, 1.5f);
+            BlockPos playerPos = player.blockPosition();
+            playSound(level, playerPos, SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 1.0f, 1.5f);
 
             // Initial particles
-            SimpleParticleType critParticles = Objects.requireNonNull(ParticleTypes.CRIT, "ParticleTypes.CRIT");
-            for (int i = 0; i < 20; i++) {
-                double x = target.getX() + (level.random.nextDouble() - 0.5) * 2;
-                double y = target.getY() + level.random.nextDouble() * target.getBbHeight();
-                double z = target.getZ() + (level.random.nextDouble() - 0.5) * 2;
-                level.sendParticles(critParticles, x, y, z, 1, 0, 0, 0, 0.1);
-            }
+            spawnParticles(level, target, ParticleTypes.CRIT, 20, 2.0, target.getBbHeight(), 0.1);
         }
 
         LOGGER.debug("[Execution] {} started executing {}", player.getName().getString(), target.getName().getString());
@@ -363,7 +385,7 @@ public class ExecutionSystem {
      * Call this from the server tick handler.
      */
     public void tickPlayer(ServerPlayer player) {
-        UUID playerId = player.getUUID();
+        UUID playerId = requirePlayerId(player);
         ExecutionState state = activeExecutions.get(playerId);
 
         if (state == null) return;
@@ -372,7 +394,8 @@ public class ExecutionSystem {
 
         // Get target
         if (player.level() instanceof ServerLevel level) {
-            Mob target = (Mob) level.getEntity(state.targetId);
+            Entity entity = level.getEntity(state.targetId);
+            Mob target = entity instanceof Mob mob ? mob : null;
 
             if (target == null || !target.isAlive()) {
                 // Target died or despawned - count as success
@@ -382,16 +405,7 @@ public class ExecutionSystem {
 
             // Tick visual effects
             if (state.ticksRemaining % 5 == 0) {
-                SimpleParticleType hitParticles = Objects.requireNonNull(
-                    ParticleTypes.ENCHANTED_HIT,
-                    "ParticleTypes.ENCHANTED_HIT"
-                );
-                for (int i = 0; i < 5; i++) {
-                    double x = target.getX() + (level.random.nextDouble() - 0.5) * 1.5;
-                    double y = target.getY() + level.random.nextDouble() * target.getBbHeight();
-                    double z = target.getZ() + (level.random.nextDouble() - 0.5) * 1.5;
-                    level.sendParticles(hitParticles, x, y, z, 1, 0, 0, 0, 0);
-                }
+                spawnParticles(level, target, ParticleTypes.ENCHANTED_HIT, 5, 1.5, target.getBbHeight(), 0);
             }
 
             // Check completion
@@ -405,7 +419,7 @@ public class ExecutionSystem {
      * Complete an execution successfully.
      */
     private void completeExecution(ServerPlayer player, Mob target, ExecutionState state) {
-        UUID playerId = player.getUUID();
+        UUID playerId = requirePlayerId(player);
         activeExecutions.remove(playerId);
 
         // Set cooldown
@@ -440,39 +454,27 @@ public class ExecutionSystem {
             target.getPersistentData().putFloat("execution_drop_boost", getDropBoost());
 
             // Kill instantly
-            DamageSource executionDamage = Objects.requireNonNull(
-                player.damageSources().playerAttack(player),
-                "playerAttack damage source"
-            );
-            target.hurt(executionDamage, Float.MAX_VALUE);
+            DamageSource executionDamage = player.damageSources().playerAttack(player);
+            if (executionDamage == null) {
+                executionDamage = player.damageSources().magic();
+            }
+            if (executionDamage != null) {
+                target.hurt(executionDamage, Float.MAX_VALUE);
+            }
         }
 
         // Visual/audio feedback
         if (player.level() instanceof ServerLevel level) {
-            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
-            SoundEvent levelUpSound = Objects.requireNonNull(
-                SoundEvents.PLAYER_LEVELUP,
-                "SoundEvents.PLAYER_LEVELUP"
-            );
-            level.playSound(null, playerPos, levelUpSound, SoundSource.PLAYERS, 1.0f, 1.5f);
+            BlockPos playerPos = player.blockPosition();
+            playSound(level, playerPos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1.0f, 1.5f);
 
             // Explosion of particles
-            SimpleParticleType totemParticles = Objects.requireNonNull(
-                ParticleTypes.TOTEM_OF_UNDYING,
-                "ParticleTypes.TOTEM_OF_UNDYING"
-            );
-            for (int i = 0; i < 50; i++) {
-                double x = player.getX() + (level.random.nextDouble() - 0.5) * 3;
-                double y = player.getY() + level.random.nextDouble() * 2;
-                double z = player.getZ() + (level.random.nextDouble() - 0.5) * 3;
-                level.sendParticles(totemParticles, x, y, z, 1, 0, 0.5, 0, 0.2);
-            }
+            spawnParticles(level, player, ParticleTypes.TOTEM_OF_UNDYING, 50, 3.0, 2.0, 0.2);
         }
 
         // Send feedback
-        Component executedMessage = Objects.requireNonNull(
-            Component.literal("§6§lEXECUTED! §r§a+" + styleGain + " Style §r§c+" + String.format("%.1f", hpRegen) + " HP"),
-            "execution completed message"
+        Component executedMessage = Component.literal(
+            "§6§lEXECUTED! §r§a+" + styleGain + " Style §r§c+" + String.format("%.1f", hpRegen) + " HP"
         );
         player.displayClientMessage(executedMessage, true);
 
@@ -485,25 +487,24 @@ public class ExecutionSystem {
     /**
      * Interrupt an execution (called when player takes damage).
      */
+    @Nullable
     public ExecutionResult interruptExecution(ServerPlayer player) {
-        UUID playerId = player.getUUID();
+        UUID playerId = requirePlayerId(player);
         ExecutionState state = activeExecutions.remove(playerId);
 
         if (state == null) return null;
 
         // Remove invincibility
-        Holder<MobEffect> resistance = Objects.requireNonNull(
-            MobEffects.DAMAGE_RESISTANCE,
-            "MobEffects.DAMAGE_RESISTANCE"
-        );
-        player.removeEffect(resistance);
+        Holder<MobEffect> resistance = MobEffects.DAMAGE_RESISTANCE;
+        if (resistance != null) {
+            player.removeEffect(resistance);
+        }
 
         // Apply vulnerability debuff
-        Holder<MobEffect> weakness = Objects.requireNonNull(
-            MobEffects.WEAKNESS,
-            "MobEffects.WEAKNESS"
-        );
-        player.addEffect(new MobEffectInstance(weakness, 60, 0, false, true));
+        Holder<MobEffect> weakness = MobEffects.WEAKNESS;
+        if (weakness != null) {
+            player.addEffect(new MobEffectInstance(weakness, 60, 0, false, true));
+        }
 
         // Mark player as vulnerable for damage calculation
         player.getPersistentData().putLong("execution_interrupted", System.currentTimeMillis() + 3000);
@@ -511,25 +512,20 @@ public class ExecutionSystem {
 
         // Restore target AI
         if (player.level() instanceof ServerLevel level) {
-            Mob target = (Mob) level.getEntity(state.targetId);
+            Entity entity = level.getEntity(state.targetId);
+            Mob target = entity instanceof Mob mob ? mob : null;
             if (target != null) {
                 target.setNoAi(false);
             }
 
             // Negative feedback
-            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
-            SoundEvent shieldBreakSound = Objects.requireNonNull(
-                SoundEvents.SHIELD_BREAK,
-                "SoundEvents.SHIELD_BREAK"
-            );
-            level.playSound(null, playerPos, shieldBreakSound, SoundSource.PLAYERS, 1.0f, 0.5f);
+            BlockPos playerPos = player.blockPosition();
+            playSound(level, playerPos, SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS, 1.0f, 0.5f);
         }
 
         // Send feedback
-        Component interruptedMessage = Objects.requireNonNull(
-            Component.literal("§c§lINTERRUPTED! §r§7Vulnerability: 2x damage for 3 sec"),
-            "execution interrupted message"
-        );
+        Component interruptedMessage =
+            Component.literal("§c§lINTERRUPTED! §r§7Vulnerability: 2x damage for 3 sec");
         player.displayClientMessage(interruptedMessage, true);
 
         LOGGER.info("[Execution] {} execution was interrupted!", player.getName().getString());
@@ -542,7 +538,7 @@ public class ExecutionSystem {
      * Check if player is currently executing.
      */
     public boolean isExecuting(ServerPlayer player) {
-        return activeExecutions.containsKey(player.getUUID());
+        return activeExecutions.containsKey(requirePlayerId(player));
     }
 
     /**
@@ -574,7 +570,7 @@ public class ExecutionSystem {
 
         // Chance to duplicate each drop
         List<ItemStack> bonusDrops = new ArrayList<>();
-        Random random = new Random();
+        ThreadLocalRandom random = ThreadLocalRandom.current();
 
         for (ItemStack drop : drops) {
             if (random.nextFloat() < boost) {
@@ -619,6 +615,32 @@ public class ExecutionSystem {
     public void reset() {
         activeExecutions.clear();
         cooldowns.clear();
+    }
+
+    @Nonnull
+    private static <T> T requireNonNull(@Nullable T value, String label) {
+        return Objects.requireNonNull(value, label);
+    }
+
+    private static void playSound(ServerLevel level, BlockPos pos, @Nullable SoundEvent sound,
+                                  SoundSource source, float volume, float pitch) {
+        if (sound == null || pos == null) {
+            return;
+        }
+        level.playSound(null, pos, sound, source, volume, pitch);
+    }
+
+    private static void spawnParticles(ServerLevel level, LivingEntity entity, @Nullable SimpleParticleType particle,
+                                       int count, double horizontalSpread, double verticalSpread, double speed) {
+        if (particle == null) {
+            return;
+        }
+        for (int i = 0; i < count; i++) {
+            double x = entity.getX() + (level.random.nextDouble() - 0.5) * horizontalSpread;
+            double y = entity.getY() + level.random.nextDouble() * verticalSpread;
+            double z = entity.getZ() + (level.random.nextDouble() - 0.5) * horizontalSpread;
+            level.sendParticles(particle, x, y, z, 1, 0, 0, 0, speed);
+        }
     }
 
     private ExecutionSystem() {}

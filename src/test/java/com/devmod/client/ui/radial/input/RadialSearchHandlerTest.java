@@ -147,15 +147,19 @@ class RadialSearchHandlerTest {
         @Test
         @DisplayName("calculateFuzzyScore throws on null query")
         void fuzzyScoreThrowsOnNullQuery() {
-            assertThrows(NullPointerException.class,
-                () -> RadialSearchHandler.calculateFuzzyScore(null, "test"));
+            assertThrowsNpe(() -> {
+                var method = RadialSearchHandler.class.getMethod("calculateFuzzyScore", String.class, String.class);
+                method.invoke(null, null, "test");
+            });
         }
 
         @Test
         @DisplayName("calculateFuzzyScore throws on null name")
         void fuzzyScoreThrowsOnNullName() {
-            assertThrows(NullPointerException.class,
-                () -> RadialSearchHandler.calculateFuzzyScore("test", null));
+            assertThrowsNpe(() -> {
+                var method = RadialSearchHandler.class.getMethod("calculateFuzzyScore", String.class, String.class);
+                method.invoke(null, "test", null);
+            });
         }
     }
 
@@ -230,5 +234,28 @@ class RadialSearchHandlerTest {
             assertTrue(elapsedMs < 100,
                 "1000 fuzzy searches should complete in under 100ms, took: " + elapsedMs + "ms");
         }
+    }
+
+    private static final String NULL_REFLECTION_ERROR = "Unexpected reflection error";
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+
+    private static void assertThrowsNpe(ThrowingRunnable action) {
+        assertThrows(NullPointerException.class, () -> {
+            try {
+                action.run();
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof NullPointerException npe) {
+                    throw npe;
+                }
+                throw new RuntimeException(cause);
+            } catch (Exception e) {
+                throw new RuntimeException(NULL_REFLECTION_ERROR, e);
+            }
+        });
     }
 }

@@ -6,17 +6,20 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
@@ -39,7 +42,9 @@ public final class ActiveContractManager {
      * Session tracking contract state for a player in a quest.
      */
     public static class ContractSession {
+        @Nonnull
         private final UUID playerId;
+        @Nonnull
         private final UUID questId;
         private final List<BloodContract> activeContracts = new ArrayList<>();
         private final Set<BloodContract> violatedContracts = new HashSet<>();
@@ -51,13 +56,14 @@ public final class ActiveContractManager {
         private boolean playerDied = false;
 
         public ContractSession(UUID playerId, UUID questId) {
-            this.playerId = playerId;
-            this.questId = questId;
+            this.playerId = requireNonNull(playerId, "playerId");
+            this.questId = requireNonNull(questId, "questId");
         }
 
         // ========== Contract Management ==========
 
         public boolean signContract(BloodContract contract) {
+            requireNonNull(contract, "contract");
             // Check compatibility with existing contracts
             for (BloodContract existing : activeContracts) {
                 if (!contract.isCompatibleWith(existing)) {
@@ -211,9 +217,14 @@ public final class ActiveContractManager {
      */
     @Nonnull
     public ContractSession getOrCreateSession(UUID questId, UUID playerId) {
-        return sessions
-            .computeIfAbsent(questId, k -> new ConcurrentHashMap<>())
-            .computeIfAbsent(playerId, k -> new ContractSession(playerId, questId));
+        Map<UUID, ContractSession> questSessions =
+            sessions.computeIfAbsent(questId, k -> new ConcurrentHashMap<>());
+        ContractSession session = questSessions.get(playerId);
+        if (session == null) {
+            session = new ContractSession(playerId, questId);
+            questSessions.put(playerId, session);
+        }
+        return session;
     }
 
     /**
@@ -231,8 +242,10 @@ public final class ActiveContractManager {
     @Nonnull
     public Collection<ContractSession> getQuestSessions(UUID questId) {
         Map<UUID, ContractSession> questSessions = sessions.get(questId);
-        if (questSessions == null) return Collections.emptyList();
-        return questSessions.values();
+        if (questSessions == null) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableCollection(questSessions.values());
     }
 
     // ========== Contract Operations ==========
@@ -246,13 +259,11 @@ public final class ActiveContractManager {
 
         if (success) {
             // Play contract signing sound
-            player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0f, 0.7f);
+            playSound(player, SoundEvents.BOOK_PAGE_TURN, 1.0f, 0.7f);
 
             // Dramatic sound for blood tier
             if (contract.getTier() == BloodContract.ContractTier.BLOOD) {
-                player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                    SoundEvents.WITHER_AMBIENT, SoundSource.PLAYERS, 0.5f, 1.5f);
+                playSound(player, SoundEvents.WITHER_AMBIENT, 0.5f, 1.5f);
             }
 
             // Telemetry
@@ -287,8 +298,7 @@ public final class ActiveContractManager {
 
             for (BloodContract violated : violations) {
                 // Violation sound
-                player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                    SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 1.0f, 0.5f);
+                playSound(player, SoundEvents.ANVIL_LAND, 1.0f, 0.5f);
 
                 // Apply violation consequences
                 applyViolationConsequence(player, violated);
@@ -308,14 +318,14 @@ public final class ActiveContractManager {
         switch (contract.getTier()) {
             case BLOOD -> {
                 // Blood contracts = instant death on violation
-                player.hurt(player.damageSources().magic(), Float.MAX_VALUE);
+                player.hurt(requireNonNull(player.damageSources().magic(), "magic"), Float.MAX_VALUE);
                 LOGGER.info("[Contracts] {} killed for violating BLOOD contract {}",
                     player.getName().getString(), contract.getId());
             }
             case MAJOR -> {
                 // Major contracts = heavy damage
                 float damage = player.getMaxHealth() * 0.5f;
-                player.hurt(player.damageSources().magic(), damage);
+                player.hurt(requireNonNull(player.damageSources().magic(), "magic"), damage);
             }
             case STANDARD, MINOR -> {
                 // No additional punishment beyond losing reward multiplier
@@ -384,7 +394,7 @@ public final class ActiveContractManager {
             }
 
             if (session.hasContract(BloodContract.ContractEffect.BERSERKER)) {
-                if (currentHealth / maxHealth < 0.5f) {
+                if (maxHealth > 0.0f && currentHealth / maxHealth < 0.5f) {
                     multiplier *= 1.75f; // +75% damage when low health
                 }
             }
@@ -427,5 +437,18 @@ public final class ActiveContractManager {
      */
     public boolean hasLifesteal(UUID questId, UUID playerId) {
         return hasEffect(questId, playerId, BloodContract.ContractEffect.VAMPIRE);
+    }
+
+    private static void playSound(ServerPlayer player, @Nullable SoundEvent sound, float volume, float pitch) {
+        if (sound == null) {
+            return;
+        }
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+            sound, SoundSource.PLAYERS, volume, pitch);
+    }
+
+    @Nonnull
+    private static <T> T requireNonNull(@Nullable T value, String label) {
+        return Objects.requireNonNull(value, label);
     }
 }

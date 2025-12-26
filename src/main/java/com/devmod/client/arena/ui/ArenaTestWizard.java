@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public class ArenaTestWizard extends Screen {
     private final List<String> recentTemplates;
 
     // UI State
+    @Nullable
     private EditBox searchBox;
     private List<TemplateEntry> filteredTemplates = new ArrayList<>();
     private int selectedIndex = -1;
@@ -58,8 +60,11 @@ public class ArenaTestWizard extends Screen {
     private int panelY;
 
     // Buttons
+    @Nullable
     private EditorButton testButton;
+    @Nullable
     private EditorButton dryRunButton;
+    @Nullable
     private EditorButton forceTemplateButton;
 
     public ArenaTestWizard(ArenaTemplateRegistry registry, Consumer<TestConfig> onTest) {
@@ -529,14 +534,14 @@ public class ArenaTestWizard extends Screen {
      */
     public record TestConfig(
         String templateId,
-        Integer playerCountOverride,
+        @Nullable Integer playerCountOverride,
         boolean dryRun,
         boolean forceTemplate
     ) {
         /**
          * Creates a config without force template (backwards compatible).
          */
-        public TestConfig(String templateId, Integer playerCountOverride, boolean dryRun) {
+        public TestConfig(String templateId, @Nullable Integer playerCountOverride, boolean dryRun) {
             this(templateId, playerCountOverride, dryRun, false);
         }
     }

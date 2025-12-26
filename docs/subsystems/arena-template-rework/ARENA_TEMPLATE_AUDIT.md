@@ -1,12 +1,12 @@
 # Arena Template Documentation Audit (v2.23)
 
-> **Last Updated**: 2024-12-23
-> **Status**: ✅ CURRENT - Audit allineato con codebase
+> **Last Updated**: 2025-12-26
+> **Status**: ✅ CURRENT - snapshot allineato con repo
 
 ## Scope
 - Obiettivo: riallineare la documentazione Arena Template allo stato attuale del codice e all'obiettivo finale v2.23.
 - Copertura: spec/template/policy, runbook alert, schemi JSON, migrazione legacy, readiness.
-- Data audit: 2025-12-21 (allineamento docs + deprecazioni).
+- Data audit: 2025-12-21 (allineamento docs + deprecazioni); refresh 2025-12-26.
 
 ## Source of Truth (canonicali)
 1. `docs/subsystems/arena-template-rework/TODO_ARENA_TEMPLATE.md` - spec completa DD1-DD72 (v2.23)
@@ -24,10 +24,10 @@ Nota: le task list storiche `docs/_deprecated/arena-template-rework/TODO_AGENT_*
 - Implementazione core in `src/main/java/com/devmod/arena/*` con pacchetti per registry, builder, budget, metrics, telemetry, observability, recovery, security, cleanup, spawn, gamification, pool, monitoring.
 - Schema template/policy presenti e allineati alle decisioni v2.23.
 - Runbook alert centralizzato in `docs/runbook/arena-alerts.md`.
-- Legacy `ArenaManager.createArena()` e percorsi legacy deprecati; nessuna chiamata diretta rilevata in `src/main/java`.
-- Prebuild pool implementata ma DEFERRED (feature flag + valutazione post telemetria).
+- Legacy API monitorate da `com.devmod.arena.migration.WrapperAnalyzer` (pattern di uso legacy).
+- Prebuild pool implementata con enable/disable espliciti e criteri DD63; default disabilitata.
 
-## Obiettivo finale (v2.23)
+## Obiettivo finale (v2.23, spec)
 - KPI di rollout: `build_p95 < 5s`, `rollback_rate < 1%`, `completion_rate > 75%` (DD72).
 - Release gate con 7 check bloccanti (DD70).
 - Monitoring 48h con soglie + ownership + escalation (DD68).
@@ -41,8 +41,8 @@ Nota: le task list storiche `docs/_deprecated/arena-template-rework/TODO_AGENT_*
 - Aggiornati percorsi file errati nei COMPLETE (Agent 08).
 
 ## Gap residui (focus evolutivo)
-1. **Prebuild Pool (DD63)**: decisione enablement dopo 2 settimane di telemetria; definire go/no-go e configurazione finale.
-2. **Legacy cleanup**: adapter legacy rimosso dai flussi endurance; resta solo il wrapper deprecato per compatibilita' storica.
+1. **Prebuild Pool (DD63)**: decisione enablement basata su telemetria (go/no-go) e configurazione finale.
+2. **Legacy cleanup**: continuare la rimozione di percorsi legacy individuati dal WrapperAnalyzer.
 
 ## Documenti deprecati (vedi header nei file)
 - `docs/_deprecated/arena-template-rework/TODO_ARENA_TEMPLATE.md` -> usa `docs/subsystems/arena-template-rework/TODO_ARENA_TEMPLATE.md`
@@ -56,14 +56,15 @@ Nota: le task list storiche `docs/_deprecated/arena-template-rework/TODO_AGENT_*
 ## Documenti esterni (allineati)
 - `docs/ARCHITECTURE.md` - aggiornato con Arena Template system
 - `docs/areas/instance/INSTANCE_DIMENSION_SYSTEM.md` - allineato (TemplateArenaBuilder)
-- `docs/areas/instance/INSTANCE_SYSTEM_MANUAL_TEST_CHECKLIST.md` - note template + check aggiornato
-- `docs/areas/instance/INSTANCE_SYSTEM_TEST_STRATEGY.md` - pointer ai test template
-- `docs/testing/PROGRESSIVE_TEST_PLAN.md` - flow aggiornato a template-based
-- `docs/testing/TEST_HARNESS.md` - aggiunta suite test arena template
+- `docs/areas/instance/INSTANCE_SYSTEM_TEST_STRATEGY.md` - strategia test istanze
+- `docs/testing/PROGRESSIVE_TEST_PLAN.md` - flow template-based
+- `docs/testing/TEST_HARNESS.md` - entrypoint harness (JUnit + GameTest)
+- `docs/testing/TESTING.md` - guida test aggiornata
 - `docs/telemetry/TELEMETRY_DOCUMENTATION.md` - sezione Arena Template Telemetry
 
-## Documenti esterni (contesto, invariati)
-- `docs/areas/radial/RADIAL_CENSUS.md` - comando `/arena` e UI census
+## Documenti esterni (contesto)
+- `docs/areas/instance/INSTANCE_SYSTEM_MANUAL_TEST_CHECKLIST.md` - ARCHIVED (manual checklist)
+- `docs/areas/radial/RADIAL_CENSUS.md` - HISTORICAL (UI census legacy)
 - `docs/GAME_DESIGN_ANALYSIS.md` - game design endurance (non sostituito)
-- `docs/_deprecated/testing-reports/L0_REPORT.md` - report test
+- `docs/_deprecated/testing-reports/L0_REPORT.md` - report test storico
 - `docs/project/BUG_LOG.md` - bug log attuale

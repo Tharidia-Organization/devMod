@@ -2,6 +2,9 @@ package com.devmod.client.ui.testing.pages;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
@@ -25,11 +28,15 @@ import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 public class HudSystemsPage extends AbstractVoxelLabPage {
 
     // 2D HUD toggles
+    @Nullable
     private EditorButton hud2dToggle;
+    @Nullable
     private EditorButton historyToggle;
+    @Nullable
     private EditorButton dpsToggle;
 
     // 3D Panel toggle
+    @Nullable
     private EditorButton panel3dToggle;
 
     // Position buttons
@@ -37,14 +44,21 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
     private Config.HudPosition currentPosition = Config.HudPosition.TOP_RIGHT;
 
     // Offset buttons
+    @Nullable
     private EditorButton offsetXMinus;
+    @Nullable
     private EditorButton offsetXPlus;
+    @Nullable
     private EditorButton offsetYMinus;
+    @Nullable
     private EditorButton offsetYPlus;
 
     // Preset buttons
+    @Nullable
     private EditorButton exportPreset;
+    @Nullable
     private EditorButton importPreset;
+    @Nullable
     private EditorButton resetDefaults;
 
     // Status message
@@ -59,6 +73,17 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
     protected void buildPanels() {
         loadCurrentPosition();
         createButtons();
+        EditorButton hud2dToggle = Objects.requireNonNull(this.hud2dToggle, "hud2dToggle");
+        EditorButton historyToggle = Objects.requireNonNull(this.historyToggle, "historyToggle");
+        EditorButton dpsToggle = Objects.requireNonNull(this.dpsToggle, "dpsToggle");
+        EditorButton panel3dToggle = Objects.requireNonNull(this.panel3dToggle, "panel3dToggle");
+        EditorButton offsetXMinus = Objects.requireNonNull(this.offsetXMinus, "offsetXMinus");
+        EditorButton offsetXPlus = Objects.requireNonNull(this.offsetXPlus, "offsetXPlus");
+        EditorButton offsetYMinus = Objects.requireNonNull(this.offsetYMinus, "offsetYMinus");
+        EditorButton offsetYPlus = Objects.requireNonNull(this.offsetYPlus, "offsetYPlus");
+        EditorButton exportPreset = Objects.requireNonNull(this.exportPreset, "exportPreset");
+        EditorButton importPreset = Objects.requireNonNull(this.importPreset, "importPreset");
+        EditorButton resetDefaults = Objects.requireNonNull(this.resetDefaults, "resetDefaults");
 
         // Header
         panelContainer.addPanel(new HeaderPanel(
@@ -274,11 +299,17 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
     }
 
     private void syncButtonStates() {
-        hud2dToggle.toggled(ImpactHudOverlay.isEnabled());
-        historyToggle.toggled(safeGetBool(Config.IMPACT_HUD_HISTORY_ENABLED));
-        dpsToggle.toggled(safeGetBool(Config.IMPACT_HUD_DPS_ENABLED));
-        panel3dToggle.toggled(Impact3DPanelManager.INSTANCE.isEnabled());
+        setToggle(hud2dToggle, ImpactHudOverlay.isEnabled());
+        setToggle(historyToggle, safeGetBool(Config.IMPACT_HUD_HISTORY_ENABLED));
+        setToggle(dpsToggle, safeGetBool(Config.IMPACT_HUD_DPS_ENABLED));
+        setToggle(panel3dToggle, Impact3DPanelManager.INSTANCE.isEnabled());
         updatePositionButtonStates();
+    }
+
+    private static void setToggle(@Nullable EditorButton button, boolean value) {
+        if (button != null) {
+            button.toggled(value);
+        }
     }
 
     private void updatePositionButtonStates() {

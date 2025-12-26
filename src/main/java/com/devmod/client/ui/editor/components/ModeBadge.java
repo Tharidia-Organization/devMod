@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.components;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -115,8 +117,11 @@ public class ModeBadge {
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
 
     // Callbacks
+    @Nullable
     private Consumer<Scope> onScopeChange;
+    @Nullable
     private Consumer<Mode> onModeChange;
+    @Nullable
     private Runnable onSetDefaultMode;
 
     // ═══════════════════════════════════════════════════════════════
@@ -142,6 +147,7 @@ public class ModeBadge {
         return hovered;
     }
 
+    @Nullable
     public String getTooltipText() {
         if (!hovered) return null;
         if (badgeType == BadgeType.SCOPE) {

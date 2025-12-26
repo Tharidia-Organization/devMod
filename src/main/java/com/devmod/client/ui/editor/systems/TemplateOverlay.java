@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.Minecraft;
@@ -43,15 +45,14 @@ public class TemplateOverlay extends BaseOverlay {
     private static final String TEMPLATE_NONE_LABEL = "(no templates)";
     private static final String SCOPE_PREFIX = "Scope: ";
     private static final String SCOPE_UNKNOWN = "Unknown";
-    private static final String TOUCHES_FORMAT = "Touches: Enchants (%d), Attributes (%d)";
 
     private final List<ItemEditorDataManager.TemplateData> templates = new ArrayList<>();
     private String searchQuery = "";
+    @Nullable
     private String filterCategory = null;
     private String lastSearchQuery = "";  // Track search changes
 
     private Consumer<ItemEditorDataManager.TemplateData> applyCallback = t -> {};
-    private Runnable closeCallback = () -> {};
 
     private boolean searchFocused = false;
 
@@ -91,10 +92,10 @@ public class TemplateOverlay extends BaseOverlay {
         .style(EditorButton.Style.SUCCESS)
         .size(EditorButton.Size.SMALL);
 
-    public void setTemplates(List<ItemEditorDataManager.TemplateData> data, String filterCategory) {
+    public void setTemplates(List<ItemEditorDataManager.TemplateData> data, @Nullable String filterCategoryLabel) {
         this.templates.clear();
         this.templates.addAll(data == null ? Collections.emptyList() : data);
-        this.filterCategory = filterCategory;
+        this.filterCategory = filterCategoryLabel;
         this.searchQuery = "";
         this.lastSearchQuery = "";
         updateFilteredList();
@@ -116,7 +117,7 @@ public class TemplateOverlay extends BaseOverlay {
     }
 
     public void onClose(Runnable cb) {
-        this.closeCallback = cb == null ? () -> {} : cb;
+        setCloseCallback(cb);
     }
 
     public void resetSearch() {
@@ -199,7 +200,7 @@ public class TemplateOverlay extends BaseOverlay {
 
             int ench = selectedTemplate.enchantments == null ? 0 : selectedTemplate.enchantments.size();
             int attrs = selectedTemplate.attributes == null ? 0 : selectedTemplate.attributes.size();
-            String touches = String.format(TOUCHES_FORMAT, ench, attrs);
+            String touches = String.format(Locale.ROOT, "Touches: Enchants (%d), Attributes (%d)", ench, attrs);
             Typography.drawText(graphics, font, touches, previewX + ScaledCoord.scaleDim(ROW_TEXT_INSET),
                 previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET + PREVIEW_LINE_HEIGHT * 2), UIConstants.Text.MUTED(), textScale);
         } else {
@@ -223,7 +224,7 @@ public class TemplateOverlay extends BaseOverlay {
 
     @Override
     protected void onEscapePressed() {
-        closeCallback.run();
+        invokeCloseCallback();
     }
 
     @Override
@@ -293,7 +294,7 @@ public class TemplateOverlay extends BaseOverlay {
         // Button clicks using EditorButton components
         if (cancelButton.mouseClicked(mouseX, mouseY, 0)) {
             cancelButton.mouseReleased(mouseX, mouseY, 0);
-            closeCallback.run();
+            invokeCloseCallback();
             return true;
         }
         if (applyButton.mouseClicked(mouseX, mouseY, 0)) {

@@ -155,9 +155,10 @@ public class DevMod {
             reloadEditorConfig();
         }
         // Refresh arena template config snapshot on common config reloads
-        if (event.getConfig().getSpec() == Config.SPEC && ARENA_BOOTSTRAP != null) {
+        TemplateRegistryBootstrap bootstrap = ARENA_BOOTSTRAP;
+        if (event.getConfig().getSpec() == Config.SPEC && bootstrap != null) {
             ArenaTemplateConfig newConfig = ArenaTemplateConfig.load();
-            ARENA_BOOTSTRAP.applyConfig(newConfig);
+            bootstrap.applyConfig(newConfig);
             EnduranceQuestManager.INSTANCE.applyArenaConfig(newConfig);
             LOGGER.info("[DevMod] ArenaTemplateConfig reloaded and applied");
             com.devmod.arena.ArenaCommandEvents.onArenaConfigReload(newConfig);
@@ -173,7 +174,9 @@ public class DevMod {
             if (server != null) {
                 com.devmod.network.GameMechanicsSyncPayload payload = com.devmod.network.GameMechanicsSyncPayload.fromGlobalConfig();
                 for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                        Objects.requireNonNull(player, "player"),
+                        Objects.requireNonNull(payload, "payload"));
                 }
                 LOGGER.info("[DevMod] Synced game mechanics config to {} clients", server.getPlayerList().getPlayerCount());
             }
@@ -186,10 +189,11 @@ public class DevMod {
     private void initArenaTemplateRegistry() {
         try {
             ArenaTelemetry telemetry = new ArenaTelemetry();
-            ARENA_BOOTSTRAP = TemplateRegistryBootstrap.createDefault(telemetry);
-            ARENA_BOOTSTRAP.initialize();
-            ARENA_TEMPLATE_REGISTRY = ARENA_BOOTSTRAP.registry();
-            LOGGER.info("[DevMod] ArenaTemplateRegistry initialized from {}", ARENA_BOOTSTRAP.templateDirectory());
+            TemplateRegistryBootstrap bootstrap = TemplateRegistryBootstrap.createDefault(telemetry);
+            ARENA_BOOTSTRAP = bootstrap;
+            bootstrap.initialize();
+            ARENA_TEMPLATE_REGISTRY = bootstrap.registry();
+            LOGGER.info("[DevMod] ArenaTemplateRegistry initialized from {}", bootstrap.templateDirectory());
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize ArenaTemplateRegistry", e);
         }

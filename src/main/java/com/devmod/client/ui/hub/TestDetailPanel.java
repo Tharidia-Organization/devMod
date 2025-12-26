@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -22,10 +24,12 @@ public class TestDetailPanel implements HubPanel {
     private final EnumMap<Verdict, EditorButton> verdictButtons;
 
     // Current test
+    @Nullable
     private TestCase currentTest = null;
     private boolean showCompletion = false;
 
     // Tool status cache
+    @Nullable
     private Set<ToolType> requiredTools = null;
 
     // Layout
@@ -53,7 +57,7 @@ public class TestDetailPanel implements HubPanel {
         this.verdictButtons = buildVerdictButtons();
     }
 
-    public void setTest(TestCase test) {
+    public void setTest(@Nullable TestCase test) {
         this.currentTest = test;
         this.showCompletion = false;
         this.instructionScroll = 0;
@@ -84,10 +88,11 @@ public class TestDetailPanel implements HubPanel {
         // Background
         graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL());
 
+        TestCase test = currentTest;
         if (showCompletion) {
             renderCompletionMessage(graphics);
-        } else if (currentTest != null) {
-            renderTestDetails(graphics, mouseX, mouseY);
+        } else if (test != null) {
+            renderTestDetails(graphics, mouseX, mouseY, test, requiredTools);
         } else {
             renderEmptyState(graphics);
         }
@@ -121,17 +126,17 @@ public class TestDetailPanel implements HubPanel {
         graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(line2, "line2"), centerX - w2 / 2, centerY + 6, UIConstants.Text.SECONDARY(), false);
     }
 
-    private void renderTestDetails(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderTestDetails(GuiGraphics graphics, int mouseX, int mouseY, TestCase test, @Nullable Set<ToolType> tools) {
         int contentX = x + PADDING;
         int contentY = y + PADDING;
         int contentWidth = width - PADDING * 2;
 
         // === HEADER: Nome test + Priority ===
-        renderHeader(graphics, contentX, contentY, contentWidth);
+        renderHeader(graphics, contentX, contentY, contentWidth, test);
         contentY += HEADER_HEIGHT + 8;
 
         // === STATUS + CATEGORY ===
-        renderStatusRow(graphics, contentX, contentY, contentWidth);
+        renderStatusRow(graphics, contentX, contentY, contentWidth, test);
         contentY += LINE_HEIGHT + 8;
 
         // Separator
@@ -143,7 +148,7 @@ public class TestDetailPanel implements HubPanel {
             "Description:", contentX, contentY, LINE_HEIGHT, 0);
         contentY += 2;
 
-        String desc = currentTest.getDescription();
+        String desc = test.getDescription();
         contentY = renderWrappedText(graphics, contentX + 4, contentY, contentWidth - 8, desc, UIConstants.Text.SECONDARY());
         contentY += 12;
 
@@ -153,46 +158,46 @@ public class TestDetailPanel implements HubPanel {
         contentY += 4;
 
         int instructionsHeight = height - contentY - y - BUTTON_HEIGHT - 60;
-        contentY = renderInstructions(graphics, contentX, contentY, contentWidth, instructionsHeight);
+        contentY = renderInstructions(graphics, contentX, contentY, contentWidth, instructionsHeight, test);
         contentY += 12;
 
         // === REQUIRED TOOLS ===
-        if (requiredTools != null && !requiredTools.isEmpty()) {
-            contentY = renderRequiredTools(graphics, contentX, contentY, contentWidth, mouseX, mouseY);
+        if (tools != null && !tools.isEmpty()) {
+            contentY = renderRequiredTools(graphics, contentX, contentY, contentWidth, mouseX, mouseY, tools);
             contentY += 8;
         }
 
         // === VERDICT BUTTONS ===
-        renderVerdictButtons(graphics, mouseX, mouseY);
+        renderVerdictButtons(graphics, mouseX, mouseY, true);
     }
 
-    private void renderHeader(GuiGraphics graphics, int cx, int cy, int cw) {
+    private void renderHeader(GuiGraphics graphics, int cx, int cy, int cw, TestCase test) {
         // Test name
-        String name = currentTest.getName();
+        String name = test.getName();
         if (Objects.requireNonNull(font, "font").width(Objects.requireNonNull(name, "name")) > cw - 60) {
             name = name.substring(0, Math.min(name.length(), 40)) + "...";
         }
         graphics.drawString(Objects.requireNonNull(font, "font"), name, cx, cy + 4, UIConstants.Text.PRIMARY(), false);
 
         // Priority badge
-        String priority = "[" + currentTest.getPriority().name() + "]";
+        String priority = "[" + test.getPriority().name() + "]";
         int priorityWidth = Objects.requireNonNull(font, "font").width(priority);
-        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(priority, "priority"), cx + cw - priorityWidth, cy + 4, currentTest.getPriority().getColor(), false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(priority, "priority"), cx + cw - priorityWidth, cy + 4, test.getPriority().getColor(), false);
 
         // Underline
         graphics.fill(cx, cy + HEADER_HEIGHT - 4, cx + cw, cy + HEADER_HEIGHT - 3, UIConstants.Border.SEPARATOR());
     }
 
-    private void renderStatusRow(GuiGraphics graphics, int cx, int cy, int cw) {
+    private void renderStatusRow(GuiGraphics graphics, int cx, int cy, int cw, TestCase test) {
         // Status dot
-        int statusColor = currentTest.getStatus().getColor();
+        int statusColor = test.getStatus().getColor();
         graphics.fill(cx, cy + 2, cx + 8, cy + 10, statusColor);
 
         // Status text
-        graphics.drawString(Objects.requireNonNull(font, "font"), currentTest.getStatus().getDisplayName(), cx + 12, cy, statusColor, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), test.getStatus().getDisplayName(), cx + 12, cy, statusColor, false);
 
         // Category
-        String category = "Category: " + currentTest.getCategory();
+        String category = "Category: " + test.getCategory();
         int catWidth = Objects.requireNonNull(font, "font").width(category);
         graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(category, "category"), cx + cw - catWidth, cy, UIConstants.Text.MUTED(), false);
     }
@@ -221,8 +226,8 @@ public class TestDetailPanel implements HubPanel {
         return lineY;
     }
 
-    private int renderInstructions(GuiGraphics graphics, int cx, int cy, int cw, int maxHeight) {
-        String[] steps = currentTest.getInstructions().split("\n");
+    private int renderInstructions(GuiGraphics graphics, int cx, int cy, int cw, int maxHeight, TestCase test) {
+        String[] steps = test.getInstructions().split("\n");
 
         // Scissor for scroll
         graphics.enableScissor(cx, cy, cx + cw, cy + maxHeight);
@@ -236,8 +241,8 @@ public class TestDetailPanel implements HubPanel {
 
             // Checkbox
             boolean isChecked = false;
-            if (currentTest.hasProgressChecker()) {
-                float progress = currentTest.getCachedProgress();
+            if (test.hasProgressChecker()) {
+                float progress = test.getCachedProgress();
                 float threshold = (float)(i + 1) / steps.length;
                 isChecked = progress >= threshold;
             }
@@ -277,13 +282,13 @@ public class TestDetailPanel implements HubPanel {
         return cy + Math.min(totalHeight, maxHeight);
     }
 
-    private int renderRequiredTools(GuiGraphics graphics, int cx, int cy, int cw, int mouseX, int mouseY) {
+    private int renderRequiredTools(GuiGraphics graphics, int cx, int cy, int cw, int mouseX, int mouseY, Set<ToolType> tools) {
         cy = HubSectionHeader.draw(graphics, Objects.requireNonNull(font, "font"),
             "Required Tools:", cx, cy, LINE_HEIGHT, 0);
         cy += 4;
 
         int toolX = cx + 4;
-        for (ToolType tool : requiredTools) {
+        for (ToolType tool : tools) {
             boolean enabled = tool.isEnabled();
             int badgeColor = enabled ? UIConstants.Status.SUCCESS() : UIConstants.Status.WARNING();
 
@@ -306,7 +311,7 @@ public class TestDetailPanel implements HubPanel {
         return cy + LINE_HEIGHT;
     }
 
-    private void renderVerdictButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderVerdictButtons(GuiGraphics graphics, int mouseX, int mouseY, boolean enabled) {
         int buttonsY = y + height - PADDING - BUTTON_HEIGHT;
         int totalWidth = BUTTON_WIDTH * 3 + BUTTON_GAP * 2;
         int buttonsX = x + (width - totalWidth) / 2;
@@ -317,7 +322,7 @@ public class TestDetailPanel implements HubPanel {
             if (button == null) {
                 continue;
             }
-            button.setEnabled(currentTest != null);
+            button.setEnabled(enabled);
             button.render(graphics, bx, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
         }
     }
@@ -392,9 +397,10 @@ public class TestDetailPanel implements HubPanel {
     }
 
     private void handleVerdict(Verdict verdict) {
-        if (currentTest == null) {
+        TestCase test = currentTest;
+        if (test == null) {
             return;
         }
-        onVerdictGiven.accept(currentTest, verdict);
+        onVerdictGiven.accept(test, verdict);
     }
 }

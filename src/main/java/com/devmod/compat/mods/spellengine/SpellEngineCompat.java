@@ -1,5 +1,6 @@
 package com.devmod.compat.mods.spellengine;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
@@ -9,6 +10,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
@@ -31,6 +33,9 @@ public class SpellEngineCompat implements CompatModule {
     private static Method getMaxSpellsMethod;
     private static Method getCurrentSpellMethod;
     private static Method isCastingSpellMethod;
+    private static Method getComponentMethod;
+
+    private static DataComponentType<?> spellContainerComponentType;
 
     // Targeting mode constants
     public static final String TARGET_AIM = "AIM";
@@ -134,10 +139,90 @@ public class SpellEngineCompat implements CompatModule {
             return null;
         }
 
-        // SpellContainer is stored as an item component in 1.21+
-        // Accessing components via reflection is complex - would need the actual
-        // DataComponentType reference. For now, this is a placeholder for future implementation.
-        // TODO: Implement component access when Spell Engine's component types are accessible
+        if (spellContainerClass == null) {
+            return null;
+        }
+
+        try {
+            if (getComponentMethod == null) {
+                getComponentMethod = ItemStack.class.getMethod("get", DataComponentType.class);
+            }
+            DataComponentType<?> componentType = resolveSpellContainerComponentType(stack);
+            if (componentType == null) {
+                return null;
+            }
+            Object result = getComponentMethod.invoke(stack, componentType);
+            if (spellContainerClass.isInstance(result)) {
+                return result;
+            }
+        } catch (Exception e) {
+            LOGGER.debug("[Compat:spell_engine] Failed to read SpellContainer component: {}", e.getMessage());
+        }
+
+        return null;
+    }
+
+    @Nullable
+    private static DataComponentType<?> resolveSpellContainerComponentType(ItemStack stack) {
+        if (spellContainerComponentType != null) {
+            return spellContainerComponentType;
+        }
+        if (getComponentMethod == null || spellContainerClass == null) {
+            return null;
+        }
+
+        String[] candidates = {
+            "net.spell_engine.api.spell.SpellComponents",
+            "net.spell_engine.api.spell.SpellContainerComponents",
+            "net.spell_engine.api.spell.SpellDataComponents",
+            "net.spell_engine.api.spell.SpellEngineComponents",
+            "net.spell_engine.init.DataComponentRegistry",
+            "net.spell_engine.init.SpellDataComponents",
+            "net.spell_engine.init.SpellComponents"
+        };
+
+        for (String className : candidates) {
+            DataComponentType<?> componentType = findComponentTypeFromClass(stack, className);
+            if (componentType != null) {
+                return componentType;
+            }
+        }
+
+        return findComponentTypeFromClass(stack, spellContainerClass);
+    }
+
+    @Nullable
+    private static DataComponentType<?> findComponentTypeFromClass(ItemStack stack, String className) {
+        try {
+            return findComponentTypeFromClass(stack, Class.forName(className));
+        } catch (ClassNotFoundException ignored) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private static DataComponentType<?> findComponentTypeFromClass(ItemStack stack, Class<?> holderClass) {
+        if (spellContainerClass == null || getComponentMethod == null) {
+            return null;
+        }
+        try {
+            for (Field field : holderClass.getFields()) {
+                if (!DataComponentType.class.isAssignableFrom(field.getType())) {
+                    continue;
+                }
+                Object candidate = field.get(null);
+                if (!(candidate instanceof DataComponentType<?> componentType)) {
+                    continue;
+                }
+                Object value = getComponentMethod.invoke(stack, componentType);
+                if (spellContainerClass.isInstance(value)) {
+                    spellContainerComponentType = componentType;
+                    return componentType;
+                }
+            }
+        } catch (Exception ignored) {
+            return null;
+        }
         return null;
     }
 

@@ -1,15 +1,17 @@
 package com.devmod.telemetry.spatial;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
@@ -227,8 +229,8 @@ public class DesireLinesService {
      */
     private static class PositionHistory {
         private final int maxSize;
-        private final LinkedList<BlockPos> positions = new LinkedList<>();
-        private final LinkedList<String> rooms = new LinkedList<>();
+        private final ArrayDeque<BlockPos> positions = new ArrayDeque<>();
+        private final ArrayDeque<String> rooms = new ArrayDeque<>();
 
         PositionHistory(int maxSize) {
             this.maxSize = maxSize;
@@ -243,12 +245,14 @@ public class DesireLinesService {
             }
         }
 
+        @Nullable
         BlockPos getLastPosition() {
-            return positions.isEmpty() ? null : positions.getLast();
+            return positions.peekLast();
         }
 
+        @Nullable
         String getLastRoom() {
-            return rooms.isEmpty() ? null : rooms.getLast();
+            return rooms.peekLast();
         }
     }
 

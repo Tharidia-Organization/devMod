@@ -58,12 +58,12 @@ public class EditorTextField {
     private ResponsiveLayout.Rect inputBounds = ResponsiveLayout.Rect.EMPTY;
 
     // Validation
-    private Predicate<String> validator = null;
+    private Predicate<String> validator = value -> true;
     private boolean valid = true;
 
     // Callback
-    private Consumer<String> onChange;
-    private Runnable onSubmit;
+    private Consumer<String> onChange = value -> {};
+    private Runnable onSubmit = () -> {};
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -101,7 +101,7 @@ public class EditorTextField {
     }
 
     public EditorTextField validator(Predicate<String> validator) {
-        this.validator = validator;
+        this.validator = validator != null ? validator : value -> true;
         return this;
     }
 
@@ -111,12 +111,12 @@ public class EditorTextField {
     }
 
     public EditorTextField onChange(Consumer<String> callback) {
-        this.onChange = callback;
+        this.onChange = callback != null ? callback : value -> {};
         return this;
     }
 
     public EditorTextField onSubmit(Runnable callback) {
-        this.onSubmit = callback;
+        this.onSubmit = callback != null ? callback : () -> {};
         return this;
     }
 
@@ -253,9 +253,7 @@ public class EditorTextField {
             }
             case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
                 validateAndCommit();
-                if (onSubmit != null) {
-                    onSubmit.run();
-                }
+                onSubmit.run();
                 focused = false;
                 return true;
             }
@@ -504,23 +502,21 @@ public class EditorTextField {
 
     private void notifyChange() {
         validate();
-        if (onChange != null) {
-            onChange.accept(value);
-        }
+        onChange.accept(value);
     }
 
     private void validate() {
-        if (validator != null) {
-            valid = validator.test(value);
-        } else if (numeric && !value.isEmpty()) {
+        boolean baseValid = validator.test(value);
+        if (numeric && !value.isEmpty()) {
             try {
                 float num = Float.parseFloat(value);
-                valid = num >= numericMin && num <= numericMax;
+                boolean numericValid = num >= numericMin && num <= numericMax;
+                valid = baseValid && numericValid;
             } catch (NumberFormatException e) {
                 valid = false;
             }
         } else {
-            valid = true;
+            valid = baseValid;
         }
     }
 

@@ -76,7 +76,8 @@ class ArenaCommandGateIntegrationTest {
 
                 var handler = ArenaActionBridge.getHandler(com.devmod.actions.ActionIds.ARENA_CREATE);
                 assertNotNull(handler, "Expected arena create handler to be registered");
-                handler.apply(context);
+                int result = handler.apply(context);
+                org.junit.jupiter.api.Assertions.assertEquals(0, result, "Expected failure result when instance-only gate blocks");
 
                 verify(source).sendFailure(argThat((net.minecraft.network.chat.Component message) -> {
                     net.minecraft.network.chat.Component safe = Objects.requireNonNull(message, "failureMessage");

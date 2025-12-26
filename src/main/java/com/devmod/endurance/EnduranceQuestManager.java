@@ -21,6 +21,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +79,10 @@ public class EnduranceQuestManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestManager.class);
 
     public static final EnduranceQuestManager INSTANCE = new EnduranceQuestManager();
+
+    private static <T> @Nonnull T requireNonNull(T value, String name) {
+        return Objects.requireNonNull(value, name);
+    }
 
     // Active quests per player (player UUID -> active quest)
     private final Map<UUID, ActiveQuestSession> activeSessions = new ConcurrentHashMap<>();
@@ -260,20 +266,17 @@ public class EnduranceQuestManager {
 
                 if (partialTokens > 0) {
                     RewardSystem.PlayerWallet wallet = RewardSystem.INSTANCE.getWallet(playerId);
-                    // SAFETY: Check wallet is not null before using
-                    if (wallet != null) {
-                        wallet.addCurrency(RewardSystem.Currency.TOKENS, partialTokens);
-                        LOGGER.info("[EnduranceQuest] Awarded {} partial tokens to player {} (completed {} waves before shutdown)",
-                            partialTokens, playerId, wavesCompleted);
-                    } else {
-                        LOGGER.warn("[EnduranceQuest] Could not find wallet for player {}", playerId);
-                    }
+                    wallet.addCurrency(RewardSystem.Currency.TOKENS, partialTokens);
+                    LOGGER.info("[EnduranceQuest] Awarded {} partial tokens to player {} (completed {} waves before shutdown)",
+                        partialTokens, playerId, wavesCompleted);
                 }
 
-                quest.fail(true); // Mark as abandoned
-
-                // Flush telemetry/stats and cleanup systems without granting full rewards
-                handleForcedShutdownCleanup(session);
+                try {
+                    quest.fail(true); // Mark as abandoned
+                } finally {
+                    // Flush telemetry/stats and cleanup systems without granting full rewards
+                    handleForcedShutdownCleanup(session);
+                }
             } catch (Exception e) {
                 LOGGER.error("[EnduranceQuest] Error cleaning up session for player {}", session.getPlayerId(), e);
             }
@@ -2251,22 +2254,30 @@ public class EnduranceQuestManager {
      * Called when a quest starts to apply per-arena config adjustments.
      */
     private void applyAndSyncArenaOverrides(ServerPlayer player, ActiveQuestSession session) {
+        ServerPlayer safePlayer = requireNonNull(player, "player");
+        ActiveQuestSession safeSession = requireNonNull(session, "session");
         try {
-            ArenaPolicy policy = getPolicyForSession(session);
-            if (policy != null && policy.gameplayOverrides() != null) {
-                UUID questId = session.getQuest().getQuestId();
-
-                // Apply override to server-side config manager
-                EnduranceConfigManager.INSTANCE.setArenaOverride(questId, policy.gameplayOverrides());
-
-                // Sync override to client
-                net.minecraft.nbt.CompoundTag overrideTag = serializeGameplayOverrides(policy.gameplayOverrides());
-                GameMechanicsSyncPayload payload = GameMechanicsSyncPayload.forQuest(questId, overrideTag);
-                PacketDistributor.sendToPlayer(player, payload);
-
-                LOGGER.debug("[EnduranceQuest] Applied arena config overrides for quest {} to player {}",
-                    questId, player.getName().getString());
+            ArenaPolicy policy = getPolicyForSession(safeSession);
+            if (policy == null) {
+                return;
             }
+            ArenaPolicy.GameplayOverrides overrides = policy.gameplayOverrides();
+            if (overrides == null) {
+                return;
+            }
+            UUID questId = safeSession.getQuest().getQuestId();
+
+            // Apply override to server-side config manager
+            EnduranceConfigManager.INSTANCE.setArenaOverride(questId, overrides);
+
+            // Sync override to client
+            net.minecraft.nbt.CompoundTag overrideTag = serializeGameplayOverrides(overrides);
+            GameMechanicsSyncPayload payload =
+                requireNonNull(GameMechanicsSyncPayload.forQuest(questId, overrideTag), "payload");
+            PacketDistributor.sendToPlayer(safePlayer, payload);
+
+            LOGGER.debug("[EnduranceQuest] Applied arena config overrides for quest {} to player {}",
+                questId, safePlayer.getName().getString());
         } catch (Exception e) {
             LOGGER.warn("[EnduranceQuest] Failed to apply arena config overrides: {}", e.getMessage());
         }
@@ -2276,51 +2287,68 @@ public class EnduranceQuestManager {
      * Serialize GameplayOverrides to CompoundTag for network sync.
      */
     private net.minecraft.nbt.CompoundTag serializeGameplayOverrides(ArenaPolicy.GameplayOverrides overrides) {
+        ArenaPolicy.GameplayOverrides safeOverrides = requireNonNull(overrides, "overrides");
         net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
 
         // Serialize each section if present
-        if (overrides.combo() != null) {
+        ArenaPolicy.ComboOverrides comboOverrides = safeOverrides.combo();
+        if (comboOverrides != null) {
             net.minecraft.nbt.CompoundTag combo = new net.minecraft.nbt.CompoundTag();
-            if (overrides.combo().timeoutTicks() != null) combo.putInt("timeoutTicks", overrides.combo().timeoutTicks());
-            if (overrides.combo().basePoints() != null) combo.putInt("basePoints", overrides.combo().basePoints());
-            if (overrides.combo().multiplierIncrement() != null) combo.putDouble("multiplierIncrement", overrides.combo().multiplierIncrement());
-            if (overrides.combo().maxMultiplier() != null) combo.putDouble("maxMultiplier", overrides.combo().maxMultiplier());
+            putIntIfPresent(combo, "timeoutTicks", comboOverrides.timeoutTicks());
+            putIntIfPresent(combo, "basePoints", comboOverrides.basePoints());
+            putDoubleIfPresent(combo, "multiplierIncrement", comboOverrides.multiplierIncrement());
+            putDoubleIfPresent(combo, "maxMultiplier", comboOverrides.maxMultiplier());
             tag.put("combo", combo);
         }
 
-        if (overrides.tension() != null) {
+        ArenaPolicy.TensionOverrides tensionOverrides = safeOverrides.tension();
+        if (tensionOverrides != null) {
             net.minecraft.nbt.CompoundTag tension = new net.minecraft.nbt.CompoundTag();
-            if (overrides.tension().baseWaveGain() != null) tension.putDouble("baseWaveGain", overrides.tension().baseWaveGain());
-            if (overrides.tension().noHitBonus() != null) tension.putDouble("noHitBonus", overrides.tension().noHitBonus());
-            if (overrides.tension().minThreshold() != null) tension.putDouble("minThreshold", overrides.tension().minThreshold());
-            if (overrides.tension().maxThreshold() != null) tension.putDouble("maxThreshold", overrides.tension().maxThreshold());
-            if (overrides.tension().minWavesBeforeBoss() != null) tension.putInt("minWavesBeforeBoss", overrides.tension().minWavesBeforeBoss());
-            if (overrides.tension().maxWavesWithoutBoss() != null) tension.putInt("maxWavesWithoutBoss", overrides.tension().maxWavesWithoutBoss());
+            putDoubleIfPresent(tension, "baseWaveGain", tensionOverrides.baseWaveGain());
+            putDoubleIfPresent(tension, "noHitBonus", tensionOverrides.noHitBonus());
+            putDoubleIfPresent(tension, "minThreshold", tensionOverrides.minThreshold());
+            putDoubleIfPresent(tension, "maxThreshold", tensionOverrides.maxThreshold());
+            putIntIfPresent(tension, "minWavesBeforeBoss", tensionOverrides.minWavesBeforeBoss());
+            putIntIfPresent(tension, "maxWavesWithoutBoss", tensionOverrides.maxWavesWithoutBoss());
             tag.put("tension", tension);
         }
 
-        if (overrides.waves() != null) {
+        ArenaPolicy.WaveOverrides waveOverrides = safeOverrides.waves();
+        if (waveOverrides != null) {
             net.minecraft.nbt.CompoundTag waves = new net.minecraft.nbt.CompoundTag();
-            if (overrides.waves().baseMobCount() != null) waves.putInt("baseMobCount", overrides.waves().baseMobCount());
-            if (overrides.waves().mobScaling() != null) waves.putDouble("mobScaling", overrides.waves().mobScaling());
-            if (overrides.waves().intermissionTicks() != null) waves.putInt("intermissionTicks", overrides.waves().intermissionTicks());
-            if (overrides.waves().bossInterval() != null) waves.putInt("bossInterval", overrides.waves().bossInterval());
+            putIntIfPresent(waves, "baseMobCount", waveOverrides.baseMobCount());
+            putDoubleIfPresent(waves, "mobScaling", waveOverrides.mobScaling());
+            putIntIfPresent(waves, "intermissionTicks", waveOverrides.intermissionTicks());
+            putIntIfPresent(waves, "bossInterval", waveOverrides.bossInterval());
             tag.put("waves", waves);
         }
 
-        if (overrides.perkRarity() != null) {
+        ArenaPolicy.PerkRarityOverrides perkRarityOverrides = safeOverrides.perkRarity();
+        if (perkRarityOverrides != null) {
             net.minecraft.nbt.CompoundTag perkRarity = new net.minecraft.nbt.CompoundTag();
-            if (overrides.perkRarity().commonWeight() != null) perkRarity.putInt("commonWeight", overrides.perkRarity().commonWeight());
-            if (overrides.perkRarity().uncommonWeight() != null) perkRarity.putInt("uncommonWeight", overrides.perkRarity().uncommonWeight());
-            if (overrides.perkRarity().rareWeight() != null) perkRarity.putInt("rareWeight", overrides.perkRarity().rareWeight());
-            if (overrides.perkRarity().epicWeight() != null) perkRarity.putInt("epicWeight", overrides.perkRarity().epicWeight());
-            if (overrides.perkRarity().legendaryWeight() != null) perkRarity.putInt("legendaryWeight", overrides.perkRarity().legendaryWeight());
+            putIntIfPresent(perkRarity, "commonWeight", perkRarityOverrides.commonWeight());
+            putIntIfPresent(perkRarity, "uncommonWeight", perkRarityOverrides.uncommonWeight());
+            putIntIfPresent(perkRarity, "rareWeight", perkRarityOverrides.rareWeight());
+            putIntIfPresent(perkRarity, "epicWeight", perkRarityOverrides.epicWeight());
+            putIntIfPresent(perkRarity, "legendaryWeight", perkRarityOverrides.legendaryWeight());
             tag.put("perkRarity", perkRarity);
         }
 
         // Add more sections as needed...
 
         return tag;
+    }
+
+    private static void putIntIfPresent(net.minecraft.nbt.CompoundTag tag, String key, Integer value) {
+        if (value != null) {
+            tag.putInt(Objects.requireNonNull(key, "key"), value);
+        }
+    }
+
+    private static void putDoubleIfPresent(net.minecraft.nbt.CompoundTag tag, String key, Double value) {
+        if (value != null) {
+            tag.putDouble(Objects.requireNonNull(key, "key"), value);
+        }
     }
 
     /**

@@ -56,14 +56,22 @@ public class DuckDBBatchWriter {
     // Flush lock: DuckDB is single-writer, prevent concurrent flushes
     private final Object flushLock = new Object();
 
-    // Circuit breaker: after N consecutive errors, trigger fallback
-    private static final int CIRCUIT_BREAKER_THRESHOLD = 5;
+    // Circuit breaker: thresholds depend on error type
+    private static final int CIRCUIT_BREAKER_THRESHOLD_PERMANENT = 2;  // Permanent errors break fast
+    private static final int CIRCUIT_BREAKER_THRESHOLD_TRANSIENT = 10; // Transient errors get more retries
+    private static final long CIRCUIT_BREAKER_RESET_MS = 60_000; // 60 seconds
     private volatile boolean circuitBroken = false;
+    private volatile long circuitBrokenAt = 0; // timestamp when circuit was broken
+
+    // Periodic maintenance
+    private volatile long lastCheckpointTime = System.currentTimeMillis();
+    private volatile long lastDiskCheckTime = 0;
 
     // Backpressure: track queue pressure level
     private final AtomicInteger pressureLevel = new AtomicInteger(0); // 0=normal, 1=elevated, 2=critical
     private static final int PRESSURE_THRESHOLD_ELEVATED = (int)(DuckDBConfig.QUEUE_CAPACITY * 0.5);
     private static final int PRESSURE_THRESHOLD_CRITICAL = (int)(DuckDBConfig.QUEUE_CAPACITY * 0.8);
+    private final AtomicLong backpressureDropCount = new AtomicLong(0); // Total drops for sampled logging
 
     /**
      * Event priority for backpressure management.
@@ -130,7 +138,12 @@ public class DuckDBBatchWriter {
         Map.entry("progression_fishing", EventPriority.NORMAL),
 
         // DUNGEON (P2-B) - Dungeon run outcomes are high priority (session-level data)
-        Map.entry("dungeon_runs", EventPriority.HIGH)
+        Map.entry("dungeon_runs", EventPriority.HIGH),
+
+        // AGGREGATION (V10) - Aggregate summaries are high priority (pre-aggregated data)
+        Map.entry("combat_aggregates", EventPriority.HIGH),
+        Map.entry("ability_aggregates", EventPriority.HIGH),
+        Map.entry("heatmap_aggregates", EventPriority.NORMAL)
     );
 
     public DuckDBBatchWriter(DuckDBConnectionManager connectionManager) {
@@ -643,6 +656,9 @@ public class DuckDBBatchWriter {
      * Queue an arena template build event from BuildEventRecord.
      */
     public void queueArenaTemplateBuild(ArenaRecords.BuildEventRecord record) {
+        Long estimatedBlocks = record.estimatedBlocks();
+        Long actualBlocks = record.actualBlocks();
+        Boolean success = record.success();
         queueArenaTemplateBuild(
             record.startedAt() != null ? record.startedAt() : Instant.now(),
             record.arenaId(),
@@ -654,11 +670,11 @@ public class DuckDBBatchWriter {
             record.originY(),
             record.originZ(),
             record.dimension(),
-            record.estimatedBlocks() != null ? record.estimatedBlocks().intValue() : null,
-            record.actualBlocks() != null ? record.actualBlocks().intValue() : null,
+            estimatedBlocks != null ? estimatedBlocks.intValue() : null,
+            actualBlocks != null ? actualBlocks.intValue() : null,
             record.estimatedMs(),
             record.actualMs(),
-            record.success() != null && record.success(),
+            success != null && success,
             record.errorMessage(),
             record.rollbackMs(),
             record.blocksReverted(),
@@ -918,6 +934,52 @@ public class DuckDBBatchWriter {
     }
 
     // ============================================
+    // AGGREGATION QUEUES (V10)
+    // ============================================
+
+    /**
+     * Queue aggregated combat data for batch writing.
+     */
+    public void queueCombatAggregate(Instant ts, UUID playerId, Instant windowStart, Instant windowEnd,
+                                      int hitCount, int missCount, double totalDamage, int killCount,
+                                      int criticalHits, @Nullable String weaponStatsJson,
+                                      @Nullable String targetStatsJson, @Nullable UUID sessionId,
+                                      @Nullable UUID questId, @Nullable String templateId,
+                                      @Nullable Integer templateVersion) {
+        queueInsert("combat_aggregates", new Object[] {
+            ts, playerId, windowStart, windowEnd, hitCount, missCount,
+            totalDamage, killCount, criticalHits, weaponStatsJson, targetStatsJson,
+            sessionId, questId, templateId, templateVersion
+        });
+    }
+
+    /**
+     * Queue aggregated ability data for batch writing.
+     */
+    public void queueAbilityAggregate(Instant ts, UUID playerId, Instant windowStart, Instant windowEnd,
+                                       String abilityType, int attemptCount, int successCount,
+                                       double totalStaminaCost, double totalDamageNegated,
+                                       @Nullable UUID sessionId) {
+        queueInsert("ability_aggregates", new Object[] {
+            ts, playerId, windowStart, windowEnd, abilityType,
+            attemptCount, successCount, totalStaminaCost, totalDamageNegated, sessionId
+        });
+    }
+
+    /**
+     * Queue aggregated heatmap data for batch writing.
+     */
+    public void queueHeatmapAggregate(Instant ts, UUID playerId, Instant windowStart, Instant windowEnd,
+                                       String heatmapType, String gridDataJson, int gridSize,
+                                       int totalSamples, @Nullable UUID sessionId,
+                                       @Nullable String templateId) {
+        queueInsert("heatmap_aggregates", new Object[] {
+            ts, playerId, windowStart, windowEnd, heatmapType,
+            gridDataJson, gridSize, totalSamples, sessionId, templateId
+        });
+    }
+
+    // ============================================
     // INTERNAL QUEUE LOGIC
     // ============================================
 
@@ -947,9 +1009,11 @@ public class DuckDBBatchWriter {
             } else if (priority == EventPriority.NORMAL) {
                 droppedByPriorityNormal.incrementAndGet();
             }
-            if (DuckDBConfig.LOG_INSERTS) {
-                LOGGER.debug("[DuckDB] Backpressure drop: {} (priority={}, pressure={})",
-                    tableName, priority, pressureLevel.get());
+            // Sampled logging: only log every N drops to prevent log spam
+            long dropCount = backpressureDropCount.incrementAndGet();
+            if (DuckDBConfig.LOG_INSERTS && dropCount % DuckDBConfig.LOG_BACKPRESSURE_SAMPLE_RATE == 0) {
+                LOGGER.debug("[DuckDB] Backpressure: {} drops total (last: {} priority={} pressure={})",
+                    dropCount, tableName, priority, pressureLevel.get());
             }
             return;
         }
@@ -1013,6 +1077,11 @@ public class DuckDBBatchWriter {
     private void flushAllBatches() {
         if (connectionManager.isShuttingDown()) return;
 
+        // Periodic disk space check
+        if (!checkDiskSpaceIfNeeded()) {
+            return; // Pause writes if disk critically low
+        }
+
         synchronized (flushLock) {
             long startTime = System.nanoTime();
             int totalFlushed = 0;
@@ -1031,7 +1100,46 @@ public class DuckDBBatchWriter {
                     LOGGER.debug("[DuckDB] Flushed {} rows in {}ms", totalFlushed, elapsedMs);
                 }
             }
+
+            // Periodic maintenance after flush
+            maybeCheckpoint();
         }
+    }
+
+    /**
+     * Perform checkpoint if interval elapsed or WAL oversized.
+     */
+    private void maybeCheckpoint() {
+        long now = System.currentTimeMillis();
+
+        // Check WAL size first (force checkpoint if oversized)
+        if (connectionManager.isWalOversized()) {
+            connectionManager.checkpoint();
+            lastCheckpointTime = now;
+            return;
+        }
+
+        // Regular interval checkpoint
+        if (now - lastCheckpointTime > DuckDBConfig.CHECKPOINT_INTERVAL_MS) {
+            connectionManager.checkpoint();
+            lastCheckpointTime = now;
+        }
+    }
+
+    /**
+     * Check disk space periodically during runtime.
+     * @return true if OK to continue, false if writes should pause
+     */
+    private boolean checkDiskSpaceIfNeeded() {
+        long now = System.currentTimeMillis();
+        if (now - lastDiskCheckTime > DuckDBConfig.DISK_CHECK_INTERVAL_MS) {
+            lastDiskCheckTime = now;
+            if (!connectionManager.checkDiskSpace()) {
+                LOGGER.error("[DuckDB] Disk space critically low - pausing writes");
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1044,8 +1152,12 @@ public class DuckDBBatchWriter {
     }
 
     private int flushTableUnlocked(String tableName) {
-        // Circuit breaker: skip if broken
-        if (circuitBroken) return 0;
+        // Circuit breaker: skip if broken, but attempt auto-reset after timeout
+        if (circuitBroken) {
+            if (!attemptCircuitBreakerReset()) {
+                return 0;
+            }
+        }
 
         BlockingQueue<Object[]> queue = tableQueues.get(tableName);
         if (queue == null || queue.isEmpty()) return 0;
@@ -1073,6 +1185,7 @@ public class DuckDBBatchWriter {
                 if (batch.isEmpty()) break;
 
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setQueryTimeout(DuckDBConfig.QUERY_TIMEOUT_SECONDS);
                     for (Object[] row : batch) {
                         setParameters(stmt, row);
                         stmt.addBatch();
@@ -1101,33 +1214,44 @@ public class DuckDBBatchWriter {
                 try {
                     conn.rollback();
                 } catch (SQLException rollbackEx) {
-                    LOGGER.error("[DuckDB] Rollback failed, forcing reconnect: {}", rollbackEx.getMessage());
+                    LOGGER.error("[DuckDB] Rollback failed; forcing reconnect (table={})", tableName, rollbackEx);
                     // Connection may be in inconsistent state; force reconnect
                     try {
                         connectionManager.reconnect();
                     } catch (SQLException reconnectEx) {
-                        LOGGER.error("[DuckDB] Reconnect failed: {}", reconnectEx.getMessage());
+                        LOGGER.error("[DuckDB] Reconnect failed after rollback (table={})", tableName, reconnectEx);
                     }
                 }
             }
 
-            // Re-queue drained batch so we don't lose data on transient errors
-            if (batch != null && !batch.isEmpty()) {
+            // Classify error for appropriate handling
+            DuckDBErrorClassifier.ErrorType errorType = DuckDBErrorClassifier.classify(e);
+            errorCount.incrementAndGet();
+            long errors = consecutiveErrors.incrementAndGet();
+
+            // Determine threshold based on error type
+            int threshold = (errorType == DuckDBErrorClassifier.ErrorType.PERMANENT)
+                ? CIRCUIT_BREAKER_THRESHOLD_PERMANENT
+                : CIRCUIT_BREAKER_THRESHOLD_TRANSIENT;
+
+            // Re-queue batch only for transient errors (permanent errors = data loss acceptable)
+            if (errorType == DuckDBErrorClassifier.ErrorType.TRANSIENT && batch != null && !batch.isEmpty()) {
                 for (Object[] row : batch) {
                     queue.offer(row);
                 }
+                LOGGER.debug("[DuckDB] Re-queued {} rows after transient error", batch.size());
             }
 
-            errorCount.incrementAndGet();
-            long errors = consecutiveErrors.incrementAndGet();
-            if (errors >= CIRCUIT_BREAKER_THRESHOLD) {
+            if (errors >= threshold) {
                 circuitBroken = true;
-                LOGGER.error("[DuckDB] CIRCUIT BREAKER TRIGGERED after {} consecutive errors. " +
-                    "DuckDB writes disabled. Error: {}", errors, e.getMessage());
+                circuitBrokenAt = System.currentTimeMillis();
+                LOGGER.error("[DuckDB] CIRCUIT BREAKER TRIGGERED (table={}, type={}, count={}/{}). " +
+                        "DuckDB writes disabled for {}s",
+                    tableName, errorType, errors, threshold, CIRCUIT_BREAKER_RESET_MS / 1000, e);
                 DuckDBTelemetryService.INSTANCE.triggerCircuitBreaker();
             } else {
-                LOGGER.error("[DuckDB] Failed to flush batch for {} (error {}/{}): {}",
-                    tableName, errors, CIRCUIT_BREAKER_THRESHOLD, e.getMessage());
+                LOGGER.warn("[DuckDB] Flush failed for table={} (type={} count={}/{})",
+                    tableName, errorType, errors, threshold, e);
             }
             return flushed;
 
@@ -1338,7 +1462,7 @@ public class DuckDBBatchWriter {
             "grid_x, grid_z, world_x, world_y, world_z, player_uuid) " +
             "VALUES (nextval('seq_arena_spatial_events'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        // Arena tables (builds, usage, errors, alerts)
+        // Arena tables (builds & usage)
         insertSqlCache.put("arena_template_builds",
             "INSERT INTO arena_template_builds (id, ts, arena_id, template_id, template_version, " +
             "policy_id, policy_version, origin_x, origin_y, origin_z, dimension, " +
@@ -1418,6 +1542,23 @@ public class DuckDBBatchWriter {
         insertSqlCache.put("progression_fishing",
             "INSERT INTO progression_fishing (id, ts, player_id, player_name, world_id, room, item_id, item_count, x, y, z) " +
             "VALUES (nextval('seq_progression_fishing'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        // Aggregation tables (V10)
+        insertSqlCache.put("combat_aggregates",
+            "INSERT INTO combat_aggregates (id, ts, player_id, window_start, window_end, hit_count, miss_count, " +
+            "total_damage, kill_count, critical_hits, weapon_stats_json, target_stats_json, " +
+            "session_id, quest_id, template_id, template_version) " +
+            "VALUES (nextval('seq_combat_aggregates'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        insertSqlCache.put("ability_aggregates",
+            "INSERT INTO ability_aggregates (id, ts, player_id, window_start, window_end, ability_type, " +
+            "attempt_count, success_count, total_stamina_cost, total_damage_negated, session_id) " +
+            "VALUES (nextval('seq_ability_aggregates'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        insertSqlCache.put("heatmap_aggregates",
+            "INSERT INTO heatmap_aggregates (id, ts, player_id, window_start, window_end, heatmap_type, " +
+            "grid_data_json, grid_size, total_samples, session_id, template_id) " +
+            "VALUES (nextval('seq_heatmap_aggregates'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     }
 
     // ============================================
@@ -1465,6 +1606,50 @@ public class DuckDBBatchWriter {
      */
     public boolean isCircuitBroken() {
         return circuitBroken;
+    }
+
+    /**
+     * Attempt to reset the circuit breaker after timeout period.
+     * Tests connection health before re-enabling writes.
+     *
+     * @return true if circuit breaker was reset and DuckDB is ready
+     */
+    private boolean attemptCircuitBreakerReset() {
+        if (!circuitBroken) {
+            return true; // Already reset
+        }
+
+        long elapsed = System.currentTimeMillis() - circuitBrokenAt;
+        if (elapsed < CIRCUIT_BREAKER_RESET_MS) {
+            return false; // Not enough time passed
+        }
+
+        LOGGER.info("[DuckDB] Attempting circuit breaker reset after {}s...", elapsed / 1000);
+
+        // Test connection health before resetting
+        if (!connectionManager.testConnection()) {
+            LOGGER.warn("[DuckDB] Circuit breaker reset failed - connection unhealthy");
+            circuitBrokenAt = System.currentTimeMillis(); // Extend timeout
+            return false;
+        }
+
+        // Check disk space
+        if (!connectionManager.checkDiskSpace()) {
+            LOGGER.warn("[DuckDB] Circuit breaker reset failed - insufficient disk space");
+            circuitBrokenAt = System.currentTimeMillis();
+            return false;
+        }
+
+        // Reset circuit breaker
+        circuitBroken = false;
+        circuitBrokenAt = 0;
+        consecutiveErrors.set(0);
+
+        // Notify service to re-enable
+        DuckDBTelemetryService.INSTANCE.resetCircuitBreaker();
+
+        LOGGER.info("[DuckDB] Circuit breaker RESET - DuckDB writes re-enabled");
+        return true;
     }
 
     /**

@@ -3,12 +3,14 @@ package com.devmod.client.ui.editor;
 import java.util.List;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.resources.ResourceLocation;
 
 public record ModuleTab(
     String id,
     String label,
-    ResourceLocation icon,
+    @Nullable ResourceLocation icon,
     Supplier<List<EditorSection>> sectionsSupplier
 ) {
     /**

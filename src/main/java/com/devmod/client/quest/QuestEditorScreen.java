@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -39,54 +40,87 @@ public class QuestEditorScreen extends ModScreen {
     private static final int HEADER_HEIGHT = 30;
 
     // UI State
+    @Nullable
     private QuestData selectedQuest;
+    @Nullable
     private QuestTask selectedTask;
     private int questListScroll = 0;
     private int taskListScroll = 0;
 
     // Input fields
+    @Nullable
     private EditBox questNoteField;
+    @Nullable
     private EditBox taskNoteField;
+    @Nullable
     private EditBox newQuestNameField;
+    @Nullable
     private EditBox newTaskDescField;
 
     // Buttons
+    @Nullable
     private EditorButton addQuestBtn;
+    @Nullable
     private Button addQuestBtnWidget;
+    @Nullable
     private EditorButton deleteQuestBtn;
+    @Nullable
     private Button deleteQuestBtnWidget;
+    @Nullable
     private EditorButton addTaskBtn;
+    @Nullable
     private Button addTaskBtnWidget;
+    @Nullable
     private EditorButton deleteTaskBtn;
+    @Nullable
     private Button deleteTaskBtnWidget;
+    @Nullable
     private EditorButton completeTaskBtn;
+    @Nullable
     private Button completeTaskBtnWidget;
+    @Nullable
     private EditorButton setActiveBtn;
+    @Nullable
     private Button setActiveBtnWidget;
+    @Nullable
     private EditorButton newEnduranceBtn;
+    @Nullable
     private Button newEnduranceBtnWidget;
 
     // Change listener reference for cleanup
+    @Nullable
     private Runnable questChangeListener;
 
     // === Endurance Quest Modal State ===
     private boolean showEnduranceModal = false;
     private List<EnduranceQuestRegistry.MobQuestConfig> availableMobs = new ArrayList<>();
     private List<EnduranceQuestRegistry.MobQuestConfig> filteredMobs = new ArrayList<>();
+    @Nullable
     private EnduranceQuestRegistry.MobQuestConfig selectedMob = null;
     private int mobListScroll = 0;
     private int enduranceWaves = 10;
     private boolean enduranceEndless = false;
+    @Nullable
     private EditBox mobSearchField;
+    @Nullable
     private EditorButton startEnduranceBtn;
+    @Nullable
     private Button startEnduranceBtnWidget;
+    @Nullable
     private EditorButton cancelEnduranceBtn;
+    @Nullable
     private Button cancelEnduranceBtnWidget;
+    @Nullable
     private EditorButton wavesMinusBtn;
+    @Nullable
     private Button wavesMinusBtnWidget;
+    @Nullable
     private EditorButton wavesPlusBtn;
+    @Nullable
     private Button wavesPlusBtnWidget;
+    @Nullable
     private EditorButton endlessModeBtn;
+    @Nullable
     private Button endlessModeBtnWidget;
 
     // If true, opens directly to endurance modal
@@ -567,6 +601,9 @@ public class QuestEditorScreen extends ModScreen {
     // === Actions ===
 
     private void addNewQuest() {
+        if (newQuestNameField == null) {
+            return;
+        }
         String name = newQuestNameField.getValue().trim();
         if (name.isEmpty()) {
             name = "New Quest " + (QuestManager.INSTANCE.getAllQuests().size() + 1);
@@ -593,6 +630,9 @@ public class QuestEditorScreen extends ModScreen {
 
     private void addNewTask() {
         if (selectedQuest != null) {
+            if (newTaskDescField == null) {
+                return;
+            }
             String desc = newTaskDescField.getValue().trim();
             if (desc.isEmpty()) {
                 desc = "Task " + (selectedQuest.getTasks().size() + 1);

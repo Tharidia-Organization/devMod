@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -34,6 +35,7 @@ public class WaveDirectiveScreen extends Screen {
     private static final int COUNTDOWN_AUDIO_SECONDS = 5;
     private static final int COUNTDOWN_PADDING = 10;
 
+    @Nullable
     private final WaveDirectiveChoicesPayload payload;
     private final List<EditorButton> selectButtons = new ArrayList<>();
     private boolean selectionSent = false;
@@ -43,7 +45,7 @@ public class WaveDirectiveScreen extends Screen {
         this(EnduranceUiCache.getLastDirectiveChoices());
     }
 
-    public WaveDirectiveScreen(WaveDirectiveChoicesPayload payload) {
+    public WaveDirectiveScreen(@Nullable WaveDirectiveChoicesPayload payload) {
         super(java.util.Objects.requireNonNull(Component.literal("Wave Directives"), "title"));
         this.payload = payload;
         long expiresAt = payload != null ? payload.expiresAt() : 0L;

@@ -23,10 +23,15 @@ public class YaclCompat implements CompatModule {
     private static boolean apiAvailable = false;
 
     // Cached reflection references
+    @Nullable
     private static Class<?> yaclClass;
+    @Nullable
     private static Class<?> configCategoryClass;
+    @Nullable
     private static Class<?> optionClass;
+    @Nullable
     private static Class<?> optionDescriptionClass;
+    @Nullable
     private static Method createBuilderMethod;
 
     @Override

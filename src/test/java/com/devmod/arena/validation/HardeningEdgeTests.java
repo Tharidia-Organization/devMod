@@ -235,7 +235,7 @@ class HardeningEdgeTests {
                 .dimensionKey("minecraft:overworld")
                 .build();
 
-            var result = preflightCheck.check(context);
+            var result = preflightCheck.check(context, false);
 
             assertFalse(result.passed());
             assertTrue(result.hasBlockingIssues());
@@ -251,7 +251,7 @@ class HardeningEdgeTests {
                 .dimensionKey("minecraft:the_nether")
                 .build();
 
-            var result = preflightCheck.check(context);
+            var result = preflightCheck.check(context, false);
 
             assertFalse(result.passed());
         }
@@ -265,7 +265,7 @@ class HardeningEdgeTests {
                 .currentTps(20.0)
                 .build();
 
-            var result = preflightCheck.check(context);
+            var result = preflightCheck.check(context, false);
 
             assertFalse(result.passed());
             assertTrue(result.getBlockingIssues().stream()
@@ -281,7 +281,7 @@ class HardeningEdgeTests {
                 .currentTps(15.0)  // Below 18 threshold
                 .build();
 
-            var result = preflightCheck.check(context);
+            var result = preflightCheck.check(context, false);
 
             assertFalse(result.passed());
             assertTrue(result.getBlockingIssues().stream()
@@ -298,7 +298,7 @@ class HardeningEdgeTests {
                 .activeArenasInWorld(10)  // At limit
                 .build();
 
-            var result = preflightCheck.check(context);
+            var result = preflightCheck.check(context, false);
 
             assertFalse(result.passed());
             assertTrue(result.getBlockingIssues().stream()
@@ -317,7 +317,7 @@ class HardeningEdgeTests {
                 .availableMemoryMb(1024)
                 .build();
 
-            var result = preflightCheck.check(context);
+            var result = preflightCheck.check(context, false);
 
             assertTrue(result.passed());
             assertFalse(result.hasBlockingIssues());
@@ -333,7 +333,7 @@ class HardeningEdgeTests {
                 .availableMemoryMb(100)  // Below 256 MB threshold
                 .build();
 
-            var result = preflightCheck.check(context);
+            var result = preflightCheck.check(context, false);
 
             assertTrue(result.passed());  // Warning doesn't block
             assertTrue(result.hasWarnings());
@@ -365,7 +365,7 @@ class HardeningEdgeTests {
             var manager = new RobustCleanupManager(executor);
 
             var bounds = new ArenaCleanupExecutor.ArenaBounds(0, 0, 0, 63, 63, 63);
-            var result = manager.cleanupWithInvariant(UUID.randomUUID(), bounds);
+            var result = manager.cleanupWithInvariant(UUID.randomUUID(), bounds, false);
 
             assertTrue(result.isSuccess());
             assertTrue(result.requiredRetries());
@@ -388,7 +388,7 @@ class HardeningEdgeTests {
             var manager = new RobustCleanupManager(executor);
 
             var bounds = new ArenaCleanupExecutor.ArenaBounds(0, 0, 0, 63, 63, 63);
-            var result = manager.cleanupWithInvariant(UUID.randomUUID(), bounds);
+            var result = manager.cleanupWithInvariant(UUID.randomUUID(), bounds, false);
 
             assertFalse(result.isSuccess());
             assertEquals(RobustCleanupManager.MAX_RETRY_ATTEMPTS, result.attemptCount());
@@ -402,7 +402,7 @@ class HardeningEdgeTests {
             var manager = new RobustCleanupManager(executor);
 
             var bounds = new ArenaCleanupExecutor.ArenaBounds(0, 0, 0, 63, 63, 63);
-            var result = manager.cleanupWithInvariant(UUID.randomUUID(), bounds);
+            var result = manager.cleanupWithInvariant(UUID.randomUUID(), bounds, false);
 
             assertTrue(result.isSuccess());
             assertFalse(result.requiredRetries());

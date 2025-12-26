@@ -3,6 +3,7 @@ package com.devmod.client.ui.screens;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
@@ -37,14 +38,27 @@ public class MobEquipmentScreen extends Screen {
     private final Mob mob;
     private final Screen parentScreen;
 
-    private EditBox mainHand, offHand, head, chest, legs, feet;
+    @Nullable
+    private EditBox mainHand;
+    @Nullable
+    private EditBox offHand;
+    @Nullable
+    private EditBox head;
+    @Nullable
+    private EditBox chest;
+    @Nullable
+    private EditBox legs;
+    @Nullable
+    private EditBox feet;
 
     // Blur control
     private int originalBlurValue = 0;
 
     // Error state
+    @Nullable
     private String errorMessage = null;
     private int errorDisplayTicks = 0;
+    @Nullable
     private EditBox errorField = null;
     private final EditorButton applyButton = new EditorButton("mob-equip-apply", "Apply").style(EditorButton.Style.PRIMARY);
     private final EditorButton backButton = new EditorButton("mob-equip-back", "Back").style(EditorButton.Style.NORMAL);

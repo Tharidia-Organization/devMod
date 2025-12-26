@@ -13,7 +13,15 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
+
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+
 import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.network.NetworkHandler;
 
 public class SeasonPassSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(SeasonPassSystem.class);
@@ -376,7 +384,52 @@ public class SeasonPassSystem {
             progress.unlockPremiumReward(newTier);
         }
 
-        // TODO: Send notification to player
+        notifyTierUp(playerId, progress, newTier);
+    }
+
+    private void notifyTierUp(UUID playerId, PlayerSeasonProgress progress, int newTier) {
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return;
+        }
+        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+        if (player == null) {
+            return;
+        }
+
+        boolean hasFreeReward = freeTrackRewards.containsKey(newTier);
+        boolean hasPremiumReward = progress.isPremium() && premiumTrackRewards.containsKey(newTier);
+
+        // Get reward names for display
+        SeasonReward freeReward = freeTrackRewards.get(newTier);
+        SeasonReward premiumReward = premiumTrackRewards.get(newTier);
+        String freeRewardName = freeReward != null ? freeReward.getDisplayName() : "";
+        String premiumRewardName = premiumReward != null ? premiumReward.getDisplayName() : "";
+
+        // Send network payload for rich client notification
+        SeasonTierUpPayload payload = SeasonTierUpPayload.create(
+            newTier,
+            hasFreeReward,
+            hasPremiumReward,
+            freeRewardName,
+            premiumRewardName,
+            progress.isPremium()
+        );
+        NetworkHandler.sendSeasonTierUp(player, payload);
+
+        // Also send chat message as fallback/log
+        MutableComponent message = Component.literal("[SeasonPass] Tier " + newTier + " unlocked!")
+            .withStyle(ChatFormatting.GOLD);
+        if (hasFreeReward || hasPremiumReward) {
+            String rewardText = hasFreeReward && hasPremiumReward
+                ? "Free + Premium rewards available."
+                : hasFreeReward
+                    ? "Free reward available."
+                    : "Premium reward available.";
+            message.append(Component.literal(" " + rewardText).withStyle(ChatFormatting.YELLOW));
+        }
+
+        player.sendSystemMessage(message);
     }
 
     // === Progress Management ===

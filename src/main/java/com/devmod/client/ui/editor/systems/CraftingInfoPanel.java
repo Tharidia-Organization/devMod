@@ -2,8 +2,11 @@ package com.devmod.client.ui.editor.systems;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -141,12 +144,10 @@ public class CraftingInfoPanel extends BaseOverlay {
     private static final String INGREDIENTS_LABEL = "Ingredients:";
     private static final String TOTAL_VALUE_LABEL = "Total Value:";
     private static final String RARITY_LABEL = "Rarity Tier:";
-    private static final String INGREDIENT_LINE_FORMAT = "• %dx %s";
-    private static final String RARITY_TAG_FORMAT = "(%s)";
-    private static final String VALUE_FORMAT = "+%d";
     private static final String ARROW_GLYPH = "→";
 
     private ItemStack targetItem = ItemStack.EMPTY;
+    @Nullable
     private RecipeHolder<CraftingRecipe> recipe = null;
     private List<RecipeHolder<CraftingRecipe>> recipes = List.of();
     private int selectedRecipeIndex = -1;
@@ -160,8 +161,11 @@ public class CraftingInfoPanel extends BaseOverlay {
     private int ingredientAreaH = 0;
 
     // Navigation buttons using EditorButton component (lazy init to avoid this-escape)
+    @Nullable
     private EditorButton prevButton;
+    @Nullable
     private EditorButton nextButton;
+    @Nullable
     private EditorButton editButton;
     private boolean buttonsInitialized = false;
 
@@ -190,6 +194,21 @@ public class CraftingInfoPanel extends BaseOverlay {
                 .onClick(() -> openRecipeEditor());
             buttonsInitialized = true;
         }
+    }
+
+    private EditorButton requirePrevButton() {
+        ensureButtons();
+        return Objects.requireNonNull(prevButton, "prevButton");
+    }
+
+    private EditorButton requireNextButton() {
+        ensureButtons();
+        return Objects.requireNonNull(nextButton, "nextButton");
+    }
+
+    private EditorButton requireEditButton() {
+        ensureButtons();
+        return Objects.requireNonNull(editButton, "editButton");
     }
 
     public void show(ItemStack item) {
@@ -245,7 +264,7 @@ public class CraftingInfoPanel extends BaseOverlay {
     @Override
     protected void renderContent(GuiGraphics g, Font font, int x, int y, int panelW, int panelH,
                                   int mouseX, int mouseY) {
-        ensureButtons();
+        EditorButton editButton = requireEditButton();
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
         int padding = ScaledCoord.scaleDim(PANEL_PADDING);
         int gridSize = ScaledCoord.scaleDim(GRID_BLOCK_HEIGHT);
@@ -366,15 +385,15 @@ public class CraftingInfoPanel extends BaseOverlay {
         for (int i = startIndex; i < totalIngredients && (i - startIndex) * ingredientLineHeight + offsetY < availableForIngredients; i++) {
             IngredientValue ing = analysis.ingredients().get(i);
             int rowY = lineY + (i - startIndex) * ingredientLineHeight + offsetY;
-            String line = String.format(INGREDIENT_LINE_FORMAT, ing.count(), ing.item().getHoverName().getString());
+            String line = String.format(Locale.ROOT, "• %dx %s", ing.count(), ing.item().getHoverName().getString());
             g.drawString(safeFont, line, x + ScaledCoord.scaleDim(INGREDIENT_TEXT_OFFSET), rowY,
                 UIConstants.Text.PRIMARY(), false);
 
-            String rarityTag = String.format(RARITY_TAG_FORMAT, ing.rarity().displayName);
+            String rarityTag = String.format(Locale.ROOT, "(%s)", ing.rarity().displayName);
             int tagX = x + ScaledCoord.scaleDim(INGREDIENT_TAG_OFFSET);
             g.drawString(safeFont, rarityTag, tagX, rowY, ing.rarity().color, false);
 
-            String valueStr = String.format(VALUE_FORMAT, ing.value());
+            String valueStr = String.format(Locale.ROOT, "+%d", ing.value());
             int valueX = x + ScaledCoord.scaleDim(INGREDIENT_VALUE_OFFSET);
             g.drawString(safeFont, valueStr, valueX, rowY, UIConstants.Text.VALUE(), false);
         }
@@ -446,6 +465,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         return new ItemValueAnalysis(List.copyOf(aggregated.values()), aggregatedTotal, highest);
     }
 
+    @Nullable
     private RecipeAnalysis selectBestRecipe(ItemStack stack) {
         List<RecipeHolder<CraftingRecipe>> candidates = findRecipesFor(stack);
         RecipeAnalysis best = null;
@@ -489,6 +509,8 @@ public class CraftingInfoPanel extends BaseOverlay {
     @Override
     protected boolean handleMouseClicked(double mouseX, double mouseY,
                                           int panelX, int panelY, int panelW, int panelH) {
+        EditorButton editButton = requireEditButton();
+
         // Edit button click
         if (editButton.mouseClicked(mouseX, mouseY, 0)) {
             editButton.mouseReleased(mouseX, mouseY, 0);
@@ -497,6 +519,8 @@ public class CraftingInfoPanel extends BaseOverlay {
 
         // Recipe selector clicks using EditorButton
         if (!recipes.isEmpty()) {
+            EditorButton prevButton = requirePrevButton();
+            EditorButton nextButton = requireNextButton();
             if (prevButton.mouseClicked(mouseX, mouseY, 0)) {
                 prevButton.mouseReleased(mouseX, mouseY, 0);
                 return true;
@@ -553,6 +577,8 @@ public class CraftingInfoPanel extends BaseOverlay {
         if (recipes.isEmpty()) {
             return;
         }
+        EditorButton prevButton = requirePrevButton();
+        EditorButton nextButton = requireNextButton();
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
         int btnW = ScaledCoord.scaleDim(RECIPE_SELECTOR_BTN_WIDTH);
         int btnH = ScaledCoord.scaleDim(RECIPE_SELECTOR_BTN_HEIGHT);

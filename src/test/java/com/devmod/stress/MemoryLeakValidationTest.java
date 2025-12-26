@@ -5,14 +5,16 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
@@ -27,6 +29,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,7 +52,7 @@ class MemoryLeakValidationTest {
         @Test
         @DisplayName("Removed entries are garbage collectible")
         void removedEntriesAreGarbageCollectible() {
-            ConcurrentHashMap<UUID, byte[]> map = new ConcurrentHashMap<>();
+            Map<UUID, byte[]> map = new HashMap<>();
             List<WeakReference<byte[]>> refs = new ArrayList<>();
 
             // Add large objects
@@ -58,6 +62,8 @@ class MemoryLeakValidationTest {
                 refs.add(new WeakReference<>(data));
                 map.put(id, data);
             }
+
+            assertEquals(100, map.size());
 
             // Remove all entries
             map.clear();
@@ -97,7 +103,8 @@ class MemoryLeakValidationTest {
             try { Thread.sleep(100); } catch (InterruptedException e) { /* ignore */ }
 
             // Force expungeStaleEntries by accessing map
-            map.size();
+            int sizeAfterAccess = map.size();
+            assertTrue(sizeAfterAccess >= 0);
 
             // key2 should still be present
             assertNotNull(key2);
@@ -115,6 +122,8 @@ class MemoryLeakValidationTest {
                 Object obj = new byte[1024 * 100]; // 100KB
                 phantoms.add(new PhantomReference<>(obj, queue));
             }
+
+            assertEquals(10, phantoms.size());
 
             // Request GC
             System.gc();
@@ -200,22 +209,20 @@ class MemoryLeakValidationTest {
         }
 
         @Test
-        @DisplayName("LinkedList memory overhead per element")
-        void linkedListMemoryOverheadPerElement() {
-            // LinkedList has higher per-element overhead than ArrayList
-            LinkedList<UUID> linkedList = new LinkedList<>();
+        @DisplayName("ArrayDeque memory overhead per element")
+        void arrayDequeMemoryOverheadPerElement() {
+            // ArrayDeque uses a resizable array for queue semantics
+            ArrayDeque<UUID> deque = new ArrayDeque<>();
             ArrayList<UUID> arrayList = new ArrayList<>();
 
             int count = 1000;
             for (int i = 0; i < count; i++) {
                 UUID id = UUID.randomUUID();
-                linkedList.add(id);
+                deque.add(id);
                 arrayList.add(id);
             }
 
-            assertEquals(linkedList.size(), arrayList.size());
-            // LinkedList uses more memory per element (prev/next pointers)
-            // but supports O(1) add/remove at both ends
+            assertEquals(deque.size(), arrayList.size());
         }
 
         @Test
@@ -431,7 +438,7 @@ class MemoryLeakValidationTest {
                 }
             }
 
-            Map<UUID, CacheEntry> cache = new ConcurrentHashMap<>();
+            Map<UUID, CacheEntry> cache = new HashMap<>();
             UUID id = UUID.randomUUID();
             cache.put(id, new CacheEntry("test", 100)); // 100ms TTL
 
@@ -452,7 +459,7 @@ class MemoryLeakValidationTest {
         @DisplayName("Size-based eviction with computeIfAbsent")
         void sizeBasedEvictionWithComputeIfAbsent() {
             int maxSize = 100;
-            ConcurrentHashMap<Integer, String> cache = new ConcurrentHashMap<>();
+            HashMap<Integer, String> cache = new HashMap<>();
             AtomicInteger computeCount = new AtomicInteger(0);
 
             // Fill cache with computeIfAbsent
@@ -472,7 +479,7 @@ class MemoryLeakValidationTest {
         @Test
         @DisplayName("WeakReference cache for optional data")
         void weakReferenceCacheForOptionalData() {
-            Map<UUID, WeakReference<byte[]>> cache = new ConcurrentHashMap<>();
+            Map<UUID, WeakReference<byte[]>> cache = new HashMap<>();
 
             // Add entries
             for (int i = 0; i < 100; i++) {
@@ -526,14 +533,14 @@ class MemoryLeakValidationTest {
                 pool.offer(new PooledObject());
             }
 
-            AtomicInteger createCount = new AtomicInteger(0);
+            int createCount = 0;
 
             // Acquire and release pattern
             for (int i = 0; i < 100; i++) {
                 PooledObject obj = pool.poll();
                 if (obj == null) {
                     obj = new PooledObject();
-                    createCount.incrementAndGet();
+                    createCount++;
                 }
                 obj.acquire();
                 assertTrue(obj.isInUse(), "Object should be marked in use after acquire");
@@ -545,7 +552,7 @@ class MemoryLeakValidationTest {
                 pool.offer(obj);
             }
 
-            assertEquals(0, createCount.get(), "Pool should handle all requests without new allocations");
+            assertEquals(0, createCount, "Pool should handle all requests without new allocations");
             assertEquals(poolSize, pool.size(), "Pool size should be unchanged");
         }
 
@@ -693,7 +700,7 @@ class MemoryLeakValidationTest {
         @Test
         @DisplayName("Destroyed instances removed from registry")
         void destroyedInstancesRemovedFromRegistry() {
-            ConcurrentHashMap<UUID, InstanceState> registry = new ConcurrentHashMap<>();
+            HashMap<UUID, InstanceState> registry = new HashMap<>();
 
             // Add instances
             List<UUID> ids = new ArrayList<>();
@@ -719,11 +726,11 @@ class MemoryLeakValidationTest {
         @Test
         @DisplayName("Player session cleanup on disconnect")
         void playerSessionCleanupOnDisconnect() {
-            ConcurrentHashMap<UUID, Object> sessions = new ConcurrentHashMap<>();
-            ConcurrentHashMap<UUID, Set<UUID>> instancePlayers = new ConcurrentHashMap<>();
+            HashMap<UUID, Object> sessions = new HashMap<>();
+            HashMap<UUID, Set<UUID>> instancePlayers = new HashMap<>();
 
             UUID instanceId = UUID.randomUUID();
-            instancePlayers.put(instanceId, ConcurrentHashMap.newKeySet());
+            instancePlayers.put(instanceId, new HashSet<>());
 
             // Add players
             List<UUID> playerIds = new ArrayList<>();
@@ -763,7 +770,7 @@ class MemoryLeakValidationTest {
                 }
             }
 
-            ConcurrentHashMap<UUID, TimestampedEntry> cache = new ConcurrentHashMap<>();
+            HashMap<UUID, TimestampedEntry> cache = new HashMap<>();
 
             // Add entries
             for (int i = 0; i < 100; i++) {
@@ -790,12 +797,12 @@ class MemoryLeakValidationTest {
             // Simulate full instance cleanup
             class InstanceData {
                 final UUID id = UUID.randomUUID();
-                final Set<UUID> players = ConcurrentHashMap.newKeySet();
-                final Map<String, Object> metadata = new ConcurrentHashMap<>();
+                final Set<UUID> players = new HashSet<>();
+                final Map<String, Object> metadata = new HashMap<>();
                 InstanceState state = InstanceState.ACTIVE;
             }
 
-            ConcurrentHashMap<UUID, InstanceData> instances = new ConcurrentHashMap<>();
+            HashMap<UUID, InstanceData> instances = new HashMap<>();
 
             // Create instance with data
             InstanceData instance = new InstanceData();
@@ -881,7 +888,7 @@ class MemoryLeakValidationTest {
                     }
                 }
 
-                V get(K key) {
+                @Nullable V get(K key) {
                     V value = primary.get(key);
                     if (value != null) return value;
 
@@ -897,19 +904,20 @@ class MemoryLeakValidationTest {
             AdaptiveCache<UUID, String> cache = new AdaptiveCache<>(primaryMaxSize);
 
             // Add entries
-            UUID primaryKey = null;
-            UUID secondaryKey = null;
-            for (int i = 0; i < 20; i++) {
-                UUID key = UUID.randomUUID();
-                if (i == 0) primaryKey = key;
-                if (i == primaryMaxSize) secondaryKey = key;
+            UUID primaryKey = UUID.randomUUID();
+            UUID secondaryKey = UUID.randomUUID();
+            cache.put(primaryKey, "value0");
+            for (int i = 1; i < 20; i++) {
+                UUID key = (i == primaryMaxSize) ? secondaryKey : UUID.randomUUID();
                 cache.put(key, "value" + i);
             }
 
             assertEquals(primaryMaxSize, cache.primarySize(), "Primary should be at max");
             assertEquals(10, cache.secondarySize(), "Overflow should go to secondary");
-            assertEquals("value0", cache.get(primaryKey));
-            assertNotNull(cache.get(secondaryKey), "Secondary storage should serve overflow items");
+            assertEquals("value0", Objects.requireNonNull(cache.get(primaryKey)));
+            String secondaryValue = Objects.requireNonNull(cache.get(secondaryKey),
+                "Secondary storage should serve overflow items");
+            assertNotNull(secondaryValue);
         }
     }
 }

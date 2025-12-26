@@ -1,5 +1,7 @@
 package com.devmod.client.ui.editor.core;
 
+import javax.annotation.Nullable;
+
 /**
  * Utility class for managing UI animations with easing functions.
  * Supports fade, slide, and scale animations with configurable duration.
@@ -24,6 +26,7 @@ public class AnimationState {
     private float progress = 0f;    // 0.0 to 1.0
 
     // Callback when animation completes
+    @Nullable
     private Runnable onComplete;
 
     /**
@@ -100,7 +103,7 @@ public class AnimationState {
      *
      * @param onComplete Callback when animation completes
      */
-    public void startHide(Runnable onComplete) {
+    public void startHide(@Nullable Runnable onComplete) {
         this.onComplete = onComplete;
         startTime = System.currentTimeMillis();
         animating = true;

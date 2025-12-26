@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import org.joml.Quaternionf;
 
 import com.mojang.blaze3d.platform.Lighting;
@@ -89,6 +91,7 @@ public class PreviewRenderer {
     // Display options
     private boolean showHint = true;
     private String hintText = "Drag to rotate";
+    @Nullable
     private Consumer<EquipmentSlot> onSlotClick;
 
     // Bounds

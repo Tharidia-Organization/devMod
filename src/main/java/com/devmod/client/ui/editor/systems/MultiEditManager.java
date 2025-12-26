@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 
@@ -15,9 +17,11 @@ public class MultiEditManager {
 
     private final List<ItemStack> selectedItems = new ArrayList<>();
     private final List<Integer> selectedSlots = new ArrayList<>();
+    @Nullable
     private java.util.function.BiFunction<ItemStack, Integer, Boolean> persistenceHandler;
 
     // Undo support for batch operations
+    @Nullable
     private BatchUndoSnapshot lastSnapshot = null;
 
     // Cancellation support
@@ -84,7 +88,7 @@ public class MultiEditManager {
                     safeName(selectedItems.get(i)),
                     safeItemId(selectedItems.get(i)),
                     i < selectedSlots.size() ? selectedSlots.get(i) : -1,
-                    e.getMessage(),
+                    safeMessage(e),
                     stackTraceOf(e)
                 ));
             }
@@ -116,7 +120,8 @@ public class MultiEditManager {
      * @param progress Optional callback for progress updates (can be null)
      * @return Result containing successes and failures
      */
-    public BatchEditResult applyPresetToAll(Preset preset, PresetManager presetManager, boolean persist, ProgressCallback progress) {
+    public BatchEditResult applyPresetToAll(Preset preset, PresetManager presetManager, boolean persist,
+                                            @Nullable ProgressCallback progress) {
         List<String> successes = new ArrayList<>();
         List<BatchEditResult.FailureDetail> failures = new ArrayList<>();
 
@@ -191,7 +196,7 @@ public class MultiEditManager {
                 }
             } catch (Exception e) {
                 failures.add(new BatchEditResult.FailureDetail(
-                    safeName(item), safeItemId(item), slot, e.getMessage(), stackTraceOf(e)));
+                    safeName(item), safeItemId(item), slot, safeMessage(e), stackTraceOf(e)));
             }
         }
 
@@ -237,6 +242,7 @@ public class MultiEditManager {
         try { return Objects.requireNonNull(item, "item cannot be null").getHoverName().getString(); } catch (Exception e) { return "<unknown>"; }
     }
 
+    @Nullable
     private static String safeItemId(ItemStack item) {
         try {
             var key = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
@@ -245,6 +251,7 @@ public class MultiEditManager {
         } catch (Exception e) { return null; }
     }
 
+    @Nullable
     private static String stackTraceOf(Throwable t) {
         try (java.io.StringWriter sw = new java.io.StringWriter(); java.io.PrintWriter pw = new java.io.PrintWriter(sw)) {
             t.printStackTrace(pw);
@@ -252,6 +259,11 @@ public class MultiEditManager {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private static String safeMessage(Throwable t) {
+        String message = t.getMessage();
+        return message != null ? message : t.getClass().getSimpleName();
     }
 
     public List<ItemStack> getSelectedItems() {
@@ -285,6 +297,7 @@ public class MultiEditManager {
     /**
      * Get the name of the preset in the last snapshot.
      */
+    @Nullable
     public String getSnapshotPresetName() {
         return lastSnapshot != null ? lastSnapshot.getPresetName() : null;
     }
@@ -338,7 +351,7 @@ public class MultiEditManager {
                         }
                     } catch (Exception e) {
                         failures.add(new BatchEditResult.FailureDetail(
-                            safeName(original), safeItemId(original), slot, "Restore persist error: " + e.getMessage(), null));
+                            safeName(original), safeItemId(original), slot, "Restore persist error: " + safeMessage(e), null));
                         continue;
                     }
                 }
@@ -346,7 +359,7 @@ public class MultiEditManager {
                 successes.add(original.getHoverName().getString());
             } catch (Exception e) {
                 failures.add(new BatchEditResult.FailureDetail(
-                    safeName(original), safeItemId(original), slot, e.getMessage(), stackTraceOf(e)));
+                    safeName(original), safeItemId(original), slot, safeMessage(e), stackTraceOf(e)));
             }
         }
 

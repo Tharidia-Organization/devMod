@@ -2,6 +2,7 @@ package com.devmod.arena.fallback;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,11 @@ class FallbackBuildStrategyTest {
 
     private CircuitBreaker circuitBreaker;
     private FallbackMetrics metrics;
+
+    @BeforeAll
+    static void disableFallbackLogging() {
+        FallbackBuildStrategy.setLoggingEnabled(false);
+    }
 
     @BeforeEach
     void setUp() {

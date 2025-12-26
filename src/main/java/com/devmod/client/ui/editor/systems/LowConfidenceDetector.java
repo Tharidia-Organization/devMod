@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.systems;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -40,8 +42,11 @@ public final class LowConfidenceDetector extends BaseOverlay {
     private static final float MIN_CONFIDENCE_FOR_AUTO_EDIT = 0.8f;
 
     // State
+    @Nullable
     private WeaponTypeDetector.DetectionResult pendingDetection = null;
+    @Nullable
     private String statusMessage = null;
+    @Nullable
     private ItemStack currentItem = null;
 
     // Button bounds (computed during render)
@@ -50,7 +55,9 @@ public final class LowConfidenceDetector extends BaseOverlay {
     private ResponsiveLayout.Rect cancelBounds = ResponsiveLayout.Rect.EMPTY;
 
     // Callbacks
+    @Nullable
     private BiConsumer<String, Integer> statusConsumer;
+    @Nullable
     private Runnable onCancelCallback;
 
     // =========================================================================
@@ -79,7 +86,8 @@ public final class LowConfidenceDetector extends BaseOverlay {
      * @param requestedTab The requested editor tab
      * @param activeModule The active editor module
      */
-    public void checkAndWarn(ItemStack item, EditorStartTab requestedTab, EditorModule activeModule) {
+    public void checkAndWarn(@Nullable ItemStack item, @Nullable EditorStartTab requestedTab,
+                             @Nullable EditorModule activeModule) {
         if (item == null || item.isEmpty()) return;
 
         var detection = WeaponTypeDetector.detectDetailed(item);
@@ -112,6 +120,7 @@ public final class LowConfidenceDetector extends BaseOverlay {
     /**
      * Get the pending detection result.
      */
+    @Nullable
     public WeaponTypeDetector.DetectionResult getPendingDetection() {
         return pendingDetection;
     }
@@ -266,12 +275,17 @@ public final class LowConfidenceDetector extends BaseOverlay {
         }
 
         if (whitelistBounds.contains(mouseX, mouseY)) {
+            ItemStack safeItem = currentItem;
+            if (safeItem == null || safeItem.isEmpty()) {
+                statusMessage = "Whitelist update failed. No item selected.";
+                return true;
+            }
             boolean added = addItemToWhitelist();
             if (!added) {
                 statusMessage = "Whitelist update failed. Check logs.";
             } else {
                 if (statusConsumer != null) {
-                    var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(currentItem.getItem()));
+                    var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(safeItem.getItem()));
                     String label = id == null ? "<unknown>" : id.toString();
                     statusConsumer.accept("Whitelisted " + label, UIConstants.Accent.GREEN());
                 }

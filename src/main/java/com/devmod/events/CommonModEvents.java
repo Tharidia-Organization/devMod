@@ -33,6 +33,8 @@ import com.devmod.config.WeaponConfigManager;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.stats.ArmorStats;
+import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
+import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
 import com.devmod.testing.stats.HazardTypeRegistry;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.DamageTypeConfig;
@@ -209,12 +211,18 @@ public class CommonModEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             // Sync global mechanics config
             try {
-                GameMechanicsSyncPayload payload = GameMechanicsSyncPayload.fromGlobalConfig();
+                GameMechanicsSyncPayload payload = Objects.requireNonNull(
+                    GameMechanicsSyncPayload.fromGlobalConfig(), "gameMechanicsSyncPayload");
                 PacketDistributor.sendToPlayer(player, payload);
                 LOGGER.debug("[DevMod] Synced game mechanics config to {}", player.getName().getString());
             } catch (Exception e) {
                 LOGGER.warn("[DevMod] Failed to sync game mechanics config to {}: {}",
                     player.getName().getString(), e.getMessage());
+            }
+
+            // Initialize telemetry aggregator for this player
+            if (AggregationConfig.AGGREGATION_ENABLED) {
+                TelemetryAggregatorRegistry.INSTANCE.onPlayerJoin(player.getUUID());
             }
         }
     }

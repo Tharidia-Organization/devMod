@@ -6,15 +6,18 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
@@ -94,7 +97,9 @@ public class NemesisProfile {
         }
 
         // Track weapon type
-        weaponTypeUsage.merge(weaponType, 1, Integer::sum);
+        String safeWeaponType = requireNonNull(weaponType, "weaponType");
+        int currentCount = weaponTypeUsage.getOrDefault(safeWeaponType, 0);
+        weaponTypeUsage.put(safeWeaponType, currentCount + 1);
     }
 
     /**
@@ -291,7 +296,7 @@ public class NemesisProfile {
         CompoundTag tag = new CompoundTag();
 
         if (bossId != null) {
-            tag.putString(NBT_BOSS_ID, bossId.toString());
+            tag.putString(NBT_BOSS_ID, requireNonNull(bossId.toString(), "bossId string"));
         }
         tag.putInt(NBT_DEFEAT_COUNT, defeatCount);
         tag.putInt(NBT_TOTAL_FIGHTS, totalFights);
@@ -308,14 +313,36 @@ public class NemesisProfile {
         // Save weapon types
         CompoundTag weaponTag = new CompoundTag();
         for (var entry : weaponTypeUsage.entrySet()) {
-            weaponTag.putInt(entry.getKey(), entry.getValue());
+            String key = requireNonNull(entry.getKey(), "weaponType key");
+            Integer value = requireNonNull(entry.getValue(), "weaponType count");
+            weaponTag.putInt(key, value);
         }
         tag.put(NBT_WEAPON_TYPES, weaponTag);
+
+        // Save phase times
+        CompoundTag phaseTag = new CompoundTag();
+        for (var entry : phaseKillTimes.entrySet()) {
+            Integer phase = entry.getKey();
+            List<Long> times = entry.getValue();
+            if (phase == null || times == null || times.isEmpty()) {
+                continue;
+            }
+            ListTag timesList = new ListTag();
+            for (Long time : times) {
+                if (time != null) {
+                    timesList.add(LongTag.valueOf(time));
+                }
+            }
+            String phaseKey = requireNonNull(String.valueOf(phase), "phase key");
+            phaseTag.put(phaseKey, timesList);
+        }
+        tag.put(NBT_PHASE_TIMES, phaseTag);
 
         // Save adaptations
         ListTag adaptationsList = new ListTag();
         for (NemesisAdaptation adaptation : adaptations) {
-            adaptationsList.add(StringTag.valueOf(adaptation.name()));
+            String name = requireNonNull(adaptation.name(), "adaptation name");
+            adaptationsList.add(StringTag.valueOf(name));
         }
         tag.put(NBT_ADAPTATIONS, adaptationsList);
 
@@ -329,7 +356,8 @@ public class NemesisProfile {
         NemesisProfile profile = new NemesisProfile();
 
         if (tag.contains(NBT_BOSS_ID)) {
-            profile.bossId = ResourceLocation.tryParse(tag.getString(NBT_BOSS_ID));
+            String bossIdStr = requireNonNull(tag.getString(NBT_BOSS_ID), "bossId from tag");
+            profile.bossId = ResourceLocation.tryParse(bossIdStr);
         }
         profile.defeatCount = tag.getInt(NBT_DEFEAT_COUNT);
         profile.totalFights = tag.getInt(NBT_TOTAL_FIGHTS);
@@ -347,7 +375,30 @@ public class NemesisProfile {
         if (tag.contains(NBT_WEAPON_TYPES)) {
             CompoundTag weaponTag = tag.getCompound(NBT_WEAPON_TYPES);
             for (String key : weaponTag.getAllKeys()) {
-                profile.weaponTypeUsage.put(key, weaponTag.getInt(key));
+                String safeKey = requireNonNull(key, "weaponType key");
+                profile.weaponTypeUsage.put(safeKey, weaponTag.getInt(safeKey));
+            }
+        }
+
+        // Load phase times
+        if (tag.contains(NBT_PHASE_TIMES, Tag.TAG_COMPOUND)) {
+            CompoundTag phaseTag = tag.getCompound(NBT_PHASE_TIMES);
+            for (String key : phaseTag.getAllKeys()) {
+                String safeKey = requireNonNull(key, "phaseTime key");
+                try {
+                    int phase = Integer.parseInt(safeKey);
+                    ListTag timesList = phaseTag.getList(safeKey, Tag.TAG_LONG);
+                    List<Long> times = new ArrayList<>(timesList.size());
+                    for (int i = 0; i < timesList.size(); i++) {
+                        Tag timeTag = timesList.get(i);
+                        if (timeTag instanceof LongTag longTag) {
+                            times.add(longTag.getAsLong());
+                        }
+                    }
+                    profile.phaseKillTimes.put(phase, times);
+                } catch (NumberFormatException ignored) {
+                    // Skip invalid phase keys
+                }
             }
         }
 
@@ -374,4 +425,9 @@ public class NemesisProfile {
     public Set<NemesisAdaptation> getAdaptations() { return Collections.unmodifiableSet(adaptations); }
     public boolean hasAdaptation(NemesisAdaptation adaptation) { return adaptations.contains(adaptation); }
     public long getLastDefeatTime() { return lastDefeatTime; }
+
+    @Nonnull
+    private static <T> T requireNonNull(@Nullable T value, String label) {
+        return Objects.requireNonNull(value, label);
+    }
 }

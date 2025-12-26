@@ -81,9 +81,6 @@ public class IrisCompat implements CompatModule {
             }
 
             if (irisApiClass != null) {
-                // Get instance method first if needed
-                Object apiInstance = getApiInstance();
-
                 // Find shaders enabled method
                 try {
                     isShadersEnabledMethod = irisApiClass.getMethod("isShaderPackInUse");

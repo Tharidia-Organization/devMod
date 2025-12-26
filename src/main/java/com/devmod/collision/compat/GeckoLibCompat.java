@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
@@ -20,10 +21,15 @@ public final class GeckoLibCompat {
 
     // ==================== Detection ====================
 
+    @Nullable
     private static Boolean geckoLibPresent = null;
+    @Nullable
     private static Class<?> geoAnimatableClass = null;
+    @Nullable
     private static Class<?> geoBoneClass = null;
+    @Nullable
     private static Method getBoneRotationMethod = null;
+    @Nullable
     private static Method getBonePositionMethod = null;
 
     /**
@@ -139,6 +145,7 @@ public final class GeckoLibCompat {
     /**
      * Gets the GeoModel for a GeckoLib entity via reflection.
      */
+    @Nullable
     private static Object getGeoModel(LivingEntity entity) {
         try {
             // GeckoLib 4.x: entity.getGeoModel() or through renderer
@@ -156,6 +163,7 @@ public final class GeckoLibCompat {
     /**
      * Gets all bones from a GeoModel.
      */
+    @Nullable
     private static Object[] getBones(Object model) {
         try {
             // GeoModel.getBones() returns Collection<GeoBone>
@@ -174,6 +182,7 @@ public final class GeckoLibCompat {
     /**
      * Gets the name of a GeoBone.
      */
+    @Nullable
     private static String getBoneName(Object bone) {
         try {
             Method getNameMethod = bone.getClass().getMethod("getName");
@@ -187,12 +196,18 @@ public final class GeckoLibCompat {
     /**
      * Extracts transform matrix from a GeoBone.
      */
+    @Nullable
     private static Matrix4f extractBoneTransform(Object bone) {
         try {
             // Get rotation (returns Vector3f or similar)
-            Object rotation = getBoneRotationMethod.invoke(bone);
+            Method rotationMethod = getBoneRotationMethod;
+            Method positionMethod = getBonePositionMethod;
+            if (rotationMethod == null || positionMethod == null) {
+                return null;
+            }
+            Object rotation = rotationMethod.invoke(bone);
             // Get position
-            Object position = getBonePositionMethod.invoke(bone);
+            Object position = positionMethod.invoke(bone);
 
             // Extract float values via reflection
             float rotX = 0, rotY = 0, rotZ = 0;

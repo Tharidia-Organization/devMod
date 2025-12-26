@@ -24,9 +24,7 @@ public class TerraBlenderCompat implements CompatModule {
 
     // Cached reflection references
     private static Class<?> regionsClass;
-    private static Class<?> regionClass;
     private static Method getRegionsMethod;
-    private static Method getRegionNameMethod;
 
     @Override
     public String modId() {
@@ -78,15 +76,6 @@ public class TerraBlenderCompat implements CompatModule {
                     LOGGER.debug("[Compat:terrablender] Found Regions at {}", pkg);
                     break;
                 } catch (ClassNotFoundException ignored) {}
-            }
-
-            // Try to find Region class
-            try {
-                regionClass = Class.forName("terrablender.api.Region", false, TerraBlenderCompat.class.getClassLoader());
-            } catch (ClassNotFoundException ignored) {
-                try {
-                    regionClass = Class.forName("terrablender.core.Region", false, TerraBlenderCompat.class.getClassLoader());
-                } catch (ClassNotFoundException ignored2) {}
             }
 
             if (regionsClass != null) {

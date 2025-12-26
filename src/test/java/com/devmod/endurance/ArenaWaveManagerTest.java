@@ -550,7 +550,7 @@ public class ArenaWaveManagerTest {
                 SimWaveState waveState = activeWaves.get(mob.arenaId);
                 if (waveState != null && waveState.spawnedMobs.contains(mobId)) {
                     waveState.recordKill();
-                    log("Mob killed: " + mobId + " (wave progress: " + (waveState.killed) + "/" + waveState.totalToSpawn + ")");
+                    log("Mob killed: " + mobId + " (wave progress: " + waveState.killed + "/" + waveState.totalToSpawn + ")");
                 }
             }
         }

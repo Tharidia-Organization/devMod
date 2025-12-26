@@ -24,6 +24,7 @@ import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 import com.devmod.endurance.resonance.ResonanceNotificationPayload;
+import com.devmod.endurance.season.SeasonTierUpPayload;
 import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.network.GlobalConfigSyncPayload;
@@ -36,6 +37,7 @@ import com.devmod.network.ShieldStatePayload;
 import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
+import com.devmod.telemetry.network.LVCSyncPayload;
 
 @OnlyIn(Dist.CLIENT)
 public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPayloadHooks {
@@ -207,5 +209,15 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     @Override
     public void handleChallengeSync(ChallengeSyncPayload payload) {
         ClientEnduranceHandlers.handleChallengeSync(payload);
+    }
+
+    @Override
+    public void handleLvcSync(LVCSyncPayload payload) {
+        com.devmod.client.telemetry.ClientLVCCache.INSTANCE.update(payload);
+    }
+
+    @Override
+    public void handleSeasonTierUp(SeasonTierUpPayload payload) {
+        com.devmod.client.overlay.SeasonTierUpToastOverlay.show(payload);
     }
 }

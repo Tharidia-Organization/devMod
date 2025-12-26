@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -333,7 +335,8 @@ public class InstanceSystemLogicTest {
         @Test
         @DisplayName("Concurrent modification safety")
         void testConcurrentModificationSafety() throws InterruptedException {
-            Map<UUID, UUID> map = new HashMap<>();
+            Map<UUID, UUID> map = new ConcurrentHashMap<>();
+            AtomicReference<Throwable> failure = new AtomicReference<>();
 
             // Add some initial data
             for (int i = 0; i < 100; i++) {
@@ -342,19 +345,24 @@ public class InstanceSystemLogicTest {
 
             // Concurrent reads and writes
             Thread writer = new Thread(() -> {
-                for (int i = 0; i < 1000; i++) {
-                    map.put(UUID.randomUUID(), UUID.randomUUID());
+                try {
+                    for (int i = 0; i < 1000; i++) {
+                        map.put(UUID.randomUUID(), UUID.randomUUID());
+                    }
+                } catch (Throwable t) {
+                    failure.compareAndSet(null, t);
                 }
             });
 
             Thread reader = new Thread(() -> {
-                for (int i = 0; i < 1000; i++) {
-                    // Iterate without ConcurrentModificationException
-                    assertDoesNotThrow(() -> {
+                try {
+                    for (int i = 0; i < 1000; i++) {
                         for (UUID key : map.keySet()) {
                             map.get(key);
                         }
-                    });
+                    }
+                } catch (Throwable t) {
+                    failure.compareAndSet(null, t);
                 }
             });
 
@@ -362,6 +370,11 @@ public class InstanceSystemLogicTest {
             reader.start();
             writer.join();
             reader.join();
+
+            Throwable thrown = failure.get();
+            if (thrown != null) {
+                fail("Unexpected exception during concurrent map access", thrown);
+            }
         }
 
         @Test

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -42,7 +44,7 @@ public class FooterComponent {
     /**
      * Action menu item definition.
      */
-    public record ActionItem(String id, String icon, String label, boolean isSeparator) {
+    public record ActionItem(@Nullable String id, @Nullable String icon, @Nullable String label, boolean isSeparator) {
         public ActionItem(String id, String icon, String label) {
             this(id, icon, label, false);
         }
@@ -91,9 +93,13 @@ public class FooterComponent {
     private double actionMaxScroll = 0;
 
     // Callbacks
+    @Nullable
     private Runnable onUndo;
+    @Nullable
     private Runnable onRedo;
+    @Nullable
     private Runnable onApply;
+    @Nullable
     private java.util.function.Consumer<String> onAction;
 
     // ═══════════════════════════════════════════════════════════════

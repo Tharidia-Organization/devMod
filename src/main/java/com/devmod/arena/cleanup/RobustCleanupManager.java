@@ -60,10 +60,27 @@ public class RobustCleanupManager {
      * @return RobustCleanupResult with invariant verification
      */
     public RobustCleanupResult cleanupWithInvariant(UUID arenaId, ArenaCleanupExecutor.ArenaBounds bounds) {
+        return cleanupWithInvariant(arenaId, bounds, true);
+    }
+
+    /**
+     * Performs cleanup with zero-residual invariant enforcement and optional warning logging.
+     *
+     * @param arenaId Unique identifier for the arena
+     * @param bounds The arena bounds to clean
+     * @param logWarnings Whether to emit warn/info logs
+     * @return RobustCleanupResult with invariant verification
+     */
+    public RobustCleanupResult cleanupWithInvariant(
+            UUID arenaId,
+            ArenaCleanupExecutor.ArenaBounds bounds,
+            boolean logWarnings) {
         totalCleanups.incrementAndGet();
         long startTime = System.currentTimeMillis();
 
-        LOGGER.info("Starting robust cleanup for arena {} with bounds {}", arenaId, bounds);
+        if (logWarnings) {
+            LOGGER.info("Starting robust cleanup for arena {} with bounds {}", arenaId, bounds);
+        }
 
         List<CleanupAttempt> attempts = new ArrayList<>();
         CleanupResult lastResult = null;
@@ -73,7 +90,9 @@ public class RobustCleanupManager {
         for (int attempt = 1; attempt <= MAX_RETRY_ATTEMPTS && !invariantSatisfied; attempt++) {
             if (attempt > 1) {
                 retriedCleanups.incrementAndGet();
-                LOGGER.warn("Cleanup retry {} for arena {}", attempt, arenaId);
+                if (logWarnings) {
+                    LOGGER.warn("Cleanup retry {} for arena {}", attempt, arenaId);
+                }
 
                 // Wait before retry
                 try {
@@ -101,10 +120,14 @@ public class RobustCleanupManager {
             ));
 
             if (invariantSatisfied) {
-                LOGGER.info("Cleanup succeeded for arena {} on attempt {}", arenaId, attempt);
+                if (logWarnings) {
+                    LOGGER.info("Cleanup succeeded for arena {} on attempt {}", arenaId, attempt);
+                }
             } else {
-                LOGGER.warn("Cleanup invariant NOT satisfied for arena {} on attempt {}: {}",
-                    arenaId, attempt, invariantCheck.violations());
+                if (logWarnings) {
+                    LOGGER.warn("Cleanup invariant NOT satisfied for arena {} on attempt {}: {}",
+                        arenaId, attempt, invariantCheck.violations());
+                }
             }
         }
 
@@ -128,7 +151,7 @@ public class RobustCleanupManager {
             telemetry.recordFailure(arenaId, result);
 
             // Route critical alert for cleanup failure
-            routeCleanupFailureAlert(arenaId, result);
+            routeCleanupFailureAlert(arenaId, result, logWarnings);
         }
 
         return result;
@@ -196,9 +219,11 @@ public class RobustCleanupManager {
     /**
      * Routes cleanup failure alert.
      */
-    private void routeCleanupFailureAlert(UUID arenaId, RobustCleanupResult result) {
+    private void routeCleanupFailureAlert(UUID arenaId, RobustCleanupResult result, boolean logWarnings) {
         if (alertRouter == null) {
-            LOGGER.warn("No AlertRouter configured, cannot route cleanup failure alert");
+            if (logWarnings) {
+                LOGGER.warn("No AlertRouter configured, cannot route cleanup failure alert");
+            }
             return;
         }
 

@@ -3,6 +3,8 @@ package com.devmod.client.effects;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import org.joml.Vector3f;
 
 import net.minecraft.world.entity.Entity;
@@ -12,6 +14,7 @@ import net.minecraft.world.phys.Vec3;
 public class ShakeEffect {
 
     private final UUID uuid;
+    @Nullable
     private final ShakeSource source;
 
     // Timing
@@ -206,6 +209,7 @@ public class ShakeEffect {
     }
 
     public static class Builder {
+        @Nullable
         private ShakeSource source;
         private int duration = 20;           // 1 second default
         private int fadeInTicks = 2;
@@ -285,6 +289,7 @@ public class ShakeEffect {
     // ==================== Source Types ====================
 
     public interface ShakeSource {
+        @Nullable
         Vec3 getPosition();
     }
 
@@ -296,6 +301,7 @@ public class ShakeEffect {
         }
 
         @Override
+        @Nullable
         public Vec3 getPosition() {
             return entity.isAlive() ? entity.position() : null;
         }
@@ -309,6 +315,7 @@ public class ShakeEffect {
         }
 
         @Override
+        @Nullable
         public Vec3 getPosition() {
             return position;
         }
@@ -322,6 +329,7 @@ public class ShakeEffect {
         }
 
         @Override
+        @Nullable
         public Vec3 getPosition() {
             return supplier.get();
         }

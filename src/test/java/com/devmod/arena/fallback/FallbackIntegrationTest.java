@@ -3,6 +3,7 @@ package com.devmod.arena.fallback;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,11 +20,17 @@ class FallbackIntegrationTest {
     private FallbackMetrics metrics;
     private ArenaFailureHandler failureHandler;
 
+    @BeforeAll
+    static void disableFallbackLogging() {
+        FallbackBuildStrategy.setLoggingEnabled(false);
+    }
+
     @BeforeEach
     void setUp() {
         circuitBreaker = new CircuitBreaker(3, 1000, 50);
         metrics = new FallbackMetrics();
         failureHandler = new ArenaFailureHandler();
+        failureHandler.setLoggingEnabled(false);
     }
 
     @Test
@@ -223,6 +230,7 @@ class FallbackIntegrationTest {
         CircuitBreaker arenaCircuit = new CircuitBreaker();
         FallbackMetrics arenaMetrics = new FallbackMetrics();
         ArenaFailureHandler handler = new ArenaFailureHandler();
+        handler.setLoggingEnabled(false);
 
         AtomicBoolean criticalAlertSent = new AtomicBoolean(false);
         handler.registerAlertHandler(event -> criticalAlertSent.set(true));

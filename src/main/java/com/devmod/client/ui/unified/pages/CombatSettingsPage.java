@@ -182,7 +182,7 @@ public class CombatSettingsPage implements SettingsPage {
                 int trackHeight = lastContentHeight - thumbHeight;
                 if (trackHeight > 0) {
                     // Center thumb on click position
-                    float clickRatio = (float)(mouseY - contentY - thumbHeight / 2) / trackHeight;
+                    float clickRatio = (float) (mouseY - contentY - thumbHeight / 2.0f) / trackHeight;
                     clickRatio = Math.max(0, Math.min(1, clickRatio));
                     scrollOffset = (int)(maxScrollOffset * clickRatio);
                 }
@@ -226,7 +226,7 @@ public class CombatSettingsPage implements SettingsPage {
             int trackHeight = lastContentHeight - thumbHeight;
             if (trackHeight > 0) {
                 // Center thumb on mouse position during drag
-                float dragRatio = (float)(mouseY - lastContentY - thumbHeight / 2) / trackHeight;
+                float dragRatio = (float) (mouseY - lastContentY - thumbHeight / 2.0f) / trackHeight;
                 dragRatio = Math.max(0, Math.min(1, dragRatio));
                 scrollOffset = (int)(maxScrollOffset * dragRatio);
             }

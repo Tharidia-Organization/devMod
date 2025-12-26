@@ -30,11 +30,7 @@ public class AccessoriesCompat implements CompatModule {
 
     // Cached reflection references
     private static Class<?> accessoriesApiClass;
-    private static Class<?> accessoriesContainerClass;
-    private static Class<?> slotReferenceClass;
     private static Method getCapabilityMethod;
-    private static Method getContainerMethod;
-    private static Method getEquippedMethod;
 
     // Common slot types
     public static final String SLOT_RING = "ring";
@@ -106,12 +102,11 @@ public class AccessoriesCompat implements CompatModule {
             }
 
             if (accessoriesApiClass != null) {
-                // Try to find container and capability classes
+                // Verify required API classes exist and load capability method
                 try {
-                    accessoriesContainerClass = Class.forName(
-                        "io.wispforest.accessories.api.AccessoriesContainer");
-                    slotReferenceClass = Class.forName(
-                        "io.wispforest.accessories.api.slot.SlotReference");
+                    // Verify container classes exist (not stored, just validated)
+                    Class.forName("io.wispforest.accessories.api.AccessoriesContainer");
+                    Class.forName("io.wispforest.accessories.api.slot.SlotReference");
 
                     // Get API methods
                     getCapabilityMethod = accessoriesApiClass.getMethod(

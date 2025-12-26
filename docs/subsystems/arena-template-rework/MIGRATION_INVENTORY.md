@@ -1,20 +1,23 @@
 # Arena API Migration Inventory (post-audit)
 
+> **Status**: CURRENT (inventory; legacy usage tracked)
+
 ## Status Summary
-- Legacy `ArenaManager.createArena()` is **deprecated** and returns null.
-- Nessuna call-site diretta trovata in `src/main/java` per `createArena()`.
-- L'adapter `ArenaManager.Arena` e' stato rimosso dai flussi endurance; ora si usa `ArenaContext` derivato da `ArenaHandle`.
+- Legacy `ArenaManager` class is not present in current source tree.
+- Legacy usage patterns are tracked by `com.devmod.arena.migration.WrapperAnalyzer`.
+- Nessuna call-site diretta trovata in `src/main/java` per pattern legacy.
+- I flussi endurance usano `ArenaContext` derivato da `ArenaHandle`.
 
-## Call-Site Inventory (legacy createArena)
-**Query utilizzata**: `rg -n "createArena\(" src/main/java`
+## Call-Site Inventory (legacy patterns)
+**Query utilizzata**: `rg -n "ArenaManager|LegacyArenaConfig|new\\s+ArenaInstance" src/main/java`
 
-**Risultato**: nessuna call-site diretta (solo definizione metodo deprecato).
+**Risultato**: nessuna call-site diretta (solo pattern nel WrapperAnalyzer).
 
 ## Adapter / Legacy Residui
-- Legacy `ArenaManager` adapter removed; no class remains in current code.
+- Nessun adapter legacy presente nel codice attuale.
 
 ## Next Milestones
-1) Rimuovere definitivamente `ArenaManager` quando non serve piu' per compatibilita' storica.
+1) Rimuovere i pattern legacy dal WrapperAnalyzer quando non servono piu'.
 
 ## Storico
 Il piano originale a 6 PR resta archiviato come riferimento storico (non piu' attivo).

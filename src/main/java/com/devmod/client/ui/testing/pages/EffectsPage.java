@@ -1,6 +1,9 @@
 package com.devmod.client.ui.testing.pages;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
@@ -24,22 +27,33 @@ import static com.devmod.client.ui.testing.pages.PageUtils.safeGetDouble;
 public class EffectsPage extends AbstractVoxelLabPage {
 
     // VFX Master toggle
+    @Nullable
     private EditorButton vfxMasterToggle;
 
     // VFX type toggles
+    @Nullable
     private EditorButton vfxVortexToggle;
+    @Nullable
     private EditorButton vfxSlashToggle;
+    @Nullable
     private EditorButton vfxLinesToggle;
 
     // Screen effects
+    @Nullable
     private EditorButton screenShakeToggle;
+    @Nullable
     private EditorButton projectileTrailsToggle;
+    @Nullable
     private EditorButton badgePopupToggle;
 
     // Intensity buttons
+    @Nullable
     private EditorButton intensityLow;
+    @Nullable
     private EditorButton intensityMed;
+    @Nullable
     private EditorButton intensityHigh;
+    @Nullable
     private EditorButton intensityMax;
 
     public EffectsPage() {
@@ -49,6 +63,17 @@ public class EffectsPage extends AbstractVoxelLabPage {
     @Override
     protected void buildPanels() {
         createButtons();
+        EditorButton vfxMasterToggle = Objects.requireNonNull(this.vfxMasterToggle, "vfxMasterToggle");
+        EditorButton vfxVortexToggle = Objects.requireNonNull(this.vfxVortexToggle, "vfxVortexToggle");
+        EditorButton vfxSlashToggle = Objects.requireNonNull(this.vfxSlashToggle, "vfxSlashToggle");
+        EditorButton vfxLinesToggle = Objects.requireNonNull(this.vfxLinesToggle, "vfxLinesToggle");
+        EditorButton screenShakeToggle = Objects.requireNonNull(this.screenShakeToggle, "screenShakeToggle");
+        EditorButton projectileTrailsToggle = Objects.requireNonNull(this.projectileTrailsToggle, "projectileTrailsToggle");
+        EditorButton badgePopupToggle = Objects.requireNonNull(this.badgePopupToggle, "badgePopupToggle");
+        EditorButton intensityLow = Objects.requireNonNull(this.intensityLow, "intensityLow");
+        EditorButton intensityMed = Objects.requireNonNull(this.intensityMed, "intensityMed");
+        EditorButton intensityHigh = Objects.requireNonNull(this.intensityHigh, "intensityHigh");
+        EditorButton intensityMax = Objects.requireNonNull(this.intensityMax, "intensityMax");
 
         // Header
         panelContainer.addPanel(new HeaderPanel(
@@ -227,22 +252,28 @@ public class EffectsPage extends AbstractVoxelLabPage {
     }
 
     private void syncButtonStates() {
-        vfxMasterToggle.toggled(safeGetBool(Config.IMPACT_VFX_ENABLED));
-        vfxVortexToggle.toggled(safeGetBool(Config.IMPACT_VFX_VORTEX_ENABLED));
-        vfxSlashToggle.toggled(safeGetBool(Config.IMPACT_VFX_SLASH_ENABLED));
-        vfxLinesToggle.toggled(safeGetBool(Config.IMPACT_VFX_LINES_ENABLED));
-        screenShakeToggle.toggled(safeGetBool(Config.SCREEN_SHAKE_ENABLED));
-        projectileTrailsToggle.toggled(safeGetBool(Config.PROJECTILE_TRAILS_ENABLED));
-        badgePopupToggle.toggled(safeGetBool(Config.BADGE_POPUP_ENABLED));
+        setToggle(vfxMasterToggle, safeGetBool(Config.IMPACT_VFX_ENABLED));
+        setToggle(vfxVortexToggle, safeGetBool(Config.IMPACT_VFX_VORTEX_ENABLED));
+        setToggle(vfxSlashToggle, safeGetBool(Config.IMPACT_VFX_SLASH_ENABLED));
+        setToggle(vfxLinesToggle, safeGetBool(Config.IMPACT_VFX_LINES_ENABLED));
+        setToggle(screenShakeToggle, safeGetBool(Config.SCREEN_SHAKE_ENABLED));
+        setToggle(projectileTrailsToggle, safeGetBool(Config.PROJECTILE_TRAILS_ENABLED));
+        setToggle(badgePopupToggle, safeGetBool(Config.BADGE_POPUP_ENABLED));
         syncIntensityButtons();
     }
 
     private void syncIntensityButtons() {
         double intensity = safeGetDouble(Config.IMPACT_VFX_INTENSITY, 1.0);
-        intensityLow.toggled(intensity < 0.7);
-        intensityMed.toggled(intensity >= 0.7 && intensity < 1.3);
-        intensityHigh.toggled(intensity >= 1.3 && intensity < 1.8);
-        intensityMax.toggled(intensity >= 1.8);
+        setToggle(intensityLow, intensity < 0.7);
+        setToggle(intensityMed, intensity >= 0.7 && intensity < 1.3);
+        setToggle(intensityHigh, intensity >= 1.3 && intensity < 1.8);
+        setToggle(intensityMax, intensity >= 1.8);
+    }
+
+    private static void setToggle(@Nullable EditorButton button, boolean value) {
+        if (button != null) {
+            button.toggled(value);
+        }
     }
 
     private void invokeToggleAction(String actionId, boolean desired, boolean current) {

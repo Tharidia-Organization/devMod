@@ -3,6 +3,7 @@ package com.devmod.client.ui;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,6 +20,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 @OnlyIn(Dist.CLIENT)
 public abstract class ModScreen extends Screen {
 
+    @Nullable
     protected final Screen parent;
     protected boolean hasChanges = false;
 
@@ -28,7 +30,7 @@ public abstract class ModScreen extends Screen {
     protected static final int BUTTON_SPACING = 10;
     protected static final int BOTTOM_MARGIN = 28;
 
-    protected ModScreen(Component title, Screen parent) {
+    protected ModScreen(Component title, @Nullable Screen parent) {
         super(java.util.Objects.requireNonNull(title, "title"));
         this.parent = parent;
     }

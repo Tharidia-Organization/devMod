@@ -188,7 +188,10 @@ public class TestingHub extends Screen {
 
         // Load previous state
         if (state.hasActiveTest()) {
-            detailPanel.setTest(state.getCurrentTest());
+            TestCase currentTest = state.getCurrentTest();
+            if (currentTest != null) {
+                detailPanel.setTest(currentTest);
+            }
         }
     }
 
@@ -362,16 +365,20 @@ public class TestingHub extends Screen {
 
         // 1/2/3: Quick verdict if there's an active test
         if (state.hasActiveTest()) {
+            TestCase currentTest = state.getCurrentTest();
+            if (currentTest == null) {
+                return true;
+            }
             if (keyCode == GLFW.GLFW_KEY_1) {
-                onVerdictGiven(state.getCurrentTest(), Verdict.PASS);
+                onVerdictGiven(currentTest, Verdict.PASS);
                 return true;
             }
             if (keyCode == GLFW.GLFW_KEY_2) {
-                onVerdictGiven(state.getCurrentTest(), Verdict.FAIL);
+                onVerdictGiven(currentTest, Verdict.FAIL);
                 return true;
             }
             if (keyCode == GLFW.GLFW_KEY_3) {
-                onVerdictGiven(state.getCurrentTest(), Verdict.SKIP);
+                onVerdictGiven(currentTest, Verdict.SKIP);
                 return true;
             }
         }
@@ -532,7 +539,10 @@ public class TestingHub extends Screen {
         state.advanceToNextTest();
         if (state.hasActiveTest()) {
             if (detailPanel != null) {
-                detailPanel.setTest(state.getCurrentTest());
+                TestCase currentTest = state.getCurrentTest();
+                if (currentTest != null) {
+                    detailPanel.setTest(currentTest);
+                }
             }
         } else {
             if (detailPanel != null) {
@@ -617,7 +627,10 @@ public class TestingHub extends Screen {
         state.saveState();
 
         if (state.hasActiveTest()) {
-            ActiveTestHudOverlay.setActiveTest(state.getCurrentTest());
+            TestCase currentTest = state.getCurrentTest();
+            if (currentTest != null) {
+                ActiveTestHudOverlay.setActiveTest(currentTest);
+            }
         }
         ActiveTestHudOverlay.setEnabled(true);
 

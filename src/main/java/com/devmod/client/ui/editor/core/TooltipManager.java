@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -38,6 +40,7 @@ public final class TooltipManager {
     private int screenHeight;
 
     // Pinned tooltip - persists until clicked again or dismissed
+    @Nullable
     private QueuedTooltip pinnedTooltip = null;
 
     /**

@@ -3,8 +3,11 @@ package com.devmod.client.ui.editor.systems;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -112,21 +115,24 @@ public class MultiEditPanel {
     private final List<ResponsiveLayout.Rect> presetOptionRects = new ArrayList<>();
     private final List<Integer> presetOptionIndices = new ArrayList<>();
     private final List<Integer> itemRectIndices = new ArrayList<>();
-    private ResponsiveLayout.Rect clearRect;
-    private ResponsiveLayout.Rect applyRect;
-    private ResponsiveLayout.Rect presetRect;
-    private ResponsiveLayout.Rect headerRect;
-    private ResponsiveLayout.Rect presetDropdownArea;
-    private ResponsiveLayout.Rect itemScrollArea;
-    private ResponsiveLayout.Rect failureToggleRect;
-    private ResponsiveLayout.Rect copyFailuresRect;
-    private ResponsiveLayout.Rect moreFailuresRect;
-    private ResponsiveLayout.Rect failureDetailsArea;
+    private ResponsiveLayout.Rect clearRect = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect applyRect = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect presetRect = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect headerRect = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect presetDropdownArea = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect itemScrollArea = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect failureToggleRect = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect copyFailuresRect = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect moreFailuresRect = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect failureDetailsArea = ResponsiveLayout.Rect.EMPTY;
+    @Nullable
     private String hoveredPresetFullName = null;
     private boolean presetDropdownOpen = false;
     private int presetScrollOffset = 0;
     private int selectedPresetIndex = -1;
+    @Nullable
     private BatchEditResult lastResult = null;
+    @Nullable
     private BatchEditResult pendingStatusResult = null;
     private boolean showFailureDetails = false;
     private boolean showAllFailures = false;
@@ -137,8 +143,9 @@ public class MultiEditPanel {
     private int itemScrollOffset = 0;
     private int failureScrollOffset = 0;  // Separate scroll for failure details
 
+    @Nullable
     private final java.util.function.BooleanSupplier persistSupplier;
-    private ResponsiveLayout.Rect previewToggleRect;
+    private ResponsiveLayout.Rect previewToggleRect = ResponsiveLayout.Rect.EMPTY;
 
     // Buttons using EditorButton component
     private final EditorButton clearButton = new EditorButton("clear", "Clear All")
@@ -163,16 +170,18 @@ public class MultiEditPanel {
         .toggleable(true);
 
     // Confirmation dialog callback: (itemCount, presetName, onConfirm) -> void
+    @Nullable
     private java.util.function.Consumer<ConfirmDialog> showDialogCallback;
     private static final int CONFIRM_THRESHOLD = 10;  // Show confirm dialog if > 10 items
     private static final int LARGE_BATCH_THRESHOLD = 20;  // Show timing info for large batches
+    @Nullable
     private String lastApplyTiming = null;  // e.g., "23 items in 45ms"
 
     // Real-time progress tracking
     private int applyProgress = -1;  // -1 means not applying, otherwise current item index
     private int applyTotal = 0;      // Total items being processed
 
-    public MultiEditPanel(MultiEditManager manager, java.util.function.BooleanSupplier persistSupplier,
+    public MultiEditPanel(MultiEditManager manager, @Nullable java.util.function.BooleanSupplier persistSupplier,
                           Supplier<String> activeItemTypeSupplier) {
         this.manager = manager;
         this.persistSupplier = persistSupplier;
@@ -183,7 +192,7 @@ public class MultiEditPanel {
      * Set a callback to show confirmation dialogs via the parent screen.
      * @param callback Consumer that receives a ConfirmDialog to show
      */
-    public void setShowDialogCallback(java.util.function.Consumer<ConfirmDialog> callback) {
+    public void setShowDialogCallback(@Nullable java.util.function.Consumer<ConfirmDialog> callback) {
         this.showDialogCallback = callback;
     }
 
@@ -201,7 +210,12 @@ public class MultiEditPanel {
                 PresetRegistry.INSTANCE.getPresetsForCategory(type != null ? type : "general");
             for (var rp : registryPresets) {
                 ItemEditorDataManager.PresetData converted = PresetBridge.toPresetData(rp);
-                if (seenNames.add(converted.name.toLowerCase())) {
+                String registryName = converted.name;
+                if (registryName == null || registryName.isBlank()) {
+                    registryName = "Preset_" + converted.createdAt;
+                    converted.name = registryName;
+                }
+                if (seenNames.add(registryName.toLowerCase(Locale.ROOT))) {
                     result.add(converted);
                 }
             }
@@ -220,7 +234,12 @@ public class MultiEditPanel {
             }
             if (userPresets != null) {
                 for (var up : userPresets) {
-                    if (up.name != null && seenNames.add(up.name.toLowerCase())) {
+                    String presetName = up.name;
+                    if (presetName == null || presetName.isBlank()) {
+                        presetName = "Preset_" + up.createdAt;
+                        up.name = presetName;
+                    }
+                    if (seenNames.add(presetName.toLowerCase(Locale.ROOT))) {
                         result.add(up);
                     }
                 }
@@ -237,16 +256,16 @@ public class MultiEditPanel {
         itemRectIndices.clear();
         presetOptionRects.clear();
         presetOptionIndices.clear();
-        clearRect = null;
-        applyRect = null;
-        presetRect = null;
-        headerRect = null;
-        failureToggleRect = null;
-        copyFailuresRect = null;
-        moreFailuresRect = null;
-        failureDetailsArea = null;
-        presetDropdownArea = null;
-        itemScrollArea = null;
+        clearRect = ResponsiveLayout.Rect.EMPTY;
+        applyRect = ResponsiveLayout.Rect.EMPTY;
+        presetRect = ResponsiveLayout.Rect.EMPTY;
+        headerRect = ResponsiveLayout.Rect.EMPTY;
+        failureToggleRect = ResponsiveLayout.Rect.EMPTY;
+        copyFailuresRect = ResponsiveLayout.Rect.EMPTY;
+        moreFailuresRect = ResponsiveLayout.Rect.EMPTY;
+        failureDetailsArea = ResponsiveLayout.Rect.EMPTY;
+        presetDropdownArea = ResponsiveLayout.Rect.EMPTY;
+        itemScrollArea = ResponsiveLayout.Rect.EMPTY;
         hoveredPresetFullName = null;
         applyEnabled = false;
         clearEnabled = false;
@@ -511,9 +530,10 @@ public class MultiEditPanel {
                 detailsButton.toggled(showFailureDetails);
                 detailsButton.render(graphics, failureToggleRect.x(), failureToggleRect.y(), failureToggleRect.width(), failBtnH, mouseX, mouseY);
             } else {
-                failureToggleRect = null;
-                copyFailuresRect = null;
-                moreFailuresRect = null;
+                failureToggleRect = ResponsiveLayout.Rect.EMPTY;
+                copyFailuresRect = ResponsiveLayout.Rect.EMPTY;
+                moreFailuresRect = ResponsiveLayout.Rect.EMPTY;
+                failureDetailsArea = ResponsiveLayout.Rect.EMPTY;
                 showFailureDetails = false;
                 showAllFailures = false;
             }
@@ -546,7 +566,7 @@ public class MultiEditPanel {
                         safeFont.width(moreText) + FAILURE_MORE_WIDTH_PADDING, FAILURE_MORE_HEIGHT);
                     graphics.drawString(safeFont, moreText, moreFailuresRect.x(), moreFailuresRect.y(), MORE_FAILURES_COLOR, false);
                 } else {
-                    moreFailuresRect = null;
+                    moreFailuresRect = ResponsiveLayout.Rect.EMPTY;
                 }
             }
 
@@ -817,6 +837,7 @@ public class MultiEditPanel {
     /**
      * Retrieve and clear the last batch edit result (if any).
      */
+    @Nullable
     public BatchEditResult takeLastResult() {
         BatchEditResult r = pendingStatusResult;
         pendingStatusResult = null;

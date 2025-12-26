@@ -145,6 +145,7 @@ public class WeaponTypeDetector {
 
     // ===== Detection helpers =====
 
+    @Nullable
     private static DetectionResult detectByClass(Item item, boolean allowPickaxe) {
         if (item instanceof SwordItem) return result(WeaponType.SWORD, DetectionMethod.CLASS_INSTANCEOF, 1.0f);
         if (item instanceof AxeItem) return result(WeaponType.AXE, DetectionMethod.CLASS_INSTANCEOF, 1.0f);
@@ -164,6 +165,7 @@ public class WeaponTypeDetector {
         return null;
     }
 
+    @Nullable
     private static DetectionResult detectByTags(ItemStack stack) {
         if (inTag(stack, ModTags.Items.NOT_EDITABLE)) {
             return new DetectionResult(WeaponType.NOT_A_WEAPON, DetectionMethod.CONFIG_BLACKLIST, 1.0f, "Tag: not_editable");
@@ -180,6 +182,7 @@ public class WeaponTypeDetector {
         return null;
     }
 
+    @Nullable
     private static DetectionResult detectByAttributes(ItemStack stack) {
         try {
             ItemAttributeModifiers attributes = stack.getAttributeModifiers();
@@ -364,13 +367,13 @@ public class WeaponTypeDetector {
         }
 
         @Nullable
-            private static ResourceLocation getId(Item item) {
-                try {
-                    return net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item));
-                } catch (Exception e) {
-                    return null;
-                }
+        private static ResourceLocation getId(Item item) {
+            try {
+                return net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item));
+            } catch (Exception e) {
+                return null;
             }
+        }
 
         private record Lists(Set<ResourceLocation> melee, Set<ResourceLocation> ranged, Set<ResourceLocation> mace,
                               Set<ResourceLocation> trident, Set<ResourceLocation> blacklist) {

@@ -2,6 +2,8 @@ package com.devmod.debug;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -29,6 +31,7 @@ public record DebugTogglePayload(String featureId) implements CustomPacketPayloa
     /**
      * Get the DebugFeature enum from the feature ID.
      */
+    @Nullable
     public DebugFeature getFeature() {
         try {
             return DebugFeature.valueOf(featureId.toUpperCase());

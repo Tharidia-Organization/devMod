@@ -81,7 +81,7 @@ public record StatusPanel(
     public static final class Builder {
         private final String id;
         private final ArrayList<StatusItem> items = new ArrayList<>();
-        private Supplier<String> messageSupplier;
+        private Supplier<String> messageSupplier = () -> "";
 
         private Builder(String id) {
             this.id = id;

@@ -7,10 +7,13 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +35,11 @@ public class PerkSynergyWeb {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSynergyWeb.class);
 
     public static final PerkSynergyWeb INSTANCE = new PerkSynergyWeb();
+
+    @Nonnull
+    private static <T> T requireNonNull(T value, String name) {
+        return Objects.requireNonNull(value, name);
+    }
 
     // Hidden perk definitions
     private final Map<String, HiddenPerk> hiddenPerks = new LinkedHashMap<>();
@@ -122,7 +130,7 @@ public class PerkSynergyWeb {
      * Persistent discovery data for a player.
      */
     public static class PlayerDiscoveries {
-        private final UUID playerId;
+        private final @Nonnull UUID playerId;
         private final Set<String> discoveredHiddenPerks = new HashSet<>();
         private final Set<String> discoveredSynergies = new HashSet<>();
         private int totalDiscoveryXp = 0;
@@ -138,7 +146,7 @@ public class PerkSynergyWeb {
         private final Map<String, Integer> perkUsageCounts = new HashMap<>();
 
         public PlayerDiscoveries(UUID playerId) {
-            this.playerId = playerId;
+            this.playerId = requireNonNull(playerId, "playerId");
         }
 
         public boolean hasDiscovered(String perkId) {
@@ -183,7 +191,8 @@ public class PerkSynergyWeb {
         }
 
         public void recordPerkUsage(String perkId) {
-            perkUsageCounts.merge(perkId, 1, Integer::sum);
+            String safePerkId = requireNonNull(perkId, "perkId");
+            perkUsageCounts.compute(safePerkId, (key, current) -> current == null ? 1 : current + 1);
         }
 
         // Getters
@@ -203,17 +212,17 @@ public class PerkSynergyWeb {
         // NBT Serialization
         public CompoundTag save() {
             CompoundTag tag = new CompoundTag();
-            tag.putUUID("playerId", playerId);
+            tag.putUUID("playerId", requireNonNull(playerId, "playerId"));
 
             ListTag discovered = new ListTag();
             for (String perk : discoveredHiddenPerks) {
-                discovered.add(StringTag.valueOf(perk));
+                discovered.add(StringTag.valueOf(requireNonNull(perk, "perkId")));
             }
             tag.put("discoveredPerks", discovered);
 
             ListTag synergies = new ListTag();
             for (String syn : discoveredSynergies) {
-                synergies.add(StringTag.valueOf(syn));
+                synergies.add(StringTag.valueOf(requireNonNull(syn, "synergyId")));
             }
             tag.put("discoveredSynergies", synergies);
 
@@ -228,7 +237,9 @@ public class PerkSynergyWeb {
 
             CompoundTag usages = new CompoundTag();
             for (Map.Entry<String, Integer> entry : perkUsageCounts.entrySet()) {
-                usages.putInt(entry.getKey(), entry.getValue());
+                String key = requireNonNull(entry.getKey(), "perkUsageKey");
+                int count = entry.getValue() != null ? entry.getValue() : 0;
+                usages.putInt(key, count);
             }
             tag.put("perkUsage", usages);
 
@@ -236,17 +247,19 @@ public class PerkSynergyWeb {
         }
 
         public static PlayerDiscoveries load(CompoundTag tag) {
-            UUID playerId = tag.getUUID("playerId");
+            UUID playerId = requireNonNull(tag.getUUID("playerId"), "playerId");
             PlayerDiscoveries discoveries = new PlayerDiscoveries(playerId);
 
             ListTag discovered = tag.getList("discoveredPerks", Tag.TAG_STRING);
             for (int i = 0; i < discovered.size(); i++) {
-                discoveries.discoveredHiddenPerks.add(discovered.getString(i));
+                discoveries.discoveredHiddenPerks.add(
+                    requireNonNull(discovered.getString(i), "discoveredPerkId"));
             }
 
             ListTag synergies = tag.getList("discoveredSynergies", Tag.TAG_STRING);
             for (int i = 0; i < synergies.size(); i++) {
-                discoveries.discoveredSynergies.add(synergies.getString(i));
+                discoveries.discoveredSynergies.add(
+                    requireNonNull(synergies.getString(i), "discoveredSynergyId"));
             }
 
             discoveries.totalDiscoveryXp = tag.getInt("discoveryXp");
@@ -260,7 +273,8 @@ public class PerkSynergyWeb {
 
             CompoundTag usages = tag.getCompound("perkUsage");
             for (String key : usages.getAllKeys()) {
-                discoveries.perkUsageCounts.put(key, usages.getInt(key));
+                String safeKey = requireNonNull(key, "perkUsageKey");
+                discoveries.perkUsageCounts.put(safeKey, usages.getInt(safeKey));
             }
 
             return discoveries;
@@ -279,7 +293,10 @@ public class PerkSynergyWeb {
 
         public DiscoverySavedData() {}
 
-        public static DiscoverySavedData load(CompoundTag tag, HolderLookup.Provider registries) {
+        public static DiscoverySavedData load(
+            @Nonnull CompoundTag tag,
+            @Nonnull HolderLookup.Provider registries
+        ) {
             DiscoverySavedData data = new DiscoverySavedData();
             ListTag players = tag.getList("players", Tag.TAG_COMPOUND);
             for (int i = 0; i < players.size(); i++) {
@@ -290,7 +307,10 @@ public class PerkSynergyWeb {
         }
 
         @Override
-        public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+        public CompoundTag save(
+            @Nonnull CompoundTag tag,
+            @Nonnull HolderLookup.Provider registries
+        ) {
             ListTag players = new ListTag();
             for (PlayerDiscoveries pd : discoveries.values()) {
                 players.add(pd.save());
@@ -300,7 +320,8 @@ public class PerkSynergyWeb {
         }
 
         public PlayerDiscoveries getOrCreate(UUID playerId) {
-            return discoveries.computeIfAbsent(playerId, PlayerDiscoveries::new);
+            UUID safePlayerId = requireNonNull(playerId, "playerId");
+            return discoveries.computeIfAbsent(safePlayerId, id -> new PlayerDiscoveries(id));
         }
 
         public static DiscoverySavedData get(ServerLevel level) {
@@ -497,7 +518,7 @@ public class PerkSynergyWeb {
         return playerDiscoveries.computeIfAbsent(playerId, id -> {
             ServerLevel level = player.serverLevel();
             DiscoverySavedData data = DiscoverySavedData.get(level);
-            return data.getOrCreate(playerId);
+            return data.getOrCreate(id);
         });
     }
 
@@ -571,11 +592,12 @@ public class PerkSynergyWeb {
                 newlyDiscovered.add(hidden.perkId);
 
                 // Notify player
-                player.displayClientMessage(
+                Component message = requireNonNull(
                     Component.literal("§d§l[DISCOVERY] §r§5" + getPerkName(hidden.perkId) +
                         " §r§7unlocked! §a+" + hidden.discoveryXp + " Discovery XP"),
-                    false
+                    "discoveryMessage"
                 );
+                player.displayClientMessage(message, false);
 
                 LOGGER.info("[PerkSynergyWeb] {} discovered hidden perk: {} (+{} XP)",
                     player.getName().getString(), hidden.perkId, hidden.discoveryXp);
@@ -613,8 +635,6 @@ public class PerkSynergyWeb {
         // Remove sacrificed perks (we can't actually remove from session in current design,
         // so we track this separately and apply negative effects)
         // For now, mark them as "sacrificed" in persistent data
-        PlayerDiscoveries discoveries = getDiscoveries(player);
-
         // Apply the result perk
         PerkSystem.INSTANCE.getPerk(recipe.resultPerkId).ifPresent(perk -> {
             session.addPerk(perk.id);
@@ -623,11 +643,12 @@ public class PerkSynergyWeb {
         });
 
         // Visual feedback
-        player.displayClientMessage(
+        Component message = requireNonNull(
             Component.literal("§4§l[SACRIFICE] §r§c" + recipe.description +
                 " §r§7→ §a" + getPerkName(recipe.resultPerkId)),
-            false
+            "sacrificeMessage"
         );
+        player.displayClientMessage(message, false);
 
         LOGGER.info("[PerkSynergyWeb] {} performed sacrifice: {} -> {}",
             player.getName().getString(),
@@ -907,14 +928,18 @@ public class PerkSynergyWeb {
         private final String progressText;
 
         public AchievementCondition(String achievementId, Predicate<DiscoveryContext> predicate, String progressText) {
-            this.achievementId = achievementId;
-            this.predicate = predicate;
-            this.progressText = progressText;
+            this.achievementId = requireNonNull(achievementId, "achievementId");
+            this.predicate = requireNonNull(predicate, "predicate");
+            this.progressText = requireNonNull(progressText, "progressText");
         }
 
         @Override
         public boolean isMet(DiscoveryContext context) {
             return predicate.test(context);
+        }
+
+        public String getAchievementId() {
+            return achievementId;
         }
 
         @Override

@@ -371,7 +371,7 @@ public class MobConfigScreenRenderer {
         state.hoveredPreset = -1;
         state.hoveredUserPreset = -1;
 
-        for (int i = 0; i < MobConfigScreenState.PRESET_NAMES.length; i++) {
+        for (int i = 0; i < MobConfigScreenState.PRESET_NAMES.size(); i++) {
             int row = i / 3;
             int col = i % 3;
             int px = x + col * (presetW + gap);
@@ -384,17 +384,17 @@ public class MobConfigScreenRenderer {
                 state.hoveredPreset = i;
             }
 
-            int bgColor = selected ? MobConfigScreenState.PRESET_COLORS[i][0] : (hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
+            MobConfigScreenState.PresetColors colors = MobConfigScreenState.PRESET_COLORS.get(i);
+            int bgColor = selected ? colors.background() : (hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
             if (selected) {
                 bgColor = UIConstants.setAlpha(bgColor, 180);
             }
             graphics.fill(px, py, px + presetW, py + presetH, bgColor);
 
-            int borderColor = selected ? MobConfigScreenState.PRESET_COLORS[i][1] : UIConstants.Border.MUTED();
+            int borderColor = selected ? colors.border() : UIConstants.Border.MUTED();
             AxiomRenderer.drawBorder(graphics, px, py, presetW, presetH, borderColor);
 
-            String name = MobConfigScreenState.PRESET_NAMES[i];
-            if (name == null) name = "";
+            String name = MobConfigScreenState.PRESET_NAMES.get(i);
             int textW = safeFont.width(name);
             int textColor = selected ? UIConstants.Text.WHITE() : UIConstants.Text.SECONDARY();
             graphics.drawString(safeFont, name, px + (presetW - textW) / 2, py + 4, textColor, false);
@@ -522,8 +522,10 @@ public class MobConfigScreenRenderer {
             AxiomRenderer.drawTooltip(graphics, safeFont, mouseX + 10, mouseY - 20, tip);
         }
 
-        if (state.hoveredPreset >= 0 && state.hoveredPreset < MobConfigScreenState.PRESET_DESCRIPTIONS.length) {
-            String presetTip = Objects.requireNonNull("§e" + MobConfigScreenState.PRESET_NAMES[state.hoveredPreset] + "§r: " + MobConfigScreenState.PRESET_DESCRIPTIONS[state.hoveredPreset]);
+        if (state.hoveredPreset >= 0 && state.hoveredPreset < MobConfigScreenState.PRESET_DESCRIPTIONS.size()) {
+            String presetTip = Objects.requireNonNull(
+                "§e" + MobConfigScreenState.PRESET_NAMES.get(state.hoveredPreset)
+                    + "§r: " + MobConfigScreenState.PRESET_DESCRIPTIONS.get(state.hoveredPreset));
             AxiomRenderer.drawTooltip(graphics, safeFont, mouseX + 10, mouseY + 15, presetTip);
         }
 

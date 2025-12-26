@@ -5,11 +5,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -20,6 +23,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
@@ -40,8 +44,14 @@ public class NemesisEvolutionManager {
 
     // Attribute modifier ID prefix
     private static final String MODIFIER_PREFIX = "nemesis_";
+    private static final String UNKNOWN_WEAPON_TYPE = "unknown";
 
     private NemesisEvolutionManager() {}
+
+    @Nonnull
+    private static <T> T requireNonNull(T value, String name) {
+        return Objects.requireNonNull(value, name);
+    }
 
     /**
      * Get config for the given quest instance.
@@ -87,11 +97,13 @@ public class NemesisEvolutionManager {
      * Get or create a nemesis profile for a player/boss combination.
      */
     public NemesisProfile getOrCreateProfile(UUID playerId, ResourceLocation bossType) {
+        UUID safePlayerId = requireNonNull(playerId, "playerId");
+        ResourceLocation safeBossType = requireNonNull(bossType, "bossType");
         Map<ResourceLocation, NemesisProfile> bossProfiles = playerProfiles.computeIfAbsent(
-            playerId, k -> new ConcurrentHashMap<>()
+            safePlayerId, k -> new ConcurrentHashMap<>()
         );
 
-        return bossProfiles.computeIfAbsent(bossType, NemesisProfile::new);
+        return bossProfiles.computeIfAbsent(safeBossType, key -> new NemesisProfile(key));
     }
 
     /**
@@ -127,15 +139,15 @@ public class NemesisEvolutionManager {
     /**
      * Record a hit on the boss.
      */
-    public void recordHit(UUID bossId, boolean isRanged, boolean isHeadshot, String weaponType) {
+    public void recordHit(UUID bossId, boolean isRanged, boolean isHeadshot, @Nullable String weaponType) {
         TrackingSession session = activeSessions.get(bossId);
         if (session == null) return;
 
         session.rangedHits += isRanged ? 1 : 0;
-        session.meleeHits += isRanged ? 0 : 1;
         session.headshots += isHeadshot ? 1 : 0;
         session.totalHits++;
-        session.weaponTypes.merge(weaponType, 1, Integer::sum);
+        String normalizedWeaponType = normalizeWeaponType(weaponType);
+        session.weaponTypes.compute(normalizedWeaponType, (key, current) -> current == null ? 1 : current + 1);
     }
 
     /**
@@ -172,10 +184,10 @@ public class NemesisEvolutionManager {
         NemesisProfile profile = getOrCreateProfile(session.playerId, session.bossType);
 
         // Record all hits
+        String weaponType = dominantWeaponType(session.weaponTypes);
         for (int i = 0; i < session.totalHits; i++) {
             boolean isRanged = i < session.rangedHits;
             boolean isHeadshot = i < session.headshots;
-            String weaponType = session.weaponTypes.keySet().stream().findFirst().orElse("unknown");
             profile.recordHit(isRanged, isHeadshot, weaponType);
         }
 
@@ -260,7 +272,8 @@ public class NemesisEvolutionManager {
         ListTag adaptationList = new ListTag();
         for (NemesisAdaptation adaptation : adaptations) {
             CompoundTag adaptTag = new CompoundTag();
-            adaptTag.putString("id", adaptation.name());
+            String adaptationName = requireNonNull(adaptation.name(), "adaptation name");
+            adaptTag.putString("id", adaptationName);
             adaptationList.add(adaptTag);
         }
         bossData.put("nemesis_adaptations", adaptationList);
@@ -270,7 +283,7 @@ public class NemesisEvolutionManager {
         // Store dominant weapon type for damage resistance
         String dominantWeapon = profile.getDominantWeaponType();
         if (dominantWeapon != null && adaptations.contains(NemesisAdaptation.DAMAGE_RESISTANCE)) {
-            bossData.putString("nemesis_resist_type", dominantWeapon);
+            bossData.putString("nemesis_resist_type", requireNonNull(dominantWeapon, "dominantWeapon"));
         }
     }
 
@@ -284,57 +297,82 @@ public class NemesisEvolutionManager {
     private void applyAdaptationStats(Mob boss, NemesisAdaptation adaptation, @Nullable UUID questId) {
         // Movement speed (using config values)
         float speedBonus = getConfiguredStatModifier(adaptation, NemesisAdaptation.StatType.MOVEMENT_SPEED, questId);
-        if (speedBonus > 0 && boss.getAttribute(Attributes.MOVEMENT_SPEED) != null) {
-            var speedAttr = boss.getAttribute(Attributes.MOVEMENT_SPEED);
-            if (speedAttr != null) {
-                speedAttr.addPermanentModifier(new AttributeModifier(
-                    ResourceLocation.fromNamespaceAndPath("devmod", MODIFIER_PREFIX + adaptation.name().toLowerCase() + "_speed"),
-                    speedBonus,
-                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
-                ));
-            }
-        }
+        AttributeInstance speedAttr = boss.getAttribute(
+            requireNonNull(Attributes.MOVEMENT_SPEED, "MOVEMENT_SPEED"));
+        applyModifier(boss, speedAttr, adaptation, "speed", speedBonus, false);
 
         // Attack speed (if applicable, using config values)
         float attackSpeedBonus = getConfiguredStatModifier(adaptation, NemesisAdaptation.StatType.ATTACK_SPEED, questId);
-        if (attackSpeedBonus > 0 && boss.getAttribute(Attributes.ATTACK_SPEED) != null) {
-            var attackAttr = boss.getAttribute(Attributes.ATTACK_SPEED);
-            if (attackAttr != null) {
-                attackAttr.addPermanentModifier(new AttributeModifier(
-                    ResourceLocation.fromNamespaceAndPath("devmod", MODIFIER_PREFIX + adaptation.name().toLowerCase() + "_attack"),
-                    attackSpeedBonus,
-                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
-                ));
-            }
-        }
+        AttributeInstance attackAttr = boss.getAttribute(
+            requireNonNull(Attributes.ATTACK_SPEED, "ATTACK_SPEED"));
+        applyModifier(boss, attackAttr, adaptation, "attack", attackSpeedBonus, false);
 
         // Max health (using config values)
         float healthBonus = getConfiguredStatModifier(adaptation, NemesisAdaptation.StatType.HEALTH, questId);
-        if (healthBonus > 0 && boss.getAttribute(Attributes.MAX_HEALTH) != null) {
-            var healthAttr = boss.getAttribute(Attributes.MAX_HEALTH);
-            if (healthAttr != null) {
-                healthAttr.addPermanentModifier(new AttributeModifier(
-                    ResourceLocation.fromNamespaceAndPath("devmod", MODIFIER_PREFIX + adaptation.name().toLowerCase() + "_health"),
-                    healthBonus,
-                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
-                ));
-                // Heal to new max
-                boss.setHealth(boss.getMaxHealth());
-            }
-        }
+        AttributeInstance healthAttr = boss.getAttribute(
+            requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"));
+        applyModifier(boss, healthAttr, adaptation, "health", healthBonus, true);
 
         // Attack damage (using config values)
         float damageBonus = getConfiguredStatModifier(adaptation, NemesisAdaptation.StatType.DAMAGE, questId);
-        if (damageBonus > 0 && boss.getAttribute(Attributes.ATTACK_DAMAGE) != null) {
-            var damageAttr = boss.getAttribute(Attributes.ATTACK_DAMAGE);
-            if (damageAttr != null) {
-                damageAttr.addPermanentModifier(new AttributeModifier(
-                    ResourceLocation.fromNamespaceAndPath("devmod", MODIFIER_PREFIX + adaptation.name().toLowerCase() + "_damage"),
-                    damageBonus,
-                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
-                ));
+        AttributeInstance damageAttr = boss.getAttribute(
+            requireNonNull(Attributes.ATTACK_DAMAGE, "ATTACK_DAMAGE"));
+        applyModifier(boss, damageAttr, adaptation, "damage", damageBonus, false);
+    }
+
+    private void applyModifier(
+        Mob boss,
+        @Nullable AttributeInstance attribute,
+        NemesisAdaptation adaptation,
+        String suffix,
+        float bonus,
+        boolean healToMax
+    ) {
+        if (bonus <= 0 || attribute == null) {
+            return;
+        }
+
+        attribute.addPermanentModifier(new AttributeModifier(
+            buildModifierId(adaptation, suffix),
+            bonus,
+            AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
+        ));
+
+        if (healToMax) {
+            boss.setHealth(boss.getMaxHealth());
+        }
+    }
+
+    @Nonnull
+    private static ResourceLocation buildModifierId(NemesisAdaptation adaptation, String suffix) {
+        String id = MODIFIER_PREFIX + adaptation.name().toLowerCase(Locale.ROOT) + "_" + suffix;
+        return requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", id), "modifierId");
+    }
+
+    private static String normalizeWeaponType(@Nullable String weaponType) {
+        if (weaponType == null) {
+            return UNKNOWN_WEAPON_TYPE;
+        }
+        String trimmed = weaponType.trim();
+        return trimmed.isEmpty() ? UNKNOWN_WEAPON_TYPE : trimmed;
+    }
+
+    private static String dominantWeaponType(Map<String, Integer> weaponTypes) {
+        String best = UNKNOWN_WEAPON_TYPE;
+        int bestCount = -1;
+        for (Map.Entry<String, Integer> entry : weaponTypes.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            Integer count = entry.getValue();
+            int value = count != null ? count : 0;
+            if (value > bestCount) {
+                bestCount = value;
+                best = key;
             }
         }
+        return best;
     }
 
     /**
@@ -346,7 +384,7 @@ public class NemesisEvolutionManager {
 
         ListTag adaptations = data.getList("nemesis_adaptations", Tag.TAG_COMPOUND);
         for (int i = 0; i < adaptations.size(); i++) {
-            if (adaptations.getCompound(i).getString("id").equals(adaptation.name())) {
+            if (adaptation.name().equals(adaptations.getCompound(i).getString("id"))) {
                 return true;
             }
         }
@@ -380,12 +418,14 @@ public class NemesisEvolutionManager {
         ListTag playersList = new ListTag();
         for (var playerEntry : playerProfiles.entrySet()) {
             CompoundTag playerTag = new CompoundTag();
-            playerTag.putUUID("playerId", playerEntry.getKey());
+            playerTag.putUUID("playerId", requireNonNull(playerEntry.getKey(), "playerId"));
 
             ListTag bossList = new ListTag();
             for (var bossEntry : playerEntry.getValue().entrySet()) {
                 CompoundTag bossTag = new CompoundTag();
-                bossTag.putString("bossType", bossEntry.getKey().toString());
+                ResourceLocation bossType = requireNonNull(bossEntry.getKey(), "bossType");
+                String bossTypeStr = requireNonNull(bossType.toString(), "bossType string");
+                bossTag.putString("bossType", bossTypeStr);
                 bossTag.put("profile", bossEntry.getValue().save());
                 bossList.add(bossTag);
             }
@@ -413,7 +453,8 @@ public class NemesisEvolutionManager {
                 ListTag bossList = playerTag.getList("bosses", Tag.TAG_COMPOUND);
                 for (int j = 0; j < bossList.size(); j++) {
                     CompoundTag bossTag = bossList.getCompound(j);
-                    ResourceLocation bossType = ResourceLocation.tryParse(bossTag.getString("bossType"));
+                    String bossTypeId = requireNonNull(bossTag.getString("bossType"), "bossTypeId");
+                    ResourceLocation bossType = ResourceLocation.tryParse(bossTypeId);
                     if (bossType != null) {
                         NemesisProfile profile = NemesisProfile.load(bossTag.getCompound("profile"));
                         bossProfiles.put(bossType, profile);
@@ -445,7 +486,6 @@ public class NemesisEvolutionManager {
         final long startTime;
 
         int rangedHits = 0;
-        int meleeHits = 0;
         int headshots = 0;
         int totalHits = 0;
         final Map<String, Integer> weaponTypes = new HashMap<>();
@@ -454,8 +494,8 @@ public class NemesisEvolutionManager {
         long lastPhaseTime = 0;
 
         TrackingSession(UUID playerId, ResourceLocation bossType, long startTime) {
-            this.playerId = playerId;
-            this.bossType = bossType;
+            this.playerId = requireNonNull(playerId, "playerId");
+            this.bossType = requireNonNull(bossType, "bossType");
             this.startTime = startTime;
         }
     }

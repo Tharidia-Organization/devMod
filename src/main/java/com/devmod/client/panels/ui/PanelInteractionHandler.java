@@ -195,6 +195,7 @@ public class PanelInteractionHandler {
     }
 
     // Drag state
+    @Nullable
     private Vec3 dragStartPanelPos = null;
     private double dragStartMouseX = 0;
     private double dragStartMouseY = 0;

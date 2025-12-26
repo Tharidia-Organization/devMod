@@ -5,21 +5,26 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -29,6 +34,10 @@ public class DevilsBargainManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DevilsBargainManager.class);
 
     public static final DevilsBargainManager INSTANCE = new DevilsBargainManager();
+
+    private static <T> @Nonnull T requireNonNull(T value, String name) {
+        return Objects.requireNonNull(value, name);
+    }
 
     // Configuration
     private static final int ALTAR_WAVE_INTERVAL = 3; // Every 3 waves
@@ -61,7 +70,7 @@ public class DevilsBargainManager {
         private int selfDamagePerKill = 0;
 
         public CurseSession(UUID questId) {
-            this.questId = questId;
+            this.questId = requireNonNull(questId, "questId");
         }
 
         /**
@@ -164,18 +173,19 @@ public class DevilsBargainManager {
      * Start a curse session for a quest.
      */
     public void startSession(UUID questId) {
-        sessions.put(questId, new CurseSession(questId));
-        LOGGER.debug("[Bargain] Started session for quest {}", questId);
+        UUID safeQuestId = requireNonNull(questId, "questId");
+        sessions.put(safeQuestId, new CurseSession(safeQuestId));
+        LOGGER.debug("[Bargain] Started session for quest {}", safeQuestId);
     }
 
     /**
      * End a curse session.
      */
     public CurseSession endSession(UUID questId) {
-        CurseSession session = sessions.remove(questId);
+        CurseSession session = sessions.remove(requireNonNull(questId, "questId"));
         if (session != null) {
             LOGGER.info("[Bargain] Ended session for quest {} - {} curses, {}x reward",
-                questId, session.getCurseCount(), session.getTotalRewardMultiplier());
+                session.questId, session.getCurseCount(), session.getTotalRewardMultiplier());
         }
         return session;
     }
@@ -215,16 +225,16 @@ public class DevilsBargainManager {
 
         // Visual/audio feedback
         if (player.level() instanceof ServerLevel level) {
-            BlockPos pos = player.blockPosition();
+            BlockPos pos = requireBlockPos(player);
 
-            level.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0f, 0.5f);
+            playSound(level, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0f, 0.5f);
 
             // Ominous particles
             for (int i = 0; i < 30; i++) {
                 double x = pos.getX() + (level.random.nextDouble() - 0.5) * 4;
                 double y = pos.getY() + level.random.nextDouble() * 2;
                 double z = pos.getZ() + (level.random.nextDouble() - 0.5) * 4;
-                level.sendParticles(ParticleTypes.SOUL, x, y, z, 1, 0, 0.1, 0, 0.02);
+                sendParticles(level, ParticleTypes.SOUL, x, y, z, 1, 0, 0.1, 0, 0.02);
             }
         }
 
@@ -238,7 +248,7 @@ public class DevilsBargainManager {
         }
         message.append("§8Skip with /bargain skip");
 
-        player.sendSystemMessage(Component.literal(message.toString()));
+        sendMessage(player, message.toString());
 
         LOGGER.info("[Bargain] Altar spawned for {} at wave {} with {} offerings",
             player.getName().getString(), waveNumber, offerings.size());
@@ -303,19 +313,19 @@ public class DevilsBargainManager {
     public boolean acceptCurse(ServerPlayer player, UUID questId, int curseIndex) {
         CurseSession session = sessions.get(questId);
         if (session == null || !session.isAltarActive()) {
-            player.sendSystemMessage(Component.literal("§cNo altar active!"));
+            sendMessage(player, "§cNo altar active!");
             return false;
         }
 
         List<Curse> offered = session.getOfferedCurses();
         if (curseIndex < 0 || curseIndex >= offered.size()) {
-            player.sendSystemMessage(Component.literal("§cInvalid curse selection!"));
+            sendMessage(player, "§cInvalid curse selection!");
             return false;
         }
 
         Curse curse = offered.get(curseIndex);
         if (!session.addCurse(curse)) {
-            player.sendSystemMessage(Component.literal("§cCannot accept this curse!"));
+            sendMessage(player, "§cCannot accept this curse!");
             return false;
         }
 
@@ -330,20 +340,18 @@ public class DevilsBargainManager {
 
         // Feedback
         if (player.level() instanceof ServerLevel level) {
-            level.playSound(null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.5f, 1.5f);
+            playSound(level, requireBlockPos(player), SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.5f, 1.5f);
 
             for (int i = 0; i < 50; i++) {
                 double x = player.getX() + (level.random.nextDouble() - 0.5) * 2;
                 double y = player.getY() + level.random.nextDouble() * 2;
                 double z = player.getZ() + (level.random.nextDouble() - 0.5) * 2;
-                level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, x, y, z, 1, 0, 0.1, 0, 0.05);
+                sendParticles(level, ParticleTypes.SOUL_FIRE_FLAME, x, y, z, 1, 0, 0.1, 0, 0.05);
             }
         }
 
-        player.sendSystemMessage(Component.literal(
-            String.format("§5⛧ %s §7accepted! Total reward: §e%.2fx",
-                curse.getFormattedName(), session.getTotalRewardMultiplier())
-        ));
+        sendMessage(player, String.format("§5⛧ %s §7accepted! Total reward: §e%.2fx",
+            curse.getFormattedName(), session.getTotalRewardMultiplier()));
 
         return true;
     }
@@ -359,10 +367,10 @@ public class DevilsBargainManager {
 
         session.setAltarActive(false);
 
-        player.sendSystemMessage(Component.literal("§7You resist the bargain... for now."));
+        sendMessage(player, "§7You resist the bargain... for now.");
 
         if (player.level() instanceof ServerLevel level) {
-            level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.0f, 1.0f);
+            playSound(level, requireBlockPos(player), SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.0f, 1.0f);
         }
     }
 
@@ -374,7 +382,8 @@ public class DevilsBargainManager {
             case FRAILTY -> {
                 // Reduce max health immediately
                 float reduction = player.getMaxHealth() * 0.3f;
-                var healthAttr = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+                var healthAttr = player.getAttribute(
+                    requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH, "MAX_HEALTH"));
                 if (healthAttr != null) {
                     healthAttr.setBaseValue(Math.max(4, healthAttr.getBaseValue() - reduction));
                     if (player.getHealth() > player.getMaxHealth()) {
@@ -384,11 +393,15 @@ public class DevilsBargainManager {
             }
             case SLUGGISH -> {
                 // Apply permanent slowness effect
-                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, Integer.MAX_VALUE, 0, false, false));
+                player.addEffect(new MobEffectInstance(
+                    requireNonNull(MobEffects.MOVEMENT_SLOWDOWN, "MOVEMENT_SLOWDOWN"),
+                    Integer.MAX_VALUE, 0, false, false));
             }
             case FUMBLING -> {
                 // Apply mining fatigue for attack speed reduction
-                player.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, Integer.MAX_VALUE, 0, false, false));
+                player.addEffect(new MobEffectInstance(
+                    requireNonNull(MobEffects.DIG_SLOWDOWN, "DIG_SLOWDOWN"),
+                    Integer.MAX_VALUE, 0, false, false));
             }
             default -> {
                 // Other curses are applied via modifiers or tick effects
@@ -397,7 +410,8 @@ public class DevilsBargainManager {
 
         // Store in player data for persistence
         CompoundTag data = player.getPersistentData();
-        data.putBoolean("bargain_curse_" + curse.name(), true);
+        String curseKey = "bargain_curse_" + curse.name();
+        data.putBoolean(requireNonNull(curseKey, "curseKey"), true);
     }
 
     /**
@@ -418,13 +432,13 @@ public class DevilsBargainManager {
         // Burning Soul - ignite every 30 seconds (600 ticks)
         if (session.hasCurse(Curse.BURNING_SOUL) && gameTime % 600 == 0) {
             player.igniteForSeconds(5);
-            player.sendSystemMessage(Component.literal("§c§oYour soul burns..."));
+            sendMessage(player, "§c§oYour soul burns...");
         }
 
         // Visual indicator for cursed players (occasional particles)
         if (!session.getActiveCurses().isEmpty() && gameTime % 40 == 0) {
             if (player.level() instanceof ServerLevel level) {
-                level.sendParticles(ParticleTypes.SOUL,
+                sendParticles(level, ParticleTypes.SOUL,
                     player.getX(), player.getY() + 1, player.getZ(),
                     1, 0.3, 0.5, 0.3, 0.01);
             }
@@ -441,7 +455,7 @@ public class DevilsBargainManager {
         // Blood Tithe - lose HP on kill
         int selfDamage = session.getSelfDamagePerKill();
         if (selfDamage > 0) {
-            player.hurt(player.damageSources().magic(), selfDamage);
+            player.hurt(requireNonNull(player.damageSources().magic(), "magic"), selfDamage);
         }
     }
 
@@ -509,6 +523,38 @@ public class DevilsBargainManager {
     public void shutdown() {
         sessions.clear();
         LOGGER.info("[Bargain] Shutdown complete");
+    }
+
+    private static BlockPos requireBlockPos(ServerPlayer player) {
+        return requireNonNull(player.blockPosition(), "player.blockPosition");
+    }
+
+    @Nonnull
+    private static Component literalMessage(String message) {
+        return requireNonNull(
+            Component.literal(requireNonNull(message, "message")),
+            "messageComponent"
+        );
+    }
+
+    private static void sendMessage(ServerPlayer player, String message) {
+        player.sendSystemMessage(literalMessage(message));
+    }
+
+    private static void playSound(ServerLevel level, BlockPos pos, SoundEvent sound, SoundSource source,
+            float volume, float pitch) {
+        level.playSound(null,
+            requireNonNull(pos, "pos"),
+            requireNonNull(sound, "sound"),
+            requireNonNull(source, "source"),
+            volume,
+            pitch
+        );
+    }
+
+    private static void sendParticles(ServerLevel level, SimpleParticleType particle,
+            double x, double y, double z, int count, double dx, double dy, double dz, double speed) {
+        level.sendParticles(requireNonNull(particle, "particle"), x, y, z, count, dx, dy, dz, speed);
     }
 
     private DevilsBargainManager() {}

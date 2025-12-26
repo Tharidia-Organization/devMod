@@ -1,8 +1,10 @@
 package com.devmod.client.ui.screens;
 
+import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -34,23 +36,28 @@ public class MobConfigScreenState {
     private static boolean lastGlobalMode = false;
 
     // Presets
-    public static final String[] PRESET_NAMES = {"Tank", "Glass Cannon", "Speedy", "Balanced", "Boss", "Custom"};
-    public static final String[] PRESET_DESCRIPTIONS = {
+    public static final List<String> PRESET_NAMES = List.of(
+        "Tank", "Glass Cannon", "Speedy", "Balanced", "Boss", "Custom"
+    );
+    public static final List<String> PRESET_DESCRIPTIONS = List.of(
         "High HP & armor, low speed/damage",
         "2.5x damage, 0.5x health, no armor",
         "2x speed, extended follow range",
         "Reset to original mob stats",
         "3x HP, 2x damage, full knockback res",
         "Your custom configuration"
-    };
-    public static final int[][] PRESET_COLORS = {
-        {UIConstants.Accent.CYAN(), UIConstants.Accent.BLUE()},
-        {UIConstants.Accent.RED(), UIConstants.Accent.ORANGE()},
-        {UIConstants.Accent.GREEN(), UIConstants.Accent.YELLOW()},
-        {0xFFAAAAAA, 0xFF888888},
-        {UIConstants.Accent.PURPLE(), UIConstants.Accent.GOLD()},
-        {UIConstants.Border.DEFAULT(), UIConstants.Border.LIGHT()}
-    };
+    );
+
+    public record PresetColors(int background, int border) {}
+
+    public static final List<PresetColors> PRESET_COLORS = List.of(
+        new PresetColors(UIConstants.Accent.CYAN(), UIConstants.Accent.BLUE()),
+        new PresetColors(UIConstants.Accent.RED(), UIConstants.Accent.ORANGE()),
+        new PresetColors(UIConstants.Accent.GREEN(), UIConstants.Accent.YELLOW()),
+        new PresetColors(0xFFAAAAAA, 0xFF888888),
+        new PresetColors(UIConstants.Accent.PURPLE(), UIConstants.Accent.GOLD()),
+        new PresetColors(UIConstants.Border.DEFAULT(), UIConstants.Border.LIGHT())
+    );
 
     private final Mob mob;
 
@@ -94,6 +101,7 @@ public class MobConfigScreenState {
     // Dialogs
     public boolean showSavePresetDialog = false;
     public StringBuilder presetNameInput = new StringBuilder();
+    @Nullable
     public String deleteConfirmPreset = null;
     public boolean showingConfirmDialog = false;
     public boolean confirmedDiscard = false;

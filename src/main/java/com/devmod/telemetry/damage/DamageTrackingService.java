@@ -15,6 +15,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.google.gson.Gson;
@@ -38,6 +40,7 @@ public class DamageTrackingService {
     private final Map<String, RoomAggregate> roomAggregates = new ConcurrentHashMap<>();
     private final Map<UUID, MinionDamageStats> minionDamage = new ConcurrentHashMap<>();
 
+    @Nullable
     private Path dataDirectory = null;
 
     private DamageTrackingService() {}
@@ -364,7 +367,7 @@ public class DamageTrackingService {
      * Classe container per la serializzazione degli aggregati.
      */
     private static class SavedAggregates {
-        Map<String, WeaponAggregate> weapons;
-        Map<String, RoomAggregate> rooms;
+        Map<String, WeaponAggregate> weapons = new ConcurrentHashMap<>();
+        Map<String, RoomAggregate> rooms = new ConcurrentHashMap<>();
     }
 }

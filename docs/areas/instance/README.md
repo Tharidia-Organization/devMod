@@ -1,19 +1,19 @@
 # Instance System
 
-> **Audit Date**: 2024-12-23
-> **Status**: PARTIAL
-> **Risk Level**: MEDIUM (async operations, state management)
+> **Audit Date**: 2025-12-26
+> **Status**: CURRENT (code-aligned)
+> **Risk Level**: MEDIUM (async dimension creation, recovery IO)
 
 ---
 
 ## 1. Purpose
 
-The Instance System manages dynamic dimension creation for quest instances:
+The Instance System creates temporary quest dimensions and guarantees recovery when teleports or sessions fail:
 
-- **Dynamic Dimensions**: Runtime void dimension creation
-- **Player Teleportation**: Safe teleport with countdown
-- **State Recovery**: Snapshot-based player recovery
-- **Cleanup**: Automatic orphan cleanup on startup
+- **On-demand dimensions**: creates `devmod:instance_<uuid>` worlds for quest sessions
+- **Safe teleport**: immediate or 10-second countdown with stale-teleport recovery
+- **Snapshot recovery**: disk-backed player snapshots for disconnect/crash handling
+- **Cleanup**: registry + destruction queue for dimension teardown
 
 ---
 
@@ -21,230 +21,113 @@ The Instance System manages dynamic dimension creation for quest instances:
 
 | Concept | Description | File Reference |
 |---------|-------------|----------------|
-| **InstanceData** | Instance data model | `InstanceData.java:19-521` |
-| **InstanceState** | 6-state machine (CREATING→DESTROYED) | `InstanceState.java:16-92` |
-| **PlayerInstanceState** | 5-state player flow | `PlayerInstanceState.java:19-97` |
-| **PlayerInstanceSnapshot** | NBT serialization | `PlayerInstanceSnapshot.java:27-607` |
-| **DynamicDimensionManager** | Dimension lifecycle | `DynamicDimensionManager.java:56-758` |
+| **InstanceData** | Instance model + player list + destruction schedule | `src/main/java/com/devmod/runtime/InstanceData.java` |
+| **InstanceState** | Instance lifecycle state machine | `src/main/java/com/devmod/runtime/InstanceState.java` |
+| **PlayerInstanceState** | Player recovery state machine | `src/main/java/com/devmod/runtime/PlayerInstanceState.java` |
+| **PlayerInstanceSnapshot** | NBT snapshot for recovery | `src/main/java/com/devmod/runtime/PlayerInstanceSnapshot.java` |
+| **InstanceRegistry** | Instance/payer mappings + persistence | `src/main/java/com/devmod/runtime/InstanceRegistry.java` |
+| **DynamicDimensionManager** | Dimension create/teleport/destroy | `src/main/java/com/devmod/runtime/DynamicDimensionManager.java` |
+| **RecoverySystem** | Snapshot IO + recovery routines | `src/main/java/com/devmod/runtime/RecoverySystem.java` |
+| **InstanceEventHandler** | Server/player event hooks | `src/main/java/com/devmod/runtime/InstanceEventHandler.java` |
 
 ---
 
-## 3. Components
+## 3. Components (Runtime Package)
 
-### Core (4 classes)
 ```
-com.devmod.instance/
-├── InstanceManager.java           # Orchestrator (650 lines)
-├── InstanceRegistry.java          # Persistence (487 lines)
-├── InstanceState.java             # Instance state enum
-└── InstanceData.java              # Instance data model (521 lines)
-```
-
-### Dimension Management (2 classes)
-```
-├── DynamicDimensionManager.java   # Dimension lifecycle (758 lines)
-└── InstanceLoadSettings.java      # Chunk configuration
+com.devmod.runtime
+├── InstanceManager.java         # Orchestrator
+├── InstanceRegistry.java        # Persistence + mappings
+├── InstanceData.java            # Instance model
+├── InstanceState.java           # Instance lifecycle enum
+├── PlayerInstanceSnapshot.java  # Recovery snapshot
+├── PlayerInstanceState.java     # Player lifecycle enum
+├── RecoverySystem.java          # Snapshot save/load + recovery
+├── DynamicDimensionManager.java # Dimension create/teleport/destroy
+└── InstanceEventHandler.java    # Server/player events
 ```
 
-### Recovery (2 classes)
-```
-├── RecoverySystem.java            # Snapshot recovery (583 lines)
-└── PlayerInstanceSnapshot.java    # NBT serialization (607 lines)
-```
-
-### Integration (2 classes)
-```
-├── InstanceEventHandler.java      # Event hooks (224 lines)
-└── InstanceArenaManager.java      # Arena bridge (198 lines)
-```
+Integration points:
+- `com.devmod.endurance.InstanceArenaManager` bridges Endurance sessions to InstanceManager.
+- `com.devmod.arena.registry.InstanceSettingsValidator` validates arena instance settings.
 
 ---
 
 ## 4. Entrypoints
 
-### Event Handlers
+### Event Hooks
+| Event | Handler | Purpose |
+|-------|---------|---------|
+| `ServerStartedEvent` | `InstanceEventHandler.onServerStarted()` | Initializes instance subsystem |
+| `ServerStoppingEvent` | `InstanceEventHandler.onServerStopping()` | Shutdown + cleanup |
+| `ServerTickEvent.Post` | `InstanceEventHandler.onServerTick()` | Teleport ticks + destruction queue |
+| `PlayerLoggedInEvent` | `InstanceEventHandler.onPlayerLoggedIn()` | Snapshot recovery check |
+| `PlayerLoggedOutEvent` | `InstanceEventHandler.onPlayerLoggedOut()` | Force-end instance if needed |
+| `LivingDeathEvent` | `InstanceEventHandler.onPlayerDeath()` | End instance on death (unless Endurance overrides) |
+| `PlayerChangedDimensionEvent` | `InstanceEventHandler.onPlayerChangeDimension()` | Detect unexpected exits |
 
-| Event | Handler | Line |
-|-------|---------|------|
-| `ServerStartedEvent` | `onServerStarted()` | 42 |
-| `ServerStoppingEvent` | `onServerStopping()` | 48 |
-| `ServerTickEvent.Post` | `onServerTick()` | 56 |
-| `PlayerLoggedInEvent` | `onPlayerLoggedIn()` | 100 |
-| `PlayerLoggedOutEvent` | `onPlayerLoggedOut()` | 108 |
-| `LivingDeathEvent` | `onPlayerDeath()` | 116 |
-| `PlayerRespawnEvent` | `onPlayerRespawn()` | 146 |
-| `PlayerChangedDimensionEvent` | `onPlayerChangeDimension()` | 168 |
-
-### API Methods
-
-| Method | File:Line | Purpose |
-|--------|-----------|---------|
-| `startInstanceQuestImmediate()` | InstanceManager:105 | Immediate teleport |
-| `startInstanceQuest()` | InstanceManager:125 | Countdown teleport |
-| `endInstanceQuest()` | InstanceManager:447 | End and return players |
-| `forceEndPlayerInstances()` | InstanceManager:504 | Force cleanup |
+### Core API
+| Method | File | Purpose |
+|--------|------|---------|
+| `startInstanceQuestImmediate()` | `InstanceManager.java` | Immediate teleport flow |
+| `startInstanceQuest()` | `InstanceManager.java` | Countdown teleport flow |
+| `endInstanceQuest()` | `InstanceManager.java` | End quest + recovery + destruction |
+| `forceEndPlayerInstances()` | `InstanceManager.java` | Disconnect cleanup |
+| `tick()` | `InstanceManager.java` | Countdown processing + stale teleports |
 
 ---
 
-## 5. End-to-End Flow
+## 5. Runtime Flow (Current Behavior)
 
-```mermaid
-flowchart TD
-    A["startInstanceQuest()"] --> B["Create Registry Entry"]
-    B --> C["Create Snapshots"]
-    C --> D["createDimensionAsync()"]
-
-    D --> E{Success?}
-    E -->|No| F["Recover All Players"]
-    E -->|Yes| G["Generate Platform"]
-
-    G --> H{Immediate?}
-    H -->|Yes| I["executeTeleport()"]
-    H -->|No| J["Start Countdown"]
-
-    J --> K["Tick Countdown"]
-    K --> L{Complete?}
-    L -->|No| K
-    L -->|Yes| I
-
-    I --> M["Update State: ACTIVE"]
-    M --> N["Quest Running"]
-
-    N --> O["endInstanceQuest()"]
-    O --> P["State: COMPLETING"]
-    P --> Q["performRecovery()"]
-    Q --> R["State: DESTROYING"]
-    R --> S["destroyDimension()"]
-    S --> T["Delete Files"]
-```
+1. **Start quest**: `InstanceManager.startInstanceQuest*()` creates `InstanceData`, writes snapshots, maps players, saves registry.
+2. **Create dimension**: `DynamicDimensionManager.createDimensionAsync()` creates `devmod:instance_<uuid>`.
+3. **Success path**: instance state -> `READY`; teleport immediate or start 10s countdown.
+4. **Teleport**: `teleportToInstance()` updates snapshot to `IN_INSTANCE` and instance to `ACTIVE`.
+5. **End quest**: `endInstanceQuest()` sets state `COMPLETING`, runs recovery, schedules destruction.
+6. **Destroy**: `InstanceRegistry.processPendingDestructions()` runs every 100 ticks; `DynamicDimensionManager` deletes dimension and unregisters.
 
 ---
 
-## 6. Runtime Sequence
+## 6. Persistence & Paths
 
-```mermaid
-sequenceDiagram
-    participant Player
-    participant Manager as InstanceManager
-    participant Dim as DimensionManager
-    participant Recovery as RecoverySystem
-    participant Registry
-
-    Player->>Manager: startInstanceQuest()
-    Manager->>Registry: createInstance()
-    Manager->>Recovery: createSnapshot()
-    Manager->>Dim: createDimensionAsync()
-
-    Dim->>Dim: createVoidDimension()
-    Dim->>Dim: injectDimension() (Mixin)
-    Dim->>Dim: generatePlatform()
-    Dim-->>Manager: dimension ready
-
-    Manager->>Manager: startCountdown()
-    Note over Manager: 10 second countdown
-
-    Manager->>Player: teleportToInstance()
-    Manager->>Registry: setState(ACTIVE)
-
-    Note over Player: Quest in progress
-
-    Manager->>Manager: endInstanceQuest()
-    Manager->>Recovery: performRecovery()
-    Recovery->>Player: restore position/inventory
-    Manager->>Dim: destroyDimension()
-    Dim->>Dim: deleteFiles()
-```
+- **Snapshots**: `config/devmod/snapshots/<playerUuid>.dat`
+- **Registry**: `config/devmod/instances.json`
+- **Dimensions**: `world/dimensions/devmod/instance_<uuidWithoutDashes>`
 
 ---
 
-## 7. Data & Telemetry
+## 7. Failure Handling (Implemented)
 
-### State Machines
-
-**InstanceState:**
-```
-CREATING → READY → ACTIVE → COMPLETING → DESTROYING → DESTROYED
-```
-
-**PlayerInstanceState:**
-```
-NORMAL → PREPARING → IN_TRANSIT → IN_INSTANCE → RETURNING → NORMAL
-```
-
-### Persistence
-
-| Data | Location | Format |
-|------|----------|--------|
-| Instance Registry | In-memory | ConcurrentHashMap |
-| Player Snapshots | `config/snapshots/<UUID>.dat` | NBT |
-| Dimension Files | `world/dimensions/devmod/instance_<UUID>` | World data |
-
-### Snapshot Contents
-
-```
-PlayerInstanceSnapshot:
-├── playerId, instanceId, state
-├── position (dimension, x, y, z, yaw, pitch)
-├── inventory, enderChest
-├── gameMode, health, food
-├── potionEffects, xp
-└── questMetadata (type, mob, waves)
-```
+- **Dimension creation returns null**: recover online players and remove instance.
+- **Stale countdown (>30s)**: recovery triggered for that player.
+- **Logout in instance**: `forceEndPlayerInstances()` cleans membership and schedules destruction.
+- **Unexpected dimension exit**: handled in `InstanceEventHandler.onPlayerChangeDimension()`.
 
 ---
 
-## 8. Failure Modes
+## 8. Known Gaps (Code-Verified)
 
-| Failure | Cause | Recovery |
-|---------|-------|----------|
-| Dimension creation fails | Mixin error | Recover players via snapshot |
-| Player disconnects mid-teleport | Network | Snapshot preserved, recovery on login |
-| Server crash during quest | Power loss | Startup cleanup + recovery |
-| Orphaned dimension | Incomplete cleanup | `cleanupOrphanedDimensionFolders()` |
+- `createDimensionAsync()` has no timeout/backoff guard.
+- Invalid state transitions are allowed (logged, not blocked).
+- Snapshot cleanup is per-player; no periodic pruning of orphaned snapshots.
 
 ---
 
-## 9. Gaps / Risks
+## 9. Automated Validation
 
-### High (P0/P1)
-
-| Gap | Description | Impact |
-|-----|-------------|--------|
-| Async Exception Handling | `createDimensionAsync()` no timeout | Stuck creation |
-| Mixin Safety | `MinecraftServerAccessor` no fallback | Crash if mixin fails |
-| Dimension Rollback | No cleanup on partial creation | Orphaned files |
-
-### Medium (P2)
-
-| Gap | Description |
-|-----|-------------|
-| setState No Validation | Invalid transitions silently ignored |
-| Snapshot Orphans | Files never auto-deleted |
-| Destroy Delay Hardcoded | 5000ms not configurable |
-
----
-
-## 10. Next Actions
-
-### Immediate
-1. Add timeout to dimension creation
-2. Add mixin reflection fallback
-3. Implement creation rollback
-
-### Short-term
-1. Add state transition validation
-2. Implement periodic snapshot cleanup
-3. Make destroy delay configurable
+| Behavior | Test |
+|----------|------|
+| Instance state transitions | `InstanceStateDirectTest` |
+| Player state transitions | `PlayerInstanceStateDirectTest` |
+| InstanceData lifecycle rules | `InstanceDataDirectTest` |
+| Snapshot NBT + file roundtrip | `PlayerInstanceSnapshotDirectTest` |
+| Registry mapping/dimension lookup | `InstanceRegistryDirectTest` |
 
 ---
 
 ## Cross-References
 
-- [[MOC]] - Master index
-- [[areas/arena/README]] - Arena integration
-- [[areas/endurance/README]] - Quest integration
-- [[cross_cutting/CONCURRENCY]] - Async patterns
+- `docs/areas/arena/README.md`
+- `docs/areas/endurance/README.md`
+- `docs/cross_cutting/CONCURRENCY.md`
 
----
-
-*Generated from codebase analysis - 2024-12-23*

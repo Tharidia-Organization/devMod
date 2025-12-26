@@ -31,6 +31,8 @@ import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
 import com.devmod.endurance.analytics.QuestResult;
 import com.devmod.endurance.analytics.WaveSummary;
 import com.devmod.party.QuestStartSequence;
+import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
+import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
 import com.devmod.util.I18n;
@@ -331,7 +333,8 @@ public class EnduranceEventHandler {
         // Sync contracts to client for HUD
         com.devmod.endurance.contracts.ActiveContractManager.INSTANCE.getSession(questId, playerId)
             .ifPresent(contractSession -> {
-                var payload = com.devmod.endurance.contracts.ContractSyncPayload.forSession(contractSession);
+                var payload = Objects.requireNonNull(
+                    com.devmod.endurance.contracts.ContractSyncPayload.forSession(contractSession), "payload");
                 net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
             });
 
@@ -581,7 +584,8 @@ public class EnduranceEventHandler {
                             .withStyle(ChatFormatting.LIGHT_PURPLE)));
                         player.sendSystemMessage(Objects.requireNonNull(Component.literal("Step " + (progress.getCurrentStep() + 1) + "/" + progress.getTotalSteps() + ": " + nextStep.title())
                             .withStyle(ChatFormatting.WHITE)));
-                        player.sendSystemMessage(Objects.requireNonNull(Component.literal(nextStep.narrative())
+                        player.sendSystemMessage(Objects.requireNonNull(Component.literal(
+                            Objects.requireNonNull(nextStep.narrative(), "narrative"))
                             .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
                     }
                 });
@@ -797,6 +801,11 @@ public class EnduranceEventHandler {
 
                 // Treat as abandonment
                 EnduranceQuestManager.INSTANCE.abandonQuest(player);
+            }
+
+            // Flush and cleanup telemetry aggregator for this player
+            if (AggregationConfig.AGGREGATION_ENABLED) {
+                TelemetryAggregatorRegistry.INSTANCE.onPlayerLeave(player.getUUID());
             }
         }
     }

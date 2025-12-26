@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,9 @@ public class InvitePopupScreen extends Screen {
     private int popupX;
     private int popupY;
     private boolean responded = false;
+    @Nullable
     private EditorButton acceptButton;
+    @Nullable
     private EditorButton declineButton;
 
     /**
@@ -192,11 +195,13 @@ public class InvitePopupScreen extends Screen {
         int declineX = popupX + POPUP_WIDTH / 2 + BUTTON_GAP / 2;
 
         boolean enabled = !responded;
-        acceptButton.enabled(enabled);
-        declineButton.enabled(enabled);
+        EditorButton safeAcceptButton = Objects.requireNonNull(acceptButton, "acceptButton");
+        EditorButton safeDeclineButton = Objects.requireNonNull(declineButton, "declineButton");
+        safeAcceptButton.enabled(enabled);
+        safeDeclineButton.enabled(enabled);
 
-        acceptButton.render(graphics, acceptX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
-        declineButton.render(graphics, declineX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
+        safeAcceptButton.render(graphics, acceptX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
+        safeDeclineButton.render(graphics, declineX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
     }
 
     @Override

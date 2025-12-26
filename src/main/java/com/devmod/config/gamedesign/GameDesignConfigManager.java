@@ -48,6 +48,10 @@ public class GameDesignConfigManager {
 
     private GameDesignConfigManager() {}
 
+    private static <T> @Nonnull T requireNonNull(T value, String name) {
+        return Objects.requireNonNull(value, name);
+    }
+
     // ========== Global Config ==========
 
     /**
@@ -55,7 +59,7 @@ public class GameDesignConfigManager {
      */
     @Nonnull
     public GameDesignConfig getGlobalConfig() {
-        return Objects.requireNonNull(globalConfig, "globalConfig");
+        return requireNonNull(globalConfig, "globalConfig");
     }
 
     /**
@@ -63,7 +67,7 @@ public class GameDesignConfigManager {
      */
     @Nonnull
     public GameDesignConfig getEffectiveConfig(@Nullable UUID instanceId) {
-        GameDesignConfig baseConfig = Objects.requireNonNull(globalConfig, "globalConfig");
+        GameDesignConfig baseConfig = requireNonNull(globalConfig, "globalConfig");
         if (instanceId == null) {
             return baseConfig;
         }
@@ -74,14 +78,14 @@ public class GameDesignConfigManager {
         }
 
         // Apply overrides to a copy of global config
-        return Objects.requireNonNull(override.applyTo(baseConfig.copy()), "effectiveConfig");
+        return requireNonNull(override.applyTo(baseConfig.copy()), "effectiveConfig");
     }
 
     /**
      * Update global configuration.
      */
     public void setGlobalConfig(@Nonnull GameDesignConfig config) {
-        this.globalConfig = Objects.requireNonNull(config, "config");
+        this.globalConfig = requireNonNull(config, "config");
         markDirty();
         notifyListeners();
     }
@@ -150,7 +154,7 @@ public class GameDesignConfigManager {
         Path configPath = getConfigPath();
         try {
             Files.createDirectories(configPath.getParent());
-            String json = GSON.toJson(globalConfig);
+            String json = GSON.toJson(getGlobalConfig());
             Files.writeString(configPath, json);
             dirty = false;
             LOGGER.debug("[GameDesignConfig] Saved configuration");
@@ -215,9 +219,10 @@ public class GameDesignConfigManager {
     }
 
     private void notifyListeners() {
-        for (Consumer<GameDesignConfig> listener : changeListeners) {
+        GameDesignConfig current = getGlobalConfig();
+        for (Consumer<GameDesignConfig> listener : List.copyOf(changeListeners)) {
             try {
-                listener.accept(globalConfig);
+                listener.accept(current);
             } catch (Exception e) {
                 LOGGER.error("[GameDesignConfig] Error notifying listener", e);
             }
@@ -244,7 +249,7 @@ public class GameDesignConfigManager {
      * Get signature weapons config.
      */
     public GameDesignConfig.SignatureWeaponsConfig getSignatureWeaponsConfig() {
-        return globalConfig.signatureWeapons;
+        return getGlobalConfig().signatureWeapons;
     }
 
     /**
@@ -265,7 +270,7 @@ public class GameDesignConfigManager {
      * Get tide config.
      */
     public GameDesignConfig.TideConfig getTideConfig() {
-        return globalConfig.tide;
+        return getGlobalConfig().tide;
     }
 
     /**
@@ -286,7 +291,7 @@ public class GameDesignConfigManager {
     }
 
     public boolean isSignatureWeaponsEnabled() {
-        return globalConfig.signatureWeapons.enabled;
+        return getGlobalConfig().signatureWeapons.enabled;
     }
 
     public boolean isNemesisEnabled(@Nullable UUID instanceId) {
@@ -294,6 +299,6 @@ public class GameDesignConfigManager {
     }
 
     public boolean isTideEnabled() {
-        return globalConfig.tide.enabled;
+        return getGlobalConfig().tide.enabled;
     }
 }

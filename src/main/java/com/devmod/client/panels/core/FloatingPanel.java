@@ -24,6 +24,7 @@ public abstract class FloatingPanel {
     // === Tracking ===
     @Nullable
     protected EntityTracker tracker;
+    @Nullable
     protected Vec3 fixedPosition;
 
     // === Lifecycle ===

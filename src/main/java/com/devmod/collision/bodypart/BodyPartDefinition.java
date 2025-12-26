@@ -31,6 +31,7 @@ public record BodyPartDefinition(
     /**
      * Sentinel value for root-level parts (no parent).
      */
+    @Nullable
     public static final String ROOT = null;
 
     /**
@@ -121,7 +122,9 @@ public record BodyPartDefinition(
         private HitHelper.BodyPart bodyPartType = HitHelper.BodyPart.BODY;
         private Vec3 localOffset = Vec3.ZERO;
         private Vec3 halfExtents = new Vec3(0.25, 0.25, 0.25);
+        @Nullable
         private String parentBoneId = null;
+        @Nullable
         private String parentPartId = null;
         private int renderColor = COLOR_BODY;
         private float damageMultiplier = 1.0f;

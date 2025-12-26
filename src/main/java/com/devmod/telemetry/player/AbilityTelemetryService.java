@@ -15,6 +15,9 @@ import com.devmod.abilities.DodgeAbilitySystem;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
+import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregator;
+import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
 import com.devmod.telemetry.util.BitPackedFlags;
 
 public class AbilityTelemetryService {
@@ -61,10 +64,22 @@ public class AbilityTelemetryService {
         json.append("\"successRate\":"); appendFloat2(json, successRate);
         json.append("}");
 
-        // DuckDB: Primary storage
-        DuckDBTelemetryService.INSTANCE.logAbility(playerId, "dash", success,
-            null, (double) staminaBefore, (double) staminaAfter, (double) staminaCost,
-            null, null, null, null);
+        // Route through aggregation if enabled
+        boolean aggregated = false;
+        if (AggregationConfig.AGGREGATION_ENABLED) {
+            TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(playerId);
+            if (agg != null) {
+                // processAbility returns false if aggregated (don't write now)
+                aggregated = !agg.processAbility("dash", success, staminaCost, 0);
+            }
+        }
+
+        // DuckDB: Primary storage - skip if aggregated
+        if (!aggregated) {
+            DuckDBTelemetryService.INSTANCE.logAbility(playerId, "dash", success,
+                null, (double) staminaBefore, (double) staminaAfter, (double) staminaCost,
+                null, null, null, null);
+        }
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
@@ -116,10 +131,22 @@ public class AbilityTelemetryService {
         json.append("\"successRate\":"); appendFloat2(json, successRate);
         json.append("}");
 
-        // DuckDB: Primary storage
-        DuckDBTelemetryService.INSTANCE.logAbility(playerId, "dodge", success,
-            packedResult, (double) staminaBefore, (double) staminaAfter, (double) staminaCost,
-            null, null, null, null);
+        // Route through aggregation if enabled
+        boolean aggregated = false;
+        if (AggregationConfig.AGGREGATION_ENABLED) {
+            TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(playerId);
+            if (agg != null) {
+                // processAbility returns false if aggregated (don't write now)
+                aggregated = !agg.processAbility("dodge", success, staminaCost, 0);
+            }
+        }
+
+        // DuckDB: Primary storage - skip if aggregated
+        if (!aggregated) {
+            DuckDBTelemetryService.INSTANCE.logAbility(playerId, "dodge", success,
+                packedResult, (double) staminaBefore, (double) staminaAfter, (double) staminaCost,
+                null, null, null, null);
+        }
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
@@ -148,10 +175,22 @@ public class AbilityTelemetryService {
         json.append("\"totalDamageNegated\":"); appendFloat1(json, stats.totalDamageNegated);
         json.append("}");
 
-        // DuckDB: Primary storage
-        DuckDBTelemetryService.INSTANCE.logAbility(playerId, "perfect_dodge", true,
-            null, null, null, null,
-            (double) damageNegated, damageSource, null, null);
+        // Route through aggregation if enabled
+        boolean aggregated = false;
+        if (AggregationConfig.AGGREGATION_ENABLED) {
+            TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(playerId);
+            if (agg != null) {
+                // processAbility returns false if aggregated (don't write now)
+                aggregated = !agg.processAbility("perfect_dodge", true, 0, damageNegated);
+            }
+        }
+
+        // DuckDB: Primary storage - skip if aggregated
+        if (!aggregated) {
+            DuckDBTelemetryService.INSTANCE.logAbility(playerId, "perfect_dodge", true,
+                null, null, null, null,
+                (double) damageNegated, damageSource, null, null);
+        }
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {

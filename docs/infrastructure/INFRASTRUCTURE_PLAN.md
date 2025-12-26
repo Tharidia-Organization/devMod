@@ -1,5 +1,7 @@
 # Piano Infrastruttura - Gestione Completa Server Minecraft OVH
 
+> **Status**: PLANNING (roadmap; non validato)
+
 ## Obiettivo e principi
 Permettere a Claude di controllare totalmente il server Minecraft (filesystem, AMP, bot in-game) in modo sicuro, ripetibile e osservabile. Guidato da:
 - **Sicurezza by design:** least privilege, segreti fuori repo, audit trail per AMP/SSH.

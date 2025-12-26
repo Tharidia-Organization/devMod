@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -214,6 +216,7 @@ public class ChunkPerformanceVisualizer {
     /**
      * Get performance data for the chunk at given position.
      */
+    @Nullable
     public ChunkPerfData getChunkData(ChunkPos pos) {
         return chunkDataCache.get(pos);
     }

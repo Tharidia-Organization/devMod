@@ -26,9 +26,13 @@ public class ControllingCompat implements CompatModule {
     private static boolean initialized = false;
 
     // Cached reflection references
+    @Nullable
     private static Class<?> controllingClass;
+    @Nullable
     private static Class<?> controllingApiClass;
+    @Nullable
     private static Method getConflictsMethod;
+    @Nullable
     private static Method hasConflictMethod;
 
     // Cache of known conflicts (keybind name -> list of conflicting keybind names)

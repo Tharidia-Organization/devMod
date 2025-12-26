@@ -11,6 +11,8 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +49,10 @@ public class BossWaveSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(BossWaveSystem.class);
 
     public static final BossWaveSystem INSTANCE = new BossWaveSystem();
+
+    private static <T> @Nonnull T requireNonNull(T value, String name) {
+        return Objects.requireNonNull(value, name);
+    }
 
     // Active boss fights
     private final Map<UUID, BossFight> activeBosses = new ConcurrentHashMap<>();
@@ -439,15 +445,19 @@ public class BossWaveSystem {
             announceMixedBoss(level, spawnPos != null ? spawnPos : center, mixedData, waveNumber);
 
             // Telemetry: record boss wave start with variant info
+            String primaryName = requireNonNull(mixedData.primaryArchetype().name(), "primaryArchetype.name");
+            String secondaryName = requireNonNull(mixedData.secondaryArchetype().name(), "secondaryArchetype.name");
+            String variantName = requireNonNull(mixedData.variant().name(), "variant.name");
             String bossType = mixedData.isRareVariant()
-                ? mixedData.variant().name() + "_" + mixedData.primaryArchetype().name()
-                : mixedData.primaryArchetype().name() + "_" + mixedData.secondaryArchetype().name();
+                ? variantName + "_" + primaryName
+                : primaryName + "_" + secondaryName;
             EnduranceTelemetryService.INSTANCE.recordBossWaveStart(
                 quest.getQuestId(), waveNumber, bossType, boss.getMaxHealth(), playerCount
             );
 
+            String generatedName = requireNonNull(mixedData.generatedName(), "generatedName");
             LOGGER.info("[BossWave] Started boss wave {} with {} (variant={}, players={}, type={})",
-                waveNumber, mixedData.generatedName(), mixedData.variant(), playerCount, questType);
+                waveNumber, generatedName, mixedData.variant(), playerCount, questType);
         }
 
         return fight;
@@ -535,22 +545,28 @@ public class BossWaveSystem {
 
         // Visual indicators with blended color
         mob.setGlowingTag(true);
+        String generatedName = requireNonNull(mixedData.generatedName(), "generatedName");
         String colorCode = getColorCode(mixedData.blendedColor());
         String variantPrefix = mixedData.isRareVariant() ? "§d§l" : "§c§l";
-        mob.setCustomName(Component.literal(variantPrefix + mixedData.generatedName() + colorCode));
+        mob.setCustomName(Component.literal(variantPrefix + generatedName + colorCode));
         mob.setCustomNameVisible(true);
 
         // Tag as boss with DNA mixing data
         CompoundTag tag = mob.getPersistentData();
         tag.putBoolean("endurance_boss", true);
         tag.putBoolean("endurance_mixed_boss", true);
-        tag.putString("endurance_archetype", mixedData.primaryArchetype().name());
-        tag.putString("endurance_secondary_archetype", mixedData.secondaryArchetype().name());
-        if (mixedData.tertiaryArchetype() != null) {
-            tag.putString("endurance_tertiary_archetype", mixedData.tertiaryArchetype().name());
+        String primaryName = requireNonNull(mixedData.primaryArchetype().name(), "primaryArchetype.name");
+        String secondaryName = requireNonNull(mixedData.secondaryArchetype().name(), "secondaryArchetype.name");
+        String variantName = requireNonNull(mixedData.variant().name(), "variant.name");
+        tag.putString("endurance_archetype", primaryName);
+        tag.putString("endurance_secondary_archetype", secondaryName);
+        BossArchetype tertiaryArchetype = mixedData.tertiaryArchetype();
+        if (tertiaryArchetype != null) {
+            tag.putString("endurance_tertiary_archetype",
+                requireNonNull(tertiaryArchetype.name(), "tertiaryArchetype.name"));
         }
-        tag.putString("endurance_variant", mixedData.variant().name());
-        tag.putString("endurance_boss_name", mixedData.generatedName());
+        tag.putString("endurance_variant", variantName);
+        tag.putString("endurance_boss_name", generatedName);
         tag.putUUID("endurance_arena_id", arenaId);
         tag.putUUID("endurance_quest_id", safeQuestId);
 

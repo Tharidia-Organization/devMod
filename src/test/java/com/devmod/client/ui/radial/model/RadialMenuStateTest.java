@@ -49,7 +49,10 @@ class RadialMenuStateTest {
         @Test
         @DisplayName("initial() throws on null macro")
         void initialThrowsOnNullMacro() {
-            assertThrows(NullPointerException.class, () -> RadialMenuState.initial(null));
+            assertThrowsNpe(() -> {
+                var method = RadialMenuState.class.getMethod("initial", MacroCategory.class);
+                method.invoke(null, new Object[]{null});
+            });
         }
     }
 
@@ -287,7 +290,10 @@ class RadialMenuStateTest {
         @DisplayName("withSearchQuery throws on null")
         void withSearchQueryThrowsOnNull() {
             RadialMenuState state = RadialMenuState.initial();
-            assertThrows(NullPointerException.class, () -> state.withSearchQuery(null));
+            assertThrowsNpe(() -> {
+                var method = RadialMenuState.class.getMethod("withSearchQuery", String.class);
+                method.invoke(state, new Object[]{null});
+            });
         }
 
         @Test
@@ -454,5 +460,28 @@ class RadialMenuStateTest {
             assertSame(state, state.withSearchMode(false));
             assertSame(state, state.withSearchQuery(""));
         }
+    }
+
+    private static final String NULL_REFLECTION_ERROR = "Unexpected reflection error";
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+
+    private static void assertThrowsNpe(ThrowingRunnable action) {
+        assertThrows(NullPointerException.class, () -> {
+            try {
+                action.run();
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof NullPointerException npe) {
+                    throw npe;
+                }
+                throw new RuntimeException(cause);
+            } catch (Exception e) {
+                throw new RuntimeException(NULL_REFLECTION_ERROR, e);
+            }
+        });
     }
 }

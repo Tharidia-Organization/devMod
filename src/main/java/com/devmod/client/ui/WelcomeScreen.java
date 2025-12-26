@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -60,11 +61,17 @@ public class WelcomeScreen extends Screen {
 
     // === State ===
     private boolean dontShowAgain = false;
+    @Nullable
     private EditorToggle dontShowCheckbox;
+    @Nullable
     private Checkbox dontShowCheckboxWidget;
+    @Nullable
     private EditorButton tutorialButton;
+    @Nullable
     private Button tutorialButtonWidget;
+    @Nullable
     private EditorButton skipButton;
+    @Nullable
     private Button skipButtonWidget;
     private long openTime;
     private boolean introSoundPlayed = false;
@@ -162,9 +169,15 @@ public class WelcomeScreen extends Screen {
 
         // Show widgets after delay
         if (elapsed > BUTTONS_REVEAL_DELAY) {
-            tutorialButtonWidget.visible = true;
-            skipButtonWidget.visible = true;
-            dontShowCheckboxWidget.visible = true;
+            if (tutorialButtonWidget != null) {
+                tutorialButtonWidget.visible = true;
+            }
+            if (skipButtonWidget != null) {
+                skipButtonWidget.visible = true;
+            }
+            if (dontShowCheckboxWidget != null) {
+                dontShowCheckboxWidget.visible = true;
+            }
         }
 
         // Update particles
@@ -240,9 +253,15 @@ public class WelcomeScreen extends Screen {
         // Render widgets with fade
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float btnAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
-            tutorialButtonWidget.setAlpha(btnAlpha);
-            skipButtonWidget.setAlpha(btnAlpha);
-            dontShowCheckboxWidget.setAlpha(btnAlpha);
+            if (tutorialButtonWidget != null) {
+                tutorialButtonWidget.setAlpha(btnAlpha);
+            }
+            if (skipButtonWidget != null) {
+                skipButtonWidget.setAlpha(btnAlpha);
+            }
+            if (dontShowCheckboxWidget != null) {
+                dontShowCheckboxWidget.setAlpha(btnAlpha);
+            }
         }
 
         super.render(safeGraphics, mouseX, mouseY, partialTick);

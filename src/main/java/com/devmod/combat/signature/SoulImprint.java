@@ -4,10 +4,10 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -19,11 +19,10 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-
-import static java.util.Objects.requireNonNull;
 
 public class SoulImprint {
 
@@ -37,9 +36,13 @@ public class SoulImprint {
     private static final String NBT_STAGE = "Stage";
     private static final String NBT_CUSTOM_NAME = "CustomName";
     private static final String NBT_CREATED_TIME = "CreatedTime";
+    private static final String UNKNOWN_OWNER = "Unknown";
+    private static final String FALLBACK_WEAPON_NAME = "Weapon";
 
     // Owner information
+    @Nullable
     private UUID ownerId;
+    @Nullable
     private String ownerName;
 
     // Accumulated statistics
@@ -104,7 +107,9 @@ public class SoulImprint {
      * Automatically checks for trait unlocks.
      */
     public boolean recordStat(ImprintStat stat, int amount) {
-        if (amount <= 0) return false;
+        if (stat == null || amount <= 0) {
+            return false;
+        }
 
         int oldValue = stats.getOrDefault(stat, 0);
         int newValue = oldValue + amount;
@@ -130,6 +135,9 @@ public class SoulImprint {
      * Get current value of a stat.
      */
     public int getStat(ImprintStat stat) {
+        if (stat == null) {
+            return 0;
+        }
         return stats.getOrDefault(stat, 0);
     }
 
@@ -137,6 +145,9 @@ public class SoulImprint {
      * Get progress toward a trait (0.0 to 1.0+).
      */
     public float getTraitProgress(ImprintStat stat) {
+        if (stat == null) {
+            return 0.0f;
+        }
         return (float) getStat(stat) / stat.traitThreshold;
     }
 
@@ -170,55 +181,76 @@ public class SoulImprint {
     /**
      * Generate the evolved display name for this weapon.
      */
-    @Nonnull
     public Component getEvolvedName(ItemStack stack) {
-        Component hoverName = requireNonNull(stack.getHoverName(), "stack hover name");
-        String baseName = requireNonNull(hoverName.getString(), "baseName");
-        String ownerDisplayName = requireNonNull(ownerName != null ? ownerName : "Unknown", "ownerDisplayName");
-        Style baseStyle = requireNonNull(Style.EMPTY, "Style.EMPTY");
+        Component hoverName = stack.getHoverName();
+        String baseName = sanitizeName(hoverName != null ? hoverName.getString() : null, FALLBACK_WEAPON_NAME);
+        String ownerDisplayName = sanitizeName(ownerName, UNKNOWN_OWNER);
+        Style baseStyle = Style.EMPTY;
+        String weaponType = getWeaponType(baseName);
 
         return switch (evolutionStage) {
-            case 0 -> requireNonNull(Component.literal(baseName), "stage0 component");
+            case 0 -> Component.literal(baseName);
             case 1 -> {
-                String displayName = ownerDisplayName + "'s " + baseName;
-                Style style = requireNonNull(baseStyle.withColor(0xAAAAAA), "stage1 style");
-                yield requireNonNull(Component.literal(displayName), "stage1 component").withStyle(style);
+                yield styledLiteral(
+                    ownerDisplayName + "'s " + baseName,
+                    baseStyle.withColor(0xAAAAAA)
+                );
             }
             case 2 -> {
-                // Find primary trait for naming
-                WeaponTrait primaryTrait = getPrimaryTrait();
-                String traitName = primaryTrait != null ? primaryTrait.getAdjective() : null;
-                String displayName = ownerDisplayName + "'s "
-                    + (traitName != null ? traitName : "Enhanced")
-                    + " " + getWeaponType(baseName);
-                Style style = requireNonNull(baseStyle.withColor(0x55FF55), "stage2 style");
-                yield requireNonNull(Component.literal(displayName), "stage2 component").withStyle(style);
+                String adjective = resolvePrimaryAdjective("Enhanced");
+                yield styledLiteral(
+                    ownerDisplayName + "'s " + adjective + " " + weaponType,
+                    baseStyle.withColor(0x55FF55)
+                );
             }
             case 3 -> {
-                WeaponTrait primaryTrait = getPrimaryTrait();
-                String traitName = primaryTrait != null ? primaryTrait.getAdjective() : null;
-                String displayName = ownerDisplayName + "'s "
-                    + (traitName != null ? traitName : "Legendary")
-                    + " " + getWeaponType(baseName);
-                Style style = requireNonNull(
-                    baseStyle.withColor(0x5555FF).withBold(true),
-                    "stage3 style"
+                String adjective = resolvePrimaryAdjective("Legendary");
+                yield styledLiteral(
+                    ownerDisplayName + "'s " + adjective + " " + weaponType,
+                    baseStyle.withColor(0x5555FF).withBold(true)
                 );
-                yield requireNonNull(Component.literal(displayName), "stage3 component").withStyle(style);
             }
             case 4 -> {
                 // Unique legendary name
-                String uniqueName = customName != null ? customName : generateUniqueName();
+                String uniqueName = resolveCustomName();
                 String title = generateTitle();
-                String displayName = requireNonNull(uniqueName, "uniqueName") + ", the " + requireNonNull(title, "title");
-                Style style = requireNonNull(
-                    baseStyle.withColor(0xFF55FF).withBold(true).withItalic(true),
-                    "stage4 style"
+                yield styledLiteral(
+                    uniqueName + ", the " + title,
+                    baseStyle.withColor(0xFF55FF).withBold(true).withItalic(true)
                 );
-                yield requireNonNull(Component.literal(displayName), "stage4 component").withStyle(style);
             }
-            default -> requireNonNull(Component.literal(baseName), "default component");
+            default -> Component.literal(baseName);
         };
+    }
+
+    private static MutableComponent styledLiteral(String name, Style style) {
+        String safeName = name == null ? "" : name;
+        Style safeStyle = style == null ? Style.EMPTY : style;
+        return Component.literal(safeName).setStyle(safeStyle);
+    }
+
+    private static String sanitizeName(@Nullable String value, String fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? fallback : trimmed;
+    }
+
+    private String resolvePrimaryAdjective(String fallback) {
+        WeaponTrait primaryTrait = getPrimaryTrait();
+        if (primaryTrait == null) {
+            return fallback;
+        }
+        return sanitizeName(primaryTrait.getAdjective(), fallback);
+    }
+
+    private String resolveCustomName() {
+        if (customName == null) {
+            return generateUniqueName();
+        }
+        String trimmed = customName.trim();
+        return trimmed.isEmpty() ? generateUniqueName() : trimmed;
     }
 
     /**
@@ -233,7 +265,7 @@ public class SoulImprint {
      * Extract weapon type from name (e.g., "Diamond Sword" -> "Blade").
      */
     private String getWeaponType(String baseName) {
-        String lower = baseName.toLowerCase();
+        String lower = baseName.toLowerCase(Locale.ROOT);
         if (lower.contains("sword")) return "Blade";
         if (lower.contains("axe")) return "Cleaver";
         if (lower.contains("bow")) return "Bow";
@@ -259,7 +291,8 @@ public class SoulImprint {
 
         // Use owner name hash for consistent naming
         int hash = ownerName != null ? ownerName.hashCode() : (int) createdTime;
-        return prefixes.get(Math.abs(hash) % prefixes.size());
+        int index = Math.floorMod(hash, prefixes.size());
+        return prefixes.get(index);
     }
 
     /**
@@ -314,8 +347,7 @@ public class SoulImprint {
         CompoundTag statsTag = new CompoundTag();
         for (var entry : stats.entrySet()) {
             if (entry.getValue() > 0) {
-                String statKey = requireNonNull(entry.getKey().name(), "ImprintStat name");
-                statsTag.putInt(statKey, entry.getValue());
+                statsTag.putInt(entry.getKey().name(), entry.getValue());
             }
         }
         tag.put(NBT_STATS, statsTag);
@@ -323,8 +355,10 @@ public class SoulImprint {
         // Save traits
         ListTag traitsList = new ListTag();
         for (WeaponTrait trait : unlockedTraits) {
-            String traitId = requireNonNull(trait.getId(), "trait id").toString();
-            traitsList.add(StringTag.valueOf(traitId));
+            var traitId = trait.getId();
+            if (traitId != null) {
+                traitsList.add(StringTag.valueOf(traitId.toString()));
+            }
         }
         tag.put(NBT_TRAITS, traitsList);
 
@@ -336,9 +370,8 @@ public class SoulImprint {
         }
 
         // Store in item's custom data component (1.21.1 API)
-        final CompoundTag finalTag = tag;
-        CustomData.update(requireNonNull(DataComponents.CUSTOM_DATA), requireNonNull(stack),
-            existingTag -> existingTag.put(NBT_KEY, finalTag));
+        CustomData.update(DataComponents.CUSTOM_DATA, stack,
+            existingTag -> existingTag.put(NBT_KEY, tag));
     }
 
     /**
@@ -346,7 +379,7 @@ public class SoulImprint {
      */
     @Nullable
     public static SoulImprint loadFromItem(ItemStack stack) {
-        CustomData customData = stack.get(requireNonNull(DataComponents.CUSTOM_DATA));
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
         if (customData == null || !customData.contains(NBT_KEY)) {
             return null;
         }
@@ -364,7 +397,7 @@ public class SoulImprint {
         // Load stats
         CompoundTag statsTag = tag.getCompound(NBT_STATS);
         for (ImprintStat stat : ImprintStat.values()) {
-            String statKey = requireNonNull(stat.name(), "ImprintStat name");
+            String statKey = stat.name();
             if (statsTag.contains(statKey)) {
                 imprint.stats.put(stat, statsTag.getInt(statKey));
             }
@@ -394,22 +427,24 @@ public class SoulImprint {
      * Check if an item has a soul imprint.
      */
     public static boolean hasImprint(ItemStack stack) {
-        CustomData customData = stack.get(requireNonNull(DataComponents.CUSTOM_DATA));
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
         return customData != null && customData.contains(NBT_KEY);
     }
 
     // ========== Getters ==========
 
+    @Nullable
     public UUID getOwnerId() { return ownerId; }
+    @Nullable
     public String getOwnerName() { return ownerName; }
     public int getEvolutionStage() { return evolutionStage; }
     public Set<WeaponTrait> getUnlockedTraits() { return Collections.unmodifiableSet(unlockedTraits); }
     public int getTraitCount() { return unlockedTraits.size(); }
     public long getCreatedTime() { return createdTime; }
 
-    public void setOwnerId(UUID ownerId) { this.ownerId = ownerId; }
-    public void setOwnerName(String ownerName) { this.ownerName = ownerName; }
-    public void setCustomName(String customName) { this.customName = customName; }
+    public void setOwnerId(@Nullable UUID ownerId) { this.ownerId = ownerId; }
+    public void setOwnerName(@Nullable String ownerName) { this.ownerName = ownerName; }
+    public void setCustomName(@Nullable String customName) { this.customName = customName; }
 
     /**
      * Check if this imprint belongs to a specific player.
@@ -423,4 +458,5 @@ public class SoulImprint {
      */
     public int getTotalKills() { return getStat(ImprintStat.TOTAL_KILLS); }
     public int getTotalDamage() { return getStat(ImprintStat.TOTAL_DAMAGE); }
+
 }

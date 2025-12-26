@@ -136,7 +136,12 @@ public final class DuckDBSchemaManager {
             createArenaTemplateAlertsTable(stmt);
             createArenaSpatialEventsTable(stmt);
 
-            LOGGER.info("[DuckDB] Created 39 tables");
+            // Aggregation tables (V9)
+            createCombatAggregatesTable(stmt);
+            createAbilityAggregatesTable(stmt);
+            createHeatmapAggregatesTable(stmt);
+
+            LOGGER.info("[DuckDB] Created 42 tables");
         }
     }
 
@@ -1092,6 +1097,81 @@ public final class DuckDBSchemaManager {
     }
 
     // ============================================
+    // AGGREGATION TABLES (V10)
+    // ============================================
+
+    private static void createCombatAggregatesTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS combat_aggregates (
+                id              BIGINT PRIMARY KEY,
+                ts              TIMESTAMP NOT NULL DEFAULT NOW(),
+                player_id       UUID NOT NULL,
+                window_start    TIMESTAMP NOT NULL,
+                window_end      TIMESTAMP NOT NULL,
+                hit_count       INTEGER NOT NULL,
+                miss_count      INTEGER NOT NULL DEFAULT 0,
+                total_damage    DOUBLE NOT NULL,
+                kill_count      INTEGER NOT NULL DEFAULT 0,
+                critical_hits   INTEGER NOT NULL DEFAULT 0,
+                weapon_stats_json VARCHAR,
+                target_stats_json VARCHAR,
+                session_id      UUID,
+                quest_id        UUID,
+                template_id     VARCHAR(128),
+                template_version INTEGER
+            )
+            """);
+        stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_combat_aggregates START 1");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_combat_aggregates_player ON combat_aggregates(player_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_combat_aggregates_ts ON combat_aggregates(ts)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_combat_aggregates_session ON combat_aggregates(session_id)");
+    }
+
+    private static void createAbilityAggregatesTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS ability_aggregates (
+                id              BIGINT PRIMARY KEY,
+                ts              TIMESTAMP NOT NULL DEFAULT NOW(),
+                player_id       UUID NOT NULL,
+                window_start    TIMESTAMP NOT NULL,
+                window_end      TIMESTAMP NOT NULL,
+                ability_type    VARCHAR(32) NOT NULL,
+                attempt_count   INTEGER NOT NULL,
+                success_count   INTEGER NOT NULL,
+                total_stamina_cost DOUBLE NOT NULL DEFAULT 0,
+                total_damage_negated DOUBLE NOT NULL DEFAULT 0,
+                session_id      UUID
+            )
+            """);
+        stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_ability_aggregates START 1");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_ability_aggregates_player ON ability_aggregates(player_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_ability_aggregates_ts ON ability_aggregates(ts)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_ability_aggregates_session ON ability_aggregates(session_id)");
+    }
+
+    private static void createHeatmapAggregatesTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS heatmap_aggregates (
+                id              BIGINT PRIMARY KEY,
+                ts              TIMESTAMP NOT NULL DEFAULT NOW(),
+                player_id       UUID NOT NULL,
+                window_start    TIMESTAMP NOT NULL,
+                window_end      TIMESTAMP NOT NULL,
+                heatmap_type    VARCHAR(32) NOT NULL,
+                grid_data_json  VARCHAR NOT NULL,
+                grid_size       INTEGER NOT NULL,
+                total_samples   INTEGER NOT NULL,
+                session_id      UUID,
+                template_id     VARCHAR(128)
+            )
+            """);
+        stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_heatmap_aggregates START 1");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_heatmap_aggregates_player ON heatmap_aggregates(player_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_heatmap_aggregates_ts ON heatmap_aggregates(ts)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_heatmap_aggregates_type ON heatmap_aggregates(heatmap_type)");
+    }
+
+    // ============================================
     // MIGRATIONS
     // ============================================
 
@@ -1256,6 +1336,16 @@ public final class DuckDBSchemaManager {
             try (Statement stmt = conn.createStatement()) {
                 createArenaTemplateErrorsTable(stmt);
                 createArenaTemplateAlertsTable(stmt);
+            }
+        }
+
+        // Migration V9 -> V10: Add aggregation tables (LVC + per-player aggregation)
+        if (oldVersion < 10) {
+            LOGGER.info("[DuckDB] Running migration V9 -> V10: Adding aggregation tables");
+            try (Statement stmt = conn.createStatement()) {
+                createCombatAggregatesTable(stmt);
+                createAbilityAggregatesTable(stmt);
+                createHeatmapAggregatesTable(stmt);
             }
         }
 

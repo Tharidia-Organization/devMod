@@ -44,6 +44,7 @@ public class TrackedEntity {
     // === Line of Sight State ===
     private boolean hasLineOfSight;
     private Vec3 lastKnownPosition;
+    @Nullable
     private Vec3 lastBlockedPoint;
 
     // === Temporal Tracking ===

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.annotation.Nullable;
+
 import com.devmod.DevMod;
 import com.devmod.config.EditorClientConfig;
 
@@ -30,8 +32,11 @@ public final class EditorConfig {
     private static final List<ConfigChangeListener> listeners = new CopyOnWriteArrayList<>();
 
     // Cache previous values to detect actual changes
+    @Nullable
     private static EditorClientConfig.EditorUiScale cachedUiScale = null;
+    @Nullable
     private static Boolean cachedSoundsEnabled = null;
+    @Nullable
     private static EditorClientConfig.EditorDefaultMode cachedDefaultMode = null;
 
     /**

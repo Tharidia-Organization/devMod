@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,10 @@ public class BossDNAMixer {
     private static final Logger LOGGER = LoggerFactory.getLogger(BossDNAMixer.class);
 
     public static final BossDNAMixer INSTANCE = new BossDNAMixer();
+
+    private static <T> @Nonnull T requireNonNull(T value, String name) {
+        return Objects.requireNonNull(value, name);
+    }
 
     // Mixing configuration
     private static final float PRIMARY_WEIGHT = 0.70f;
@@ -399,7 +406,8 @@ public class BossDNAMixer {
         float attackDamage = 1.0f;
 
         // Get player's attack damage if available
-        var damageAttr = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+        var damageAttr = player.getAttribute(
+            requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE, "ATTACK_DAMAGE"));
         if (damageAttr != null) {
             attackDamage = (float) damageAttr.getValue();
         }

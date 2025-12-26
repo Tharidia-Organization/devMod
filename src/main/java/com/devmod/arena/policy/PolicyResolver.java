@@ -29,6 +29,7 @@ import com.devmod.arena.telemetry.ArenaTelemetry;
 
 public class PolicyResolver implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolicyResolver.class);
+    private boolean loggingEnabled = true;
 
     // DD4: Weight configuration (taratura via telemetry)
     private static final int WEIGHT_MOB_MATCH = 5;
@@ -108,7 +109,13 @@ public class PolicyResolver implements AutoCloseable {
             TimeUnit.MILLISECONDS
         );
 
-        LOGGER.info("PolicyResolver initialized with lock cleanup every {}ms", lockCleanupIntervalMs);
+        if (loggingEnabled) {
+            LOGGER.info("PolicyResolver initialized with lock cleanup every {}ms", lockCleanupIntervalMs);
+        }
+    }
+
+    public void setLoggingEnabled(boolean enabled) {
+        this.loggingEnabled = enabled;
     }
 
     /**
@@ -132,7 +139,9 @@ public class PolicyResolver implements AutoCloseable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             telemetry.emit("arena.resolve.interrupted", Map.of("playerId", playerId.toString()));
-            LOGGER.warn("Resolve interrupted for player {}, falling back to default", playerId);
+            if (loggingEnabled) {
+                LOGGER.warn("Resolve interrupted for player {}, falling back to default", playerId);
+            }
             return getDefaultArena(context);
         }
 
@@ -144,7 +153,9 @@ public class PolicyResolver implements AutoCloseable {
 
         if (!acquired) {
             lockTimeoutCount.incrementAndGet();
-            LOGGER.warn("Lock timeout for player {}, falling back to default", playerId);
+            if (loggingEnabled) {
+                LOGGER.warn("Lock timeout for player {}, falling back to default", playerId);
+            }
             telemetry.emitLockTimeout(playerId, lockTimeoutMs);
             return getDefaultArena(context);
         }
@@ -175,7 +186,9 @@ public class PolicyResolver implements AutoCloseable {
             if (policy != null) {
                 return resolveWithPolicy(context, policy, Map.of("forced", 100.0));
             }
-            LOGGER.warn("Forced policy '{}' not found, continuing with normal resolution", context.forcePolicyId());
+            if (loggingEnabled) {
+                LOGGER.warn("Forced policy '{}' not found, continuing with normal resolution", context.forcePolicyId());
+            }
         }
 
         if (context.forceTemplateId() != null) {
@@ -187,7 +200,9 @@ public class PolicyResolver implements AutoCloseable {
                     Map.of("forced_template", 100.0)
                 );
             }
-            LOGGER.warn("Forced template '{}' not found, continuing with normal resolution", context.forceTemplateId());
+            if (loggingEnabled) {
+                LOGGER.warn("Forced template '{}' not found, continuing with normal resolution", context.forceTemplateId());
+            }
         }
 
         // Score all policies
@@ -199,7 +214,9 @@ public class PolicyResolver implements AutoCloseable {
             .toList();
 
         if (scoredPolicies.isEmpty()) {
-            LOGGER.debug("No matching policies for context, using default");
+            if (loggingEnabled) {
+                LOGGER.debug("No matching policies for context, using default");
+            }
             fallbackCount.incrementAndGet();
             return getDefaultArena(context);
         }
@@ -280,7 +297,9 @@ public class PolicyResolver implements AutoCloseable {
         double requested = policy.weight();
         double clamped = Math.min(MAX_POLICY_WEIGHT, Math.max(MIN_POLICY_WEIGHT, requested));
         if (clamped != requested && weightClampEmitted.add(policy.id())) {
-            LOGGER.warn("Policy '{}' weight {} clamped to {}", policy.id(), requested, clamped);
+            if (loggingEnabled) {
+                LOGGER.warn("Policy '{}' weight {} clamped to {}", policy.id(), requested, clamped);
+            }
             telemetry.emit("arena.routing.weight_clamped", Map.of(
                 "policyId", policy.id(),
                 "requestedWeight", requested,
@@ -469,7 +488,9 @@ public class PolicyResolver implements AutoCloseable {
         }
 
         if (removedCount > 0) {
-            LOGGER.debug("Lock cleanup: removed {} stale locks, {} remaining", removedCount, playerLocks.size());
+            if (loggingEnabled) {
+                LOGGER.debug("Lock cleanup: removed {} stale locks, {} remaining", removedCount, playerLocks.size());
+            }
             telemetry.emit("arena.resolver.lock_cleanup", Map.of(
                 "removedCount", removedCount,
                 "beforeSize", beforeSize,
@@ -493,7 +514,9 @@ public class PolicyResolver implements AutoCloseable {
     public void registerPolicy(ArenaPolicy policy) {
         ArenaPolicy normalized = clampPolicyWeight(policy);
         policies.put(normalized.id(), normalized);
-        LOGGER.debug("Policy '{}' registered", normalized.id());
+        if (loggingEnabled) {
+            LOGGER.debug("Policy '{}' registered", normalized.id());
+        }
     }
 
     /**
@@ -502,7 +525,9 @@ public class PolicyResolver implements AutoCloseable {
     public boolean unregisterPolicy(String policyId) {
         ArenaPolicy removed = policies.remove(policyId);
         if (removed != null) {
-            LOGGER.debug("Policy '{}' unregistered", policyId);
+            if (loggingEnabled) {
+                LOGGER.debug("Policy '{}' unregistered", policyId);
+            }
             return true;
         }
         return false;
@@ -559,7 +584,9 @@ public class PolicyResolver implements AutoCloseable {
             cleanupScheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
-        LOGGER.info("PolicyResolver shutdown complete");
+        if (loggingEnabled) {
+            LOGGER.info("PolicyResolver shutdown complete");
+        }
     }
 
     // ===================

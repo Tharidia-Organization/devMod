@@ -28,13 +28,13 @@ public class EditorSettingsPage implements SettingsPage {
     private static final int PREVIEW_PADDING = 6;
 
     // Track original values
-    private EditorClientConfig.EditorUiScale originalUiScale;
-    private EditorClientConfig.EditorDefaultMode originalDefaultMode;
+    private EditorClientConfig.EditorUiScale originalUiScale = EditorClientConfig.EditorUiScale.AUTO;
+    private EditorClientConfig.EditorDefaultMode originalDefaultMode = EditorClientConfig.EditorDefaultMode.PREVIEW;
     private boolean originalSoundsEnabled;
 
     // Current values
-    private EditorClientConfig.EditorUiScale currentUiScale;
-    private EditorClientConfig.EditorDefaultMode currentDefaultMode;
+    private EditorClientConfig.EditorUiScale currentUiScale = EditorClientConfig.EditorUiScale.AUTO;
+    private EditorClientConfig.EditorDefaultMode currentDefaultMode = EditorClientConfig.EditorDefaultMode.PREVIEW;
     private boolean currentSoundsEnabled;
 
     // Scale button options

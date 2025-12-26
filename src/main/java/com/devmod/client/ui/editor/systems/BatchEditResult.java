@@ -3,15 +3,20 @@ package com.devmod.client.ui.editor.systems;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 public class BatchEditResult {
     public static class FailureDetail {
         public final String itemName;
+        @Nullable
         public final String itemId; // registry id if available
         public final int slot;
+        @Nullable
         public final String message;
+        @Nullable
         public final String stackTrace; // optional
 
-        public FailureDetail(String itemName, String itemId, int slot, String message, String stackTrace) {
+        public FailureDetail(String itemName, @Nullable String itemId, int slot, @Nullable String message, @Nullable String stackTrace) {
             this.itemName = itemName;
             this.itemId = itemId;
             this.slot = slot;
@@ -22,7 +27,8 @@ public class BatchEditResult {
         @Override
         public String toString() {
             String idPart = itemId == null ? "<unknown-id>" : itemId;
-            return "slot#" + slot + " " + idPart + " (" + itemName + ") - " + message;
+            String messagePart = message == null ? "<no message>" : message;
+            return "slot#" + slot + " " + idPart + " (" + itemName + ") - " + messagePart;
         }
     }
 

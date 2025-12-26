@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -41,7 +43,7 @@ public class HeaderComponent {
     /**
      * Tab definition for the header.
      */
-    public record TabInfo(String id, String label, String tooltip) {}
+    public record TabInfo(String id, String label, @Nullable String tooltip) {}
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -69,7 +71,9 @@ public class HeaderComponent {
     private ResponsiveLayout.Rect closeBounds = ResponsiveLayout.Rect.EMPTY;
 
     // Callbacks
+    @Nullable
     private Consumer<Integer> onTabChange;
+    @Nullable
     private Runnable onClose;
 
     // ═══════════════════════════════════════════════════════════════
@@ -85,7 +89,7 @@ public class HeaderComponent {
     // CONFIGURATION
     // ═══════════════════════════════════════════════════════════════
 
-    public HeaderComponent addTab(String id, String label, String tooltip) {
+    public HeaderComponent addTab(String id, String label, @Nullable String tooltip) {
         tabs.add(new TabInfo(id, label, tooltip));
         return this;
     }
@@ -474,6 +478,7 @@ public class HeaderComponent {
         return selectedTabIndex;
     }
 
+    @Nullable
     public TabInfo getSelectedTab() {
         if (selectedTabIndex >= 0 && selectedTabIndex < tabs.size()) {
             return tabs.get(selectedTabIndex);
@@ -481,6 +486,7 @@ public class HeaderComponent {
         return null;
     }
 
+    @Nullable
     public String getSelectedTabId() {
         TabInfo tab = getSelectedTab();
         return tab != null ? tab.id() : null;

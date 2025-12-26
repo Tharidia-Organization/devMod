@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -98,9 +101,9 @@ public class UserFlowSimulationTest {
         private final Map<UUID, Boolean> memberReady = new ConcurrentHashMap<>();
         private final Set<UUID> pendingInvites = ConcurrentHashMap.newKeySet();
         private SimQuestType questType;
-        private SimResourceLocation selectedMobId;
+        private @Nullable SimResourceLocation selectedMobId;
         private SimPartyState state;
-        private UUID instanceId;
+        private @Nullable UUID instanceId;
         private SimMobPreset mobPreset = SimMobPreset.STANDARD;
 
         public SimPartyData(UUID leaderId, String leaderName, SimQuestType questType) {
@@ -225,12 +228,12 @@ public class UserFlowSimulationTest {
         public String getLeaderName() { return leaderName; }
         public Set<UUID> getMembers() { return Collections.unmodifiableSet(members); }
         public int getMemberCount() { return members.size(); }
-        public String getMemberName(UUID id) { return memberNames.get(id); }
+        public @Nullable String getMemberName(UUID id) { return memberNames.get(id); }
         public SimQuestType getQuestType() { return questType; }
-        public SimResourceLocation getSelectedMobId() { return selectedMobId; }
+        public @Nullable SimResourceLocation getSelectedMobId() { return selectedMobId; }
         public SimMobPreset getMobPreset() { return mobPreset; }
         public SimPartyState getState() { return state; }
-        public UUID getInstanceId() { return instanceId; }
+        public @Nullable UUID getInstanceId() { return instanceId; }
         public boolean isFull() { return members.size() >= questType.maxPlayers; }
         public int getRemainingSlots() { return Math.max(0, questType.maxPlayers - members.size() - pendingInvites.size()); }
     }
@@ -288,7 +291,7 @@ public class UserFlowSimulationTest {
 
             // 2. Player selects mob type
             assertTrue(party.setSelectedMobId(player1Id, SimResourceLocation.of("minecraft:zombie")));
-            assertEquals("minecraft:zombie", party.getSelectedMobId().toString());
+            assertEquals("minecraft:zombie", Objects.requireNonNull(party.getSelectedMobId()).toString());
 
             // 3. Player can start immediately (PVE_COOP allows solo)
             assertTrue(party.canStartQuest(), "PVE_COOP should allow solo play");
@@ -456,7 +459,7 @@ public class UserFlowSimulationTest {
 
             // Leader selects zombie
             assertTrue(party.setSelectedMobId(player1Id, SimResourceLocation.of("minecraft:zombie")));
-            assertEquals("minecraft:zombie", party.getSelectedMobId().toString());
+            assertEquals("minecraft:zombie", Objects.requireNonNull(party.getSelectedMobId()).toString());
 
             // Leader changes to skeleton
             assertTrue(party.setSelectedMobId(player1Id, SimResourceLocation.of("minecraft:skeleton")));
@@ -490,7 +493,7 @@ public class UserFlowSimulationTest {
 
             // Try to change mob
             assertFalse(party.setSelectedMobId(player1Id, SimResourceLocation.of("minecraft:blaze")));
-            assertEquals("minecraft:zombie", party.getSelectedMobId().toString());
+            assertEquals("minecraft:zombie", Objects.requireNonNull(party.getSelectedMobId()).toString());
         }
 
         @Test
@@ -506,7 +509,7 @@ public class UserFlowSimulationTest {
             party.addMember(player3Id, "Member3");
 
             // Mob selection should persist
-            assertEquals("minecraft:blaze", party.getSelectedMobId().toString());
+            assertEquals("minecraft:blaze", Objects.requireNonNull(party.getSelectedMobId()).toString());
         }
     }
 
@@ -667,7 +670,7 @@ public class UserFlowSimulationTest {
             assertEquals(SimPartyState.IN_QUEST, party.getState());
 
             // 7. Verify configurations persist during quest
-            assertEquals("minecraft:wither_skeleton", party.getSelectedMobId().toString());
+            assertEquals("minecraft:wither_skeleton", Objects.requireNonNull(party.getSelectedMobId()).toString());
             assertEquals(SimMobPreset.BOSS_STYLE, party.getMobPreset());
 
             // 8. Quest completes
@@ -710,7 +713,7 @@ public class UserFlowSimulationTest {
 
             // Start second quest
             assertTrue(party.startQuest(UUID.randomUUID()));
-            assertEquals("minecraft:skeleton", party.getSelectedMobId().toString());
+            assertEquals("minecraft:skeleton", Objects.requireNonNull(party.getSelectedMobId()).toString());
         }
 
         @Test
@@ -919,7 +922,7 @@ public class UserFlowSimulationTest {
             SimPartyData party = new SimPartyData(player1Id, "Leader", SimQuestType.PVE_COOP);
 
             assertTrue(party.setSelectedMobId(player1Id, SimResourceLocation.of(mobId)));
-            assertEquals(mobId, party.getSelectedMobId().toString());
+            assertEquals(mobId, Objects.requireNonNull(party.getSelectedMobId()).toString());
         }
     }
 }

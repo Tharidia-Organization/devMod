@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 public class ArenaFailureHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaFailureHandler.class);
+    private volatile boolean loggingEnabled = true;
 
     /**
      * Player-facing messages for each failure type.
@@ -78,6 +79,13 @@ public class ArenaFailureHandler {
     }
 
     /**
+     * Enable or disable logging for this handler instance.
+     */
+    public void setLoggingEnabled(boolean enabled) {
+        this.loggingEnabled = enabled;
+    }
+
+    /**
      * Handle a failure with full logging and optional alerting.
      *
      * @param type The failure type
@@ -126,6 +134,9 @@ public class ArenaFailureHandler {
     }
 
     private void logFailure(FailureEvent event) {
+        if (!loggingEnabled) {
+            return;
+        }
         String logMessage = buildLogMessage(event);
 
         if (event.exception() != null) {
@@ -174,8 +185,10 @@ public class ArenaFailureHandler {
     }
 
     private void triggerAlert(FailureEvent event) {
-        LOGGER.error("CRITICAL ALERT: {} failure detected. Context: {}",
-            event.type(), event.context());
+        if (loggingEnabled) {
+            LOGGER.error("CRITICAL ALERT: {} failure detected. Context: {}",
+                event.type(), event.context());
+        }
 
         for (Consumer<FailureEvent> handler : alertHandlers) {
             try {

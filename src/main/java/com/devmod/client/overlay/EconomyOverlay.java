@@ -5,6 +5,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -73,7 +75,9 @@ public class EconomyOverlay {
     private static int scrollOffset = 0;
 
     // Cached stats
+    @Nullable
     private static EconomyMetricsService.SessionEconomyStats cachedStats = null;
+    @Nullable
     private static List<EconomyMetricsService.MobDropSummary> cachedMobStats = null;
     private static int cachedTotalKills = 0;
 

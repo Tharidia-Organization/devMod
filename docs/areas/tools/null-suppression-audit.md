@@ -1,5 +1,7 @@
 # Null-Suppression Audit Plan
 
+> **Status**: PLANNING (not active; excluded from validation)
+
 Goal: remove `@SuppressWarnings("null")` (and similar unchecked-null issues) across the project with deterministic coverage and no regressions.
 
 ## Inventory (from `rg '@SuppressWarnings("null")'`)

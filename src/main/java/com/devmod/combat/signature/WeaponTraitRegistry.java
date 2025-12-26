@@ -7,9 +7,11 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ import com.devmod.config.gamedesign.GameDesignConfigManager;
 public class WeaponTraitRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeaponTraitRegistry.class);
+    private static final String MOD_ID = requireNonNull(DevMod.MODID, "DevMod.MODID");
 
     public static final WeaponTraitRegistry INSTANCE = new WeaponTraitRegistry();
 
@@ -33,7 +36,7 @@ public class WeaponTraitRegistry {
     // ========== Predefined Traits ==========
 
     public static final WeaponTrait EXECUTIONER = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "executioner"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "executioner"))
         .adjective("Executioner's")
         .requiredStat(SoulImprint.ImprintStat.HEADSHOTS)
         .effect(WeaponTrait.TraitEffectType.HEADSHOT_BONUS, 0.15f) // +15% headshot damage
@@ -41,7 +44,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait TYRANT_SLAYER = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "tyrant_slayer"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "tyrant_slayer"))
         .adjective("Tyrant-Slaying")
         .requiredStat(SoulImprint.ImprintStat.BOSS_KILLS)
         .effect(WeaponTrait.TraitEffectType.BOSS_DAMAGE, 0.30f) // +30% vs bosses
@@ -49,7 +52,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait STYLISH = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "stylish"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "stylish"))
         .adjective("Stylish")
         .requiredStat(SoulImprint.ImprintStat.SSS_WAVES)
         .effect(WeaponTrait.TraitEffectType.STYLE_GAIN, 0.20f) // +20% style gain
@@ -57,7 +60,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait BLOODTHIRSTY = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "bloodthirsty"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "bloodthirsty"))
         .adjective("Bloodthirsty")
         .requiredStat(SoulImprint.ImprintStat.TOTAL_KILLS)
         .effect(WeaponTrait.TraitEffectType.LIFESTEAL, 0.005f) // 0.5% lifesteal
@@ -65,7 +68,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait HARMONIC = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "harmonic"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "harmonic"))
         .adjective("Harmonic")
         .requiredStat(SoulImprint.ImprintStat.PERFECT_RESONANCES)
         .effect(WeaponTrait.TraitEffectType.RESONANCE_BONUS, 0.50f) // +50% resonance damage
@@ -73,7 +76,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait PRECISION = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "precision"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "precision"))
         .adjective("Precise")
         .requiredStat(SoulImprint.ImprintStat.CRITICAL_HITS)
         .effect(WeaponTrait.TraitEffectType.CRIT_CHANCE, 0.10f) // +10% crit chance
@@ -81,7 +84,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait RELENTLESS = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "relentless"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "relentless"))
         .adjective("Relentless")
         .requiredStat(SoulImprint.ImprintStat.HIGH_COMBOS)
         .effect(WeaponTrait.TraitEffectType.COMBO_DECAY, 0.20f) // -20% combo decay
@@ -89,7 +92,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait GUARDIAN = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "guardian"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "guardian"))
         .adjective("Guardian's")
         .requiredStat(SoulImprint.ImprintStat.NO_HIT_WAVES)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_REDUCTION, 0.05f) // +5% damage reduction
@@ -97,7 +100,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait DEVASTATING = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "devastating"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "devastating"))
         .adjective("Devastating")
         .requiredStat(SoulImprint.ImprintStat.TOTAL_DAMAGE)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.05f) // +5% all damage
@@ -105,7 +108,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait FINISHER = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "finisher"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "finisher"))
         .adjective("Finishing")
         .requiredStat(SoulImprint.ImprintStat.EXECUTE_KILLS)
         .effect(WeaponTrait.TraitEffectType.EXECUTE_THRESHOLD, 0.10f) // Execute below 10% HP
@@ -113,7 +116,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait CLEAVING = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "cleaving"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "cleaving"))
         .adjective("Cleaving")
         .requiredStat(SoulImprint.ImprintStat.MULTI_KILLS)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.03f) // +3% damage (area focus)
@@ -121,7 +124,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait RETALIATING = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "retaliating"))
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "retaliating"))
         .adjective("Retaliating")
         .requiredStat(SoulImprint.ImprintStat.PARRY_KILLS)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.08f) // +8% damage (counter-attack focus)
@@ -150,8 +153,11 @@ public class WeaponTraitRegistry {
     }
 
     private void register(WeaponTrait trait) {
-        traitById.put(trait.getId(), trait);
-        traitByStat.put(trait.getRequiredStat(), trait);
+        requireNonNull(trait, "trait");
+        ResourceLocation traitId = requireNonNull(trait.getId(), "traitId");
+        SoulImprint.ImprintStat requiredStat = requireNonNull(trait.getRequiredStat(), "traitStat");
+        traitById.put(traitId, trait);
+        traitByStat.put(requiredStat, trait);
     }
 
     // ========== Lookups ==========
@@ -161,10 +167,14 @@ public class WeaponTraitRegistry {
      */
     @Nullable
     public WeaponTrait getTrait(@Nullable String id) {
-        if (id == null || id.isBlank()) {
+        if (id == null) {
             return null;
         }
-        ResourceLocation loc = ResourceLocation.tryParse(id);
+        String normalizedId = id.trim();
+        if (normalizedId.isEmpty()) {
+            return null;
+        }
+        ResourceLocation loc = ResourceLocation.tryParse(normalizedId);
         return loc != null ? traitById.get(loc) : null;
     }
 
@@ -204,7 +214,10 @@ public class WeaponTraitRegistry {
      * Get config for the given quest instance.
      */
     private static GameDesignConfig.SignatureWeaponsConfig getConfig(@Nullable UUID questId) {
-        return GameDesignConfigManager.INSTANCE.getSignatureWeaponsConfig(questId);
+        return requireNonNull(
+            GameDesignConfigManager.INSTANCE.getSignatureWeaponsConfig(questId),
+            "signatureWeaponsConfig"
+        );
     }
 
     /**
@@ -216,10 +229,11 @@ public class WeaponTraitRegistry {
      * @return The configured effect value
      */
     public static float getConfiguredEffectValue(WeaponTrait trait, @Nullable UUID questId) {
+        requireNonNull(trait, "trait");
         GameDesignConfig.SignatureWeaponsConfig config = getConfig(questId);
 
         // Map trait ID to config value
-        String traitName = trait.getId().getPath();
+        String traitName = requireNonNull(trait.getId(), "traitId").getPath();
         return switch (traitName) {
             case "executioner" -> config.executionerBonus;
             case "tyrant_slayer" -> config.tyrantSlayerBonus;
@@ -245,6 +259,8 @@ public class WeaponTraitRegistry {
      */
     public static float getCombinedEffect(Set<WeaponTrait> traits, WeaponTrait.TraitEffectType type,
                                            @Nullable UUID questId) {
+        requireNonNull(traits, "traits");
+        requireNonNull(type, "type");
         float total = 0f;
         for (WeaponTrait trait : traits) {
             if (trait.getEffect().type() == type) {
@@ -267,10 +283,16 @@ public class WeaponTraitRegistry {
      * Get formatted trait list for tooltips.
      */
     public static List<String> getTraitDescriptions(Set<WeaponTrait> traits) {
-        List<String> descriptions = new ArrayList<>();
+        requireNonNull(traits, "traits");
+        List<String> descriptions = new ArrayList<>(traits.size());
         for (WeaponTrait trait : traits) {
             descriptions.add(trait.getAdjective() + ": " + trait.getEffect().getDescription());
         }
         return descriptions;
+    }
+
+    @Nonnull
+    private static <T> T requireNonNull(@Nullable T value, String label) {
+        return Objects.requireNonNull(value, label);
     }
 }

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -43,15 +44,30 @@ public final class BloodContractRegistry {
      * Get config for the given quest instance.
      */
     private GameDesignConfig.ContractsConfig getConfig(@Nullable UUID questId) {
-        return GameDesignConfigManager.INSTANCE.getContractsConfig(questId);
+        return requireNonNull(GameDesignConfigManager.INSTANCE.getContractsConfig(questId), "contractsConfig");
     }
 
     // ========== Registration ==========
 
     public void register(BloodContract contract) {
-        contracts.put(contract.getId(), contract);
-        byTier.computeIfAbsent(contract.getTier(), k -> new ArrayList<>()).add(contract);
-        LOGGER.debug("[BloodContracts] Registered: {} ({}x)", contract.getId(), contract.getTotalMultiplier());
+        requireNonNull(contract, "contract");
+        ResourceLocation id = requireNonNull(contract.getId(), "contractId");
+        BloodContract.ContractTier tier = requireNonNull(contract.getTier(), "contractTier");
+
+        BloodContract previous = contracts.put(id, contract);
+        if (previous != null) {
+            BloodContract.ContractTier previousTier = previous.getTier();
+            if (previousTier != null) {
+                List<BloodContract> previousList = byTier.get(previousTier);
+                if (previousList != null) {
+                    previousList.remove(previous);
+                }
+            }
+            LOGGER.warn("[BloodContracts] Replaced contract: {}", id);
+        }
+
+        byTier.computeIfAbsent(tier, k -> new ArrayList<>()).add(contract);
+        LOGGER.debug("[BloodContracts] Registered: {} ({}x)", id, contract.getTotalMultiplier());
     }
 
     @Nullable
@@ -61,12 +77,14 @@ public final class BloodContractRegistry {
 
     @Nonnull
     public Collection<BloodContract> getAll() {
-        return Collections.unmodifiableCollection(contracts.values());
+        return Collections.unmodifiableCollection(new ArrayList<>(contracts.values()));
     }
 
     @Nonnull
     public List<BloodContract> getByTier(BloodContract.ContractTier tier) {
-        return byTier.getOrDefault(tier, Collections.emptyList());
+        requireNonNull(tier, "tier");
+        List<BloodContract> contractsForTier = byTier.getOrDefault(tier, Collections.emptyList());
+        return Collections.unmodifiableList(new ArrayList<>(contractsForTier));
     }
 
     // ========== Contract Selection ==========
@@ -83,10 +101,11 @@ public final class BloodContractRegistry {
     @Nonnull
     public List<BloodContract> getRandomOffers(int count, int waveNumber, Set<ResourceLocation> excludeIds,
                                                 @Nullable UUID questId) {
+        requireNonNull(excludeIds, "excludeIds");
         // Check if contracts are enabled
         GameDesignConfig.ContractsConfig config = getConfig(questId);
-        if (!config.enabled) {
-            return Collections.emptyList();
+        if (!config.enabled || count <= 0) {
+            return List.of();
         }
 
         List<BloodContract> available = new ArrayList<>();
@@ -106,9 +125,14 @@ public final class BloodContractRegistry {
             available.add(contract);
         }
 
+        if (available.isEmpty()) {
+            return List.of();
+        }
+
         // Shuffle and take
         Collections.shuffle(available, random);
-        return available.subList(0, Math.min(count, available.size()));
+        int limit = Math.min(count, available.size());
+        return List.copyOf(available.subList(0, limit));
     }
 
     /**
@@ -274,7 +298,14 @@ public final class BloodContractRegistry {
         LOGGER.info("[BloodContracts] Registered {} contracts", contracts.size());
     }
 
-    private static ResourceLocation loc(String path) {
-        return ResourceLocation.fromNamespaceAndPath(DevMod.MODID, path);
+    @Nonnull
+    private static ResourceLocation loc(@Nonnull String path) {
+        String modId = requireNonNull(DevMod.MODID, "modid");
+        return requireNonNull(ResourceLocation.fromNamespaceAndPath(modId, requireNonNull(path, "path")), "resourceLocation");
+    }
+
+    @Nonnull
+    private static <T> T requireNonNull(@Nullable T value, String label) {
+        return Objects.requireNonNull(value, label);
     }
 }

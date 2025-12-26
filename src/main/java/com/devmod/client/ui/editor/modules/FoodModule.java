@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.modules;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
@@ -17,8 +19,8 @@ import com.devmod.stats.FoodStats;
 public class FoodModule extends AbstractEditorModule {
 
     // Delegate classes (lazy initialized to avoid this-escape)
-    private FoodModuleCore core;
-    private FoodModuleUI ui;
+    private @Nullable FoodModuleCore core;
+    private @Nullable FoodModuleUI ui;
     private boolean delegatesInitialized = false;
 
     // ═══════════════════════════════════════════════════════════════
@@ -38,18 +40,26 @@ public class FoodModule extends AbstractEditorModule {
         }
     }
 
+    private FoodModuleCore requireCore() {
+        ensureDelegates();
+        return Objects.requireNonNull(core, "core");
+    }
+
+    private FoodModuleUI requireUi() {
+        ensureDelegates();
+        return Objects.requireNonNull(ui, "ui");
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // DELEGATE ACCESSORS
     // ═══════════════════════════════════════════════════════════════
 
     public FoodModuleCore getCore() {
-        ensureDelegates();
-        return core;
+        return requireCore();
     }
 
     public FoodModuleUI getUI() {
-        ensureDelegates();
-        return ui;
+        return requireUi();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -76,13 +86,13 @@ public class FoodModule extends AbstractEditorModule {
 
     @Override
     protected void onItemSet() {
-        ensureDelegates();
-        core.loadStatsFromItem(item);
+        requireCore().loadStatsFromItem(item);
     }
 
     @Override
     protected void initializeTabs() {
-        ensureDelegates();
+        FoodModuleCore core = requireCore();
+        FoodModuleUI ui = requireUi();
         tabs.clear();
 
         // Create UI components
@@ -105,6 +115,8 @@ public class FoodModule extends AbstractEditorModule {
         if (newStats == null) {
             return;
         }
+        FoodModuleCore core = requireCore();
+        FoodModuleUI ui = requireUi();
         saveUndoState();
         core.setStats(newStats.copy());
         ui.updateComponentsFromStats();
@@ -147,7 +159,7 @@ public class FoodModule extends AbstractEditorModule {
 
     @Override
     public CustomPacketPayload buildPayload(boolean isGlobal) {
-        FoodStats stats = core.getStats();
+        FoodStats stats = requireCore().getStats();
 
         // Build NBT from current stats
         CompoundTag statsTag = new CompoundTag();
@@ -167,6 +179,8 @@ public class FoodModule extends AbstractEditorModule {
 
     @Override
     public void applyPreview() {
+        FoodModuleCore core = requireCore();
+        FoodModuleUI ui = requireUi();
         FoodStats stats = core.getStats();
         try {
             ItemStack copy = item.copy();
@@ -190,17 +204,20 @@ public class FoodModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     public FoodStats getStats() {
-        return core.getStats();
+        return requireCore().getStats();
     }
 
     public FoodStats getOriginalStats() {
-        return core.getOriginalStats();
+        return requireCore().getOriginalStats();
     }
 
     /**
      * Reset all stats to original values loaded from the item.
      */
+    @Override
     public void resetToOriginal() {
+        FoodModuleCore core = requireCore();
+        FoodModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
         ui.updateComponentsFromStats();
         clearDirty();
@@ -210,7 +227,7 @@ public class FoodModule extends AbstractEditorModule {
      * Check if current stats differ from original.
      */
     public boolean hasModifications() {
-        return core.hasModifications();
+        return requireCore().hasModifications();
     }
 
     @Override

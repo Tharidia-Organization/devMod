@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -69,6 +71,7 @@ public class PerkSelectionScreen extends Screen {
     private long openTime;
     private boolean soundPlayed = false;
     private final List<EditorButton> perkButtons = new ArrayList<>();
+    @Nullable
     private EditorButton skipButton;
     private boolean showComparisonPanel = true;  // Show side comparison
 

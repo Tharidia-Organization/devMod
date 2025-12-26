@@ -31,6 +31,9 @@ import com.devmod.telemetry.combat.FightSessionService;
 import com.devmod.telemetry.damage.DamageTrackingService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
+import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregator;
+import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
 import com.devmod.telemetry.entity.EntityTrackingService;
 import com.devmod.telemetry.entity.MinionService;
 import com.devmod.telemetry.skills.SkillTrackingService;
@@ -87,8 +90,23 @@ public class TelemetryLogHandlers {
                 + contextJson
                 + "}";
 
-        // DuckDB PRIMARY, NDJSON fallback
-        if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        // Route through aggregation for player attackers
+        boolean aggregated = false;
+        if (AggregationConfig.AGGREGATION_ENABLED && attacker instanceof ServerPlayer playerAttacker) {
+            TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(playerAttacker.getUUID());
+            if (agg != null) {
+                boolean isKill = hpAfter <= 0;
+                boolean isCritical = false; // Server-side doesn't track crits easily
+                String weapon = playerAttacker.getMainHandItem().isEmpty()
+                    ? "fist"
+                    : playerAttacker.getMainHandItem().getItem().toString();
+                // processHit returns false if aggregated (don't write now)
+                aggregated = !agg.processHit(amount, isKill, isCritical, weapon, targetType);
+            }
+        }
+
+        // DuckDB PRIMARY - skip if aggregated
+        if (!aggregated && DuckDBTelemetryService.INSTANCE.isEnabled()) {
             DuckDBTelemetryService.INSTANCE.logHit(room, level.dimension().location().toString(),
                 context != null ? context.templateId() : null,
                 context != null ? context.templateVersion() : null,
@@ -163,6 +181,14 @@ public class TelemetryLogHandlers {
                 + "\"distance\":" + distance
                 + "}";
         service.appendLine("hits.ndjson", line);
+
+        // Route miss through aggregation for player attackers
+        if (AggregationConfig.AGGREGATION_ENABLED && attacker instanceof ServerPlayer playerAttacker) {
+            TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(playerAttacker.getUUID());
+            if (agg != null) {
+                agg.processMiss();
+            }
+        }
 
         if (attacker instanceof ServerPlayer player) {
             DamageTrackingService.INSTANCE.registerWeaponMiss(player);
@@ -443,14 +469,17 @@ public class TelemetryLogHandlers {
             return "";
         }
         StringBuilder sb = new StringBuilder();
-        if (context.templateId() != null && !context.templateId().isBlank()) {
-            sb.append(",\"templateId\":\"").append(TelemetryJson.escape(context.templateId())).append("\"");
+        String templateId = context.templateId();
+        if (templateId != null && !templateId.isBlank()) {
+            sb.append(",\"templateId\":\"").append(TelemetryJson.escape(templateId)).append("\"");
         }
-        if (context.templateVersion() != null) {
-            sb.append(",\"templateVersion\":").append(context.templateVersion());
+        Integer templateVersion = context.templateVersion();
+        if (templateVersion != null) {
+            sb.append(",\"templateVersion\":").append(templateVersion);
         }
-        if (context.policyId() != null && !context.policyId().isBlank()) {
-            sb.append(",\"policyId\":\"").append(TelemetryJson.escape(context.policyId())).append("\"");
+        String policyId = context.policyId();
+        if (policyId != null && !policyId.isBlank()) {
+            sb.append(",\"policyId\":\"").append(TelemetryJson.escape(policyId)).append("\"");
         }
         if (context.policyVersion() != null) {
             sb.append(",\"policyVersion\":").append(context.policyVersion());

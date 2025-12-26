@@ -162,7 +162,7 @@ public class ImpactVFX {
         float g1 = ((COLOR_CORE_PRIMARY >> 8) & 0xFF) / 255.0f;
         float b1 = (COLOR_CORE_PRIMARY & 0xFF) / 255.0f;
 
-        float r2 = ((COLOR_CORE_SECONDARY >> 16) & 0xFF) / 255.0f;
+        float r2 = 0.0f;
         float g2 = ((COLOR_CORE_SECONDARY >> 8) & 0xFF) / 255.0f;
         float b2 = (COLOR_CORE_SECONDARY & 0xFF) / 255.0f;
 
@@ -719,7 +719,7 @@ public class ImpactVFX {
         Matrix4f matrix = nn(poseStack.last().pose(), "line matrix");
         VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugLineStrip(2.0)));
 
-        float r = ((COLOR_LINE >> 16) & 0xFF) / 255.0f;
+        float r = 0.0f;
         float g = ((COLOR_LINE >> 8) & 0xFF) / 255.0f;
         float b = (COLOR_LINE & 0xFF) / 255.0f;
 

@@ -2,6 +2,8 @@ package com.devmod.client.endurance;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -10,6 +12,7 @@ import com.devmod.endurance.season.SeasonPassPayload;
 @OnlyIn(Dist.CLIENT)
 public class ClientSeasonCache {
 
+    @Nullable
     private static SeasonPassPayload cachedData = null;
     private static long lastUpdateTime = 0;
 

@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.modules;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
@@ -21,9 +23,9 @@ public class WeaponModule extends AbstractEditorModule {
     private WeaponVariant variant = WeaponVariant.STANDARD;
 
     // Delegate classes (lazy initialized to avoid this-escape)
-    private WeaponModuleCore core;
-    private WeaponModuleVariants variants;
-    private WeaponModuleUI ui;
+    private @Nullable WeaponModuleCore core;
+    private @Nullable WeaponModuleVariants variants;
+    private @Nullable WeaponModuleUI ui;
     private boolean delegatesInitialized = false;
 
     // ═══════════════════════════════════════════════════════════════
@@ -49,23 +51,35 @@ public class WeaponModule extends AbstractEditorModule {
         }
     }
 
+    private WeaponModuleCore requireCore() {
+        ensureDelegates();
+        return Objects.requireNonNull(core, "core");
+    }
+
+    private WeaponModuleVariants requireVariants() {
+        ensureDelegates();
+        return Objects.requireNonNull(variants, "variants");
+    }
+
+    private WeaponModuleUI requireUi() {
+        ensureDelegates();
+        return Objects.requireNonNull(ui, "ui");
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // DELEGATE ACCESSORS
     // ═══════════════════════════════════════════════════════════════
 
     public WeaponModuleCore getCore() {
-        ensureDelegates();
-        return core;
+        return requireCore();
     }
 
     public WeaponModuleVariants getVariants() {
-        ensureDelegates();
-        return variants;
+        return requireVariants();
     }
 
     public WeaponModuleUI getUI() {
-        ensureDelegates();
-        return ui;
+        return requireUi();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -93,7 +107,8 @@ public class WeaponModule extends AbstractEditorModule {
     @Override
     protected void onItemSet() {
         // Ensure delegates are initialized before use
-        ensureDelegates();
+        WeaponModuleCore core = requireCore();
+        WeaponModuleVariants variants = requireVariants();
 
         // Load existing weapon stats from item NBT
         core.loadStatsFromItem(item);
@@ -114,7 +129,9 @@ public class WeaponModule extends AbstractEditorModule {
     @Override
     protected void initializeTabs() {
         // Ensure delegates are initialized before use
-        ensureDelegates();
+        WeaponModuleCore core = requireCore();
+        WeaponModuleVariants variants = requireVariants();
+        WeaponModuleUI ui = requireUi();
 
         tabs.clear();
 
@@ -149,6 +166,8 @@ public class WeaponModule extends AbstractEditorModule {
         if (newStats == null) {
             return;
         }
+        WeaponModuleCore core = requireCore();
+        WeaponModuleUI ui = requireUi();
         saveUndoState();
         core.setStats(newStats.copy());
         ui.updateSlidersFromStats();
@@ -191,6 +210,8 @@ public class WeaponModule extends AbstractEditorModule {
 
     @Override
     public CustomPacketPayload buildPayload(boolean isGlobal) {
+        WeaponModuleCore core = requireCore();
+        WeaponModuleVariants variants = requireVariants();
         WeaponStats stats = core.getStats();
         WeaponStats originalStats = core.getOriginalStats();
 
@@ -216,6 +237,9 @@ public class WeaponModule extends AbstractEditorModule {
 
     @Override
     public void applyPreview() {
+        WeaponModuleCore core = requireCore();
+        WeaponModuleVariants variants = requireVariants();
+        WeaponModuleUI ui = requireUi();
         WeaponStats stats = core.getStats();
         // Prepare a preview copy of the item and set CustomData on the copy only.
         try {
@@ -248,11 +272,11 @@ public class WeaponModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     public WeaponStats getStats() {
-        return core.getStats();
+        return requireCore().getStats();
     }
 
     public WeaponStats getOriginalStats() {
-        return core.getOriginalStats();
+        return requireCore().getOriginalStats();
     }
 
     public WeaponVariant getVariant() {
@@ -266,7 +290,11 @@ public class WeaponModule extends AbstractEditorModule {
     /**
      * Reset all stats to original values loaded from the item.
      */
+    @Override
     public void resetToOriginal() {
+        WeaponModuleCore core = requireCore();
+        WeaponModuleVariants variants = requireVariants();
+        WeaponModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
         variants.resetToOriginal(variant);
         ui.updateSlidersFromStats();
@@ -278,7 +306,7 @@ public class WeaponModule extends AbstractEditorModule {
      * Check if current stats differ from original.
      */
     public boolean hasModifications() {
-        return core.hasModifications();
+        return requireCore().hasModifications();
     }
 
     @Override

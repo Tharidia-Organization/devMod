@@ -14,6 +14,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
+
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+
 import com.devmod.endurance.config.EnduranceConfigManager;
 
 public class GuildSystem {
@@ -280,7 +287,11 @@ public class GuildSystem {
         LOGGER.info("[Guild] '{}' completed objective '{}'!",
             guild.getName(), objective.name());
 
-        // TODO: Send notification to all members
+        Component message = Component.literal(
+            "[Guild] Objective completed: " + objective.name()
+                + " (+" + objective.tokenReward() + " tokens, +" + objective.xpReward() + " XP)")
+            .withStyle(ChatFormatting.GOLD);
+        notifyGuildMembers(guild, message);
     }
 
     /**
@@ -326,7 +337,31 @@ public class GuildSystem {
             guild.unlockPerk(perk);
         }
 
-        // TODO: Notify members
+        MutableComponent message = Component.literal(
+            "[Guild] " + guild.getName() + " reached level " + newLevel + "!")
+            .withStyle(ChatFormatting.AQUA);
+        if (perk != null) {
+            message = message.append(Component.literal(" Perk unlocked: " + perk.name)
+                .withStyle(ChatFormatting.GOLD));
+        }
+        notifyGuildMembers(guild, message);
+    }
+
+    private void notifyGuildMembers(Guild guild, Component message) {
+        if (guild == null || message == null) {
+            return;
+        }
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return;
+        }
+        var playerList = server.getPlayerList();
+        for (UUID memberId : guild.getMemberIds()) {
+            ServerPlayer player = playerList.getPlayer(memberId);
+            if (player != null) {
+                player.sendSystemMessage(message);
+            }
+        }
     }
 
     /**

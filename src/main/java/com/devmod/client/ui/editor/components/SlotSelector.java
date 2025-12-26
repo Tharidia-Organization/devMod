@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -84,6 +86,7 @@ public final class SlotSelector {
     private final List<ResponsiveLayout.Rect> slotBounds = new ArrayList<>();
 
     // Callback
+    @Nullable
     private Consumer<SlotInfo> onSelect;
 
     // ═══════════════════════════════════════════════════════════════
@@ -304,6 +307,7 @@ public final class SlotSelector {
         }
     }
 
+    @Nullable
     public SlotInfo getSelectedSlot() {
         if (selectedIndex >= 0 && selectedIndex < slots.size()) {
             return slots.get(selectedIndex);
@@ -330,6 +334,7 @@ public final class SlotSelector {
     /**
      * Get the currently hovered slot info, or null if none.
      */
+    @Nullable
     public SlotInfo getHoveredSlot() {
         if (hoveredIndex >= 0 && hoveredIndex < slots.size()) {
             return slots.get(hoveredIndex);

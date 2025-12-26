@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -33,6 +34,7 @@ public class EnduranceSettingsScreen extends Screen {
     private int scrollOffset = 0;
     private int maxScroll = 0;
 
+    @Nullable
     private EditorButton backButton;
 
     public EnduranceSettingsScreen(Screen parent) {
@@ -305,7 +307,9 @@ public class EnduranceSettingsScreen extends Screen {
         // Back button
         int btnW = 70;
         int btnH = 24;
-        backButton.render(graphics, width - btnW - PADDING, 8, btnW, btnH, mouseX, mouseY);
+        if (backButton != null) {
+            backButton.render(graphics, width - btnW - PADDING, 8, btnW, btnH, mouseX, mouseY);
+        }
     }
 
     private void renderSidebar(GuiGraphics graphics, net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
@@ -389,7 +393,7 @@ public class EnduranceSettingsScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
             // Back button
-            if (backButton.mouseClicked(mouseX, mouseY, button)) {
+            if (backButton != null && backButton.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
 
@@ -432,7 +436,9 @@ public class EnduranceSettingsScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        backButton.mouseReleased(mouseX, mouseY, button);
+        if (backButton != null) {
+            backButton.mouseReleased(mouseX, mouseY, button);
+        }
 
         if (activeSection >= 0 && activeSection < sections.size()) {
             ConfigSection section = sections.get(activeSection);

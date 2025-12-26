@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
@@ -219,6 +220,7 @@ public class ItemEditorDataOps {
         return key == null ? "unknown" : key.toString();
     }
 
+    @Nullable
     public String detectTemplateCategory(ItemStack item) {
         String itemId = getCurrentItemId(item);
         return ItemEditorDataManager.INSTANCE.suggestTemplate(itemId)

@@ -4,8 +4,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import com.devmod.client.ui.editor.ItemEditorDataManager;
 
@@ -100,7 +103,11 @@ public final class PresetBridge {
      * @return a RegistryPreset object
      */
     public static PresetRegistry.RegistryPreset toRegistryPreset(ItemEditorDataManager.PresetData pd) {
-        String id = generateId(pd.name);
+        String name = pd.name;
+        if (name == null || name.isBlank()) {
+            name = "Preset_" + pd.createdAt;
+        }
+        String id = generateId(name);
         String category = pd.itemType != null ? pd.itemType : "general";
 
         Map<String, Object> values = convertStatsToValues(pd.statValues, category);
@@ -114,7 +121,7 @@ public final class PresetBridge {
 
         return new PresetRegistry.RegistryPreset(
             id,
-            pd.name,
+            name,
             "",  // No description in PresetData
             new PresetScope.Global(),  // User presets are global scope
             category,
@@ -170,12 +177,12 @@ public final class PresetBridge {
     /**
      * Generate a filesystem-safe ID from a preset name.
      */
-    public static String generateId(String name) {
+    public static String generateId(@Nullable String name) {
         if (name == null || name.isEmpty()) {
             return "unnamed_" + System.currentTimeMillis();
         }
 
-        return name.toLowerCase()
+        return name.toLowerCase(Locale.ROOT)
             .replaceAll("[^a-z0-9_]", "_")
             .replaceAll("_+", "_")
             .replaceAll("^_|_$", "");
@@ -222,15 +229,23 @@ public final class PresetBridge {
 
         // Add user presets (avoiding duplicates by name)
         Set<String> existingNames = result.stream()
-            .map(p -> p.name.toLowerCase())
+            .map(p -> safePresetName(p).toLowerCase(Locale.ROOT))
             .collect(java.util.stream.Collectors.toSet());
 
         for (var up : userPresets) {
-            if (!existingNames.contains(up.name.toLowerCase())) {
+            if (!existingNames.contains(safePresetName(up).toLowerCase(Locale.ROOT))) {
                 result.add(up);
             }
         }
 
         return result;
+    }
+
+    private static String safePresetName(ItemEditorDataManager.PresetData preset) {
+        String name = preset.name;
+        if (name == null || name.isBlank()) {
+            return "Preset_" + preset.createdAt;
+        }
+        return name;
     }
 }

@@ -30,6 +30,7 @@ public class AttributeMonitoringSystem {
     private boolean enabled = false;
     private final List<TrackedEntity> trackedEntities = new ArrayList<>();
     private final List<AttributeLogEntry> logHistory = new ArrayList<>();
+    @Nullable
     private TrackedEntity primaryTarget = null;
 
     private AttributeMonitoringSystem() {}

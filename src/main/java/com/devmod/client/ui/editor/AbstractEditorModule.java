@@ -2,11 +2,14 @@ package com.devmod.client.ui.editor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
-import java.util.Stack;
 import java.util.function.BiConsumer;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -31,6 +34,7 @@ public abstract class AbstractEditorModule implements EditorModule {
     protected final String title;
     protected ItemStack item = ItemStack.EMPTY;
     protected ItemStack originalItem = ItemStack.EMPTY;
+    @Nullable
     protected ResponsiveLayout layout;
 
     // Tabs
@@ -43,8 +47,8 @@ public abstract class AbstractEditorModule implements EditorModule {
     private BiConsumer<String, Integer> statusConsumer = (msg, color) -> {};
 
     // Undo/Redo stacks
-    protected final Stack<UndoState> undoStack = new Stack<>();
-    protected final Stack<UndoState> redoStack = new Stack<>();
+    protected final Deque<UndoState> undoStack = new ArrayDeque<>();
+    protected final Deque<UndoState> redoStack = new ArrayDeque<>();
     private static final int MAX_UNDO_STATES = 50;
 
     // ═══════════════════════════════════════════════════════════════
@@ -362,7 +366,7 @@ public abstract class AbstractEditorModule implements EditorModule {
 
         // Limit stack size
         while (undoStack.size() > MAX_UNDO_STATES) {
-            undoStack.remove(0);
+            undoStack.removeLast();
         }
 
         // Clear redo stack on new action
@@ -467,21 +471,25 @@ public abstract class AbstractEditorModule implements EditorModule {
     }
 
     // Preview item: used to hold a client-side preview copy so preview does not mutate the real item
+    @Nullable
     private ItemStack previewItem = null;
 
     /**
      * Returns a preview ItemStack if a preview is active, otherwise null.
      */
+    @Override
+    @Nullable
     public ItemStack getPreviewItem() { return previewItem; }
 
     /**
      * Sets the preview item (client-side only).
      */
-    protected void setPreviewItem(ItemStack stack) { this.previewItem = stack; }
+    protected void setPreviewItem(@Nullable ItemStack stack) { this.previewItem = stack; }
 
     /**
      * Clear any active preview.
      */
+    @Override
     public void clearPreview() { this.previewItem = null; }
 
     @Override

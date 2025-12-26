@@ -5,6 +5,8 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -45,7 +47,7 @@ public final class OverlayController {
      * @param callback The callback (receives new overlay type)
      * @return this for chaining
      */
-    public OverlayController setOnOverlayChanged(Consumer<OverlayType> callback) {
+    public OverlayController setOnOverlayChanged(@Nullable Consumer<OverlayType> callback) {
         this.onOverlayChanged = callback != null ? callback : type -> {};
         return this;
     }
@@ -61,7 +63,7 @@ public final class OverlayController {
      *
      * @param type The overlay type to toggle
      */
-    public void toggle(OverlayType type) {
+    public void toggle(@Nullable OverlayType type) {
         OverlayType normalized = type == null ? OverlayType.NONE : type;
         OverlayType active = getActive();
 

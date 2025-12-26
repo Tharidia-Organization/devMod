@@ -657,15 +657,17 @@ public class RoomBoundsEditorScreen extends Screen {
         }
 
         private static RoomDefinition buildRoomDefinition(String roomName, String dimension) {
+            BlockPos safePointA = Objects.requireNonNull(pointA, "pointA");
+            BlockPos safePointB = Objects.requireNonNull(pointB, "pointB");
             BlockPos min = new BlockPos(
-                Math.min(pointA.getX(), pointB.getX()),
-                Math.min(pointA.getY(), pointB.getY()),
-                Math.min(pointA.getZ(), pointB.getZ())
+                Math.min(safePointA.getX(), safePointB.getX()),
+                Math.min(safePointA.getY(), safePointB.getY()),
+                Math.min(safePointA.getZ(), safePointB.getZ())
             );
             BlockPos max = new BlockPos(
-                Math.max(pointA.getX(), pointB.getX()),
-                Math.max(pointA.getY(), pointB.getY()),
-                Math.max(pointA.getZ(), pointB.getZ())
+                Math.max(safePointA.getX(), safePointB.getX()),
+                Math.max(safePointA.getY(), safePointB.getY()),
+                Math.max(safePointA.getZ(), safePointB.getZ())
             );
             return new RoomDefinition(roomName, dimension, min, max);
         }

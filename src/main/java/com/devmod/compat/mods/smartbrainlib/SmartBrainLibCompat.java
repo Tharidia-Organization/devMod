@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +30,6 @@ public class SmartBrainLibCompat implements CompatModule {
 
     // Cached reflection references
     private static Class<?> smartBrainOwnerClass;
-    private static Class<?> smartBrainProviderClass;
-    private static Class<?> brainActivityGroupClass;
 
     @Override
     public String modId() {
@@ -83,25 +83,20 @@ public class SmartBrainLibCompat implements CompatModule {
                 } catch (ClassNotFoundException ignored) {}
             }
 
-            // Try to load additional classes
+            // Try to load additional classes (for logging only)
             try {
-                smartBrainProviderClass = Class.forName(
+                Class<?> providerClass = Class.forName(
                     "net.tslat.smartbrainlib.api.core.SmartBrainProvider");
+                LOGGER.debug("[Compat:smartbrainlib] Found SmartBrainProvider at {}",
+                    providerClass.getName());
             } catch (ClassNotFoundException ignored) {}
 
             try {
-                brainActivityGroupClass = Class.forName(
+                Class<?> activityClass = Class.forName(
                     "net.tslat.smartbrainlib.api.core.BrainActivityGroup");
-            } catch (ClassNotFoundException ignored) {}
-
-            if (smartBrainProviderClass != null) {
-                LOGGER.debug("[Compat:smartbrainlib] Found SmartBrainProvider at {}",
-                    smartBrainProviderClass.getName());
-            }
-            if (brainActivityGroupClass != null) {
                 LOGGER.debug("[Compat:smartbrainlib] Found BrainActivityGroup at {}",
-                    brainActivityGroupClass.getName());
-            }
+                    activityClass.getName());
+            } catch (ClassNotFoundException ignored) {}
 
             if (smartBrainOwnerClass != null) {
                 apiAvailable = true;
@@ -136,6 +131,10 @@ public class SmartBrainLibCompat implements CompatModule {
      */
     public static boolean isApiAvailable() {
         return apiAvailable;
+    }
+
+    private static <T> @Nonnull T requireNonNull(T value, String name) {
+        return Objects.requireNonNull(value, name);
     }
 
     /**
@@ -259,10 +258,10 @@ public class SmartBrainLibCompat implements CompatModule {
             var brain = entity.getBrain();
             if (brain != null) {
                 // Check for attack target memory
-                var attackTargetType = Objects.requireNonNull(
-                    MemoryModuleType.ATTACK_TARGET, "ATTACK_TARGET");
-                var attackTarget = brain.getMemory(attackTargetType);
-                return attackTarget.isPresent();
+                @Nonnull MemoryModuleType<LivingEntity> attackTargetType =
+                    requireNonNull(MemoryModuleType.ATTACK_TARGET, "ATTACK_TARGET");
+                Optional<LivingEntity> attackTarget = brain.getMemory(attackTargetType);
+                return attackTarget != null && attackTarget.isPresent();
             }
         } catch (Exception e) {
             LOGGER.debug("[Compat:smartbrainlib] Error checking combat: {}", e.getMessage());
@@ -290,16 +289,15 @@ public class SmartBrainLibCompat implements CompatModule {
         try {
             var brain = entity.getBrain();
             if (brain != null) {
-                var attackTargetType = Objects.requireNonNull(
-                    MemoryModuleType.ATTACK_TARGET, "ATTACK_TARGET");
-                var attackTargetOpt = brain.getMemory(attackTargetType);
+                @Nonnull MemoryModuleType<LivingEntity> attackTargetType =
+                    requireNonNull(MemoryModuleType.ATTACK_TARGET, "ATTACK_TARGET");
+                Optional<LivingEntity> attackTargetOpt = brain.getMemory(attackTargetType);
 
-                if (attackTargetOpt.isPresent()) {
-                    LivingEntity target = attackTargetOpt.get();
-                    info.put("hasTarget", true);
-                    info.put("targetType", target.getType().toShortString());
-                    info.put("targetHealth", target.getHealth());
-                    info.put("targetDistance", entity.distanceTo(target));
+                if (attackTargetOpt != null) {
+                    LivingEntity target = attackTargetOpt.orElse(null);
+                    if (target != null) {
+                        populateTargetInfo(info, entity, target);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -307,15 +305,23 @@ public class SmartBrainLibCompat implements CompatModule {
             if (entity instanceof Mob mob) {
                 LivingEntity target = mob.getTarget();
                 if (target != null) {
-                    info.put("hasTarget", true);
-                    info.put("targetType", target.getType().toShortString());
-                    info.put("targetHealth", target.getHealth());
-                    info.put("targetDistance", entity.distanceTo(target));
+                    populateTargetInfo(info, entity, target);
                 }
             }
         }
 
         return info;
+    }
+
+    private static void populateTargetInfo(
+        Map<String, Object> info,
+        LivingEntity entity,
+        LivingEntity target
+    ) {
+        info.put("hasTarget", true);
+        info.put("targetType", target.getType().toShortString());
+        info.put("targetHealth", target.getHealth());
+        info.put("targetDistance", entity.distanceTo(target));
     }
 
     /**

@@ -22,6 +22,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.telemetry.ClientLVCCache;
 import com.devmod.client.endurance.EnduranceUiCache;
 import com.devmod.client.endurance.PerkSelectionScreen;
 import com.devmod.client.endurance.WaveCheckpointScreen;
@@ -386,14 +387,30 @@ public class EnduranceQuestOverlay {
             g.drawString(font, dmgText, x + width - PANEL_PADDING - dmgWidth, textY, TEXT_DIM, false);
             textY += LINE_HEIGHT;
 
-            // Derived metrics (overall)
+            // Derived metrics - prefer LVC real-time data if available
+            ClientLVCCache lvcCache = ClientLVCCache.INSTANCE;
             double seconds = Math.max(1, data.sessionDurationMs() / 1000.0);
             double kps = data.mobsKilled() / seconds;
-            double dps = data.damageDealt() / seconds;
             double dtps = data.damageTaken() / seconds;
+
+            // Use LVC rolling DPS if available, otherwise calculate from totals
+            double dps = lvcCache.hasData() && !lvcCache.isStale()
+                ? lvcCache.getCurrentDPS()
+                : data.damageDealt() / seconds;
+
             String metrics = String.format("KPS %.2f | DPS %.1f | DTPS %.1f", kps, dps, dtps);
             g.drawString(font, metrics, textX, textY, TEXT_DIM, false);
             textY += LINE_HEIGHT;
+
+            // Show LVC accuracy and critical hits if available
+            if (lvcCache.hasData() && !lvcCache.isStale()) {
+                double accuracy = lvcCache.getAccuracy() * 100;
+                var payload = lvcCache.getCachedPayload();
+                int critCount = payload != null ? payload.criticalHitCount() : 0;
+                String lvcMetrics = String.format("Accuracy %.0f%% | Crits %d", accuracy, critCount);
+                g.drawString(font, lvcMetrics, textX, textY, TEXT_DIM, false);
+                textY += LINE_HEIGHT;
+            }
 
             // Deaths this session (if > 0)
             if (data.deaths() > 0) {
@@ -629,6 +646,11 @@ public class EnduranceQuestOverlay {
         if (showDetails) {
             height += 4;  // Separator
             height += LINE_HEIGHT * 4; // Run Stats + Time + Kills/DMG + metrics
+
+            // LVC accuracy/crit line if data available
+            if (ClientLVCCache.INSTANCE.hasData() && !ClientLVCCache.INSTANCE.isStale()) {
+                height += LINE_HEIGHT;
+            }
 
             if (data.deaths() > 0) {
                 height += LINE_HEIGHT; // Deaths

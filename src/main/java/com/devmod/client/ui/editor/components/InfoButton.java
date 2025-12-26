@@ -2,6 +2,8 @@ package com.devmod.client.ui.editor.components;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -27,6 +29,7 @@ public final class InfoButton {
     // ═══════════════════════════════════════════════════════════════
 
     private final String id;
+    @Nullable
     private final String descriptionKey;      // i18n key (if using translation system)
     private final String directDescription;   // Direct text (fallback or when not using i18n)
 
@@ -60,7 +63,7 @@ public final class InfoButton {
      * @param descriptionKey  Key from SliderDescriptions (e.g., SliderDescriptions.ATTACK_DAMAGE)
      * @param fallback        Fallback text if translation is not found
      */
-    private InfoButton(String id, String descriptionKey, String fallback) {
+    private InfoButton(String id, String descriptionKey, @Nullable String fallback) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
         this.descriptionKey = descriptionKey;
         this.directDescription = fallback != null ? fallback : "";
@@ -78,7 +81,7 @@ public final class InfoButton {
      * @param fallback        Fallback text if translation is not found
      * @return New InfoButton instance
      */
-    public static InfoButton withI18n(String id, String descriptionKey, String fallback) {
+    public static InfoButton withI18n(String id, String descriptionKey, @Nullable String fallback) {
         return new InfoButton(id, descriptionKey, fallback);
     }
 
@@ -175,7 +178,7 @@ public final class InfoButton {
         return getResolvedDescription();
     }
 
-    public String getDescriptionKey() {
+    public @Nullable String getDescriptionKey() {
         return descriptionKey;
     }
 

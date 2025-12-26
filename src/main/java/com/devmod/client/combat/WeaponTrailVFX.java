@@ -4,6 +4,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -44,6 +46,7 @@ public class WeaponTrailVFX {
     private int lastSwingCount = 0;
 
     // BetterCombat compatibility
+    @Nullable
     private static Boolean betterCombatPresent = null;
     private static boolean betterCombatEventsRegistered = false;
     private boolean lastAttackKeyState = false;
@@ -70,6 +73,7 @@ public class WeaponTrailVFX {
     private boolean enabled = true;
 
     // Iris shader detection (like ShaderHelper.java)
+    @Nullable
     private static Boolean irisShaderActive = null;
     private static long lastIrisCheck = 0;
     private static final long IRIS_CHECK_INTERVAL_MS = 1000; // Re-check every second

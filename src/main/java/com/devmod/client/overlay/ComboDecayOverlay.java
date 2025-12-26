@@ -2,6 +2,8 @@ package com.devmod.client.overlay;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -27,7 +29,9 @@ public class ComboDecayOverlay {
     private static long showStartTime = 0;
     private static int lostCombo = 0;
     private static boolean isRankDown = false;
+    @Nullable
     private static StyleRank previousRank = null;
+    @Nullable
     private static StyleRank newRank = null;
     private static boolean soundPlayed = false;
 

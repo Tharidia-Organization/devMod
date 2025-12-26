@@ -1,5 +1,9 @@
 package com.devmod.client.ui.testing.pages;
 
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -21,11 +25,15 @@ import static com.devmod.client.ui.testing.pages.PageUtils.safeGetInt;
 public class TelemetryPage extends AbstractVoxelLabPage {
 
     // Master toggle
+    @Nullable
     private EditorButton telemetryMasterToggle;
 
     // Event type toggles
+    @Nullable
     private EditorButton hitsToggle;
+    @Nullable
     private EditorButton deathsToggle;
+    @Nullable
     private EditorButton spawnsToggle;
 
     public TelemetryPage() {
@@ -35,6 +43,10 @@ public class TelemetryPage extends AbstractVoxelLabPage {
     @Override
     protected void buildPanels() {
         createButtons();
+        EditorButton telemetryMasterToggle = Objects.requireNonNull(this.telemetryMasterToggle, "telemetryMasterToggle");
+        EditorButton hitsToggle = Objects.requireNonNull(this.hitsToggle, "hitsToggle");
+        EditorButton deathsToggle = Objects.requireNonNull(this.deathsToggle, "deathsToggle");
+        EditorButton spawnsToggle = Objects.requireNonNull(this.spawnsToggle, "spawnsToggle");
 
         // Header
         panelContainer.addPanel(new HeaderPanel(
@@ -133,10 +145,16 @@ public class TelemetryPage extends AbstractVoxelLabPage {
     }
 
     private void syncButtonStates() {
-        telemetryMasterToggle.toggled(safeGetBool(Config.TELEMETRY_ENABLED));
-        hitsToggle.toggled(safeGetBool(Config.TELEMETRY_HITS_ENABLED));
-        deathsToggle.toggled(safeGetBool(Config.TELEMETRY_DEATHS_ENABLED));
-        spawnsToggle.toggled(safeGetBool(Config.TELEMETRY_SPAWNS_ENABLED));
+        setToggle(telemetryMasterToggle, safeGetBool(Config.TELEMETRY_ENABLED));
+        setToggle(hitsToggle, safeGetBool(Config.TELEMETRY_HITS_ENABLED));
+        setToggle(deathsToggle, safeGetBool(Config.TELEMETRY_DEATHS_ENABLED));
+        setToggle(spawnsToggle, safeGetBool(Config.TELEMETRY_SPAWNS_ENABLED));
+    }
+
+    private static void setToggle(@Nullable EditorButton button, boolean value) {
+        if (button != null) {
+            button.toggled(value);
+        }
     }
 
     private void invokeToggleAction(String actionId, boolean desired, boolean current) {

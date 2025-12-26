@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.modules;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
@@ -21,8 +23,8 @@ public class UsableModule extends AbstractEditorModule {
     private UsableVariant variant = UsableVariant.STANDARD;
 
     // Delegate classes (lazy initialized to avoid this-escape)
-    private UsableModuleCore core;
-    private UsableModuleUI ui;
+    private @Nullable UsableModuleCore core;
+    private @Nullable UsableModuleUI ui;
     private boolean delegatesInitialized = false;
 
     // ═══════════════════════════════════════════════════════════════
@@ -47,18 +49,26 @@ public class UsableModule extends AbstractEditorModule {
         }
     }
 
+    private UsableModuleCore requireCore() {
+        ensureDelegates();
+        return Objects.requireNonNull(core, "core");
+    }
+
+    private UsableModuleUI requireUi() {
+        ensureDelegates();
+        return Objects.requireNonNull(ui, "ui");
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // DELEGATE ACCESSORS
     // ═══════════════════════════════════════════════════════════════
 
     public UsableModuleCore getCore() {
-        ensureDelegates();
-        return core;
+        return requireCore();
     }
 
     public UsableModuleUI getUI() {
-        ensureDelegates();
-        return ui;
+        return requireUi();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -86,7 +96,7 @@ public class UsableModule extends AbstractEditorModule {
     @Override
     protected void onItemSet() {
         // Ensure delegates are initialized before use
-        ensureDelegates();
+        UsableModuleCore core = requireCore();
 
         // Load existing usable stats from item NBT
         core.loadStatsFromItem(item);
@@ -98,7 +108,8 @@ public class UsableModule extends AbstractEditorModule {
     @Override
     protected void initializeTabs() {
         // Ensure delegates are initialized before use
-        ensureDelegates();
+        UsableModuleCore core = requireCore();
+        UsableModuleUI ui = requireUi();
 
         tabs.clear();
 
@@ -126,6 +137,8 @@ public class UsableModule extends AbstractEditorModule {
         if (newStats == null) {
             return;
         }
+        UsableModuleCore core = requireCore();
+        UsableModuleUI ui = requireUi();
         saveUndoState();
         core.setStats(newStats.copy());
         ui.updateSlidersFromStats();
@@ -168,7 +181,7 @@ public class UsableModule extends AbstractEditorModule {
 
     @Override
     public CustomPacketPayload buildPayload(boolean isGlobal) {
-        UsableStats stats = core.getStats();
+        UsableStats stats = requireCore().getStats();
 
         // Build NBT from current stats
         CompoundTag statsTag = new CompoundTag();
@@ -188,6 +201,8 @@ public class UsableModule extends AbstractEditorModule {
 
     @Override
     public void applyPreview() {
+        UsableModuleCore core = requireCore();
+        UsableModuleUI ui = requireUi();
         UsableStats stats = core.getStats();
         // Prepare a preview copy of the item and set CustomData on the copy only.
         try {
@@ -216,11 +231,11 @@ public class UsableModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     public UsableStats getStats() {
-        return core.getStats();
+        return requireCore().getStats();
     }
 
     public UsableStats getOriginalStats() {
-        return core.getOriginalStats();
+        return requireCore().getOriginalStats();
     }
 
     public UsableVariant getVariant() {
@@ -234,7 +249,10 @@ public class UsableModule extends AbstractEditorModule {
     /**
      * Reset all stats to original values loaded from the item.
      */
+    @Override
     public void resetToOriginal() {
+        UsableModuleCore core = requireCore();
+        UsableModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
         ui.updateSlidersFromStats();
         clearDirty();
@@ -244,7 +262,7 @@ public class UsableModule extends AbstractEditorModule {
      * Check if current stats differ from original.
      */
     public boolean hasModifications() {
-        return core.hasModifications();
+        return requireCore().hasModifications();
     }
 
     @Override

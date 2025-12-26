@@ -7,6 +7,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,9 +26,13 @@ public class FancyMenuCompat implements CompatModule {
     private static boolean apiAvailable = false;
 
     // Cached reflection references
+    @Nullable
     private static Class<?> layoutHandlerClass;
+    @Nullable
     private static Class<?> customizationClass;
+    @Nullable
     private static Method isScreenCustomizedMethod;
+    @Nullable
     private static Method getLayoutForScreenMethod;
 
     @Override

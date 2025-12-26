@@ -1,9 +1,11 @@
 package com.devmod.telemetry;
 
+import javax.annotation.Nullable;
+
 public final class TelemetryJson {
     private TelemetryJson() {}
 
-    public static String escape(String input) {
+    public static String escape(@Nullable String input) {
         if (input == null) return "";
         StringBuilder sb = new StringBuilder(input.length() + 8);
         for (char c : input.toCharArray()) {

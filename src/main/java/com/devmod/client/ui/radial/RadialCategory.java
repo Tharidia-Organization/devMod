@@ -174,6 +174,7 @@ public class RadialCategory {
         private String name;
         private int color = 0xFFFFFFFF;
         private String icon = "*";
+        @Nullable
         private ItemStack iconStack;
         private final List<RadialMenuItem> items = new ArrayList<>();
 
@@ -197,7 +198,7 @@ public class RadialCategory {
             return this;
         }
 
-        public Builder iconStack(ItemStack iconStack) {
+        public Builder iconStack(@Nullable ItemStack iconStack) {
             this.iconStack = iconStack;
             return this;
         }

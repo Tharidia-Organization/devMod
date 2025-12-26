@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.core;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 public class FocusManager {
 
     private final List<Focusable> focusables = new ArrayList<>();
@@ -223,6 +225,7 @@ public class FocusManager {
      *
      * @return The focused component, or null if none
      */
+    @Nullable
     public Focusable getFocused() {
         if (focusIndex < 0 || focusIndex >= focusables.size()) return null;
         return focusables.get(focusIndex);
@@ -288,7 +291,6 @@ public class FocusManager {
      *
      * @param mouseX Mouse X position
      * @param mouseY Mouse Y position
-     * @param focusables Map of components with their bounds
      */
     public void handleMouseClick(double mouseX, double mouseY) {
         // This is a simplified version - in practice you'd check bounds

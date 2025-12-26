@@ -28,6 +28,7 @@ public final class ItemEditorState {
     // MODULE STATE
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private EditorModule activeModule;
 
     // ═══════════════════════════════════════════════════════════════

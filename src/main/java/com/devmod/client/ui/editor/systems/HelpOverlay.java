@@ -67,6 +67,7 @@ public final class HelpOverlay extends BaseOverlay {
     /**
      * Toggle visibility of the help overlay.
      */
+    @Override
     public void toggle() {
         if (visible) {
             hide();

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -17,6 +19,7 @@ public class PlaceholderModule implements EditorModule {
     private final String id;
     private final String title;
     private ItemStack item = ItemStack.EMPTY;
+    @Nullable
     private ResponsiveLayout layout;
     private int activeTabIndex = 0;
     private final List<String> pendingChanges = new ArrayList<>();
@@ -158,7 +161,7 @@ public class PlaceholderModule implements EditorModule {
     }
 
     @Override
-    public CustomPacketPayload buildPayload(boolean isGlobal) {
+    public @Nullable CustomPacketPayload buildPayload(boolean isGlobal) {
         return null; // Placeholder returns null
     }
 

@@ -1,5 +1,7 @@
 package com.devmod.client.rendering;
 
+import javax.annotation.Nullable;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -239,8 +241,11 @@ public final class TrigCache {
 
     // === Singleton Cached Geometries ===
 
+    @Nullable
     private static CachedSpiral outerSpiral;
+    @Nullable
     private static CachedSpiral innerSpiral;
+    @Nullable
     private static CachedRing ring24;
 
     /**

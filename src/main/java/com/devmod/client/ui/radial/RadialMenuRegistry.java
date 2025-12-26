@@ -33,6 +33,12 @@ public final class RadialMenuRegistry {
         return new ItemStack(Objects.requireNonNull(item, "item"));
     }
 
+    @Nonnull
+    private static List<RadialCategory> requireCategories(Map<MacroCategory, List<RadialCategory>> map,
+            MacroCategory macro) {
+        return Objects.requireNonNull(map.get(macro), "categories for " + macro);
+    }
+
     private static ItemStack getHeldItem() {
         var mc = Minecraft.getInstance();
         var player = mc.player;
@@ -133,7 +139,7 @@ public final class RadialMenuRegistry {
     // ================================================================
 
     private static void buildAnalyzeCategories(Map<MacroCategory, List<RadialCategory>> map) {
-        List<RadialCategory> categories = map.get(MacroCategory.ANALYZE);
+        List<RadialCategory> categories = requireCategories(map, MacroCategory.ANALYZE);
 
         // Category 1: Debug
         RadialCategory debug = RadialCategory.builder("debug")
@@ -215,7 +221,7 @@ public final class RadialMenuRegistry {
     // ================================================================
 
     private static void buildTelemetryCategories(Map<MacroCategory, List<RadialCategory>> map) {
-        List<RadialCategory> categories = map.get(MacroCategory.TELEMETRY);
+        List<RadialCategory> categories = requireCategories(map, MacroCategory.TELEMETRY);
 
         // Category 1: Telemetry Ops
         categories.add(RadialCategory.builder("telemetry_ops")
@@ -299,7 +305,7 @@ public final class RadialMenuRegistry {
     // ================================================================
 
     private static void buildCombatCategories(Map<MacroCategory, List<RadialCategory>> map) {
-        List<RadialCategory> categories = map.get(MacroCategory.COMBAT);
+        List<RadialCategory> categories = requireCategories(map, MacroCategory.COMBAT);
 
         // Category 1: Combat HUD
         categories.add(RadialCategory.builder("combat_hud")
@@ -362,7 +368,7 @@ public final class RadialMenuRegistry {
     // ================================================================
 
     private static void buildArenaCategories(Map<MacroCategory, List<RadialCategory>> map) {
-        List<RadialCategory> categories = map.get(MacroCategory.ARENA);
+        List<RadialCategory> categories = requireCategories(map, MacroCategory.ARENA);
 
         // Category 1: Arena Ops
         categories.add(RadialCategory.builder("arena_ops")
@@ -430,7 +436,7 @@ public final class RadialMenuRegistry {
 
     private static void buildToolsCategories(Map<MacroCategory, List<RadialCategory>> map,
             Supplier<RadialMenuItem> mobEditorItemSupplier) {
-        List<RadialCategory> categories = map.get(MacroCategory.TOOLS);
+        List<RadialCategory> categories = requireCategories(map, MacroCategory.TOOLS);
 
         // Category 1: Settings
         RadialCategory settings = RadialCategory.builder("settings")
@@ -709,7 +715,7 @@ public final class RadialMenuRegistry {
     // ================================================================
 
     private static void buildPlayCategories(Map<MacroCategory, List<RadialCategory>> map) {
-        List<RadialCategory> categories = map.get(MacroCategory.PLAY);
+        List<RadialCategory> categories = requireCategories(map, MacroCategory.PLAY);
 
         // Category 1: Endurance
         categories.add(RadialCategory.builder("endurance_core")

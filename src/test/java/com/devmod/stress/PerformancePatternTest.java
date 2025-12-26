@@ -1,10 +1,10 @@
 package com.devmod.stress;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +22,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -110,37 +112,34 @@ class PerformancePatternTest {
         }
 
         @Test
-        @DisplayName("ArrayList vs LinkedList random access")
-        void arrayListVsLinkedListRandomAccess() {
+        @DisplayName("ArrayList vs ArrayDeque head removal")
+        void arrayListVsArrayDequeHeadRemoval() {
             int size = 10000;
             ArrayList<Integer> arrayList = new ArrayList<>();
-            LinkedList<Integer> linkedList = new LinkedList<>();
+            ArrayDeque<Integer> deque = new ArrayDeque<>();
 
             for (int i = 0; i < size; i++) {
                 arrayList.add(i);
-                linkedList.add(i);
+                deque.addLast(i);
             }
 
-            // ArrayList random access is O(1)
+            // ArrayList head removal is O(n)
             long arrayStart = System.nanoTime();
             for (int i = 0; i < 1000; i++) {
-                int index = ThreadLocalRandom.current().nextInt(size);
-                arrayList.get(index);
+                Integer removed = arrayList.remove(0);
+                assertNotNull(removed);
             }
             long arrayElapsed = System.nanoTime() - arrayStart;
 
-            // LinkedList random access is O(n)
-            long linkedStart = System.nanoTime();
-            for (int i = 0; i < 100; i++) { // Fewer iterations due to O(n)
-                int index = ThreadLocalRandom.current().nextInt(size);
-                linkedList.get(index);
+            // ArrayDeque head removal is O(1)
+            long dequeStart = System.nanoTime();
+            for (int i = 0; i < 1000; i++) {
+                deque.pollFirst();
             }
-            long linkedElapsed = System.nanoTime() - linkedStart;
+            long dequeElapsed = System.nanoTime() - dequeStart;
 
-            // ArrayList should be significantly faster for random access
-            // (comparing 1000 ArrayList ops vs 100 LinkedList ops)
-            assertTrue(arrayElapsed < linkedElapsed * 10,
-                "ArrayList random access should be faster");
+            assertTrue(arrayElapsed > dequeElapsed,
+                "ArrayDeque head removal should be faster");
         }
 
         @Test
@@ -338,7 +337,7 @@ class PerformancePatternTest {
             AtomicInteger createCount = new AtomicInteger(0);
 
             class LazyValue<T> {
-                private volatile T value;
+                private volatile @Nullable T value;
                 private final java.util.function.Supplier<T> supplier;
 
                 LazyValue(java.util.function.Supplier<T> supplier) {
@@ -400,7 +399,7 @@ class PerformancePatternTest {
         @Test
         @DisplayName("Map computeIfAbsent for lazy population")
         void mapComputeIfAbsentForLazyPopulation() {
-            Map<String, List<UUID>> cache = new ConcurrentHashMap<>();
+            Map<String, List<UUID>> cache = new HashMap<>();
             AtomicInteger computeCount = new AtomicInteger(0);
 
             java.util.function.Function<String, List<UUID>> loader = key -> {
@@ -540,12 +539,12 @@ class PerformancePatternTest {
             assertEquals(100, batches.get(99).size());
 
             // Process batches
-            AtomicInteger processedCount = new AtomicInteger(0);
+            int processedCount = 0;
             for (List<Integer> batch : batches) {
-                processedCount.addAndGet(batch.size());
+                processedCount += batch.size();
             }
 
-            assertEquals(10000, processedCount.get());
+            assertEquals(10000, processedCount);
         }
 
         @Test
@@ -943,11 +942,14 @@ class PerformancePatternTest {
             String pattern = "\\d+";
             String input = "test123test456test789";
             int iterations = 10000;
+            int matchCount = 0;
 
             // Without caching (recompile each time)
             long uncachedStart = System.nanoTime();
             for (int i = 0; i < iterations; i++) {
-                input.matches(pattern);
+                if (input.matches(pattern)) {
+                    matchCount++;
+                }
             }
             long uncachedElapsed = System.nanoTime() - uncachedStart;
 
@@ -962,6 +964,7 @@ class PerformancePatternTest {
             // Cached should be faster
             assertTrue(cachedElapsed <= uncachedElapsed * 2,
                 "Cached regex should not be much slower");
+            assertEquals(0, matchCount);
         }
     }
 
@@ -975,7 +978,7 @@ class PerformancePatternTest {
         @DisplayName("UUID lookup in large registry")
         void uuidLookupInLargeRegistry() {
             int size = 100000;
-            ConcurrentHashMap<UUID, InstanceState> registry = new ConcurrentHashMap<>();
+            HashMap<UUID, InstanceState> registry = new HashMap<>();
             List<UUID> ids = new ArrayList<>();
 
             for (int i = 0; i < size; i++) {
@@ -1006,13 +1009,13 @@ class PerformancePatternTest {
         void playerToInstanceReverseLookup() {
             int instanceCount = 1000;
             int playersPerInstance = 4;
-            ConcurrentHashMap<UUID, Set<UUID>> instancePlayers = new ConcurrentHashMap<>();
-            ConcurrentHashMap<UUID, UUID> playerInstance = new ConcurrentHashMap<>();
+            HashMap<UUID, Set<UUID>> instancePlayers = new HashMap<>();
+            HashMap<UUID, UUID> playerInstance = new HashMap<>();
 
             // Setup
             for (int i = 0; i < instanceCount; i++) {
                 UUID instanceId = UUID.randomUUID();
-                Set<UUID> players = ConcurrentHashMap.newKeySet();
+                Set<UUID> players = new HashSet<>();
                 for (int p = 0; p < playersPerInstance; p++) {
                     UUID playerId = UUID.randomUUID();
                     players.add(playerId);
@@ -1020,6 +1023,7 @@ class PerformancePatternTest {
                 }
                 instancePlayers.put(instanceId, players);
             }
+            assertEquals(instanceCount, instancePlayers.size());
 
             // Reverse lookup performance
             List<UUID> allPlayers = new ArrayList<>(playerInstance.keySet());
@@ -1043,7 +1047,7 @@ class PerformancePatternTest {
         @DisplayName("Filtered instance enumeration")
         void filteredInstanceEnumeration() {
             int size = 10000;
-            ConcurrentHashMap<UUID, InstanceState> registry = new ConcurrentHashMap<>();
+            HashMap<UUID, InstanceState> registry = new HashMap<>();
 
             for (int i = 0; i < size; i++) {
                 InstanceState state = switch (i % 6) {

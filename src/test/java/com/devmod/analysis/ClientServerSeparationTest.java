@@ -191,7 +191,7 @@ public class ClientServerSeparationTest {
     }
 
     private boolean shouldSkip(Path file) {
-        String path = file.toString();
+        String path = normalizePath(file);
         for (String skip : SKIP_PATHS) {
             if (path.contains(skip)) return true;
         }
@@ -199,7 +199,7 @@ public class ClientServerSeparationTest {
     }
 
     private boolean isInCommonPackage(Path file) {
-        String path = file.toString().replace('\\', '/');
+        String path = normalizePath(file);
         // Files in client/ are not common
         if (path.contains("/client/")) return false;
         // Check if in a known common package
@@ -210,6 +210,10 @@ public class ClientServerSeparationTest {
             }
         }
         return false;
+    }
+
+    private String normalizePath(Path file) {
+        return file.toString().replace('\\', '/');
     }
 
     private boolean hasProperGuard(String content) {

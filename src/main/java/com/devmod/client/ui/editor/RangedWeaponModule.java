@@ -2,6 +2,8 @@ package com.devmod.client.ui.editor;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
@@ -18,7 +20,7 @@ public class RangedWeaponModule {
         UNKNOWN
     }
 
-    public record SourcedValue<T>(T value, ValueSource source, String detail) {
+    public record SourcedValue<T>(T value, ValueSource source, @Nullable String detail) {
         public static <T> SourcedValue<T> vanilla(T val) { return new SourcedValue<>(val, ValueSource.VANILLA_DEFAULT, null); }
         public static <T> SourcedValue<T> devmod(T val) { return new SourcedValue<>(val, ValueSource.DEVMOD_COMPONENT, null); }
         public static <T> SourcedValue<T> custom(T val) { return new SourcedValue<>(val, ValueSource.CUSTOM_DATA, null); }

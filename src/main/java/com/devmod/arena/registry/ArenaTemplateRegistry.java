@@ -47,6 +47,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     @Nullable
     private ArenaTemplateConfig.ConfigSnapshot configSnapshot;
+    private boolean loggingEnabled = true;
 
     // Stats tracking
     private final RegistryStats stats = new RegistryStats();
@@ -154,7 +155,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
                 : Path.of("config/devmod/structures_manifest.json");
             StructureValidationInitializer.configure(this, manifestPath, Thread.currentThread().getContextClassLoader(), activeSnapshot);
         } catch (Exception e) {
-            LOGGER.warn("Failed to auto-configure structure validation: {}", e.getMessage());
+            if (loggingEnabled) {
+                LOGGER.warn("Failed to auto-configure structure validation: {}", e.getMessage());
+            }
         }
 
         this.healthCheckExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -198,6 +201,10 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         ));
     }
 
+    public void setLoggingEnabled(boolean enabled) {
+        this.loggingEnabled = enabled;
+    }
+
     /**
      * Loads a template into the registry.
      * Implements DD1 (Last-Wins) and DD2 (Inheritance on-load with caching).
@@ -212,8 +219,10 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         // DD1: Version handling - Last Wins
         ArenaTemplate existing = registry.get(template.id());
         if (existing != null && existing.version() != template.version()) {
-            LOGGER.warn("Template '{}' version {} replaced by version {}",
-                template.id(), existing.version(), template.version());
+            if (loggingEnabled) {
+                LOGGER.warn("Template '{}' version {} replaced by version {}",
+                    template.id(), existing.version(), template.version());
+            }
             telemetry.emit("arena.template.version_replaced", Map.of(
                 "templateId", template.id(),
                 "oldVersion", existing.version(),
@@ -239,7 +248,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         registry.put(resolved.id(), resolved);
         generation.incrementAndGet();
 
-        LOGGER.info("Template '{}' v{} loaded successfully", resolved.id(), resolved.version());
+        if (loggingEnabled) {
+            LOGGER.info("Template '{}' v{} loaded successfully", resolved.id(), resolved.version());
+        }
         telemetry.emit("arena.template.loaded", Map.of(
             "templateId", resolved.id(),
             "version", resolved.version(),
@@ -273,7 +284,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
     public ArenaTemplate getOrDefault(String id) {
         ArenaTemplate template = registry.get(id);
         if (template == null) {
-            LOGGER.warn("Template '{}' not found, falling back to default", id);
+            if (loggingEnabled) {
+                LOGGER.warn("Template '{}' not found, falling back to default", id);
+            }
             telemetry.emit("arena.template.fallback", Map.of(
                 "requestedId", id,
                 "fallbackId", "default_flat_64"
@@ -322,7 +335,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         unresolvedTemplates.remove(id);
         if (removed != null) {
             generation.incrementAndGet();
-            LOGGER.info("Template '{}' unloaded", id);
+            if (loggingEnabled) {
+                LOGGER.info("Template '{}' unloaded", id);
+            }
             telemetry.emit("arena.template.unloaded", Map.of(
                 "templateId", id,
                 "version", removed.version()
@@ -344,7 +359,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
      * @return Reload result with success/failure info
      */
     public ReloadResult hotReload(Collection<ArenaTemplate> templates) {
-        LOGGER.info("Hot-reload started with {} templates", templates.size());
+        if (loggingEnabled) {
+            LOGGER.info("Hot-reload started with {} templates", templates.size());
+        }
         Instant startTime = Instant.now();
 
         ConcurrentHashMap<String, ArenaTemplate> newRegistry = new ConcurrentHashMap<>();
@@ -392,7 +409,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
                 eventDispatcher.emitTemplateRegistered(newTemplate.id(), newTemplate.version(), "hot-reload");
             }
 
-            LOGGER.info("Hot-reload completed successfully, generation {}", newGen);
+            if (loggingEnabled) {
+                LOGGER.info("Hot-reload completed successfully, generation {}", newGen);
+            }
             telemetry.emit("arena.template.hot_reload", Map.of(
                 "success", true,
                 "templateCount", newRegistry.size(),
@@ -402,7 +421,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
 
             return new ReloadResult(true, newRegistry.size(), List.of());
         } else {
-            LOGGER.error("Hot-reload failed with {} errors", errors.size());
+            if (loggingEnabled) {
+                LOGGER.error("Hot-reload failed with {} errors", errors.size());
+            }
             telemetry.emit("arena.template.hot_reload", Map.of(
                 "success", false,
                 "errorCount", errors.size(),
@@ -424,13 +445,17 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             try {
                 load(t);
             } catch (Exception e) {
-                LOGGER.error("Failed to load template {} from {}", t.id(), directory, e);
+                if (loggingEnabled) {
+                    LOGGER.error("Failed to load template {} from {}", t.id(), directory, e);
+                }
             }
         }
 
         // Fallback injection if nothing loaded
         if (registry.isEmpty()) {
-            LOGGER.warn("No templates loaded from {}. Injecting built-in fallbacks.", directory);
+            if (loggingEnabled) {
+                LOGGER.warn("No templates loaded from {}. Injecting built-in fallbacks.", directory);
+            }
             injectFallbackTemplates(directory, "load_empty");
         }
         return result;
@@ -455,7 +480,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         TemplateLoader.LoadResult loadResult = loader.loadAllSources(directory);
 
         if (!loadResult.success()) {
-            LOGGER.error("Template reload aborted, {} errors", loadResult.errors().size());
+            if (loggingEnabled) {
+                LOGGER.error("Template reload aborted, {} errors", loadResult.errors().size());
+            }
             // Leak prevention: clear ephemeral handles/locks even on failed reload attempts
             clearEphemeralState();
             return new ReloadResult(false, 0, loadResult.errors());
@@ -532,7 +559,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             }
             healthCheckExecutor.shutdownNow();
         } catch (Exception e) {
-            LOGGER.warn("Failed to shut down template registry health executor", e);
+            if (loggingEnabled) {
+                LOGGER.warn("Failed to shut down template registry health executor", e);
+            }
         }
         clearEphemeralState();
         registry.clear();
@@ -566,7 +595,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
                 ));
             }
         } catch (Exception e) {
-            LOGGER.warn("Template registry health check failed: {}", e.getMessage());
+            if (loggingEnabled) {
+                LOGGER.warn("Template registry health check failed: {}", e.getMessage());
+            }
         }
     }
 

@@ -713,7 +713,9 @@ public class TelemetryService {
      * for ALL NDJSON writes in the system.
      */
     void appendLine(String fileName, String line) {
-        if (telemetryDir == null || asyncWriter == null) return;
+        Path dir = telemetryDir;
+        AsyncTelemetryWriter writer = asyncWriter;
+        if (dir == null || writer == null) return;
 
         // Circuit breaker: If DuckDB failed and FALLBACK_ON_ERROR=false, disable ALL telemetry
         if (duckDbInitFailed && !DuckDBConfig.FALLBACK_ON_ERROR) {
@@ -735,8 +737,8 @@ public class TelemetryService {
             return;
         }
 
-        Path file = telemetryDir.resolve(fileName);
-        asyncWriter.queueWrite(file, line);
+        Path file = dir.resolve(fileName);
+        writer.queueWrite(file, line);
     }
 
     /**

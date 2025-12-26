@@ -16,6 +16,13 @@ import com.mojang.logging.LogUtils;
 
 import net.minecraft.server.MinecraftServer;
 
+import com.devmod.telemetry.duckdb.aggregation.AbilityAggregateWindow.AbilityAggregate;
+import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
+import com.devmod.telemetry.duckdb.aggregation.CombatAggregateWindow.CombatAggregate;
+import com.devmod.telemetry.duckdb.aggregation.HeatmapAggregateWindow.HeatmapAggregate;
+import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
+import com.devmod.telemetry.duckdb.lvc.TelemetryLVC;
+
 public class DuckDBTelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -84,8 +91,20 @@ public class DuckDBTelemetryService {
             // Initialize connection manager
             connectionManager = new DuckDBConnectionManager(dbPath);
 
-            // Ensure schema exists
-            DuckDBSchemaManager.ensureSchema(connectionManager.getConnection());
+            // Run startup validation (disk space, integrity, permissions)
+            if (!connectionManager.runStartupValidation()) {
+                LOGGER.error("[DuckDB] Startup validation failed - aborting initialization");
+                cleanup();
+                return false;
+            }
+
+            // Ensure schema exists (connectionManager guaranteed non-null after validation)
+            DuckDBConnectionManager cm = connectionManager;
+            if (cm == null) {
+                LOGGER.error("[DuckDB] Connection manager unexpectedly null");
+                return false;
+            }
+            DuckDBSchemaManager.ensureSchema(cm.getConnection());
 
             // Initialize batch writer
             batchWriter = new DuckDBBatchWriter(connectionManager);
@@ -97,16 +116,22 @@ public class DuckDBTelemetryService {
             initialized = true;
             enabled = true;
 
-            LOGGER.info("[DuckDB] Initialization complete");
-            LOGGER.info("[DuckDB] === TELEMETRY CONFIG ===");
-            LOGGER.info("[DuckDB]   ENABLED = {}", DuckDBConfig.ENABLED);
-            LOGGER.info("[DuckDB]   NDJSON_FALLBACK = {}", DuckDBConfig.NDJSON_FALLBACK);
-            LOGGER.info("[DuckDB]   FALLBACK_ON_ERROR = {}", DuckDBConfig.FALLBACK_ON_ERROR);
-            LOGGER.info("[DuckDB] With NDJSON_FALLBACK=false, NDJSON writes will be SKIPPED");
+            // Start aggregation registry if enabled
+            if (AggregationConfig.AGGREGATION_ENABLED) {
+                TelemetryAggregatorRegistry.INSTANCE.start();
+                LOGGER.info("[DuckDB] Aggregation system started (LVC: {})",
+                    AggregationConfig.LVC_ENABLED ? "enabled" : "disabled");
+            }
+
+            // Consolidated init log (was 6 lines, now 2)
+            LOGGER.info("[DuckDB] Initialized at {} | Mode: {} | Fallback: {}",
+                dbPath != null ? dbPath.getFileName() : "unknown",
+                DuckDBConfig.NDJSON_FALLBACK ? "dual-write" : "DuckDB-only",
+                DuckDBConfig.FALLBACK_ON_ERROR ? "on-error" : "strict");
             return true;
 
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to initialize: {}", e.getMessage());
+            LOGGER.error("[DuckDB] Failed to initialize", e);
             cleanup();
             return false;
         }
@@ -121,6 +146,11 @@ public class DuckDBTelemetryService {
 
         LOGGER.info("[DuckDB] Shutting down DuckDB telemetry...");
         enabled = false;
+
+        // Shutdown aggregation registry first (flushes all player aggregators)
+        if (AggregationConfig.AGGREGATION_ENABLED) {
+            TelemetryAggregatorRegistry.INSTANCE.shutdown();
+        }
 
         // Shutdown batch writer (flushes pending writes)
         if (batchWriter != null) {
@@ -200,6 +230,20 @@ public class DuckDBTelemetryService {
         return initialized && !enabled;
     }
 
+    /**
+     * Called by DuckDBBatchWriter when circuit breaker auto-resets.
+     * Re-enables DuckDB writes after successful health check.
+     */
+    public void resetCircuitBreaker() {
+        if (!initialized) return;
+
+        LOGGER.info("[DuckDB] Circuit breaker reset - re-enabling DuckDB writes");
+        enabled = true;
+
+        // Keep NDJSON fallback if it was enabled (dual-write mode)
+        // This provides extra safety during recovery period
+    }
+
     public boolean isDedicatedServer() {
         return isDedicatedServer;
     }
@@ -231,12 +275,13 @@ public class DuckDBTelemetryService {
      * Get statistics about the batch writer.
      */
     public String getStats() {
-        if (batchWriter == null) return "Not initialized";
+        DuckDBBatchWriter writer = batchWriter;
+        if (writer == null) return "Not initialized";
         return String.format("Inserts: %d, Batches: %d, Pending: %d, Dropped: %d",
-            batchWriter.getTotalInserts(),
-            batchWriter.getTotalBatches(),
-            batchWriter.getPendingInserts(),
-            batchWriter.getDroppedInserts());
+            writer.getTotalInserts(),
+            writer.getTotalBatches(),
+            writer.getPendingInserts(),
+            writer.getDroppedInserts());
     }
 
     /**
@@ -246,13 +291,14 @@ public class DuckDBTelemetryService {
      * @return The DuckDB connection, or null if not initialized or on error
      */
     public @Nullable java.sql.Connection getConnection() {
-        if (!initialized || connectionManager == null) {
+        DuckDBConnectionManager manager = connectionManager;
+        if (!initialized || manager == null) {
             return null;
         }
         try {
-            return connectionManager.getConnection();
+            return manager.getConnection();
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to get connection for dashboard: {}", e.getMessage());
+            LOGGER.error("[DuckDB] Failed to get connection for dashboard", e);
             return null;
         }
     }
@@ -292,9 +338,10 @@ public class DuckDBTelemetryService {
                        @Nullable Double armorPenBonus, boolean isMiss,
                        boolean isHazard, @Nullable String hazardType,
                        @Nullable String attackerStateJson, @Nullable String targetStateJson) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueCombatHit(Instant.now(), room, world,
+        writer.queueCombatHit(Instant.now(), room, world,
             templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
             attackerName, attackerType, targetName, targetType,
             damage, damageType, hpBefore, hpAfter, bodyPart, distance,
@@ -318,9 +365,10 @@ public class DuckDBTelemetryService {
                          @Nullable UUID arenaId, @Nullable UUID sessionId,
                          @Nullable String targetName, @Nullable String targetType,
                          @Nullable String cause, @Nullable Long ttkFirstHitMs, @Nullable Long ttkSpawnMs) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueCombatDeath(Instant.now(), room, world,
+        writer.queueCombatDeath(Instant.now(), room, world,
             templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
             targetName, targetType, cause, ttkFirstHitMs, ttkSpawnMs);
     }
@@ -343,9 +391,10 @@ public class DuckDBTelemetryService {
                         @Nullable String targetName, @Nullable String targetType,
                         double healAmount, @Nullable Double hpBefore, @Nullable Double hpAfter,
                         @Nullable String source) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueCombatHeal(Instant.now(), room, world,
+        writer.queueCombatHeal(Instant.now(), room, world,
             templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
             targetName, targetType, healAmount, hpBefore, hpAfter, source);
     }
@@ -368,9 +417,10 @@ public class DuckDBTelemetryService {
                          @Nullable String entityName, @Nullable String entityType,
                          @Nullable String reason, boolean spawnFail,
                          @Nullable Double x, @Nullable Double y, @Nullable Double z) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueCombatSpawn(Instant.now(), room, world,
+        writer.queueCombatSpawn(Instant.now(), room, world,
             templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
             entityName, entityType, reason, spawnFail, x, y, z);
     }
@@ -398,9 +448,10 @@ public class DuckDBTelemetryService {
                          String[] players, String mobKillsByTypeJson,
                          String playerDeathsByNameJson, String ttkByTypeJson,
                          double burstMax, double hpAfterPlayersAvg, double hpAfterMobsAvg) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueCombatFight(room, world,
+        writer.queueCombatFight(room, world,
             templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
             startTs, endTs, durationMs, hits, mobKills,
             playerDeaths, players, mobKillsByTypeJson, playerDeathsByNameJson, ttkByTypeJson,
@@ -425,9 +476,10 @@ public class DuckDBTelemetryService {
                              @Nullable String templateId, @Nullable Integer templateVersion,
                              @Nullable String policyId, @Nullable Integer policyVersion,
                              @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceWave(Instant.now(), sessionId,
+        writer.queueEnduranceWave(Instant.now(), sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             waveNumber, "start", mobCount, playerCount, questType, modifiers,
             null, null, null, null);
@@ -447,9 +499,10 @@ public class DuckDBTelemetryService {
                                 @Nullable String templateId, @Nullable Integer templateVersion,
                                 @Nullable String policyId, @Nullable Integer policyVersion,
                                 @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceWave(Instant.now(), sessionId,
+        writer.queueEnduranceWave(Instant.now(), sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             waveNumber, "complete", null, null, null, null,
             mobsKilled, durationMs, noDamage, killsPerSecond);
@@ -469,9 +522,10 @@ public class DuckDBTelemetryService {
                             @Nullable String templateId, @Nullable Integer templateVersion,
                             @Nullable String policyId, @Nullable Integer policyVersion,
                             @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceWaveKill(Instant.now(), sessionId,
+        writer.queueEnduranceWaveKill(Instant.now(), sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             waveNumber, mobType, isElite, killerWeapon, damageDealt);
     }
@@ -492,9 +546,10 @@ public class DuckDBTelemetryService {
                               @Nullable String templateId, @Nullable Integer templateVersion,
                               @Nullable String policyId, @Nullable Integer policyVersion,
                               @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceCombo(Instant.now(), playerId, sessionId,
+        writer.queueEnduranceCombo(Instant.now(), playerId, sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             eventType, oldRank, newRank, styleScore, currentCombo,
             null, null, null, null, null, null);
@@ -514,9 +569,10 @@ public class DuckDBTelemetryService {
                                   @Nullable String templateId, @Nullable Integer templateVersion,
                                   @Nullable String policyId, @Nullable Integer policyVersion,
                                   @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceCombo(Instant.now(), playerId, sessionId,
+        writer.queueEnduranceCombo(Instant.now(), playerId, sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "milestone", null, rank, null, null,
             milestone, null, null, null, pointsEarned, styleEarned);
@@ -536,9 +592,10 @@ public class DuckDBTelemetryService {
                               @Nullable String templateId, @Nullable Integer templateVersion,
                               @Nullable String policyId, @Nullable Integer policyVersion,
                               @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceCombo(Instant.now(), playerId, sessionId,
+        writer.queueEnduranceCombo(Instant.now(), playerId, sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "break", previousRank, newRank, null, null,
             null, comboLost, damageTaken, null, null, null);
@@ -560,9 +617,10 @@ public class DuckDBTelemetryService {
                                 @Nullable String templateId, @Nullable Integer templateVersion,
                                 @Nullable String policyId, @Nullable Integer policyVersion,
                                 @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEndurancePerk(Instant.now(), playerId, sessionId,
+        writer.queueEndurancePerk(Instant.now(), playerId, sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "selected", perkId, perkName, tier, category,
             stackCount, totalPerks, waveNumber, null);
@@ -582,9 +640,10 @@ public class DuckDBTelemetryService {
                                @Nullable String templateId, @Nullable Integer templateVersion,
                                @Nullable String policyId, @Nullable Integer policyVersion,
                                @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEndurancePerk(Instant.now(), playerId, sessionId,
+        writer.queueEndurancePerk(Instant.now(), playerId, sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "choices", null, null, null, null,
             null, null, waveNumber, choicesJson);
@@ -604,9 +663,10 @@ public class DuckDBTelemetryService {
                                   @Nullable String templateId, @Nullable Integer templateVersion,
                                   @Nullable String policyId, @Nullable Integer policyVersion,
                                   @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceReward(Instant.now(), playerId, sessionId,
+        writer.queueEnduranceReward(Instant.now(), playerId, sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "currency", currency, amount, source,
             null, null, null, null, null, null, null);
@@ -626,9 +686,10 @@ public class DuckDBTelemetryService {
                             @Nullable String templateId, @Nullable Integer templateVersion,
                             @Nullable String policyId, @Nullable Integer policyVersion,
                             @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceReward(Instant.now(), playerId, sessionId,
+        writer.queueEnduranceReward(Instant.now(), playerId, sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "loot", null, null, null,
             itemId, itemCount, lootTier, null, null, null, null);
@@ -643,9 +704,10 @@ public class DuckDBTelemetryService {
                                        @Nullable String templateId, @Nullable Integer templateVersion,
                                        @Nullable String policyId, @Nullable Integer policyVersion,
                                        @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceReward(Instant.now(), playerId, sessionId,
+        writer.queueEnduranceReward(Instant.now(), playerId, sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "achievement_unlocked", rewardCurrency, rewardAmount, null,
             null, null, null, achievementId, achievementName, null, null);
@@ -664,10 +726,11 @@ public class DuckDBTelemetryService {
                                  @Nullable String templateId, @Nullable Integer templateVersion,
                                  @Nullable String policyId, @Nullable Integer policyVersion,
                                  @Nullable UUID instanceId, @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
         if (!shouldLogSessionStart(sessionId, playerName, questName, questType)) return;
 
-        batchWriter.queueEnduranceSession(sessionId, playerId, playerName,
+        writer.queueEnduranceSession(sessionId, playerId, playerName,
             questName, questType, totalWaves, isEndless, playerCount,
             Instant.now(), null, null, null, null, null, null, null, null, null, null,
             templateId, templateVersion, policyId, policyVersion, instanceId, arenaId,
@@ -691,10 +754,11 @@ public class DuckDBTelemetryService {
                                @Nullable Integer giveupDuringRespawn,
                                @Nullable Integer inventoryRestoreSuccess, @Nullable Integer inventoryRestoreFallback,
                                @Nullable Integer externalDeathRespawnCount, @Nullable Integer waveBlockedDetected) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
         if (!shouldLogSessionEnd(sessionId, playerName, questName, questType)) return;
 
-        batchWriter.queueEnduranceSession(sessionId, playerId, playerName,
+        writer.queueEnduranceSession(sessionId, playerId, playerName,
             questName, questType, totalWaves, isEndless, playerCount,
             startTs, Instant.now(), outcome, wavesCompleted, totalKills,
             damageDealt, damageTaken, tokensEarned, prestigeEarned,
@@ -715,9 +779,10 @@ public class DuckDBTelemetryService {
                                         @Nullable String templateId, @Nullable Integer templateVersion,
                                         @Nullable String policyId, @Nullable Integer policyVersion,
                                         @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEndurancePerformance(Instant.now(), sessionId, playerId,
+        writer.queueEndurancePerformance(Instant.now(), sessionId, playerId,
             questType, durationMs, wavesCompleted, kills,
             damageDealt, damageTaken, avgTtkMs, kps, dtps, dps,
             templateId, templateVersion, policyId, policyVersion, arenaId);
@@ -805,9 +870,10 @@ public class DuckDBTelemetryService {
                                     @Nullable String templateId, @Nullable Integer templateVersion,
                                     @Nullable String policyId, @Nullable Integer policyVersion,
                                     @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceMutator(Instant.now(), sessionId,
+        writer.queueEnduranceMutator(Instant.now(), sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "assigned", null, null, null, rewardMultiplier, mutatorCount, mutatorsJson);
     }
@@ -824,9 +890,10 @@ public class DuckDBTelemetryService {
                                 @Nullable String templateId, @Nullable Integer templateVersion,
                                 @Nullable String policyId, @Nullable Integer policyVersion,
                                 @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceMutator(Instant.now(), sessionId,
+        writer.queueEnduranceMutator(Instant.now(), sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "added", mutatorId, category, waveNumber, null, null, null);
     }
@@ -839,9 +906,10 @@ public class DuckDBTelemetryService {
      * Log party created.
      */
     public void logPartyCreated(UUID partyId, UUID leaderId, String leaderName, String questType) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceParty(Instant.now(), partyId, "created",
+        writer.queueEnduranceParty(Instant.now(), partyId, "created",
             leaderId, leaderName, null, null, questType, 1, null, null);
     }
 
@@ -849,9 +917,10 @@ public class DuckDBTelemetryService {
      * Log party member joined.
      */
     public void logPartyJoin(UUID partyId, UUID memberId, String memberName, int partySize) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceParty(Instant.now(), partyId, "join",
+        writer.queueEnduranceParty(Instant.now(), partyId, "join",
             null, null, memberId, memberName, null, partySize, null, null);
     }
 
@@ -859,9 +928,10 @@ public class DuckDBTelemetryService {
      * Log party member left.
      */
     public void logPartyLeave(UUID partyId, UUID memberId, String reason, int partySize) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceParty(Instant.now(), partyId, "leave",
+        writer.queueEnduranceParty(Instant.now(), partyId, "leave",
             null, null, memberId, null, null, partySize, reason, null);
     }
 
@@ -869,9 +939,10 @@ public class DuckDBTelemetryService {
      * Log party disbanded.
      */
     public void logPartyDisbanded(UUID partyId, int memberCount, String reason) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceParty(Instant.now(), partyId, "disbanded",
+        writer.queueEnduranceParty(Instant.now(), partyId, "disbanded",
             null, null, null, null, null, memberCount, reason, null);
     }
 
@@ -879,9 +950,10 @@ public class DuckDBTelemetryService {
      * Log invite sent.
      */
     public void logInviteSent(UUID partyId, UUID senderId, UUID targetId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceParty(Instant.now(), partyId, "invite_sent",
+        writer.queueEnduranceParty(Instant.now(), partyId, "invite_sent",
             senderId, null, targetId, null, null, null, null, null);
     }
 
@@ -889,9 +961,10 @@ public class DuckDBTelemetryService {
      * Log invite response.
      */
     public void logInviteResponse(UUID partyId, UUID targetId, boolean accepted) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceParty(Instant.now(), partyId, "invite_response",
+        writer.queueEnduranceParty(Instant.now(), partyId, "invite_response",
             null, null, targetId, null, null, null, null, accepted);
     }
 
@@ -913,9 +986,10 @@ public class DuckDBTelemetryService {
                                   @Nullable String templateId, @Nullable Integer templateVersion,
                                   @Nullable String policyId, @Nullable Integer policyVersion,
                                   @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceBoss(Instant.now(), sessionId,
+        writer.queueEnduranceBoss(Instant.now(), sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "wave_start", waveNumber, bossArchetype, bossMaxHealth, playerCount,
             null, null, null, null, null, null);
@@ -935,9 +1009,10 @@ public class DuckDBTelemetryService {
                                 @Nullable String templateId, @Nullable Integer templateVersion,
                                 @Nullable String policyId, @Nullable Integer policyVersion,
                                 @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceBoss(Instant.now(), sessionId,
+        writer.queueEnduranceBoss(Instant.now(), sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "ability", null, bossArchetype, null, null,
             abilityName, playersHit, damageDealt, null, null, null);
@@ -957,9 +1032,10 @@ public class DuckDBTelemetryService {
                                  @Nullable String templateId, @Nullable Integer templateVersion,
                                  @Nullable String policyId, @Nullable Integer policyVersion,
                                  @Nullable UUID arenaId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEnduranceBoss(Instant.now(), sessionId,
+        writer.queueEnduranceBoss(Instant.now(), sessionId,
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "defeated", waveNumber, bossArchetype, null, null,
             null, null, null, fightDurationMs, bonusPoints, damageDealtToBoss);
@@ -987,9 +1063,10 @@ public class DuckDBTelemetryService {
                                   double dashCooldown, double dodgeCooldown, int abilityFlags,
                                   int currentCombo, @Nullable String styleRank, int styleScore,
                                   double x, double y, double z, @Nullable String dimension) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queuePlayerSnapshot(Instant.now(), playerId, playerName, trigger,
+        writer.queuePlayerSnapshot(Instant.now(), playerId, playerName, trigger,
             healthHp, maxHealthHp, healthHearts, absorptionHp,
             hungerLevel, saturation, exhaustion,
             movementSpeed, velocityX, velocityY, velocityZ, movementFlags,
@@ -1008,9 +1085,10 @@ public class DuckDBTelemetryService {
                            @Nullable Integer result, @Nullable Double staminaBefore, @Nullable Double staminaAfter,
                            @Nullable Double staminaCost, @Nullable Double damageNegated, @Nullable String damageSource,
                            @Nullable String context, @Nullable Long regenTimeMs) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queuePlayerAbility(Instant.now(), playerId, abilityType,
+        writer.queuePlayerAbility(Instant.now(), playerId, abilityType,
             success, result, staminaBefore, staminaAfter, staminaCost,
             damageNegated, damageSource, context, regenTimeMs);
     }
@@ -1020,9 +1098,10 @@ public class DuckDBTelemetryService {
      */
     public void logPlayerAttributeChange(UUID playerId, String attributeName,
                                           double oldValue, double newValue) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queuePlayerAttributeChange(Instant.now(), playerId, attributeName,
+        writer.queuePlayerAttributeChange(Instant.now(), playerId, attributeName,
             oldValue, newValue);
     }
 
@@ -1034,9 +1113,10 @@ public class DuckDBTelemetryService {
      * Log a heatmap point.
      */
     public void logHeatmap(@Nullable String heatmapType, @Nullable String room, int x, int y, int z, int count) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueSpatialHeatmap(Instant.now(), heatmapType, room, x, y, z, count);
+        writer.queueSpatialHeatmap(Instant.now(), heatmapType, room, x, y, z, count);
     }
 
     /**
@@ -1046,9 +1126,10 @@ public class DuckDBTelemetryService {
                                      @Nullable UUID sessionId, String eventType,
                                      int gridX, int gridZ, double worldX, double worldY, double worldZ,
                                      @Nullable UUID playerId) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueArenaSpatialEvent(Instant.now(), templateId, templateVersion, sessionId, eventType,
+        writer.queueArenaSpatialEvent(Instant.now(), templateId, templateVersion, sessionId, eventType,
             gridX, gridZ, worldX, worldY, worldZ, playerId);
     }
 
@@ -1058,9 +1139,10 @@ public class DuckDBTelemetryService {
     public void logAlert(String alertType, @Nullable String playerName, @Nullable String entityName,
                          @Nullable String entityType, @Nullable String room,
                          double x, double y, double z, @Nullable String extraDataJson) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueSpatialAlert(Instant.now(), alertType, playerName,
+        writer.queueSpatialAlert(Instant.now(), alertType, playerName,
             entityName, entityType, room, x, y, z, extraDataJson);
     }
 
@@ -1068,9 +1150,10 @@ public class DuckDBTelemetryService {
      * Log a room transition.
      */
     public void logRoomTransition(UUID playerId, @Nullable String playerName, @Nullable String room) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueRoomTransition(Instant.now(), playerId, playerName, room);
+        writer.queueRoomTransition(Instant.now(), playerId, playerName, room);
     }
 
     // ============================================
@@ -1081,9 +1164,10 @@ public class DuckDBTelemetryService {
      * Log a performance sample.
      */
     public void logPerformance(double mspt, double tps) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queuePerformanceSample(Instant.now(), mspt, tps);
+        writer.queuePerformanceSample(Instant.now(), mspt, tps);
     }
 
     // ============================================
@@ -1095,9 +1179,10 @@ public class DuckDBTelemetryService {
      * Maps 1:1 to economy_mob_kills table.
      */
     public void logMobKill(String mobType, int totalKills, boolean hadLoot) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEconomyMobKill(Instant.now(), mobType, totalKills, hadLoot);
+        writer.queueEconomyMobKill(Instant.now(), mobType, totalKills, hadLoot);
     }
 
     /**
@@ -1105,9 +1190,10 @@ public class DuckDBTelemetryService {
      * Maps 1:1 to economy_mob_drops table.
      */
     public void logMobDrop(String mobType, String room, String itemId, int itemCount, int x, int y, int z) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEconomyMobDrop(Instant.now(), mobType, room, itemId, itemCount, x, y, z);
+        writer.queueEconomyMobDrop(Instant.now(), mobType, room, itemId, itemCount, x, y, z);
     }
 
     /**
@@ -1115,9 +1201,10 @@ public class DuckDBTelemetryService {
      * Maps 1:1 to economy_item_pickups table.
      */
     public void logItemPickup(UUID playerId, String playerName, String room, String itemId, int itemCount, int x, int y, int z) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEconomyItemPickup(Instant.now(), playerId, playerName, room, itemId, itemCount, x, y, z);
+        writer.queueEconomyItemPickup(Instant.now(), playerId, playerName, room, itemId, itemCount, x, y, z);
     }
 
     /**
@@ -1125,9 +1212,10 @@ public class DuckDBTelemetryService {
      * Maps 1:1 to economy_item_usage table.
      */
     public void logItemUsage(UUID playerId, String playerName, String eventType, String itemId, int itemCount, String useType) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueEconomyItemUsage(Instant.now(), playerId, playerName, eventType, itemId, itemCount, useType);
+        writer.queueEconomyItemUsage(Instant.now(), playerId, playerName, eventType, itemId, itemCount, useType);
     }
 
     // ============================================
@@ -1141,10 +1229,11 @@ public class DuckDBTelemetryService {
      */
     public void logBlock(UUID playerId, String playerName, String worldId, String room,
                          String eventType, String blockId, int x, int y, int z) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
         if (blockId == null || blockId.isEmpty()) return; // Guard: no empty block_id
 
-        batchWriter.queueProgressionBlock(Instant.now(), playerId, playerName, worldId, room,
+        writer.queueProgressionBlock(Instant.now(), playerId, playerName, worldId, room,
             eventType, blockId, x, y, z);
     }
 
@@ -1156,14 +1245,15 @@ public class DuckDBTelemetryService {
     public void logXp(UUID playerId, String playerName, String worldId, String room,
                       String eventType, int xpAmount, int oldLevel, int newLevel,
                       int x, int y, int z) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
         if (xpAmount == 0 && oldLevel == newLevel) return; // Guard: no-op events
 
         long now = System.currentTimeMillis();
 
         // Level change events are always logged immediately
         if (!"pickup".equals(eventType) || newLevel != oldLevel) {
-            batchWriter.queueProgressionXp(Instant.now(), playerId, playerName, worldId, room,
+            writer.queueProgressionXp(Instant.now(), playerId, playerName, worldId, room,
                 eventType, xpAmount, oldLevel, newLevel, x, y, z);
             return;
         }
@@ -1181,7 +1271,7 @@ public class DuckDBTelemetryService {
 
             // Flush if interval elapsed
             if (now - batch.lastFlush >= XP_BATCH_INTERVAL_MS && batch.accumulatedXp > 0) {
-                batchWriter.queueProgressionXp(Instant.now(), playerId, playerName,
+                writer.queueProgressionXp(Instant.now(), playerId, playerName,
                     batch.lastWorldId, batch.lastRoom, "pickup_batch",
                     batch.accumulatedXp, batch.startLevel, batch.lastLevel,
                     batch.lastX, batch.lastY, batch.lastZ);
@@ -1197,7 +1287,8 @@ public class DuckDBTelemetryService {
      */
     public void logAdvancement(UUID playerId, String playerName, String worldId, String room,
                                String advancementId, String title, int x, int y, int z) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
         // Dedup: only log once per session per player+advancement
         String dedupKey = playerId + ":" + advancementId;
@@ -1205,7 +1296,7 @@ public class DuckDBTelemetryService {
             return; // Already logged this session
         }
 
-        batchWriter.queueProgressionAdvancement(Instant.now(), playerId, playerName, worldId, room,
+        writer.queueProgressionAdvancement(Instant.now(), playerId, playerName, worldId, room,
             advancementId, title, x, y, z);
     }
 
@@ -1217,7 +1308,8 @@ public class DuckDBTelemetryService {
     public void logDimensionChange(UUID playerId, String playerName, String worldId,
                                    String fromDimension, String toDimension,
                                    int x, int y, int z) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
         if (fromDimension.equals(toDimension)) return; // Guard: no actual change
 
         long now = System.currentTimeMillis();
@@ -1229,7 +1321,7 @@ public class DuckDBTelemetryService {
         }
         lastDimensionChange.put(playerId, now);
 
-        batchWriter.queueProgressionDimension(Instant.now(), playerId, playerName, worldId,
+        writer.queueProgressionDimension(Instant.now(), playerId, playerName, worldId,
             fromDimension, toDimension, x, y, z);
     }
 
@@ -1242,9 +1334,10 @@ public class DuckDBTelemetryService {
                          String itemBought, int itemBoughtCount,
                          String itemSold, int itemSoldCount,
                          int x, int y, int z) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueProgressionTrade(Instant.now(), playerId, playerName, worldId, room,
+        writer.queueProgressionTrade(Instant.now(), playerId, playerName, worldId, room,
             villagerType, profession, itemBought, itemBoughtCount, itemSold, itemSoldCount,
             x, y, z);
     }
@@ -1255,9 +1348,10 @@ public class DuckDBTelemetryService {
      */
     public void logFishing(UUID playerId, String playerName, String worldId, String room,
                            String itemId, int itemCount, int x, int y, int z) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueProgressionFishing(Instant.now(), playerId, playerName, worldId, room,
+        writer.queueProgressionFishing(Instant.now(), playerId, playerName, worldId, room,
             itemId, itemCount, x, y, z);
     }
 
@@ -1275,9 +1369,10 @@ public class DuckDBTelemetryService {
                                int deaths, int kills, String enemiesKilled,
                                float damageDealt, float damageTaken,
                                int rewardCount, String lootCollected, String lastDeathRoom) {
-        if (!enabled || batchWriter == null) return;
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
 
-        batchWriter.queueDungeonRun(startTs, endTs, durationMs, playerId, playerName, dungeonId,
+        writer.queueDungeonRun(startTs, endTs, durationMs, playerId, playerName, dungeonId,
             outcome, roomsVisited, roomsList, deaths, kills, enemiesKilled,
             damageDealt, damageTaken, rewardCount, lootCollected, lastDeathRoom);
     }
@@ -1323,5 +1418,111 @@ public class DuckDBTelemetryService {
         boolean hasQuestName;
         boolean hasQuestType;
         long lastUpdatedMs;
+    }
+
+    // ============================================
+    // AGGREGATED EVENT WRITING
+    // ============================================
+
+    /**
+     * Write aggregated combat data to DuckDB.
+     * Called by TelemetryAggregatorRegistry during periodic flush.
+     *
+     * @param playerId the player's UUID
+     * @param combat the aggregated combat data
+     */
+    public void writeAggregatedCombat(UUID playerId, CombatAggregate combat) {
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
+
+        writer.queueCombatAggregate(
+            Instant.now(),
+            playerId,
+            combat.windowStart(),
+            combat.windowEnd(),
+            combat.hitCount(),
+            combat.missCount(),
+            combat.totalDamage(),
+            combat.killCount(),
+            combat.criticalHits(),
+            combat.weaponStatsJson(),
+            combat.targetStatsJson(),
+            combat.sessionId(),
+            combat.questId(),
+            combat.templateId(),
+            combat.templateVersion()
+        );
+    }
+
+    /**
+     * Write aggregated ability data to DuckDB.
+     * Called by TelemetryAggregatorRegistry during periodic flush.
+     *
+     * @param playerId the player's UUID
+     * @param ability the aggregated ability data
+     */
+    public void writeAggregatedAbility(UUID playerId, AbilityAggregate ability) {
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
+
+        // Write each ability type as a separate row
+        for (var entry : ability.abilityStats().entrySet()) {
+            String abilityType = entry.getKey();
+            var stats = entry.getValue();
+
+            writer.queueAbilityAggregate(
+                Instant.now(),
+                playerId,
+                ability.windowStart(),
+                ability.windowEnd(),
+                abilityType,
+                stats.getAttempts(),
+                stats.getSuccesses(),
+                stats.getTotalStaminaCost(),
+                stats.getTotalDamageNegated(),
+                ability.sessionId()
+            );
+        }
+    }
+
+    /**
+     * Write aggregated heatmap data to DuckDB.
+     * Called by TelemetryAggregatorRegistry during periodic flush.
+     *
+     * @param playerId the player's UUID
+     * @param heatmap the aggregated heatmap data
+     */
+    public void writeAggregatedHeatmap(UUID playerId, HeatmapAggregate heatmap) {
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
+
+        writer.queueHeatmapAggregate(
+            Instant.now(),
+            playerId,
+            heatmap.windowStart(),
+            heatmap.windowEnd(),
+            heatmap.heatmapType(),
+            heatmap.toGridJson(),
+            heatmap.gridSize(),
+            heatmap.totalSamples(),
+            heatmap.sessionId(),
+            heatmap.templateId()
+        );
+    }
+
+    /**
+     * Get the LVC instance for real-time queries.
+     * Returns null if LVC is disabled.
+     */
+    public @Nullable TelemetryLVC getLVC() {
+        return AggregationConfig.LVC_ENABLED ? TelemetryLVC.INSTANCE : null;
+    }
+
+    /**
+     * Get the aggregator registry for player lifecycle management.
+     * Returns null if aggregation is disabled.
+     */
+    public @Nullable TelemetryAggregatorRegistry getAggregatorRegistry() {
+        return AggregationConfig.AGGREGATION_ENABLED ? TelemetryAggregatorRegistry.INSTANCE : null;
     }
 }

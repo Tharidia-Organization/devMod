@@ -1,13 +1,17 @@
 # Agent 12 - Pool & Operational Readiness - COMPLETE
 
+> **Last Updated**: 2025-12-26
+> **Status**: ✅ CURRENT
+
 ## Summary
-Implementato il sistema di pool (deferred), migration audit, monitoring, release gate e KPIs (DD63-72).
+Implementato il sistema di pool (feature-flagged), migration audit, monitoring, release gate e KPIs (DD63-72).
 
 ## Files Created
 
 ### Pool Package (DD63-65 - Prepared for future)
 - `src/main/java/com/devmod/arena/pool/PoolState.java`
-  - DD64: State machine BUILDING→READY→RESERVED→IN_USE→CLEANUP
+  - DD64: State machine BUILDING -> READY -> RESERVED -> IN_USE -> CLEANUP
+  - Transizioni extra: BUILDING -> CLEANUP, READY -> CLEANUP
   - canTransitionTo() per validazione transizioni
   - canBeEvicted() per policy eviction
 
@@ -19,7 +23,7 @@ Implementato il sistema di pool (deferred), migration audit, monitoring, release
 - `src/main/java/com/devmod/arena/pool/PoolMetrics.java`
   - DD65: Hit/miss tracking con auto-disable >50%
   - Alert thresholds 20%/30%
-  - Feature flag integration
+  - Feature flag integration via PoolFeatureFlag
 
 ### Migration Package
 - `src/main/java/com/devmod/arena/migration/WrapperAnalyzer.java`
@@ -43,7 +47,7 @@ Implementato il sistema di pool (deferred), migration audit, monitoring, release
 - `src/main/java/com/devmod/arena/obsolescence/TemplateObsolescenceHandler.java`
   - DD71: Successor mapping per deprecated templates
   - Session-safe removal con wait
-  - Obsolescence phases (DEPRECATED→WARNING→BLOCKED→REMOVED)
+  - Obsolescence phases (DEPRECATED -> WARNING -> BLOCKED -> REMOVED)
 
 ### Rollout Package
 - `src/main/java/com/devmod/arena/rollout/RolloutSuccessCriteria.java`
@@ -54,7 +58,7 @@ Implementato il sistema di pool (deferred), migration audit, monitoring, release
 - `src/main/java/com/devmod/arena/rollout/RolloutEvaluator.java`
   - DD72: Go/no-go gates per phase advancement
   - 7 gate checks (observation, sample, build, rollback, completion, error)
-  - Phase progression CANARY→GRADUAL→FULL
+  - Phase progression CANARY -> GRADUAL -> FULL
 
 ### GitHub Workflow
 - `.github/workflows/release-gate.yml`

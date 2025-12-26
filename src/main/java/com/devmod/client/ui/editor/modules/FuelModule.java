@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.modules;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
@@ -17,8 +19,8 @@ import com.devmod.stats.FuelStats;
 public class FuelModule extends AbstractEditorModule {
 
     // Delegate classes (lazy initialized to avoid this-escape)
-    private FuelModuleCore core;
-    private FuelModuleUI ui;
+    private @Nullable FuelModuleCore core;
+    private @Nullable FuelModuleUI ui;
     private boolean delegatesInitialized = false;
 
     // ═══════════════════════════════════════════════════════════════
@@ -38,18 +40,26 @@ public class FuelModule extends AbstractEditorModule {
         }
     }
 
+    private FuelModuleCore requireCore() {
+        ensureDelegates();
+        return Objects.requireNonNull(core, "core");
+    }
+
+    private FuelModuleUI requireUi() {
+        ensureDelegates();
+        return Objects.requireNonNull(ui, "ui");
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // DELEGATE ACCESSORS
     // ═══════════════════════════════════════════════════════════════
 
     public FuelModuleCore getCore() {
-        ensureDelegates();
-        return core;
+        return requireCore();
     }
 
     public FuelModuleUI getUI() {
-        ensureDelegates();
-        return ui;
+        return requireUi();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -76,13 +86,13 @@ public class FuelModule extends AbstractEditorModule {
 
     @Override
     protected void onItemSet() {
-        ensureDelegates();
-        core.loadStatsFromItem(item);
+        requireCore().loadStatsFromItem(item);
     }
 
     @Override
     protected void initializeTabs() {
-        ensureDelegates();
+        FuelModuleCore core = requireCore();
+        FuelModuleUI ui = requireUi();
         tabs.clear();
 
         // Create UI components
@@ -104,6 +114,8 @@ public class FuelModule extends AbstractEditorModule {
         if (newStats == null) {
             return;
         }
+        FuelModuleCore core = requireCore();
+        FuelModuleUI ui = requireUi();
         saveUndoState();
         core.setStats(newStats.copy());
         ui.updateComponentsFromStats();
@@ -146,7 +158,7 @@ public class FuelModule extends AbstractEditorModule {
 
     @Override
     public CustomPacketPayload buildPayload(boolean isGlobal) {
-        FuelStats stats = core.getStats();
+        FuelStats stats = requireCore().getStats();
 
         // Build NBT from current stats
         CompoundTag statsTag = new CompoundTag();
@@ -166,6 +178,8 @@ public class FuelModule extends AbstractEditorModule {
 
     @Override
     public void applyPreview() {
+        FuelModuleCore core = requireCore();
+        FuelModuleUI ui = requireUi();
         FuelStats stats = core.getStats();
         try {
             ItemStack copy = item.copy();
@@ -189,17 +203,20 @@ public class FuelModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     public FuelStats getStats() {
-        return core.getStats();
+        return requireCore().getStats();
     }
 
     public FuelStats getOriginalStats() {
-        return core.getOriginalStats();
+        return requireCore().getOriginalStats();
     }
 
     /**
      * Reset all stats to original values loaded from the item.
      */
+    @Override
     public void resetToOriginal() {
+        FuelModuleCore core = requireCore();
+        FuelModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
         ui.updateComponentsFromStats();
         clearDirty();
@@ -209,7 +226,7 @@ public class FuelModule extends AbstractEditorModule {
      * Check if current stats differ from original.
      */
     public boolean hasModifications() {
-        return core.hasModifications();
+        return requireCore().hasModifications();
     }
 
     @Override

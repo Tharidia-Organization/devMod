@@ -2,9 +2,11 @@ package com.devmod.stress;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -144,7 +146,9 @@ public class L5MemoryAndSoakTest {
         }
 
         UUID createInstance(UUID playerId, String arenaId) {
-            if (!initialized.get()) return null;
+            if (!initialized.get()) {
+                throw new IllegalStateException("Manager not initialized");
+            }
 
             UUID instanceId = UUID.randomUUID();
             SimInstance instance = new SimInstance(instanceId, arenaId, playerId);
@@ -363,7 +367,7 @@ public class L5MemoryAndSoakTest {
         void extendedCleanupSession() {
             SimMemoryCleanupService cleanup = new SimMemoryCleanupService(50, 500);
 
-            AtomicLong totalAdded = new AtomicLong(0);
+            long totalAdded = 0;
 
             // Simulate 100 cleanup cycles with continuous entity addition
             for (int cycle = 0; cycle < 100; cycle++) {
@@ -372,7 +376,7 @@ public class L5MemoryAndSoakTest {
                 for (int i = 0; i < toAdd; i++) {
                     UUID id = UUID.randomUUID();
                     cleanup.addEntityData(id, new SimEntityData(id, 512));
-                    totalAdded.incrementAndGet();
+                    totalAdded++;
                 }
 
                 // Small delay to make some entities stale
@@ -387,8 +391,8 @@ public class L5MemoryAndSoakTest {
             }
 
             // Should have cleaned a significant portion
-            assertTrue(cleanup.getTotalCleaned() > totalAdded.get() / 2,
-                "Should have cleaned entries: " + cleanup.getTotalCleaned() + " of " + totalAdded.get());
+            assertTrue(cleanup.getTotalCleaned() > totalAdded / 2,
+                "Should have cleaned entries: " + cleanup.getTotalCleaned() + " of " + totalAdded);
         }
 
         @RepeatedTest(5)
@@ -431,7 +435,7 @@ public class L5MemoryAndSoakTest {
             manager.initialize();
 
             int playerCount = 10000;
-            Map<UUID, UUID> createdMappings = new ConcurrentHashMap<>();
+            Map<UUID, UUID> createdMappings = new HashMap<>();
 
             // Create many instances (one per player)
             for (int i = 0; i < playerCount; i++) {
@@ -785,7 +789,7 @@ public class L5MemoryAndSoakTest {
         @Test
         @DisplayName("Quest session cleanup after completion")
         void questSessionCleanupAfterCompletion() {
-            Map<UUID, SimQuestSession> activeSessions = new ConcurrentHashMap<>();
+            Map<UUID, SimQuestSession> activeSessions = new HashMap<>();
 
             // Create sessions
             for (int i = 0; i < 100; i++) {
@@ -797,7 +801,7 @@ public class L5MemoryAndSoakTest {
 
             // Complete and clean up
             for (UUID playerId : new ArrayList<>(activeSessions.keySet())) {
-                SimQuestSession session = activeSessions.get(playerId);
+                SimQuestSession session = Objects.requireNonNull(activeSessions.get(playerId));
                 session.complete();
                 activeSessions.remove(playerId);
             }

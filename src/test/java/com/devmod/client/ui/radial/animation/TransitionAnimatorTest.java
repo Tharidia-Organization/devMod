@@ -11,6 +11,28 @@ import static org.junit.jupiter.api.Assertions.*;
 class TransitionAnimatorTest {
 
     private static final float DELTA = 0.001f;
+    private static final String NULL_REFLECTION_ERROR = "Unexpected reflection error";
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+
+    private static void assertThrowsNpe(ThrowingRunnable action) {
+        assertThrows(NullPointerException.class, () -> {
+            try {
+                action.run();
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof NullPointerException npe) {
+                    throw npe;
+                }
+                throw new RuntimeException(cause);
+            } catch (Exception e) {
+                throw new RuntimeException(NULL_REFLECTION_ERROR, e);
+            }
+        });
+    }
 
     // ================================================================
     // INITIALIZATION TESTS
@@ -51,15 +73,27 @@ class TransitionAnimatorTest {
         @Test
         @DisplayName("throws on null initial value")
         void throwsOnNullInitialValue() {
-            assertThrows(NullPointerException.class,
-                () -> new TransitionAnimator<String>(null, 0.1f));
+            assertThrowsNpe(() -> {
+                var ctor = TransitionAnimator.class.getConstructor(Object.class, float.class);
+                ctor.newInstance(new Object[]{null, 0.1f});
+            });
         }
 
         @Test
         @DisplayName("throws on null easing function")
         void throwsOnNullEasingFunction() {
-            assertThrows(NullPointerException.class,
-                () -> new TransitionAnimator<>("A", 0.1f, null));
+            assertThrowsNpe(() -> {
+                java.lang.reflect.Constructor<?> target = null;
+                for (var ctor : TransitionAnimator.class.getConstructors()) {
+                    Class<?>[] params = ctor.getParameterTypes();
+                    if (params.length == 3 && params[0] == Object.class && params[1] == float.class) {
+                        target = ctor;
+                        break;
+                    }
+                }
+                assertNotNull(target, "Expected 3-arg constructor not found");
+                target.newInstance(new Object[]{"A", 0.1f, null});
+            });
         }
     }
 
@@ -114,8 +148,10 @@ class TransitionAnimatorTest {
         @Test
         @DisplayName("transitionTo throws on null value")
         void transitionToThrowsOnNull() {
-            assertThrows(NullPointerException.class,
-                () -> animator.transitionTo(null));
+            assertThrowsNpe(() -> {
+                var method = TransitionAnimator.class.getMethod("transitionTo", Object.class);
+                method.invoke(animator, new Object[]{null});
+            });
         }
     }
 

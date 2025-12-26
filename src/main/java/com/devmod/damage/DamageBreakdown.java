@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.LivingEntity;
@@ -37,7 +39,7 @@ public class DamageBreakdown {
      * @param bodyPartMult Body part multiplier
      * @param armorPenBonus Armor penetration bonus
      */
-    public DamageBreakdown(ItemStack weapon, LivingEntity attacker, LivingEntity target,
+    public DamageBreakdown(ItemStack weapon, @Nullable LivingEntity attacker, LivingEntity target,
                            float baseDmg, float bodyPartMult, float armorPenBonus) {
         this.baseWeaponDamage = baseDmg;
         this.bodyPartMultiplier = bodyPartMult;

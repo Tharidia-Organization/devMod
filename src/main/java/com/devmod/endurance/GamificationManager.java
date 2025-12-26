@@ -884,6 +884,10 @@ public class GamificationManager {
     // ========== Persistence ==========
 
     private void loadData() {
+        if (dataDirectory == null) {
+            LOGGER.warn("[Gamification] Data directory not set; skipping load");
+            return;
+        }
         // Load player profiles
         Path profilesFile = dataDirectory.resolve("profiles.json");
         if (Files.exists(profilesFile)) {
@@ -964,6 +968,16 @@ public class GamificationManager {
     }
 
     private void saveData() {
+        if (dataDirectory == null) {
+            LOGGER.warn("[Gamification] Data directory not set; skipping save");
+            return;
+        }
+        try {
+            Files.createDirectories(dataDirectory);
+        } catch (IOException e) {
+            LOGGER.error("[Gamification] Failed to create data directory", e);
+            return;
+        }
         // Save player profiles
         Path profilesFile = dataDirectory.resolve("profiles.json");
         try (Writer writer = Files.newBufferedWriter(profilesFile)) {

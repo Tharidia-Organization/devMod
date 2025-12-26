@@ -125,36 +125,36 @@ public class ApothicAttributesCompat implements CompatModule {
      */
     @Nullable
     public static Holder<Attribute> getAttribute(@Nullable String attributeId) {
-        if (!available || attributeId == null || attributeId.isBlank()) {
+        if (!available || attributeId == null) {
+            return null;
+        }
+        String id = attributeId.trim();
+        if (id.isEmpty()) {
             return null;
         }
 
-        // Check cache first
-        Optional<Holder<Attribute>> cached = attributeCache.get(attributeId);
-        if (cached != null) {
-            return cached.orElse(null);
-        }
+        Optional<Holder<Attribute>> cached = attributeCache.computeIfAbsent(
+            id,
+            ApothicAttributesCompat::resolveAttribute
+        );
+        return cached.orElse(null);
+    }
 
+    private static Optional<Holder<Attribute>> resolveAttribute(String attributeId) {
         try {
             ResourceLocation rl = ResourceLocation.tryParse(attributeId);
             if (rl == null) {
-                attributeCache.put(attributeId, Optional.empty());
-                return null;
+                return Optional.empty();
             }
             Optional<Holder.Reference<Attribute>> holder = BuiltInRegistries.ATTRIBUTE.getHolder(rl);
-
             if (holder.isPresent()) {
-                Holder<Attribute> resolved = holder.get();
-                attributeCache.put(attributeId, Optional.of(resolved));
-                return resolved;
+                return Optional.of(holder.get());
             }
         } catch (Exception e) {
             LOGGER.debug("[Compat:apothicattributes] Could not find attribute {}: {}",
                 attributeId, e.getMessage());
         }
-
-        attributeCache.put(attributeId, Optional.empty()); // Cache miss
-        return null;
+        return Optional.empty();
     }
 
     /**

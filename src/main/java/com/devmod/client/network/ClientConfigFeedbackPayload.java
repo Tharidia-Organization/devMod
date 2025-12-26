@@ -2,6 +2,8 @@ package com.devmod.client.network;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -57,6 +59,7 @@ public class ClientConfigFeedbackPayload {
     /**
      * Get current confirmation state for HUD rendering.
      */
+    @Nullable
     public static ConfirmState getConfirmState() {
         long elapsed = System.currentTimeMillis() - lastConfirmTime;
         if (elapsed > 3000) {

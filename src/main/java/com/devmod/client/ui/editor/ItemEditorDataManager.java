@@ -14,8 +14,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -69,7 +72,9 @@ public class ItemEditorDataManager {
     // ==================== PRESETS ====================
 
     public static class PresetData {
+        @Nullable
         public String name;
+        @Nullable
         public String itemType; // For filtering by item type
         public long createdAt;
         public String scope = "SPECIFIC";
@@ -90,6 +95,7 @@ public class ItemEditorDataManager {
     }
 
     public static class EnchantData {
+        @Nullable
         public String id; // e.g., "minecraft:sharpness"
         public int level;
 
@@ -101,6 +107,7 @@ public class ItemEditorDataManager {
     }
 
     public static class AttrData {
+        @Nullable
         public String id; // e.g., "minecraft:generic.attack_damage"
         public double value;
         public int operation; // 0=ADD, 1=MULT_BASE, 2=MULT_TOTAL
@@ -135,7 +142,7 @@ public class ItemEditorDataManager {
      * - GLOBAL scope (matches all)
      * - Empty/null itemType (matches all)
      */
-    private boolean matchesItemType(String presetItemType, String requestedType) {
+    private boolean matchesItemType(@Nullable String presetItemType, String requestedType) {
         // Null or empty preset itemType matches everything
         if (presetItemType == null || presetItemType.isEmpty()) return true;
 
@@ -199,20 +206,20 @@ public class ItemEditorDataManager {
     public void savePreset(PresetData preset) {
         ensureInitialized();
         // Remove existing with same name
-        presets.removeIf(p -> p.name.equals(preset.name));
+        presets.removeIf(p -> Objects.equals(p.name, preset.name));
         presets.add(0, preset); // Add at beginning (most recent first)
         savePresets();
     }
 
     public void deletePreset(String name) {
         ensureInitialized();
-        presets.removeIf(p -> p.name.equals(name));
+        presets.removeIf(p -> Objects.equals(p.name, name));
         savePresets();
     }
 
     public Optional<PresetData> getPreset(String name) {
         ensureInitialized();
-        return presets.stream().filter(p -> p.name.equals(name)).findFirst();
+        return presets.stream().filter(p -> Objects.equals(p.name, name)).findFirst();
     }
 
     // ==================== FAVORITES ====================
@@ -261,8 +268,11 @@ public class ItemEditorDataManager {
 
     public static class HistoryEntry {
         public long timestamp;
+        @Nullable
         public String action; // "modify", "preset_load", "preset_save", etc.
+        @Nullable
         public String itemName;
+        @Nullable
         public String details;
 
         public HistoryEntry() {}
@@ -308,7 +318,9 @@ public class ItemEditorDataManager {
     // ==================== TEMPLATES ====================
 
     public static class TemplateData {
+        @Nullable
         public String name;
+        @Nullable
         public String itemCategory; // "sword", "axe", "pickaxe", "bow", "armor", etc.
         public List<EnchantData> enchantments = new ArrayList<>();
         public List<AttrData> attributes = new ArrayList<>();
@@ -453,14 +465,19 @@ public class ItemEditorDataManager {
 
     public static class ItemConfigExport {
         public String version = "1.0";
+        @Nullable
         public String itemId;
+        @Nullable
         public String itemName;
         public long exportTime;
         public List<Float> stats = new ArrayList<>();
         public List<EnchantData> enchantments = new ArrayList<>();
         public List<AttrData> attributes = new ArrayList<>();
+        @Nullable
         public Integer durability;
+        @Nullable
         public Boolean unbreakable;
+        @Nullable
         public Integer repairCost;
     }
 

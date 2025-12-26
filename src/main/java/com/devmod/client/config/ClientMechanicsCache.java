@@ -301,32 +301,4 @@ public final class ClientMechanicsCache {
         return defaultValue;
     }
 
-    /**
-     * Get boolean value with 3-tier fallback: quest → global → default.
-     */
-    private boolean getBoolean(String section, String key, boolean defaultValue) {
-        // 1. Check quest-specific override
-        if (activeQuestId != null) {
-            CompoundTag override = questOverrides.get(activeQuestId);
-            if (override != null) {
-                CompoundTag sectionTag = override.getCompound(section);
-                if (sectionTag.contains(key)) {
-                    return sectionTag.getBoolean(key);
-                }
-            }
-        }
-
-        // 2. Check global config
-        synchronized (this) {
-            if (globalConfig.contains(section)) {
-                CompoundTag sectionTag = globalConfig.getCompound(section);
-                if (sectionTag.contains(key)) {
-                    return sectionTag.getBoolean(key);
-                }
-            }
-        }
-
-        // 3. Return hardcoded default
-        return defaultValue;
-    }
 }

@@ -8,7 +8,7 @@
 | Severity | Count | Status |
 |----------|-------|--------|
 | P0 | 0 | N/A |
-| P1 | 0 | N/A |
+| P1 | 1 | 1 open |
 | P2 | 2 | 1 fixed, 1 open |
 
 ---
@@ -32,16 +32,21 @@
 2. **ClientUiBridgeImpl.toggleDebugOverlay is a TODO (P2)**
    - Debug overlay integration is stubbed out and should be implemented when the overlay is available.
 
+3. **Telemetry aggregation/LVC packages are referenced but unstaged (P1)**
+   - `EnduranceEventHandler` and `TelemetryPacketHandler` import aggregation/LVC classes that are currently untracked.
+   - Builds can surface `ClassNotFoundException` until a clean rebuild forces compilation.
+   - Recommendation: stage aggregation/LVC sources and tests together, then verify with clean build to avoid cache-stale failures.
+
 ---
 
 ## Files Reviewed
 
 | Area | Files |
 |------|-------|
-| Endurance core flow | `EnduranceQuestManager.java`, `WaveManager.java` |
+| Endurance core flow | `EnduranceQuestManager.java`, `EnduranceEventHandler.java`, `WaveManager.java` |
 | Arena registry/builder/policy | `ArenaTemplateRegistry.java`, `TemplateRegistryBootstrap.java`, `ArenaPolicyRegistry.java`, `ArenaBuilder.java` |
-| Network handlers + validators | `NetworkHandler.java`, `EnduranceNetworkHandler.java`, `PacketValidator.java` |
-| Telemetry persistence | `DuckDBBatchWriter.java`, `DuckDBTelemetryService.java`, `DuckDbDestination.java` |
+| Network handlers + validators | `NetworkHandler.java`, `EnduranceNetworkHandler.java`, `PacketValidator.java`, `TelemetryPacketHandler.java` |
+| Telemetry persistence | `DuckDBBatchWriter.java`, `DuckDBTelemetryService.java`, `DuckDBSchemaManager.java`, `DuckDBMigrationService.java` |
 | Radial action registry | `ActionRegistry.java` |
 | Client/server boundary | `ClientUiBridge.java`, `ClientUiBridgeImpl.java`, `ClientVFXProxy.java` |
 

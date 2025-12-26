@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -104,6 +106,7 @@ public class SignatureWeaponTooltip {
     /**
      * Build progress line for the closest trait to unlocking.
      */
+    @Nullable
     private static Component buildProgressLine(SoulImprint imprint) {
         float bestProgress = 0f;
         SoulImprint.ImprintStat bestStat = null;

@@ -1,5 +1,7 @@
 # Radial Census (DevMod)
 
+> **Status**: HISTORICAL (inventory snapshot; not guaranteed to match implementation)
+
 Obiettivo: inventario completo delle azioni/funzionalita' accessibili e dei loro trigger attuali, con proposta di collocazione nel Radial.
 
 Legenda priorita': P0 = core workflow/testing/comandi critici, P1 = debug/quality of life, P2 = nicchie/legacy.

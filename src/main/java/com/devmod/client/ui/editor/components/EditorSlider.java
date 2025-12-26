@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.components;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.jetbrains.annotations.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
@@ -56,9 +58,11 @@ public class EditorSlider {
     private boolean showInput = false;
 
     // Source badge (optional, shows value origin)
+    @Nullable
     private SourceBadge sourceBadge = null;
 
     // Info button (optional, shows description tooltip)
+    @Nullable
     private InfoButton infoButton = null;
 
     // State
@@ -72,6 +76,7 @@ public class EditorSlider {
     private ResponsiveLayout.Rect trackBounds = ResponsiveLayout.Rect.EMPTY;
     // Callback
     private Consumer<Float> onChange;
+    @Nullable
     private EditorTextField inputField;
 
     // ═══════════════════════════════════════════════════════════════
@@ -79,13 +84,14 @@ public class EditorSlider {
     // ═══════════════════════════════════════════════════════════════
 
     public EditorSlider(String id, String label, float min, float max, float defaultValue) {
-        this.id = id;
-        this.label = label;
+        this.id = Objects.requireNonNull(id, "id");
+        this.label = label == null ? "" : label;
         this.min = min;
         this.max = max;
         this.defaultValue = defaultValue;
         this.value = defaultValue;
         this.step = (max - min) / 100f; // Default 1% steps
+        this.onChange = value -> {};
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -98,12 +104,12 @@ public class EditorSlider {
     }
 
     public EditorSlider format(String format) {
-        this.format = format;
+        this.format = format != null ? format : "%.2f";
         return this;
     }
 
     public EditorSlider suffix(String suffix) {
-        this.suffix = suffix;
+        this.suffix = suffix != null ? suffix : "";
         return this;
     }
 
@@ -125,11 +131,12 @@ public class EditorSlider {
     public EditorSlider showInput(boolean show) {
         this.showInput = show;
         if (show && inputField == null) {
-            inputField = new EditorTextField(id + "_input", "");
-            inputField.numeric(true).numericRange(min, max);
-            inputField.onChange(text -> {
+            EditorTextField createdField = new EditorTextField(id + "_input", "");
+            inputField = createdField;
+            createdField.numeric(true).numericRange(min, max);
+            createdField.onChange(text -> {
                 try {
-                    float parsed = inputField.getNumericValue();
+                    float parsed = createdField.getNumericValue();
                     setValue(parsed);
                 } catch (Exception ignored) { }
             });
@@ -141,7 +148,7 @@ public class EditorSlider {
     }
 
     public EditorSlider onChange(Consumer<Float> callback) {
-        this.onChange = callback;
+        this.onChange = callback != null ? callback : value -> {};
         return this;
     }
 
@@ -204,6 +211,7 @@ public class EditorSlider {
     /**
      * Get the info button (may be null if no info was set).
      */
+    @Nullable
     public InfoButton getInfoButton() {
         return infoButton;
     }
@@ -222,6 +230,7 @@ public class EditorSlider {
     /**
      * Get the current source badge (may be null).
      */
+    @Nullable
     public SourceBadge getSourceBadge() {
         return sourceBadge;
     }
@@ -495,9 +504,7 @@ public class EditorSlider {
         if (newValue != this.value) {
             this.value = Mth.clamp(newValue, min, max);
             EditorSounds.playSliderTick();
-            if (onChange != null) {
-                onChange.accept(this.value);
-            }
+            onChange.accept(this.value);
         }
     }
 
@@ -525,9 +532,7 @@ public class EditorSlider {
         float newValue = Mth.clamp(value, min, max);
         if (newValue != this.value) {
             this.value = newValue;
-            if (onChange != null) {
-                onChange.accept(newValue);
-            }
+            onChange.accept(newValue);
         }
     }
 
@@ -537,6 +542,9 @@ public class EditorSlider {
 
     public void setMin(float min) {
         this.min = min;
+        if (inputField != null) {
+            inputField.numericRange(min, max);
+        }
         setValue(value); // Re-clamp
     }
 
@@ -546,6 +554,9 @@ public class EditorSlider {
 
     public void setMax(float max) {
         this.max = max;
+        if (inputField != null) {
+            inputField.numericRange(min, max);
+        }
         setValue(value); // Re-clamp
     }
 

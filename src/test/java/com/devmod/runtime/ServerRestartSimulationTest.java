@@ -238,7 +238,6 @@ public class ServerRestartSimulationTest {
         @DisplayName("Orphaned snapshots trigger recovery on player login")
         void testOrphanedSnapshotsRecovery() {
             Map<UUID, PlayerInstanceState> snapshots = new HashMap<>();
-            Set<UUID> existingInstances = new HashSet<>();
             Set<UUID> playersNeedingRecovery = new HashSet<>();
 
             // Player with snapshot but instance gone
@@ -246,11 +245,9 @@ public class ServerRestartSimulationTest {
             snapshots.put(orphanedPlayer, PlayerInstanceState.IN_INSTANCE);
             // Instance doesn't exist
 
-            // Player with snapshot and existing instance
+            // Player with snapshot and expected normal recovery
             UUID normalPlayer = UUID.randomUUID();
-            UUID existingInstance = UUID.randomUUID();
             snapshots.put(normalPlayer, PlayerInstanceState.IN_INSTANCE);
-            existingInstances.add(existingInstance);
 
             // Simulate login check
             for (UUID playerId : snapshots.keySet()) {

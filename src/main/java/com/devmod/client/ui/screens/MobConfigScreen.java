@@ -3,6 +3,7 @@ package com.devmod.client.ui.screens;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
@@ -29,7 +30,9 @@ public class MobConfigScreen extends Screen {
     private final Mob mob;
 
     // Delegate classes
+    @Nullable
     private MobConfigScreenState state;
+    @Nullable
     private MobConfigScreenRenderer renderer;
 
     public MobConfigScreen(Mob mob) {
@@ -40,20 +43,23 @@ public class MobConfigScreen extends Screen {
     @Override
     protected void init() {
         // Initialize delegates
-        this.state = new MobConfigScreenState(mob);
-        this.renderer = new MobConfigScreenRenderer(state, font);
+        MobConfigScreenState newState = new MobConfigScreenState(mob);
+        this.state = newState;
+        this.renderer = new MobConfigScreenRenderer(newState, font);
 
         // Disable blur
         Minecraft mc = Minecraft.getInstance();
         if (mc.options != null) {
             OptionInstance<Integer> blurOption = mc.options.menuBackgroundBlurriness();
-            state.originalBlurValue = blurOption.get();
+            newState.originalBlurValue = blurOption.get();
             blurOption.set(0);
         }
     }
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        MobConfigScreenState state = requireState();
+        MobConfigScreenRenderer renderer = requireRenderer();
         // Check if mob died while screen is open
         if (!mob.isAlive()) {
             var mc = minecraft;
@@ -126,6 +132,7 @@ public class MobConfigScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        MobConfigScreenState state = requireState();
         int mx = (int) mouseX;
         int my = (int) mouseY;
 
@@ -180,6 +187,7 @@ public class MobConfigScreen extends Screen {
     }
 
     private boolean handleSavePresetDialogClick(int mx, int my, int button) {
+        MobConfigScreenState state = requireState();
         int dw = 200;
         int dh = 90;
         int dx = (this.width - dw) / 2;
@@ -210,6 +218,7 @@ public class MobConfigScreen extends Screen {
     }
 
     private boolean handleDeletePresetDialogClick(int mx, int my, int button) {
+        MobConfigScreenState state = requireState();
         int dw = 220;
         int dh = 80;
         int dx = (this.width - dw) / 2;
@@ -222,7 +231,10 @@ public class MobConfigScreen extends Screen {
         int btnsY = dy + dh - 28;
 
         if (button == 0 && AxiomRenderer.isMouseOver(mx, my, btnsX, btnsY, btnW, btnH)) {
-            state.deleteUserPreset(state.deleteConfirmPreset);
+            String presetToDelete = state.deleteConfirmPreset;
+            if (presetToDelete != null) {
+                state.deleteUserPreset(presetToDelete);
+            }
             state.deleteConfirmPreset = null;
             return true;
         }
@@ -236,6 +248,7 @@ public class MobConfigScreen extends Screen {
     }
 
     private boolean handleConfirmDialogClick(int mx, int my) {
+        MobConfigScreenState state = requireState();
         int dx = (this.width - MobConfigScreenRenderer.DIALOG_WIDTH) / 2;
         int dy = (this.height - MobConfigScreenRenderer.DIALOG_HEIGHT) / 2;
         int btnW = 80;
@@ -266,6 +279,7 @@ public class MobConfigScreen extends Screen {
     }
 
     private boolean handleTabClick(int mx, int my, int panelX, int panelY) {
+        MobConfigScreenState state = requireState();
         int tabsX = panelX + 10;
         int tabsY = panelY + UIConstants.Spacing.HEADER_HEIGHT;
         for (int i = 0; i < 3; i++) {
@@ -279,6 +293,7 @@ public class MobConfigScreen extends Screen {
     }
 
     private boolean handlePreviewClick(int mx, int my, int panelX, int panelY) {
+        MobConfigScreenState state = requireState();
         int previewX = panelX + 15;
         int previewY = panelY + UIConstants.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 10;
         if (AxiomRenderer.isMouseOver(mx, my, previewX, previewY, MobConfigScreenRenderer.PREVIEW_SIZE, MobConfigScreenRenderer.PREVIEW_SIZE + 20)) {
@@ -293,6 +308,7 @@ public class MobConfigScreen extends Screen {
     }
 
     private boolean handleSliderClick(int mx, int my, int panelX, int panelY) {
+        MobConfigScreenState state = requireState();
         int slidersX = panelX + MobConfigScreenRenderer.PREVIEW_SIZE + 40;
         int contentY = panelY + UIConstants.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 5;
         int numSliders = state.selectedTab == 2 ? 1 : 3;
@@ -331,6 +347,7 @@ public class MobConfigScreen extends Screen {
     }
 
     private boolean handleActionButtons(int mx, int my, int panelX, int bottomY) {
+        MobConfigScreenState state = requireState();
         int btnY = bottomY + 56;
         int btnW = 70;
         int btnH = 22;
@@ -360,6 +377,7 @@ public class MobConfigScreen extends Screen {
     }
 
     private boolean handlePresetClick(int mx, int my, int panelX, int bottomY, int button) {
+        MobConfigScreenState state = requireState();
         int presetX = panelX + 150;
         int presetY = bottomY - 3 + 12;
         int presetW = 55;
@@ -367,7 +385,7 @@ public class MobConfigScreen extends Screen {
         int gap = 4;
 
         // Built-in presets
-        for (int i = 0; i < MobConfigScreenState.PRESET_NAMES.length; i++) {
+        for (int i = 0; i < MobConfigScreenState.PRESET_NAMES.size(); i++) {
             int row = i / 3;
             int col = i % 3;
             int px = presetX + col * (presetW + gap);
@@ -420,6 +438,7 @@ public class MobConfigScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        MobConfigScreenState state = requireState();
         if (state.isDraggingPreview && button == 0) {
             int mx = (int) mouseX;
             int my = (int) mouseY;
@@ -440,6 +459,7 @@ public class MobConfigScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        MobConfigScreenState state = requireState();
         if (button == 0) {
             state.isDraggingPreview = false;
             state.activeSlider = -1;
@@ -449,6 +469,7 @@ public class MobConfigScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        MobConfigScreenState state = requireState();
         int panelX = (this.width - MobConfigScreenRenderer.PANEL_WIDTH) / 2;
         int panelY = (this.height - MobConfigScreenRenderer.PANEL_HEIGHT) / 2;
         int previewX = panelX + 15;
@@ -464,6 +485,7 @@ public class MobConfigScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        MobConfigScreenState state = requireState();
         // Save preset dialog
         if (state.showSavePresetDialog) {
             if (keyCode == 256) { // ESC
@@ -540,6 +562,7 @@ public class MobConfigScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
+        MobConfigScreenState state = requireState();
         // Preset name input
         if (state.showSavePresetDialog) {
             if (Character.isLetterOrDigit(codePoint) || codePoint == ' ' || codePoint == '_' || codePoint == '-') {
@@ -570,6 +593,16 @@ public class MobConfigScreen extends Screen {
         return super.charTyped(codePoint, modifiers);
     }
 
+    @Nonnull
+    private MobConfigScreenState requireState() {
+        return Objects.requireNonNull(state, "state");
+    }
+
+    @Nonnull
+    private MobConfigScreenRenderer requireRenderer() {
+        return Objects.requireNonNull(renderer, "renderer");
+    }
+
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -578,8 +611,9 @@ public class MobConfigScreen extends Screen {
     @Override
     public void onClose() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.options != null && state != null) {
-            mc.options.menuBackgroundBlurriness().set(state.originalBlurValue);
+        MobConfigScreenState localState = this.state;
+        if (mc.options != null && localState != null) {
+            mc.options.menuBackgroundBlurriness().set(localState.originalBlurValue);
         }
         super.onClose();
     }

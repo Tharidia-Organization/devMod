@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
@@ -28,8 +30,11 @@ public class VirtualizedList<T> {
     private final ScrollState scrollState = new ScrollState();
 
     // Rendering
+    @Nullable
     private BiConsumer<RowRenderContext<T>, T> rowRenderer;
+    @Nullable
     private Consumer<T> onSelect;
+    @Nullable
     private Consumer<T> onDoubleClick;
 
     // Bounds (set during render)
@@ -132,6 +137,7 @@ public class VirtualizedList<T> {
     /**
      * Get currently selected item, or null if none selected.
      */
+    @Nullable
     public T getSelectedItem() {
         if (selectedIndex < 0 || selectedIndex >= items.size()) return null;
         return items.get(selectedIndex);

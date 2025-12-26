@@ -3,6 +3,7 @@ package com.devmod.collision.transform;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.neoforged.fml.loading.FMLEnvironment;
 
@@ -11,10 +12,12 @@ public final class TransformProviderRegistry {
     private TransformProviderRegistry() {} // Utility class
 
     // Lazy-initialized client provider (only loaded on client)
+    @Nullable
     private static volatile TransformProvider clientProvider;
     private static volatile boolean clientProviderChecked = false;
+    @Nonnull
     private static final TransformProvider SERVER_PROVIDER =
-        Objects.requireNonNull(ServerTransformProvider.INSTANCE, "ServerTransformProvider.INSTANCE");
+        requireNonNull(ServerTransformProvider.INSTANCE, "ServerTransformProvider.INSTANCE");
 
     /**
      * Gets the transform provider for the current side.
@@ -23,10 +26,7 @@ public final class TransformProviderRegistry {
      */
     @Nonnull
     public static TransformProvider getProvider() {
-        if (FMLEnvironment.dist.isClient()) {
-            return getClientProvider();
-        }
-        return SERVER_PROVIDER;
+        return FMLEnvironment.dist.isClient() ? getClientProvider() : SERVER_PROVIDER;
     }
 
     /**
@@ -49,7 +49,7 @@ public final class TransformProviderRegistry {
     @Nonnull
     public static TransformProvider getClientProvider() {
         if (!FMLEnvironment.dist.isClient()) {
-            return SERVER_PROVIDER;
+            return getServerProvider();
         }
 
         if (!clientProviderChecked) {
@@ -60,14 +60,14 @@ public final class TransformProviderRegistry {
                         clientProvider = loadClientProvider();
                     } catch (Exception e) {
                         // Fallback to server provider if client provider fails to load
-                        clientProvider = ServerTransformProvider.INSTANCE;
+                        clientProvider = SERVER_PROVIDER;
                     }
                     clientProviderChecked = true;
                 }
             }
         }
         TransformProvider provider = clientProvider;
-        return provider != null ? provider : SERVER_PROVIDER;
+        return requireNonNull(provider != null ? provider : SERVER_PROVIDER, "clientProvider");
     }
 
     /**
@@ -80,7 +80,7 @@ public final class TransformProviderRegistry {
         if (!(instance instanceof TransformProvider provider)) {
             throw new IllegalStateException("ClientTransformProvider.INSTANCE is not a TransformProvider");
         }
-        return Objects.requireNonNull(provider, "ClientTransformProvider.INSTANCE");
+        return requireNonNull(provider, "ClientTransformProvider.INSTANCE");
     }
 
     /**
@@ -104,5 +104,10 @@ public final class TransformProviderRegistry {
         if (clientProviderChecked && clientProvider != null) {
             clientProvider.clearCache(entityId);
         }
+    }
+
+    @Nonnull
+    private static <T> T requireNonNull(@Nullable T value, String label) {
+        return Objects.requireNonNull(value, label);
     }
 }

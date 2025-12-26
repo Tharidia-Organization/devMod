@@ -3,12 +3,14 @@ package com.devmod.client.ui.editor;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 public class VisualTesting {
     public static class TestCase {
         public String name;
         public Runnable setup;
         public Runnable test;
-        public String expectedHash;
+        public @Nullable String expectedHash;
         
         public TestCase(String name, Runnable setup, Runnable test) {
             this.name = name; this.setup = setup; this.test = test;
@@ -18,11 +20,11 @@ public class VisualTesting {
     public static class TestResult {
         public String name;
         public boolean passed;
-        public String actualHash;
-        public String error;
+        public @Nullable String actualHash;
+        public @Nullable String error;
         public long duration;
         
-        public TestResult(String name, boolean passed, String actualHash, String error, long duration) {
+        public TestResult(String name, boolean passed, @Nullable String actualHash, @Nullable String error, long duration) {
             this.name = name; this.passed = passed; this.actualHash = actualHash; 
             this.error = error; this.duration = duration;
         }

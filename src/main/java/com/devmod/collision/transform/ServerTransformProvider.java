@@ -19,6 +19,7 @@ public final class ServerTransformProvider implements TransformProvider {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    @Nonnull
     public static final ServerTransformProvider INSTANCE = new ServerTransformProvider();
 
     private ServerTransformProvider() {} // Singleton

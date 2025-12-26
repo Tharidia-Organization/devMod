@@ -52,6 +52,17 @@ public class RuntimePreflightCheck {
      * @return PreflightResult with pass/fail status and details
      */
     public PreflightResult check(PreflightContext context) {
+        return check(context, true);
+    }
+
+    /**
+     * Performs all preflight checks with optional warning logging.
+     *
+     * @param context Runtime context to check
+     * @param logWarnings Whether to emit warn/info logs
+     * @return PreflightResult with pass/fail status and details
+     */
+    public PreflightResult check(PreflightContext context, boolean logWarnings) {
         List<PreflightIssue> issues = new ArrayList<>();
         long startTime = System.currentTimeMillis();
 
@@ -64,8 +75,10 @@ public class RuntimePreflightCheck {
                 String.format("World type: %s, dimension: %s",
                     context.worldType(), context.dimensionKey())
             ));
-            LOGGER.warn("Instance-only gate blocked arena build in world type: {}",
-                context.worldType());
+            if (logWarnings) {
+                LOGGER.warn("Instance-only gate blocked arena build in world type: {}",
+                    context.worldType());
+            }
         }
 
         // === Check 2: Dimension blacklist ===
@@ -144,13 +157,17 @@ public class RuntimePreflightCheck {
         );
 
         if (passed) {
-            LOGGER.info("Preflight check PASSED in {}ms", duration);
+            if (logWarnings) {
+                LOGGER.info("Preflight check PASSED in {}ms", duration);
+            }
         } else {
             long blockingCount = issues.stream()
                 .filter(i -> i.severity() == PreflightSeverity.BLOCKING)
                 .count();
-            LOGGER.warn("Preflight check FAILED: {} blocking issue(s) in {}ms",
-                blockingCount, duration);
+            if (logWarnings) {
+                LOGGER.warn("Preflight check FAILED: {} blocking issue(s) in {}ms",
+                    blockingCount, duration);
+            }
         }
 
         return result;

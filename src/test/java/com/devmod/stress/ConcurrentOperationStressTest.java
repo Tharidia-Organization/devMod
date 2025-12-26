@@ -7,6 +7,7 @@ import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -31,6 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -157,7 +161,8 @@ class ConcurrentOperationStressTest {
             assertTrue(endLatch.await(10, TimeUnit.SECONDS));
 
             assertEquals(1, map.size(), "Only one list should be created");
-            assertEquals(threadCount, map.get(sharedKey).size(), "All UUIDs should be added");
+            List<UUID> list = Objects.requireNonNull(map.get(sharedKey), "List should be created");
+            assertEquals(threadCount, list.size(), "All UUIDs should be added");
         }
 
         @Test
@@ -630,7 +635,7 @@ class ConcurrentOperationStressTest {
                             if (item != null) {
                                 consumedCount.incrementAndGet();
                             } else {
-                                Thread.yield();
+                                LockSupport.parkNanos(1L);
                             }
                         }
                     } catch (InterruptedException e) {
@@ -716,7 +721,7 @@ class ConcurrentOperationStressTest {
             // Simple lock-free stack implementation
             class Node<T> {
                 final T value;
-                Node<T> next;
+                @Nullable Node<T> next;
                 Node(T value) { this.value = value; }
             }
 

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.editor.ItemEditorDataManager;
@@ -15,8 +17,8 @@ import com.devmod.stats.WeaponStats;
 public class ItemEditorPresetManager implements PresetManager {
 
     public static final ItemEditorPresetManager INSTANCE = new ItemEditorPresetManager();
-    private BiConsumer<ItemStack, WeaponStats> weaponApplier;
-    private BiConsumer<ItemStack, ArmorStats> armorApplier;
+    private @Nullable BiConsumer<ItemStack, WeaponStats> weaponApplier;
+    private @Nullable BiConsumer<ItemStack, ArmorStats> armorApplier;
 
     @Override
     public boolean applyPreset(Preset preset, ItemStack item, int slotIndex) {

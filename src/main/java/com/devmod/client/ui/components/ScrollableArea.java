@@ -109,7 +109,7 @@ public class ScrollableArea {
             int effectiveTrackHeight = trackHeight - thumbHeight;
             if (effectiveTrackHeight > 0) {
                 // Center thumb on click position
-                float clickRatio = (float) (mouseY - y - 2 - thumbHeight / 2) / effectiveTrackHeight;
+                float clickRatio = (float) (mouseY - y - 2 - thumbHeight / 2.0f) / effectiveTrackHeight;
                 clickRatio = Math.max(0, Math.min(1, clickRatio)); // Clamp to valid range
                 scrollOffset = (int) (clickRatio * getMaxScroll());
                 clampScrollOffset();

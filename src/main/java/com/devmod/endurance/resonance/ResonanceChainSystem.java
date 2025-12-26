@@ -50,7 +50,16 @@ public final class ResonanceChainSystem {
     private final Map<Integer, Long> resonanceCooldowns = new ConcurrentHashMap<>();
     private static final long RESONANCE_COOLDOWN_MS = 1500;
 
+    // Empty participants list constant for null-safety
+    @Nonnull
+    private static final List<UUID> EMPTY_PARTICIPANTS = Objects.requireNonNull(List.of(), "emptyList");
+
     private ResonanceChainSystem() {}
+
+    @Nonnull
+    private static <T> T requireNonNull(T value, String name) {
+        return Objects.requireNonNull(value, name);
+    }
 
     /**
      * Get config for the given quest instance.
@@ -94,21 +103,21 @@ public final class ResonanceChainSystem {
      * Record of a single hit.
      */
     public record HitRecord(
-        UUID attackerId,
-        String attackerName,
+        @Nonnull UUID attackerId,
+        @Nonnull String attackerName,
         long timestamp,
         float damage,
-        UUID questId
+        @Nullable UUID questId
     ) {}
 
     /**
      * Result of a resonance check.
      */
     public record ResonanceResult(
-        ResonanceTier tier,
+        @Nonnull ResonanceTier tier,
         float damageMultiplier,
         int styleBonus,
-        List<UUID> participants,
+        @Nonnull List<UUID> participants,
         int entityId
     ) {
         public boolean triggered() {
@@ -126,26 +135,32 @@ public final class ResonanceChainSystem {
      * @return ResonanceResult indicating if resonance was triggered
      */
     @Nonnull
-    public ResonanceResult recordHit(ServerPlayer attacker, LivingEntity target, float damage, UUID questId) {
+    public ResonanceResult recordHit(
+        ServerPlayer attacker,
+        LivingEntity target,
+        float damage,
+        @Nullable UUID questId
+    ) {
         // Check if resonance is enabled
         GameDesignConfig.ResonanceConfig config = getConfig(questId);
         if (!config.enabled) {
-            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, List.of(), target.getId());
+            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, EMPTY_PARTICIPANTS, target.getId());
         }
 
         int entityId = target.getId();
         long now = System.currentTimeMillis();
 
         // Check cooldown (use config value)
+        long cooldownMs = config.cooldownMs > 0 ? config.cooldownMs : RESONANCE_COOLDOWN_MS;
         Long lastResonance = resonanceCooldowns.get(entityId);
-        if (lastResonance != null && now - lastResonance < config.cooldownMs) {
-            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, List.of(), entityId);
+        if (lastResonance != null && now - lastResonance < cooldownMs) {
+            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, EMPTY_PARTICIPANTS, entityId);
         }
 
         // Create hit record
         HitRecord record = new HitRecord(
-            attacker.getUUID(),
-            attacker.getName().getString(),
+            requireNonNull(attacker.getUUID(), "attackerId"),
+            requireNonNull(attacker.getName().getString(), "attackerName"),
             now,
             damage,
             questId
@@ -167,17 +182,23 @@ public final class ResonanceChainSystem {
     /**
      * Check if recent hits form a resonance chain.
      */
-    private ResonanceResult checkResonance(int entityId, UUID questId, long now, LivingEntity target) {
+    @Nonnull
+    private ResonanceResult checkResonance(
+        int entityId,
+        @Nullable UUID questId,
+        long now,
+        LivingEntity target
+    ) {
         List<HitRecord> hits = recentHits.get(entityId);
         if (hits == null || hits.size() < 2) {
-            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, List.of(), entityId);
+            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, EMPTY_PARTICIPANTS, entityId);
         }
 
         // Get config values
         GameDesignConfig.ResonanceConfig config = getConfig(questId);
-        long duoWindow = config.duoWindowMs;
-        long trinityWindow = config.trinityWindowMs;
-        long apocalypseWindow = config.apocalypseWindowMs;
+        long duoWindow = config.duoWindowMs > 0 ? config.duoWindowMs : DUO_WINDOW_MS;
+        long trinityWindow = config.trinityWindowMs > 0 ? config.trinityWindowMs : TRINITY_WINDOW_MS;
+        long apocalypseWindow = config.apocalypseWindowMs > 0 ? config.apocalypseWindowMs : APOCALYPSE_WINDOW_MS;
 
         // Filter to same quest and recent time window
         Set<UUID> uniqueAttackers = new HashSet<>();
@@ -189,7 +210,7 @@ public final class ResonanceChainSystem {
                 if (!Objects.equals(hit.questId, questId)) continue;
                 if (now - hit.timestamp > duoWindow) continue; // Outside widest window
 
-                uniqueAttackers.add(hit.attackerId);
+                uniqueAttackers.add(requireNonNull(hit.attackerId, "attackerId"));
                 if (hit.timestamp < earliestTime) earliestTime = hit.timestamp;
                 if (hit.timestamp > latestTime) latestTime = hit.timestamp;
             }
@@ -197,7 +218,7 @@ public final class ResonanceChainSystem {
 
         int playerCount = uniqueAttackers.size();
         if (playerCount < 2) {
-            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, List.of(), entityId);
+            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, EMPTY_PARTICIPANTS, entityId);
         }
 
         long timeSpan = latestTime - earliestTime;
@@ -220,7 +241,7 @@ public final class ResonanceChainSystem {
             damageMultiplier = config.duoDamageMultiplier;
             styleBonus = config.duoStyleBonus;
         } else {
-            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, List.of(), entityId);
+            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, EMPTY_PARTICIPANTS, entityId);
         }
 
         // Set cooldown
@@ -231,10 +252,11 @@ public final class ResonanceChainSystem {
             hits.clear();
         }
 
-        List<UUID> participants = new ArrayList<>(uniqueAttackers);
+        List<UUID> participants = requireNonNull(List.copyOf(uniqueAttackers), "participants");
 
+        String tierName = requireNonNull(tier.name(), "tierName");
         LOGGER.info("[Resonance] {} triggered on entity {} by {} players! Time span: {}ms, damage: {}x, style: +{}",
-            tier.name(), entityId, playerCount, timeSpan, damageMultiplier, styleBonus);
+            tierName, entityId, playerCount, timeSpan, damageMultiplier, styleBonus);
 
         // Apply effects (pass styleBonus from config, not tier defaults)
         applyResonanceEffects(tier, styleBonus, participants, target, questId);
@@ -242,7 +264,7 @@ public final class ResonanceChainSystem {
         // Telemetry
         if (questId != null) {
             EnduranceTelemetryService.INSTANCE.recordResonanceChain(
-                questId, tier.name(), playerCount, timeSpan, entityId
+                questId, tierName, playerCount, timeSpan, entityId
             );
         }
 
@@ -258,7 +280,7 @@ public final class ResonanceChainSystem {
      * @param target The target entity
      * @param questId The quest ID for config lookup (nullable)
      */
-    private void applyResonanceEffects(ResonanceTier tier, int styleBonus, List<UUID> participants,
+    private void applyResonanceEffects(ResonanceTier tier, int styleBonus, @Nonnull List<UUID> participants,
                                         LivingEntity target, @Nullable UUID questId) {
         for (UUID playerId : participants) {
             // Add style bonus to combo session (using config value, not tier default)
@@ -277,7 +299,7 @@ public final class ResonanceChainSystem {
 
             // Get player and apply visual/audio feedback
             if (target.level() instanceof ServerLevel serverLevel && serverLevel.getServer() != null) {
-                ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(playerId);
+                ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(requireNonNull(playerId, "playerId"));
                 if (player != null) {
                     // Sound effect
                     float pitch = switch (tier) {
@@ -287,16 +309,18 @@ public final class ResonanceChainSystem {
                         default -> 1.0f;
                     };
                     player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                        SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1.0f, pitch);
+                        requireNonNull(SoundEvents.PLAYER_LEVELUP, "PLAYER_LEVELUP"),
+                        SoundSource.PLAYERS, 1.0f, pitch);
 
                     // Additional sound for higher tiers
                     if (tier == ResonanceTier.TRINITY || tier == ResonanceTier.APOCALYPSE) {
                         player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                            SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 0.5f, pitch);
+                            requireNonNull(SoundEvents.TOTEM_USE, "TOTEM_USE"),
+                            SoundSource.PLAYERS, 0.5f, pitch);
                     }
 
                     // Send network packet for HUD notification
-                    sendResonanceNotification(player, tier, styleBonus);
+                    sendResonanceNotification(requireNonNull(player, "player"), tier, styleBonus);
                 }
             }
         }
@@ -314,12 +338,12 @@ public final class ResonanceChainSystem {
                 default -> 0;
             };
 
-            serverLevel.sendParticles(ParticleTypes.END_ROD, x, y, z,
+            serverLevel.sendParticles(requireNonNull(ParticleTypes.END_ROD, "END_ROD"), x, y, z,
                 particleCount, 0.5, 0.5, 0.5, 0.1);
 
             // Extra particles for APOCALYPSE
             if (tier == ResonanceTier.APOCALYPSE) {
-                serverLevel.sendParticles(ParticleTypes.EXPLOSION, x, y, z,
+                serverLevel.sendParticles(requireNonNull(ParticleTypes.EXPLOSION, "EXPLOSION"), x, y, z,
                     5, 0.3, 0.3, 0.3, 0);
             }
 
@@ -342,14 +366,15 @@ public final class ResonanceChainSystem {
         float damage = tier == ResonanceTier.APOCALYPSE
             ? config.apocalypseShockwaveDamage : config.trinityShockwaveDamage;
 
+        var bounds = requireNonNull(center.getBoundingBox().inflate(radius), "shockwaveBounds");
         List<LivingEntity> nearby = level.getEntitiesOfClass(
             LivingEntity.class,
-            center.getBoundingBox().inflate(radius),
+            bounds,
             e -> e != center && !(e instanceof ServerPlayer) && e.isAlive()
         );
 
         for (LivingEntity entity : nearby) {
-            entity.hurt(level.damageSources().magic(), damage);
+            entity.hurt(requireNonNull(level.damageSources().magic(), "magicDamage"), damage);
 
             // Knockback away from center
             double dx = entity.getX() - center.getX();
@@ -375,11 +400,13 @@ public final class ResonanceChainSystem {
      * @param tier The resonance tier achieved
      * @param styleBonus The style bonus from config (may differ from tier default)
      */
-    private void sendResonanceNotification(ServerPlayer player, ResonanceTier tier, int styleBonus) {
+    private void sendResonanceNotification(@Nonnull ServerPlayer player, ResonanceTier tier, int styleBonus) {
+        String tierName = requireNonNull(tier.name(), "tierName");
+        String announcement = requireNonNull(tier.announcement, "announcement");
         // Create and send payload (use config styleBonus, not tier default)
         ResonanceNotificationPayload payload = new ResonanceNotificationPayload(
-            tier.name(),
-            tier.announcement,
+            tierName,
+            announcement,
             tier.getColor(),
             styleBonus
         );

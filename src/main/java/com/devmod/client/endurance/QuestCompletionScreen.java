@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -53,6 +54,7 @@ public class QuestCompletionScreen extends Screen {
     private boolean victoryFanfarePlayed = false;
     private int animatedTokens = 0;
     private int animatedGems = 0;
+    @Nullable
     private EditorButton continueButton;
 
     public QuestCompletionScreen(QuestCompletionPayload data) {

@@ -760,9 +760,10 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
                     failedBuilds++;
                 }
 
-                if (build.durationMs() != null && build.durationMs() > 0) {
-                    totalDurationMs += build.durationMs();
-                    durations.add(build.durationMs());
+                Long duration = build.durationMs();
+                if (duration != null && duration > 0) {
+                    totalDurationMs += duration;
+                    durations.add(duration);
                 }
             }
 
@@ -862,9 +863,10 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             double maxMspt = 0;
 
             for (ArenaRecords.BuildRecord build : builds) {
-                if (build.durationMs() != null && build.durationMs() > 0 && build.completedAt() != null) {
+                Long duration = build.durationMs();
+                if (duration != null && duration > 0 && build.completedAt() != null) {
                     // Estimate MSPT based on build duration (rough heuristic)
-                    double estimatedMspt = Math.min(50.0, build.durationMs() / 100.0);
+                    double estimatedMspt = Math.min(50.0, duration / 100.0);
                     double estimatedTps = Math.max(1.0, 20.0 - (estimatedMspt / 5.0));
 
                     samples.add(new PerformanceResponse.MsptSample(

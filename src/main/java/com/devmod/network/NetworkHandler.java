@@ -48,6 +48,7 @@ import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 import com.devmod.endurance.resonance.ResonanceNotificationPayload;
+import com.devmod.endurance.season.SeasonTierUpPayload;
 import com.devmod.network.handlers.AbilityNetworkHandler;
 import com.devmod.network.handlers.ConfigNetworkHandler;
 import com.devmod.network.handlers.EnduranceNetworkHandler;
@@ -63,6 +64,7 @@ import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
+import com.devmod.telemetry.network.LVCSyncPayload;
 
 import static com.devmod.DevMod.MODID;
 import static com.devmod.network.ChannelId.ABILITY_ACTION;
@@ -83,6 +85,7 @@ import static com.devmod.network.ChannelId.GAME_MECHANICS_SYNC;
 import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.INSTANCE_LOADING;
 import static com.devmod.network.ChannelId.INVITE_RESPONSE;
+import static com.devmod.network.ChannelId.LVC_SYNC;
 import static com.devmod.network.ChannelId.MOB_CONFIG_CONFIRM;
 import static com.devmod.network.ChannelId.MOB_STATS;
 import static com.devmod.network.ChannelId.MODIFY_ITEM;
@@ -121,6 +124,7 @@ import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_CHOICES;
 import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_SELECTION;
 import static com.devmod.network.ChannelId.WEAPON_LEGACY;
 import static com.devmod.network.ChannelId.WEAPON_STATS_V2;
+import static com.devmod.network.ChannelId.SEASON_TIER_UP;
 
 @EventBusSubscriber(modid = MODID)
 public class NetworkHandler {
@@ -191,6 +195,10 @@ public class NetworkHandler {
         void handleBuildProgress(BuildProgressPayload payload);
 
         void handleChallengeSync(ChallengeSyncPayload payload);
+
+        void handleLvcSync(LVCSyncPayload payload);
+
+        void handleSeasonTierUp(SeasonTierUpPayload payload);
     }
 
     @Nullable
@@ -602,6 +610,16 @@ public class NetworkHandler {
                 nn(AbilityActionPayload.STREAM_CODEC),
                 AbilityNetworkHandler::handleAbilityAction
         );
+        event.registrar(LVC_SYNC.asString()).playToClient(
+                nn(LVCSyncPayload.TYPE),
+                nn(LVCSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            withClientHooks(hooks -> hooks.handleLvcSync(payload)));
+                    }
+                }
+        );
 
         // ===================================================================
         // ARENA CHANNELS (76-85) - see ChannelId enum
@@ -629,6 +647,21 @@ public class NetworkHandler {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
                             withClientHooks(hooks -> hooks.handleChallengeSync(payload)));
+                    }
+                }
+        );
+
+        // ===================================================================
+        // SEASON PASS CHANNELS (92-99) - see ChannelId enum
+        // ===================================================================
+
+        event.registrar(SEASON_TIER_UP.asString()).playToClient(
+                nn(SeasonTierUpPayload.TYPE),
+                nn(SeasonTierUpPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            withClientHooks(hooks -> hooks.handleSeasonTierUp(payload)));
                     }
                 }
         );
@@ -774,6 +807,21 @@ public class NetworkHandler {
      */
     public static void sendStaminaSync(ServerPlayer player, float currentStamina, float maxStamina) {
         AbilityNetworkHandler.sendStaminaSync(player, currentStamina, maxStamina);
+    }
+
+    /**
+     * Send LVC (Last Value Cache) telemetry sync to a player.
+     * Contains real-time combat stats for HUD display.
+     */
+    public static void sendLvcSync(ServerPlayer player, LVCSyncPayload payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    /**
+     * Send season pass tier-up notification to a player.
+     */
+    public static void sendSeasonTierUp(ServerPlayer player, SeasonTierUpPayload payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, Objects.requireNonNull(payload));
     }
 
     // ===================================================================

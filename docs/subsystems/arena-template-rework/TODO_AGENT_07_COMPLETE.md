@@ -1,7 +1,9 @@
 # Agent 07 - Operations & Security (DD 29-36) - COMPLETE
 
-## Summary
+> **Last Updated**: 2025-12-26
+> **Status**: ✅ CURRENT
 
+## Summary
 All tasks for Agent 07 have been implemented. This agent focused on security, permissions, dashboard authentication, and production guards.
 
 ## Design Decisions Implemented
@@ -21,8 +23,8 @@ All tasks for Agent 07 have been implemented. This agent focused on security, pe
 
 ### Override System (DD29)
 - `src/main/java/com/devmod/arena/override/TemplateOverrideManager.java`
-  - Session-based override storage with TTL
-  - Persistent override via NeoForge 1.21+ Data Attachments
+  - Session-based override storage with TTL (default 1h)
+  - Persistent override via NeoForge Data Attachments
   - Automatic restore on player relog
   - Cleanup of expired overrides
 
@@ -64,10 +66,14 @@ All tasks for Agent 07 have been implemented. This agent focused on security, pe
   - Detailed GuardResult with block reasons
 
 - `src/main/java/com/devmod/arena/autosmoke/AutosmokeThresholds.java`
-  - Three presets: STRICT, LARGE, ASYNC
+  - Preset thresholds (STRICT, LARGE, ASYNC)
   - Template-specific threshold overrides
   - Validation with detailed violation reporting
-  - Custom threshold builders
+
+- `src/main/java/com/devmod/arena/autosmoke/AutosmokeSizeThresholds.java`
+  - Size categories (SMALL/MEDIUM/LARGE/XLARGE)
+  - Build/rollback time and entity thresholds per size
+  - Whitelist support and mutable threshold updates
 
 - `src/main/java/com/devmod/arena/autosmoke/AutosmokeExceptions.java`
   - Whitelist management for templates
@@ -79,6 +85,10 @@ All tasks for Agent 07 have been implemented. This agent focused on security, pe
   - Config hash (SHA-256, first 12 chars)
   - Runtime info: Java version, OS, memory, CPUs
   - Multiple output formats: multi-line, compact, JSON
+
+- `src/main/java/com/devmod/arena/autosmoke/AutosmokeScheduler.java`
+  - Daily scheduling (default 03:00) with optional run-on-startup
+  - Optional AlertRouter integration for failure alerts
 
 ### Dashboard & Analytics (DD35, DD36)
 - `src/main/java/com/devmod/arena/dashboard/ArenaDashboardEndpoint.java`
@@ -121,7 +131,7 @@ All tasks for Agent 07 have been implemented. This agent focused on security, pe
 
 ## Dependencies
 
-- **Depends on**: Agent 05 (Observability) for AlertRouter integration (optional)
+- **Depends on**: AlertRouter (optional) via AutosmokeScheduler
 - **Outputs consumed by**: Agent 10 (Operational Readiness)
 
 ## Shared Resources
@@ -152,26 +162,29 @@ The following files may be modified by other agents:
 5. AutosmokeThresholds
    - forTemplate() selection logic
 
-6. AutosmokeExceptions
+6. AutosmokeSizeThresholds
+   - Size category selection and whitelist behavior
+
+7. AutosmokeExceptions
    - Whitelist lookup
 
-7. AutosmokeReportHeader
+8. AutosmokeReportHeader
    - Capture with all fields
 
-8. ArenaDashboardEndpoint
+9. ArenaDashboardEndpoint
    - Auth (401 without token)
    - Rate limit (429 when exceeded)
 
-9. AnalyticsQueryParams
-   - Validation (date range, pagination)
+10. AnalyticsQueryParams
+    - Validation (date range, pagination)
 
-10. AnalyticsService
+11. AnalyticsService
     - Timeout (10 sec)
 
 ## Notes
 
-- All classes use singleton pattern via `getInstance()` for easy access
-- NeoForge 1.21+ Data Attachments used instead of old Capability system
-- Thread-safe implementations using ConcurrentHashMap and volatile
-- Daemon threads for background tasks (cache refresh, export jobs)
+- Singleton accessors used by TemplateOverrideManager, ArenaDebugHud, ArenaCommandPermissions, ArenaCommandAudit, AutosmokeGuard
+- AutosmokeThresholds and AutosmokeSizeThresholds are value classes (not singletons)
+- Thread-safe structures where needed (ConcurrentHashMap, volatile flags)
+- Daemon threads used for background tasks (dashboard cache refresh, analytics export)
 - Graceful shutdown methods provided for executor services

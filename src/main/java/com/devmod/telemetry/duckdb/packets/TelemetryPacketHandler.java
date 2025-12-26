@@ -19,6 +19,10 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
+import com.devmod.telemetry.duckdb.aggregation.SnapshotSampler.SnapshotData;
+import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregator;
+import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
 
@@ -150,6 +154,32 @@ public class TelemetryPacketHandler {
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
         EnduranceContext ctx = getEnduranceContext(json);
 
+        double damage = json.has("damage") ? json.get("damage").getAsDouble() : 0;
+        boolean isMiss = json.has("isMiss") && json.get("isMiss").getAsBoolean();
+        String weapon = getStringOrNull(json, "attackerType"); // Use attacker type as weapon proxy
+        String targetType = getStringOrNull(json, "targetType");
+        String safeWeapon = (weapon == null || weapon.isBlank()) ? "unknown" : weapon;
+        String safeTargetType = (targetType == null || targetType.isBlank()) ? "unknown" : targetType;
+        Double hpAfter = getDoubleOrNull(json, "hpAfter");
+        boolean isKill = hpAfter != null && hpAfter <= 0;
+        boolean isCritical = json.has("isCritical") && json.get("isCritical").getAsBoolean();
+
+        // Route through aggregation if enabled
+        if (AggregationConfig.AGGREGATION_ENABLED) {
+            TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(player.getUUID());
+            if (agg != null) {
+                if (isMiss) {
+                    agg.processMiss();
+                } else {
+                    // Returns false if aggregated (don't write immediately)
+                    if (!agg.processHit(damage, isKill, isCritical, safeWeapon, safeTargetType)) {
+                        return; // Aggregated, don't write to DB now
+                    }
+                }
+            }
+        }
+
+        // BYPASS: Write immediately (aggregation disabled or no aggregator)
         DuckDBTelemetryService.INSTANCE.logHit(
             getStringOrNull(json, "room"),
             getStringOrNull(json, "world"),
@@ -162,15 +192,15 @@ public class TelemetryPacketHandler {
             getStringOrNull(json, "attackerName"),
             getStringOrNull(json, "attackerType"),
             getStringOrNull(json, "targetName"),
-            getStringOrNull(json, "targetType"),
-            json.has("damage") ? json.get("damage").getAsDouble() : 0,
+            targetType,
+            damage,
             getStringOrNull(json, "damageType"),
             getDoubleOrNull(json, "hpBefore"),
-            getDoubleOrNull(json, "hpAfter"),
+            hpAfter,
             getStringOrNull(json, "bodyPart"),
             getDoubleOrNull(json, "distance"),
             getDoubleOrNull(json, "armorPenBonus"),
-            json.has("isMiss") && json.get("isMiss").getAsBoolean(),
+            isMiss,
             json.has("isHazard") && json.get("isHazard").getAsBoolean(),
             getStringOrNull(json, "hazardType"),
             getStringOrNull(json, "attackerState"),
@@ -183,6 +213,19 @@ public class TelemetryPacketHandler {
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
         EnduranceContext ctx = getEnduranceContext(json);
 
+        // Update LVC for player death (always, regardless of aggregation)
+        if (AggregationConfig.LVC_ENABLED) {
+            String targetType = getStringOrNull(json, "targetType");
+            // Only update LVC if this is the player dying
+            if ("player".equalsIgnoreCase(targetType)) {
+                TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(player.getUUID());
+                if (agg != null) {
+                    agg.processDeath();
+                }
+            }
+        }
+
+        // Deaths always BYPASS aggregation - write immediately
         DuckDBTelemetryService.INSTANCE.logDeath(
             getStringOrNull(json, "room"),
             getStringOrNull(json, "world"),
@@ -250,7 +293,45 @@ public class TelemetryPacketHandler {
     private void processPlayerSnapshot(ServerPlayer player, long timestamp, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Player snapshot from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
+        String dimension = getStringOrNull(json, "dimension");
+        if (dimension == null || dimension.isBlank()) {
+            dimension = "overworld";
+        }
 
+        // Route through aggregation (sampling) if enabled
+        if (AggregationConfig.AGGREGATION_ENABLED) {
+            TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(player.getUUID());
+            if (agg != null) {
+                // Create snapshot data for sampling
+                SnapshotData snapshot = new SnapshotData(
+                    java.time.Instant.now(),
+                    player.getUUID(),
+                    player.getName().getString(),
+                    json.has("x") ? json.get("x").getAsDouble() : 0,
+                    json.has("y") ? json.get("y").getAsDouble() : 0,
+                    json.has("z") ? json.get("z").getAsDouble() : 0,
+                    dimension,
+                    (float) (json.has("healthHp") ? json.get("healthHp").getAsDouble() : 20),
+                    (float) (json.has("maxHealthHp") ? json.get("maxHealthHp").getAsDouble() : 20),
+                    (float) (json.has("armorValue") ? json.get("armorValue").getAsDouble() : 0),
+                    (float) (json.has("stamina") ? json.get("stamina").getAsDouble() : 100),
+                    (float) (json.has("maxStamina") ? json.get("maxStamina").getAsDouble() : 100),
+                    getStringOrNull(json, "heldItem"),
+                    json.has("inCombat") && json.get("inCombat").getAsBoolean(),
+                    json.has("currentCombo") ? json.get("currentCombo").getAsInt() : 0,
+                    getUuidOrNull(json, "questId"),
+                    json.has("currentWave") ? json.get("currentWave").getAsInt() : 0,
+                    json.has("clientFps") ? json.get("clientFps").getAsFloat() : 60f
+                );
+
+                // Returns false if rate-limited (drop this snapshot)
+                if (!agg.processSnapshot(snapshot)) {
+                    return; // Rate-limited, don't write to DB
+                }
+            }
+        }
+
+        // Write snapshot (not rate-limited or aggregation disabled)
         DuckDBTelemetryService.INSTANCE.logPlayerSnapshot(
             player.getUUID(),
             player.getName().getString(),
@@ -301,15 +382,36 @@ public class TelemetryPacketHandler {
         LOGGER.trace("[TelemetryPacket] Player ability from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
+        String abilityType = getStringOrNull(json, "abilityType");
+        boolean success = json.has("success") && json.get("success").getAsBoolean();
+        Double staminaCost = getDoubleOrNull(json, "staminaCost");
+        Double damageNegated = getDoubleOrNull(json, "damageNegated");
+
+        // Route through aggregation if enabled
+        if (AggregationConfig.AGGREGATION_ENABLED && abilityType != null) {
+            TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(player.getUUID());
+            if (agg != null) {
+                // Returns false if aggregated (don't write immediately)
+                if (!agg.processAbility(
+                        abilityType,
+                        success,
+                        staminaCost != null ? staminaCost : 0,
+                        damageNegated != null ? damageNegated : 0)) {
+                    return; // Aggregated, don't write to DB now
+                }
+            }
+        }
+
+        // BYPASS: Write immediately (aggregation disabled or no aggregator)
         DuckDBTelemetryService.INSTANCE.logAbility(
             player.getUUID(),
-            getStringOrNull(json, "abilityType"),
+            abilityType,
             json.has("success") ? json.get("success").getAsBoolean() : null,
             json.has("result") ? json.get("result").getAsInt() : null,
             getDoubleOrNull(json, "staminaBefore"),
             getDoubleOrNull(json, "staminaAfter"),
-            getDoubleOrNull(json, "staminaCost"),
-            getDoubleOrNull(json, "damageNegated"),
+            staminaCost,
+            damageNegated,
             getStringOrNull(json, "damageSource"),
             getStringOrNull(json, "context"),
             getLongOrNull(json, "regenTimeMs")
@@ -340,12 +442,27 @@ public class TelemetryPacketHandler {
         LOGGER.trace("[TelemetryPacket] Heatmap update from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
+        int x = json.has("x") ? json.get("x").getAsInt() : 0;
+        int y = json.has("y") ? json.get("y").getAsInt() : 0;
+        int z = json.has("z") ? json.get("z").getAsInt() : 0;
+        String heatmapType = getStringOrNull(json, "heatmapType");
+
+        // Route through aggregation if enabled
+        if (AggregationConfig.AGGREGATION_ENABLED) {
+            TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(player.getUUID());
+            if (agg != null) {
+                // Returns false if aggregated (don't write immediately)
+                if (!agg.processHeatmap(x, y, z, heatmapType != null ? heatmapType : "movement")) {
+                    return; // Aggregated, don't write to DB now
+                }
+            }
+        }
+
+        // BYPASS: Write immediately (aggregation disabled or no aggregator)
         DuckDBTelemetryService.INSTANCE.logHeatmap(
-            getStringOrNull(json, "heatmapType"),
+            heatmapType,
             getStringOrNull(json, "room"),
-            json.has("x") ? json.get("x").getAsInt() : 0,
-            json.has("y") ? json.get("y").getAsInt() : 0,
-            json.has("z") ? json.get("z").getAsInt() : 0,
+            x, y, z,
             json.has("count") ? json.get("count").getAsInt() : 1
         );
     }
@@ -437,6 +554,14 @@ public class TelemetryPacketHandler {
         int waveNumber = json.has("waveNumber") ? json.get("waveNumber").getAsInt() : 0;
 
         if ("start".equals(eventType)) {
+            // Update LVC for wave start
+            if (AggregationConfig.LVC_ENABLED) {
+                TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(player.getUUID());
+                if (agg != null) {
+                    agg.processWaveStart(waveNumber);
+                }
+            }
+
             String[] modifiers = json.has("modifiers")
                 ? new Gson().fromJson(json.get("modifiers"), String[].class)
                 : new String[0];
@@ -455,6 +580,14 @@ public class TelemetryPacketHandler {
                 ctx.arenaId
             );
         } else if ("complete".equals(eventType)) {
+            // Update LVC for wave complete
+            if (AggregationConfig.LVC_ENABLED) {
+                TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(player.getUUID());
+                if (agg != null) {
+                    agg.processWaveComplete(waveNumber);
+                }
+            }
+
             DuckDBTelemetryService.INSTANCE.logWaveComplete(
                 sessionId,
                 waveNumber,

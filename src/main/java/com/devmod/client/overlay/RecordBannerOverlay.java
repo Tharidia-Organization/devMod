@@ -138,7 +138,7 @@ public class RecordBannerOverlay {
 
         for (int i = 0; i < sparkleCount; i++) {
             // Each sparkle has different timing offset
-            long offset = (i * 1000 / sparkleCount);
+            long offset = (long) i * 1000 / sparkleCount;
             long sparkleTime = (elapsed + offset) % 2000;
 
             if (sparkleTime < 1500) {

@@ -32,7 +32,7 @@ public final class ModpackDetector {
     );
 
     // Cached result (lazy init)
-    private static String cachedModpack = null;
+    private static @Nullable String cachedModpack = null;
     private static boolean detectionDone = false;
 
     private ModpackDetector() {}
@@ -76,7 +76,7 @@ public final class ModpackDetector {
         cachedModpack = null;
     }
 
-    private static String doDetection() {
+    private static @Nullable String doDetection() {
         // Strategy 1: Explicit config file
         String explicit = detectFromExplicitConfig();
         if (explicit != null) {
@@ -127,10 +127,14 @@ public final class ModpackDetector {
     private static String detectFromManifest() {
         try {
             // Check game root
-            Path manifest = FMLPaths.GAMEDIR.get().resolve("manifest.json");
+            Path gameDir = FMLPaths.GAMEDIR.get();
+            Path manifest = gameDir.resolve("manifest.json");
             if (!Files.exists(manifest)) {
                 // Try parent directory (for development environments)
-                manifest = FMLPaths.GAMEDIR.get().getParent().resolve("manifest.json");
+                Path parent = gameDir.getParent();
+                if (parent != null) {
+                    manifest = parent.resolve("manifest.json");
+                }
             }
 
             if (Files.exists(manifest)) {
@@ -183,7 +187,7 @@ public final class ModpackDetector {
     /**
      * Normalize modpack name to a filesystem-safe identifier.
      */
-    private static String normalizeModpackName(String name) {
+    private static @Nullable String normalizeModpackName(String name) {
         if (name == null || name.isEmpty()) {
             return null;
         }

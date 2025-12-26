@@ -9,6 +9,8 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -210,6 +212,7 @@ public final class DuckDBMigrationService {
      * Simple JSON field extraction (without full JSON parsing).
      * Looks for "fieldName":"value" pattern.
      */
+    @Nullable
     private static String extractJsonField(String json, String fieldName) {
         String pattern = "\"" + fieldName + "\":\"";
         int start = json.indexOf(pattern);

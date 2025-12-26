@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -23,6 +25,7 @@ public interface EditorModule {
     String getTitle();
 
     /** Module icon (optional) */
+    @Nullable
     default ResourceLocation getIcon() {
         return null;
     }
@@ -108,6 +111,7 @@ public interface EditorModule {
     default boolean hasPendingDiff() { return hasUnsavedChanges(); }
 
     /** Provide preview copy of the item (optional) */
+    @Nullable
     default ItemStack getPreviewItem() { return null; }
 
     /** Clear any preview state (optional) */
@@ -118,6 +122,7 @@ public interface EditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     /** Build payload for server sync */
+    @Nullable
     CustomPacketPayload buildPayload(boolean isGlobal);
 
     /** Apply changes locally (preview mode) */

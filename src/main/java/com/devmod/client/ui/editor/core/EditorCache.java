@@ -5,6 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 public class EditorCache {
 
     // ═══════════════════════════════════════════════════════════════
@@ -139,6 +141,7 @@ public class EditorCache {
      * @param valueClass Class token for type-safe casting
      * @return Cached value or null if not found/expired/type mismatch
      */
+    @Nullable
     public <T> T get(String type, String itemId, Class<T> valueClass) {
         CacheKey key = new CacheKey(type, itemId, version.get());
         CacheEntry<?> entry = cache.get(key);

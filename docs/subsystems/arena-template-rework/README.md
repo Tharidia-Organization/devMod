@@ -1,13 +1,13 @@
 # Arena Template Rework
 
-> **Last Updated**: 2024-12-23
+> **Last Updated**: 2025-12-26
 > **Status**: ✅ CURRENT - Sistema Arena Template v2.23 documentato
 > **Design Decisions**: 72 DD completate (DD1-DD72)
-> **Main Reference**: [[areas/arena/README]] ← Documento principale consolidato
+> **Main Reference**: `docs/areas/arena/README.md` ← Documento principale consolidato
 
 Documentazione dettagliata e track record per il rework del sistema Arena Template.
 
-**Nota**: Per una panoramica consolidata del sistema Arena, vedere [[areas/arena/README]]. Questa cartella contiene le specifiche dettagliate e i record di implementazione.
+**Nota**: Per una panoramica consolidata del sistema Arena, vedere `docs/areas/arena/README.md`. Questa cartella contiene le specifiche dettagliate e i record di implementazione.
 
 ## Struttura
 
@@ -18,8 +18,8 @@ docs/subsystems/arena-template-rework/
 ├── TODO_ARENA_TEMPLATE.md         # Design Decisions complete (DD1-DD72)
 ├── DOCUMENTATION_AUDIT_REPORT.md  # Report audit documentazione
 ├── PRODUCTION_MARKER_README.md    # Guard autosmoke (DD32)
-├── arena_template.schema.json     # Schema L1 (ArenaTemplate)
-├── arena_policy.schema.json       # Schema L2 (ArenaPolicy)
+├── arena_template.schema.json     # Schema L1 (ArenaTemplate) - local copy
+├── arena_policy.schema.json       # Schema L2 (ArenaPolicy) - local copy
 ├── TODO_AGENT_01_COMPLETE.md      # Agent 01: Registry & Resolver
 ├── TODO_AGENT_02_COMPLETE.md      # Agent 02: Builder Transazionale
 ├── TODO_AGENT_03_COMPLETE.md      # Agent 03: Budget & Async
@@ -36,6 +36,8 @@ docs/subsystems/arena-template-rework/
 
 Archivio storico (task list e script): `docs/_deprecated/arena-template-rework/`.
 
+Schema canonicali: `src/main/resources/schemas/` (le copie in questa cartella sono snapshot).
+
 ## Flusso consigliato (entrypoint)
 
 1. `docs/subsystems/arena-template-rework/ARENA_TEMPLATE_AUDIT.md` - stato corrente, gap residui, doc canonicali
@@ -43,7 +45,7 @@ Archivio storico (task list e script): `docs/_deprecated/arena-template-rework/`
 3. `docs/subsystems/arena-template-rework/TODO_AGENT_*_COMPLETE.md` - implementazione per area
 4. `docs/runbook/arena-alerts.md` - runbook alert (DD68)
 
-**Note**: I file `TODO_GAPS.md` e `MIGRATION_INVENTORY.md` sono stati spostati in `_deprecated/` poiché obsoleti.
+**Note**: `TODO_GAPS.md` e `MIGRATION_INVENTORY.md` sono ancora presenti in questa cartella; lo stato corrente e' indicato nei rispettivi header.
 
 ### Tracking Completamento
 

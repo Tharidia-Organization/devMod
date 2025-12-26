@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -36,6 +38,7 @@ public class SpawnabilityOverlay {
     // Performance: Caching
     private static final int CACHE_UPDATE_INTERVAL_TICKS = 10; // Update every 10 ticks (~500ms)
     private int ticksSinceLastUpdate = 0;
+    @Nullable
     private BlockPos lastPlayerPos = null;
     private final List<SpawnData> cachedSpawnData = new ArrayList<>();
 

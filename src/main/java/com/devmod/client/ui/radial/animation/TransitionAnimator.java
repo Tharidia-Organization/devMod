@@ -2,6 +2,8 @@ package com.devmod.client.ui.radial.animation;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 @FunctionalInterface
 interface FloatFunction {
     float apply(float value);
@@ -45,6 +47,7 @@ public final class TransitionAnimator<T> {
     private T currentValue;
 
     /** Previous value (null if not transitioning) */
+    @Nullable
     private T previousValue;
 
     /** Transition progress (0 = at previous, 1 = at current) */
@@ -189,6 +192,7 @@ public final class TransitionAnimator<T> {
      *
      * @return previous value, or null if not transitioning
      */
+    @Nullable
     public T getPreviousValue() {
         return previousValue;
     }

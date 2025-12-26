@@ -2,6 +2,8 @@ package com.devmod.client.rendering;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -32,6 +34,7 @@ public class LightLevelOverlay {
     // === PERFORMANCE OPTIMIZATION: Caching ===
     private static final int CACHE_UPDATE_INTERVAL_TICKS = 5; // Update every 5 ticks (~250ms)
     private int ticksSinceLastUpdate = 0;
+    @Nullable
     private BlockPos lastPlayerPos = null;
     private java.util.List<LightData> cachedLightData = new java.util.ArrayList<>();
 
@@ -106,7 +109,8 @@ public class LightLevelOverlay {
         }
 
         // Force update if the player has moved more than 2 blocks
-        if (lastPlayerPos == null || playerPos.distManhattan(Objects.requireNonNull(lastPlayerPos)) > 2) {
+        BlockPos previousPos = lastPlayerPos;
+        if (previousPos == null || playerPos.distManhattan(previousPos) > 2) {
             needsCacheUpdate = true;
             ticksSinceLastUpdate = 0;
         }

@@ -142,7 +142,10 @@ public class ItemEditorInputHandler {
 
         // Multi-edit panel
         if (showMultiEditPanel && multiEditPanel != null && multiEditPanel.mouseClicked(mouseX, mouseY, button)) {
-            callbacks.handleMultiEditResult(multiEditPanel.takeLastResult());
+            BatchEditResult result = multiEditPanel.takeLastResult();
+            if (result != null) {
+                callbacks.handleMultiEditResult(result);
+            }
             return true;
         }
 

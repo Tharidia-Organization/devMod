@@ -2,6 +2,7 @@ package com.devmod.stress;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -14,6 +15,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -78,8 +81,8 @@ public class PartyStressAndEdgeCaseTest {
         private volatile UUID leaderId;
         private volatile SimQuestType questType;
         private volatile SimPartyState state = SimPartyState.FORMING;
-        private volatile String selectedMobId;
-        private volatile UUID instanceId;
+        private volatile @Nullable String selectedMobId;
+        private volatile @Nullable UUID instanceId;
 
         private final Set<UUID> members = ConcurrentHashMap.newKeySet();
         private final Map<UUID, Boolean> memberReady = new ConcurrentHashMap<>();
@@ -96,8 +99,9 @@ public class PartyStressAndEdgeCaseTest {
             memberReady.put(leaderId, true);
         }
 
-        public boolean addMember(UUID playerId, String name) {
+        public boolean addMember(@Nullable UUID playerId, String name) {
             synchronized (stateLock) {
+                if (playerId == null) return false;
                 if (state != SimPartyState.FORMING) return false;
                 if (members.size() >= questType.maxPlayers) return false;
                 if (members.contains(playerId)) return false;
@@ -193,10 +197,10 @@ public class PartyStressAndEdgeCaseTest {
         public UUID getLeaderId() { return leaderId; }
         public SimQuestType getQuestType() { return questType; }
         public SimPartyState getState() { return state; }
-        public String getSelectedMobId() { return selectedMobId; }
-        public UUID getInstanceId() { return instanceId; }
+        public @Nullable String getSelectedMobId() { return selectedMobId; }
+        public @Nullable UUID getInstanceId() { return instanceId; }
         public int getMemberCount() { return members.size(); }
-        public Set<UUID> getMembers() { return Collections.unmodifiableSet(members); }
+        public Set<UUID> getMembers() { return Collections.unmodifiableSet(new HashSet<>(members)); }
         public boolean isFull() { return members.size() >= questType.maxPlayers; }
     }
 
@@ -646,14 +650,8 @@ public class PartyStressAndEdgeCaseTest {
             UUID leaderId = UUID.randomUUID();
             ThreadSafePartyData party = new ThreadSafePartyData(leaderId, "Leader", SimQuestType.PVE_COOP);
 
-            // This would NPE without null check - test behavior
-            try {
-                party.addMember(null, "NullPlayer");
-                // If no exception, verify behavior
-                assertFalse(party.getMembers().contains(null));
-            } catch (NullPointerException e) {
-                // Expected if implementation doesn't handle null
-            }
+            assertFalse(party.addMember(null, "NullPlayer"));
+            assertFalse(party.getMembers().contains(null));
         }
 
         @Test

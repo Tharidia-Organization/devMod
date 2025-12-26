@@ -75,6 +75,9 @@ public final class ImpactHudService {
                                         @Nullable Vec3 vfxDirection, LivingEntity victim) {
         LOGGER.debug("dist.isClient={}, hitPoint={}, target={}",
             FMLEnvironment.dist.isClient(), hitPoint, victim.getName().getString());
+        if (hitPoint == null || vfxDirection == null) {
+            return;
+        }
         ClientVFXProxy.addImpactVFX(hitPoint, vfxDirection, impactData);
     }
 

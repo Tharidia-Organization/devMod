@@ -1,6 +1,9 @@
 package com.devmod.client.ui.testing.pages;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.devmod.ModConfig;
 import com.devmod.actions.ActionIds;
@@ -25,7 +28,9 @@ import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 public class CombatPage extends AbstractVoxelLabPage {
 
     // Body part system
+    @Nullable
     private EditorButton bodyPartToggle;
+    @Nullable
     private EditorButton showBodyPartBoxesToggle;
 
     public CombatPage() {
@@ -35,6 +40,8 @@ public class CombatPage extends AbstractVoxelLabPage {
     @Override
     protected void buildPanels() {
         createButtons();
+        EditorButton bodyPartToggle = Objects.requireNonNull(this.bodyPartToggle, "bodyPartToggle");
+        EditorButton showBodyPartBoxesToggle = Objects.requireNonNull(this.showBodyPartBoxesToggle, "showBodyPartBoxesToggle");
 
         // Header
         panelContainer.addPanel(new HeaderPanel(
@@ -145,8 +152,14 @@ public class CombatPage extends AbstractVoxelLabPage {
     }
 
     private void syncButtonStates() {
-        bodyPartToggle.toggled(safeGetBool(Config.BODY_PART_DETECTION_ENABLED));
-        showBodyPartBoxesToggle.toggled(ModConfig.showBodyPartBoxes);
+        setToggle(bodyPartToggle, safeGetBool(Config.BODY_PART_DETECTION_ENABLED));
+        setToggle(showBodyPartBoxesToggle, ModConfig.showBodyPartBoxes);
+    }
+
+    private static void setToggle(@Nullable EditorButton button, boolean value) {
+        if (button != null) {
+            button.toggled(value);
+        }
     }
 
     private void invokeToggleAction(String actionId, boolean desired, boolean current) {

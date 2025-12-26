@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -47,6 +49,7 @@ public class BuildProgressHud {
     private final Map<UUID, BuildProgressState> activeBuilds = new ConcurrentHashMap<>();
 
     /** Current displayed arena (null if none) */
+    @Nullable
     private UUID displayedArena;
 
     private BuildProgressHud() {}
@@ -215,6 +218,7 @@ public class BuildProgressHud {
         return (a << 24) | (color & 0x00FFFFFF);
     }
 
+    @Nullable
     private UUID findNextArena() {
         return activeBuilds.keySet().stream()
             .filter(id -> {
@@ -245,6 +249,7 @@ public class BuildProgressHud {
     /**
      * Returns the currently displayed arena ID.
      */
+    @Nullable
     public UUID getDisplayedArena() {
         return displayedArena;
     }

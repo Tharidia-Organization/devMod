@@ -1,8 +1,10 @@
 package com.devmod.telemetry.duckdb;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
@@ -18,11 +20,30 @@ import com.mojang.logging.LogUtils;
 
 public class DuckDBQueryAPI {
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final RateLimitedLogger RATE_LIMITED = new RateLimitedLogger(LOGGER, DuckDBConfig.LOG_RATE_LIMIT_MS);
 
     private final DuckDBConnectionManager connectionManager;
 
     public DuckDBQueryAPI(DuckDBConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
+    }
+
+    /**
+     * Create a Statement with analytics query timeout.
+     */
+    private Statement createStatement(Connection conn) throws SQLException {
+        Statement stmt = conn.createStatement();
+        stmt.setQueryTimeout(DuckDBConfig.ANALYTICS_QUERY_TIMEOUT_SECONDS);
+        return stmt;
+    }
+
+    /**
+     * Prepare a Statement with analytics query timeout.
+     */
+    private PreparedStatement prepareStatement(Connection conn, String sql) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setQueryTimeout(DuckDBConfig.ANALYTICS_QUERY_TIMEOUT_SECONDS);
+        return stmt;
     }
 
     // ============================================
@@ -51,7 +72,7 @@ public class DuckDBQueryAPI {
         List<WeaponSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new WeaponSummary(
@@ -65,7 +86,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to get weapon summaries: {}", e.getMessage());
+            RATE_LIMITED.error("weapon_summaries", "[DuckDB] Failed to get weapon summaries: {}", safeMessage(e));
         }
         return results;
     }
@@ -91,7 +112,7 @@ public class DuckDBQueryAPI {
         List<RoomDamageSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  var rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new RoomDamageSummary(
@@ -104,7 +125,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to get room damage summaries: {}", e.getMessage());
+            RATE_LIMITED.error("room_damage", "[DuckDB] Failed to get room damage summaries: {}", safeMessage(e));
         }
         return results;
     }
@@ -138,7 +159,7 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setObject(1, playerId);
                 try (var rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -161,7 +182,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to get endurance stats: {}", e.getMessage());
+            RATE_LIMITED.error("endurance_stats", "[DuckDB] Failed to get endurance stats: {}", safeMessage(e));
         }
         return null;
     }
@@ -188,7 +209,7 @@ public class DuckDBQueryAPI {
         List<PerkUsageSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  var rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new PerkUsageSummary(
@@ -202,7 +223,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to get perk usage stats: {}", e.getMessage());
+            RATE_LIMITED.error("perk_usage", "[DuckDB] Failed to get perk usage stats: {}", safeMessage(e));
         }
         return results;
     }
@@ -230,7 +251,7 @@ public class DuckDBQueryAPI {
         AbilityStats stats = new AbilityStats(playerId);
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setObject(1, playerId);
                 try (var rs = stmt.executeQuery()) {
                     while (rs.next()) {
@@ -260,7 +281,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to get ability stats: {}", e.getMessage());
+            RATE_LIMITED.error("ability_stats", "[DuckDB] Failed to get ability stats: {}", safeMessage(e));
         }
         return stats;
     }
@@ -285,7 +306,7 @@ public class DuckDBQueryAPI {
         List<HeatmapCell> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, heatmapType);
                 stmt.setString(2, room);
                 try (var rs = stmt.executeQuery()) {
@@ -300,7 +321,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to get heatmap: {}", e.getMessage());
+            RATE_LIMITED.error("heatmap", "[DuckDB] Failed to get heatmap: {}", safeMessage(e));
         }
         return results;
     }
@@ -327,7 +348,7 @@ public class DuckDBQueryAPI {
         List<PerformanceSample> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setTimestamp(1, Timestamp.from(Instant.now().minus(window)));
                 try (var rs = stmt.executeQuery()) {
                     while (rs.next()) {
@@ -340,7 +361,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to get performance time series: {}", e.getMessage());
+            RATE_LIMITED.error("perf_time_series", "[DuckDB] Failed to get performance time series: {}", safeMessage(e));
         }
         return results;
     }
@@ -363,7 +384,7 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setTimestamp(1, Timestamp.from(Instant.now().minus(window)));
                 try (var rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -378,7 +399,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("[DuckDB] Failed to get performance average: {}", e.getMessage());
+            RATE_LIMITED.error("perf_average", "[DuckDB] Failed to get performance average: {}", safeMessage(e));
         }
         return null;
     }
@@ -486,7 +507,7 @@ public class DuckDBQueryAPI {
         List<MobKillSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new MobKillSummary(
@@ -497,7 +518,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query mob kills: {}", e.getMessage());
+            RATE_LIMITED.warn("mob_kills", "[DuckDB] Failed to query mob kills: {}", safeMessage(e));
         }
         return results;
     }
@@ -518,7 +539,7 @@ public class DuckDBQueryAPI {
         List<MobDropSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new MobDropSummary(
@@ -530,7 +551,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query mob drops: {}", e.getMessage());
+            RATE_LIMITED.warn("mob_drops", "[DuckDB] Failed to query mob drops: {}", safeMessage(e));
         }
         return results;
     }
@@ -551,7 +572,7 @@ public class DuckDBQueryAPI {
         List<ItemPickupSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new ItemPickupSummary(
@@ -563,7 +584,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query item pickups: {}", e.getMessage());
+            RATE_LIMITED.warn("item_pickups", "[DuckDB] Failed to query item pickups: {}", safeMessage(e));
         }
         return results;
     }
@@ -584,7 +605,7 @@ public class DuckDBQueryAPI {
         List<ItemUsageSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new ItemUsageSummary(
@@ -597,7 +618,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query item usage: {}", e.getMessage());
+            RATE_LIMITED.warn("item_usage", "[DuckDB] Failed to query item usage: {}", safeMessage(e));
         }
         return results;
     }
@@ -611,7 +632,7 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement()) {
+            try (var stmt = createStatement(conn)) {
                 // economy_mob_kills
                 try (ResultSet rs = stmt.executeQuery(
                     "SELECT COUNT(*) FROM economy_mob_kills WHERE ts >= " + interval)) {
@@ -634,7 +655,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query economy counts: {}", e.getMessage());
+            RATE_LIMITED.warn("economy_counts", "[DuckDB] Failed to query economy counts: {}", safeMessage(e));
         }
         return counts;
     }
@@ -682,7 +703,7 @@ public class DuckDBQueryAPI {
         List<BlockEventSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new BlockEventSummary(
@@ -694,7 +715,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query block events: {}", e.getMessage());
+            RATE_LIMITED.warn("block_events", "[DuckDB] Failed to query block events: {}", safeMessage(e));
         }
         return results;
     }
@@ -716,7 +737,7 @@ public class DuckDBQueryAPI {
         List<XpEventSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new XpEventSummary(
@@ -730,7 +751,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query XP events: {}", e.getMessage());
+            RATE_LIMITED.warn("xp_events", "[DuckDB] Failed to query XP events: {}", safeMessage(e));
         }
         return results;
     }
@@ -750,7 +771,7 @@ public class DuckDBQueryAPI {
         List<AdvancementSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new AdvancementSummary(
@@ -762,7 +783,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query advancements: {}", e.getMessage());
+            RATE_LIMITED.warn("advancements", "[DuckDB] Failed to query advancements: {}", safeMessage(e));
         }
         return results;
     }
@@ -783,7 +804,7 @@ public class DuckDBQueryAPI {
         List<DimensionChangeSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new DimensionChangeSummary(
@@ -795,7 +816,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query dimension changes: {}", e.getMessage());
+            RATE_LIMITED.warn("dimension_changes", "[DuckDB] Failed to query dimension changes: {}", safeMessage(e));
         }
         return results;
     }
@@ -817,7 +838,7 @@ public class DuckDBQueryAPI {
         List<TradeSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new TradeSummary(
@@ -832,7 +853,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query trades: {}", e.getMessage());
+            RATE_LIMITED.warn("trades", "[DuckDB] Failed to query trades: {}", safeMessage(e));
         }
         return results;
     }
@@ -853,7 +874,7 @@ public class DuckDBQueryAPI {
         List<FishingSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new FishingSummary(
@@ -865,7 +886,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query fishing: {}", e.getMessage());
+            RATE_LIMITED.warn("fishing", "[DuckDB] Failed to query fishing: {}", safeMessage(e));
         }
         return results;
     }
@@ -879,7 +900,7 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement()) {
+            try (var stmt = createStatement(conn)) {
                 try (ResultSet rs = stmt.executeQuery(
                     "SELECT COUNT(*) FROM progression_blocks WHERE ts >= " + interval)) {
                     if (rs.next()) counts.blocks = rs.getInt(1);
@@ -906,7 +927,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to query progression counts: {}", e.getMessage());
+            RATE_LIMITED.warn("progression_counts", "[DuckDB] Failed to query progression counts: {}", safeMessage(e));
         }
         return counts;
     }
@@ -955,14 +976,14 @@ public class DuckDBQueryAPI {
         List<String> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.createStatement();
+            try (var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(rs.getString("template_id"));
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to get arena template IDs: {}", e.getMessage());
+            RATE_LIMITED.warn("arena_template_ids", "[DuckDB] Failed to get arena template IDs: {}", safeMessage(e));
         }
         return results;
     }
@@ -1000,7 +1021,7 @@ public class DuckDBQueryAPI {
         List<ArenaRecords.BuildRecord> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1039,7 +1060,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to get arena recent builds: {}", e.getMessage());
+            RATE_LIMITED.warn("arena_recent_builds", "[DuckDB] Failed to get arena recent builds: {}", safeMessage(e));
         }
         return results;
     }
@@ -1070,7 +1091,7 @@ public class DuckDBQueryAPI {
         List<ArenaRecords.BuildPerformanceSample> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1091,7 +1112,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to get arena build performance: {}", e.getMessage());
+            RATE_LIMITED.warn("arena_build_perf", "[DuckDB] Failed to get arena build performance: {}", safeMessage(e));
         }
         return results;
     }
@@ -1128,7 +1149,7 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1150,7 +1171,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to get arena heatmap: {}", e.getMessage());
+            RATE_LIMITED.warn("arena_heatmap", "[DuckDB] Failed to get arena heatmap: {}", safeMessage(e));
         }
         return grid;
     }
@@ -1183,7 +1204,7 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1199,7 +1220,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to get arena spatial event count: {}", e.getMessage());
+            RATE_LIMITED.warn("arena_spatial_count", "[DuckDB] Failed to get arena spatial event count: {}", safeMessage(e));
         }
         return 0;
     }
@@ -1226,7 +1247,7 @@ public class DuckDBQueryAPI {
         List<ArenaRecords.TemporalGap> gaps = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setTimestamp(1, Timestamp.from(since));
                 stmt.setDouble(2, Math.max(0.0, (double) minGap.toSeconds()));
                 stmt.setInt(3, Math.max(1, limit));
@@ -1246,7 +1267,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to find arena build gaps: {}", e.getMessage());
+            RATE_LIMITED.warn("arena_build_gaps", "[DuckDB] Failed to find arena build gaps: {}", safeMessage(e));
         }
         return gaps;
     }
@@ -1259,7 +1280,7 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setTimestamp(1, Timestamp.from(timestamp));
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -1268,7 +1289,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to count arena builds: {}", e.getMessage());
+            RATE_LIMITED.warn("arena_build_count", "[DuckDB] Failed to count arena builds: {}", safeMessage(e));
         }
         return 0L;
     }
@@ -1308,7 +1329,7 @@ public class DuckDBQueryAPI {
         List<ArenaRecords.WaveAggregate> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1331,7 +1352,7 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to get arena wave aggregates: {}", e.getMessage());
+            RATE_LIMITED.warn("arena_wave_aggregates", "[DuckDB] Failed to get arena wave aggregates: {}", safeMessage(e));
         }
         return results;
     }
@@ -1360,7 +1381,7 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1378,9 +1399,14 @@ public class DuckDBQueryAPI {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("[DuckDB] Failed to get arena average waves: {}", e.getMessage());
+            RATE_LIMITED.warn("arena_avg_waves", "[DuckDB] Failed to get arena average waves: {}", safeMessage(e));
         }
         return 0.0;
+    }
+
+    private static String safeMessage(Throwable error) {
+        String message = error.getMessage();
+        return message == null ? error.getClass().getSimpleName() : message;
     }
 
     // Helper method for nullable double
@@ -1388,5 +1414,100 @@ public class DuckDBQueryAPI {
     private Double getNullableDouble(ResultSet rs, String column) throws SQLException {
         double value = rs.getDouble(column);
         return rs.wasNull() ? null : value;
+    }
+
+    // ============================================
+    // LVC (LAST VALUE CACHE) QUERIES - INSTANT
+    // ============================================
+    // These methods bypass DuckDB and read from in-memory cache.
+    // Response time: <1ms, zero database access.
+
+    /**
+     * Get real-time DPS for a player (rolling 60s window).
+     * Returns 0 if player not found or LVC disabled.
+     *
+     * @param playerId the player's UUID
+     * @return current DPS (damage per second)
+     */
+    public double getPlayerCurrentDPS(UUID playerId) {
+        var lvc = com.devmod.telemetry.duckdb.lvc.TelemetryLVC.INSTANCE;
+        return lvc.getCurrentDPS(playerId);
+    }
+
+    /**
+     * Get player session stats from LVC (instant, no database).
+     *
+     * @param playerId the player's UUID
+     * @return session stats snapshot, or null if player not found
+     */
+    @Nullable
+    public com.devmod.telemetry.duckdb.lvc.PlayerLVCEntry.PlayerLVCSnapshot getPlayerSessionStats(UUID playerId) {
+        var lvc = com.devmod.telemetry.duckdb.lvc.TelemetryLVC.INSTANCE;
+        return lvc.getPlayerSnapshot(playerId);
+    }
+
+    /**
+     * Get top damage dealers from LVC (instant, no database).
+     *
+     * @param limit maximum number of players to return
+     * @return list of player damage summaries, sorted by total damage
+     */
+    public List<com.devmod.telemetry.duckdb.lvc.TelemetryLVC.PlayerDamageSummary> getTopDamageDealers(int limit) {
+        var lvc = com.devmod.telemetry.duckdb.lvc.TelemetryLVC.INSTANCE;
+        return lvc.getTopDamageDealers(limit);
+    }
+
+    /**
+     * Get top killers from LVC (instant, no database).
+     *
+     * @param limit maximum number of players to return
+     * @return list of player kill summaries, sorted by kills
+     */
+    public List<com.devmod.telemetry.duckdb.lvc.TelemetryLVC.PlayerKillSummary> getTopKillers(int limit) {
+        var lvc = com.devmod.telemetry.duckdb.lvc.TelemetryLVC.INSTANCE;
+        return lvc.getTopKillers(limit);
+    }
+
+    /**
+     * Get server-wide combat summary from LVC (instant, no database).
+     *
+     * @return aggregate combat stats for all online players
+     */
+    public com.devmod.telemetry.duckdb.lvc.TelemetryLVC.ServerCombatSummary getServerCombatSummary() {
+        var lvc = com.devmod.telemetry.duckdb.lvc.TelemetryLVC.INSTANCE;
+        return lvc.getServerCombatSummary();
+    }
+
+    /**
+     * Get player kill count from LVC (instant, no database).
+     *
+     * @param playerId the player's UUID
+     * @return total kills this session
+     */
+    public int getPlayerKillCount(UUID playerId) {
+        var lvc = com.devmod.telemetry.duckdb.lvc.TelemetryLVC.INSTANCE;
+        return lvc.getKillCount(playerId);
+    }
+
+    /**
+     * Get player accuracy from LVC (instant, no database).
+     *
+     * @param playerId the player's UUID
+     * @return accuracy as percentage (0.0 - 1.0)
+     */
+    public double getPlayerAccuracy(UUID playerId) {
+        var lvc = com.devmod.telemetry.duckdb.lvc.TelemetryLVC.INSTANCE;
+        return lvc.getAccuracy(playerId);
+    }
+
+    /**
+     * Get player highest wave from LVC (instant, no database).
+     *
+     * @param playerId the player's UUID
+     * @return highest wave reached this session
+     */
+    public int getPlayerHighestWave(UUID playerId) {
+        var lvc = com.devmod.telemetry.duckdb.lvc.TelemetryLVC.INSTANCE;
+        return lvc.getHighestWave(playerId);
     }
 }

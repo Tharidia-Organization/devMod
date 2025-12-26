@@ -80,6 +80,37 @@ public final class DuckDBConfig {
     public static int WRITER_THREADS = 1;
 
     // ============================================
+    // TIMEOUTS & RESILIENCE
+    // ============================================
+
+    /** Connection timeout in seconds (prevents infinite hang on lock) */
+    public static int CONNECTION_TIMEOUT_SECONDS = getInt("devmod.duckdb.connection_timeout", "DEVMOD_DUCKDB_CONNECTION_TIMEOUT", 30);
+
+    /** Query timeout for write operations in seconds */
+    public static int QUERY_TIMEOUT_SECONDS = getInt("devmod.duckdb.query_timeout", "DEVMOD_DUCKDB_QUERY_TIMEOUT", 10);
+
+    /** Query timeout for analytics/read operations in seconds (longer for complex queries) */
+    public static int ANALYTICS_QUERY_TIMEOUT_SECONDS = getInt("devmod.duckdb.analytics_timeout", "DEVMOD_DUCKDB_ANALYTICS_TIMEOUT", 60);
+
+    /** Maximum connection retry attempts on lock errors */
+    public static int MAX_CONNECTION_RETRIES = getInt("devmod.duckdb.max_retries", "DEVMOD_DUCKDB_MAX_RETRIES", 5);
+
+    /** Initial retry delay in milliseconds (doubles each retry, max 10s) */
+    public static long INITIAL_RETRY_DELAY_MS = getLong("devmod.duckdb.retry_delay_ms", "DEVMOD_DUCKDB_RETRY_DELAY_MS", 1000);
+
+    /** Checkpoint interval in milliseconds (15 minutes default) */
+    public static long CHECKPOINT_INTERVAL_MS = getLong("devmod.duckdb.checkpoint_interval_ms", "DEVMOD_DUCKDB_CHECKPOINT_INTERVAL_MS", 15 * 60 * 1000);
+
+    /** Disk space check interval in milliseconds during runtime */
+    public static long DISK_CHECK_INTERVAL_MS = getLong("devmod.duckdb.disk_check_interval_ms", "DEVMOD_DUCKDB_DISK_CHECK_INTERVAL_MS", 60_000);
+
+    /** Maximum WAL size in bytes before forcing checkpoint (300MB) */
+    public static long MAX_WAL_SIZE_BYTES = getLong("devmod.duckdb.max_wal_size", "DEVMOD_DUCKDB_MAX_WAL_SIZE", 300 * 1024 * 1024);
+
+    /** Minimum free disk space in bytes (100MB) */
+    public static long MIN_DISK_SPACE_BYTES = getLong("devmod.duckdb.min_disk_space", "DEVMOD_DUCKDB_MIN_DISK_SPACE", 100 * 1024 * 1024);
+
+    // ============================================
     // FILE PATHS
     // ============================================
 
@@ -116,7 +147,7 @@ public final class DuckDBConfig {
     // ============================================
 
     /** Current schema version for migration tracking */
-    public static int SCHEMA_VERSION = 9;  // Bumped for arena error/alert tables
+    public static int SCHEMA_VERSION = 10;  // Bumped for aggregation tables (LVC + per-player)
 
     // ============================================
     // DEBUG
@@ -127,6 +158,12 @@ public final class DuckDBConfig {
 
     /** Log individual insert operations (very verbose) */
     public static boolean LOG_INSERTS = getBoolean("devmod.duckdb.log_inserts", "DEVMOD_DUCKDB_LOG_INSERTS", false);
+
+    /** Rate limit interval for warning logs in milliseconds (default 60s) */
+    public static long LOG_RATE_LIMIT_MS = getLong("devmod.duckdb.log_rate_limit_ms", "DEVMOD_DUCKDB_LOG_RATE_LIMIT_MS", 60_000);
+
+    /** Log every N backpressure drops (sampled logging, default 100) */
+    public static int LOG_BACKPRESSURE_SAMPLE_RATE = getInt("devmod.duckdb.log_backpressure_sample", "DEVMOD_DUCKDB_LOG_BACKPRESSURE_SAMPLE", 100);
 
     // ============================================
     // CONFIG RESOLUTION HELPERS

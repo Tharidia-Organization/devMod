@@ -30,15 +30,12 @@ public class JourneyMapCompat implements CompatModule {
     // Cached reflection references
     private static Class<?> clientApiClass;
     private static Class<?> waypointClass;
-    private static Class<?> markerOverlayClass;
-    private static Class<?> polygonOverlayClass;
     private static Object clientApiInstance;
 
     // Methods
     private static Method getClientApiMethod;
     private static Method addWaypointMethod;
     private static Method removeWaypointMethod;
-    private static Method showWaypointMethod;
 
     // Waypoint builders
     private static Constructor<?> waypointConstructor;
@@ -118,7 +115,6 @@ public class JourneyMapCompat implements CompatModule {
                 // Get waypoint methods
                 addWaypointMethod = clientApiClass.getMethod("add", waypointClass);
                 removeWaypointMethod = clientApiClass.getMethod("remove", waypointClass);
-                showWaypointMethod = clientApiClass.getMethod("show", waypointClass);
 
                 // Get waypoint constructor
                 waypointConstructor = waypointClass.getConstructor(

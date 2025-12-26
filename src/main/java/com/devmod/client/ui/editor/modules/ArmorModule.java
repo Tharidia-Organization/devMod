@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.modules;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
@@ -25,8 +27,8 @@ public class ArmorModule extends AbstractEditorModule {
     private ArmorVariant variant = ArmorVariant.STANDARD;
 
     // Delegate classes (lazy initialized to avoid this-escape)
-    private ArmorModuleCore core;
-    private ArmorModuleUI ui;
+    private @Nullable ArmorModuleCore core;
+    private @Nullable ArmorModuleUI ui;
     private boolean delegatesInitialized = false;
 
     // ═══════════════════════════════════════════════════════════════
@@ -51,18 +53,26 @@ public class ArmorModule extends AbstractEditorModule {
         }
     }
 
+    private ArmorModuleCore requireCore() {
+        ensureDelegates();
+        return Objects.requireNonNull(core, "core");
+    }
+
+    private ArmorModuleUI requireUi() {
+        ensureDelegates();
+        return Objects.requireNonNull(ui, "ui");
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // DELEGATE ACCESSORS
     // ═══════════════════════════════════════════════════════════════
 
     public ArmorModuleCore getCore() {
-        ensureDelegates();
-        return core;
+        return requireCore();
     }
 
     public ArmorModuleUI getUI() {
-        ensureDelegates();
-        return ui;
+        return requireUi();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -89,7 +99,8 @@ public class ArmorModule extends AbstractEditorModule {
 
     @Override
     protected void onItemSet() {
-        ensureDelegates();
+        ArmorModuleCore core = requireCore();
+        ArmorModuleUI ui = requireUi();
 
         // Auto-detect shield variant from item type
         detectVariantFromItem();
@@ -125,7 +136,8 @@ public class ArmorModule extends AbstractEditorModule {
 
     @Override
     protected void initializeTabs() {
-        ensureDelegates();
+        ArmorModuleCore core = requireCore();
+        ArmorModuleUI ui = requireUi();
         tabs.clear();
 
         // Create UI components
@@ -151,7 +163,8 @@ public class ArmorModule extends AbstractEditorModule {
         if (newStats == null) {
             return;
         }
-        ensureDelegates();
+        ArmorModuleCore core = requireCore();
+        ArmorModuleUI ui = requireUi();
         saveUndoState();
         core.setStats(newStats.copy());
         ui.updateComponentsFromStats();
@@ -194,8 +207,7 @@ public class ArmorModule extends AbstractEditorModule {
 
     @Override
     public CustomPacketPayload buildPayload(boolean isGlobal) {
-        ensureDelegates();
-        ArmorStats stats = core.getStats();
+        ArmorStats stats = requireCore().getStats();
 
         CompoundTag statsTag = new CompoundTag();
         CompoundTag armorStats = new CompoundTag();
@@ -209,7 +221,7 @@ public class ArmorModule extends AbstractEditorModule {
 
     @Override
     public void applyPreview() {
-        ensureDelegates();
+        ArmorModuleCore core = requireCore();
         // Create a preview copy and attach CustomData to the copy only
         try {
             ItemStack copy = item.copy();
@@ -223,7 +235,8 @@ public class ArmorModule extends AbstractEditorModule {
 
     @Override
     public void resetToOriginal() {
-        ensureDelegates();
+        ArmorModuleCore core = requireCore();
+        ArmorModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
         ui.updateComponentsFromStats();
         clearDirty();
@@ -256,13 +269,11 @@ public class ArmorModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     public ArmorStats getStats() {
-        ensureDelegates();
-        return core.getStats();
+        return requireCore().getStats();
     }
 
     public ArmorStats getOriginalStats() {
-        ensureDelegates();
-        return core.getOriginalStats();
+        return requireCore().getOriginalStats();
     }
 
     public ArmorVariant getVariant() {
@@ -275,7 +286,6 @@ public class ArmorModule extends AbstractEditorModule {
 
     @Override
     public boolean hasPendingDiff() {
-        ensureDelegates();
-        return core.hasPendingDiff();
+        return requireCore().hasPendingDiff();
     }
 }

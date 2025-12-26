@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -111,7 +113,7 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
     // STAT ENTRY
     // ═══════════════════════════════════════════════════════════════
 
-    public record StatEntry(String label, double value, String format, int color, String source) {
+    public record StatEntry(String label, double value, @Nullable String format, int color, @Nullable String source) {
         public StatEntry(String label, double value) {
             this(label, value, "%.1f", UIConstants.Text.PRIMARY(), null);
         }
@@ -160,7 +162,7 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
             return this;
         }
 
-        public Builder addStat(String label, double value, String format, int color, String source) {
+        public Builder addStat(String label, double value, String format, int color, @Nullable String source) {
             stats.add(new StatEntry(label, value, format, color, source));
             return this;
         }

@@ -34,6 +34,7 @@ public class LoadingIndicator {
 
     // Configuration
     private long timeoutMs = 30000; // 30 second default timeout
+    @Nullable
     private Runnable onRetry = null;
 
     // ═══════════════════════════════════════════════════════════════════════════

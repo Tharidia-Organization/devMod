@@ -2,6 +2,8 @@ package com.devmod.client.ui.editor.debug;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.devmod.client.ui.editor.core.Bounds;
 
 public interface DebugReporter {
@@ -46,6 +48,7 @@ public interface DebugReporter {
      *
      * @return Additional debug text, or null for none
      */
+    @Nullable
     default String getDebugDetails() {
         return null;
     }

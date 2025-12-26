@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 public class FallbackBuildStrategy<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FallbackBuildStrategy.class);
+    private static volatile boolean loggingEnabled = true;
 
     private final CircuitBreaker circuitBreaker;
     private final FallbackMetrics metrics;
@@ -72,7 +73,9 @@ public class FallbackBuildStrategy<T> {
     public T execute() throws BuildStrategyException {
         // Check circuit breaker first
         if (!circuitBreaker.allowRequest()) {
-            LOGGER.warn("[{}] Circuit breaker is open, failing fast", strategyName);
+            if (loggingEnabled) {
+                LOGGER.warn("[{}] Circuit breaker is open, failing fast", strategyName);
+            }
             metrics.record(FallbackMetrics.MetricType.ALL_FAILED);
             throw new BuildStrategyException(
                 "Circuit breaker is open - too many recent failures",
@@ -88,13 +91,17 @@ public class FallbackBuildStrategy<T> {
             metrics.recordPrimaryTime(elapsed);
             circuitBreaker.recordSuccess();
             metrics.record(FallbackMetrics.MetricType.PRIMARY_SUCCESS);
-            LOGGER.debug("[{}] Primary strategy succeeded in {}ms", strategyName, elapsed / 1_000_000.0);
+            if (loggingEnabled) {
+                LOGGER.debug("[{}] Primary strategy succeeded in {}ms", strategyName, elapsed / 1_000_000.0);
+            }
             return result;
         } catch (Exception primaryException) {
             long elapsed = System.nanoTime() - primaryStart;
             metrics.recordPrimaryTime(elapsed);
-            LOGGER.warn("[{}] Primary strategy failed after {}ms: {}",
-                strategyName, elapsed / 1_000_000.0, primaryException.getMessage());
+            if (loggingEnabled) {
+                LOGGER.warn("[{}] Primary strategy failed after {}ms: {}",
+                    strategyName, elapsed / 1_000_000.0, primaryException.getMessage());
+            }
 
             // DD45: Max 1 retry - try fallback once
             return tryFallback(primaryException);
@@ -110,7 +117,9 @@ public class FallbackBuildStrategy<T> {
         try {
             return Optional.of(execute());
         } catch (BuildStrategyException e) {
-            LOGGER.debug("[{}] Build strategy failed: {}", strategyName, e.getMessage());
+            if (loggingEnabled) {
+                LOGGER.debug("[{}] Build strategy failed: {}", strategyName, e.getMessage());
+            }
             return Optional.empty();
         }
     }
@@ -123,7 +132,9 @@ public class FallbackBuildStrategy<T> {
             metrics.recordFallbackTime(elapsed);
             circuitBreaker.recordSuccess();
             metrics.record(FallbackMetrics.MetricType.FALLBACK_USED);
-            LOGGER.info("[{}] Fallback strategy succeeded in {}ms", strategyName, elapsed / 1_000_000.0);
+            if (loggingEnabled) {
+                LOGGER.info("[{}] Fallback strategy succeeded in {}ms", strategyName, elapsed / 1_000_000.0);
+            }
             return result;
         } catch (Exception fallbackException) {
             long elapsed = System.nanoTime() - fallbackStart;
@@ -131,8 +142,10 @@ public class FallbackBuildStrategy<T> {
             circuitBreaker.recordFailure();
             metrics.record(FallbackMetrics.MetricType.ALL_FAILED);
 
-            LOGGER.error("[{}] All strategies failed. Primary: {}, Fallback: {}",
-                strategyName, primaryException.getMessage(), fallbackException.getMessage());
+            if (loggingEnabled) {
+                LOGGER.error("[{}] All strategies failed. Primary: {}, Fallback: {}",
+                    strategyName, primaryException.getMessage(), fallbackException.getMessage());
+            }
 
             // Combine both exceptions for diagnosis
             BuildStrategyException exception = new BuildStrategyException(
@@ -174,6 +187,10 @@ public class FallbackBuildStrategy<T> {
         if (resetMetrics) {
             metrics.reset();
         }
+    }
+
+    public static void setLoggingEnabled(boolean enabled) {
+        loggingEnabled = enabled;
     }
 
     /**
