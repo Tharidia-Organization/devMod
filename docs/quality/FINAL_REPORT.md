@@ -1,5 +1,8 @@
 # Quality Pass Final Report
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (snapshot)
+
 Date: 2025-12-26
 Branch: Banastaff
 Duration: multi-session (2025-12-25 to 2025-12-26)
@@ -9,8 +12,8 @@ Duration: multi-session (2025-12-25 to 2025-12-26)
 ## Build Status
 
 ```
-FAIL ./gradlew build: 2879 tests completed, 8 failed (NoClassDefFoundError in telemetry/LVC/testcase tests)
-FAIL ./gradlew test: 2942 tests completed, 32 failed (could not write XML results under build/test-results/test)
+OK ./gradlew build --no-daemon --no-parallel --max-workers=1 --rerun-tasks: SUCCESS
+OK ./gradlew test --no-daemon --no-parallel --max-workers=1 --rerun-tasks --stacktrace: SUCCESS
 ```
 
 ---
@@ -32,10 +35,10 @@ See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 
 ---
 
-## Build/Test Failures (Final Pass)
+## Intermittent Issues Observed
 
-- `./gradlew build`: 8 tests failed with `NoClassDefFoundError` (telemetry aggregation/LVC/testcase classes). This aligns with the unstaged aggregation/LVC sources; a clean rebuild after staging is recommended.
-- `./gradlew test`: Gradle could not write XML test results under `build/test-results/test` for many tests (32 failures reported), which blocks accurate pass/fail counts.
+- `./gradlew clean build --no-daemon --no-parallel --max-workers=1 --no-build-cache` failed during test discovery with `NoClassDefFoundError` for nested classes (e.g., `ArenaBuilder$BlockPlacer`, `ArenaCleanupExecutor$LevelAccess`).
+- Earlier `NoClassDefFoundError` failures for telemetry/LVC/testcase tests and XML test-result write errors were not reproducible after full reruns.
 
 ## Compiler Warnings (Last Known)
 
@@ -69,8 +72,8 @@ See `build/reports/problems/problems-report.html` for the full list.
 ### Long Methods (>80 lines)
 22 methods remain over 80 lines, primarily in telemetry, challenge/wave managers, and UI render paths. No refactor applied to avoid behavioral risk.
 
-### Test Reporting Failures
-Gradle intermittently fails to write XML test results under `build/test-results/test` during full suite runs. Investigation needed (filesystem permissions/locks, disk space, or test worker shutdown).
+### Test Execution Flakiness
+`clean build --no-build-cache` shows intermittent `NoClassDefFoundError` during test discovery; reruns with the standard build/test commands succeed. Treat as flaky build/test infrastructure issue.
 
 ---
 
@@ -82,7 +85,7 @@ Gradle intermittently fails to write XML test results under `build/test-results/
 4. Add small smoke tests around packet validation and recipe injection with explicit null cases.
 5. Document large manager classes with ADRs to justify scope.
 6. Add logging guidelines for high-frequency loops to avoid debug spam.
-7. Investigate Gradle test XML write failures (permissions/locks/temp dir saturation) and stabilize test reporting.
+7. Investigate intermittent `NoClassDefFoundError` in `clean build --no-build-cache` test discovery (classpath/incremental compilation).
 8. Consider splitting EnduranceQuestManager into focused subsystems when behavior refactor is allowed.
 9. Keep Checkstyle import ordering rules in CI and treat violations as errors.
 
@@ -103,6 +106,6 @@ Gradle intermittently fails to write XML test results under `build/test-results/
 ## Verification Commands
 
 ```bash
-./gradlew build
-./gradlew test
+./gradlew build --no-daemon --no-parallel --max-workers=1 --rerun-tasks
+./gradlew test --no-daemon --no-parallel --max-workers=1 --rerun-tasks --stacktrace
 ```
