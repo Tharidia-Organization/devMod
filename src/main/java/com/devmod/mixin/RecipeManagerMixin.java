@@ -21,7 +21,9 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.DevMod;
 import com.devmod.recipe.RecipeInjector;
+
 @Mixin(RecipeManager.class)
+@SuppressWarnings("UnusedMethod")
 public class RecipeManagerMixin {
 
     /**

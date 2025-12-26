@@ -322,7 +322,7 @@ Codebase follows good extraction patterns. No high-value extraction opportunitie
 
 ### Final Metrics
 - **Wildcard imports**: 149 → 0 (main/test; JUnit static wildcard retained)
-- **Files modified**: 900+ files across 18 batches
+- **Files modified**: 900+ files across 19 batches
 - **Build status**: All changes compile successfully; checkstyleMain clean
 
 ### Key Improvements
@@ -333,6 +333,7 @@ Codebase follows good extraction patterns. No high-value extraction opportunitie
 5. Endurance flow fixes for directive chains and rewards
 6. Test stability improvements (configurable thresholds)
 7. Import ordering enforced via Checkstyle (external-com grouping fix)
+8. Null-safety hardening in network handlers + mixin warning suppression
 
 ---
 
@@ -377,3 +378,17 @@ None (Quality pass complete)
 ### Results
 - checkstyleMain clean after reorder
 - Import order now enforced by Checkstyle
+
+---
+
+## Batch 19: NullAway/ErrorProne Triage (2025-12-26)
+
+### Scope
+- Network handlers: normalized validation error messaging to avoid nullable leaks
+- Recipe data models: standardized @Nullable imports to align with project null-safety
+- Mixins: suppressed NullAway.Init/UnusedMethod where Mixin injects lifecycle
+- Telemetry dashboard: non-null query parameter defaults for safe parsing
+
+### Results
+- Reduced NullAway/UnusedMethod warnings in network + mixin paths
+- Validation error messaging is now always non-null for UI/reporting

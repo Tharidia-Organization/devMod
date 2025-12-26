@@ -2,12 +2,13 @@ package com.devmod.recipe;
 
 import java.util.Objects;
 
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
 
 import com.google.gson.JsonObject;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
+
 public record StonecuttingRecipeData(
     ResourceLocation id,
     IngredientData ingredient,

@@ -2,7 +2,7 @@ package com.devmod.recipe;
 
 import java.util.Objects;
 
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
 
 import com.google.gson.JsonObject;
 
@@ -13,6 +13,7 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+
 public record ResultData(
     @Nullable ResourceLocation itemId,
     int count,

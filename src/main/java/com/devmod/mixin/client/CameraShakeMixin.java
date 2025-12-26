@@ -1,5 +1,9 @@
 package com.devmod.mixin.client;
 
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.slf4j.Logger;
@@ -15,12 +19,15 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
 
 import com.devmod.client.effects.ShakeManager;
+
 @Mixin(Camera.class)
+@SuppressWarnings("NullAway.Init")
 public abstract class CameraShakeMixin {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("DevMod/CameraShake");
 
     @Shadow
+    @Nullable
     private Quaternionf rotation;
 
     @Shadow
@@ -42,14 +49,16 @@ public abstract class CameraShakeMixin {
      * Applies accumulated shake effects after camera setup is complete.
      */
     @Inject(method = "setup", at = @At("TAIL"))
-    private void devmod$applyScreenShake(BlockGetter level, Entity entity, boolean detached,
-                                          boolean thirdPersonReverse, float partialTicks, CallbackInfo ci) {
+    void devmod$applyScreenShake(BlockGetter level, Entity entity, boolean detached,
+                                 boolean thirdPersonReverse, float partialTicks, CallbackInfo ci) {
         if (!ShakeManager.INSTANCE.isEnabled()) {
             return;
         }
         if (ShakeManager.INSTANCE.getActiveCount() == 0) {
             return;
         }
+
+        Quaternionf rotation = Objects.requireNonNull(this.rotation, "rotation");
 
         // Get accumulated shake values
         Vector3f shakeRotation = ShakeManager.INSTANCE.getAccumulatedRotation(partialTicks);
@@ -63,7 +72,7 @@ public abstract class CameraShakeMixin {
         if (shakeRotation.lengthSquared() > 0.0001f) {
             // Convert shake rotation to camera-local space
             // We need to rotate the shake vector by the inverse of camera rotation
-            Quaternionf inverseRotation = new Quaternionf(this.rotation).invert();
+            Quaternionf inverseRotation = new Quaternionf(rotation).invert();
             Vector3f localShake = inverseRotation.transform(new Vector3f(shakeRotation));
 
             // Apply as euler angles (degrees)
@@ -75,7 +84,7 @@ public abstract class CameraShakeMixin {
             // Also apply roll (Z rotation) directly to quaternion
             if (Math.abs(localShake.z) > 0.001f) {
                 Quaternionf rollQuat = new Quaternionf().rotateZ((float) Math.toRadians(localShake.z * shakeFactor));
-                this.rotation.mul(rollQuat);
+                rotation.mul(rollQuat);
             }
 
             // Update pitch and yaw
@@ -85,7 +94,7 @@ public abstract class CameraShakeMixin {
         // Apply position offset shake
         if (shakeOffset.lengthSquared() > 0.0001f) {
             // Transform offset to camera-local space
-            Quaternionf inverseRotation = new Quaternionf(this.rotation).invert();
+            Quaternionf inverseRotation = new Quaternionf(rotation).invert();
             Vector3f localOffset = inverseRotation.transform(new Vector3f(shakeOffset));
 
             // Apply offset

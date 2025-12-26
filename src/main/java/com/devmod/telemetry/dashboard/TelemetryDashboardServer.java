@@ -4,6 +4,7 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +22,8 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.google.gson.Gson;
@@ -32,6 +35,7 @@ import com.sun.net.httpserver.HttpServer;
 
 import com.devmod.arena.dashboard.ArenaDashboardEndpoint;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
 public class TelemetryDashboardServer {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final TelemetryDashboardServer INSTANCE = new TelemetryDashboardServer();
@@ -45,11 +49,14 @@ public class TelemetryDashboardServer {
             .create();
 
     private final AtomicBoolean running = new AtomicBoolean(false);
+    @Nullable
     private HttpServer server;
     private int port = DEFAULT_PORT;
 
     // Delegate for analytics handlers
+    @Nullable
     private TelemetryAnalyticsHandlers analyticsHandlers;
+    @Nullable
     private ArenaDashboardEndpoint arenaEndpoint;
 
     private TelemetryDashboardServer() {}
@@ -65,59 +72,61 @@ public class TelemetryDashboardServer {
 
         try {
             // Initialize delegate for analytics handlers
-            this.analyticsHandlers = new TelemetryAnalyticsHandlers(this, gson);
+            TelemetryAnalyticsHandlers handlers = new TelemetryAnalyticsHandlers(this, gson);
+            this.analyticsHandlers = handlers;
             initializeArenaDashboard();
 
-            server = HttpServer.create(new InetSocketAddress(BIND_ADDRESS, port), 0);
-            server.setExecutor(Executors.newFixedThreadPool(4));
+            HttpServer httpServer = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
+            httpServer.setExecutor(Executors.newFixedThreadPool(4));
+            server = httpServer;
 
             // API Routes - Basic
-            server.createContext("/api/health", new ApiHandler(this::handleHealth));
-            server.createContext("/api/summary", new ApiHandler(this::handleSummary));
-            server.createContext("/api/tables", new ApiHandler(this::handleTables));
-            server.createContext("/api/query", new ApiHandler(this::handleQuery));
+            httpServer.createContext("/api/health", new ApiHandler(this::handleHealth));
+            httpServer.createContext("/api/summary", new ApiHandler(this::handleSummary));
+            httpServer.createContext("/api/tables", new ApiHandler(this::handleTables));
+            httpServer.createContext("/api/query", new ApiHandler(this::handleQuery));
 
             // API Routes - Raw Data
-            server.createContext("/api/combat/hits", new ApiHandler(this::handleCombatHits));
-            server.createContext("/api/combat/deaths", new ApiHandler(this::handleCombatDeaths));
-            server.createContext("/api/combat/fights", new ApiHandler(this::handleCombatFights));
-            server.createContext("/api/combat/weapons", new ApiHandler(this::handleCombatWeapons));
-            server.createContext("/api/endurance/sessions", new ApiHandler(this::handleEnduranceSessions));
-            server.createContext("/api/endurance/waves", new ApiHandler(this::handleEnduranceWaves));
-            server.createContext("/api/endurance/perks", new ApiHandler(this::handleEndurancePerks));
-            server.createContext("/api/endurance/performance", new ApiHandler(this::handleEndurancePerformance));
-            server.createContext("/api/player/snapshots", new ApiHandler(this::handlePlayerSnapshots));
-            server.createContext("/api/player/abilities", new ApiHandler(this::handlePlayerAbilities));
-            server.createContext("/api/spatial/heatmaps", new ApiHandler(this::handleSpatialHeatmaps));
-            server.createContext("/api/spatial/transitions", new ApiHandler(this::handleSpatialTransitions));
-            server.createContext("/api/economy/drops", new ApiHandler(this::handleEconomyDrops));
-            server.createContext("/api/economy/kills", new ApiHandler(this::handleEconomyKills));
-            server.createContext("/api/dungeons/runs", new ApiHandler(this::handleDungeonRuns));
-            server.createContext("/api/performance", new ApiHandler(this::handlePerformance));
+            httpServer.createContext("/api/combat/hits", new ApiHandler(this::handleCombatHits));
+            httpServer.createContext("/api/combat/deaths", new ApiHandler(this::handleCombatDeaths));
+            httpServer.createContext("/api/combat/fights", new ApiHandler(this::handleCombatFights));
+            httpServer.createContext("/api/combat/weapons", new ApiHandler(this::handleCombatWeapons));
+            httpServer.createContext("/api/endurance/sessions", new ApiHandler(this::handleEnduranceSessions));
+            httpServer.createContext("/api/endurance/waves", new ApiHandler(this::handleEnduranceWaves));
+            httpServer.createContext("/api/endurance/perks", new ApiHandler(this::handleEndurancePerks));
+            httpServer.createContext("/api/endurance/performance", new ApiHandler(this::handleEndurancePerformance));
+            httpServer.createContext("/api/player/snapshots", new ApiHandler(this::handlePlayerSnapshots));
+            httpServer.createContext("/api/player/abilities", new ApiHandler(this::handlePlayerAbilities));
+            httpServer.createContext("/api/spatial/heatmaps", new ApiHandler(this::handleSpatialHeatmaps));
+            httpServer.createContext("/api/spatial/transitions", new ApiHandler(this::handleSpatialTransitions));
+            httpServer.createContext("/api/economy/drops", new ApiHandler(this::handleEconomyDrops));
+            httpServer.createContext("/api/economy/kills", new ApiHandler(this::handleEconomyKills));
+            httpServer.createContext("/api/dungeons/runs", new ApiHandler(this::handleDungeonRuns));
+            httpServer.createContext("/api/performance", new ApiHandler(this::handlePerformance));
 
             // API Routes - Analytics (delegated to TelemetryAnalyticsHandlers)
-            server.createContext("/api/analytics/overview", new ApiHandler(analyticsHandlers::handleAnalyticsOverview));
-            server.createContext("/api/analytics/hits-timeline", new ApiHandler(analyticsHandlers::handleHitsTimeline));
-            server.createContext("/api/analytics/damage-by-bodypart", new ApiHandler(analyticsHandlers::handleDamageByBodypart));
-            server.createContext("/api/analytics/damage-by-type", new ApiHandler(analyticsHandlers::handleDamageByType));
-            server.createContext("/api/analytics/weapon-stats", new ApiHandler(analyticsHandlers::handleWeaponAnalytics));
-            server.createContext("/api/analytics/mob-kills", new ApiHandler(analyticsHandlers::handleMobKillsAnalytics));
-            server.createContext("/api/analytics/ttk", new ApiHandler(analyticsHandlers::handleTTKAnalytics));
-            server.createContext("/api/analytics/accuracy-timeline", new ApiHandler(analyticsHandlers::handleAccuracyTimeline));
-            server.createContext("/api/analytics/endurance-stats", new ApiHandler(analyticsHandlers::handleEnduranceAnalytics));
-            server.createContext("/api/analytics/dungeon-stats", new ApiHandler(analyticsHandlers::handleDungeonAnalytics));
-            server.createContext("/api/analytics/room-stats", new ApiHandler(analyticsHandlers::handleRoomAnalytics));
-            server.createContext("/api/analytics/loot-rates", new ApiHandler(analyticsHandlers::handleLootRatesAnalytics));
+            httpServer.createContext("/api/analytics/overview", new ApiHandler(handlers::handleAnalyticsOverview));
+            httpServer.createContext("/api/analytics/hits-timeline", new ApiHandler(handlers::handleHitsTimeline));
+            httpServer.createContext("/api/analytics/damage-by-bodypart", new ApiHandler(handlers::handleDamageByBodypart));
+            httpServer.createContext("/api/analytics/damage-by-type", new ApiHandler(handlers::handleDamageByType));
+            httpServer.createContext("/api/analytics/weapon-stats", new ApiHandler(handlers::handleWeaponAnalytics));
+            httpServer.createContext("/api/analytics/mob-kills", new ApiHandler(handlers::handleMobKillsAnalytics));
+            httpServer.createContext("/api/analytics/ttk", new ApiHandler(handlers::handleTTKAnalytics));
+            httpServer.createContext("/api/analytics/accuracy-timeline", new ApiHandler(handlers::handleAccuracyTimeline));
+            httpServer.createContext("/api/analytics/endurance-stats", new ApiHandler(handlers::handleEnduranceAnalytics));
+            httpServer.createContext("/api/analytics/dungeon-stats", new ApiHandler(handlers::handleDungeonAnalytics));
+            httpServer.createContext("/api/analytics/room-stats", new ApiHandler(handlers::handleRoomAnalytics));
+            httpServer.createContext("/api/analytics/loot-rates", new ApiHandler(handlers::handleLootRatesAnalytics));
 
             // API Routes - Advanced Analytics v2 (delegated to TelemetryAnalyticsHandlers)
-            server.createContext("/api/analytics/dps-timeline", new ApiHandler(analyticsHandlers::handleDpsTimeline));
-            server.createContext("/api/analytics/player-stats", new ApiHandler(analyticsHandlers::handlePlayerStats));
-            server.createContext("/api/analytics/player-comparison", new ApiHandler(analyticsHandlers::handlePlayerComparison));
-            server.createContext("/api/analytics/trends", new ApiHandler(analyticsHandlers::handleTrends));
-            server.createContext("/api/analytics/performance", new ApiHandler(analyticsHandlers::handlePerformanceAnalytics));
-            server.createContext("/api/analytics/fight-analysis", new ApiHandler(analyticsHandlers::handleFightAnalysis));
-            server.createContext("/api/analytics/damage-taken", new ApiHandler(analyticsHandlers::handleDamageTaken));
-            server.createContext("/api/analytics/players-list", new ApiHandler(analyticsHandlers::handlePlayersList));
+            httpServer.createContext("/api/analytics/dps-timeline", new ApiHandler(handlers::handleDpsTimeline));
+            httpServer.createContext("/api/analytics/player-stats", new ApiHandler(handlers::handlePlayerStats));
+            httpServer.createContext("/api/analytics/player-comparison", new ApiHandler(handlers::handlePlayerComparison));
+            httpServer.createContext("/api/analytics/trends", new ApiHandler(handlers::handleTrends));
+            httpServer.createContext("/api/analytics/performance", new ApiHandler(handlers::handlePerformanceAnalytics));
+            httpServer.createContext("/api/analytics/fight-analysis", new ApiHandler(handlers::handleFightAnalysis));
+            httpServer.createContext("/api/analytics/damage-taken", new ApiHandler(handlers::handleDamageTaken));
+            httpServer.createContext("/api/analytics/players-list", new ApiHandler(handlers::handlePlayersList));
 
             // Arena analytics (DD36) + auth
             server.createContext("/api/arena/token", new ApiHandler(this::handleArenaToken));
@@ -156,14 +165,17 @@ public class TelemetryDashboardServer {
         }
 
         try {
-            if (server != null) {
-                server.stop(1);
-                server = null;
+            HttpServer httpServer = server;
+            if (httpServer != null) {
+                httpServer.stop(1);
             }
-            if (arenaEndpoint != null) {
-                try { arenaEndpoint.close(); } catch (Exception ignored) {}
-                arenaEndpoint = null;
+            server = null;
+
+            ArenaDashboardEndpoint endpoint = arenaEndpoint;
+            if (endpoint != null) {
+                try { endpoint.close(); } catch (Exception ignored) {}
             }
+            arenaEndpoint = null;
             running.set(false);
             LOGGER.info("[Dashboard] Server stopped");
         } catch (Exception e) {
@@ -234,48 +246,57 @@ public class TelemetryDashboardServer {
 
     private String handleCombatHits(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 1000);
+        String from = paramOrEmpty(params, "from");
+        String to = paramOrEmpty(params, "to");
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 1000);
         Map<String, String> filters = buildArenaFilters(params);
-        return gson.toJson(queryTableWithFilters("combat_hits", params.get("from"), params.get("to"), limit, "ts", filters));
+        return gson.toJson(queryTableWithFilters("combat_hits", from, to, limit, "ts", filters));
     }
 
     private String handleCombatDeaths(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 500);
+        String from = paramOrEmpty(params, "from");
+        String to = paramOrEmpty(params, "to");
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 500);
         Map<String, String> filters = buildArenaFilters(params);
-        return gson.toJson(queryTableWithFilters("combat_deaths", params.get("from"), params.get("to"), limit, "ts", filters));
+        return gson.toJson(queryTableWithFilters("combat_deaths", from, to, limit, "ts", filters));
     }
 
     private String handleCombatFights(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 100);
+        String from = paramOrEmpty(params, "from");
+        String to = paramOrEmpty(params, "to");
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 100);
         Map<String, String> filters = buildArenaFilters(params);
-        return gson.toJson(queryTableWithFilters("combat_fights", params.get("from"), params.get("to"), limit, "start_ts", filters));
+        return gson.toJson(queryTableWithFilters("combat_fights", from, to, limit, "start_ts", filters));
     }
 
     private String handleCombatWeapons(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
         Map<String, String> filters = buildArenaFilters(params);
-        return gson.toJson(getWeaponStats(filters, params.get("from"), params.get("to")));
+        String from = paramOrEmpty(params, "from");
+        String to = paramOrEmpty(params, "to");
+        return gson.toJson(getWeaponStats(filters, from, to));
     }
 
     private String handleEnduranceSessions(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 100);
+        String from = paramOrEmpty(params, "from");
+        String to = paramOrEmpty(params, "to");
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 100);
         Map<String, String> filters = buildArenaFilters(params);
-        return gson.toJson(queryTableWithFilters("endurance_sessions", params.get("from"), params.get("to"),
-            limit, "start_ts", filters));
+        return gson.toJson(queryTableWithFilters("endurance_sessions", from, to, limit, "start_ts", filters));
     }
 
     private String handleEnduranceWaves(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 500);
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 500);
         String sessionId = params.get("session_id");
         if (sessionId != null) {
             return gson.toJson(queryWithFilter("endurance_waves", "session_id", sessionId, limit));
         }
         Map<String, String> filters = buildArenaFilters(params);
-        return gson.toJson(queryTableWithFilters("endurance_waves", null, null, limit, "ts", filters));
+        return gson.toJson(queryTableWithFilters("endurance_waves", "", "", limit, "ts", filters));
     }
 
     private String handleEndurancePerks(HttpExchange exchange) {
@@ -283,60 +304,65 @@ public class TelemetryDashboardServer {
         String templateId = params.get("templateId");
         if (templateId != null && !templateId.isBlank()) {
             Map<String, String> filters = buildArenaFilters(params);
-            return gson.toJson(queryTableWithFilters("endurance_perks", params.get("from"), params.get("to"), 500, "ts", filters));
+            String from = paramOrEmpty(params, "from");
+            String to = paramOrEmpty(params, "to");
+            return gson.toJson(queryTableWithFilters("endurance_perks", from, to, 500, "ts", filters));
         }
         return gson.toJson(getPerkStats());
     }
 
     private String handleEndurancePerformance(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 200);
+        String from = paramOrEmpty(params, "from");
+        String to = paramOrEmpty(params, "to");
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 200);
         Map<String, String> filters = buildArenaFilters(params);
-        return gson.toJson(queryTableWithFilters("endurance_performance", params.get("from"), params.get("to"),
-            limit, "ts", filters));
+        return gson.toJson(queryTableWithFilters("endurance_performance", from, to, limit, "ts", filters));
     }
 
     private String handlePlayerSnapshots(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 500);
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 500);
         String playerId = params.get("player_id");
         if (playerId != null) {
             return gson.toJson(queryWithFilter("player_snapshots", "player_id", playerId, limit));
         }
-        return gson.toJson(queryTable("player_snapshots", null, null, limit));
+        return gson.toJson(queryTable("player_snapshots", "", "", limit));
     }
 
     private String handlePlayerAbilities(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 500);
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 500);
         String playerId = params.get("player_id");
         if (playerId != null) {
             return gson.toJson(queryWithFilter("player_abilities", "player_id", playerId, limit));
         }
-        return gson.toJson(queryTable("player_abilities", null, null, limit));
+        return gson.toJson(queryTable("player_abilities", "", "", limit));
     }
 
     private String handleSpatialHeatmaps(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 5000);
-        return gson.toJson(getHeatmapData(params.get("type"), params.get("room"), limit));
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 5000);
+        String type = paramOrEmpty(params, "type");
+        String room = paramOrEmpty(params, "room");
+        return gson.toJson(getHeatmapData(type, room, limit));
     }
 
     private String handleSpatialTransitions(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 1000);
-        return gson.toJson(queryTable("spatial_room_transitions", null, null, limit));
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 1000);
+        return gson.toJson(queryTable("spatial_room_transitions", "", "", limit));
     }
 
     private String handleEconomyDrops(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 500);
-        return gson.toJson(queryTable("economy_mob_drops", null, null, limit));
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 500);
+        return gson.toJson(queryTable("economy_mob_drops", "", "", limit));
     }
 
     private String handleEconomyKills(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 50);
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 50);
         // Aggregate mob kills by type - show total kills and loot rate per mob
         String sql = "SELECT mob_type, COUNT(*) as total_kills, " +
             "SUM(CASE WHEN had_loot THEN 1 ELSE 0 END) as kills_with_loot, " +
@@ -348,27 +374,29 @@ public class TelemetryDashboardServer {
 
     private String handleDungeonRuns(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 100);
-        return gson.toJson(queryTable("dungeon_runs", params.get("from"), params.get("to"), limit, "start_ts"));
+        String from = paramOrEmpty(params, "from");
+        String to = paramOrEmpty(params, "to");
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 100);
+        return gson.toJson(queryTable("dungeon_runs", from, to, limit, "start_ts"));
     }
 
     private String handlePerformance(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        int limit = getIntParam(params.get("limit"), 1000);
-        return gson.toJson(queryTable("performance_samples", params.get("from"), params.get("to"), limit));
+        String from = paramOrEmpty(params, "from");
+        String to = paramOrEmpty(params, "to");
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 1000);
+        return gson.toJson(queryTable("performance_samples", from, to, limit));
     }
 
     private String handleArenaToken(HttpExchange exchange) {
-        if (arenaEndpoint == null) {
-            throw new IllegalStateException("Arena analytics not initialized");
-        }
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
         Map<String, String> params = parseQueryParams(exchange);
         String userId = params.getOrDefault("user", "local");
         boolean full = "true".equalsIgnoreCase(params.get("full"));
         ArenaDashboardEndpoint.TokenPermissions permissions = full
             ? ArenaDashboardEndpoint.TokenPermissions.full()
             : ArenaDashboardEndpoint.TokenPermissions.readOnly();
-        String token = arenaEndpoint.generateToken(userId, permissions);
+        String token = endpoint.generateToken(userId, permissions);
         return gson.toJson(Map.of(
             "token", token,
             "userId", userId,
@@ -379,73 +407,83 @@ public class TelemetryDashboardServer {
 
     private String handleArenaTemplates(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
-        return gson.toJson(arenaEndpoint.handleTemplates(token));
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
+        return gson.toJson(endpoint.handleTemplates(token));
     }
 
     private String handleArenaBuildMetrics(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
         ArenaDashboardEndpoint.AnalyticsQueryParams query = buildArenaParams(params, true);
-        return gson.toJson(arenaEndpoint.handleBuildMetrics(token, query));
+        return gson.toJson(endpoint.handleBuildMetrics(token, query));
     }
 
     private String handleArenaPerformance(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
         ArenaDashboardEndpoint.AnalyticsQueryParams query = buildArenaParams(params, true);
-        return gson.toJson(arenaEndpoint.handlePerformance(token, query));
+        return gson.toJson(endpoint.handlePerformance(token, query));
     }
 
     private String handleArenaSpawnHeatmap(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
         ArenaDashboardEndpoint.AnalyticsQueryParams query = buildArenaParams(params, true);
-        return gson.toJson(arenaEndpoint.handleSpawnHeatmap(token, query));
+        return gson.toJson(endpoint.handleSpawnHeatmap(token, query));
     }
 
     private String handleArenaDeathHeatmap(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
         ArenaDashboardEndpoint.AnalyticsQueryParams query = buildArenaParams(params, true);
-        return gson.toJson(arenaEndpoint.handleDeathHeatmap(token, query));
+        return gson.toJson(endpoint.handleDeathHeatmap(token, query));
     }
 
     private String handleArenaWaveCorrelation(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
         ArenaDashboardEndpoint.AnalyticsQueryParams query = buildArenaParams(params, true);
-        return gson.toJson(arenaEndpoint.handleWaveCorrelation(token, query));
+        return gson.toJson(endpoint.handleWaveCorrelation(token, query));
     }
 
     private String handleArenaTemplatesFailureRate(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
-        return gson.toJson(arenaEndpoint.handleTemplatesFailureRate(token));
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
+        return gson.toJson(endpoint.handleTemplatesFailureRate(token));
     }
 
     private String handleArenaExportBuildMetrics(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
         ArenaDashboardEndpoint.AnalyticsQueryParams query = buildArenaParams(params, true);
-        ArenaDashboardEndpoint.ExportFormat format = parseExportFormat(params.get("format"));
-        return gson.toJson(arenaEndpoint.handleExportBuildMetrics(token, query, format));
+        ArenaDashboardEndpoint.ExportFormat format = parseExportFormat(paramOrEmpty(params, "format"));
+        return gson.toJson(endpoint.handleExportBuildMetrics(token, query, format));
     }
 
     private String handleArenaExportPerformance(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
         ArenaDashboardEndpoint.AnalyticsQueryParams query = buildArenaParams(params, true);
-        ArenaDashboardEndpoint.ExportFormat format = parseExportFormat(params.get("format"));
-        return gson.toJson(arenaEndpoint.handleExportPerformance(token, query, format));
+        ArenaDashboardEndpoint.ExportFormat format = parseExportFormat(paramOrEmpty(params, "format"));
+        return gson.toJson(endpoint.handleExportPerformance(token, query, format));
     }
 
     private String handleArenaExportWaveCorrelation(HttpExchange exchange) {
         Map<String, String> params = parseQueryParams(exchange);
-        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(exchange, params);
+        ArenaDashboardEndpoint endpoint = requireArenaEndpoint();
+        ArenaDashboardEndpoint.TokenInfo token = requireArenaToken(endpoint, exchange, params);
         ArenaDashboardEndpoint.AnalyticsQueryParams query = buildArenaParams(params, true);
         ArenaDashboardEndpoint.ExportFormat format = parseExportFormat(params.get("format"));
-        return gson.toJson(arenaEndpoint.handleExportWaveCorrelation(token, query, format));
+        return gson.toJson(endpoint.handleExportWaveCorrelation(token, query, format));
     }
 
     private static final java.lang.reflect.Type STRING_MAP_TYPE =
@@ -475,10 +513,17 @@ public class TelemetryDashboardServer {
 
     // ========== Query Helpers ==========
 
-    private ArenaDashboardEndpoint.TokenInfo requireArenaToken(HttpExchange exchange, Map<String, String> params) {
-        if (arenaEndpoint == null) {
+    private ArenaDashboardEndpoint requireArenaEndpoint() {
+        ArenaDashboardEndpoint endpoint = arenaEndpoint;
+        if (endpoint == null) {
             throw new IllegalStateException("Arena analytics not initialized");
         }
+        return endpoint;
+    }
+
+    private ArenaDashboardEndpoint.TokenInfo requireArenaToken(ArenaDashboardEndpoint endpoint,
+                                                              HttpExchange exchange,
+                                                              Map<String, String> params) {
         String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
         if ((authHeader == null || authHeader.isBlank()) && params != null) {
             String tokenParam = params.get("token");
@@ -486,11 +531,11 @@ public class TelemetryDashboardServer {
                 authHeader = "Bearer " + tokenParam.trim();
             }
         }
-        Optional<ArenaDashboardEndpoint.TokenInfo> token = arenaEndpoint.authenticate(authHeader);
+        Optional<ArenaDashboardEndpoint.TokenInfo> token = endpoint.authenticate(authHeader);
         if (token.isEmpty()) {
             throw new SecurityException("Unauthorized");
         }
-        if (!arenaEndpoint.checkRateLimit(token.get().token())) {
+        if (!endpoint.checkRateLimit(token.get().token())) {
             throw new SecurityException("Rate limit exceeded");
         }
         return token.get();
@@ -512,21 +557,22 @@ public class TelemetryDashboardServer {
         }
 
         Instant now = Instant.now();
-        Instant from = parseInstantParam(params.get("from"));
-        Instant to = parseInstantParam(params.get("to"));
+        Instant from = parseInstantParam(paramOrEmpty(params, "from"));
+        Instant to = parseInstantParam(paramOrEmpty(params, "to"));
         if (from == null || to == null) {
             Duration rangeDuration = parseRangeDuration(params.getOrDefault("range", "7d"));
             from = now.minus(rangeDuration);
             to = now;
         }
 
-        int page = getIntParam(params.get("page"), 0);
-        int pageSize = getIntParam(params.get("pageSize"), 100);
+        int page = getIntParam(paramOrEmpty(params, "page"), 0);
+        int pageSize = getIntParam(paramOrEmpty(params, "pageSize"), 100);
 
         return new ArenaDashboardEndpoint.AnalyticsQueryParams(templateId, templateVersion, from, to, page, pageSize);
     }
 
-    private Instant parseInstantParam(String value) {
+    @Nullable
+    private Instant parseInstantParam(@Nullable String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
@@ -552,7 +598,7 @@ public class TelemetryDashboardServer {
         };
     }
 
-    private ArenaDashboardEndpoint.ExportFormat parseExportFormat(String value) {
+    private ArenaDashboardEndpoint.ExportFormat parseExportFormat(@Nullable String value) {
         if (value == null || value.isBlank()) {
             return ArenaDashboardEndpoint.ExportFormat.JSON;
         }
@@ -593,7 +639,9 @@ public class TelemetryDashboardServer {
             try {
                 List<Map<String, Object>> result = executeQuery("SELECT COUNT(*) as cnt FROM " + table);
                 if (!result.isEmpty()) {
-                    counts.put(table, ((Number) result.get(0).get("cnt")).longValue());
+                    Object countValue = result.get(0).get("cnt");
+                    long count = countValue instanceof Number ? ((Number) countValue).longValue() : 0L;
+                    counts.put(table, count);
                 }
             } catch (Exception e) {
                 counts.put(table, -1L);
@@ -613,7 +661,9 @@ public class TelemetryDashboardServer {
                              " WHERE ts >= NOW() - INTERVAL '15 minutes'";
                 List<Map<String, Object>> result = executeQuery(sql);
                 if (!result.isEmpty()) {
-                    activity.put(table + "_15min", ((Number) result.get(0).get("cnt")).longValue());
+                    Object countValue = result.get(0).get("cnt");
+                    long count = countValue instanceof Number ? ((Number) countValue).longValue() : 0L;
+                    activity.put(table + "_15min", count);
                 }
             } catch (Exception e) {
                 // Table might not have 'ts' column
@@ -637,11 +687,11 @@ public class TelemetryDashboardServer {
         return -1;
     }
 
-    private List<Map<String, Object>> queryTable(String table, String from, String to, int limit) {
+    private List<Map<String, Object>> queryTable(String table, @Nullable String from, @Nullable String to, int limit) {
         return queryTable(table, from, to, limit, "ts");
     }
 
-    private List<Map<String, Object>> queryTable(String table, String from, String to, int limit, String tsColumn) {
+    private List<Map<String, Object>> queryTable(String table, @Nullable String from, @Nullable String to, int limit, String tsColumn) {
         StringBuilder sql = new StringBuilder("SELECT * FROM ").append(table);
         List<String> conditions = new ArrayList<>();
 
@@ -661,8 +711,8 @@ public class TelemetryDashboardServer {
         return executeQuery(sql.toString());
     }
 
-    private List<Map<String, Object>> queryTableWithFilters(String table, String from, String to, int limit,
-                                                            String tsColumn, Map<String, String> filters) {
+    private List<Map<String, Object>> queryTableWithFilters(String table, @Nullable String from, @Nullable String to, int limit,
+                                                            String tsColumn, @Nullable Map<String, String> filters) {
         StringBuilder sql = new StringBuilder("SELECT * FROM ").append(table);
         List<String> conditions = new ArrayList<>();
 
@@ -735,7 +785,7 @@ public class TelemetryDashboardServer {
         return executeQuery(sql);
     }
 
-    private List<Map<String, Object>> getWeaponStats(Map<String, String> filters, String from, String to) {
+    private List<Map<String, Object>> getWeaponStats(@Nullable Map<String, String> filters, @Nullable String from, @Nullable String to) {
         StringBuilder sql = new StringBuilder("""
             SELECT
                 COALESCE(NULLIF(JSON_EXTRACT_STRING(attacker_state, '$.mainHand'), ''), 'fist') as weapon,
@@ -818,7 +868,7 @@ public class TelemetryDashboardServer {
             default -> "24 hours";
         };
     }
-    private List<Map<String, Object>> getHeatmapData(String type, String room, int limit) {
+    private List<Map<String, Object>> getHeatmapData(@Nullable String type, @Nullable String room, int limit) {
         StringBuilder sql = new StringBuilder("SELECT * FROM spatial_heatmaps");
         List<String> conditions = new ArrayList<>();
 
@@ -898,7 +948,12 @@ public class TelemetryDashboardServer {
         return params;
     }
 
-    private int getIntParam(String value, int defaultValue) {
+    private static String paramOrEmpty(Map<String, String> params, String key) {
+        String value = params.get(key);
+        return value == null ? "" : value;
+    }
+
+    private int getIntParam(@Nullable String value, int defaultValue) {
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
@@ -955,7 +1010,7 @@ public class TelemetryDashboardServer {
         }
     }
 
-    private class StaticFileHandler implements HttpHandler {
+    private static class StaticFileHandler implements HttpHandler {
         private final String resourceBase;
 
         StaticFileHandler(String resourceBase) {

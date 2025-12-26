@@ -12,7 +12,9 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.client.collision.transform.ModelPartTransformCapture;
+
 @Mixin(LivingEntityRenderer.class)
+@SuppressWarnings("UnusedMethod")
 public class LivingEntityRendererMixin<T extends LivingEntity> {
 
     /**
@@ -21,9 +23,9 @@ public class LivingEntityRendererMixin<T extends LivingEntity> {
      */
     @Inject(method = "render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
             at = @At("HEAD"))
-    private void devmod$beginTransformCapture(T entity, float entityYaw, float partialTick,
-                                               PoseStack poseStack, MultiBufferSource buffer,
-                                               int packedLight, CallbackInfo ci) {
+    void devmod$beginTransformCapture(T entity, float entityYaw, float partialTick,
+                                      PoseStack poseStack, MultiBufferSource buffer,
+                                      int packedLight, CallbackInfo ci) {
         // Only capture if OBB system needs it
         if (shouldCaptureTransforms()) {
             ModelPartTransformCapture.beginCapture(entity);
@@ -36,9 +38,9 @@ public class LivingEntityRendererMixin<T extends LivingEntity> {
      */
     @Inject(method = "render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
             at = @At("RETURN"))
-    private void devmod$endTransformCapture(T entity, float entityYaw, float partialTick,
-                                             PoseStack poseStack, MultiBufferSource buffer,
-                                             int packedLight, CallbackInfo ci) {
+    void devmod$endTransformCapture(T entity, float entityYaw, float partialTick,
+                                    PoseStack poseStack, MultiBufferSource buffer,
+                                    int packedLight, CallbackInfo ci) {
         if (ModelPartTransformCapture.isCapturing()) {
             ModelPartTransformCapture.endCapture();
         }

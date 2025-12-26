@@ -1,5 +1,7 @@
 package com.devmod.network.handlers;
 
+import java.util.Objects;
+
 import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -8,6 +10,7 @@ import com.devmod.abilities.AbilityActionPayload;
 import com.devmod.abilities.DashAbilitySystem;
 import com.devmod.abilities.DodgeAbilitySystem;
 import com.devmod.abilities.StaminaSyncPayload;
+
 public final class AbilityNetworkHandler extends NetworkHandlerBase {
 
     private AbilityNetworkHandler() {}
@@ -24,11 +27,14 @@ public final class AbilityNetworkHandler extends NetworkHandlerBase {
             // Rate limit check to prevent ability spam
             var validation = security().validatePacket(player, "ability_action", false);
             if (!validation.isSuccess()) {
-                if (validation.getErrorMessage() != null
-                    && validation.getErrorMessage().toLowerCase().contains("rate limit")) {
+                String errorMessage = Objects.requireNonNullElse(
+                    validation.getErrorMessage(),
+                    "Ability action rejected"
+                );
+                if (errorMessage.toLowerCase().contains("rate limit")) {
                     security().recordRateLimitHit("ability_action", player.getName().getString());
                 } else {
-                    security().recordRejection("ability_action", validation.getErrorMessage());
+                    security().recordRejection("ability_action", errorMessage);
                 }
                 return; // Fail closed: rate limited
             }

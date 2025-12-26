@@ -60,6 +60,7 @@ import com.devmod.stats.FuelStats;
 import com.devmod.stats.UsableStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.I18n;
+
 public final class MobItemNetworkHandler extends NetworkHandlerBase {
 
     private MobItemNetworkHandler() {}
@@ -73,7 +74,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "mob_stats", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
                     return;
                 }
 
@@ -174,8 +175,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "weapon_stats", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
-                    sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<unknown>", validation.getErrorMessage());
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
+                    sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<unknown>", resolveValidationError(validation));
                     return;
                 }
 
@@ -225,8 +226,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
             PacketValidator security = security();
             ValidationResult validation = security.validatePacket(player, "weapon_stats_nbt", true);
             if (!validation.isSuccess()) {
-                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
-                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<unknown>", validation.getErrorMessage());
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<unknown>", resolveValidationError(validation));
                 return;
             }
 
@@ -279,8 +280,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
             PacketValidator security = security();
             ValidationResult validation = security.validatePacket(player, "weapon_stats_v2", true);
             if (!validation.isSuccess()) {
-                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
-                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<unknown>", validation.getErrorMessage());
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<unknown>", resolveValidationError(validation));
                 return;
             }
 
@@ -343,8 +344,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "ranged_weapon", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
-                    sendEditorConfirm(player, false, payload.isGlobal(), "ranged", "<unknown>", validation.getErrorMessage());
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
+                    sendEditorConfirm(player, false, payload.isGlobal(), "ranged", "<unknown>", resolveValidationError(validation));
                     return;
                 }
 
@@ -395,8 +396,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "armor_stats", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
-                    sendEditorConfirm(player, false, payload.isGlobal(), "armor", payload.itemName(), validation.getErrorMessage());
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
+                    sendEditorConfirm(player, false, payload.isGlobal(), "armor", payload.itemName(), resolveValidationError(validation));
                     return;
                 }
 
@@ -475,8 +476,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
             PacketValidator security = security();
             ValidationResult validation = security.validatePacket(player, "armor_stats_v2", true);
             if (!validation.isSuccess()) {
-                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
-                sendEditorConfirm(player, false, payload.isGlobal(), "armor", "<unknown>", validation.getErrorMessage());
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
+                sendEditorConfirm(player, false, payload.isGlobal(), "armor", "<unknown>", resolveValidationError(validation));
                 return;
             }
 
@@ -575,8 +576,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
             PacketValidator security = security();
             ValidationResult validation = security.validatePacket(player, "usable_stats", true);
             if (!validation.isSuccess()) {
-                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
-                sendEditorConfirm(player, false, payload.isGlobal(), "usable", "<unknown>", validation.getErrorMessage());
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
+                sendEditorConfirm(player, false, payload.isGlobal(), "usable", "<unknown>", resolveValidationError(validation));
                 return;
             }
 
@@ -635,8 +636,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
             PacketValidator security = security();
             ValidationResult validation = security.validatePacket(player, "food_stats", true);
             if (!validation.isSuccess()) {
-                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
-                sendEditorConfirm(player, false, payload.isGlobal(), "food", "<unknown>", validation.getErrorMessage());
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
+                sendEditorConfirm(player, false, payload.isGlobal(), "food", "<unknown>", resolveValidationError(validation));
                 return;
             }
 
@@ -700,8 +701,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
             PacketValidator security = security();
             ValidationResult validation = security.validatePacket(player, "fuel_stats", true);
             if (!validation.isSuccess()) {
-                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
-                sendEditorConfirm(player, false, payload.isGlobal(), "fuel", "<unknown>", validation.getErrorMessage());
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
+                sendEditorConfirm(player, false, payload.isGlobal(), "fuel", "<unknown>", resolveValidationError(validation));
                 return;
             }
 
@@ -759,7 +760,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "equip_mob", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
                     return;
                 }
 
@@ -792,7 +793,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "modify_item", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", resolveValidationError(validation)));
                     return;
                 }
 
@@ -841,6 +842,10 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     // HELPER METHODS
     // =================================================================================
+    private static String resolveValidationError(PacketValidator.ValidationResult validation) {
+        return Objects.requireNonNullElse(validation.getErrorMessage(), "Validation failed");
+    }
+
     private static void applyAttribute(Mob mob, Holder<Attribute> attr, double value, List<AttributeInstance> syncList) {
         AttributeInstance instance = mob.getAttribute(nn(attr));
         if (instance != null) {

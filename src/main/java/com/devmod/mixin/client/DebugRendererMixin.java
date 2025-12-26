@@ -1,6 +1,7 @@
 package com.devmod.mixin.client;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,59 +16,61 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.debug.DebugRenderer;
 
 import com.devmod.debug.client.DebugRenderBools;
+
 @Mixin(DebugRenderer.class)
+@SuppressWarnings({"NullAway.Init", "UnusedMethod"})
 public class DebugRendererMixin {
 
-    @Shadow @Final public net.minecraft.client.renderer.debug.PathfindingRenderer pathfindingRenderer;
-    @Shadow @Final public net.minecraft.client.renderer.debug.GoalSelectorDebugRenderer goalSelectorRenderer;
-    @Shadow @Final public net.minecraft.client.renderer.debug.RaidDebugRenderer raidDebugRenderer;
-    @Shadow @Final public net.minecraft.client.renderer.debug.VillageSectionsDebugRenderer villageSectionsDebugRenderer;
-    @Shadow @Final public net.minecraft.client.renderer.debug.BrainDebugRenderer brainDebugRenderer;
-    @Shadow @Final public net.minecraft.client.renderer.debug.BeeDebugRenderer beeDebugRenderer;
-    @Shadow @Final public net.minecraft.client.renderer.debug.GameEventListenerRenderer gameEventListenerRenderer;
-    @Shadow @Final public net.minecraft.client.renderer.debug.StructureRenderer structureRenderer;
-    @Shadow @Final public net.minecraft.client.renderer.debug.BreezeDebugRenderer breezeDebugRenderer;
+    @Nullable @Shadow @Final public net.minecraft.client.renderer.debug.PathfindingRenderer pathfindingRenderer;
+    @Nullable @Shadow @Final public net.minecraft.client.renderer.debug.GoalSelectorDebugRenderer goalSelectorRenderer;
+    @Nullable @Shadow @Final public net.minecraft.client.renderer.debug.RaidDebugRenderer raidDebugRenderer;
+    @Nullable @Shadow @Final public net.minecraft.client.renderer.debug.VillageSectionsDebugRenderer villageSectionsDebugRenderer;
+    @Nullable @Shadow @Final public net.minecraft.client.renderer.debug.BrainDebugRenderer brainDebugRenderer;
+    @Nullable @Shadow @Final public net.minecraft.client.renderer.debug.BeeDebugRenderer beeDebugRenderer;
+    @Nullable @Shadow @Final public net.minecraft.client.renderer.debug.GameEventListenerRenderer gameEventListenerRenderer;
+    @Nullable @Shadow @Final public net.minecraft.client.renderer.debug.StructureRenderer structureRenderer;
+    @Nullable @Shadow @Final public net.minecraft.client.renderer.debug.BreezeDebugRenderer breezeDebugRenderer;
 
     /**
      * Inject at the end of render() to actually render the debug data.
      */
     @Inject(method = "render", at = @At("TAIL"))
-    private void devmod_render(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource.BufferSource bufferSource,
-                               double camX, double camY, double camZ, @Nonnull CallbackInfo ci) {
+    void devmod_render(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource.BufferSource bufferSource,
+                       double camX, double camY, double camZ, @Nonnull CallbackInfo ci) {
 
-        if (DebugRenderBools.ENTITY_PATHING) {
+        if (DebugRenderBools.ENTITY_PATHING && this.pathfindingRenderer != null) {
             this.pathfindingRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.ENTITY_GOALS) {
+        if (DebugRenderBools.ENTITY_GOALS && this.goalSelectorRenderer != null) {
             this.goalSelectorRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.RAIDS) {
+        if (DebugRenderBools.RAIDS && this.raidDebugRenderer != null) {
             this.raidDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.ENTITY_BRAINS) {
+        if (DebugRenderBools.ENTITY_BRAINS && this.brainDebugRenderer != null) {
             this.brainDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.BEES || DebugRenderBools.BEE_HIVES) {
+        if ((DebugRenderBools.BEES || DebugRenderBools.BEE_HIVES) && this.beeDebugRenderer != null) {
             this.beeDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.GAME_EVENTS) {
+        if (DebugRenderBools.GAME_EVENTS && this.gameEventListenerRenderer != null) {
             this.gameEventListenerRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.STRUCTURES) {
+        if (DebugRenderBools.STRUCTURES && this.structureRenderer != null) {
             this.structureRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.POI) {
+        if (DebugRenderBools.POI && this.villageSectionsDebugRenderer != null) {
             this.villageSectionsDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.BREEZE) {
+        if (DebugRenderBools.BREEZE && this.breezeDebugRenderer != null) {
             this.breezeDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
     }
@@ -76,15 +79,33 @@ public class DebugRendererMixin {
      * Clear all renderers when they should be reset.
      */
     @Inject(method = "clear", at = @At("TAIL"))
-    private void devmod_clear(@Nonnull CallbackInfo ci) {
-        this.pathfindingRenderer.clear();
-        this.goalSelectorRenderer.clear();
-        this.raidDebugRenderer.clear();
-        this.brainDebugRenderer.clear();
-        this.beeDebugRenderer.clear();
-        this.gameEventListenerRenderer.clear();
-        this.structureRenderer.clear();
-        this.villageSectionsDebugRenderer.clear();
-        this.breezeDebugRenderer.clear();
+    void devmod_clear(@Nonnull CallbackInfo ci) {
+        if (this.pathfindingRenderer != null) {
+            this.pathfindingRenderer.clear();
+        }
+        if (this.goalSelectorRenderer != null) {
+            this.goalSelectorRenderer.clear();
+        }
+        if (this.raidDebugRenderer != null) {
+            this.raidDebugRenderer.clear();
+        }
+        if (this.brainDebugRenderer != null) {
+            this.brainDebugRenderer.clear();
+        }
+        if (this.beeDebugRenderer != null) {
+            this.beeDebugRenderer.clear();
+        }
+        if (this.gameEventListenerRenderer != null) {
+            this.gameEventListenerRenderer.clear();
+        }
+        if (this.structureRenderer != null) {
+            this.structureRenderer.clear();
+        }
+        if (this.villageSectionsDebugRenderer != null) {
+            this.villageSectionsDebugRenderer.clear();
+        }
+        if (this.breezeDebugRenderer != null) {
+            this.breezeDebugRenderer.clear();
+        }
     }
 }
