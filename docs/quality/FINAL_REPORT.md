@@ -9,8 +9,8 @@ Duration: multi-session (2025-12-25 to 2025-12-26)
 ## Build Status
 
 ```
-OK ./gradlew build: SUCCESS (configuration cache reused; tasks mostly up-to-date)
-OK ./gradlew test: SUCCESS (configuration cache reused; tasks up-to-date)
+OK ./gradlew build: SUCCESS (configuration cache reused; full test suite executed)
+OK ./gradlew test: SUCCESS (jacoco report generated)
 OK ./gradlew compileJava --rerun-tasks: SUCCESS (100 warnings)
 OK ./gradlew compileTestJava --rerun-tasks: SUCCESS (59 warnings)
 ```
@@ -25,6 +25,7 @@ OK ./gradlew compileTestJava --rerun-tasks: SUCCESS (59 warnings)
 4. Null-safety cleanup in EnduranceQuestManager (local copy for @Nullable capability).
 5. Network validation error messages normalized to non-null values in handler flows.
 6. Telemetry dashboard query params normalized to empty strings; recipe data annotations aligned to javax @Nullable; mixin-only init/unused warnings suppressed where appropriate.
+7. Client UI/editor nullability annotations and override markers to reduce NullAway/MissingOverride noise.
 
 See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 
@@ -34,7 +35,7 @@ See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 
 Compiler warnings remain (ErrorProne/NullAway), observed in the rerun builds and final build:
 
-- 100 warnings in `compileJava` (NullAway, JdkObsolete, NarrowCalculation, MissingOverride, IntLongMath, MutablePublicArray).
+- 100 warnings in `compileJava` (NullAway, JdkObsolete, NarrowCalculation, MissingOverride, IntLongMath, MutablePublicArray, InlineFormatString, HidingField).
 - 59 warnings in `compileTestJava` (NullAway, UnnecessaryAsync, ThreadPriorityCheck, ReturnValueIgnored, ModifiedButNotUsed, UnnecessaryParentheses).
 
 Primary hotspots:
