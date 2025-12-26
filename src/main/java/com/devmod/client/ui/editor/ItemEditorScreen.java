@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -200,7 +201,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private final ItemStack item;
     private final ItemStack originalItem;
     private final EditorStartTab requestedTab;
+    @Nullable
     private EditorModule activeModule;
+    @Nullable
     private SlotSelector.SlotInfo selectedSlot;
 
     // Mode flags are now managed entirely by editorState
@@ -214,21 +217,25 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private final ScrollableContentArea scrollArea = new ScrollableContentArea();
 
     // UI state
+    @Nullable
     private String statusMessage = null;
     private int statusColor = 0;
     private int statusTicks = 0;
 
     // Tooltip state
+    @Nullable
     private String tooltipText = null;
     private int tooltipX = 0;
     private int tooltipY = 0;
 
     // Dialog state
+    @Nullable
     private ConfirmDialog activeDialog = null;
     private long lastSaveTimestamp = 0;
     private int historyScrollOffset = 0;
     // Low-confidence detection system
     private final LowConfidenceDetector lowConfidenceDetector = new LowConfidenceDetector();
+    @Nullable
     private String lastLoadedPreset = null;
     private final FavoritePresetStore favoriteStore = new FavoritePresetStore();
     private final CraftingInfoPanel craftingPanel = new CraftingInfoPanel();
@@ -243,13 +250,18 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private final HelpOverlay helpOverlay = new HelpOverlay();
 
     // Debug panel
+    @Nullable
     private DebugPanel debugPanel;
 
     // Multi-edit subsystem
+    @Nullable
     private MultiEditManager multiEditManager;
+    @Nullable
     private MultiEditPanel multiEditPanel;
     private boolean showMultiEditPanel = false;
+    @Nullable
     private TemplateOverlay templateOverlay;
+    @Nullable
     private PresetSelectorOverlay presetSelectorOverlay;
 
     // Keyboard state for F3+D combo
@@ -298,12 +310,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Resolve and initialize the module
-        activeModule = resolveModule(item, requestedTab);
-        editorState.setActiveModule(activeModule);
-        activeModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO() : color));
-        activeModule.setModuleSwitchCallback(this::switchModule);
-        activeModule.setItem(item);
-        activeModule.init(layout);
+        EditorModule resolvedModule = Objects.requireNonNull(resolveModule(item, requestedTab), "active module");
+        activeModule = resolvedModule;
+        editorState.setActiveModule(resolvedModule);
+        resolvedModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO() : color));
+        resolvedModule.setModuleSwitchCallback(this::switchModule);
+        resolvedModule.setItem(item);
+        resolvedModule.init(layout);
 
         // Configure and check low-confidence detection system
         lowConfidenceDetector.setStatusConsumer((msg, color) -> showStatus(msg, color));
@@ -311,37 +324,41 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             onClose();
             Minecraft.getInstance().setScreen(null);
         });
-        lowConfidenceDetector.checkAndWarn(item, requestedTab, activeModule);
+        lowConfidenceDetector.checkAndWarn(item, requestedTab, resolvedModule);
         if (lowConfidenceDetector.hasPendingDetection()) {
             scrollArea.setScrollOffset(0); // ensure dialog visible
         }
 
-        activeModule.setDirtyTrackingEnabled(true);
-        activeModule.clearDirty();
+        resolvedModule.setDirtyTrackingEnabled(true);
+        resolvedModule.clearDirty();
         configureHeader();
         configureLeftColumn();
         configureFooterCallbacks();
 
         // Initialize multi-edit subsystem
-        this.multiEditManager = new MultiEditManager();
-        this.multiEditPanel = new MultiEditPanel(multiEditManager, () -> !isPreviewMode(), this::getActiveItemType);
-        this.multiEditPanel.setShowDialogCallback(dialog -> {
+        MultiEditManager editManager = new MultiEditManager();
+        multiEditManager = editManager;
+        MultiEditPanel editPanel = new MultiEditPanel(editManager, () -> !isPreviewMode(), this::getActiveItemType);
+        multiEditPanel = editPanel;
+        editPanel.setShowDialogCallback(dialog -> {
             activeDialog = dialog;
-            activeDialog.show();
+            dialog.show();
         });
-        this.multiEditManager.setPersistenceHandler((stack, slot) -> persistMultiEditItem(stack, slot == null ? -1 : slot));
-        this.debugPanel = new DebugPanel();
-        this.templateOverlay = new TemplateOverlay();
-        this.templateOverlay.onClose(this::closeOverlay);
-        this.templateOverlay.onApply(this::handleTemplateApply);
+        editManager.setPersistenceHandler((stack, slot) -> persistMultiEditItem(stack, slot == null ? -1 : slot));
+        debugPanel = new DebugPanel();
+        TemplateOverlay templateOverlayInstance = new TemplateOverlay();
+        templateOverlay = templateOverlayInstance;
+        templateOverlayInstance.onClose(this::closeOverlay);
+        templateOverlayInstance.onApply(this::handleTemplateApply);
 
-        this.presetSelectorOverlay = new PresetSelectorOverlay();
-        this.presetSelectorOverlay.setContext(getActiveItemType());
-        this.presetSelectorOverlay.onClose(this::closeOverlay);
-        this.presetSelectorOverlay.onApply(this::applyPreset);
-        this.presetSelectorOverlay.onDelete(this::deletePreset);
-        this.presetSelectorOverlay.onRename(this::renamePreset);
-        this.presetSelectorOverlay.onSaveCurrent(this::saveCurrentAsPreset);
+        PresetSelectorOverlay presetOverlay = new PresetSelectorOverlay();
+        presetSelectorOverlay = presetOverlay;
+        presetOverlay.setContext(getActiveItemType());
+        presetOverlay.onClose(this::closeOverlay);
+        presetOverlay.onApply(this::applyPreset);
+        presetOverlay.onDelete(this::deletePreset);
+        presetOverlay.onRename(this::renamePreset);
+        presetOverlay.onSaveCurrent(this::saveCurrentAsPreset);
 
         // Invalidate cache on init
         EditorCache.INSTANCE.invalidateAll();
@@ -445,14 +462,15 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Resolve and initialize the new module
-        activeModule = resolveModule(item, targetTab);
-        editorState.setActiveModule(activeModule);
-        activeModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO() : color));
-        activeModule.setModuleSwitchCallback(this::switchModule);
-        activeModule.setItem(item);
-        activeModule.init(layout);
-        activeModule.setDirtyTrackingEnabled(true);
-        activeModule.clearDirty();
+        EditorModule resolvedModule = Objects.requireNonNull(resolveModule(item, targetTab), "active module");
+        activeModule = resolvedModule;
+        editorState.setActiveModule(resolvedModule);
+        resolvedModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO() : color));
+        resolvedModule.setModuleSwitchCallback(this::switchModule);
+        resolvedModule.setItem(item);
+        resolvedModule.init(layout);
+        resolvedModule.setDirtyTrackingEnabled(true);
+        resolvedModule.clearDirty();
 
         // Update UI components
         configureHeader();
@@ -461,7 +479,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         // Reset scroll
         scrollArea.setScrollOffset(0);
 
-        showStatus("Switched to " + activeModule.getTitle(), UIConstants.Accent.INFO());
+        showStatus("Switched to " + resolvedModule.getTitle(), UIConstants.Accent.INFO());
         DevMod.LOGGER.info("[ItemEditor] Switched module to: {}", targetTab);
     }
 
@@ -548,13 +566,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             return;
         }
         if (!isPreviewMode() && activeModule != null && activeModule.hasUnsavedChanges()) {
-            activeDialog = ConfirmDialog.switchSlot(slot.label(), activeModule.getPendingChanges().size(),
+            ConfirmDialog dialog = ConfirmDialog.switchSlot(slot.label(), activeModule.getPendingChanges().size(),
                 () -> {
                     selectedSlot = slot;
                     showStatus("Switched to " + slot.label(), UIConstants.Accent.BLUE());
                 },
                 () -> {});
-            activeDialog.show();
+            activeDialog = dialog;
+            dialog.show();
             return;
         }
         selectedSlot = slot;
@@ -573,7 +592,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         // Switching from APPLY -> PREVIEW with pending changes: confirm discard
         if (preview && !isPreviewMode() && activeModule != null && activeModule.hasUnsavedChanges()) {
-            activeDialog = ConfirmDialog.switchModeToPreview(
+            ConfirmDialog dialog = ConfirmDialog.switchModeToPreview(
                 activeModule.getPendingChanges().size(),
                 () -> {
                     switchToPreviewMode(true);
@@ -586,7 +605,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                     header.getModeBadge().closeDropdown();
                 }
             );
-            activeDialog.show();
+            activeDialog = dialog;
+            dialog.show();
             return;
         }
 
@@ -660,11 +680,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         switch (actionId) {
             case "reset" -> {
                 if (activeModule != null) {
-                    activeDialog = ConfirmDialog.resetToDefault(() -> {
-                        activeModule.resetToOriginal();
+                    EditorModule module = Objects.requireNonNull(activeModule, "active module");
+                    ConfirmDialog dialog = ConfirmDialog.resetToDefault(() -> {
+                        module.resetToOriginal();
                         showStatus("Reset to original", UIConstants.Accent.ORANGE());
                     }, () -> {});
-                    activeDialog.show();
+                    activeDialog = dialog;
+                    dialog.show();
                 }
             }
             case "cancel" -> handleCloseRequest();
@@ -793,6 +815,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int contentWidth = contentBounds.width() - UIConstants.Spacing.MD * 2;
         graphics.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, UIConstants.Background.CONTENT());
         if (activeModule != null) {
+            EditorModule module = Objects.requireNonNull(activeModule, "active module");
             perfMonitor.startTiming("render_content");
             int viewportHeight = contentHeight - UIConstants.Spacing.MD * 2;
             scrollArea.render(graphics, contentX, contentY, contentWidth, contentHeight,
@@ -800,8 +823,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                     ResponsiveLayout.Rect bounds = new ResponsiveLayout.Rect(x, y, w, viewportHeight);
                     // Pass raw mouseY (screen space) - render Y coordinates are also screen space
                     // Scroll adjustment is only needed for click handling, not hover detection
-                    activeModule.renderContent(g, bounds, mx, my);
-                    return activeModule.calculateContentHeight();
+                    module.renderContent(g, bounds, mx, my);
+                    return module.calculateContentHeight();
                 });
             perfMonitor.endTiming("render_content");
         }
@@ -834,7 +857,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         if (overlayController.isPresetsVisible() && supportsDataOps() && presetSelectorOverlay != null) {
             presetSelectorOverlay.render(graphics, font, width, height, mouseX, mouseY);
         }
-        if (overlayController.isTemplatesVisible()) {
+        if (overlayController.isTemplatesVisible() && templateOverlay != null) {
             templateOverlay.render(graphics, font, width, height, mouseX, mouseY);
         }
         if (overlayController.isCraftingVisible()) {
@@ -1663,12 +1686,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     @Override
     public void handleCloseRequest() {
         if (!isPreviewMode() && activeModule != null && activeModule.hasUnsavedChanges()) {
-            activeDialog = ConfirmDialog.unsavedChanges(
+            ConfirmDialog dialog = ConfirmDialog.unsavedChanges(
                 activeModule.getPendingChanges().size(),
                 this::onClose,
                 () -> {}
             );
-            activeDialog.show();
+            activeDialog = dialog;
+            dialog.show();
             return;
         }
         onClose();
@@ -1792,8 +1816,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private void openTemplatesOverlay() {
         ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
         List<ItemEditorDataManager.TemplateData> list = new ArrayList<>(data.getTemplates().values());
-        String category = detectTemplateCategory();
-        templateOverlay.setTemplates(list, category);
+        @Nullable String category = detectTemplateCategory();
+        if (templateOverlay != null) {
+            templateOverlay.setTemplates(list, category);
+        }
         overlayController.toggle(OverlayController.OverlayType.TEMPLATES);
     }
 
@@ -1820,7 +1846,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         return key == null ? "unknown" : key.toString();
     }
 
-    private String detectTemplateCategory() {
+    private @Nullable String detectTemplateCategory() {
         String itemId = getCurrentItemId();
         return ItemEditorDataManager.INSTANCE.suggestTemplate(itemId)
             .map(t -> t.itemCategory)
@@ -1948,14 +1974,15 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private void handleTemplateApply(ItemEditorDataManager.TemplateData template) {
         if (template == null) return;
         if (!isPreviewMode() && activeModule != null && activeModule.hasUnsavedChanges()) {
-            activeDialog = ConfirmDialog.unsavedChanges(
+            ConfirmDialog dialog = ConfirmDialog.unsavedChanges(
                 activeModule.getPendingChanges().size(),
                 () -> {
                     applyTemplateInternal(template);
                     closeOverlay();
                 },
                 () -> {});
-            activeDialog.show();
+            activeDialog = dialog;
+            dialog.show();
             return;
         }
         applyTemplateInternal(template);
@@ -2052,19 +2079,21 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void deletePreset(ItemEditorDataManager.PresetData preset) {
         if (preset == null || preset.name == null) return;
-        activeDialog = ConfirmDialog.deletePreset(preset.name,
+        String presetName = preset.name;
+        ConfirmDialog dialog = ConfirmDialog.deletePreset(presetName,
             () -> {
-                ItemEditorDataManager.INSTANCE.deletePreset(preset.name);
-                ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_delete", item.getHoverName().getString(), preset.name);
-                DevMod.LOGGER.info("[Editor] Preset deleted: {}", preset.name);
-                showStatus("Preset deleted: " + preset.name, UIConstants.Accent.BLUE());
+                ItemEditorDataManager.INSTANCE.deletePreset(presetName);
+                ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_delete", item.getHoverName().getString(), presetName);
+                DevMod.LOGGER.info("[Editor] Preset deleted: {}", presetName);
+                showStatus("Preset deleted: " + presetName, UIConstants.Accent.BLUE());
                 if (presetSelectorOverlay != null) {
                     presetSelectorOverlay.refreshPresets();
                 }
             },
             () -> {}  // onCancel - no action needed
         );
-        activeDialog.show();
+        activeDialog = dialog;
+        dialog.show();
     }
 
     private void renamePreset(ItemEditorDataManager.PresetData preset, String newName) {
@@ -2127,22 +2156,24 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             int rowY = startY + i * rowHeight;
             if (mouseY >= rowY && mouseY <= rowY + rowHeight) {
                 ItemEditorDataManager.PresetData preset = favorites.get(i);
+                String presetName = preset.name == null ? FAVORITES_LABEL_FALLBACK : preset.name;
                 Runnable loadAction = () -> {
                     applyPreset(preset);
-                    ItemEditorDataManager.INSTANCE.addHistoryEntry("favorite_load", item.getHoverName().getString(), preset.name);
-                    showStatus("Favorite applied: " + preset.name, UIConstants.Accent.BLUE());
+                    ItemEditorDataManager.INSTANCE.addHistoryEntry("favorite_load", item.getHoverName().getString(), presetName);
+                    showStatus("Favorite applied: " + presetName, UIConstants.Accent.BLUE());
                 };
                 if (activeModule != null && activeModule.hasUnsavedChanges()) {
-                    activeDialog = ConfirmDialog.create(
+                    ConfirmDialog dialog = ConfirmDialog.create(
                         "Apply favorite",
                         "Apply",
                         "Cancel",
                         ConfirmDialog.Style.WARNING,
                         loadAction,
                         () -> {},
-                        "Overwrite current changes with favorite '" + preset.name + "'?"
+                        "Overwrite current changes with favorite '" + presetName + "'?"
                     );
-                    activeDialog.show();
+                    activeDialog = dialog;
+                    dialog.show();
                 } else {
                     loadAction.run();
                 }
@@ -2299,17 +2330,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     @Override
-    public ConfirmDialog activeDialog() {
+    public @Nullable ConfirmDialog activeDialog() {
         return this.activeDialog;
     }
 
     @Override
-    public TemplateOverlay templateOverlay() {
+    public @Nullable TemplateOverlay templateOverlay() {
         return this.templateOverlay;
     }
 
     @Override
-    public PresetSelectorOverlay presetSelectorOverlay() {
+    public @Nullable PresetSelectorOverlay presetSelectorOverlay() {
         return this.presetSelectorOverlay;
     }
 
@@ -2319,7 +2350,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     @Override
-    public DebugPanel debugPanel() {
+    public @Nullable DebugPanel debugPanel() {
         return this.debugPanel;
     }
 
@@ -2329,17 +2360,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     @Override
-    public EditorModule activeModule() {
+    public @Nullable EditorModule activeModule() {
         return this.activeModule;
     }
 
     @Override
-    public MultiEditManager multiEditManager() {
+    public @Nullable MultiEditManager multiEditManager() {
         return this.multiEditManager;
     }
 
     @Override
-    public MultiEditPanel multiEditPanel() {
+    public @Nullable MultiEditPanel multiEditPanel() {
         return this.multiEditPanel;
     }
 
@@ -2444,6 +2475,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         return originalItem;
     }
 
+    @Override
     public boolean isPreviewMode() {
         return editorState.isPreviewMode();
     }
@@ -2452,7 +2484,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         return editorState.isGlobalMode();
     }
 
-    public EditorModule getActiveModule() {
+    public @Nullable EditorModule getActiveModule() {
         return activeModule;
     }
 

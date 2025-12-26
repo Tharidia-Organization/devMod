@@ -2,9 +2,13 @@ package com.devmod.client.ui.editor.systems;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -92,9 +96,11 @@ public class PresetSelectorOverlay extends BaseOverlay {
     private String searchQuery = "";
     private boolean searchFocused = false;
     private String itemCategory = DEFAULT_CATEGORY;
+    @Nullable
     private PresetListEntry selectedEntry = null;
 
     // Rename state
+    @Nullable
     private PresetListEntry renamingEntry = null;
     private String renameBuffer = "";
     private boolean renameFocused = false;
@@ -106,16 +112,22 @@ public class PresetSelectorOverlay extends BaseOverlay {
     // CALLBACKS
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private Consumer<ItemEditorDataManager.PresetData> onApply;
+    @Nullable
     private Consumer<ItemEditorDataManager.PresetData> onDelete;
+    @Nullable
     private BiConsumer<ItemEditorDataManager.PresetData, String> onRename;
+    @Nullable
     private Runnable onSaveCurrent;
+    @Nullable
     private Runnable onClose;
 
     // ═══════════════════════════════════════════════════════════════
     // COMPONENTS (lazy init to avoid this-escape)
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private VirtualizedList<PresetListEntry> presetList;
     private boolean listInitialized = false;
 
@@ -158,6 +170,11 @@ public class PresetSelectorOverlay extends BaseOverlay {
                 .rowRenderer(this::renderPresetRow);
             listInitialized = true;
         }
+    }
+
+    private @Nonnull VirtualizedList<PresetListEntry> requirePresetList() {
+        ensureList();
+        return Objects.requireNonNull(presetList, "presetList");
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -246,13 +263,16 @@ public class PresetSelectorOverlay extends BaseOverlay {
                 ItemEditorDataManager.INSTANCE.getPresetsForItemType(itemCategory);
 
             for (var up : userPresets) {
+                String userPresetName = (up.name == null || up.name.isBlank())
+                    ? "Preset_" + up.createdAt
+                    : up.name;
                 // Avoid duplicates by name
                 boolean alreadyExists = allEntries.stream()
-                    .anyMatch(e -> e.name().equalsIgnoreCase(up.name));
+                    .anyMatch(e -> e.name().equalsIgnoreCase(userPresetName));
                 if (!alreadyExists) {
                     allEntries.add(new PresetListEntry(
-                        PresetBridge.generateId(up.name),
-                        up.name,
+                        PresetBridge.generateId(userPresetName),
+                        userPresetName,
                         "",
                         new PresetScope.Global(),
                         up.itemType != null ? up.itemType : itemCategory,
@@ -267,16 +287,16 @@ public class PresetSelectorOverlay extends BaseOverlay {
     }
 
     private void updateFilteredList() {
-        ensureList();
+        VirtualizedList<PresetListEntry> list = requirePresetList();
         filteredEntries.clear();
 
-        String query = searchQuery.toLowerCase().trim();
+        String query = searchQuery.toLowerCase(Locale.ROOT).trim();
 
         for (var entry : allEntries) {
             if (query.isEmpty() ||
-                entry.name().toLowerCase().contains(query) ||
-                entry.description().toLowerCase().contains(query) ||
-                entry.scope().label().toLowerCase().contains(query)) {
+                entry.name().toLowerCase(Locale.ROOT).contains(query) ||
+                entry.description().toLowerCase(Locale.ROOT).contains(query) ||
+                entry.scope().label().toLowerCase(Locale.ROOT).contains(query)) {
                 filteredEntries.add(entry);
             }
         }
@@ -288,7 +308,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
             return a.name().compareToIgnoreCase(b.name());
         });
 
-        presetList.items(filteredEntries);
+        list.items(filteredEntries);
 
         // Keep selection if still in list, otherwise select first
         if (selectedEntry != null && !filteredEntries.contains(selectedEntry)) {
@@ -297,7 +317,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         if (selectedEntry != null) {
             int idx = filteredEntries.indexOf(selectedEntry);
             if (idx >= 0) {
-                presetList.setSelectedIndex(idx);
+                list.setSelectedIndex(idx);
             }
         }
     }
@@ -386,7 +406,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Preset list
         int listHeight = LIST_VISIBLE_ROWS * LIST_ROW_HEIGHT;
-        presetList.render(graphics, x + PADDING, currentY, width - PADDING * 2, listHeight, mouseX, mouseY);
+        requirePresetList().render(graphics, x + PADDING, currentY, width - PADDING * 2, listHeight, mouseX, mouseY);
         currentY += listHeight + UIConstants.Spacing.SM;
 
         // Preview box or Rename box
@@ -617,7 +637,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         }
 
         // List click
-        if (presetList.mouseClicked(mouseX, mouseY, 0)) {
+        if (requirePresetList().mouseClicked(mouseX, mouseY, 0)) {
             return true;
         }
 
@@ -696,7 +716,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
     @Override
     protected boolean handleMouseScrolled(double mouseX, double mouseY, double scrollDelta,
                                            int panelX, int panelY, int panelW, int panelH) {
-        return presetList.mouseScrolled(mouseX, mouseY, scrollDelta);
+        return requirePresetList().mouseScrolled(mouseX, mouseY, scrollDelta);
     }
 
     @Override
@@ -752,13 +772,15 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Arrow navigation
         if (keyCode == GLFW.GLFW_KEY_UP) {
-            presetList.selectPrevious();
-            selectedEntry = presetList.getSelectedItem();
+            VirtualizedList<PresetListEntry> list = requirePresetList();
+            list.selectPrevious();
+            selectedEntry = list.getSelectedItem();
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_DOWN) {
-            presetList.selectNext();
-            selectedEntry = presetList.getSelectedItem();
+            VirtualizedList<PresetListEntry> list = requirePresetList();
+            list.selectNext();
+            selectedEntry = list.getSelectedItem();
             return true;
         }
 

@@ -11,8 +11,8 @@ Duration: multi-session (2025-12-25 to 2025-12-26)
 ```
 OK ./gradlew build --no-daemon --no-parallel --max-workers=1: SUCCESS (full test suite executed)
 OK ./gradlew test --no-daemon --no-parallel --max-workers=1: SUCCESS (jacoco report generated)
-OK ./gradlew compileJava --rerun-tasks: SUCCESS (100 warnings)
-OK ./gradlew compileTestJava --rerun-tasks: SUCCESS (46 warnings)
+OK ./gradlew compileJava --no-daemon --no-parallel --max-workers=1 --rerun-tasks: SUCCESS (100 warnings)
+OK ./gradlew compileTestJava --no-daemon --no-parallel --max-workers=1 --rerun-tasks: SUCCESS (45 warnings)
 ```
 
 ---
@@ -27,6 +27,7 @@ OK ./gradlew compileTestJava --rerun-tasks: SUCCESS (46 warnings)
 6. Telemetry dashboard query params normalized to empty strings; recipe data annotations aligned to javax @Nullable; mixin-only init/unused warnings suppressed where appropriate.
 7. Client UI/editor nullability annotations and override markers to reduce NullAway/MissingOverride noise.
 8. Debug panel NBT helpers now accept nullable tags to avoid NullAway parameter warnings.
+9. Editor overlays: nullable UI state/overlay fields annotated and dialog/template access guarded without behavior changes.
 
 See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 
@@ -37,7 +38,7 @@ See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 Compiler warnings remain (ErrorProne/NullAway), observed in the rerun builds and final build:
 
 - 100 warnings in `compileJava` (NullAway, JdkObsolete, NarrowCalculation, MissingOverride, IntLongMath, MutablePublicArray, InlineFormatString, HidingField).
-- 46 warnings in `compileTestJava` (NullAway, UnnecessaryAsync, ThreadPriorityCheck, ReturnValueIgnored, ModifiedButNotUsed, UnnecessaryParentheses).
+- 45 warnings in `compileTestJava` (NullAway, UnnecessaryAsync, ThreadPriorityCheck, ReturnValueIgnored, ModifiedButNotUsed, UnnecessaryParentheses).
 
 Primary hotspots:
 - `src/main/java/com/devmod/telemetry/duckdb/DuckDBMigrationService.java`
@@ -94,8 +95,8 @@ See `build/reports/problems/problems-report.html` for the full list.
 ## Verification Commands
 
 ```bash
-./gradlew build
-./gradlew test
-./gradlew compileJava --rerun-tasks
-./gradlew compileTestJava --rerun-tasks
+./gradlew build --no-daemon --no-parallel --max-workers=1
+./gradlew test --no-daemon --no-parallel --max-workers=1
+./gradlew compileJava --no-daemon --no-parallel --max-workers=1 --rerun-tasks
+./gradlew compileTestJava --no-daemon --no-parallel --max-workers=1 --rerun-tasks
 ```

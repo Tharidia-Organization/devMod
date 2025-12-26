@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.component.DataComponents;
@@ -121,6 +123,7 @@ public class ItemEditorRenderer {
     private final PerformanceMonitor perfMonitor = PerformanceMonitor.INSTANCE;
 
     // Tooltip state (managed by renderer, read by screen)
+    @Nullable
     private String tooltipText = null;
     private int tooltipX = 0;
     private int tooltipY = 0;
@@ -573,7 +576,7 @@ public class ItemEditorRenderer {
     }
 
     // Tooltip state accessors
-    public String getTooltipText() { return tooltipText; }
+    public @Nullable String getTooltipText() { return tooltipText; }
     public int getTooltipX() { return tooltipX; }
     public int getTooltipY() { return tooltipY; }
     public void clearTooltip() { tooltipText = null; }

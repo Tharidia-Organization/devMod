@@ -432,3 +432,20 @@ None (Quality pass complete)
 
 ### Results
 - Cleared nullable parameter warnings in DebugPanel without behavior change
+
+---
+
+## Batch 22: Editor Overlay Null-Safety (2025-12-26)
+
+### Scope
+- Annotated nullable editor UI state fields and overlay references
+- Used local non-null dialog/module references before callback use
+- Guarded overlay accessors and normalized preset list access
+
+### Files Modified
+- `ItemEditorScreen.java` - Annotated nullable UI/overlay fields, guarded dialog and overlay usage, stabilized module references
+- `ItemEditorRenderer.java` - Marked tooltip state and accessors as @Nullable
+- `PresetSelectorOverlay.java` - Added nullable annotations for callbacks/entries, requirePresetList helper, Locale-rooted search normalization
+
+### Results
+- Reduced NullAway warnings around editor overlays and dialog lifecycle without behavior change
