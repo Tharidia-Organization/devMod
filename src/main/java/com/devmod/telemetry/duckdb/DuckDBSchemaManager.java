@@ -58,7 +58,7 @@ public final class DuckDBSchemaManager {
             }
             return 0;
         } catch (SQLException e) {
-            LOGGER.debug("[DuckDB] Could not get schema version: {}", e.getMessage());
+            LOGGER.debug("[DuckDB] Could not get schema version", e);
             return 0;
         }
     }

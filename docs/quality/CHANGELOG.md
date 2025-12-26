@@ -520,3 +520,18 @@ None (Quality pass complete)
 
 ### Results
 - Eliminated remaining non-JUnit wildcard imports in tests
+
+---
+
+## Batch 27: DuckDB Logging Context (2025-12-26)
+
+### Scope
+- Include exception context for migration and schema version diagnostics
+
+### Files Modified
+- `DuckDBMigrationService.java` - Include exceptions in import/migration failures and routing debug
+- `DuckDBSchemaManager.java` - Include exception for schema version read failures
+
+### Results
+- DuckDB migration/schema logs now preserve exception stack traces for troubleshooting
+- Remaining telemetry logging upgrades are pending while aggregation/LVC feature set stays unstaged

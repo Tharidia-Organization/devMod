@@ -81,7 +81,7 @@ public final class DuckDBMigrationService {
                         migratedCount++;
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("[DuckDB Migration] Failed to import {}: {}", filename, e.getMessage());
+                    LOGGER.error("[DuckDB Migration] Failed to import {}", filename, e);
                     errorCount++;
                 }
             }
@@ -94,7 +94,7 @@ public final class DuckDBMigrationService {
                 migrateEnduranceData(enduranceFile, conn);
                 migratedCount++;
             } catch (Exception e) {
-                LOGGER.error("[DuckDB Migration] Failed to migrate endurance data: {}", e.getMessage());
+                LOGGER.error("[DuckDB Migration] Failed to migrate endurance data", e);
                 errorCount++;
             }
         }
@@ -156,7 +156,7 @@ public final class DuckDBMigrationService {
                 try {
                     routeEnduranceEvent(line, conn);
                 } catch (Exception e) {
-                    LOGGER.debug("[DuckDB Migration] Failed to route endurance event: {}", e.getMessage());
+                    LOGGER.debug("[DuckDB Migration] Failed to route endurance event", e);
                 }
             });
         }
