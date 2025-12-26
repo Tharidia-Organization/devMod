@@ -1,0 +1,409 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://devmod.io/schemas/arena_template.schema.json",
+  "title": "ArenaTemplate",
+  "description": "Arena template schema (L1) for DevMod v2.23",
+  "type": "object",
+  "required": ["id", "version", "schemaVersion", "origin", "size", "floor", "mobSpawnStrategy"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]{1,32}$",
+      "description": "Unique template identifier (lowercase alphanumeric with underscores, max 32 chars)"
+    },
+    "extendsTemplate": {
+      "type": ["string", "null"],
+      "description": "Parent template ID for inheritance"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Template version (SemVer major)"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Schema version (DD25: int, not string)"
+    },
+    "breakingChange": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this version introduces breaking changes"
+    },
+    "deprecated": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this template is deprecated"
+    },
+    "replacementVersion": {
+      "type": ["string", "null"],
+      "description": "Replacement template ID when deprecated"
+    },
+    "minParentVersion": {
+      "type": ["integer", "null"],
+      "description": "Minimum parent version for inheritance compatibility"
+    },
+    "templateType": {
+      "description": "Template type variant (DD1-DD2)",
+      "oneOf": [
+        { "type": "string", "enum": ["flat", "structure", "schematic", "composite"] },
+        { "$ref": "#/$defs/TemplateType" }
+      ]
+    },
+    "origin": {
+      "$ref": "#/$defs/Origin",
+      "description": "Arena origin point and mode"
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 8,
+      "maximum": 256,
+      "description": "Base arena size (square)"
+    },
+    "sizeX": {
+      "type": ["integer", "null"],
+      "minimum": 8,
+      "maximum": 256,
+      "description": "Arena width (X axis) for rectangular arenas"
+    },
+    "sizeZ": {
+      "type": ["integer", "null"],
+      "minimum": 8,
+      "maximum": 256,
+      "description": "Arena depth (Z axis) for rectangular arenas"
+    },
+    "floor": {
+      "$ref": "#/$defs/Floor",
+      "description": "Floor configuration"
+    },
+    "walls": {
+      "$ref": "#/$defs/Walls",
+      "description": "Wall configuration"
+    },
+    "ceiling": {
+      "$ref": "#/$defs/Ceiling",
+      "description": "Ceiling configuration"
+    },
+    "underfloor": {
+      "$ref": "#/$defs/Underfloor",
+      "description": "Underfloor configuration"
+    },
+    "palette": {
+      "$ref": "#/$defs/Palette",
+      "description": "Color/material palette"
+    },
+    "biome": {
+      "$ref": "#/$defs/Biome",
+      "description": "Biome configuration"
+    },
+    "lighting": {
+      "$ref": "#/$defs/Lighting",
+      "description": "Lighting configuration"
+    },
+    "spawnSlots": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SpawnSlot" },
+      "maxItems": 100,
+      "description": "Spawn slot definitions"
+    },
+    "playerSpawnOffset": {
+      "$ref": "#/$defs/Offset",
+      "description": "Player spawn offset relative to origin"
+    },
+    "mobSpawnStrategy": {
+      "type": "string",
+      "enum": ["DISTRIBUTED", "CLUSTERED", "CORNERS", "RING"],
+      "description": "Mob spawn distribution strategy"
+    },
+    "forbiddenZones": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ForbiddenZone" },
+      "maxItems": 20,
+      "description": "Zones where spawning is prohibited"
+    },
+    "hazards": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Hazard" },
+      "maxItems": 50,
+      "description": "Hazard definitions"
+    },
+    "environment": {
+      "$ref": "#/$defs/Environment",
+      "description": "Environmental effects"
+    },
+    "compat": {
+      "$ref": "#/$defs/Compat",
+      "description": "Player count compatibility"
+    },
+    "instanceSettings": {
+      "$ref": "#/$defs/InstanceSettings",
+      "description": "Instance dimension settings"
+    },
+    "structureNbt": {
+      "$ref": "#/$defs/StructureNbt",
+      "description": "NBT structure configuration"
+    },
+    "limits": {
+      "$ref": "#/$defs/Limits",
+      "description": "Build limits"
+    },
+    "buildSettings": {
+      "$ref": "#/$defs/BuildSettings",
+      "description": "Build execution settings"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Template tags for categorization"
+    }
+  },
+  "$defs": {
+    "TemplateType": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["flat", "structure", "schematic", "composite"] },
+        "sizeX": { "type": "integer" },
+        "sizeZ": { "type": "integer" },
+        "floorY": { "type": "integer" },
+        "wallHeight": { "type": "integer" },
+        "floorMaterial": { "type": "string" },
+        "wallMaterial": { "type": "string" },
+        "ceilingMaterial": { "type": ["string", "null"] },
+        "generateUnderfloor": { "type": "boolean" },
+        "structurePath": { "type": "string" },
+        "schematicPath": { "type": "string" },
+        "offsetX": { "type": "integer" },
+        "offsetY": { "type": "integer" },
+        "offsetZ": { "type": "integer" },
+        "rotation": { "type": "string" },
+        "mirror": { "type": "string" },
+        "ignoreAir": { "type": "boolean" },
+        "seedOverride": { "type": ["integer", "null"] },
+        "replaceExisting": { "type": "boolean" },
+        "layers": { "type": "array" },
+        "mergeStrategy": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "Origin": {
+      "type": "object",
+      "required": ["mode", "x", "y", "z"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["CENTER", "CORNER_NW", "CORNER_SW"],
+          "description": "Origin placement mode"
+        },
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "z": { "type": "integer" }
+      }
+    },
+    "Offset": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "z": { "type": "integer" }
+      }
+    },
+    "Floor": {
+      "type": "object",
+      "required": ["y", "thickness", "material", "pattern", "borderMaterial", "borderWidth"],
+      "properties": {
+        "y": { "type": "integer", "description": "Floor Y level" },
+        "thickness": { "type": "integer", "minimum": 1, "default": 1 },
+        "material": { "type": "string", "description": "Block ID (e.g., minecraft:stone_bricks)" },
+        "pattern": { "type": "string", "enum": ["solid", "checkerboard", "border"], "default": "solid" },
+        "borderMaterial": { "type": ["string", "null"] },
+        "borderWidth": { "type": "integer", "minimum": 0, "default": 0 }
+      }
+    },
+    "Walls": {
+      "type": "object",
+      "required": ["enabled", "material", "height", "thickness", "startY", "style"],
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "material": { "type": "string" },
+        "height": { "type": "integer", "minimum": 1 },
+        "thickness": { "type": "integer", "minimum": 1, "default": 1 },
+        "startY": { "type": "integer" },
+        "style": { "type": "string", "enum": ["solid", "fence", "glass", "barrier"], "default": "solid" }
+      }
+    },
+    "Ceiling": {
+      "type": "object",
+      "required": ["enabled", "material", "y", "thickness"],
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "material": { "type": "string" },
+        "y": { "type": "integer" },
+        "thickness": { "type": "integer", "minimum": 1, "default": 1 }
+      }
+    },
+    "Underfloor": {
+      "type": "object",
+      "required": ["material", "depth", "sameAsFloor"],
+      "properties": {
+        "material": { "type": "string" },
+        "depth": { "type": "integer", "minimum": 1, "default": 3 },
+        "sameAsFloor": { "type": "boolean", "default": false }
+      }
+    },
+    "Palette": {
+      "type": "object",
+      "required": ["accent", "highlight", "hazardBorder"],
+      "properties": {
+        "accent": { "type": "string", "description": "Accent block ID" },
+        "highlight": { "type": "string", "description": "Highlight block ID" },
+        "hazardBorder": { "type": "string", "description": "Hazard border block ID" }
+      }
+    },
+    "Biome": {
+      "type": "object",
+      "required": ["id", "applyTo"],
+      "properties": {
+        "id": { "type": "string", "description": "Biome ID (e.g., minecraft:plains)" },
+        "applyTo": { "type": "string", "enum": ["BOUNDS", "CHUNKS"], "default": "BOUNDS" }
+      }
+    },
+    "Lighting": {
+      "type": "object",
+      "properties": {
+        "skyLight": { "type": "integer", "minimum": 0, "maximum": 15, "default": 15 },
+        "blockLight": { "type": "integer", "minimum": 0, "maximum": 15, "default": 0 },
+        "ambientLight": { "type": "boolean", "default": false },
+        "lightSources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["pos", "block"],
+            "properties": {
+              "pos": { "type": "array", "items": { "type": "integer" }, "minItems": 3, "maxItems": 3 },
+              "block": { "type": "string" }
+            }
+          },
+          "maxItems": 50
+        }
+      }
+    },
+    "SpawnSlot": {
+      "type": "object",
+      "required": ["pos"],
+      "properties": {
+        "pos": { "type": "array", "items": { "type": "integer" }, "minItems": 3, "maxItems": 3 },
+        "yMode": { "type": "string", "enum": ["RELATIVE_TO_FLOOR", "ABSOLUTE"], "default": "RELATIVE_TO_FLOOR" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "validation": {
+          "type": "object",
+          "properties": {
+            "requireSolidBelow": { "type": "boolean", "default": true },
+            "requireAirAbove": { "type": "integer", "minimum": 0, "default": 2 },
+            "requireClearRadius": { "type": "integer", "minimum": 0, "default": 1 }
+          }
+        }
+      }
+    },
+    "ForbiddenZone": {
+      "type": "object",
+      "required": ["min", "max"],
+      "properties": {
+        "min": { "type": "array", "items": { "type": "integer" }, "minItems": 3, "maxItems": 3 },
+        "max": { "type": "array", "items": { "type": "integer" }, "minItems": 3, "maxItems": 3 },
+        "yMode": { "type": "string", "enum": ["RELATIVE_TO_FLOOR", "ABSOLUTE"], "default": "RELATIVE_TO_FLOOR" },
+        "reason": { "type": "string", "description": "Reason this zone is forbidden" }
+      }
+    },
+    "Hazard": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["lava_ring", "lava_pool", "void_pit", "spike_trap", "fire_zone", "magma_floor", "falling_blocks", "custom"],
+          "description": "Hazard type (DD8 whitelist)"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Type-specific parameters"
+        },
+        "y": { "type": ["integer", "null"], "description": "Y level for hazard" },
+        "yMode": { "type": "string", "enum": ["RELATIVE_TO_FLOOR", "ABSOLUTE"] }
+      }
+    },
+    "Environment": {
+      "type": "object",
+      "properties": {
+        "particles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "type": "string" },
+              "rate": { "type": "number", "minimum": 0 },
+              "area": { "type": "string", "enum": ["bounds", "chunks"] }
+            }
+          }
+        },
+        "ambientSound": { "type": ["string", "null"] },
+        "fog": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "density": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    },
+    "Compat": {
+      "type": "object",
+      "properties": {
+        "minPlayers": { "type": "integer", "minimum": 1, "default": 1 },
+        "maxPlayers": { "type": "integer", "minimum": 1, "default": 4 }
+      }
+    },
+    "InstanceSettings": {
+      "type": "object",
+      "properties": {
+        "chunkRadius": { "type": "integer", "minimum": 1, "maximum": 32, "default": 5 },
+        "tickDistance": { "type": "integer", "minimum": 1, "maximum": 32, "default": 4 },
+        "keepLoaded": { "type": "boolean", "default": true }
+      }
+    },
+    "StructureNbt": {
+      "type": "object",
+      "required": ["path", "offset"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+:[a-z0-9_/]+$",
+          "description": "Structure path (ResourceLocation format)"
+        },
+        "offset": { "$ref": "#/$defs/Offset" },
+        "rotation": { "type": "string", "enum": ["none", "clockwise_90", "180", "counterclockwise_90"], "default": "none" },
+        "mirror": { "type": "string", "enum": ["none", "front_back", "left_right"], "default": "none" },
+        "seedPolicy": { "type": "string", "enum": ["fixed", "perRun"], "default": "fixed" },
+        "ignoreAir": { "type": "boolean", "default": false }
+      }
+    },
+    "Limits": {
+      "type": "object",
+      "properties": {
+        "maxBuildTimeMs": { "type": "integer", "minimum": 100, "maximum": 60000, "default": 5000 },
+        "maxBlocks": { "type": "integer", "minimum": 100, "maximum": 150000, "default": 8000 },
+        "maxEntities": { "type": "integer", "minimum": 0, "maximum": 1000, "default": 50 }
+      }
+    },
+    "BuildSettings": {
+      "type": "object",
+      "properties": {
+        "buildPriority": { "type": "string", "enum": ["SYNC", "ASYNC"], "default": "SYNC" },
+        "buildOrder": { "type": "string", "enum": ["FLOOR_FIRST", "WALLS_FIRST", "STRUCTURE_FIRST"], "default": "FLOOR_FIRST" }
+      }
+    }
+  }
+}

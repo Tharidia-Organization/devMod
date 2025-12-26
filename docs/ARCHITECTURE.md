@@ -233,7 +233,7 @@ RegisterShadersEvent ──► ShieldShaderRegistry
 
 **Posizione File Shader:** `assets/devmod/shaders/core/`
 
-Vedi [SHADER_SYSTEM.md](SHADER_SYSTEM.md) per guida implementazione dettagliata.
+Vedi [SHADER_SYSTEM.md](subsystems/editor-design-system/SHADER_SYSTEM.md) per guida implementazione dettagliata.
 
 ## Layer Network
 

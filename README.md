@@ -178,8 +178,8 @@ The mod includes **2172 automated tests** covering all major systems:
 
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [Feature Documentation](docs/FEATURES.md)
-- [Testing Guide](docs/TESTING.md)
-- [Progressive Test Plan](docs/PROGRESSIVE_TEST_PLAN.md)
+- [Testing Guide](docs/testing/TESTING.md)
+- [Progressive Test Plan](docs/testing/PROGRESSIVE_TEST_PLAN.md)
 
 ## Security Features
 

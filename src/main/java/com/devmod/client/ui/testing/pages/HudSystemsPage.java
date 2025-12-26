@@ -18,6 +18,7 @@ import com.devmod.client.ui.testing.panel.SectionPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.config.Config;
+import com.devmod.util.I18n;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 
@@ -64,12 +65,14 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
         createButtons();
 
         // Header
-        panelContainer.addPanel(new HeaderPanel("HUD SYSTEMS"));
+        panelContainer.addPanel(new HeaderPanel(
+            I18n.translate("devmod.testing.voxel_lab.hud.header").getString()));
 
         // 2D HUD Section
         panelContainer.addPanel(
-            SectionPanel.builder("section-2d", "2D HUD Overlay")
-                .description("On-screen damage breakdown display")
+            SectionPanel.builder("section-2d",
+                I18n.translate("devmod.testing.voxel_lab.section.hud_2d").getString())
+                .description(I18n.translate("devmod.testing.voxel_lab.hud.section.hud_2d_desc").getString())
                 .addButton(hud2dToggle)
                 .addRow(historyToggle, dpsToggle)
                 .build()
@@ -77,30 +80,36 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
 
         // 3D Panel Section
         panelContainer.addPanel(
-            SectionPanel.builder("section-3d", "3D World Panel")
-                .description("In-world floating damage display")
+            SectionPanel.builder("section-3d",
+                I18n.translate("devmod.testing.voxel_lab.section.hud_3d").getString())
+                .description(I18n.translate("devmod.testing.voxel_lab.hud.section.hud_3d_desc").getString())
                 .addButton(panel3dToggle)
                 .build()
         );
 
         // Position Section (collapsible)
         panelContainer.addPanel(
-            new CollapsiblePanel("collapsible-position", "HUD Position",
-                GridPanel.of("grid-position", "Select Position", positionButtons, 2),
+            new CollapsiblePanel("collapsible-position",
+                I18n.translate("devmod.testing.voxel_lab.section.hud_position").getString(),
+                GridPanel.of("grid-position",
+                    I18n.translate("devmod.testing.voxel_lab.section.select_position").getString(),
+                    positionButtons, 2),
                 0xFFFFAA00)
         );
 
         // Offset Section
         panelContainer.addPanel(
-            SectionPanel.builder("section-offset", "Offset Adjustment")
-                .description("Fine-tune HUD position")
+            SectionPanel.builder("section-offset",
+                I18n.translate("devmod.testing.voxel_lab.hud.section.offset_adjustment").getString())
+                .description(I18n.translate("devmod.testing.voxel_lab.hud.section.offset_desc").getString())
                 .addRow(offsetXMinus, offsetXPlus, offsetYMinus, offsetYPlus)
                 .build()
         );
 
         // Presets Section
         panelContainer.addPanel(
-            SectionPanel.builder("section-presets", "Presets")
+            SectionPanel.builder("section-presets",
+                I18n.translate("devmod.testing.voxel_lab.section.presets").getString())
                 .withSeparator()
                 .addRow(exportPreset, importPreset)
                 .addButton(resetDefaults)
@@ -111,10 +120,14 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
         panelContainer.addPanel(new SpacerPanel("spacer-status", 8));
         panelContainer.addPanel(
             StatusPanel.builder("status-hud")
-                .addStatus("2D HUD", ImpactHudOverlay::isEnabled)
-                .addStatus("3D Panel", () -> Impact3DPanelManager.INSTANCE.isEnabled())
-                .addStatus("History", () -> safeGetBool(Config.IMPACT_HUD_HISTORY_ENABLED))
-                .addStatus("DPS", () -> safeGetBool(Config.IMPACT_HUD_DPS_ENABLED))
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.hud.status.hud_2d").getString(),
+                    ImpactHudOverlay::isEnabled)
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.hud.status.panel_3d").getString(),
+                    () -> Impact3DPanelManager.INSTANCE.isEnabled())
+                .addStatus(I18n.translate("devmod.testing.impact_hud.history").getString(),
+                    () -> safeGetBool(Config.IMPACT_HUD_HISTORY_ENABLED))
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.hud.status.dps").getString(),
+                    () -> safeGetBool(Config.IMPACT_HUD_DPS_ENABLED))
                 .messageSupplier(this::getStatusMessage)
                 .build()
         );
@@ -128,7 +141,8 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
 
     private void createButtons() {
         // 2D HUD toggles
-        hud2dToggle = new EditorButton("toggle-hud2d", "Enable 2D HUD")
+        hud2dToggle = new EditorButton("toggle-hud2d",
+            I18n.translate("devmod.testing.voxel_lab.hud.toggle.hud_2d").getString())
             .toggleable(true)
             .toggled(ImpactHudOverlay.isEnabled())
             .style(EditorButton.Style.PRIMARY)
@@ -136,7 +150,8 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_TOGGLE,
                 Boolean.TRUE.equals(v), ImpactHudOverlay.isEnabled()));
 
-        historyToggle = new EditorButton("toggle-history", "History")
+        historyToggle = new EditorButton("toggle-history",
+            I18n.translate("devmod.testing.impact_hud.history").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.IMPACT_HUD_HISTORY_ENABLED))
             .style(EditorButton.Style.GHOST)
@@ -144,7 +159,8 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_HUD_HISTORY_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_HUD_HISTORY_ENABLED)));
 
-        dpsToggle = new EditorButton("toggle-dps", "DPS Tracker")
+        dpsToggle = new EditorButton("toggle-dps",
+            I18n.translate("devmod.testing.impact_hud.dps").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.IMPACT_HUD_DPS_ENABLED))
             .style(EditorButton.Style.GHOST)
@@ -153,7 +169,8 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
                 Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_HUD_DPS_ENABLED)));
 
         // 3D Panel toggle
-        panel3dToggle = new EditorButton("toggle-3d", "Enable 3D Panel")
+        panel3dToggle = new EditorButton("toggle-3d",
+            I18n.translate("devmod.testing.voxel_lab.hud.toggle.panel_3d").getString())
             .toggleable(true)
             .toggled(Impact3DPanelManager.INSTANCE.isEnabled())
             .style(EditorButton.Style.PRIMARY)
@@ -180,45 +197,53 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
         }
 
         // Offset buttons
-        offsetXMinus = new EditorButton("ox-", "X-")
+        offsetXMinus = new EditorButton("ox-",
+            I18n.translate("devmod.testing.voxel_lab.hud.offset.x_minus").getString())
             .size(EditorButton.Size.SMALL)
             .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_X_MINUS));
 
-        offsetXPlus = new EditorButton("ox+", "X+")
+        offsetXPlus = new EditorButton("ox+",
+            I18n.translate("devmod.testing.voxel_lab.hud.offset.x_plus").getString())
             .size(EditorButton.Size.SMALL)
             .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_X_PLUS));
 
-        offsetYMinus = new EditorButton("oy-", "Y-")
+        offsetYMinus = new EditorButton("oy-",
+            I18n.translate("devmod.testing.voxel_lab.hud.offset.y_minus").getString())
             .size(EditorButton.Size.SMALL)
             .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_Y_MINUS));
 
-        offsetYPlus = new EditorButton("oy+", "Y+")
+        offsetYPlus = new EditorButton("oy+",
+            I18n.translate("devmod.testing.voxel_lab.hud.offset.y_plus").getString())
             .size(EditorButton.Size.SMALL)
             .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_Y_PLUS));
 
         // Preset buttons
-        exportPreset = new EditorButton("export", "Export")
+        exportPreset = new EditorButton("export", I18n.ui("export").getString())
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .icon("\uD83D\uDCE4")
             .onClick(() -> {
                 boolean success = ActionRegistry.invoke(ActionIds.CONFIG_IMPACT_HUD_PRESET_EXPORT,
                     ClientActionContexts.forClient(ActionOrigin.UI));
-                showStatus(success ? "Exported!" : "Export failed!");
+                showStatus(success
+                    ? "+ " + I18n.translate("devmod.testing.impact_hud.exported").getString()
+                    : "! " + I18n.translate("devmod.testing.impact_hud.export_failed").getString());
             });
 
-        importPreset = new EditorButton("import", "Import")
+        importPreset = new EditorButton("import", I18n.ui("import").getString())
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .icon("\uD83D\uDCE5")
             .onClick(() -> {
                 boolean success = ActionRegistry.invoke(ActionIds.CONFIG_IMPACT_HUD_PRESET_IMPORT,
                     ClientActionContexts.forClient(ActionOrigin.UI));
-                showStatus(success ? "Imported!" : "Import failed!");
+                showStatus(success
+                    ? "+ " + I18n.translate("devmod.testing.impact_hud.imported").getString()
+                    : "! " + I18n.translate("devmod.testing.impact_hud.import_failed").getString());
                 syncButtonStates();
             });
 
-        resetDefaults = new EditorButton("reset", "Reset Defaults")
+        resetDefaults = new EditorButton("reset", I18n.ui("reset_defaults").getString())
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.SMALL)
             .onClick(() -> {
@@ -232,7 +257,7 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
         currentPosition = Config.HudPosition.TOP_RIGHT;
 
         syncButtonStates();
-        showStatus("Reset to defaults!");
+        showStatus("+ " + I18n.translate("devmod.testing.voxel_lab.hud.message.reset_defaults").getString());
     }
 
     private void showStatus(String message) {
@@ -290,13 +315,14 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
     }
 
     private static String formatPositionName(Config.HudPosition pos) {
-        return switch (pos) {
-            case TOP_LEFT -> "Top Left";
-            case TOP_RIGHT -> "Top Right";
-            case CENTER_LEFT -> "Center Left";
-            case CENTER_RIGHT -> "Center Right";
-            case BOTTOM_LEFT -> "Bottom Left";
-            case BOTTOM_RIGHT -> "Bottom Right";
+        String key = switch (pos) {
+            case TOP_LEFT -> "top_left";
+            case TOP_RIGHT -> "top_right";
+            case CENTER_LEFT -> "center_left";
+            case CENTER_RIGHT -> "center_right";
+            case BOTTOM_LEFT -> "bottom_left";
+            case BOTTOM_RIGHT -> "bottom_right";
         };
+        return I18n.translate("devmod.testing.voxel_lab.hud.position." + key).getString();
     }
 }

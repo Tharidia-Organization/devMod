@@ -269,26 +269,26 @@ Per la specifica completa del sistema Arena Template, vedere:
 
 | Document | Description |
 |----------|-------------|
-| [[arena-template-rework/TODO_ARENA_TEMPLATE]] | Specifica completa DD1-DD72 (canonical) |
-| [[arena-template-rework/PRODUCTION_MARKER_README]] | AutosmokeGuard (DD32) |
+| [[subsystems/arena-template-rework/TODO_ARENA_TEMPLATE]] | Specifica completa DD1-DD72 (canonical) |
+| [[subsystems/arena-template-rework/PRODUCTION_MARKER_README]] | AutosmokeGuard (DD32) |
 | [[runbook/arena-alerts]] | Runbook alert DD68 (48h monitoring) |
 
 ### Implementation Records (DD by Agent)
 
 | Agent | DD Range | Area | Status |
 |-------|----------|------|--------|
-| [[arena-template-rework/TODO_AGENT_01_COMPLETE]] | DD 1-6 | Registry & Resolver | ✅ |
-| [[arena-template-rework/TODO_AGENT_02_COMPLETE]] | DD 7-10 | Builder Transazionale | ✅ |
-| [[arena-template-rework/TODO_AGENT_03_COMPLETE]] | DD 11-12 | Budget & Async | ✅ |
-| [[arena-template-rework/TODO_AGENT_04_COMPLETE]] | DD 13-15 | Metriche & API | ✅ |
-| [[arena-template-rework/TODO_AGENT_05_COMPLETE]] | DD 16-21 | Observability & Persistence | ⚠️ DuckDbRepository missing |
-| [[arena-template-rework/TODO_AGENT_06_COMPLETE]] | DD 22-28 | Identity & Recovery | ✅ |
-| [[arena-template-rework/TODO_AGENT_07_COMPLETE]] | DD 29-36 | Operations & Security | ✅ |
-| [[arena-template-rework/TODO_AGENT_08_COMPLETE]] | DD 37-43 | Cleanup & Migration | ✅ |
-| [[arena-template-rework/TODO_AGENT_09_COMPLETE]] | DD 44-50 | Rollback & Spawn | ✅ |
-| [[arena-template-rework/TODO_AGENT_10_COMPLETE]] | DD 51-56 | Gamification & Balance | ✅ |
-| [[arena-template-rework/TODO_AGENT_11_COMPLETE]] | DD 57-62 | Telemetry & Concurrency | ✅ |
-| [[arena-template-rework/TODO_AGENT_12_COMPLETE]] | DD 63-72 | Pool & Readiness | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_01_COMPLETE]] | DD 1-6 | Registry & Resolver | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_02_COMPLETE]] | DD 7-10 | Builder Transazionale | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_03_COMPLETE]] | DD 11-12 | Budget & Async | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_04_COMPLETE]] | DD 13-15 | Metriche & API | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_05_COMPLETE]] | DD 16-21 | Observability & Persistence | ⚠️ DuckDbRepository missing |
+| [[subsystems/arena-template-rework/TODO_AGENT_06_COMPLETE]] | DD 22-28 | Identity & Recovery | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_07_COMPLETE]] | DD 29-36 | Operations & Security | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_08_COMPLETE]] | DD 37-43 | Cleanup & Migration | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_09_COMPLETE]] | DD 44-50 | Rollback & Spawn | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_10_COMPLETE]] | DD 51-56 | Gamification & Balance | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_11_COMPLETE]] | DD 57-62 | Telemetry & Concurrency | ✅ |
+| [[subsystems/arena-template-rework/TODO_AGENT_12_COMPLETE]] | DD 63-72 | Pool & Readiness | ✅ |
 
 ### Schemas (Canonical Location)
 
@@ -314,8 +314,8 @@ Per la specifica completa del sistema Arena Template, vedere:
 - [[areas/endurance/README]] - Uses arena system
 - [[areas/telemetry/README]] - Arena telemetry
 - [[cross_cutting/CONCURRENCY]] - Lock patterns
-- [[arena-template-rework/ARENA_TEMPLATE_AUDIT]] - Audit status e gap residui
-- [[arena-template-rework/DOCUMENTATION_AUDIT_REPORT]] - Audit doc 2024-12-23
+- [[subsystems/arena-template-rework/ARENA_TEMPLATE_AUDIT]] - Audit status e gap residui
+- [[subsystems/arena-template-rework/DOCUMENTATION_AUDIT_REPORT]] - Audit doc 2024-12-23
 
 ---
 

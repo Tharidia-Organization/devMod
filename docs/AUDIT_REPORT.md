@@ -26,14 +26,14 @@ DevMod is a sophisticated NeoForge mod with **862 Java classes** across multiple
 
 | Area | Status | Risk | Critical Issues |
 |------|--------|------|-----------------|
-| [[areas/arena/README\|Arena System]] | PARTIAL | HIGH | TOCTOU race, missing PolicyEngine |
-| [[areas/endurance/README\|Endurance System]] | PARTIAL | MEDIUM | Session orphan, wave sync race |
-| [[areas/instance/README\|Instance System]] | PARTIAL | MEDIUM | Async exception handling |
-| [[areas/telemetry/README\|Telemetry System]] | PARTIAL | MEDIUM | Missing event hooks |
-| [[areas/radial/README\|Radial/UX System]] | DONE | HIGH | RadialAction API mismatch |
-| [[areas/client_server/README\|Client/Server]] | PARTIAL | HIGH | Missing @OnlyIn annotations |
-| [[areas/config/README\|Config System]] | PARTIAL | MEDIUM | No JSON schema validation |
-| [[areas/tools/README\|Tools/QA]] | DONE | LOW | Good coverage |
+| [[areas/arena/README|Arena System]] | PARTIAL | HIGH | TOCTOU race, missing PolicyEngine |
+| [[areas/endurance/README|Endurance System]] | PARTIAL | MEDIUM | Session orphan, wave sync race |
+| [[areas/instance/README|Instance System]] | PARTIAL | MEDIUM | Async exception handling |
+| [[areas/telemetry/README|Telemetry System]] | PARTIAL | MEDIUM | Missing event hooks |
+| [[areas/radial/README|Radial/UX System]] | DONE | HIGH | RadialAction API mismatch |
+| [[areas/client_server/README|Client/Server]] | PARTIAL | HIGH | Missing @OnlyIn annotations |
+| [[areas/config/README|Config System]] | PARTIAL | MEDIUM | No JSON schema validation |
+| [[areas/tools/README|Tools/QA]] | DONE | LOW | Good coverage |
 
 ---
 

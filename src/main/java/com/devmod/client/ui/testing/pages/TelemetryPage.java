@@ -13,6 +13,7 @@ import com.devmod.client.ui.testing.panel.SliderPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.config.Config;
+import com.devmod.util.I18n;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetInt;
@@ -40,20 +41,24 @@ public class TelemetryPage extends AbstractVoxelLabPage {
         createButtons();
 
         // Header
-        panelContainer.addPanel(new HeaderPanel("TELEMETRY"));
+        panelContainer.addPanel(new HeaderPanel(
+            I18n.translate("devmod.testing.voxel_lab.telemetry.header").getString()));
 
         // Master Controls
         panelContainer.addPanel(
-            SectionPanel.builder("section-master", "Recording")
-                .description("Master telemetry controls")
+            SectionPanel.builder("section-master",
+                I18n.translate("devmod.testing.voxel_lab.telemetry.label.recording").getString())
+                .description(I18n.translate("devmod.testing.voxel_lab.telemetry.section.recording_desc").getString())
                 .addButton(telemetryMasterToggle)
                 .build()
         );
 
         // Event Types Section
         panelContainer.addPanel(
-            new CollapsiblePanel("collapsible-events", "Event Types",
-                SectionPanel.builder("section-events-content", "What to Record")
+            new CollapsiblePanel("collapsible-events",
+                I18n.translate("devmod.testing.voxel_lab.telemetry.section.event_types").getString(),
+                SectionPanel.builder("section-events-content",
+                        I18n.translate("devmod.testing.voxel_lab.telemetry.section.what_to_record").getString())
                     .addRow(hitsToggle, deathsToggle, spawnsToggle)
                     .build(),
                 0xFF00AAFF)
@@ -61,26 +66,33 @@ public class TelemetryPage extends AbstractVoxelLabPage {
 
         // Tick Interval Slider
         panelContainer.addPanel(
-            SliderPanel.of("slider-interval", "Tick Interval",
+            SliderPanel.of("slider-interval",
+                I18n.translate("devmod.testing.voxel_lab.telemetry.slider.tick_interval").getString(),
                 () -> (double) safeGetInt(Config.TELEMETRY_TICK_INTERVAL, 20),
                 v -> Config.TELEMETRY_TICK_INTERVAL.set(v.intValue()),
-                1.0, 100.0, 1.0, "%.0f ticks")
+                1.0, 100.0, 1.0,
+                I18n.translate("devmod.testing.voxel_lab.format.ticks").getString())
         );
 
         // Status Panel
         panelContainer.addPanel(new SpacerPanel("spacer-status", 8));
         panelContainer.addPanel(
             StatusPanel.builder("status-telemetry")
-                .addStatus("Recording", () -> safeGetBool(Config.TELEMETRY_ENABLED))
-                .addStatus("Hits", () -> safeGetBool(Config.TELEMETRY_HITS_ENABLED))
-                .addStatus("Deaths", () -> safeGetBool(Config.TELEMETRY_DEATHS_ENABLED))
-                .addStatus("Spawns", () -> safeGetBool(Config.TELEMETRY_SPAWNS_ENABLED))
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.telemetry.label.recording").getString(),
+                    () -> safeGetBool(Config.TELEMETRY_ENABLED))
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.telemetry.label.hits").getString(),
+                    () -> safeGetBool(Config.TELEMETRY_HITS_ENABLED))
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.telemetry.label.deaths").getString(),
+                    () -> safeGetBool(Config.TELEMETRY_DEATHS_ENABLED))
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.telemetry.label.spawns").getString(),
+                    () -> safeGetBool(Config.TELEMETRY_SPAWNS_ENABLED))
                 .build()
         );
     }
 
     private void createButtons() {
-        telemetryMasterToggle = new EditorButton("toggle-telemetry", "Enable Recording")
+        telemetryMasterToggle = new EditorButton("toggle-telemetry",
+            I18n.translate("devmod.testing.voxel_lab.telemetry.toggle.recording").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.TELEMETRY_ENABLED))
             .style(EditorButton.Style.DANGER)
@@ -88,7 +100,8 @@ public class TelemetryPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_TELEMETRY_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.TELEMETRY_ENABLED)));
 
-        hitsToggle = new EditorButton("toggle-hits", "Hits")
+        hitsToggle = new EditorButton("toggle-hits",
+            I18n.translate("devmod.testing.voxel_lab.telemetry.label.hits").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.TELEMETRY_HITS_ENABLED))
             .style(EditorButton.Style.GHOST)
@@ -97,7 +110,8 @@ public class TelemetryPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_TELEMETRY_HITS_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.TELEMETRY_HITS_ENABLED)));
 
-        deathsToggle = new EditorButton("toggle-deaths", "Deaths")
+        deathsToggle = new EditorButton("toggle-deaths",
+            I18n.translate("devmod.testing.voxel_lab.telemetry.label.deaths").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.TELEMETRY_DEATHS_ENABLED))
             .style(EditorButton.Style.GHOST)
@@ -106,7 +120,8 @@ public class TelemetryPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_TELEMETRY_DEATHS_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.TELEMETRY_DEATHS_ENABLED)));
 
-        spawnsToggle = new EditorButton("toggle-spawns", "Spawns")
+        spawnsToggle = new EditorButton("toggle-spawns",
+            I18n.translate("devmod.testing.voxel_lab.telemetry.label.spawns").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.TELEMETRY_SPAWNS_ENABLED))
             .style(EditorButton.Style.GHOST)

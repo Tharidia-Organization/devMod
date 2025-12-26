@@ -109,8 +109,8 @@ public class TestDetailPanel implements HubPanel {
         int w1 = Objects.requireNonNull(font, "font").width(line1);
         int w2 = Objects.requireNonNull(font, "font").width(line2);
 
-        graphics.drawString(Objects.requireNonNull(font, "font"), line1, centerX - w1 / 2, centerY - 10, UIConstants.Text.MUTED(), false);
-        graphics.drawString(Objects.requireNonNull(font, "font"), line2, centerX - w2 / 2, centerY + 4, UIConstants.Text.MUTED(), false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(line1, "line1"), centerX - w1 / 2, centerY - 10, UIConstants.Text.MUTED(), false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(line2, "line2"), centerX - w2 / 2, centerY + 4, UIConstants.Text.MUTED(), false);
     }
 
     private void renderCompletionMessage(GuiGraphics graphics) {
@@ -123,8 +123,8 @@ public class TestDetailPanel implements HubPanel {
         int w1 = Objects.requireNonNull(font, "font").width(line1);
         int w2 = Objects.requireNonNull(font, "font").width(line2);
 
-        graphics.drawString(Objects.requireNonNull(font, "font"), line1, centerX - w1 / 2, centerY - 10, UIConstants.Status.SUCCESS(), false);
-        graphics.drawString(Objects.requireNonNull(font, "font"), line2, centerX - w2 / 2, centerY + 6, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(line1, "line1"), centerX - w1 / 2, centerY - 10, UIConstants.Status.SUCCESS(), false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(line2, "line2"), centerX - w2 / 2, centerY + 6, UIConstants.Text.SECONDARY(), false);
     }
 
     private void renderTestDetails(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -183,7 +183,7 @@ public class TestDetailPanel implements HubPanel {
         // Priority badge
         String priority = "[" + currentTest.getPriority().name() + "]";
         int priorityWidth = Objects.requireNonNull(font, "font").width(priority);
-        graphics.drawString(Objects.requireNonNull(font, "font"), priority, cx + cw - priorityWidth, cy + 4, currentTest.getPriority().getColor(), false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(priority, "priority"), cx + cw - priorityWidth, cy + 4, currentTest.getPriority().getColor(), false);
 
         // Underline
         graphics.fill(cx, cy + HEADER_HEIGHT - 4, cx + cw, cy + HEADER_HEIGHT - 3, UIConstants.Border.SEPARATOR());
@@ -200,7 +200,7 @@ public class TestDetailPanel implements HubPanel {
         // Category
         String category = "Category: " + currentTest.getCategory();
         int catWidth = Objects.requireNonNull(font, "font").width(category);
-        graphics.drawString(Objects.requireNonNull(font, "font"), category, cx + cw - catWidth, cy, UIConstants.Text.MUTED(), false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(category, "category"), cx + cw - catWidth, cy, UIConstants.Text.MUTED(), false);
     }
 
     private int renderWrappedText(GuiGraphics graphics, int cx, int cy, int maxWidth, String text, int color) {
