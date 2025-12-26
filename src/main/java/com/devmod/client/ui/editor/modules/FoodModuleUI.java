@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
@@ -30,16 +31,22 @@ public class FoodModuleUI {
     // UI COMPONENTS - Nutrition Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorSlider nutritionSlider;
+    @Nullable
     EditorSlider saturationSlider;
+    @Nullable
     EditorSlider consumptionTimeSlider;
+    @Nullable
     EditorToggle canAlwaysEatToggle;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Properties Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorToggle isMeatToggle;
+    @Nullable
     EditorToggle isFastFoodToggle;
 
     public FoodModuleUI(FoodModule module, FoodModuleCore core) {
@@ -98,12 +105,16 @@ public class FoodModuleUI {
     }
 
     public List<EditorSection> getNutritionSections() {
+        EditorSlider nutrition = Objects.requireNonNull(nutritionSlider, "nutritionSlider");
+        EditorSlider saturation = Objects.requireNonNull(saturationSlider, "saturationSlider");
+        EditorSlider consumptionTime = Objects.requireNonNull(consumptionTimeSlider, "consumptionTimeSlider");
+        EditorToggle canAlwaysEat = Objects.requireNonNull(canAlwaysEatToggle, "canAlwaysEatToggle");
         List<EditorSection> sections = new ArrayList<>();
         sections.add(new SimpleHeaderSection("nutrition-header", "Nutrition Properties"));
-        sections.add(new SliderSectionAdapter(nutritionSlider));
-        sections.add(new SliderSectionAdapter(saturationSlider));
-        sections.add(new SliderSectionAdapter(consumptionTimeSlider));
-        sections.add(new ToggleSectionAdapter(canAlwaysEatToggle));
+        sections.add(new SliderSectionAdapter(nutrition));
+        sections.add(new SliderSectionAdapter(saturation));
+        sections.add(new SliderSectionAdapter(consumptionTime));
+        sections.add(new ToggleSectionAdapter(canAlwaysEat));
         sections.add(new TextNoteSection("nutrition-note", "Actual saturation = nutrition × modifier × 2."));
         return sections;
     }
@@ -149,10 +160,12 @@ public class FoodModuleUI {
     }
 
     public List<EditorSection> getPropertiesSections() {
+        EditorToggle isMeat = Objects.requireNonNull(isMeatToggle, "isMeatToggle");
+        EditorToggle isFastFood = Objects.requireNonNull(isFastFoodToggle, "isFastFoodToggle");
         List<EditorSection> sections = new ArrayList<>();
         sections.add(new SimpleHeaderSection("props-header", "Food Properties"));
-        sections.add(new ToggleSectionAdapter(isMeatToggle));
-        sections.add(new ToggleSectionAdapter(isFastFoodToggle));
+        sections.add(new ToggleSectionAdapter(isMeat));
+        sections.add(new ToggleSectionAdapter(isFastFood));
         sections.add(new TextNoteSection("props-note", "Is Meat: Wolves can eat. Is Fast Food: Faster eating animation."));
         return sections;
     }

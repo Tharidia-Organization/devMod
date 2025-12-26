@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -39,53 +41,86 @@ public class WeaponModuleUI {
     // UI COMPONENTS - Hit Location Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorSlider headMultSlider;
+    @Nullable
     EditorSlider bodyMultSlider;
+    @Nullable
     EditorSlider armsMultSlider;
+    @Nullable
     EditorSlider legsMultSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Combat Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorSlider attackDamageSlider;
+    @Nullable
     EditorSlider attackSpeedSlider;
+    @Nullable
     EditorSlider attackReachSlider;
+    @Nullable
     EditorSlider attackKnockbackSlider;
+    @Nullable
     EditorSlider armorPenetrationSlider;
+    @Nullable
     EditorSlider baseDamageBonusSlider;
+    @Nullable
     EditorSlider damageBonusSlider;
+    @Nullable
     EditorSlider sweepingRatioSlider;
+    @Nullable
     EditorSlider armorShredSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Special Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorToggle critEnabledToggle;
+    @Nullable
     EditorSlider critChanceSlider;
+    @Nullable
     EditorSlider critDamageSlider;
+    @Nullable
     EditorToggle lifestealEnabledToggle;
+    @Nullable
     EditorSlider lifestealSlider;
+    @Nullable
     EditorToggle fireDamageEnabledToggle;
+    @Nullable
     EditorSlider fireDamageSlider;
+    @Nullable
     EditorToggle magicDamageEnabledToggle;
+    @Nullable
     EditorSlider magicDamageSlider;
+    @Nullable
     EditorSlider vsUndeadSlider;
+    @Nullable
     EditorSlider vsArthroSlider;
+    @Nullable
     EditorSlider vsPlayersSlider;
+    @Nullable
     EditorSlider trueDamageSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Durability Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorSlider maxDurabilitySlider;
+    @Nullable
     EditorSlider currentDamageSlider;
+    @Nullable
     EditorSlider repairCostSlider;
+    @Nullable
     EditorToggle unbreakableToggle;
+    @Nullable
     EditorToggle clearToolRulesToggle;
+    @Nullable
     EditorSlider toolDefaultSpeedSlider;
+    @Nullable
     EditorSlider toolDamagePerBlockSlider;
     final List<ToolRuleSection> toolRuleSections = new ArrayList<>();
 
@@ -157,11 +192,15 @@ public class WeaponModuleUI {
     }
 
     public List<EditorSection> getHitLocationSections() {
+        EditorSlider headMult = Objects.requireNonNull(headMultSlider, "headMultSlider");
+        EditorSlider bodyMult = Objects.requireNonNull(bodyMultSlider, "bodyMultSlider");
+        EditorSlider armsMult = Objects.requireNonNull(armsMultSlider, "armsMultSlider");
+        EditorSlider legsMult = Objects.requireNonNull(legsMultSlider, "legsMultSlider");
         return List.of(
-            new SliderSectionAdapter(headMultSlider),
-            new SliderSectionAdapter(bodyMultSlider),
-            new SliderSectionAdapter(armsMultSlider),
-            new SliderSectionAdapter(legsMultSlider)
+            new SliderSectionAdapter(headMult),
+            new SliderSectionAdapter(bodyMult),
+            new SliderSectionAdapter(armsMult),
+            new SliderSectionAdapter(legsMult)
         );
     }
 
@@ -260,16 +299,25 @@ public class WeaponModuleUI {
     }
 
     public List<EditorSection> getCombatSections() {
+        EditorSlider attackDamage = Objects.requireNonNull(attackDamageSlider, "attackDamageSlider");
+        EditorSlider attackSpeed = Objects.requireNonNull(attackSpeedSlider, "attackSpeedSlider");
+        EditorSlider attackReach = Objects.requireNonNull(attackReachSlider, "attackReachSlider");
+        EditorSlider attackKnockback = Objects.requireNonNull(attackKnockbackSlider, "attackKnockbackSlider");
+        EditorSlider damageBonus = Objects.requireNonNull(damageBonusSlider, "damageBonusSlider");
+        EditorSlider sweepingRatio = Objects.requireNonNull(sweepingRatioSlider, "sweepingRatioSlider");
+        EditorSlider armorPenetration = Objects.requireNonNull(armorPenetrationSlider, "armorPenetrationSlider");
+        EditorSlider baseDamageBonus = Objects.requireNonNull(baseDamageBonusSlider, "baseDamageBonusSlider");
+        EditorSlider armorShred = Objects.requireNonNull(armorShredSlider, "armorShredSlider");
         return withDps(List.of(
-            new SliderSectionAdapter(attackDamageSlider),
-            new SliderSectionAdapter(attackSpeedSlider),
-            new SliderSectionAdapter(attackReachSlider),
-            new SliderSectionAdapter(attackKnockbackSlider),
-            new SliderSectionAdapter(damageBonusSlider),
-            new SliderSectionAdapter(sweepingRatioSlider),
-            new SliderSectionAdapter(armorPenetrationSlider),
-            new SliderSectionAdapter(baseDamageBonusSlider),
-            new SliderSectionAdapter(armorShredSlider)
+            new SliderSectionAdapter(attackDamage),
+            new SliderSectionAdapter(attackSpeed),
+            new SliderSectionAdapter(attackReach),
+            new SliderSectionAdapter(attackKnockback),
+            new SliderSectionAdapter(damageBonus),
+            new SliderSectionAdapter(sweepingRatio),
+            new SliderSectionAdapter(armorPenetration),
+            new SliderSectionAdapter(baseDamageBonus),
+            new SliderSectionAdapter(armorShred)
         ));
     }
 
@@ -280,20 +328,7 @@ public class WeaponModuleUI {
     private void createSpecialComponents(SourceBadge.Source dataSource) {
         WeaponStats stats = core.getStats();
 
-        critEnabledToggle = new EditorToggle("critEnabled", "Enable Critical Hits", stats.critChance > 0)
-            .source(dataSource)
-            .tooltip("Enable critical hit mechanics for this weapon")
-            .onChange(enabled -> {
-                critChanceSlider.setEnabled(enabled);
-                critDamageSlider.setEnabled(enabled);
-                if (!enabled) {
-                    stats.critChance = 0f;
-                    critChanceSlider.setValue(0f);
-                }
-                module.markDirty("Critical hits " + (enabled ? "enabled" : "disabled"));
-            });
-
-        critChanceSlider = new EditorSlider("critCh", "Critical Chance", 0f, 100f, 0f)
+        EditorSlider critChance = new EditorSlider("critCh", "Critical Chance", 0f, 100f, 0f)
             .step(1f)
             .format("%.0f")
             .suffix("%")
@@ -304,7 +339,7 @@ public class WeaponModuleUI {
             .info("Chance to deal critical hit. Rolled on each attack. Uses devmod:crit_chance attribute.")
             .onChange(v -> { stats.critChance = v / 100f; module.markDirty("Critical chance"); });
 
-        critDamageSlider = new EditorSlider("critDmg", "Critical Damage", 1f, 5f, 1.5f)
+        EditorSlider critDamage = new EditorSlider("critDmg", "Critical Damage", 1f, 5f, 1.5f)
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
@@ -315,19 +350,23 @@ public class WeaponModuleUI {
             .info("Damage multiplier on critical hit. 2.0x = double damage. Uses devmod:crit_multiplier attribute.")
             .onChange(v -> { stats.critDamage = v; module.markDirty("Critical damage"); });
 
-        lifestealEnabledToggle = new EditorToggle("lifestealEnabled", "Enable Lifesteal", stats.lifesteal > 0)
+        critChanceSlider = critChance;
+        critDamageSlider = critDamage;
+
+        critEnabledToggle = new EditorToggle("critEnabled", "Enable Critical Hits", stats.critChance > 0)
             .source(dataSource)
-            .tooltip("Heal a percentage of damage dealt")
+            .tooltip("Enable critical hit mechanics for this weapon")
             .onChange(enabled -> {
-                lifestealSlider.setEnabled(enabled);
+                critChance.setEnabled(enabled);
+                critDamage.setEnabled(enabled);
                 if (!enabled) {
-                    stats.lifesteal = 0f;
-                    lifestealSlider.setValue(0f);
+                    stats.critChance = 0f;
+                    critChance.setValue(0f);
                 }
-                module.markDirty("Lifesteal " + (enabled ? "enabled" : "disabled"));
+                module.markDirty("Critical hits " + (enabled ? "enabled" : "disabled"));
             });
 
-        lifestealSlider = new EditorSlider("lifesteal", "Lifesteal", 0f, 50f, 0f)
+        EditorSlider lifesteal = new EditorSlider("lifesteal", "Lifesteal", 0f, 50f, 0f)
             .step(1f)
             .format("%.0f")
             .suffix("%")
@@ -338,19 +377,21 @@ public class WeaponModuleUI {
             .info("Heals attacker for percentage of damage dealt. 10% lifesteal on 20 damage = 2 HP healed.")
             .onChange(v -> { stats.lifesteal = v / 100f; module.markDirty("Lifesteal"); });
 
-        fireDamageEnabledToggle = new EditorToggle("fireEnabled", "Enable Fire Damage", stats.fireDamageBonus > 0)
+        lifestealSlider = lifesteal;
+
+        lifestealEnabledToggle = new EditorToggle("lifestealEnabled", "Enable Lifesteal", stats.lifesteal > 0)
             .source(dataSource)
-            .tooltip("Add fire damage to attacks")
+            .tooltip("Heal a percentage of damage dealt")
             .onChange(enabled -> {
-                fireDamageSlider.setEnabled(enabled);
+                lifesteal.setEnabled(enabled);
                 if (!enabled) {
-                    stats.fireDamageBonus = 0f;
-                    fireDamageSlider.setValue(0f);
+                    stats.lifesteal = 0f;
+                    lifesteal.setValue(0f);
                 }
-                module.markDirty("Fire damage " + (enabled ? "enabled" : "disabled"));
+                module.markDirty("Lifesteal " + (enabled ? "enabled" : "disabled"));
             });
 
-        fireDamageSlider = new EditorSlider("fireDmg", "Fire Damage", 0f, 20f, 0f)
+        EditorSlider fireDamage = new EditorSlider("fireDmg", "Fire Damage", 0f, 20f, 0f)
             .step(0.5f)
             .format("+%.1f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
@@ -360,19 +401,21 @@ public class WeaponModuleUI {
             .info("Extra fire damage added to attacks. Sets target on fire. Ignores some armor.")
             .onChange(v -> { stats.fireDamageBonus = v; module.markDirty("Fire damage"); });
 
-        magicDamageEnabledToggle = new EditorToggle("magicEnabled", "Enable Magic Damage", stats.magicDamageBonus > 0)
+        fireDamageSlider = fireDamage;
+
+        fireDamageEnabledToggle = new EditorToggle("fireEnabled", "Enable Fire Damage", stats.fireDamageBonus > 0)
             .source(dataSource)
-            .tooltip("Add magic damage to attacks")
+            .tooltip("Add fire damage to attacks")
             .onChange(enabled -> {
-                magicDamageSlider.setEnabled(enabled);
+                fireDamage.setEnabled(enabled);
                 if (!enabled) {
-                    stats.magicDamageBonus = 0f;
-                    magicDamageSlider.setValue(0f);
+                    stats.fireDamageBonus = 0f;
+                    fireDamage.setValue(0f);
                 }
-                module.markDirty("Magic damage " + (enabled ? "enabled" : "disabled"));
+                module.markDirty("Fire damage " + (enabled ? "enabled" : "disabled"));
             });
 
-        magicDamageSlider = new EditorSlider("magicDmg", "Magic Damage", 0f, 20f, 0f)
+        EditorSlider magicDamage = new EditorSlider("magicDmg", "Magic Damage", 0f, 20f, 0f)
             .step(0.5f)
             .format("+%.1f")
             .trackColor(UIConstants.SliderColors.SPECIAL)
@@ -381,15 +424,34 @@ public class WeaponModuleUI {
             .enabled(stats.magicDamageBonus > 0)
             .info("Extra magic damage added to attacks. Bypasses physical armor. Affected by magic resistance.")
             .onChange(v -> { stats.magicDamageBonus = v; module.markDirty("Magic damage"); });
+
+        magicDamageSlider = magicDamage;
+
+        magicDamageEnabledToggle = new EditorToggle("magicEnabled", "Enable Magic Damage", stats.magicDamageBonus > 0)
+            .source(dataSource)
+            .tooltip("Add magic damage to attacks")
+            .onChange(enabled -> {
+                magicDamage.setEnabled(enabled);
+                if (!enabled) {
+                    stats.magicDamageBonus = 0f;
+                    magicDamage.setValue(0f);
+                }
+                module.markDirty("Magic damage " + (enabled ? "enabled" : "disabled"));
+            });
     }
 
     public List<EditorSection> getSpecialSections() {
+        EditorToggle critEnabled = Objects.requireNonNull(critEnabledToggle, "critEnabledToggle");
+        EditorSlider critChance = Objects.requireNonNull(critChanceSlider, "critChanceSlider");
+        EditorSlider critDamage = Objects.requireNonNull(critDamageSlider, "critDamageSlider");
+        EditorToggle lifestealEnabled = Objects.requireNonNull(lifestealEnabledToggle, "lifestealEnabledToggle");
+        EditorSlider lifesteal = Objects.requireNonNull(lifestealSlider, "lifestealSlider");
         return withDps(List.of(
-            new ToggleSectionAdapter(critEnabledToggle),
-            new SliderSectionAdapter(critChanceSlider),
-            new SliderSectionAdapter(critDamageSlider),
-            new ToggleSectionAdapter(lifestealEnabledToggle),
-            new SliderSectionAdapter(lifestealSlider)
+            new ToggleSectionAdapter(critEnabled),
+            new SliderSectionAdapter(critChance),
+            new SliderSectionAdapter(critDamage),
+            new ToggleSectionAdapter(lifestealEnabled),
+            new SliderSectionAdapter(lifesteal)
         ));
     }
 
@@ -442,15 +504,23 @@ public class WeaponModuleUI {
     }
 
     public List<EditorSection> getDamageTypeSections() {
+        EditorSlider vsUndead = Objects.requireNonNull(vsUndeadSlider, "vsUndeadSlider");
+        EditorSlider vsArthro = Objects.requireNonNull(vsArthroSlider, "vsArthroSlider");
+        EditorSlider vsPlayers = Objects.requireNonNull(vsPlayersSlider, "vsPlayersSlider");
+        EditorToggle fireEnabled = Objects.requireNonNull(fireDamageEnabledToggle, "fireDamageEnabledToggle");
+        EditorSlider fireDamage = Objects.requireNonNull(fireDamageSlider, "fireDamageSlider");
+        EditorToggle magicEnabled = Objects.requireNonNull(magicDamageEnabledToggle, "magicDamageEnabledToggle");
+        EditorSlider magicDamage = Objects.requireNonNull(magicDamageSlider, "magicDamageSlider");
+        EditorSlider trueDamage = Objects.requireNonNull(trueDamageSlider, "trueDamageSlider");
         return withDps(List.of(
-            new SliderSectionAdapter(vsUndeadSlider),
-            new SliderSectionAdapter(vsArthroSlider),
-            new SliderSectionAdapter(vsPlayersSlider),
-            new ToggleSectionAdapter(fireDamageEnabledToggle),
-            new SliderSectionAdapter(fireDamageSlider),
-            new ToggleSectionAdapter(magicDamageEnabledToggle),
-            new SliderSectionAdapter(magicDamageSlider),
-            new SliderSectionAdapter(trueDamageSlider)
+            new SliderSectionAdapter(vsUndead),
+            new SliderSectionAdapter(vsArthro),
+            new SliderSectionAdapter(vsPlayers),
+            new ToggleSectionAdapter(fireEnabled),
+            new SliderSectionAdapter(fireDamage),
+            new ToggleSectionAdapter(magicEnabled),
+            new SliderSectionAdapter(magicDamage),
+            new SliderSectionAdapter(trueDamage)
         ));
     }
 
@@ -500,11 +570,15 @@ public class WeaponModuleUI {
     }
 
     public List<EditorSection> getDurabilitySections() {
+        EditorSlider maxDurability = Objects.requireNonNull(maxDurabilitySlider, "maxDurabilitySlider");
+        EditorSlider currentDamage = Objects.requireNonNull(currentDamageSlider, "currentDamageSlider");
+        EditorSlider repairCost = Objects.requireNonNull(repairCostSlider, "repairCostSlider");
+        EditorToggle unbreakable = Objects.requireNonNull(unbreakableToggle, "unbreakableToggle");
         return List.of(
-            new SliderSectionAdapter(maxDurabilitySlider),
-            new SliderSectionAdapter(currentDamageSlider),
-            new SliderSectionAdapter(repairCostSlider),
-            new ToggleSectionAdapter(unbreakableToggle)
+            new SliderSectionAdapter(maxDurability),
+            new SliderSectionAdapter(currentDamage),
+            new SliderSectionAdapter(repairCost),
+            new ToggleSectionAdapter(unbreakable)
         );
     }
 
@@ -539,11 +613,14 @@ public class WeaponModuleUI {
     }
 
     public List<EditorSection> getToolSections() {
+        EditorSlider toolDefaultSpeed = Objects.requireNonNull(toolDefaultSpeedSlider, "toolDefaultSpeedSlider");
+        EditorSlider toolDamagePerBlock = Objects.requireNonNull(toolDamagePerBlockSlider, "toolDamagePerBlockSlider");
+        EditorToggle clearToolRules = Objects.requireNonNull(clearToolRulesToggle, "clearToolRulesToggle");
         List<EditorSection> sections = new ArrayList<>();
-        sections.add(new SliderSectionAdapter(toolDefaultSpeedSlider));
-        sections.add(new SliderSectionAdapter(toolDamagePerBlockSlider));
+        sections.add(new SliderSectionAdapter(toolDefaultSpeed));
+        sections.add(new SliderSectionAdapter(toolDamagePerBlock));
         toolRuleSections.forEach(sections::add);
-        sections.add(new ToggleSectionAdapter(clearToolRulesToggle));
+        sections.add(new ToggleSectionAdapter(clearToolRules));
         sections.add(new TextNoteSection(
             "toolRulesNote",
             "Block tags (e.g. minecraft:mineable/pickaxe) with speed + drops",
@@ -945,7 +1022,7 @@ public class WeaponModuleUI {
         applySourceLabel(vsPlayersSlider, prefix);
     }
 
-    private void applySourceLabel(EditorSlider slider, String prefix) {
+    private void applySourceLabel(@Nullable EditorSlider slider, String prefix) {
         if (slider == null) return;
         String label = slider.getLabel();
         slider.setLabel(prefix + label.replaceFirst("^\\[[^]]+\\] ", ""));

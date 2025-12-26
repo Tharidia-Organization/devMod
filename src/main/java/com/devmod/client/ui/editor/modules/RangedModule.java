@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.component.DataComponents;
@@ -42,29 +44,29 @@ public class RangedModule extends AbstractEditorModule {
 
     private RangedWeaponModule.RangedStats stats = new RangedWeaponModule.RangedStats();
     private RangedWeaponModule.RangedStats originalStats = new RangedWeaponModule.RangedStats();
-    private RangedWeaponModule.SourcedStats sourcedStats;
+    private @Nullable RangedWeaponModule.SourcedStats sourcedStats;
     private static final int TOGGLE_SECTION_HEIGHT = EditorDimensions.TOGGLE_HEIGHT + UIConstants.Spacing.SM;
 
     // UI components
-    private EditorSlider drawSpeedSlider;
-    private EditorSlider accuracySlider;
-    private EditorSlider rangeSlider;
-    private EditorSlider projectileSpeedSlider;
-    private EditorSlider chargeTimeSlider;
-    private EditorSlider projectileGravitySlider;
-    private EditorSlider projectileSpreadSlider;
-    private EditorSlider baseDamageSlider;
-    private EditorSlider loyaltySpeedSlider;
-    private EditorSlider riptideDistanceSlider;
-    private EditorToggle riptideRequiresWaterToggle;
-    private EditorToggle channelingToggle;
-    private EditorSlider critChanceSlider;
-    private EditorSlider critDamageSlider;
-    private EditorSlider piercingSlider;
-    private EditorSlider multishotCountSlider;
-    private EditorToggle multishotToggle;
-    private EditorToggle infinityToggle;
-    private EditorTextField ammoFilterInput;
+    private @Nullable EditorSlider drawSpeedSlider;
+    private @Nullable EditorSlider accuracySlider;
+    private @Nullable EditorSlider rangeSlider;
+    private @Nullable EditorSlider projectileSpeedSlider;
+    private @Nullable EditorSlider chargeTimeSlider;
+    private @Nullable EditorSlider projectileGravitySlider;
+    private @Nullable EditorSlider projectileSpreadSlider;
+    private @Nullable EditorSlider baseDamageSlider;
+    private @Nullable EditorSlider loyaltySpeedSlider;
+    private @Nullable EditorSlider riptideDistanceSlider;
+    private @Nullable EditorToggle riptideRequiresWaterToggle;
+    private @Nullable EditorToggle channelingToggle;
+    private @Nullable EditorSlider critChanceSlider;
+    private @Nullable EditorSlider critDamageSlider;
+    private @Nullable EditorSlider piercingSlider;
+    private @Nullable EditorSlider multishotCountSlider;
+    private @Nullable EditorToggle multishotToggle;
+    private @Nullable EditorToggle infinityToggle;
+    private @Nullable EditorTextField ammoFilterInput;
     private List<String> ammoMatches = new ArrayList<>();
     private final List<Suggestion> ammoSuggestions = List.of(
         new Suggestion("#minecraft:arrows", "Tag: arrows"),
@@ -331,47 +333,51 @@ public class RangedModule extends AbstractEditorModule {
 
     private List<EditorSection> getMechanicsSections() {
         var list = new java.util.ArrayList<EditorSection>();
-        list.add(new SliderSectionAdapter(drawSpeedSlider));
+        list.add(new SliderSectionAdapter(Objects.requireNonNull(drawSpeedSlider, "drawSpeedSlider")));
         if (chargeTimeSlider != null) list.add(new SliderSectionAdapter(chargeTimeSlider));
-        list.add(new SliderSectionAdapter(accuracySlider));
-        list.add(new SliderSectionAdapter(rangeSlider));
+        list.add(new SliderSectionAdapter(Objects.requireNonNull(accuracySlider, "accuracySlider")));
+        list.add(new SliderSectionAdapter(Objects.requireNonNull(rangeSlider, "rangeSlider")));
         return list;
     }
 
     private List<EditorSection> getProjectileSections() {
         return List.of(
-            new SliderSectionAdapter(projectileSpeedSlider),
-            new SliderSectionAdapter(projectileGravitySlider),
-            new SliderSectionAdapter(projectileSpreadSlider),
-            new SliderSectionAdapter(baseDamageSlider),
-            new ToggleSectionAdapter(multishotToggle, TOGGLE_SECTION_HEIGHT),
-            new SliderSectionAdapter(multishotCountSlider),
-            new SliderSectionAdapter(piercingSlider),
-            new ToggleSectionAdapter(infinityToggle, TOGGLE_SECTION_HEIGHT)
+            new SliderSectionAdapter(Objects.requireNonNull(projectileSpeedSlider, "projectileSpeedSlider")),
+            new SliderSectionAdapter(Objects.requireNonNull(projectileGravitySlider, "projectileGravitySlider")),
+            new SliderSectionAdapter(Objects.requireNonNull(projectileSpreadSlider, "projectileSpreadSlider")),
+            new SliderSectionAdapter(Objects.requireNonNull(baseDamageSlider, "baseDamageSlider")),
+            new ToggleSectionAdapter(Objects.requireNonNull(multishotToggle, "multishotToggle"), TOGGLE_SECTION_HEIGHT),
+            new SliderSectionAdapter(Objects.requireNonNull(multishotCountSlider, "multishotCountSlider")),
+            new SliderSectionAdapter(Objects.requireNonNull(piercingSlider, "piercingSlider")),
+            new ToggleSectionAdapter(Objects.requireNonNull(infinityToggle, "infinityToggle"), TOGGLE_SECTION_HEIGHT)
         );
     }
 
     private List<EditorSection> getDamageSections() {
         return List.of(
-            new SliderSectionAdapter(critChanceSlider),
-            new SliderSectionAdapter(critDamageSlider)
+            new SliderSectionAdapter(Objects.requireNonNull(critChanceSlider, "critChanceSlider")),
+            new SliderSectionAdapter(Objects.requireNonNull(critDamageSlider, "critDamageSlider"))
         );
     }
 
     private List<EditorSection> getTridentSections() {
         return List.of(
-            new SliderSectionAdapter(loyaltySpeedSlider),
-            new SliderSectionAdapter(riptideDistanceSlider),
-            new ToggleSectionAdapter(riptideRequiresWaterToggle, TOGGLE_SECTION_HEIGHT),
-            new ToggleSectionAdapter(channelingToggle, TOGGLE_SECTION_HEIGHT)
+            new SliderSectionAdapter(Objects.requireNonNull(loyaltySpeedSlider, "loyaltySpeedSlider")),
+            new SliderSectionAdapter(Objects.requireNonNull(riptideDistanceSlider, "riptideDistanceSlider")),
+            new ToggleSectionAdapter(Objects.requireNonNull(riptideRequiresWaterToggle, "riptideRequiresWaterToggle"), TOGGLE_SECTION_HEIGHT),
+            new ToggleSectionAdapter(Objects.requireNonNull(channelingToggle, "channelingToggle"), TOGGLE_SECTION_HEIGHT)
         );
     }
 
     private List<EditorSection> getAmmoSections() {
         return List.of(
-            new InputSectionAdapter(ammoFilterInput, true),
+            new InputSectionAdapter(requireAmmoFilterInput(), true),
             new AmmoListSection()
         );
+    }
+
+    private EditorTextField requireAmmoFilterInput() {
+        return Objects.requireNonNull(ammoFilterInput, "ammoFilterInput");
     }
 
     private List<String> computeAmmoMatches(String filter) {
@@ -466,7 +472,7 @@ public class RangedModule extends AbstractEditorModule {
             // First rect is clear
             if (suggestionRects.get(0).contains((int) mouseX, (int) mouseY)) {
                 stats.ammoFilter = "";
-                ammoFilterInput.setValue("");
+                requireAmmoFilterInput().setValue("");
                 ammoMatches = computeAmmoMatches(stats.ammoFilter);
                 markDirty("Ammo filter");
                 return true;
@@ -475,7 +481,7 @@ public class RangedModule extends AbstractEditorModule {
                 if (suggestionRects.get(i).contains((int) mouseX, (int) mouseY)) {
                     Suggestion s = ammoSuggestions.get(i - 1);
                     stats.ammoFilter = s.value();
-                    ammoFilterInput.setValue(s.value());
+                    requireAmmoFilterInput().setValue(s.value());
                     ammoMatches = computeAmmoMatches(stats.ammoFilter);
                     markDirty("Ammo filter");
                     return true;
@@ -534,24 +540,25 @@ public class RangedModule extends AbstractEditorModule {
     private void updateComponentsFromStats() {
         // update sourced info
         sourcedStats = RangedWeaponModule.getSourcedStats(item);
-        applySourceLabel(drawSpeedSlider, sourcedStats.drawSpeed());
-        applySourceLabel(chargeTimeSlider, sourcedStats.chargeTime());
-        applySourceLabel(accuracySlider, sourcedStats.accuracy());
-        applySourceLabel(rangeSlider, sourcedStats.range());
-        applySourceLabel(projectileSpeedSlider, sourcedStats.projectileSpeed());
-        applySourceLabel(projectileGravitySlider, sourcedStats.projectileGravity());
-        applySourceLabel(projectileSpreadSlider, sourcedStats.projectileSpread());
-        applySourceLabel(baseDamageSlider, sourcedStats.baseDamage());
-        applySourceLabel(piercingSlider, sourcedStats.piercing());
-        applySourceLabel(multishotCountSlider, sourcedStats.multishotCount());
-        applySourceLabel(multishotToggle, sourcedStats.multishot());
-        applySourceLabel(infinityToggle, sourcedStats.infinityOverride());
-        applySourceLabel(critChanceSlider, sourcedStats.critChance());
-        applySourceLabel(critDamageSlider, sourcedStats.critDamage());
-        applySourceLabel(loyaltySpeedSlider, sourcedStats.loyaltySpeed());
-        applySourceLabel(riptideDistanceSlider, sourcedStats.riptideDistance());
-        applySourceLabel(riptideRequiresWaterToggle, sourcedStats.riptideRequiresWater());
-        applySourceLabel(channelingToggle, sourcedStats.channeling());
+        RangedWeaponModule.SourcedStats sourced = Objects.requireNonNull(sourcedStats, "sourcedStats");
+        applySourceLabel(drawSpeedSlider, sourced.drawSpeed());
+        applySourceLabel(chargeTimeSlider, sourced.chargeTime());
+        applySourceLabel(accuracySlider, sourced.accuracy());
+        applySourceLabel(rangeSlider, sourced.range());
+        applySourceLabel(projectileSpeedSlider, sourced.projectileSpeed());
+        applySourceLabel(projectileGravitySlider, sourced.projectileGravity());
+        applySourceLabel(projectileSpreadSlider, sourced.projectileSpread());
+        applySourceLabel(baseDamageSlider, sourced.baseDamage());
+        applySourceLabel(piercingSlider, sourced.piercing());
+        applySourceLabel(multishotCountSlider, sourced.multishotCount());
+        applySourceLabel(multishotToggle, sourced.multishot());
+        applySourceLabel(infinityToggle, sourced.infinityOverride());
+        applySourceLabel(critChanceSlider, sourced.critChance());
+        applySourceLabel(critDamageSlider, sourced.critDamage());
+        applySourceLabel(loyaltySpeedSlider, sourced.loyaltySpeed());
+        applySourceLabel(riptideDistanceSlider, sourced.riptideDistance());
+        applySourceLabel(riptideRequiresWaterToggle, sourced.riptideRequiresWater());
+        applySourceLabel(channelingToggle, sourced.channeling());
 
         if (drawSpeedSlider != null) drawSpeedSlider.setValue(stats.drawSpeed);
         if (chargeTimeSlider != null) chargeTimeSlider.setValue(stats.chargeTime);
@@ -575,7 +582,7 @@ public class RangedModule extends AbstractEditorModule {
         ammoMatches = computeAmmoMatches(stats.ammoFilter);
     }
 
-    private void applySourceLabel(EditorSlider slider, RangedWeaponModule.SourcedValue<?> sourced) {
+    private void applySourceLabel(@Nullable EditorSlider slider, @Nullable RangedWeaponModule.SourcedValue<?> sourced) {
         if (slider == null || sourced == null) return;
         String prefix = switch (sourced.source()) {
             case DEVMOD_COMPONENT -> "[DEV] ";
@@ -586,7 +593,7 @@ public class RangedModule extends AbstractEditorModule {
         slider.setLabel(prefix + slider.getLabel().replaceFirst("^\\[[^]]+\\] ", ""));
     }
 
-    private void applySourceLabel(EditorToggle toggle, RangedWeaponModule.SourcedValue<?> sourced) {
+    private void applySourceLabel(@Nullable EditorToggle toggle, @Nullable RangedWeaponModule.SourcedValue<?> sourced) {
         if (toggle == null || sourced == null) return;
         String prefix = switch (sourced.source()) {
             case DEVMOD_COMPONENT -> "[DEV] ";

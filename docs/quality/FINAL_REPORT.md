@@ -28,6 +28,7 @@ OK ./gradlew compileTestJava --no-daemon --no-parallel --max-workers=1 --rerun-t
 7. Client UI/editor nullability annotations and override markers to reduce NullAway/MissingOverride noise.
 8. Debug panel NBT helpers now accept nullable tags to avoid NullAway parameter warnings.
 9. Editor overlays: nullable UI state/overlay fields annotated and dialog/template access guarded without behavior changes.
+10. Editor module UIs: nullable component fields annotated and section assembly guarded to avoid null captures.
 
 See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 

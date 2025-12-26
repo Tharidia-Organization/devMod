@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -37,54 +39,78 @@ public class ArmorModuleUI {
     // UI COMPONENTS - Damage Reduction Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private EditorSlider physicalReductionSlider;
+    @Nullable
     private EditorSlider fireReductionSlider;
+    @Nullable
     private EditorSlider magicReductionSlider;
+    @Nullable
     private EditorSlider explosionReductionSlider;
+    @Nullable
     private EditorSlider projectileReductionSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Vanilla Stats Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private EditorSlider armorBonusSlider;
+    @Nullable
     private EditorSlider toughnessBonusSlider;
+    @Nullable
     private EditorSlider knockbackResistanceSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Special Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private EditorToggle thornsToggle;
+    @Nullable
     private EditorSlider thornsPercentSlider;
+    @Nullable
     private EditorToggle shieldReflectToggle;
+    @Nullable
     private EditorSlider shieldBlockStrengthSlider;
+    @Nullable
     private EditorSlider shieldRecoverySlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Shield Visual Tab (Prismatic Integration)
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private EditorSlider shieldOpacitySlider;
+    @Nullable
     private EditorToggle shieldGlowToggle;
+    @Nullable
     private EditorSlider shieldGlowIntensitySlider;
+    @Nullable
     private EditorSlider shieldNoiseIntensitySlider;
+    @Nullable
     private EditorSlider shieldPulseSpeedSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Shield Deflection Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private EditorSlider shieldDeflectionSpreadSlider;
+    @Nullable
     private EditorToggle shieldDeflectToOwnerToggle;
+    @Nullable
     private EditorSlider shieldDeflectSpeedMultSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Shield Shatter Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private EditorSlider shieldShatterThresholdSlider;
+    @Nullable
     private EditorToggle shieldAutoRegenerateToggle;
+    @Nullable
     private EditorSlider shieldRegenDelaySlider;
 
     public ArmorModuleUI(ArmorModule module, ArmorModuleCore core) {
@@ -441,61 +467,85 @@ public class ArmorModuleUI {
     // ═══════════════════════════════════════════════════════════════
 
     public List<EditorSection> getDamageReductionSections() {
+        EditorSlider physicalReduction = Objects.requireNonNull(physicalReductionSlider, "physicalReductionSlider");
+        EditorSlider fireReduction = Objects.requireNonNull(fireReductionSlider, "fireReductionSlider");
+        EditorSlider magicReduction = Objects.requireNonNull(magicReductionSlider, "magicReductionSlider");
+        EditorSlider explosionReduction = Objects.requireNonNull(explosionReductionSlider, "explosionReductionSlider");
+        EditorSlider projectileReduction = Objects.requireNonNull(projectileReductionSlider, "projectileReductionSlider");
         return withEhp(List.of(
-            new SliderSectionAdapter(physicalReductionSlider),
-            new SliderSectionAdapter(fireReductionSlider),
-            new SliderSectionAdapter(magicReductionSlider),
-            new SliderSectionAdapter(explosionReductionSlider),
-            new SliderSectionAdapter(projectileReductionSlider)
+            new SliderSectionAdapter(physicalReduction),
+            new SliderSectionAdapter(fireReduction),
+            new SliderSectionAdapter(magicReduction),
+            new SliderSectionAdapter(explosionReduction),
+            new SliderSectionAdapter(projectileReduction)
         ));
     }
 
     public List<EditorSection> getVanillaStatsSections() {
+        EditorSlider armorBonus = Objects.requireNonNull(armorBonusSlider, "armorBonusSlider");
+        EditorSlider toughnessBonus = Objects.requireNonNull(toughnessBonusSlider, "toughnessBonusSlider");
+        EditorSlider knockbackResistance = Objects.requireNonNull(knockbackResistanceSlider, "knockbackResistanceSlider");
         return withEhp(List.of(
-            new SliderSectionAdapter(armorBonusSlider),
-            new SliderSectionAdapter(toughnessBonusSlider),
-            new SliderSectionAdapter(knockbackResistanceSlider)
+            new SliderSectionAdapter(armorBonus),
+            new SliderSectionAdapter(toughnessBonus),
+            new SliderSectionAdapter(knockbackResistance)
         ));
     }
 
     public List<EditorSection> getSpecialSections() {
+        EditorToggle thorns = Objects.requireNonNull(thornsToggle, "thornsToggle");
+        EditorSlider thornsPercent = Objects.requireNonNull(thornsPercentSlider, "thornsPercentSlider");
         return withEhp(List.of(
-            new ToggleSectionAdapter(thornsToggle),
-            new SliderSectionAdapter(thornsPercentSlider)
+            new ToggleSectionAdapter(thorns),
+            new SliderSectionAdapter(thornsPercent)
         ));
     }
 
     public List<EditorSection> getShieldSections() {
+        EditorToggle shieldReflect = Objects.requireNonNull(shieldReflectToggle, "shieldReflectToggle");
+        EditorSlider shieldBlockStrength = Objects.requireNonNull(shieldBlockStrengthSlider, "shieldBlockStrengthSlider");
+        EditorSlider shieldRecovery = Objects.requireNonNull(shieldRecoverySlider, "shieldRecoverySlider");
         return withEhp(List.of(
-            new ToggleSectionAdapter(shieldReflectToggle),
-            new SliderSectionAdapter(shieldBlockStrengthSlider),
-            new SliderSectionAdapter(shieldRecoverySlider)
+            new ToggleSectionAdapter(shieldReflect),
+            new SliderSectionAdapter(shieldBlockStrength),
+            new SliderSectionAdapter(shieldRecovery)
         ));
     }
 
     public List<EditorSection> getShieldVisualSections() {
+        EditorSlider shieldOpacity = Objects.requireNonNull(shieldOpacitySlider, "shieldOpacitySlider");
+        EditorToggle shieldGlow = Objects.requireNonNull(shieldGlowToggle, "shieldGlowToggle");
+        EditorSlider shieldGlowIntensity = Objects.requireNonNull(shieldGlowIntensitySlider, "shieldGlowIntensitySlider");
+        EditorSlider shieldNoiseIntensity = Objects.requireNonNull(shieldNoiseIntensitySlider, "shieldNoiseIntensitySlider");
+        EditorSlider shieldPulseSpeed = Objects.requireNonNull(shieldPulseSpeedSlider, "shieldPulseSpeedSlider");
         return withEhp(List.of(
-            new SliderSectionAdapter(shieldOpacitySlider),
-            new ToggleSectionAdapter(shieldGlowToggle),
-            new SliderSectionAdapter(shieldGlowIntensitySlider),
-            new SliderSectionAdapter(shieldNoiseIntensitySlider),
-            new SliderSectionAdapter(shieldPulseSpeedSlider)
+            new SliderSectionAdapter(shieldOpacity),
+            new ToggleSectionAdapter(shieldGlow),
+            new SliderSectionAdapter(shieldGlowIntensity),
+            new SliderSectionAdapter(shieldNoiseIntensity),
+            new SliderSectionAdapter(shieldPulseSpeed)
         ));
     }
 
     public List<EditorSection> getShieldDeflectionSections() {
+        EditorSlider deflectionSpread = Objects.requireNonNull(shieldDeflectionSpreadSlider, "shieldDeflectionSpreadSlider");
+        EditorToggle deflectToOwner = Objects.requireNonNull(shieldDeflectToOwnerToggle, "shieldDeflectToOwnerToggle");
+        EditorSlider deflectSpeedMult = Objects.requireNonNull(shieldDeflectSpeedMultSlider, "shieldDeflectSpeedMultSlider");
         return withEhp(List.of(
-            new SliderSectionAdapter(shieldDeflectionSpreadSlider),
-            new ToggleSectionAdapter(shieldDeflectToOwnerToggle),
-            new SliderSectionAdapter(shieldDeflectSpeedMultSlider)
+            new SliderSectionAdapter(deflectionSpread),
+            new ToggleSectionAdapter(deflectToOwner),
+            new SliderSectionAdapter(deflectSpeedMult)
         ));
     }
 
     public List<EditorSection> getShieldShatterSections() {
+        EditorSlider shatterThreshold = Objects.requireNonNull(shieldShatterThresholdSlider, "shieldShatterThresholdSlider");
+        EditorToggle autoRegenerate = Objects.requireNonNull(shieldAutoRegenerateToggle, "shieldAutoRegenerateToggle");
+        EditorSlider regenDelay = Objects.requireNonNull(shieldRegenDelaySlider, "shieldRegenDelaySlider");
         return withEhp(List.of(
-            new SliderSectionAdapter(shieldShatterThresholdSlider),
-            new ToggleSectionAdapter(shieldAutoRegenerateToggle),
-            new SliderSectionAdapter(shieldRegenDelaySlider)
+            new SliderSectionAdapter(shatterThreshold),
+            new ToggleSectionAdapter(autoRegenerate),
+            new SliderSectionAdapter(regenDelay)
         ));
     }
 

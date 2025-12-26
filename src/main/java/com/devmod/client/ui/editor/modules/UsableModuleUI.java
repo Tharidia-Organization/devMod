@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
@@ -30,23 +31,31 @@ public class UsableModuleUI {
     // UI COMPONENTS - Timing Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorSlider useDurationSlider;
+    @Nullable
     EditorSlider cooldownDurationSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Projectile Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorToggle isThrowableToggle;
+    @Nullable
     EditorSlider projectileSpeedSlider;
+    @Nullable
     EditorSlider projectileGravitySlider;
+    @Nullable
     EditorSlider projectileInaccuracySlider;
+    @Nullable
     EditorSlider projectileDamageSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Consumption Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorToggle consumeOnUseToggle;
 
     public UsableModuleUI(UsableModule module, UsableModuleCore core) {
@@ -93,10 +102,12 @@ public class UsableModuleUI {
     }
 
     public List<EditorSection> getTimingSections() {
+        EditorSlider useDuration = Objects.requireNonNull(useDurationSlider, "useDurationSlider");
+        EditorSlider cooldownDuration = Objects.requireNonNull(cooldownDurationSlider, "cooldownDurationSlider");
         List<EditorSection> sections = new ArrayList<>();
         sections.add(new SimpleHeaderSection("timing-header", "Timing Properties"));
-        sections.add(new SliderSectionAdapter(useDurationSlider));
-        sections.add(new SliderSectionAdapter(cooldownDurationSlider));
+        sections.add(new SliderSectionAdapter(useDuration));
+        sections.add(new SliderSectionAdapter(cooldownDuration));
         sections.add(new TextNoteSection("timing-note", "20 ticks = 1 second. Food default is 32 ticks (1.6s)."));
         return sections;
     }
@@ -150,13 +161,18 @@ public class UsableModuleUI {
     }
 
     public List<EditorSection> getProjectileSections() {
+        EditorToggle throwableToggle = Objects.requireNonNull(isThrowableToggle, "isThrowableToggle");
+        EditorSlider projectileSpeed = Objects.requireNonNull(projectileSpeedSlider, "projectileSpeedSlider");
+        EditorSlider projectileGravity = Objects.requireNonNull(projectileGravitySlider, "projectileGravitySlider");
+        EditorSlider projectileInaccuracy = Objects.requireNonNull(projectileInaccuracySlider, "projectileInaccuracySlider");
+        EditorSlider projectileDamage = Objects.requireNonNull(projectileDamageSlider, "projectileDamageSlider");
         List<EditorSection> sections = new ArrayList<>();
         sections.add(new SimpleHeaderSection("proj-header", "Projectile Properties"));
-        sections.add(new ToggleSectionAdapter(isThrowableToggle));
-        sections.add(new SliderSectionAdapter(projectileSpeedSlider));
-        sections.add(new SliderSectionAdapter(projectileGravitySlider));
-        sections.add(new SliderSectionAdapter(projectileInaccuracySlider));
-        sections.add(new SliderSectionAdapter(projectileDamageSlider));
+        sections.add(new ToggleSectionAdapter(throwableToggle));
+        sections.add(new SliderSectionAdapter(projectileSpeed));
+        sections.add(new SliderSectionAdapter(projectileGravity));
+        sections.add(new SliderSectionAdapter(projectileInaccuracy));
+        sections.add(new SliderSectionAdapter(projectileDamage));
         return sections;
     }
 
@@ -173,9 +189,10 @@ public class UsableModuleUI {
     }
 
     public List<EditorSection> getConsumptionSections() {
+        EditorToggle consumeOnUse = Objects.requireNonNull(consumeOnUseToggle, "consumeOnUseToggle");
         List<EditorSection> sections = new ArrayList<>();
         sections.add(new SimpleHeaderSection("cons-header", "Consumption Properties"));
-        sections.add(new ToggleSectionAdapter(consumeOnUseToggle));
+        sections.add(new ToggleSectionAdapter(consumeOnUse));
         sections.add(new TextNoteSection("cons-note", "Remainder item (e.g., bucket after milk) can be set via commands."));
         return sections;
     }

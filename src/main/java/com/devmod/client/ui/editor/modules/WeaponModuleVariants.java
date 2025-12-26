@@ -1,5 +1,9 @@
 package com.devmod.client.ui.editor.modules;
 
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.client.ui.editor.components.EditorSlider;
@@ -49,21 +53,32 @@ public class WeaponModuleVariants {
     // MACE UI COMPONENTS
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorSlider smashBonusSlider;
+    @Nullable
     EditorSlider smashCapSlider;
+    @Nullable
     EditorSlider smashKnockbackSlider;
+    @Nullable
     EditorSlider smashAoeDamageSlider;
+    @Nullable
     EditorToggle smashFallNegationToggle;
 
     // ═══════════════════════════════════════════════════════════════
     // TRIDENT UI COMPONENTS
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorSlider throwDamageSlider;
+    @Nullable
     EditorSlider throwSpeedSlider;
+    @Nullable
     EditorSlider loyaltySpeedSlider;
+    @Nullable
     EditorSlider riptideDistanceSlider;
+    @Nullable
     EditorSlider riptideDamageSlider;
+    @Nullable
     EditorToggle riptideRequiresWaterToggle;
 
     private final WeaponModule module;
@@ -187,7 +202,7 @@ public class WeaponModuleVariants {
     // LOAD / SAVE VARIANT DATA
     // ═══════════════════════════════════════════════════════════════
 
-    public void loadVariantData(CompoundTag customRoot, CompoundTag componentRoot) {
+    public void loadVariantData(@Nullable CompoundTag customRoot, @Nullable CompoundTag componentRoot) {
         CompoundTag source = customRoot == null ? new CompoundTag() : customRoot;
         if (source.isEmpty() && componentRoot != null) {
             source = componentRoot;
@@ -318,16 +333,16 @@ public class WeaponModuleVariants {
     // GETTERS FOR UI COMPONENTS
     // ═══════════════════════════════════════════════════════════════
 
-    public EditorSlider getSmashBonusSlider() { return smashBonusSlider; }
-    public EditorSlider getSmashCapSlider() { return smashCapSlider; }
-    public EditorSlider getSmashKnockbackSlider() { return smashKnockbackSlider; }
-    public EditorSlider getSmashAoeDamageSlider() { return smashAoeDamageSlider; }
-    public EditorToggle getSmashFallNegationToggle() { return smashFallNegationToggle; }
+    public EditorSlider getSmashBonusSlider() { return Objects.requireNonNull(smashBonusSlider, "smashBonusSlider"); }
+    public EditorSlider getSmashCapSlider() { return Objects.requireNonNull(smashCapSlider, "smashCapSlider"); }
+    public EditorSlider getSmashKnockbackSlider() { return Objects.requireNonNull(smashKnockbackSlider, "smashKnockbackSlider"); }
+    public EditorSlider getSmashAoeDamageSlider() { return Objects.requireNonNull(smashAoeDamageSlider, "smashAoeDamageSlider"); }
+    public EditorToggle getSmashFallNegationToggle() { return Objects.requireNonNull(smashFallNegationToggle, "smashFallNegationToggle"); }
 
-    public EditorSlider getThrowDamageSlider() { return throwDamageSlider; }
-    public EditorSlider getThrowSpeedSlider() { return throwSpeedSlider; }
-    public EditorSlider getLoyaltySpeedSlider() { return loyaltySpeedSlider; }
-    public EditorSlider getRiptideDistanceSlider() { return riptideDistanceSlider; }
-    public EditorSlider getRiptideDamageSlider() { return riptideDamageSlider; }
-    public EditorToggle getRiptideRequiresWaterToggle() { return riptideRequiresWaterToggle; }
+    public EditorSlider getThrowDamageSlider() { return Objects.requireNonNull(throwDamageSlider, "throwDamageSlider"); }
+    public EditorSlider getThrowSpeedSlider() { return Objects.requireNonNull(throwSpeedSlider, "throwSpeedSlider"); }
+    public EditorSlider getLoyaltySpeedSlider() { return Objects.requireNonNull(loyaltySpeedSlider, "loyaltySpeedSlider"); }
+    public EditorSlider getRiptideDistanceSlider() { return Objects.requireNonNull(riptideDistanceSlider, "riptideDistanceSlider"); }
+    public EditorSlider getRiptideDamageSlider() { return Objects.requireNonNull(riptideDamageSlider, "riptideDamageSlider"); }
+    public EditorToggle getRiptideRequiresWaterToggle() { return Objects.requireNonNull(riptideRequiresWaterToggle, "riptideRequiresWaterToggle"); }
 }

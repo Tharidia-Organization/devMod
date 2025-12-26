@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 
@@ -28,18 +30,26 @@ public class FuelModuleUI {
     // UI COMPONENTS - Burn Time Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorSlider burnTimeSlider;
+    @Nullable
     EditorToggle overrideDefaultToggle;
+    @Nullable
     EditorSlider efficiencySlider;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Cook Time Tab
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     EditorToggle customCookTimesToggle;
+    @Nullable
     EditorSlider furnaceCookTimeSlider;
+    @Nullable
     EditorSlider blastFurnaceCookTimeSlider;
+    @Nullable
     EditorSlider smokerCookTimeSlider;
+    @Nullable
     EditorSlider campfireCookTimeSlider;
 
     public FuelModuleUI(FuelModule module, FuelModuleCore core) {
@@ -89,11 +99,14 @@ public class FuelModuleUI {
     }
 
     public List<EditorSection> getBurnTimeSections() {
+        EditorSlider burnTime = Objects.requireNonNull(burnTimeSlider, "burnTimeSlider");
+        EditorToggle overrideDefault = Objects.requireNonNull(overrideDefaultToggle, "overrideDefaultToggle");
+        EditorSlider efficiency = Objects.requireNonNull(efficiencySlider, "efficiencySlider");
         List<EditorSection> sections = new ArrayList<>();
         sections.add(new SimpleHeaderSection("burn-header", "Burn Time Properties"));
-        sections.add(new SliderSectionAdapter(burnTimeSlider));
-        sections.add(new ToggleSectionAdapter(overrideDefaultToggle));
-        sections.add(new SliderSectionAdapter(efficiencySlider));
+        sections.add(new SliderSectionAdapter(burnTime));
+        sections.add(new ToggleSectionAdapter(overrideDefault));
+        sections.add(new SliderSectionAdapter(efficiency));
 
         // Show effective burn time
         FuelStats stats = core.getStats();
@@ -159,13 +172,18 @@ public class FuelModuleUI {
     }
 
     public List<EditorSection> getCookTimeSections() {
+        EditorToggle customCookTimes = Objects.requireNonNull(customCookTimesToggle, "customCookTimesToggle");
+        EditorSlider furnaceCook = Objects.requireNonNull(furnaceCookTimeSlider, "furnaceCookTimeSlider");
+        EditorSlider blastCook = Objects.requireNonNull(blastFurnaceCookTimeSlider, "blastFurnaceCookTimeSlider");
+        EditorSlider smokerCook = Objects.requireNonNull(smokerCookTimeSlider, "smokerCookTimeSlider");
+        EditorSlider campfireCook = Objects.requireNonNull(campfireCookTimeSlider, "campfireCookTimeSlider");
         List<EditorSection> sections = new ArrayList<>();
         sections.add(new SimpleHeaderSection("cook-header", "Cook Time Properties"));
-        sections.add(new ToggleSectionAdapter(customCookTimesToggle));
-        sections.add(new SliderSectionAdapter(furnaceCookTimeSlider));
-        sections.add(new SliderSectionAdapter(blastFurnaceCookTimeSlider));
-        sections.add(new SliderSectionAdapter(smokerCookTimeSlider));
-        sections.add(new SliderSectionAdapter(campfireCookTimeSlider));
+        sections.add(new ToggleSectionAdapter(customCookTimes));
+        sections.add(new SliderSectionAdapter(furnaceCook));
+        sections.add(new SliderSectionAdapter(blastCook));
+        sections.add(new SliderSectionAdapter(smokerCook));
+        sections.add(new SliderSectionAdapter(campfireCook));
         sections.add(new TextNoteSection("cook-note", "Cook times require recipe integration. Enable 'Custom Cook Times' to apply."));
         return sections;
     }

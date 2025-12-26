@@ -449,3 +449,24 @@ None (Quality pass complete)
 
 ### Results
 - Reduced NullAway warnings around editor overlays and dialog lifecycle without behavior change
+
+---
+
+## Batch 23: Editor Module UI Null-Safety (2025-12-26)
+
+### Scope
+- Annotated nullable editor module UI components and guarded section assembly with requireNonNull
+- Reordered special toggle wiring to avoid null captures in callbacks
+- Allowed nullable applySourceLabel inputs for ranged/weapon modules
+
+### Files Modified
+- `UsableModuleUI.java` - Annotated nullable UI fields, required components before section use
+- `FuelModuleUI.java` - Annotated nullable UI fields, required components before section use
+- `FoodModuleUI.java` - Annotated nullable UI fields, required components before section use
+- `ArmorModuleUI.java` - Annotated nullable UI fields, required components before section use
+- `WeaponModuleUI.java` - Annotated nullable UI fields, rewired special toggles, required components before section use
+- `WeaponModuleVariants.java` - Annotated nullable UI fields, required non-null in getters
+- `RangedModule.java` - Allowed nullable inputs in applySourceLabel helpers
+
+### Results
+- Reduced NullAway warnings for editor module initialization and source label updates
