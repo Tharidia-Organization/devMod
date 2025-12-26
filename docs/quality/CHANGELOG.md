@@ -535,3 +535,14 @@ None (Quality pass complete)
 ### Results
 - DuckDB migration/schema logs now preserve exception stack traces for troubleshooting
 - Remaining telemetry logging upgrades are pending while aggregation/LVC feature set stays unstaged
+
+---
+
+## Batch 28: Import Order Fixes (2025-12-26)
+
+### Files Modified
+- `NetworkHandler.java` - Reordered static import for `SEASON_TIER_UP`
+- `EnduranceQuestOverlay.java` - Reordered endurance/client telemetry imports
+
+### Results
+- Checkstyle import-order warnings cleared for network and overlay modules

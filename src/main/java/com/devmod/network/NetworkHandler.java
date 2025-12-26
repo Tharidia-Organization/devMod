@@ -108,6 +108,7 @@ import static com.devmod.network.ChannelId.RECORD_BANNER;
 import static com.devmod.network.ChannelId.REQUEST_PERSONAL_RECORDS;
 import static com.devmod.network.ChannelId.REQUEST_SHOP_SYNC;
 import static com.devmod.network.ChannelId.RESONANCE_NOTIFICATION;
+import static com.devmod.network.ChannelId.SEASON_TIER_UP;
 import static com.devmod.network.ChannelId.SHIELD_IMPACT;
 import static com.devmod.network.ChannelId.SHIELD_SHATTER;
 import static com.devmod.network.ChannelId.SHIELD_STATE;
@@ -124,7 +125,6 @@ import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_CHOICES;
 import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_SELECTION;
 import static com.devmod.network.ChannelId.WEAPON_LEGACY;
 import static com.devmod.network.ChannelId.WEAPON_STATS_V2;
-import static com.devmod.network.ChannelId.SEASON_TIER_UP;
 
 @EventBusSubscriber(modid = MODID)
 public class NetworkHandler {
