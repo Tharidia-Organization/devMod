@@ -6,12 +6,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
-
-/**
- * Arena session snapshot with versioning for recovery (DD25).
- *
- * <p>Supports schema versioning and migration chain.
- */
 public record ArenaSessionSnapshot(
     // DD25: Schema version for migration
     String schemaVersion,

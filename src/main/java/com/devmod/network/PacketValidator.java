@@ -6,21 +6,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.level.ServerPlayer;
-
-/**
- * Security service for network packet validation and rate limiting.
- * Protects against malicious clients sending invalid or excessive packets.
- *
- * Features:
- * - Rate limiting per player per packet type
- * - Value validation with configurable bounds
- * - Permission checking (operator-only commands)
- * - Automatic cleanup of stale rate limit data
- */
 public class PacketValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(PacketValidator.class);
     public static final PacketValidator INSTANCE = new PacketValidator();
@@ -308,6 +299,7 @@ public class PacketValidator {
      * @param maxLength Maximum allowed length
      * @return Sanitized string or null if invalid
      */
+    @Nullable
     public String validateString(String value, int maxLength) {
         if (value == null) return null;
         if (value.length() > maxLength) {
@@ -323,6 +315,7 @@ public class PacketValidator {
      * @param itemId The item ID to validate
      * @return Sanitized item ID or null if invalid
      */
+    @Nullable
     public String validateItemId(String itemId) {
         if (itemId == null || itemId.isEmpty()) return null;
 
@@ -510,6 +503,7 @@ public class PacketValidator {
      */
     public static class ValidationResult {
         private final boolean success;
+        @Nullable
         private final String errorMessage;
 
         private ValidationResult(boolean success, String errorMessage) {
@@ -529,6 +523,7 @@ public class PacketValidator {
             return success;
         }
 
+        @Nullable
         public String getErrorMessage() {
             return errorMessage;
         }

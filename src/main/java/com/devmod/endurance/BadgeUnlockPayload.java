@@ -8,11 +8,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-/**
- * Payload sent from server to client when a badge is unlocked.
- * Triggers the badge popup overlay on the client.
- */
 public record BadgeUnlockPayload(String badgeName, String rarity) implements CustomPacketPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "badge_unlock"));

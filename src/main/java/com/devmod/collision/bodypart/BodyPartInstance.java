@@ -11,19 +11,6 @@ import org.joml.Matrix4f;
 
 import com.devmod.collision.obb.OrientedBoundingBox;
 import com.devmod.combat.HitHelper;
-
-/**
- * Runtime instance of a body part with current world-space transform.
- * Created each frame from BodyPartDefinition + current model pose.
- *
- * Uses object pooling to reduce GC pressure during combat.
- *
- * Lifecycle:
- * 1. Acquire from pool: BodyPartInstance.acquire(definition)
- * 2. Update with transform: instance.update(worldTransform, tick)
- * 3. Use for raycast: instance.getWorldOBB()
- * 4. Release back to pool: instance.release()
- */
 public final class BodyPartInstance {
 
     // ==================== Object Pool ====================

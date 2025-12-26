@@ -16,15 +16,6 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.Config;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
-
-// DamageBreakdown is now in the same package
-/**
- * Centralized damage calculation logic extracted from DamageHandler.
- * Handles armor penetration, true damage, custom armor reduction, and damage type bonuses.
- *
- * <p>This class provides pure calculation methods without side effects,
- * making the damage pipeline easier to test and maintain.</p>
- */
 public final class DamageCalculator {
 
     private DamageCalculator() {} // Utility class

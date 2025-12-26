@@ -1,11 +1,6 @@
 package com.devmod.endurance.analytics;
 
 import java.util.Map;
-
-/**
- * Summary of a completed wave for analytics and feedback.
- * Provided during wave transitions for targeted suggestions.
- */
 public record WaveSummary(
         /** Wave number that completed */
         int waveNumber,

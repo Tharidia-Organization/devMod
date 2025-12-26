@@ -6,24 +6,6 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Executes arena cleanup in 4 phases as per DD37.
- *
- * Phase order is critical:
- * 1. ENTITIES - Remove all entities (mobs, items, projectiles)
- * 2. BLOCK_ENTITIES - Clear containers, remove block entities
- * 3. SCHEDULED_TICKS - Cancel pending block/fluid ticks
- * 4. BLOCKS - Set all blocks to air
- *
- * This order prevents:
- * - Item drops from containers when blocks are broken
- * - Entity AI errors from missing block entities
- * - Delayed updates causing state corruption
- *
- * Note: This is an abstraction layer. Actual Minecraft level operations
- * should be implemented via the LevelAccess interface.
- */
 public class ArenaCleanupExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaCleanupExecutor.class);

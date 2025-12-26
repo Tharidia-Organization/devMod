@@ -14,11 +14,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
-
-/**
- * Data components for weapon-related persistent data.
- * Provides a typed container for weapon stats to avoid ad-hoc custom data keys.
- */
 public final class WeaponComponents {
     private WeaponComponents() {}
 

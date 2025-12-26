@@ -8,16 +8,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-/**
- * DD36: Analytics Query Limits - 30 giorni max, pagination, timeout 10s
- *
- * Validated query parameters for analytics queries.
- * Enforces:
- * - Maximum 30-day date range
- * - Pagination with configurable page size
- * - Query timeout of 10 seconds
- */
 public class AnalyticsQueryParams {
 
     /** Maximum date range in days */

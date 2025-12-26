@@ -12,27 +12,6 @@ import net.minecraft.world.entity.player.Player;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Iron's Spells 'n Spellbooks.
- *
- * Iron's Spellbooks provides:
- * - Complete magic system with mana and cooldowns
- * - Multiple schools of magic (Fire, Ice, Holy, Blood, etc.)
- * - Spell casting with levels and effects
- * - Magic equipment and artifacts
- * - Boss encounters and magical mobs
- *
- * This integration allows DevMod to:
- * - Track player mana in HUD displays
- * - Include spell damage in damage calculations
- * - Monitor spell casting in telemetry
- * - Display magic stats in entity overlays
- * - Support spell items in the item editor
- *
- * @see <a href="https://iron.wiki/developers/">Iron's Spellbooks Developer Docs</a>
- * @see <a href="https://github.com/iron431/irons-spells-n-spellbooks">GitHub</a>
- */
 public class IronsSpellbooksCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(IronsSpellbooksCompat.class);
     public static final String MOD_ID = "irons_spellbooks";

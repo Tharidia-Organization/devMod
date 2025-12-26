@@ -10,21 +10,12 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.world.phys.Vec3;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
-/**
- * Utility for rendering spheres in 3D space.
- * Ported from PhantomShapes Kotlin/Fabric to Java/NeoForge.
- *
- * Used for visualizing mob aggro ranges and detection areas.
- *
- * <p>Optimized with pre-computed geometry caching for ~94% performance improvement.</p>
- */
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.phys.Vec3;
 public class SphereRenderer {
 
     // === Cached Sphere Geometry ===

@@ -9,11 +9,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
-
-/**
- * Payload sent from server to client for party notifications.
- * Handles: invite received, member joined/left, kicked, disbanded, quest started, etc.
- */
 public record PartyNotificationPayload(
     NotificationType notificationType,
     UUID relatedId,           // Invite ID, Player ID, or Party ID depending on type

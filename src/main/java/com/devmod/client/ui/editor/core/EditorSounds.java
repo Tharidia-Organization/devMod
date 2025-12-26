@@ -6,13 +6,6 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 
 import com.devmod.config.EditorClientConfig;
-
-/**
- * Sound effects for editor interactions.
- * All sounds are optional and can be disabled in config.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#17-sound-design
- */
 public final class EditorSounds {
     private EditorSounds() {}
 

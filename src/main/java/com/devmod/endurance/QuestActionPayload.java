@@ -7,11 +7,6 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from client to server for quest actions.
- * Handles: respawn choice, checkpoint choice, abandon quest.
- */
 public record QuestActionPayload(
     Action action
 ) implements CustomPacketPayload {

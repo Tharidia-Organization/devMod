@@ -9,11 +9,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Network payload sent from client to server to request personal records sync.
- * Sent when opening EnduranceQuestScreen.
- */
 public record RequestPersonalRecordsPayload() implements CustomPacketPayload {
 
     public static final Type<RequestPersonalRecordsPayload> TYPE = new Type<>(

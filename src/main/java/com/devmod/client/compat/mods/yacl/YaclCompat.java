@@ -1,34 +1,18 @@
 package com.devmod.client.compat.mods.yacl;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.function.Consumer;
 
-/**
- * Compatibility module for Yet Another Config Lib (YACL).
- *
- * YACL provides:
- * - Modern config screen framework
- * - Category-based organization
- * - Rich option types (buttons, controllers, lists)
- * - Search functionality in config screens
- * - Description/tooltip support
- *
- * This integration allows DevMod to:
- * - Use YACL for config screens as alternative to Cloth Config
- * - Create config categories and options
- * - Build screens with YACL's fluent API
- *
- * @see <a href="https://github.com/isXander/YetAnotherConfigLib">YACL GitHub</a>
- */
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 public class YaclCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(YaclCompat.class);
     public static final String MOD_ID = "yet_another_config_lib_v3";

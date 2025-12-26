@@ -7,12 +7,6 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Evaluates rollout phase transitions (DD72).
- *
- * <p>Implements go/no-go gates for each phase based on success criteria.
- */
 public class RolloutEvaluator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RolloutEvaluator.class);

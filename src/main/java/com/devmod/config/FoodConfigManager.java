@@ -7,6 +7,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -20,17 +26,6 @@ import net.neoforged.fml.loading.FMLPaths;
 import com.devmod.DevMod;
 import com.devmod.components.FoodComponents;
 import com.devmod.stats.FoodStats;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
-/**
- * Manages food stats configuration and persistence.
- * Priority: Component > CustomData > Global > Vanilla Default
- */
 public final class FoodConfigManager {
     private FoodConfigManager() {}
 

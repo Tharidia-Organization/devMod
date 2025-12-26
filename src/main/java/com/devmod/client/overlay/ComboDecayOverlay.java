@@ -14,17 +14,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.endurance.ComboSystem.StyleRank;
-
-/**
- * Combo Decay Overlay - shows visual/audio feedback when combo is lost.
- * TASK-058: P2 Enhancement
- *
- * Features:
- * - Red flash when combo drops
- * - "COMBO LOST!" text with shake
- * - Sound effect on rank down
- * - Shows lost combo count
- */
 public class ComboDecayOverlay {
 
     private static final long DISPLAY_DURATION_MS = 1200;

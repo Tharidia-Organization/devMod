@@ -12,52 +12,6 @@ import net.minecraft.client.gui.screens.Screen;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-/**
- * Standardized ESC key behavior for DevMod screens.
- *
- * <h2>ESC Behavior Policy</h2>
- * <p>ESC handling follows a layered approach with consistent behavior:</p>
- *
- * <ol>
- *   <li><b>Level 1 - Active Overlays</b>: Close any open modal overlays first
- *       (dialogs, tooltips, pickers, popovers)</li>
- *   <li><b>Level 2 - Unsaved Changes</b>: If the screen has unsaved changes,
- *       show a confirmation dialog before closing</li>
- *   <li><b>Level 3 - Close Screen</b>: Close the screen and return to
- *       parent or game</li>
- * </ol>
- *
- * <h2>Special Cases</h2>
- * <ul>
- *   <li><b>Forced Choice Screens</b>: Screens like PerkSelection and QuestDeath
- *       override {@code shouldCloseOnEsc()} to return false, forcing users to
- *       make a selection or wait for timeout.</li>
- *   <li><b>Nested Dialogs</b>: Each dialog handles its own ESC. The parent
- *       screen's ESC handler is only invoked after all dialogs are closed.</li>
- *   <li><b>Shift+ESC</b>: Force-closes all overlays in complex screens like
- *       ItemEditorScreen as an emergency escape.</li>
- * </ul>
- *
- * <h2>Usage</h2>
- * <pre>{@code
- * // In your screen class:
- * private final EscapeBehavior escapeBehavior = new EscapeBehavior()
- *     .addOverlayCheck(this::hasActiveDialog, this::closeActiveDialog)
- *     .addOverlayCheck(this::isPopupOpen, this::closePopup)
- *     .setDirtyCheck(this::hasUnsavedChanges)
- *     .setConfirmDialogFactory(this::showSaveConfirmDialog)
- *     .setCloseAction(this::onClose);
- *
- * @Override
- * public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
- *     if (escapeBehavior.handleKeyPressed(keyCode, modifiers)) {
- *         return true;
- *     }
- *     return super.keyPressed(keyCode, scanCode, modifiers);
- * }
- * }</pre>
- */
 @OnlyIn(Dist.CLIENT)
 public final class EscapeBehavior {
 

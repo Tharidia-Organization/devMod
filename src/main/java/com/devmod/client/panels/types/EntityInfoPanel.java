@@ -5,6 +5,8 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,18 +22,6 @@ import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.PanelType;
 import com.devmod.client.panels.tracking.EntityTracker;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Panel that shows detailed information about an entity.
- *
- * Information displayed:
- * - Name and entity type
- * - Health bar and values
- * - Attributes (attack damage, armor)
- * - Active effects
- */
 public class EntityInfoPanel extends FloatingPanel {
 
     // Data cache to avoid lookups every frame

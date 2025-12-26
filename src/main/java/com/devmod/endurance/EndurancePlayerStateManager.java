@@ -13,11 +13,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
-
-/**
- * Manages player state during endurance quests.
- * Handles saving/restoring inventory, game mode, health, and providing starter kits.
- */
 public class EndurancePlayerStateManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EndurancePlayerStateManager.class);
 

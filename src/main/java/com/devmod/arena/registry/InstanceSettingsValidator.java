@@ -3,9 +3,7 @@ package com.devmod.arena.registry;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Validates instance settings against server limits and arena coverage.
- */
+import javax.annotation.Nullable;
 public class InstanceSettingsValidator {
 
     public record Result(boolean valid, List<String> errors, List<String> warnings,
@@ -19,13 +17,14 @@ public class InstanceSettingsValidator {
         void coverageInsufficient(String templateId, int maxDim, int requiredChunks, int effectiveChunkRadius);
     }
 
+    @Nullable
     private final Telemetry telemetry;
 
     public InstanceSettingsValidator() {
         this(null);
     }
 
-    public InstanceSettingsValidator(Telemetry telemetry) {
+    public InstanceSettingsValidator(@Nullable Telemetry telemetry) {
         this.telemetry = telemetry;
     }
 

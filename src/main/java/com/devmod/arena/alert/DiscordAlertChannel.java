@@ -12,22 +12,6 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * G6: Discord webhook alert channel.
- *
- * <p>Delivers alerts as rich embeds to Discord webhook URLs.
- * Supports color-coding by severity, custom username/avatar, and mentions.
- *
- * <p>Discord embed format includes:
- * <ul>
- *   <li>Color based on severity (red=ERROR, yellow=WARN, blue=INFO)</li>
- *   <li>Title with error code</li>
- *   <li>Description with message</li>
- *   <li>Fields for context details</li>
- *   <li>Footer with error ID and timestamp</li>
- * </ul>
- */
 public class DiscordAlertChannel implements AlertRouter.AlertChannel {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DiscordAlertChannel.class);

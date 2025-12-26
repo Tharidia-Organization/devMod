@@ -25,11 +25,6 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.network.EquipMobPayload;
 import com.devmod.util.I18n;
-
-/**
- * Screen per modificare l'equipaggiamento di un mob.
- * Refactored con Axiom-style UI.
- */
 @OnlyIn(Dist.CLIENT)
 public class MobEquipmentScreen extends Screen {
 

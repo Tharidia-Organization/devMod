@@ -5,6 +5,9 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
@@ -19,20 +22,6 @@ import com.devmod.DevMod;
 import com.devmod.client.rendering.shader.ShaderPipeline;
 import com.devmod.client.rendering.shader.ShaderPipelineDiagnostics;
 import com.devmod.client.rendering.shader.ShaderRenderTypeConfig;
-
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
-
-/**
- * Registers and manages custom shaders for the energy shield rendering.
- *
- * <p>This class handles:</p>
- * <ul>
- *   <li>Registration of the energy_shield shader via RegisterShadersEvent</li>
- *   <li>Creation of custom RenderType using the shader</li>
- *   <li>Proper integration with Minecraft's rendering pipeline</li>
- * </ul>
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class ShieldShaderRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShieldShaderRegistry.class);

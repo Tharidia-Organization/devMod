@@ -1,11 +1,6 @@
 package com.devmod.client.panels.core;
 
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Types of floating panels available in the system.
- * Each type has specific configurations for rendering and behavior.
- */
 public enum PanelType {
     /** Entity info panel - shows target mob/player stats */
     ENTITY_INFO("Entity Info", 180, 120, 8000, true, UIConstants.Status.INFO()),

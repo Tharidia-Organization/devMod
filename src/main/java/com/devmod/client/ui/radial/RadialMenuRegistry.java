@@ -1,37 +1,24 @@
 package com.devmod.client.ui.radial;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.actions.ActionIds;
-import com.devmod.client.ui.editor.WeaponTypeDetector;
-import com.devmod.client.ui.radial.model.MacroCategory;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.component.DataComponentType;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.RecipeType;
-
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
+
 import javax.annotation.Nonnull;
 
-/**
- * Registry for radial menu category definitions.
- *
- * This class centralizes all 24 category definitions (6 per macro-category)
- * to keep RadialMenuScreen focused on UI logic.
- *
- * Structure:
- * - ANALYZE (3): Debug, Spatial, Performance
- * - TELEMETRY (4): Ops, Data, Scan, Dashboard
- * - COMBAT (3): HUD, Heatmaps, Abilities
- * - ARENA (5): Ops, Templates, Force, Autosmoke, HUD
- * - PLAY (4): Endurance, Endurance HUD, Quest Tools, Party
- * - TOOLS (5): Settings, Testing, Mob Tools, Item Editors, Commands
- */
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.RecipeType;
+
+import com.devmod.actions.ActionIds;
+import com.devmod.client.ui.editor.WeaponTypeDetector;
+import com.devmod.client.ui.radial.model.MacroCategory;
+import com.devmod.config.ArmorConfigManager;
 public final class RadialMenuRegistry {
 
     private RadialMenuRegistry() {} // Utility class

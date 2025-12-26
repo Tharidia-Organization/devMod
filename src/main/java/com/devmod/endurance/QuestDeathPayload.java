@@ -9,11 +9,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Network payload sent from server to client when player dies during quest.
- * Triggers the QuestDeathScreen to appear on the client.
- */
 public record QuestDeathPayload(
     int currentWave,
     int totalWaves,

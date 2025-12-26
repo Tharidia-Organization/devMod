@@ -7,23 +7,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.model.geom.ModelPart;
 
 import com.devmod.client.collision.transform.ModelPartTransformCapture;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Mixin to capture ModelPart transforms during rendering.
- * This intercepts the translateAndRotate method which is called for every
- * ModelPart during entity rendering, allowing us to extract the exact
- * transforms used for collision detection.
- *
- * Works with:
- * - Vanilla entities
- * - Modded entities using standard ModelPart system
- * - Any renderer that calls ModelPart.translateAndRotate()
- */
 @Mixin(ModelPart.class)
 public class ModelPartTransformMixin {
 

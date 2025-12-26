@@ -16,16 +16,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.endurance.contracts.ContractSyncPayload;
-
-/**
- * Client-side HUD overlay for active Blood Contracts.
- *
- * Displays signed contracts in the top-right corner with:
- * - Contract name and tier color
- * - Multiplier value
- * - Strikethrough effect when violated
- * - Total multiplier at bottom
- */
 @OnlyIn(Dist.CLIENT)
 public class ContractHudOverlay implements LayeredDraw.Layer {
 

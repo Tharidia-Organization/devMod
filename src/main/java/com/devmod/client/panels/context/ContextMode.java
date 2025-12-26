@@ -1,16 +1,6 @@
 package com.devmod.client.panels.context;
 
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Context modes that determine which panels to show automatically.
- *
- * The system automatically detects context based on:
- * - Recent combat events
- * - Active testing session
- * - Entity interactions
- * - Explicit user input
- */
 public enum ContextMode {
 
     /**

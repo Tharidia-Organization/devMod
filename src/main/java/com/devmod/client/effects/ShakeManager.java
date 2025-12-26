@@ -15,11 +15,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.Config;
-
-/**
- * Manages all active screen shake effects.
- * Thread-safe singleton that handles shake lifecycle and accumulation.
- */
 public class ShakeManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ShakeManager.class);

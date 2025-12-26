@@ -8,18 +8,6 @@ import org.joml.Vector3f;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
-
-/**
- * Represents a screen shake effect with configurable parameters.
- * Inspired by Perception mod but implemented independently.
- *
- * Supports:
- * - Rotation shake (pitch/yaw/roll)
- * - Position offset shake
- * - FOV pulse
- * - Distance-based attenuation
- * - Fade in/out with easing
- */
 public class ShakeEffect {
 
     private final UUID uuid;

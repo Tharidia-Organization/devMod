@@ -6,7 +6,6 @@ import net.minecraft.client.gui.screens.Screen;
 
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionOrigin;
-
 public final class ClientActionContexts {
     private ClientActionContexts() {}
 

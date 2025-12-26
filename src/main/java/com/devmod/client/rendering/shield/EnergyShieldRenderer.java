@@ -9,6 +9,15 @@ import org.joml.Vector3f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -21,30 +30,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.rendering.TrigCache;
-
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
-
-/**
- * Energy Shield Renderer - GPU Shader-Based Visual System
- *
- * <p>Renders energy shield effects using custom GLSL shaders registered
- * via Minecraft's shader system for maximum compatibility.</p>
- *
- * <p>Features:</p>
- * <ul>
- *   <li>GPU-accelerated Simplex noise for energy field animation</li>
- *   <li>Fresnel edge glow computed in vertex shader</li>
- *   <li>Impact wave effect with expanding ripples</li>
- *   <li>Full integration with Minecraft's RenderType system</li>
- * </ul>
- */
 @OnlyIn(Dist.CLIENT)
 
 public class EnergyShieldRenderer {

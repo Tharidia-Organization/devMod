@@ -6,11 +6,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.endurance.season.SeasonPassPayload;
-
-/**
- * Client-side cache for season pass data.
- * Updated via network packets from server.
- */
 @OnlyIn(Dist.CLIENT)
 public class ClientSeasonCache {
 

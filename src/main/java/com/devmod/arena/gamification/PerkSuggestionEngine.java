@@ -7,17 +7,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
-
-/**
- * Perk Suggestion Engine implementing DD51: Perk Suggestions Bias.
- *
- * <p>Key features:
- * <ul>
- *   <li>Shuffle SUGGESTED perks to eliminate position bias</li>
- *   <li>A/B test 10% of users for perk suggestions</li>
- *   <li>Weekly winrate analysis query via DuckDB</li>
- * </ul>
- */
 public final class PerkSuggestionEngine {
 
     /**

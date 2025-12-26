@@ -42,23 +42,6 @@ import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.endurance.boss.BossDNAMixer;
 import com.devmod.endurance.boss.BossDNAMixer.MixedBossData;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
-/**
- * Boss Wave System - Special waves with unique mechanics.
- *
- * Every 5 waves (or configurable), a boss wave occurs with:
- * - A powerful "Champion" version of the mob
- * - Special attack patterns
- * - Phase transitions
- * - Unique rewards
- *
- * Boss Types:
- * - BERSERKER: High damage, charges, ground slam
- * - SUMMONER: Spawns minions, defensive shields
- * - JUGGERNAUT: Tanky, reflects damage, slow but devastating
- * - ASSASSIN: Fast, teleports, backstab attacks
- * - ELEMENTAL: Elemental attacks, area denial
- */
 public class BossWaveSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(BossWaveSystem.class);
 

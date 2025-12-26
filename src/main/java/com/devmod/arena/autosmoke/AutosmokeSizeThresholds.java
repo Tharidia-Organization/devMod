@@ -4,18 +4,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * Autosmoke Size Thresholds implementing DD33: Autosmoke Soglie.
- *
- * <p>Key features:
- * <ul>
- *   <li>Size-based thresholds for autosmoke tests</li>
- *   <li>Template whitelist for skip</li>
- *   <li>Configurable thresholds per template size</li>
- *   <li>Default thresholds for small, medium, large, xlarge</li>
- * </ul>
- */
 public class AutosmokeSizeThresholds {
 
     /**

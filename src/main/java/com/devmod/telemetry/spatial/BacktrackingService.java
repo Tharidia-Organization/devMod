@@ -14,29 +14,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.telemetry.TelemetryService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * VOXEL-LAB M47: Backtracking Detection
- *
- * Detects when players backtrack (return to previously visited positions).
- * High backtracking rates may indicate:
- * - Confusing level design
- * - Unclear objectives
- * - Dead ends
- * - Lost players
- *
- * Metrics tracked:
- * - Backtrack count per room
- * - Backtrack frequency (backtrack events / time)
- * - Confusion index (backtrack count / unique positions visited)
- * - Backtrack hotspots (positions players frequently return to)
- */
 public class BacktrackingService {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final BacktrackingService INSTANCE = new BacktrackingService();

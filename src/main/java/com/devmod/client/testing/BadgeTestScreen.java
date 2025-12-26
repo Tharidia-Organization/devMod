@@ -1,28 +1,22 @@
 package com.devmod.client.testing;
-import com.devmod.endurance.GamificationManager.BadgeRarity;
-import com.devmod.client.overlay.BadgePopupOverlay;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Test screen for badge popup system.
- * Allows testers to trigger badge popups of each rarity to verify:
- * - Animations (slide-in, bounce, fade-out)
- * - Sounds (per-rarity sounds, fanfare for legendary)
- * - Visual effects (glow for rare+, particles for epic+)
- * - Queue system (multiple badges in sequence)
- */
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.client.overlay.BadgePopupOverlay;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.GamificationManager.BadgeRarity;
 @OnlyIn(Dist.CLIENT)
 public class BadgeTestScreen extends Screen {
 

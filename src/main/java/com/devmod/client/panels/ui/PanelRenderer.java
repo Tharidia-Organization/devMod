@@ -9,6 +9,9 @@ import javax.annotation.Nonnull;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -17,19 +20,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Renders FloatingPanels in the 3D world.
- *
- * Features:
- * - Billboard orientation (always facing camera)
- * - Support for animated alpha and scale
- * - Rendering of background, borders, header, content
- * - Style consistent with Axiom UI
- */
 public class PanelRenderer {
 
     public static final PanelRenderer INSTANCE = new PanelRenderer();

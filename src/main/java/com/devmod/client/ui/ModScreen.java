@@ -14,16 +14,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Base class for all DevMod screens providing consistent styling and behavior.
- *
- * Features:
- * - Parent screen navigation
- * - Standard button layout (Apply/Cancel/Reset)
- * - Themed styling with UIConstants
- * - Input field helpers with validation
- */
 @OnlyIn(Dist.CLIENT)
 public abstract class ModScreen extends Screen {
 

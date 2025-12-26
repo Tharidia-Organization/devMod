@@ -11,11 +11,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from server to client to update quest start sequence status.
- * Used to show countdown, teleport progress, arrival status, and sync status on client UI.
- */
 public record QuestSequencePayload(
     UUID partyId,
     Phase phase,

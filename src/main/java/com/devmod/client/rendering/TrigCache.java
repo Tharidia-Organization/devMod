@@ -2,16 +2,6 @@ package com.devmod.client.rendering;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-/**
- * Pre-computed trigonometry lookup tables for VFX rendering optimization.
- *
- * <p>This class provides cached sin/cos values to eliminate per-frame
- * trigonometric calculations in render loops, providing ~70% speedup
- * for CPU-based rendering when GPU shaders are not available.</p>
- *
- * <p>Resolution: 4096 entries = ~0.09° accuracy, sufficient for VFX.</p>
- */
 @OnlyIn(Dist.CLIENT)
 public final class TrigCache {
 

@@ -4,6 +4,11 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.FloatArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.world.item.Items;
@@ -32,30 +37,6 @@ import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
 import com.devmod.telemetry.duckdb.DuckDBQueryAPI.EnduranceStats;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.util.I18n;
-
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.FloatArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
-
-/**
- * Test harness commands for manual testing of complex UI/HUD features.
- *
- * These commands are intended for:
- * - Manual testing of features that are difficult to automate
- * - Debugging during development
- * - Demonstrations
- *
- * Commands:
- * - /devtest hud <on|off> - Toggles Impact HUD visibility
- * - /devtest panel <on|off> - Toggles 3D panel visibility
- * - /devtest debug <on|off> - Toggles debug renderer
- * - /devtest debugbox <size> - Adds a debug box at player position
- * - /devtest debugclear - Clears all debug shapes
- * - /devtest panelclear - Clears all 3D panels
- * - /devtest info - Shows current system status
- * - /devtest bodypart <part> - Shows body part multiplier info
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class TestHarnessCommands {
 

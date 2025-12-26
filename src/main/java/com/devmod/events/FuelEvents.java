@@ -1,6 +1,8 @@
 package com.devmod.events;
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.world.item.ItemStack;
 
 import net.neoforged.bus.api.SubscribeEvent;
@@ -10,13 +12,6 @@ import net.neoforged.neoforge.event.furnace.FurnaceFuelBurnTimeEvent;
 import com.devmod.DevMod;
 import com.devmod.config.FuelConfigManager;
 import com.devmod.stats.FuelStats;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Event handlers for fuel item modifications.
- * Intercepts furnace fuel checks to apply custom burn times.
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class FuelEvents {
 

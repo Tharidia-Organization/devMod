@@ -7,11 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-
-/**
- * Immutable error context record for structured error logging (DD18).
- * Captures stacktrace as JSON array with max 20 frames.
- */
 public record ErrorContext(
     UUID errorId,
     Instant timestamp,

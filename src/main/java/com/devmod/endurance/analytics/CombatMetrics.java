@@ -1,13 +1,6 @@
 package com.devmod.endurance.analytics;
 
 import java.util.Map;
-
-/**
- * Immutable snapshot of current combat metrics for analytics hooks.
- * Updated every second during active Endurance Quest.
- *
- * All values are computed at snapshot time - no live references.
- */
 public record CombatMetrics(
         // === Time metrics ===
         /** Session duration in milliseconds */

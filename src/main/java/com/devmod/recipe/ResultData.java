@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.google.gson.JsonObject;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -11,15 +13,8 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-
-import com.google.gson.JsonObject;
-
-/**
- * Represents the result of a recipe.
- * Immutable record for recipe result data.
- */
 public record ResultData(
-    ResourceLocation itemId,
+    @Nullable ResourceLocation itemId,
     int count,
     @Nullable CompoundTag components
 ) {
@@ -95,7 +90,8 @@ public record ResultData(
     public ItemStack toItemStack() {
         if (isEmpty()) return ItemStack.EMPTY;
 
-        Item item = BuiltInRegistries.ITEM.get(itemId);
+        ResourceLocation safeItemId = Objects.requireNonNull(itemId, "itemId");
+        Item item = BuiltInRegistries.ITEM.get(safeItemId);
         if (item == null || item == Items.AIR) return ItemStack.EMPTY;
 
         ItemStack stack = new ItemStack(item, count);
@@ -155,8 +151,9 @@ public record ResultData(
             return json;
         }
 
+        ResourceLocation safeItemId = Objects.requireNonNull(itemId, "itemId");
         // Use "id" for 1.21+ format
-        json.addProperty("id", itemId.toString());
+        json.addProperty("id", safeItemId.toString());
 
         if (count > 1) {
             json.addProperty("count", count);
@@ -176,7 +173,8 @@ public record ResultData(
      */
     public String getDisplayName() {
         if (isEmpty()) return "Empty";
-        String name = itemId.getPath();
+        ResourceLocation safeItemId = Objects.requireNonNull(itemId, "itemId");
+        String name = safeItemId.getPath();
         if (count > 1) {
             return name + " x" + count;
         }
@@ -204,6 +202,7 @@ public record ResultData(
     @Override
     public String toString() {
         if (isEmpty()) return "ResultData{empty}";
-        return "ResultData{" + itemId + " x" + count + "}";
+        ResourceLocation safeItemId = Objects.requireNonNull(itemId, "itemId");
+        return "ResultData{" + safeItemId + " x" + count + "}";
     }
 }

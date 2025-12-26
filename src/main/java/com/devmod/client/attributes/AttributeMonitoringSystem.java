@@ -13,18 +13,6 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.attributes.AttributeLogEntry;
-
-/**
- * Attribute Monitoring System - Controller principale.
- *
- * Sistema ispirato all'immagine di riferimento che mostra:
- * - Pannello HUD laterale con attributi del target
- * - Raggi 3D di Line of Sight verso le entità
- * - Log history degli eventi
- * - Tracking in tempo reale
- *
- * Attivazione: Tasto U (Utility)
- */
 public class AttributeMonitoringSystem {
     public static final AttributeMonitoringSystem INSTANCE = new AttributeMonitoringSystem();
 

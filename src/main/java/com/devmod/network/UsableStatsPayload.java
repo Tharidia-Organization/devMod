@@ -11,11 +11,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Payload for usable item stats (cooldowns, use duration, throwable properties).
- * Carries the serialized UsableStats tag.
- */
 public record UsableStatsPayload(
     @Nonnull ItemStack item,
     @Nonnull CompoundTag statsTag,

@@ -2,27 +2,6 @@ package com.devmod.arena.cleanup;
 
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * Result of an arena cleanup operation.
- * Contains counters for each phase and any warnings encountered.
- *
- * <p>DD37: Cleanup Robusto - Track results from 5 phases:
- * <ol>
- *   <li>Entities removed</li>
- *   <li>Block entities removed</li>
- *   <li>Scheduled ticks cancelled</li>
- *   <li>Blocks removed</li>
- *   <li>Chunks unloaded</li>
- * </ol>
- *
- * <p>Residual metrics ({@code entitiesResidual}, {@code blocksResidual}) are computed
- * post-cleanup by counting remaining non-player entities and non-air blocks within
- * arena bounds. These are compared against {@code AlertThresholds} for warn/error detection.
- *
- * @see com.devmod.arena.config.ArenaTemplateConfig.AlertThresholds
- * @see com.devmod.arena.metrics.MetricsCompatibilityLayer#measureResiduals
- */
     public record CleanupResult(
         int entitiesRemoved,
         int blockEntitiesRemoved,

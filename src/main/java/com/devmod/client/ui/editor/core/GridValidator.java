@@ -4,11 +4,6 @@ import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Simple runtime grid validation helper (4px grid).
- * Logs when bounds are off-grid to aid debugging (guarded by EditorSpacing.ENABLE_GRID_VALIDATION).
- */
 public final class GridValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GridValidator.class);

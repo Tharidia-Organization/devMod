@@ -2,25 +2,13 @@ package com.devmod.client.overlay;
 
 import java.util.Objects;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Represents a single 3D panel instance in the world.
- * Manages position, lifecycle (fade in/out), and rendering.
- *
- * Each panel is associated with a specific impact and contains:
- * - Original impact point position
- * - Panel position (offset from hit point)
- * - Impact data (ImpactData)
- * - Timestamp for lifecycle management
- */
-
 public class Impact3DPanel {
 
     // === Lifecycle Configuration ===

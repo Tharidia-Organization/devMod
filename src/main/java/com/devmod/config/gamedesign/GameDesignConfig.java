@@ -1,19 +1,6 @@
 package com.devmod.config.gamedesign;
 
 import com.google.gson.annotations.SerializedName;
-
-/**
- * Master configuration for all Game Design systems.
- *
- * Contains sub-configurations for:
- * - Resonance Chain System
- * - Blood Contracts System
- * - Signature Weapons System
- * - Nemesis Evolution System
- * - The Tide System
- *
- * All values have sensible defaults matching the original implementations.
- */
 public class GameDesignConfig {
 
     @SerializedName("version")

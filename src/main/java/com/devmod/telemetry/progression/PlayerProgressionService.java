@@ -12,21 +12,6 @@ import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
-
-/**
- * Service for tracking player progression metrics.
- *
- * Features:
- * - Block break/place tracking (mining patterns, building behavior)
- * - XP and level progression
- * - Advancement completion
- * - Dimension changes (exploration patterns)
- * - Combat events (critical hits, attacks)
- * - Trading with villagers
- * - Fishing events
- *
- * Thread-safe for concurrent access from multiple server threads.
- */
 public class PlayerProgressionService {
     public static final PlayerProgressionService INSTANCE = new PlayerProgressionService();
 

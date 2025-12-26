@@ -7,34 +7,16 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.locks.ReentrantLock;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Manages the DuckDB database connection.
- *
- * DuckDB is a single-writer database, so we maintain one connection per server instance.
- * This class handles:
- * - Connection creation and lifecycle
- * - Reconnection on failure
- * - Thread-safe access via ReentrantLock
- * - Graceful shutdown with connection cleanup
- *
- * Usage:
- * <pre>
- *   DuckDBConnectionManager manager = new DuckDBConnectionManager(dbPath);
- *   try (Connection conn = manager.getConnection()) {
- *       // Use connection
- *   }
- *   // On shutdown:
- *   manager.shutdown();
- * </pre>
- */
 public class DuckDBConnectionManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBConnectionManager.class);
 
     private final Path dbPath;
     private final ReentrantLock connectionLock = new ReentrantLock();
+    @Nullable
     private Connection connection;
     private volatile boolean shuttingDown = false;
 

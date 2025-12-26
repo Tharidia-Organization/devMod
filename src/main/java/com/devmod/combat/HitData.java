@@ -5,18 +5,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.world.entity.Entity;
-
-/**
- * Thread-safe context storage for passing body part information from DamageHandler to Telemetry.
- * Avoids double calculation and ensures consistency between damage multiplier and telemetry logging.
- *
- * Pattern: DamageHandler calculates body part → stores in context → TelemetryEvents retrieves it
- *
- * MODDED COMPATIBILITY:
- * - Supports generic Entity (not just LivingEntity) for modded mobs
- * - Atomic cleanup with synchronized to prevent race conditions
- * - Works with multi-part bosses (Ender Guardian, Hydra, etc.)
- */
 public class HitData {
     private static final Map<UUID, HitInfo> CONTEXT = new ConcurrentHashMap<>();
     private static final long EXPIRATION_MS = 100; // 100ms max lifespan per context entry

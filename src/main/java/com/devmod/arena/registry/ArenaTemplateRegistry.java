@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,18 +29,6 @@ import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
 import com.devmod.arena.event.TemplateEventDispatcher;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Registry for Arena Templates with version handling (DD1) and inheritance resolution (DD2).
- *
- * <p>Design Decisions:
- * <ul>
- *   <li>DD1: Last-Wins version handling - templates with same ID but different version replace the previous</li>
- *   <li>DD2: Inheritance resolved on-load with caching - O(1) for get(), already resolved and immutable</li>
- * </ul>
- *
- * @see <a href="TODO_ARENA_TEMPLATE.md">Arena Template Design Document</a>
- */
 public class ArenaTemplateRegistry implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaTemplateRegistry.class);
     private static final int MAX_INHERITANCE_DEPTH = 3;
@@ -52,6 +41,8 @@ public class ArenaTemplateRegistry implements AutoCloseable {
     private final TemplateValidator validator;
     private final TemplateEventDispatcher eventDispatcher;
     private final ScheduledExecutorService healthCheckExecutor;
+    @Nullable
+    private ScheduledFuture<?> healthCheckTask;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     @Nullable
     private ArenaTemplateConfig.ConfigSnapshot configSnapshot;
@@ -76,7 +67,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
                                  InstanceSettingsValidator.InstanceLimits instanceLimits,
                                  @Nullable ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         this.telemetry = telemetry;
-        this.eventDispatcher = TemplateEventDispatcher.getInstance();
+        this.eventDispatcher = Objects.requireNonNull(TemplateEventDispatcher.getInstance(), "TemplateEventDispatcher");
         this.configSnapshot = configSnapshot;
         this.validator = new TemplateValidator()
             .withInstanceLimits(instanceLimits)
@@ -170,7 +161,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             t.setDaemon(true);
             return t;
         });
-        this.healthCheckExecutor.scheduleAtFixedRate(
+        this.healthCheckTask = this.healthCheckExecutor.scheduleAtFixedRate(
             this::runHealthCheck,
             HEALTH_CHECK_INTERVAL_MS,
             HEALTH_CHECK_INTERVAL_MS,
@@ -534,8 +525,13 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             return;
         }
         try {
+            ScheduledFuture<?> task = healthCheckTask;
+            if (task != null) {
+                task.cancel(true);
+            }
             healthCheckExecutor.shutdownNow();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.warn("Failed to shut down template registry health executor", e);
         }
         clearEphemeralState();
         registry.clear();
@@ -683,33 +679,34 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             child.deprecated() || parent.deprecated(),
             child.replacementVersion() != null ? child.replacementVersion() : parent.replacementVersion(),
             child.minParentVersion() != null ? child.minParentVersion() : parent.minParentVersion(),
-            child.templateType() != null ? child.templateType() : parent.templateType(),
+            Objects.requireNonNull(child.templateType() != null ? child.templateType() : parent.templateType(),
+                "Missing templateType during merge for " + child.id()),
             // SHALLOW_MERGE for objects (spec v2.23)
-            mergeByStrategy("origin", child.origin(), parent.origin(), this::mergeOrigin),
+            mergeRequiredByStrategy("origin", child.origin(), parent.origin(), this::mergeOrigin),
             mergeIntByStrategy("size", child.size(), parent.size(), 0),
             mergeIntegerByStrategy("sizeX", child.sizeX(), parent.sizeX()),
             mergeIntegerByStrategy("sizeZ", child.sizeZ(), parent.sizeZ()),
-            mergeByStrategy("floor", child.floor(), parent.floor(), this::mergeFloor),
-            mergeByStrategy("walls", child.walls(), parent.walls(), this::mergeWalls),
-            mergeByStrategy("ceiling", child.ceiling(), parent.ceiling(), this::mergeCeiling),
-            mergeByStrategy("underfloor", child.underfloor(), parent.underfloor(), this::mergeUnderfloor),
-            mergeByStrategy("palette", child.palette(), parent.palette(), this::mergePalette),
-            mergeByStrategy("biome", child.biome(), parent.biome(), this::mergeBiome),
-            mergeByStrategy("lighting", child.lighting(), parent.lighting(), this::mergeLighting),
+            mergeRequiredByStrategy("floor", child.floor(), parent.floor(), this::mergeFloor),
+            mergeRequiredByStrategy("walls", child.walls(), parent.walls(), this::mergeWalls),
+            mergeRequiredByStrategy("ceiling", child.ceiling(), parent.ceiling(), this::mergeCeiling),
+            mergeRequiredByStrategy("underfloor", child.underfloor(), parent.underfloor(), this::mergeUnderfloor),
+            mergeRequiredByStrategy("palette", child.palette(), parent.palette(), this::mergePalette),
+            mergeRequiredByStrategy("biome", child.biome(), parent.biome(), this::mergeBiome),
+            mergeRequiredByStrategy("lighting", child.lighting(), parent.lighting(), this::mergeLighting),
             // OVERRIDE for arrays (spec v2.23)
             mergeListByStrategy("spawnSlots", child.spawnSlots(), parent.spawnSlots()),
-            mergeByStrategy("playerSpawnOffset", child.playerSpawnOffset(), parent.playerSpawnOffset(), null),
-            mergeByStrategy("mobSpawnStrategy", child.mobSpawnStrategy(), parent.mobSpawnStrategy(), null),
+            mergeRequiredByStrategy("playerSpawnOffset", child.playerSpawnOffset(), parent.playerSpawnOffset(), null),
+            mergeRequiredByStrategy("mobSpawnStrategy", child.mobSpawnStrategy(), parent.mobSpawnStrategy(), null),
             mergeListByStrategy("forbiddenZones", child.forbiddenZones(), parent.forbiddenZones()),
             mergeListByStrategy("hazards", child.hazards(), parent.hazards()),
             // SHALLOW_MERGE for objects
-            mergeByStrategy("environment", child.environment(), parent.environment(), this::mergeEnvironment),
-            mergeByStrategy("compat", child.compat(), parent.compat(), this::mergeCompat),
-            mergeByStrategy("instanceSettings", child.instanceSettings(), parent.instanceSettings(), this::mergeInstanceSettings),
+            mergeRequiredByStrategy("environment", child.environment(), parent.environment(), this::mergeEnvironment),
+            mergeRequiredByStrategy("compat", child.compat(), parent.compat(), this::mergeCompat),
+            mergeRequiredByStrategy("instanceSettings", child.instanceSettings(), parent.instanceSettings(), this::mergeInstanceSettings),
             // OVERRIDE for structureNbt (complete replacement)
             mergeByStrategy("structureNbt", child.structureNbt(), parent.structureNbt(), null),
-            mergeByStrategy("limits", child.limits(), parent.limits(), this::mergeLimits),
-            mergeByStrategy("buildSettings", child.buildSettings(), parent.buildSettings(), this::mergeBuildSettings),
+            mergeRequiredByStrategy("limits", child.limits(), parent.limits(), this::mergeLimits),
+            mergeRequiredByStrategy("buildSettings", child.buildSettings(), parent.buildSettings(), this::mergeBuildSettings),
             // OVERRIDE for arrays
             mergeListByStrategy("tags", child.tags(), parent.tags())
         );
@@ -721,6 +718,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         return List.of();
     }
 
+    @Nullable
     private <T> T mergeByStrategy(String field,
                                   @Nullable T child,
                                   @Nullable T parent,
@@ -731,6 +729,14 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             case OVERRIDE -> child != null ? child : parent;
             case SHALLOW_MERGE -> shallowMerger != null ? shallowMerger.apply(child, parent) : (child != null ? child : parent);
         };
+    }
+
+    private <T> T mergeRequiredByStrategy(String field,
+                                          @Nullable T child,
+                                          @Nullable T parent,
+                                          @Nullable java.util.function.BiFunction<T, T, T> shallowMerger) {
+        T merged = mergeByStrategy(field, child, parent, shallowMerger);
+        return Objects.requireNonNull(merged, "Missing required '" + field + "' during merge");
     }
 
     private <T> List<T> mergeListByStrategy(String field,
@@ -751,6 +757,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         return child != sentinel ? child : parent;
     }
 
+    @Nullable
     private Integer mergeIntegerByStrategy(String field, @Nullable Integer child, @Nullable Integer parent) {
         TemplateMergeRules.MergeStrategy strategy = TemplateMergeRules.strategyFor(field);
         if (strategy == TemplateMergeRules.MergeStrategy.SKIP) {
@@ -764,6 +771,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
     // Child can override specific fields, rest inherited from parent
     // ===================
 
+    @Nullable
     private ArenaTemplate.Origin mergeOrigin(@Nullable ArenaTemplate.Origin child, @Nullable ArenaTemplate.Origin parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -775,6 +783,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Floor mergeFloor(@Nullable ArenaTemplate.Floor child, @Nullable ArenaTemplate.Floor parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -788,6 +797,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Walls mergeWalls(@Nullable ArenaTemplate.Walls child, @Nullable ArenaTemplate.Walls parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -801,6 +811,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Ceiling mergeCeiling(@Nullable ArenaTemplate.Ceiling child, @Nullable ArenaTemplate.Ceiling parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -812,6 +823,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Underfloor mergeUnderfloor(@Nullable ArenaTemplate.Underfloor child, @Nullable ArenaTemplate.Underfloor parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -822,6 +834,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Palette mergePalette(@Nullable ArenaTemplate.Palette child, @Nullable ArenaTemplate.Palette parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -832,6 +845,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Biome mergeBiome(@Nullable ArenaTemplate.Biome child, @Nullable ArenaTemplate.Biome parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -841,6 +855,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Lighting mergeLighting(@Nullable ArenaTemplate.Lighting child, @Nullable ArenaTemplate.Lighting parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -853,6 +868,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Environment mergeEnvironment(@Nullable ArenaTemplate.Environment child, @Nullable ArenaTemplate.Environment parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -864,6 +880,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Compat mergeCompat(@Nullable ArenaTemplate.Compat child, @Nullable ArenaTemplate.Compat parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -873,6 +890,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.InstanceSettings mergeInstanceSettings(@Nullable ArenaTemplate.InstanceSettings child, @Nullable ArenaTemplate.InstanceSettings parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -883,6 +901,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.Limits mergeLimits(@Nullable ArenaTemplate.Limits child, @Nullable ArenaTemplate.Limits parent) {
         if (child == null) return parent;
         if (parent == null) return child;
@@ -893,6 +912,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         );
     }
 
+    @Nullable
     private ArenaTemplate.BuildSettings mergeBuildSettings(@Nullable ArenaTemplate.BuildSettings child, @Nullable ArenaTemplate.BuildSettings parent) {
         if (child == null) return parent;
         if (parent == null) return child;

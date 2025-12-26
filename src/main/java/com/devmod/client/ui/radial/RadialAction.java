@@ -6,22 +6,17 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ActionKeybindRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-
-/**
- * Modular action system for radial menu items.
- * Supports commands, key bindings, item usage, screen navigation, and custom actions.
- */
 public abstract class RadialAction {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RadialAction.class);

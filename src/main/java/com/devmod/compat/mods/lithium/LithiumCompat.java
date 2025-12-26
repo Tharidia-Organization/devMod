@@ -11,24 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Lithium.
- *
- * Lithium provides:
- * - Game logic optimizations
- * - Entity AI improvements
- * - Physics calculations optimization
- * - Block/world tick optimization
- *
- * This integration allows DevMod to:
- * - Detect Lithium presence and config
- * - Track enabled optimization categories
- * - Monitor performance improvements
- * - Include Lithium info in telemetry
- *
- * @see <a href="https://github.com/CaffeineMC/lithium-fabric">Lithium GitHub</a>
- */
 public class LithiumCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(LithiumCompat.class);
     public static final String MOD_ID = "lithium";

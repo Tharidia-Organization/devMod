@@ -6,8 +6,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
+
+import com.mojang.logging.LogUtils;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -16,20 +19,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.endurance.ComboSystem;
 import com.devmod.telemetry.player.AbilityTelemetryService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Dodge Ability System - Quick evasive movement with invincibility frames.
- *
- * Features:
- * - Configurable dodge distance and direction
- * - I-frames (invincibility frames) during dodge
- * - Cooldown between dodges
- * - Stamina cost
- * - Perfect dodge detection for style bonus
- * - Integration with combo system
- */
 public class DodgeAbilitySystem {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -325,6 +314,7 @@ public class DodgeAbilitySystem {
         public int maxDodgeDurationTicks = DEFAULT_DODGE_DURATION_TICKS;
         public int perfectDodgeWindowTicks = PERFECT_DODGE_WINDOW_TICKS; // Configurable perfect dodge timing window
         public long lastDodgeTime = 0;
+        @Nullable
         public DodgeDirection lastDodgeDirection = null;
         public int dodgeCount = 0;
         public int perfectDodgeCount = 0;

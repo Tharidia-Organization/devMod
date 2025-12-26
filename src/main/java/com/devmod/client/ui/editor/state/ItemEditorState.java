@@ -13,19 +13,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.editor.EditorModule;
 import com.devmod.client.ui.editor.components.SlotSelector;
-
-/**
- * Centralized state object for ItemEditorScreen.
- * Client-only - never load on dedicated server.
- * Contains the core editing state that is shared across subsystems.
- *
- * <p>This class consolidates scattered state fields to enable:
- * <ul>
- *   <li>Decoupled subsystems that don't need Screen reference</li>
- *   <li>Easier testing via state injection</li>
- *   <li>Clear separation of concerns</li>
- * </ul>
- */
 @OnlyIn(Dist.CLIENT)
 public final class ItemEditorState {
 

@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -37,14 +39,6 @@ import com.devmod.telemetry.skills.SkillTrackingService;
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.telemetry.spatial.LightAnalysisService;
 import com.devmod.telemetry.spatial.SpatialMetricsService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Central telemetry logger. Keeps light in-memory aggregates and appends NDJSON lines to disk.
- */
-// Minecraft API (getGameProfile) guaranteed non-null for ServerPlayer
-
 public class TelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final TelemetryService INSTANCE = new TelemetryService();

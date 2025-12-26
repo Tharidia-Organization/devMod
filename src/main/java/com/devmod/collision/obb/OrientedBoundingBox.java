@@ -11,20 +11,6 @@ import org.joml.Vector3f;
 
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-
-/**
- * Oriented Bounding Box (OBB) that supports arbitrary rotation.
- * Unlike Minecraft's AABB, OBB follows model transformations.
- *
- * Internally stores:
- * - Center position (world space)
- * - Half-extents (distance from center to each face along local axes)
- * - Rotation (orientation in world space)
- *
- * Designed for real-time combat (sub-ms operations).
- * Immutable class - all transform operations return new instances.
- */
-
 public final class OrientedBoundingBox {
 
     private final Vec3 center;

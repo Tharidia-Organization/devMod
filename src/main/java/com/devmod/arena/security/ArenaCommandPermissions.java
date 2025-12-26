@@ -9,13 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
-
-/**
- * DD31: Command Permissions - modello granulare + audit log
- *
- * Provides granular permission levels for arena commands.
- * 7 permission levels from VIEWER (lowest) to SUPERADMIN (highest).
- */
 public class ArenaCommandPermissions {
 
     private static final ArenaCommandPermissions INSTANCE = new ArenaCommandPermissions();

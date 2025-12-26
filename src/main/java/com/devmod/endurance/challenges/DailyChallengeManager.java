@@ -18,27 +18,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
 import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.config.EnduranceConfigManager;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
-/**
- * Manages daily challenges for the Endurance Quest system.
- *
- * Features:
- * - Rotates 3 challenges daily (Easy, Medium, Hard/Extreme)
- * - Tracks player progress per challenge
- * - Awards rewards on completion
- * - Persists progress across sessions
- * - Resets at midnight UTC
- */
 public class DailyChallengeManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DailyChallengeManager.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

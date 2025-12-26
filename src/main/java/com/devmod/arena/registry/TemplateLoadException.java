@@ -1,10 +1,6 @@
 package com.devmod.arena.registry;
 
 import java.util.List;
-
-/**
- * Exception thrown when a template fails to load.
- */
 public class TemplateLoadException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 

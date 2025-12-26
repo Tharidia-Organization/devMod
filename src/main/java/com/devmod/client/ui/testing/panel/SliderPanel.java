@@ -15,10 +15,6 @@ import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_HEADER_ACC
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_THUMB_HOVER;
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_TRACK;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SLIDER_HEIGHT;
-
-/**
- * Slider panel for numeric value editing with drag support.
- */
 public final class SliderPanel implements UIPanel {
 
     private final String id;

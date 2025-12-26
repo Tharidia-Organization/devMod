@@ -7,11 +7,6 @@ import java.util.Random;
 import net.minecraft.core.BlockPos;
 
 import com.devmod.arena.api.ArenaHandle;
-
-/**
- * WaveDirector plans the "beat" of each wave (pacing + objective).
- * This is the gameplay brain that makes Endurance feel like a real game loop.
- */
 public final class WaveDirector {
     public static final WaveDirector INSTANCE = new WaveDirector();
 

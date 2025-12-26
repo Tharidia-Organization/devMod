@@ -9,10 +9,6 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_HEIGHT_NORMAL;
 import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_HEIGHT_SMALL;
 import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_SPACING;
-
-/**
- * Sealed interface for button row layouts within SectionPanel.
- */
 public sealed interface ButtonRow permits
     ButtonRow.FullWidth,
     ButtonRow.EqualWidth,

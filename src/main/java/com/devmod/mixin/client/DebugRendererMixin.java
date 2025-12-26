@@ -9,20 +9,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.debug.DebugRenderer;
 
 import com.devmod.debug.client.DebugRenderBools;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Client-side mixin to enable debug renderers.
- * In release builds, DebugRenderer.render() never calls the actual renderers.
- * This mixin adds those calls back when debug features are enabled.
- *
- * Uses direct field access on DebugRenderer instance to avoid @Shadow issues.
- */
 @Mixin(DebugRenderer.class)
 public class DebugRendererMixin {
 

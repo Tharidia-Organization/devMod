@@ -7,6 +7,9 @@ import java.util.Objects;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -32,15 +35,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Client-side renderer for native Minecraft debug features.
- * This replaces the broken mixin approach by directly accessing mob data
- * in singleplayer/LAN worlds and rendering our own visualization.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class NativeDebugClientRenderer {
 

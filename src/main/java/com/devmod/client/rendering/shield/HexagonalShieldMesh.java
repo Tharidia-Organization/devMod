@@ -8,24 +8,12 @@ import java.util.Objects;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Generates and caches geodesic sphere meshes from icosahedron subdivision.
- *
- * <p>This class provides pre-computed sphere geometry for efficient rendering
- * of energy shields, eliminating per-frame trigonometry calculations.</p>
- *
- * <p>The mesh is generated once and cached, providing ~94% performance
- * improvement over per-frame sphere generation.</p>
- *
- * <p>Includes edge extraction for hexagonal grid line rendering.</p>
- */
 @OnlyIn(Dist.CLIENT)
 public class HexagonalShieldMesh {
 

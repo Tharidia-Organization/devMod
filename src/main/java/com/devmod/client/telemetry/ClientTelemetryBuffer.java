@@ -6,27 +6,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Client-side buffer for telemetry events in multiplayer.
- *
- * Collects events locally and sends them to the server in batches.
- * This avoids spamming the network with individual telemetry packets.
- *
- * Drain conditions:
- * - Every 10 seconds (configurable)
- * - When buffer reaches 50 events
- * - On client disconnect (flush remaining)
- *
- * Thread-safe for use from any thread (render, tick, network).
- */
 public class ClientTelemetryBuffer {
     private static final Logger LOGGER = LogUtils.getLogger();
 

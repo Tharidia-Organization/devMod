@@ -1,10 +1,6 @@
 package com.devmod.arena.registry;
 
 import java.util.Set;
-
-/**
- * Exception thrown when a circular inheritance chain is detected.
- */
 public class InheritanceCycleException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 

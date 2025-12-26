@@ -13,20 +13,6 @@ import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
-
-/**
- * Renders the outer category ring and category items for the Radial Menu.
- *
- * <p>This renderer handles:</p>
- * <ul>
- *   <li>Category segments in the outer ring</li>
- *   <li>Category icons and names</li>
- *   <li>Active item badges</li>
- *   <li>Item rendering when a category is selected</li>
- *   <li>Cross-fade transitions between macro categories</li>
- * </ul>
- */
-
 public final class RadialCategoryRenderer {
 
     private RadialCategoryRenderer() {

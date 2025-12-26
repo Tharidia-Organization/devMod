@@ -15,18 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
-
-/**
- * Guild/Clan system for Endurance Quest.
- * Provides cooperative objectives, shared rewards, and guild competition.
- *
- * Features:
- * - Guild creation and membership management
- * - Weekly guild objectives with shared progress
- * - Guild leaderboards (weekly and all-time)
- * - Guild perks/bonuses based on level
- * - Guild bank for shared resources
- */
 public class GuildSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(GuildSystem.class);
 

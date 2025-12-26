@@ -4,16 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.devmod.arena.metrics.ArenaMetricsContext;
-
-/**
- * Telemetry for arena build operations with contention tracking (DD62).
- *
- * <p>All events include:
- * <ul>
- *   <li>waitTimeMs - time spent waiting for permit</li>
- *   <li>templateId - for bottleneck analysis</li>
- * </ul>
- */
 public class ArenaBuildTelemetry {
 
     private static final long CONTENTION_THRESHOLD_MS = 1000;

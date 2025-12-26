@@ -14,19 +14,6 @@ import java.util.function.Consumer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-
-/**
- * Service for managing fight sessions.
- *
- * Tracks:
- * - Fight sessions per room (start, duration, participants)
- * - Kill count per mob type
- * - Death count per player
- * - TTK (Time To Kill) per entity type
- * - Burst damage (max damage in time window)
- */
-// Minecraft API (getGameProfile) guaranteed non-null for ServerPlayer
-
 public class FightSessionService {
     public static final FightSessionService INSTANCE = new FightSessionService();
 

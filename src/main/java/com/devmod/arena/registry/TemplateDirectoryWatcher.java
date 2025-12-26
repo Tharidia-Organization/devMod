@@ -15,13 +15,10 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Lightweight directory watcher with debounce for template hot reload.
- * Ensures watcher + executor are closed to prevent leak on shutdown/reload.
- */
 public final class TemplateDirectoryWatcher implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateDirectoryWatcher.class);
@@ -33,8 +30,11 @@ public final class TemplateDirectoryWatcher implements AutoCloseable {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final ScheduledExecutorService debounceExecutor;
 
+    @Nullable
     private WatchService watchService;
+    @Nullable
     private Thread watcherThread;
+    @Nullable
     private ScheduledFuture<?> pendingReload;
 
     public TemplateDirectoryWatcher(Path directory, Runnable onChange) {
@@ -143,7 +143,8 @@ public final class TemplateDirectoryWatcher implements AutoCloseable {
             if (watchService != null) {
                 watchService.close();
             }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            LOGGER.warn("Failed to close template watcher", e);
         }
         debounceExecutor.shutdownNow();
         watcherThread = null;

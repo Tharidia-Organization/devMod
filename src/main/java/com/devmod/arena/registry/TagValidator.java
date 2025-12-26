@@ -11,27 +11,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
-/**
- * Validates arena template tags with typo detection (DD28).
- *
- * <p>Provides:
- * <ul>
- *   <li>Predefined tag dictionary for common categories</li>
- *   <li>Levenshtein distance-based typo detection (threshold ≤ 2)</li>
- *   <li>Autocomplete suggestions (max 5) for unknown tags</li>
- *   <li>Telemetry integration for tracking tag usage</li>
- * </ul>
- *
- * <p>Predefined tag categories:
- * <ul>
- *   <li><b>Difficulty:</b> EASY, MEDIUM, HARD, NIGHTMARE</li>
- *   <li><b>Environment:</b> INDOOR, OUTDOOR, UNDERGROUND, NETHER, END</li>
- *   <li><b>Size:</b> SMALL, MEDIUM_SIZE, LARGE, HUGE</li>
- *   <li><b>Type:</b> BOSS, WAVE, PVP, PUZZLE, SURVIVAL</li>
- *   <li><b>Special:</b> TUTORIAL, EVENT, SEASONAL</li>
- * </ul>
- */
 public class TagValidator {
 
     /** Maximum Levenshtein distance for typo suggestions (DD28). */

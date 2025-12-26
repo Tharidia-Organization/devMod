@@ -26,11 +26,6 @@ import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 
 import net.neoforged.neoforge.network.PacketDistributor;
-
-/**
- * Server-side collector that gathers debug data from Minecraft's internal systems
- * and sends it to clients who have enabled the corresponding debug features.
- */
 public class DebugDataCollector {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugDataCollector.class);
 

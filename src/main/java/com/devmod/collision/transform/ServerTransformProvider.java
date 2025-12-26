@@ -10,23 +10,10 @@ import javax.annotation.Nonnull;
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
 
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.Vec3;
-
 import com.mojang.logging.LogUtils;
 
-/**
- * Server-side transform provider that computes simplified transforms
- * based on entity pose data only (no bone animations).
- *
- * This implementation:
- * - Works without client-side rendering data
- * - Provides reasonable approximations using yBodyRot, yHeadRot, xRot
- * - Is suitable for dedicated server collision detection
- *
- * Accuracy is lower than client-side captures but sufficient for
- * server-side hit detection.
- */
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 public final class ServerTransformProvider implements TransformProvider {
 
     private static final Logger LOGGER = LogUtils.getLogger();

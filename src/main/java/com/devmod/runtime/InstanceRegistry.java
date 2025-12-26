@@ -22,20 +22,14 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
-
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-/**
- * Central registry for all active instances.
- * Provides lookups by instance ID, player ID, and dimension key.
- * Persists to disk for crash recovery.
- */
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
+
+import com.devmod.util.ConfigPaths;
 public class InstanceRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceRegistry.class);
     public static final InstanceRegistry INSTANCE = new InstanceRegistry();

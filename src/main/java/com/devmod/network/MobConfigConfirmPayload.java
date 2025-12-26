@@ -10,11 +10,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Server-to-client confirmation payload sent after mob configuration is applied.
- * Provides feedback to the user that their changes were successfully saved.
- */
 public record MobConfigConfirmPayload(
     boolean success,
     boolean isGlobal,

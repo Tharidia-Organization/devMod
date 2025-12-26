@@ -3,7 +3,6 @@ package com.devmod.actions;
 import java.util.Objects;
 
 import net.minecraft.network.chat.Component;
-
 public enum ActionCategory {
     TOOLS("devmod.action.category.tools"),
     COMBAT("devmod.action.category.combat"),

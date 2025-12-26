@@ -16,13 +16,6 @@ import net.neoforged.neoforge.event.level.ExplosionEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 import com.devmod.DevMod;
-
-/**
- * Handles Perception-style events:
- * - Explosion screen shake (TNT, creepers, etc.)
- * - Warden spawn and heartbeat shake
- * - Player fall landing shake
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class PerceptionEventHandler {
 

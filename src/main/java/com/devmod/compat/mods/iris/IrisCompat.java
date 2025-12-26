@@ -12,24 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Iris Shaders.
- *
- * Iris provides:
- * - Shader support for Fabric/NeoForge (Sodium-based)
- * - OptiFine shader pack compatibility
- * - Shadow and lighting effects
- * - Performance optimizations
- *
- * This integration allows DevMod to:
- * - Detect if shaders are active
- * - Get current shader pack name
- * - Check for shader features that affect rendering
- * - Adjust DevMod overlays for shader compatibility
- *
- * @see <a href="https://github.com/IrisShaders/Iris">Iris GitHub</a>
- */
 public class IrisCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(IrisCompat.class);
     public static final String MOD_ID = "iris";

@@ -21,6 +21,9 @@ import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
@@ -30,20 +33,6 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.loading.FMLPaths;
 
 import com.devmod.DevMod;
-
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-/**
- * Registry for hierarchical presets with 3-level priority system.
- *
- * Presets are loaded from:
- * - config/devmod/presets/global/       (priority 1)
- * - config/devmod/presets/category/     (priority 2)
- * - config/devmod/presets/modpack/{id}/ (priority 3)
- *
- * Resolution order: MODPACK > CATEGORY > GLOBAL (first match wins by priority)
- */
 public final class PresetRegistry {
 
     // Singleton instance (eager initialization - thread-safe)

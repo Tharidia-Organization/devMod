@@ -12,18 +12,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Hot-Reload Manager implementing DD16: Snapshot Immutabile.
- *
- * <p>Key features:
- * <ul>
- *   <li>Immutable snapshots for thread-safe reads</li>
- *   <li>Atomic swap on reload</li>
- *   <li>Version tracking for cache invalidation</li>
- *   <li>No blocking during reads</li>
- * </ul>
- */
 public class HotReloadManager<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HotReloadManager.class);

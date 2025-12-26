@@ -4,12 +4,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Tab definition for editor modules.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#32-editor-module-interface
- */
 public record ModuleTab(
     String id,
     String label,

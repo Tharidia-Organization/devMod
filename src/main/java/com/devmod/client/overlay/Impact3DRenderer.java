@@ -6,25 +6,14 @@ import java.util.Objects;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Manages the rendering of the Impact Analysis panel in 3D in the world.
- *
- * Instead of using an off-screen framebuffer (complex and problematic),
- * it renders the HUD content directly as 3D geometry in the world.
- *
- * This approach is simpler, more performant, and integrates better
- * with the Minecraft 1.21.1 rendering system.
- */
-
 public class Impact3DRenderer {
 
     // Singleton instance

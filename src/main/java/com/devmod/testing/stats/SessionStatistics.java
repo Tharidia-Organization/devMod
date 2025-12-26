@@ -1,11 +1,6 @@
 package com.devmod.testing.stats;
 
 import com.google.gson.JsonObject;
-
-/**
- * Tracks session and play time statistics.
- * Extracted from TesterProgress for single responsibility.
- */
 public class SessionStatistics {
     public static final SessionStatistics INSTANCE = new SessionStatistics();
 

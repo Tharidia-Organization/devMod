@@ -13,19 +13,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import com.devmod.DevMod;
-
-/**
- * Tracks enchantment procs as "skills" for telemetry analytics.
- *
- * Enchantments tracked:
- * - Fire Aspect (burn damage)
- * - Sharpness/Smite/Bane of Arthropods (damage boost)
- * - Knockback (displacement)
- * - Thorns (reflect damage)
- *
- * Cast: When weapon/armor with enchantment is used
- * Hit: When enchantment effect procs (fire damage, knockback, etc.)
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class EnchantmentSkillTracker {
 

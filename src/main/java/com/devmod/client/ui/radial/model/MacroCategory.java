@@ -1,29 +1,6 @@
 package com.devmod.client.ui.radial.model;
 
 import java.util.Objects;
-
-/**
- * Macro-categories that organize the radial menu into 6 logical groups.
- * Each macro-category contains a focused set of sub-categories displayed in the outer ring.
- *
- * <p>Layout:</p>
- * <pre>
- *     ANALYZE (top)
- *     TELEMETRY (upper-right)
- *     COMBAT (right-lower)
- *     ARENA (bottom)
- *     PLAY (lower-left)
- *     TOOLS (left-upper)
- * </pre>
- *
- * <p>Each macro has:</p>
- * <ul>
- *   <li>name - Display name shown in tooltips</li>
- *   <li>icon - Emoji icon shown in center hub segment</li>
- *   <li>color - ARGB color (0xFFxxxxxx format) for theming</li>
- *   <li>description - Tooltip description of category purpose</li>
- * </ul>
- */
 public enum MacroCategory {
     /**
      * Debug, spatial analysis, and visualization tools.

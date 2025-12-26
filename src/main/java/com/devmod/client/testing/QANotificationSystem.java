@@ -16,11 +16,6 @@ import net.minecraft.sounds.SoundSource;
 
 import com.devmod.testing.TestCase;
 import com.devmod.testing.TesterProfile;
-
-/**
- * Toast notification system for QA testing events.
- * Shows slide-in notifications for test completions, achievements, and level ups.
- */
 public class QANotificationSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(QANotificationSystem.class);
 

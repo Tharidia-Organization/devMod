@@ -24,11 +24,6 @@ import com.devmod.config.Config;
 import com.devmod.util.I18n;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
-
-/**
- * Overview Page - Dashboard with system status and quick toggles.
- * Shows the current state of all major systems with one-click enable/disable.
- */
 public class OverviewPage extends AbstractVoxelLabPage {
 
     // Quick toggle buttons

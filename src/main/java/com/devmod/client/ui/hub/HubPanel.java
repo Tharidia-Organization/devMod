@@ -1,11 +1,6 @@
 package com.devmod.client.ui.hub;
 
 import net.minecraft.client.gui.GuiGraphics;
-
-/**
- * Base interface for TestingHub panels.
- * Each panel manages its own rendering and input.
- */
 public interface HubPanel {
 
     /**

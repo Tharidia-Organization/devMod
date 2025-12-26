@@ -17,11 +17,6 @@ import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.util.I18n;
-
-/**
- * Client-side handlers for Party network packets.
- * This class is only loaded on the client.
- */
 @OnlyIn(Dist.CLIENT)
 public final class ClientPartyHandlers {
 

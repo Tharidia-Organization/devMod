@@ -17,11 +17,6 @@ import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.components.ArmorComponents;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.stats.ArmorStats;
-
-/**
- * Core stats management for ArmorModule.
- * Handles loading, saving, comparison, and state management.
- */
 public class ArmorModuleCore {
 
     static final String NBT_KEY = "ArmorModStats";

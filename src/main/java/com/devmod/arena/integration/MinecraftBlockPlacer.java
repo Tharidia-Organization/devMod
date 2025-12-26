@@ -18,18 +18,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.arena.builder.ArenaBuilder;
-
-/**
- * Minecraft/NeoForge implementation of BlockPlacer.
- *
- * <p>Handles actual block placement in ServerLevel with:</p>
- * <ul>
- *   <li>Material name to BlockState resolution</li>
- *   <li>State ID tracking for rollback</li>
- *   <li>Neighbor update flags configuration</li>
- *   <li>Block entity preservation</li>
- * </ul>
- */
 public class MinecraftBlockPlacer implements ArenaBuilder.BlockPlacer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MinecraftBlockPlacer.class);

@@ -9,6 +9,8 @@ import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -16,19 +18,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.endurance.ComboSystem;
 import com.devmod.telemetry.player.AbilityTelemetryService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Dash Ability System - Quick burst of speed in movement direction.
- *
- * Features:
- * - Configurable dash distance and duration
- * - Cooldown between dashes
- * - Stamina cost
- * - Integration with combo system for style points
- * - Ground and air dash variants
- */
 public class DashAbilitySystem {
     private static final Logger LOGGER = LogUtils.getLogger();
 

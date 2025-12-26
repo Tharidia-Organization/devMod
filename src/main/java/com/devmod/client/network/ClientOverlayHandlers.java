@@ -13,11 +13,6 @@ import com.devmod.client.overlay.ResonanceHudOverlay;
 import com.devmod.client.overlay.TokenGainOverlay;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 import com.devmod.endurance.resonance.ResonanceNotificationPayload;
-
-/**
- * Client-side handlers for overlay network packets.
- * This class is only loaded on the client.
- */
 @OnlyIn(Dist.CLIENT)
 public final class ClientOverlayHandlers {
 

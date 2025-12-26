@@ -11,11 +11,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
-
-/**
- * Payload sent from server to client to synchronize full party state.
- * Sent when: joining party, member changes, ready status changes, quest type changes.
- */
 public record PartySyncPayload(
     boolean hasParty,
     UUID partyId,

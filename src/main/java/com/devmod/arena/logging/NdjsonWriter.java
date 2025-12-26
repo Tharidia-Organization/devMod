@@ -26,16 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
-
-/**
- * Async NDJSON (Newline Delimited JSON) writer with buffering and flush policy (DD17, DD20).
- *
- * Features:
- * - Non-blocking writes with 10k buffer (DD20)
- * - Flush policy: 100 lines or 1 second, whichever comes first (DD20)
- * - Log rotation: 14 days, 500MB cap, .gz compression (DD17)
- * - Buffer full behavior: drop oldest entries (non-blocking)
- */
 public class NdjsonWriter implements AutoCloseable {
 
     private static final Logger LOGGER = Logger.getLogger(NdjsonWriter.class.getName());

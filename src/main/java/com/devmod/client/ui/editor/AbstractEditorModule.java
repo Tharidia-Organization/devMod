@@ -20,13 +20,6 @@ import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Abstract base class for editor modules.
- * Provides common functionality for tab management, undo/redo, and dirty tracking.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 3.2
- */
 public abstract class AbstractEditorModule implements EditorModule {
 
     // ═══════════════════════════════════════════════════════════════

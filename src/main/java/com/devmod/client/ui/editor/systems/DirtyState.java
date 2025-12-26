@@ -4,12 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Tracks unsaved changes for the editor.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#35-dirty-state-system
- */
 public final class DirtyState {
 
     private boolean isDirty = false;

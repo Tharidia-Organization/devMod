@@ -9,12 +9,6 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Server-to-client confirmation for editor apply actions (weapon/armor).
- * Carries scope, item id, global flag and an optional message so the client
- * can log in the debug/session history.
- */
 public record EditorApplyConfirmPayload(
     boolean success,
     boolean global,

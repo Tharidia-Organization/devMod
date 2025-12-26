@@ -2,24 +2,9 @@ package com.devmod.arena.registry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
-
-/**
- * Arena Template (L1 - layout fisico) allineato alla spec v2.23.
- *
- * <p>Campi principali:
- * <ul>
- *   <li>id/version/schemaVersion/breakingChange</li>
- *   <li>origin/size/sizeX/sizeZ</li>
- *   <li>floor/walls/ceiling/underfloor/palette</li>
- *   <li>biome/lighting/environment</li>
- *   <li>spawnSlots/forbiddenZones/hazards</li>
- *   <li>compat/instanceSettings/structureNbt/limits/buildSettings/tags</li>
- * </ul>
- * I record nidificati sono minimali ma mappano 1:1 i campi previsti dalla
- * TODO_ARENA_TEMPLATE.md; la validazione applica vincoli di base.
- */
 public record ArenaTemplate(
     String id,
     @Nullable String extendsTemplate,
@@ -42,7 +27,7 @@ public record ArenaTemplate(
     Biome biome,
     Lighting lighting,
     List<SpawnSlot> spawnSlots,
-    Offset playerSpawnOffset,
+    ArenaTemplate.Offset playerSpawnOffset,
     MobSpawnStrategy mobSpawnStrategy,
     List<ForbiddenZone> forbiddenZones,
     List<Hazard> hazards,
@@ -111,7 +96,7 @@ public record ArenaTemplate(
                 new SpawnSlot(new int[]{-14, 1, 8}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("skirmish", "mob"),
                     new SpawnSlot.Validation(true, 2, 1))
             ))
-            .playerSpawnOffset(new Offset(0, 0, 0))
+            .playerSpawnOffset(new ArenaTemplate.Offset(0, 0, 0))
             .mobSpawnStrategy(MobSpawnStrategy.DISTRIBUTED)
             .forbiddenZones(List.of())
             .hazards(List.of())
@@ -196,7 +181,7 @@ public record ArenaTemplate(
                 new SpawnSlot(new int[]{35, 1, 35}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"), new SpawnSlot.Validation(true, 2, 1)),
                 new SpawnSlot(new int[]{0, 1, 30}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("boss", "mob"), new SpawnSlot.Validation(true, 2, 2))
             ))
-            .playerSpawnOffset(new Offset(0, 0, 0))
+            .playerSpawnOffset(new ArenaTemplate.Offset(0, 0, 0))
             .mobSpawnStrategy(MobSpawnStrategy.RING)
             .forbiddenZones(List.of())
             .hazards(List.of(
@@ -258,7 +243,7 @@ public record ArenaTemplate(
 
     public record InstanceSettings(int chunkRadius, int tickDistance, boolean keepLoaded) {}
 
-    public record StructureNbt(String path, Offset offset, String rotation, String mirror,
+    public record StructureNbt(String path, StructureNbt.Offset offset, String rotation, String mirror,
                                String seedPolicy, boolean ignoreAir) {
         public record Offset(int x, int y, int z) {}
     }
@@ -284,33 +269,39 @@ public record ArenaTemplate(
      */
     public static class Builder {
         private final String id;
+        @Nullable
         private String extendsTemplate;
         private int version = 1;
         private int schemaVersion = 1;  // DD25: int instead of String
         private boolean breakingChange = false;
         private boolean deprecated = false;
+        @Nullable
         private String replacementVersion;
+        @Nullable
         private Integer minParentVersion;
         private TemplateType templateType = TemplateType.FlatTemplate.defaults();  // DD1-DD2
         private Origin origin = new Origin(OriginMode.CENTER, 0, 64, 0);
         private int size = 64;
+        @Nullable
         private Integer sizeX;
+        @Nullable
         private Integer sizeZ;
-        private Floor floor;
-        private Walls walls;
-        private Ceiling ceiling;
-        private Underfloor underfloor;
+        private Floor floor = new Floor(64, 1, "minecraft:stone_bricks", "solid", "minecraft:polished_andesite", 0);
+        private Walls walls = new Walls(true, "minecraft:barrier", 10, 1, 64, "solid");
+        private Ceiling ceiling = new Ceiling(true, "minecraft:barrier", 74, 1);
+        private Underfloor underfloor = new Underfloor("minecraft:bedrock", 1, false);
         private Palette palette = new Palette("minecraft:polished_andesite", "minecraft:glowstone", "minecraft:magma_block");
         private Biome biome = new Biome("minecraft:plains", Biome.ApplyTo.BOUNDS);
         private Lighting lighting = new Lighting(15, 10, true, List.of());
         private List<SpawnSlot> spawnSlots = List.of();
-        private Offset playerSpawnOffset = new Offset(0, 0, 0);
+        private ArenaTemplate.Offset playerSpawnOffset = new ArenaTemplate.Offset(0, 0, 0);
         private MobSpawnStrategy mobSpawnStrategy = MobSpawnStrategy.DISTRIBUTED;
         private List<ForbiddenZone> forbiddenZones = List.of();
         private List<Hazard> hazards = List.of();
         private Environment environment = new Environment(List.of(), null, new Environment.Fog(false, 0.0f));
         private Compat compat = new Compat(1, 4);
         private InstanceSettings instanceSettings = new InstanceSettings(5, 4, true);
+        @Nullable
         private StructureNbt structureNbt;
         private Limits limits = new Limits(5000, 50000, 100);
         private BuildSettings buildSettings = new BuildSettings(BuildSettings.Priority.SYNC, BuildSettings.Order.FLOOR_FIRST);
@@ -340,7 +331,7 @@ public record ArenaTemplate(
         public Builder biome(Biome biome) { this.biome = biome; return this; }
         public Builder lighting(Lighting lighting) { this.lighting = lighting; return this; }
         public Builder spawnSlots(List<SpawnSlot> spawnSlots) { this.spawnSlots = spawnSlots; return this; }
-        public Builder playerSpawnOffset(Offset offset) { this.playerSpawnOffset = offset; return this; }
+        public Builder playerSpawnOffset(ArenaTemplate.Offset offset) { this.playerSpawnOffset = offset; return this; }
         public Builder mobSpawnStrategy(MobSpawnStrategy strategy) { this.mobSpawnStrategy = strategy; return this; }
         public Builder forbiddenZones(List<ForbiddenZone> forbiddenZones) { this.forbiddenZones = forbiddenZones; return this; }
         public Builder hazards(List<Hazard> hazards) { this.hazards = hazards; return this; }
@@ -362,30 +353,30 @@ public record ArenaTemplate(
                 deprecated,
                 replacementVersion,
                 minParentVersion,
-                templateType,
-                origin,
+                Objects.requireNonNull(templateType, "templateType"),
+                Objects.requireNonNull(origin, "origin"),
                 size,
                 sizeX,
                 sizeZ,
-                floor,
-                walls,
-                ceiling,
-                underfloor,
-                palette,
-                biome,
-                lighting,
-                List.copyOf(spawnSlots),
-                playerSpawnOffset,
-                mobSpawnStrategy,
-                List.copyOf(forbiddenZones),
-                List.copyOf(hazards),
-                environment,
-                compat,
-                instanceSettings,
+                Objects.requireNonNull(floor, "floor"),
+                Objects.requireNonNull(walls, "walls"),
+                Objects.requireNonNull(ceiling, "ceiling"),
+                Objects.requireNonNull(underfloor, "underfloor"),
+                Objects.requireNonNull(palette, "palette"),
+                Objects.requireNonNull(biome, "biome"),
+                Objects.requireNonNull(lighting, "lighting"),
+                List.copyOf(Objects.requireNonNull(spawnSlots, "spawnSlots")),
+                Objects.requireNonNull(playerSpawnOffset, "playerSpawnOffset"),
+                Objects.requireNonNull(mobSpawnStrategy, "mobSpawnStrategy"),
+                List.copyOf(Objects.requireNonNull(forbiddenZones, "forbiddenZones")),
+                List.copyOf(Objects.requireNonNull(hazards, "hazards")),
+                Objects.requireNonNull(environment, "environment"),
+                Objects.requireNonNull(compat, "compat"),
+                Objects.requireNonNull(instanceSettings, "instanceSettings"),
                 structureNbt,
-                limits,
-                buildSettings,
-                List.copyOf(tags)
+                Objects.requireNonNull(limits, "limits"),
+                Objects.requireNonNull(buildSettings, "buildSettings"),
+                List.copyOf(Objects.requireNonNull(tags, "tags"))
             );
         }
     }

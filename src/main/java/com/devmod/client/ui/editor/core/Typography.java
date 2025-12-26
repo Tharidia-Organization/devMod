@@ -7,13 +7,6 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import static com.devmod.client.ui.editor.core.StringBuilderCache.acquire;
 import static com.devmod.client.ui.editor.core.StringBuilderCache.release;
-
-/**
- * Typography constants and text rendering utilities for the editor.
- * Uses Minecraft's built-in font with scale multipliers.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#15-typography
- */
 public final class Typography {
     private Typography() {}
 

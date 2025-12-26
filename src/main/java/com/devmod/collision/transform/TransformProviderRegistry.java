@@ -1,18 +1,10 @@
 package com.devmod.collision.transform;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import net.neoforged.fml.loading.FMLEnvironment;
-
-/**
- * Registry for accessing the appropriate TransformProvider for the current side.
- *
- * On client: Returns the real client provider that captures bone transforms
- * On server: Returns the server provider that estimates transforms from pose
- *
- * This registry ensures that collision code can be shared between client
- * and server without causing ClassNotFoundException for client-only classes.
- */
 public final class TransformProviderRegistry {
 
     private TransformProviderRegistry() {} // Utility class
@@ -20,6 +12,8 @@ public final class TransformProviderRegistry {
     // Lazy-initialized client provider (only loaded on client)
     private static volatile TransformProvider clientProvider;
     private static volatile boolean clientProviderChecked = false;
+    private static final TransformProvider SERVER_PROVIDER =
+        Objects.requireNonNull(ServerTransformProvider.INSTANCE, "ServerTransformProvider.INSTANCE");
 
     /**
      * Gets the transform provider for the current side.
@@ -31,7 +25,7 @@ public final class TransformProviderRegistry {
         if (FMLEnvironment.dist.isClient()) {
             return getClientProvider();
         }
-        return ServerTransformProvider.INSTANCE;
+        return SERVER_PROVIDER;
     }
 
     /**
@@ -42,7 +36,7 @@ public final class TransformProviderRegistry {
      */
     @Nonnull
     public static TransformProvider getServerProvider() {
-        return ServerTransformProvider.INSTANCE;
+        return SERVER_PROVIDER;
     }
 
     /**
@@ -54,7 +48,7 @@ public final class TransformProviderRegistry {
     @Nonnull
     public static TransformProvider getClientProvider() {
         if (!FMLEnvironment.dist.isClient()) {
-            return ServerTransformProvider.INSTANCE;
+            return SERVER_PROVIDER;
         }
 
         if (!clientProviderChecked) {
@@ -71,7 +65,8 @@ public final class TransformProviderRegistry {
                 }
             }
         }
-        return clientProvider != null ? clientProvider : ServerTransformProvider.INSTANCE;
+        TransformProvider provider = clientProvider;
+        return provider != null ? provider : SERVER_PROVIDER;
     }
 
     /**
@@ -81,7 +76,10 @@ public final class TransformProviderRegistry {
     private static TransformProvider loadClientProvider() throws ReflectiveOperationException {
         Class<?> providerClass = Class.forName("com.devmod.client.collision.transform.ClientTransformProvider");
         Object instance = providerClass.getField("INSTANCE").get(null);
-        return (TransformProvider) instance;
+        if (!(instance instanceof TransformProvider provider)) {
+            throw new IllegalStateException("ClientTransformProvider.INSTANCE is not a TransformProvider");
+        }
+        return Objects.requireNonNull(provider, "ClientTransformProvider.INSTANCE");
     }
 
     /**
@@ -89,7 +87,7 @@ public final class TransformProviderRegistry {
      * Call during world unload or entity cleanup.
      */
     public static void clearAllCaches() {
-        ServerTransformProvider.INSTANCE.clearAllCaches();
+        SERVER_PROVIDER.clearAllCaches();
         if (clientProviderChecked && clientProvider != null) {
             clientProvider.clearAllCaches();
         }
@@ -101,7 +99,7 @@ public final class TransformProviderRegistry {
      * @param entityId The entity ID
      */
     public static void clearCache(int entityId) {
-        ServerTransformProvider.INSTANCE.clearCache(entityId);
+        SERVER_PROVIDER.clearCache(entityId);
         if (clientProviderChecked && clientProvider != null) {
             clientProvider.clearCache(entityId);
         }

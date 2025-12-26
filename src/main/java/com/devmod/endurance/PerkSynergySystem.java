@@ -10,21 +10,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Perk Synergy System - Defines and calculates synergies between perks.
- *
- * Synergies provide:
- * - Visual indicators during perk selection showing which perks work well together
- * - Bonus effects when certain perk combinations are acquired
- * - Guided build paths for players to discover powerful combos
- *
- * Synergy Types:
- * - COMBO: Perks that directly enhance each other's effects
- * - THRESHOLD: Perks that unlock bonuses at certain stack counts
- * - ARCHETYPE: Category-based synergies (e.g., 3+ Offense perks)
- * - SPECIAL: Unique legendary synergy combinations
- */
 public class PerkSynergySystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSynergySystem.class);
 

@@ -1,16 +1,6 @@
 package com.devmod.arena.policy;
 
 import java.util.Objects;
-
-/**
- * Represents a mutator binding configuration.
- * DD50: Mutator Binding - SUGGESTED soft, EXCLUDED/REQUIRED hard.
- *
- * @param mutatorId The identifier of the mutator
- * @param bindingType The type of binding (how the mutator is applied)
- * @param priority UI display priority (lower = higher priority)
- * @param description Optional description for UI
- */
 public record MutatorBinding(
     String mutatorId,
     BindingType bindingType,

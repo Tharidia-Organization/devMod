@@ -86,13 +86,6 @@ import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.DatapackIO;
-
-/**
- * Unified Item Editor Screen.
- * Main entry point for all item editing functionality.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#31-unified-editor-architecture
- */
 @OnlyIn(Dist.CLIENT)
 public class ItemEditorScreen extends Screen implements InputRouter.InputContext {
 

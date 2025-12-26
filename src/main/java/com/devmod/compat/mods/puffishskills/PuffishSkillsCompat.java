@@ -15,24 +15,6 @@ import net.minecraft.world.entity.player.Player;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Puffish Skills.
- *
- * Puffish Skills provides:
- * - Skill tree system with multiple categories
- * - Experience and level-based progression
- * - Configurable skill rewards (attributes, abilities)
- * - Data-driven skill definitions
- *
- * This integration allows DevMod to:
- * - Track player skill points and levels
- * - Display skill tree progress in HUD
- * - Include skill data in telemetry
- * - Show available/unlocked skills
- *
- * @see <a href="https://github.com/puffish/skills">Puffish Skills GitHub</a>
- */
 public class PuffishSkillsCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PuffishSkillsCompat.class);
     public static final String MOD_ID = "puffish_skills";

@@ -37,12 +37,6 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.testing.stats.EnvironmentalDamageStats;
 import com.devmod.testing.stats.HazardTypeRegistry.HazardType;
 import com.devmod.util.I18n;
-
-/**
- * Dashboard e Analytics Screen per la telemetria.
- * Fornisce controlli per esportare heatmap, visualizzare statistiche e toggle overlay.
- * Refactored con Axiom-style UI.
- */
 @OnlyIn(Dist.CLIENT)
 public class TelemetryDashboardScreen extends Screen {
 

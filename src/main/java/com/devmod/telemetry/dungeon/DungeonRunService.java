@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -21,23 +23,6 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.room.RoomService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * VOXEL-LAB M41: Dungeon Run Outcomes
- *
- * Tracks complete dungeon runs from entry to exit/death.
- * Collects metrics for level design analysis:
- * - Run duration
- * - Deaths during run
- * - Rooms visited
- * - Loot collected
- * - Success/failure outcome
- * - Combat stats (kills, damage taken/dealt)
- *
- * A "dungeon" is defined by configured room groups in telemetry_rooms.json.
- */
 public class DungeonRunService {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DungeonRunService INSTANCE = new DungeonRunService();

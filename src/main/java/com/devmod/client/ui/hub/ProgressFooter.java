@@ -1,18 +1,14 @@
 package com.devmod.client.ui.hub;
 
-import com.devmod.client.testing.TestingSession;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import javax.annotation.Nonnull;
-
-/**
- * Footer with progress bar and quick actions.
- * Shows: progress bar, stats, save report button, minimize button.
- */
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
 public class ProgressFooter implements HubPanel {
 
     private final int x, y, width, height;

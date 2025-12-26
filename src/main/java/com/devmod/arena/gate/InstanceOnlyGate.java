@@ -15,10 +15,6 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Enforces instance-only arena creation (spec Fase0).
- */
 public class InstanceOnlyGate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceOnlyGate.class);

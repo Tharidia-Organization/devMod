@@ -12,6 +12,9 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -35,23 +38,6 @@ import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.I18n;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-/**
- * In-game UI for defining Room Bounds.
- * Uses standard UIConstants for consistent theming.
- *
- * Allows:
- * - Set Point A (min corner) from player position
- * - Set Point B (max corner) from player position
- * - Give a name to the room
- * - Save directly to telemetry_rooms.json file
- * - View list of existing rooms
- *
- * Keybind: Shift+R (when Room Bounds visualizer is active)
- */
 @OnlyIn(Dist.CLIENT)
 public class RoomBoundsEditorScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomBoundsEditorScreen.class);

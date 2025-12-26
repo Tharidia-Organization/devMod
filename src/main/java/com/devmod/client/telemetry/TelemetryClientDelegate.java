@@ -1,11 +1,6 @@
 package com.devmod.client.telemetry;
 
 import net.minecraft.client.Minecraft;
-
-/**
- * Client-side delegate for telemetry commands.
- * Isolates Minecraft.getInstance() calls from server-side code.
- */
 public final class TelemetryClientDelegate {
 
     private TelemetryClientDelegate() {}

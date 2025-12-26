@@ -6,13 +6,6 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Manages chunk loading for arena builds (DD9).
- *
- * <p>Ensures all required chunks are FULL status before building.
- * Implements polling with timeout and proper cleanup on failure.
- */
 public class ChunkLoadingManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChunkLoadingManager.class);

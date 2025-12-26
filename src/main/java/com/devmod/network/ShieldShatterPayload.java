@@ -8,13 +8,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Network payload for synchronizing shield shatter events.
- *
- * <p>Sent from server to nearby clients when a shield is broken,
- * triggering the shatter visual effect (fragments flying apart).</p>
- */
 public record ShieldShatterPayload(
     int entityId,
     double centerX,

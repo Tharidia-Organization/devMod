@@ -18,20 +18,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.testing.TestCase;
-
-/**
- * In-game HUD overlay that displays the currently active test.
- * Shows test name, instructions checklist, and quick action buttons.
- *
- * This allows testers to see test progress without opening the full QA screen.
- *
- * Features:
- * - Compact panel in corner showing active test
- * - Step-by-step instruction checklist
- * - Progress bar for tests with auto-progress
- * - Quick action hints (keyboard shortcuts)
- * - Minimized mode when no test is active
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class ActiveTestHudOverlay {

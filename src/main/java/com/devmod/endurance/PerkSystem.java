@@ -27,19 +27,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
-/**
- * Roguelike Perk System for Endurance Quests.
- *
- * After each wave, players choose from 3 random perks that modify their abilities.
- * Perks stack and synergize with each other, creating unique builds each run.
- *
- * Features:
- * - Tiered perks (Common, Uncommon, Rare, Epic, Legendary)
- * - Perk synergies and combos
- * - Curse perks (negative effects for bonus rewards)
- * - Meta-progression unlocks
- */
 public class PerkSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSystem.class);
 

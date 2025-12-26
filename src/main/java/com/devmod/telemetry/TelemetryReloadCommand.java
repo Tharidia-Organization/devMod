@@ -2,6 +2,11 @@ package com.devmod.telemetry;
 
 import java.util.Objects;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -17,19 +22,6 @@ import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
 import com.devmod.util.I18n;
-
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-
-/**
- * Simple admin command to reload telemetry room definitions without server restart.
- * Usage: /devmod telemetry reload
- *        /devmod telemetry dump <weapons|rooms|fights|minions>
- *        /devmod telemetry export <heatmaps|all>
- *        /devmod telemetry scan light [roomId]
- */
 public class TelemetryReloadCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(

@@ -2,10 +2,6 @@ package com.devmod.arena.registry;
 
 import java.util.Map;
 import java.util.Set;
-
-/**
- * Lightweight manifest describing allowed structures and limits (spec v2.23).
- */
 public record StructureManifest(
     Map<String, Entry> structures,
     Set<String> allowedNamespaces,

@@ -17,22 +17,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.devmod.DevMod;
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
-/**
- * Manages persistent data for the Item Editor:
- * - Presets (saved to JSON)
- * - Favorites (enchantments/attributes)
- * - History log
- * - Templates
- */
+import com.devmod.DevMod;
+import com.devmod.util.ConfigPaths;
 public class ItemEditorDataManager {
 
     public static final ItemEditorDataManager INSTANCE = new ItemEditorDataManager();

@@ -11,24 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.world.entity.LivingEntity;
-
-/**
- * Optional compatibility layer for GeckoLib entities.
- *
- * GeckoLib uses its own animation system (GeoModel, GeoRenderer, AnimatableManager)
- * instead of Minecraft's ModelPart system. This class provides hooks to capture
- * bone transforms from GeckoLib entities when the library is present.
- *
- * Detection strategy:
- * 1. Check if GeckoLib classes are available via reflection
- * 2. If available, hook into GeoRenderer to capture bone transforms
- * 3. If not available, silently skip (no errors, no overhead)
- *
- * GeckoLib bone structure:
- * - GeoBone: Has name, position, rotation, scale, children
- * - GeoModel: Contains root bones and provides getAnimationProcessor()
- * - AnimatableManager: Manages animation state per entity
- */
 public final class GeckoLibCompat {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GeckoLibCompat.class);

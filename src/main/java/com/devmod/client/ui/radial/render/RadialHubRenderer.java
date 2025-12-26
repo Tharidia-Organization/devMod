@@ -8,22 +8,6 @@ import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.model.MacroCategory;
-
-/**
- * Renders the center hub of the Radial Menu.
- *
- * <p>The hub consists of:</p>
- * <ul>
- *   <li>Macro-category segments (ANALYZE, TELEMETRY, COMBAT, ARENA, PLAY, TOOLS)</li>
- *   <li>Close/back button in the very center</li>
- *   <li>Divider lines between segments</li>
- *   <li>Outer ring around the entire hub</li>
- * </ul>
- *
- * <p>Each segment is clickable and switches the active macro-category.
- * The selected macro is highlighted with its color.</p>
- */
-
 public final class RadialHubRenderer {
 
     private RadialHubRenderer() {

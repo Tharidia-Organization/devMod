@@ -6,11 +6,6 @@ import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.PANEL_SPACING;
-
-/**
- * Composite panel containing multiple child panels stacked vertically.
- * Useful for grouping related panels together.
- */
 public record CompositePanel(
     String id,
     String title,

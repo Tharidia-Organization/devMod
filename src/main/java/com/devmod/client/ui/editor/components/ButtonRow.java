@@ -7,24 +7,6 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.EditorSpacing;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Horizontal layout component for arranging multiple EditorButtons in a row.
- * Supports configurable gap between buttons and alignment options.
- *
- * <p>Example usage:
- * <pre>
- * ButtonRow row = new ButtonRow()
- *     .add(cancelButton)
- *     .add(applyButton)
- *     .gap(EditorSpacing.S)
- *     .alignment(ButtonRow.Alignment.RIGHT);
- *
- * row.render(graphics, x, y, availableWidth, mouseX, mouseY);
- * </pre>
- *
- * @see EditorButton
- */
 public class ButtonRow {
 
     /**

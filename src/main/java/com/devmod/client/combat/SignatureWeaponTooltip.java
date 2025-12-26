@@ -15,16 +15,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.combat.signature.SoulImprint;
 import com.devmod.combat.signature.WeaponTrait;
-
-/**
- * Client-side tooltip renderer for Signature Weapons.
- *
- * Displays the weapon's Soul Imprint data including:
- * - Evolved name based on stage
- * - Unlocked traits with effects
- * - Stat progress toward next traits
- * - Total kills and damage dealt
- */
 @OnlyIn(Dist.CLIENT)
 public class SignatureWeaponTooltip {
 

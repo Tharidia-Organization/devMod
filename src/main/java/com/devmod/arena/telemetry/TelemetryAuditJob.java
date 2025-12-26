@@ -14,17 +14,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Scheduled job for telemetry audit (DD57).
- *
- * <p>Runs daily at 05:00 to detect:
- * <ul>
- *   <li>Orphan events (missing required context fields)</li>
- *   <li>Sub-service coverage gaps (12 expected services)</li>
- *   <li>Events without proper context</li>
- * </ul>
- */
 public class TelemetryAuditJob {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TelemetryAuditJob.class);

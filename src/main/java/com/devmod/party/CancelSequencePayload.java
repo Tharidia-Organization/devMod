@@ -9,11 +9,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from client (leader) to server to cancel the quest start sequence.
- * Only the party leader can cancel during countdown.
- */
 public record CancelSequencePayload(
     UUID partyId
 ) implements CustomPacketPayload {

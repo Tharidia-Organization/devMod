@@ -7,11 +7,6 @@ import com.devmod.client.ui.testing.panel.ShowcasePanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.util.I18n;
-
-/**
- * Component Showcase Page - Demonstrates all UI components.
- * Shows EditorButton variants, styles, sizes, and states.
- */
 public class ComponentShowcasePage extends AbstractVoxelLabPage {
 
     public ComponentShowcasePage() {

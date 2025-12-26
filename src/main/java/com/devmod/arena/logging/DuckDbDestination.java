@@ -16,11 +16,6 @@ import com.devmod.arena.logging.LogAggregationPipeline.LogEvent;
 import com.devmod.telemetry.duckdb.ArenaRecords;
 import com.devmod.telemetry.duckdb.DuckDBBatchWriter;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-
-/**
- * DuckDB destination for arena.build.* telemetry events.
- * Uses DuckDBBatchWriter for async, non-blocking writes.
- */
 public class DuckDbDestination implements LogDestination {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDbDestination.class);

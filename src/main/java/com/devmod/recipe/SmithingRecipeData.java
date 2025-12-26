@@ -4,14 +4,10 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
-
 import com.google.gson.JsonObject;
 
-/**
- * Data for smithing recipes (transform and trim).
- */
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 public record SmithingRecipeData(
     ResourceLocation id,
     SmithingType smithingType,

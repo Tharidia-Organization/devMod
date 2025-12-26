@@ -1,11 +1,6 @@
 package com.devmod.arena.spawn;
 
 import java.util.UUID;
-
-/**
- * Represents a forbidden zone where spawning is not allowed.
- * DD47: Forbidden zones are checked during spawn slot resolution.
- */
 public record ForbiddenZone(
     UUID id,
     double minX,

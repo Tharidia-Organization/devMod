@@ -4,15 +4,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-
-/**
- * Object pool for frequently created render objects to reduce GC pressure.
- *
- * Pools reusable objects like StringBuilders, ArrayLists, and int arrays
- * that would otherwise be created every frame.
- *
- * @see docs/editor-design-system/19-performance-considerations.md
- */
 public final class RenderObjectPool {
 
     // Pool size limits

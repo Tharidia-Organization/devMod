@@ -7,11 +7,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.minecraft.world.phys.Vec3;
-
-/**
- * Represents a trail effect that follows an entity or projectile.
- * Stores position history and renders as a glowing line.
- */
 public class TrailEffect {
 
     private final int entityId;

@@ -9,18 +9,6 @@ import com.devmod.client.ui.editor.EditorModule;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.state.ItemEditorState;
 import com.devmod.config.EditorClientConfig;
-
-/**
- * Controller for managing editor mode state (Preview vs Apply).
- * Client-only.
- * Encapsulates mode switching logic, preference persistence, and state synchronization.
- *
- * <p>This controller is decoupled from the UI - it receives callbacks for:
- * <ul>
- *   <li>Status messages (for UI feedback)</li>
- *   <li>UI updates (for badge/visual sync)</li>
- * </ul>
- */
 @OnlyIn(Dist.CLIENT)
 public final class ModeController {
 

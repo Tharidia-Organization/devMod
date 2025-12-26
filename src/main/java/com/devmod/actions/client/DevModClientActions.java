@@ -97,26 +97,6 @@ import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
-
-/**
- * Client-side action registry for DevMod.
- *
- * <p>Registers all radial menu actions organized by category:
- * <ul>
- *   <li>UI actions - screen toggles and overlays</li>
- *   <li>Debug actions - visualization and rendering toggles</li>
- *   <li>Config actions - armor/weapon editing</li>
- *   <li>Telemetry actions - data collection toggles</li>
- *   <li>Quest actions - quest system controls</li>
- *   <li>Endurance actions - endurance quest management</li>
- *   <li>Ability actions - player abilities</li>
- * </ul>
- *
- * <p>All actions are registered via {@link #register()} during client mod initialization.
- *
- * @see ActionRegistry
- * @see RadialAction
- */
 public final class DevModClientActions {
     private static final HeatmapVisualizer.HeatmapType[] HEATMAP_CYCLE = {
         HeatmapVisualizer.HeatmapType.DEATH,

@@ -1,10 +1,6 @@
 package com.devmod.arena.registry;
 
 import java.util.List;
-
-/**
- * Golden reference data for default_flat_64.
- */
 public record GoldenReference(
     Bounds arenaBounds,
     Bounds floorBounds,

@@ -18,10 +18,6 @@ import net.minecraft.world.level.Level;
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Coordinates async arena builders per level and ticks them from server events.
- */
 public class AsyncArenaBuildCoordinator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncArenaBuildCoordinator.class);

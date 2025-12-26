@@ -15,28 +15,6 @@ import net.minecraft.world.entity.LivingEntity;
 import com.devmod.collision.compat.GeckoLibCompat;
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for GeckoLib animation library.
- *
- * GeckoLib provides:
- * - Advanced entity animation system
- * - Bone-based model transformations
- * - Animation controllers and keyframes
- * - Custom model rendering
- *
- * This integration allows DevMod to:
- * - Detect GeckoLib animated entities
- * - Extract bone transforms for OBB collision
- * - Track animation states for telemetry
- * - Support GeckoLib mobs in Arena
- *
- * Note: Core GeckoLib collision compat is in com.devmod.collision.compat.GeckoLibCompat
- * This module provides the CompatModule interface wrapper.
- *
- * @see GeckoLibCompat
- * @see <a href="https://github.com/bernie-g/geckolib">GeckoLib GitHub</a>
- */
 public class GeckoLibModuleCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(GeckoLibModuleCompat.class);
     public static final String MOD_ID = "geckolib";

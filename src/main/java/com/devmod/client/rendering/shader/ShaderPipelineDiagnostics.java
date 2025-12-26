@@ -8,10 +8,6 @@ import net.minecraft.client.renderer.RenderType;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-/**
- * Utility for logging shader pipeline readiness and fallback state.
- */
 @OnlyIn(Dist.CLIENT)
 public final class ShaderPipelineDiagnostics {
     private ShaderPipelineDiagnostics() {}

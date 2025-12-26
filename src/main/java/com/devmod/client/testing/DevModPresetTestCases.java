@@ -10,21 +10,6 @@ import com.devmod.client.ui.editor.systems.PresetBridge;
 import com.devmod.client.ui.editor.systems.PresetRegistry;
 import com.devmod.client.ui.editor.systems.PresetScope;
 import com.devmod.testing.TestCase;
-
-/**
- * Test cases for the Preset System (Plan B - Full PresetRegistry Integration).
- *
- * Tests cover:
- * - PresetScope hierarchy (Global, Category, Modpack)
- * - PresetRegistry initialization and loading
- * - PresetBridge conversion utilities
- * - ModpackDetector strategies
- * - Bundled preset loading
- * - User preset CRUD operations
- *
- * NOTE: This is a client-only class - moved from com.devmod.testing to
- * com.devmod.client.testing for dedicated server compatibility.
- */
 public class DevModPresetTestCases {
 
     private static final String CATEGORY = "Preset System";

@@ -17,27 +17,17 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import com.mojang.logging.LogUtils;
-
-/**
- * Service for damage tracking and weapon statistics.
- *
- * Manages:
- * - Weapon aggregates (total damage, hits, kills, misses)
- * - Room aggregates (damage to player vs mob, deaths)
- * - Minion statistics (damage dealt during lifetime)
- * - TTK tracking (time to kill)
- */
 public class DamageTrackingService {
     public static final DamageTrackingService INSTANCE = new DamageTrackingService();
     private static final Logger LOGGER = LogUtils.getLogger();

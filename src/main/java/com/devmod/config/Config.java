@@ -1,18 +1,6 @@
 package com.devmod.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
-
-/**
- * Configurazione centralizzata per DevMod.
- *
- * Categorie:
- * - Telemetry: Controllo logging e tracking
- * - Combat: Body part detection e damage calculation
- * - Debug: Overlay e visualizzazioni
- * - Performance: Cache e ottimizzazioni
- *
- * Nota: le preferenze dell'Item Editor sono in {@link EditorClientConfig}.
- */
 public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 

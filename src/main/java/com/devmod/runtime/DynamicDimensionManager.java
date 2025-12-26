@@ -51,18 +51,6 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.mixin.MinecraftServerAccessor;
-
-/**
- * Manages dynamic creation and destruction of instance dimensions at runtime.
- *
- * This class handles:
- * - Creating new void dimensions for arena instances
- * - Tracking active dimensions
- * - Safely destroying dimensions and cleaning up files
- * - Teleporting players between dimensions
- *
- * Note: This requires Mixin hooks to inject dimensions into MinecraftServer.levels
- */
 public class DynamicDimensionManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicDimensionManager.class);
     public static final DynamicDimensionManager INSTANCE = new DynamicDimensionManager();

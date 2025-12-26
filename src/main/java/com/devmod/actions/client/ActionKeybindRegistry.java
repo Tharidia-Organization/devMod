@@ -9,7 +9,6 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import net.minecraft.client.KeyMapping;
-
 public final class ActionKeybindRegistry {
     private static final Map<String, KeybindHint> KEYBINDS = new HashMap<>();
 

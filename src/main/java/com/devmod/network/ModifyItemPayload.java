@@ -10,21 +10,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Payload for comprehensive item modification.
- * NeoForge 1.21.1 compliant using StreamCodec.composite and ByteBufCodecs.collection.
- *
- * Supports:
- * - Durability changes
- * - Unbreakable flag
- * - Repair cost
- * - Enchantment modifications (add/remove/change level) - works with ALL modded enchantments
- * - Attribute modifier changes - works with ALL modded attributes
- *
- * Format for enchantments: "namespace:path:level" (e.g., "minecraft:sharpness:5")
- * Format for attributes: "namespace:path:value:operation" (e.g., "minecraft:generic.attack_damage:5.0:0")
- */
 public record ModifyItemPayload(
     int durability,
     boolean unbreakable,

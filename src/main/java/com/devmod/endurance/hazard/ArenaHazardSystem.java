@@ -27,24 +27,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
-
-/**
- * Dynamic Arena Hazards - Make arenas feel alive.
- *
- * This system introduces environmental hazards that activate during
- * Endurance Quests, adding an extra layer of challenge and spectacle.
- *
- * Hazard Types:
- * - FLOOR_CRUMBLE (Wave 3+): Parts of the floor collapse
- * - BLOOD_MOON (Wave 5+): Red sky, mobs gain strength
- * - ARENA_SHRINK (Wave 7+): Arena boundaries contract
- * - LIGHTNING_STORM (Wave 9+): Random lightning strikes
- * - VOID_RIFTS (Wave 11+): Portals spawn extra enemies
- *
- * Design Philosophy:
- * Hazards create memorable moments and force players to adapt.
- * They should be dangerous but fair, with clear visual warnings.
- */
 public class ArenaHazardSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaHazardSystem.class);
 

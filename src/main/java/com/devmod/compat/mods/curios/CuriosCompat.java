@@ -17,25 +17,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Curios API.
- *
- * Curios provides:
- * - Extra equipment slots (rings, necklaces, belts, etc.)
- * - Flexible slot type system
- * - Tag-based item categorization
- * - Inventory management API
- *
- * This integration allows DevMod to:
- * - Detect equipped curios for damage/stat calculations
- * - Read curio attributes for HUD display
- * - Support curio items in the item editor
- * - Display curio slots in entity info overlays
- *
- * @see <a href="https://github.com/TheIllusiveC4/Curios">Curios GitHub</a>
- * @see <a href="https://www.curseforge.com/minecraft/mc-mods/curios">CurseForge</a>
- */
 public class CuriosCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(CuriosCompat.class);
     public static final String MOD_ID = "curios";

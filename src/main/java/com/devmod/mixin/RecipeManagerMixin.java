@@ -21,12 +21,6 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.DevMod;
 import com.devmod.recipe.RecipeInjector;
-
-/**
- * Mixin to inject custom recipes into RecipeManager lookups.
- * This is necessary because RecipeManager is mostly immutable after datapack loading.
- * We intercept recipe queries and supplement them with our custom recipes.
- */
 @Mixin(RecipeManager.class)
 public class RecipeManagerMixin {
 
@@ -38,7 +32,7 @@ public class RecipeManagerMixin {
      * Also filters out removed/overridden recipes.
      */
     @Inject(method = "getAllRecipesFor", at = @At("RETURN"), cancellable = true)
-    private <I extends RecipeInput, T extends Recipe<I>> void devmod$injectAllRecipes(
+    <I extends RecipeInput, T extends Recipe<I>> void devmod$injectAllRecipes(
             RecipeType<T> type,
             CallbackInfoReturnable<Collection<RecipeHolder<T>>> cir) {
         RecipeType<T> safeType = Objects.requireNonNull(type, "recipe type");
@@ -71,7 +65,7 @@ public class RecipeManagerMixin {
      */
     @Inject(method = "getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;)Ljava/util/Optional;",
             at = @At("HEAD"), cancellable = true)
-    private <I extends RecipeInput, T extends Recipe<I>> void devmod$injectRecipeFor(
+    <I extends RecipeInput, T extends Recipe<I>> void devmod$injectRecipeFor(
             RecipeType<T> type,
             I input,
             Level level,
@@ -111,7 +105,7 @@ public class RecipeManagerMixin {
      */
     @Inject(method = "getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;",
             at = @At("HEAD"), cancellable = true)
-    private <I extends RecipeInput, T extends Recipe<I>> void devmod$injectRecipeForWithHint(
+    <I extends RecipeInput, T extends Recipe<I>> void devmod$injectRecipeForWithHint(
             RecipeType<T> type,
             I input,
             Level level,
@@ -158,7 +152,7 @@ public class RecipeManagerMixin {
      */
     @Inject(method = "getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/crafting/RecipeHolder;)Ljava/util/Optional;",
             at = @At("HEAD"), cancellable = true)
-    private <I extends RecipeInput, T extends Recipe<I>> void devmod$injectRecipeForWithHolder(
+    <I extends RecipeInput, T extends Recipe<I>> void devmod$injectRecipeForWithHolder(
             RecipeType<T> type,
             I input,
             Level level,
@@ -210,7 +204,7 @@ public class RecipeManagerMixin {
      * Intercept byKey lookup to include injected recipes and filter removed ones.
      */
     @Inject(method = "byKey", at = @At("HEAD"), cancellable = true)
-    private void devmod$injectByKey(
+    void devmod$injectByKey(
             ResourceLocation id,
             CallbackInfoReturnable<Optional<RecipeHolder<?>>> cir) {
 

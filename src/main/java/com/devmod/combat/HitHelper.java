@@ -14,11 +14,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.Config;
-
-/**
- * Utility class for precise body part hit detection.
- * All methods are static; this class should not be instantiated.
- */
 public final class HitHelper {
 
     private HitHelper() {

@@ -12,11 +12,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Network payload sent from server to client with player's personal records.
- * Used to display "Best: Wave X | Y pts" in the EnduranceQuestScreen.
- */
 public record PersonalRecordsSyncPayload(
     int totalQuestsAttempted,
     int totalQuestsCompleted,

@@ -5,17 +5,6 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Fallback build strategy with circuit breaker pattern.
- * DD45: Fallback Chain Limits - max 1 retry, circuit breaker 3/5min.
- *
- * <p>This strategy executes a primary build operation and falls back to
- * an alternative if the primary fails. The circuit breaker prevents
- * cascading failures by failing fast when too many failures occur.
- *
- * @param <T> The type of result produced by the build strategies
- */
 public class FallbackBuildStrategy<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FallbackBuildStrategy.class);

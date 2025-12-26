@@ -17,17 +17,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Weekly balance report job (DD59).
- *
- * <p>Runs every Sunday at 06:00:
- * <ul>
- *   <li>Query must complete in &lt;30s</li>
- *   <li>Generates JSON report</li>
- *   <li>Sends Slack notification</li>
- * </ul>
- */
 public class BalanceReportJob {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BalanceReportJob.class);

@@ -13,18 +13,6 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.ModuleTab;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.stats.WeaponStats;
-
-/**
- * Editor module for weapon statistics.
- * Allows editing damage multipliers, attack stats, and special effects.
- *
- * Delegates to:
- * - WeaponModuleCore: Stats management, loading, saving
- * - WeaponModuleUI: UI components and section builders
- * - WeaponModuleVariants: Mace/Trident specific logic
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 3.3
- */
 public class WeaponModule extends AbstractEditorModule {
 
     public enum WeaponVariant { STANDARD, MACE, TRIDENT }

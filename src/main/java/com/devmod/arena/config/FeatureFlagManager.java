@@ -6,11 +6,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Feature flag manager that owns a FeatureFlagRegistry and applies config reloads,
- * notifying listeners on changes. Intended to avoid stale flag state across reloads.
- */
 public class FeatureFlagManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureFlagManager.class);
 

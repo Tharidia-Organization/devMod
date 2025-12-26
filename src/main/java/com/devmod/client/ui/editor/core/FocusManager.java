@@ -2,30 +2,6 @@ package com.devmod.client.ui.editor.core;
 
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * Manages keyboard focus navigation between focusable UI components.
- * Supports Tab/Shift+Tab navigation and focus state tracking.
- *
- * Usage:
- * <pre>
- * FocusManager focus = new FocusManager();
- * focus.register(button1);
- * focus.register(slider1);
- * focus.register(toggle1);
- *
- * // In keyPressed handler:
- * if (focus.handleKeyPressed(keyCode, modifiers)) {
- *     return true;
- * }
- *
- * // In render:
- * boolean isFocused = focus.isFocused(button1);
- * </pre>
- *
- * @see Focusable
- * @see EditorComponent
- */
 public class FocusManager {
 
     private final List<Focusable> focusables = new ArrayList<>();

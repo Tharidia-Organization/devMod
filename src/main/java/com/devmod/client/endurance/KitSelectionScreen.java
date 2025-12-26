@@ -1,10 +1,24 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.CustomKit;
-import com.devmod.endurance.KitManager;
-import com.devmod.endurance.KitPersistence;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-import com.devmod.util.I18n;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
@@ -22,6 +36,7 @@ import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MaceItem;
@@ -29,38 +44,16 @@ import net.minecraft.world.item.PotionItem;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TieredItem;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.enchantment.Enchantment;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
-/**
- * Professional kit selection screen with:
- * - Categorized items with search
- * - Visual slot-based kit preview
- * - Live character preview with equipped gear
- * - Enchantment selector popup
- * - Kit naming dialog
- * - Sound effects for feedback
- */
+import com.devmod.endurance.CustomKit;
+import com.devmod.endurance.KitManager;
+import com.devmod.endurance.KitPersistence;
+import com.devmod.util.I18n;
 @OnlyIn(Dist.CLIENT)
 public class KitSelectionScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(KitSelectionScreen.class);
@@ -158,6 +151,7 @@ public class KitSelectionScreen extends Screen {
 
     private boolean showNameDialog = false;
     private String kitNameInput = "";
+    @Nullable
     private EditBox kitNameBox;
 
     // Slot configuration
@@ -167,6 +161,7 @@ public class KitSelectionScreen extends Screen {
     };
 
     // UI Components
+    @Nullable
     private EditBox searchBox;
     @Nullable
     private final Consumer<List<ItemStack>> onKitSelected;
@@ -261,13 +256,15 @@ public class KitSelectionScreen extends Screen {
 
     private void filterItems() {
         filteredItems.clear();
-        String query = searchQuery.toLowerCase().trim();
+        String query = searchQuery.toLowerCase(Locale.ROOT).trim();
 
         for (ItemStack stack : allItems) {
             if (!selectedCategory.filter.test(stack)) continue;
             if (!query.isEmpty()) {
-                String name = stack.getHoverName().getString().toLowerCase();
-                String id = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem()))).toString().toLowerCase();
+                String name = stack.getHoverName().getString().toLowerCase(Locale.ROOT);
+                String id = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem())))
+                    .toString()
+                    .toLowerCase(Locale.ROOT);
                 if (!name.contains(query) && !id.contains(query)) continue;
             }
             filteredItems.add(stack);
@@ -293,7 +290,7 @@ public class KitSelectionScreen extends Screen {
 
         renderHeader(graphics, mouseX, mouseY);
         renderItemBrowser(graphics, mouseX, mouseY);
-        renderKitPanel(graphics, mouseX, mouseY, partialTick);
+        renderKitPanel(graphics, mouseX, mouseY);
         renderBottomBar(graphics, mouseX, mouseY);
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -412,7 +409,7 @@ public class KitSelectionScreen extends Screen {
         }
     }
 
-    private void renderKitPanel(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    private void renderKitPanel(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
 
         int panelX = width / 2 + PANEL_PADDING;
@@ -436,7 +433,7 @@ public class KitSelectionScreen extends Screen {
         // === CHARACTER PREVIEW ===
         int previewX = panelX + panelW - 80;
         int previewY = y + 80;
-        renderCharacterPreview(graphics, previewX, previewY, mouseX, mouseY, partialTick);
+        renderCharacterPreview(graphics, previewX, previewY, mouseX, mouseY);
 
         // === EQUIPMENT SLOTS ===
         graphics.drawString(safeFont, I18n.translate("devmod.kit.section.equipment").getString(), contentX, y, COLOR_TEXT_DIM);
@@ -497,7 +494,7 @@ public class KitSelectionScreen extends Screen {
         }
     }
 
-    private void renderCharacterPreview(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, float partialTick) {
+    private void renderCharacterPreview(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
         var mc = Minecraft.getInstance();
         Player player = mc.player;
@@ -585,12 +582,12 @@ public class KitSelectionScreen extends Screen {
         // Back button
         renderButton(graphics, PANEL_PADDING, btnY, 90, btnH,
             I18n.translate("devmod.kit.button.back").getString(), COLOR_PANEL,
-            mouseX, mouseY, this::goBack);
+            mouseX, mouseY);
 
         // Clear button
         renderButton(graphics, PANEL_PADDING + 100, btnY, 90, btnH,
             I18n.translate("devmod.kit.button.clear").getString(), COLOR_PANEL,
-            mouseX, mouseY, this::clearKit);
+            mouseX, mouseY);
 
         // Right side buttons
         int rx = width - PANEL_PADDING;
@@ -613,7 +610,7 @@ public class KitSelectionScreen extends Screen {
     }
 
     private void renderButton(GuiGraphics graphics, int x, int y, int w, int h, String text, int bgColor,
-                              int mouseX, int mouseY, Runnable action) {
+                              int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
         String safeText = Objects.requireNonNull(text);
         boolean hovered = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
@@ -861,23 +858,23 @@ public class KitSelectionScreen extends Screen {
             return handleNameDialogClick((int) mouseX, (int) mouseY, button);
         }
         if (showEnchantPopup) {
-            return handleEnchantPopupClick((int) mouseX, (int) mouseY, button);
+            return handleEnchantPopupClick((int) mouseX, (int) mouseY);
         }
 
         // Category tabs
         if (handleCategoryTabClick((int) mouseX, (int) mouseY)) return true;
 
         // Bottom bar buttons
-        if (handleBottomBarClick((int) mouseX, (int) mouseY, button)) return true;
+        if (handleBottomBarClick((int) mouseX, (int) mouseY)) return true;
 
         // Item browser
-        if (handleItemBrowserClick((int) mouseX, (int) mouseY, button)) return true;
+        if (handleItemBrowserClick((int) mouseX, (int) mouseY)) return true;
 
         // Kit slots
         if (handleSlotClick((int) mouseX, (int) mouseY, button)) return true;
 
         // Quick presets
-        if (handlePresetClick((int) mouseX, (int) mouseY, button)) return true;
+        if (handlePresetClick((int) mouseX, (int) mouseY)) return true;
 
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -899,7 +896,7 @@ public class KitSelectionScreen extends Screen {
         return false;
     }
 
-    private boolean handleBottomBarClick(int mouseX, int mouseY, int button) {
+    private boolean handleBottomBarClick(int mouseX, int mouseY) {
         int barY = height - 50;
         int btnY = barY + 10;
         int btnH = 28;
@@ -938,7 +935,7 @@ public class KitSelectionScreen extends Screen {
         return false;
     }
 
-    private boolean handleItemBrowserClick(int mouseX, int mouseY, int button) {
+    private boolean handleItemBrowserClick(int mouseX, int mouseY) {
         int gridX = PANEL_PADDING + 8;
         int gridY = TAB_HEIGHT + PANEL_PADDING + 58;
         int gridW = (width / 2) - PANEL_PADDING * 2 - 20;
@@ -1022,7 +1019,7 @@ public class KitSelectionScreen extends Screen {
         return true;
     }
 
-    private boolean handlePresetClick(int mouseX, int mouseY, int button) {
+    private boolean handlePresetClick(int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
         int panelX = width / 2 + PANEL_PADDING + 12;
         int y = TAB_HEIGHT + PANEL_PADDING + 54 + SLOT_SIZE + 16 + 14 + SLOT_SIZE + 20 + 12 + 14;
@@ -1042,7 +1039,7 @@ public class KitSelectionScreen extends Screen {
         return false;
     }
 
-    private boolean handleEnchantPopupClick(int mouseX, int mouseY, int button) {
+    private boolean handleEnchantPopupClick(int mouseX, int mouseY) {
         int popupW = 280;
         int popupH = 320;
         int popupX = (width - popupW) / 2;
@@ -1268,7 +1265,7 @@ public class KitSelectionScreen extends Screen {
 
     private String formatEnchantmentName(String path) {
         return Arrays.stream(path.split("_"))
-            .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1))
+            .map(word -> word.substring(0, 1).toUpperCase(Locale.ROOT) + word.substring(1))
             .reduce((a, b) -> a + " " + b)
             .orElse(path);
     }

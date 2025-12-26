@@ -8,8 +8,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-// This "packet" carries the names of items you want to equip on the mob
 public record EquipMobPayload(
         int entityId,       // Monster ID
         String mainHand,    // Main Hand (Right)

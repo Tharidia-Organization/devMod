@@ -12,11 +12,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-/**
- * Payload for POI (Points of Interest) debug data (server to client).
- * Shows beds, workstations, bells, beehives, etc.
- */
 public record POIPayload(List<POIInfo> pois) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<POIPayload> TYPE =

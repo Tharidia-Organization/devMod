@@ -9,11 +9,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Network payload for shop purchase requests.
- * Sent from client to server when player purchases an item.
- */
 public record ShopPurchasePayload(String itemId) implements CustomPacketPayload {
 
     // Security limits to prevent DoS attacks

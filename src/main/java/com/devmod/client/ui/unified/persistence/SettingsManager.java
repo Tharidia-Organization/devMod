@@ -9,6 +9,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.mojang.logging.LogUtils;
+
 import com.devmod.ModConfig;
 import com.devmod.client.overlay.BossPhaseOverlay;
 import com.devmod.client.overlay.EntityDensityOverlay;
@@ -20,15 +24,6 @@ import com.devmod.client.rendering.LineOfSightVisualizer;
 import com.devmod.client.rendering.PathfindingDebugger;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.util.ConfigPaths;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.mojang.logging.LogUtils;
-
-/**
- * Singleton manager for loading and saving DevMod settings.
- * Settings are stored in config/devmod/settings.json
- */
 public class SettingsManager {
     public static final SettingsManager INSTANCE = new SettingsManager();
     private static final Logger LOGGER = LogUtils.getLogger();

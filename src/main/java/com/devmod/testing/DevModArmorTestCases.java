@@ -16,14 +16,6 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.testing.TestCase.TestPriority;
 import com.devmod.util.DatapackIO;
-
-/**
- * DevMod-specific test cases for armor functionality.
- * Tests component round-trip, shield mechanics, datapack export/import,
- * clamp override, and modifier overwrite (no stacking).
- *
- * @see docs/editor-design-system/15-armor-properties.todo.md
- */
 public final class DevModArmorTestCases {
     private static final Logger LOGGER = LoggerFactory.getLogger(DevModArmorTestCases.class);
     private static final String CATEGORY = "DevMod - Armor";

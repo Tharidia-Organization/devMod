@@ -15,11 +15,10 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -27,10 +26,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/**
- * Singleton manager for custom recipe storage.
- * Handles persistence, CRUD operations, and datapack export.
- */
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 public final class RecipeConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RecipeConfigManager.class);
     private static final Gson GSON = new GsonBuilder()
@@ -56,6 +53,7 @@ public final class RecipeConfigManager {
     private static final ReadWriteLock clientLock = new ReentrantReadWriteLock();
 
     // Configuration
+    @Nullable
     private static volatile Path serverConfigPath = null;
     private static volatile boolean initialized = false;
 
@@ -93,13 +91,14 @@ public final class RecipeConfigManager {
             }
 
             // Use the provided path directly (no more nested resolve)
-            serverConfigPath = recipesDir;
+            Path configPath = recipesDir;
+            serverConfigPath = configPath;
             try {
-                Files.createDirectories(serverConfigPath);
+                Files.createDirectories(configPath);
                 loadServerRecipes();
                 initialized = true;
                 LOGGER.info("[RecipeConfig] Server initialized with {} custom recipes at {}",
-                    serverRecipes.size(), serverConfigPath);
+                    serverRecipes.size(), configPath);
             } catch (Exception e) {
                 LOGGER.error("[RecipeConfig] Failed to initialize server storage at {}", recipesDir, e);
             }
@@ -473,9 +472,10 @@ public final class RecipeConfigManager {
     // ═══════════════════════════════════════════════════════════════
 
     private static void loadServerRecipes() {
-        if (serverConfigPath == null) return;
+        Path configPath = serverConfigPath;
+        if (configPath == null) return;
 
-        Path indexFile = serverConfigPath.resolve(INDEX_FILE);
+        Path indexFile = configPath.resolve(INDEX_FILE);
         if (!Files.exists(indexFile)) {
             LOGGER.info("[RecipeConfig] No index file found, starting fresh");
             return;
@@ -526,7 +526,8 @@ public final class RecipeConfigManager {
      * Internal save method - MUST be called with serverLock.writeLock() held.
      */
     private static void saveServerRecipesUnsafe() {
-        if (serverConfigPath == null) {
+        Path configPath = serverConfigPath;
+        if (configPath == null) {
             LOGGER.warn("[RecipeConfig] Cannot save - not initialized");
             return;
         }
@@ -549,7 +550,7 @@ public final class RecipeConfigManager {
             }
             index.add("recipes", recipesArray);
 
-            Path indexFile = serverConfigPath.resolve(INDEX_FILE);
+            Path indexFile = configPath.resolve(INDEX_FILE);
             Files.writeString(indexFile, GSON.toJson(index), StandardCharsets.UTF_8);
 
             LOGGER.debug("[RecipeConfig] Saved {} recipes", serverRecipes.size());
@@ -746,6 +747,7 @@ public final class RecipeConfigManager {
      * Parse a single recipe from JSON without adding to storage.
      * @return The parsed recipe, or null if invalid
      */
+    @Nullable
     private static RecipeData parseSingleRecipe(JsonObject json) {
         try {
             JsonObject root = Objects.requireNonNull(json, "json");

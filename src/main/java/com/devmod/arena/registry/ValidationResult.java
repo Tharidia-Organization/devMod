@@ -1,10 +1,6 @@
 package com.devmod.arena.registry;
 
 import java.util.List;
-
-/**
- * Result of template validation.
- */
 public record ValidationResult(
     boolean valid,
     List<String> errors,

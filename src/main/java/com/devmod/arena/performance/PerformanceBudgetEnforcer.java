@@ -15,25 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.monitor.MsptMonitor;
 import com.devmod.arena.monitor.MsptSample;
-
-/**
- * DD40: Performance Budget Enforcer with MSPT/TPS measurement and fail-fast.
- *
- * <p>Monitors server performance during arena build and enforces:
- * <ul>
- *   <li>MSPT threshold (default: 45ms) - pause/abort if exceeded</li>
- *   <li>TPS threshold (default: 18.0) - pause/abort if below</li>
- *   <li>Build impact tracking (current MSPT - baseline)</li>
- *   <li>Fail-fast: abort build immediately if impact exceeds threshold</li>
- * </ul>
- *
- * <p>Backpressure modes:
- * <ul>
- *   <li>PAUSE - Pause build operations until performance recovers</li>
- *   <li>THROTTLE - Reduce operations per tick</li>
- *   <li>ABORT - Cancel build entirely</li>
- * </ul>
- */
 public class PerformanceBudgetEnforcer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PerformanceBudgetEnforcer.class);

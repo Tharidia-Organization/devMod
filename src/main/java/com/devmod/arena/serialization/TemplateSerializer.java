@@ -9,15 +9,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.registry.SchemaValidator;
-import com.devmod.arena.registry.TemplateType;
-import com.devmod.arena.registry.TemplateValidator;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -33,19 +31,10 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 
-/**
- * Template Serializer (DD11).
- *
- * <p>Provides JSON serialization/deserialization for ArenaTemplate records.
- *
- * <p>Features:
- * <ul>
- *   <li>Pretty-printed JSON output</li>
- *   <li>Validation on deserialize</li>
- *   <li>Batch load from directory</li>
- *   <li>Schema version checking</li>
- * </ul>
- */
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.SchemaValidator;
+import com.devmod.arena.registry.TemplateType;
+import com.devmod.arena.registry.TemplateValidator;
 public class TemplateSerializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateSerializer.class);
@@ -215,7 +204,7 @@ public class TemplateSerializer {
     /**
      * Result of template validation.
      */
-    public record ValidationResult(boolean valid, String error, List<String> warnings, List<String> unknownFields) {
+    public record ValidationResult(boolean valid, @Nullable String error, List<String> warnings, List<String> unknownFields) {
         public ValidationResult(boolean valid, String error) {
             this(valid, error, List.of(), List.of());
         }
@@ -333,7 +322,7 @@ public class TemplateSerializer {
 
         private static TemplateType.StructureTemplate.Rotation parseRotation(String value) {
             try {
-                return TemplateType.StructureTemplate.Rotation.valueOf(value.toUpperCase());
+                return TemplateType.StructureTemplate.Rotation.valueOf(value.toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
                 return TemplateType.StructureTemplate.Rotation.NONE;
             }
@@ -341,7 +330,7 @@ public class TemplateSerializer {
 
         private static TemplateType.StructureTemplate.Mirror parseMirror(String value) {
             try {
-                return TemplateType.StructureTemplate.Mirror.valueOf(value.toUpperCase());
+                return TemplateType.StructureTemplate.Mirror.valueOf(value.toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
                 return TemplateType.StructureTemplate.Mirror.NONE;
             }

@@ -9,19 +9,6 @@ import net.minecraft.world.entity.boss.wither.WitherBoss;
 
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.TelemetrySettings;
-
-/**
- * Unified boss detection logic used by both client-side overlay and server-side telemetry.
- * Prevents inconsistencies between what the HUD shows and what telemetry tracks.
- *
- * Detection criteria (in order):
- * 1. Vanilla bosses (Wither, EnderDragon)
- * 2. Explicit tags: "devmod:boss", "boss", "minecraft:boss"
- * 3. NBT marker: "IsBoss" boolean
- * 4. Entity type name contains: "boss", "ender_guardian", "void_worm", "harbinger"
- * 5. HP threshold (configurable, default 100)
- * 6. Exclude buffed regular mobs (elite, champion, rare tags)
- */
 public class UnifiedBossDetector {
 
     public static final UnifiedBossDetector INSTANCE = new UnifiedBossDetector();

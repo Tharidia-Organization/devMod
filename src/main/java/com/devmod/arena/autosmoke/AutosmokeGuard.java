@@ -6,18 +6,6 @@ import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * DD32: Autosmoke Production Guard - triple guard ENV+flag+file
- *
- * Prevents accidental autosmoke execution in production environments.
- * Uses a triple-check system:
- * 1. Environment variable (DEVMOD_ENV != production)
- * 2. Feature flag (autosmoke.enabled config)
- * 3. .production marker file absence
- *
- * ALL THREE checks must pass for autosmoke to run.
- */
 public class AutosmokeGuard {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeGuard.class);

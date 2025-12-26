@@ -10,13 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLEnvironment;
-
-/**
- * Core utility class for mod compatibility detection.
- * Provides safe, cached mod presence checks and version queries.
- *
- * All methods are thread-safe and designed to never throw exceptions.
- */
 public final class Compat {
     private static final Logger LOGGER = LoggerFactory.getLogger(Compat.class);
 

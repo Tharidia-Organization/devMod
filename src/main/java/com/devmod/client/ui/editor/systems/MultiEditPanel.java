@@ -16,12 +16,6 @@ import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Simple UI panel for multi-edit selection. This is a lightweight implementation
- * intended to match the sample in `EDITOR_DESIGN_SYSTEM.md` and to provide concrete
- * hover tracking and basic remove interaction.
- */
 public class MultiEditPanel {
     private final MultiEditManager manager;
     private final Supplier<String> activeItemTypeSupplier;

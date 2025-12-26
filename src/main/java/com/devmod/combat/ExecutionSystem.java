@@ -5,49 +5,42 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
 
 import com.devmod.arena.policy.ArenaPolicy.ExecutionOverrides;
 import com.devmod.config.GameMechanicsConfig;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.MomentumTracker;
-
-/**
- * Execution System - Finisher Mechanics.
- *
- * Creates power fantasy moments with risk/reward:
- * - Execute low HP enemies (<15%) for massive style points
- * - During execution: 2 sec i-frames (invincibility)
- * - Rewards: +200 style, 5% HP regen, 30% item drop chance boost
- * - Risk: If interrupted before completion = 2x damage vulnerability
- * - 3 sec cooldown between executions
- *
- * Design Philosophy:
- * Executions are high-risk, high-reward "finishing moves" that
- * create memorable combat moments. They reward aggressive play
- * (getting enemies low) but punish greed (trying to execute
- * while surrounded by other threats).
- */
 public class ExecutionSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionSystem.class);
 
@@ -55,6 +48,15 @@ public class ExecutionSystem {
 
     // Configuration - now read from GameMechanicsConfig with optional per-instance overrides
     // These methods allow runtime configuration changes and per-arena customization
+
+    private static final double DEFAULT_EXECUTION_HP_THRESHOLD = 0.15;
+    private static final int DEFAULT_EXECUTION_DURATION_TICKS = 40;
+    private static final int DEFAULT_EXECUTION_COOLDOWN_TICKS = 60;
+    private static final int DEFAULT_EXECUTION_STYLE_REWARD = 200;
+    private static final double DEFAULT_EXECUTION_HP_REGEN_PERCENT = 0.05;
+    private static final double DEFAULT_EXECUTION_DROP_BOOST = 0.30;
+    private static final double DEFAULT_EXECUTION_INTERRUPT_VULNERABILITY = 2.0;
+    private static final double DEFAULT_EXECUTION_RANGE = 4.0;
 
     private ExecutionOverrides currentOverrides = null;
 
@@ -72,60 +74,94 @@ public class ExecutionSystem {
         this.currentOverrides = null;
     }
 
-    private float getExecutionThreshold() {
-        if (currentOverrides != null && currentOverrides.hpThreshold() != null) {
-            return currentOverrides.hpThreshold().floatValue();
+    private static double resolveDoubleOverride(Double overrideValue, Double configValue, double fallback) {
+        if (overrideValue != null) {
+            return overrideValue;
         }
-        return GameMechanicsConfig.EXECUTION_HP_THRESHOLD.get().floatValue();
+        return configValue != null ? configValue : fallback;
+    }
+
+    private static int resolveIntOverride(Integer overrideValue, Integer configValue, int fallback) {
+        if (overrideValue != null) {
+            return overrideValue;
+        }
+        return configValue != null ? configValue : fallback;
+    }
+
+    private float getExecutionThreshold() {
+        Double overrideValue = currentOverrides != null ? currentOverrides.hpThreshold() : null;
+        double value = resolveDoubleOverride(
+            overrideValue,
+            GameMechanicsConfig.EXECUTION_HP_THRESHOLD.get(),
+            DEFAULT_EXECUTION_HP_THRESHOLD
+        );
+        return (float) value;
     }
 
     private int getExecutionDurationTicks() {
-        if (currentOverrides != null && currentOverrides.durationTicks() != null) {
-            return currentOverrides.durationTicks();
-        }
-        return GameMechanicsConfig.EXECUTION_DURATION_TICKS.get();
+        Integer overrideValue = currentOverrides != null ? currentOverrides.durationTicks() : null;
+        return resolveIntOverride(
+            overrideValue,
+            GameMechanicsConfig.EXECUTION_DURATION_TICKS.get(),
+            DEFAULT_EXECUTION_DURATION_TICKS
+        );
     }
 
     private int getCooldownTicks() {
-        if (currentOverrides != null && currentOverrides.cooldownTicks() != null) {
-            return currentOverrides.cooldownTicks();
-        }
-        return GameMechanicsConfig.EXECUTION_COOLDOWN_TICKS.get();
+        Integer overrideValue = currentOverrides != null ? currentOverrides.cooldownTicks() : null;
+        return resolveIntOverride(
+            overrideValue,
+            GameMechanicsConfig.EXECUTION_COOLDOWN_TICKS.get(),
+            DEFAULT_EXECUTION_COOLDOWN_TICKS
+        );
     }
 
     private int getStyleReward() {
-        if (currentOverrides != null && currentOverrides.styleReward() != null) {
-            return currentOverrides.styleReward();
-        }
-        return GameMechanicsConfig.EXECUTION_STYLE_REWARD.get();
+        Integer overrideValue = currentOverrides != null ? currentOverrides.styleReward() : null;
+        return resolveIntOverride(
+            overrideValue,
+            GameMechanicsConfig.EXECUTION_STYLE_REWARD.get(),
+            DEFAULT_EXECUTION_STYLE_REWARD
+        );
     }
 
     private float getHpRegenPercent() {
-        if (currentOverrides != null && currentOverrides.hpRegenPercent() != null) {
-            return currentOverrides.hpRegenPercent().floatValue();
-        }
-        return GameMechanicsConfig.EXECUTION_HP_REGEN_PERCENT.get().floatValue();
+        Double overrideValue = currentOverrides != null ? currentOverrides.hpRegenPercent() : null;
+        double value = resolveDoubleOverride(
+            overrideValue,
+            GameMechanicsConfig.EXECUTION_HP_REGEN_PERCENT.get(),
+            DEFAULT_EXECUTION_HP_REGEN_PERCENT
+        );
+        return (float) value;
     }
 
     private float getDropBoost() {
-        if (currentOverrides != null && currentOverrides.dropBoost() != null) {
-            return currentOverrides.dropBoost().floatValue();
-        }
-        return GameMechanicsConfig.EXECUTION_DROP_BOOST.get().floatValue();
+        Double overrideValue = currentOverrides != null ? currentOverrides.dropBoost() : null;
+        double value = resolveDoubleOverride(
+            overrideValue,
+            GameMechanicsConfig.EXECUTION_DROP_BOOST.get(),
+            DEFAULT_EXECUTION_DROP_BOOST
+        );
+        return (float) value;
     }
 
     private float getInterruptVulnerability() {
-        if (currentOverrides != null && currentOverrides.interruptVulnerability() != null) {
-            return currentOverrides.interruptVulnerability().floatValue();
-        }
-        return GameMechanicsConfig.EXECUTION_INTERRUPT_VULNERABILITY.get().floatValue();
+        Double overrideValue = currentOverrides != null ? currentOverrides.interruptVulnerability() : null;
+        double value = resolveDoubleOverride(
+            overrideValue,
+            GameMechanicsConfig.EXECUTION_INTERRUPT_VULNERABILITY.get(),
+            DEFAULT_EXECUTION_INTERRUPT_VULNERABILITY
+        );
+        return (float) value;
     }
 
     private double getExecutionRange() {
-        if (currentOverrides != null && currentOverrides.range() != null) {
-            return currentOverrides.range();
-        }
-        return GameMechanicsConfig.EXECUTION_RANGE.get();
+        Double overrideValue = currentOverrides != null ? currentOverrides.range() : null;
+        return resolveDoubleOverride(
+            overrideValue,
+            GameMechanicsConfig.EXECUTION_RANGE.get(),
+            DEFAULT_EXECUTION_RANGE
+        );
     }
 
     // Active execution state
@@ -136,7 +172,9 @@ public class ExecutionSystem {
      * State of an ongoing execution.
      */
     public static class ExecutionState {
+        @Nonnull
         public final UUID playerId;
+        @Nonnull
         public final UUID targetId;
         public final long startTime;
         public final int durationTicks;
@@ -144,9 +182,9 @@ public class ExecutionSystem {
         public boolean completed = false;
         public boolean interrupted = false;
 
-        public ExecutionState(UUID playerId, UUID targetId, int durationTicks) {
-            this.playerId = playerId;
-            this.targetId = targetId;
+        public ExecutionState(@Nonnull UUID playerId, @Nonnull UUID targetId, int durationTicks) {
+            this.playerId = Objects.requireNonNull(playerId, "playerId");
+            this.targetId = Objects.requireNonNull(targetId, "targetId");
             this.startTime = System.currentTimeMillis();
             this.durationTicks = durationTicks;
             this.ticksRemaining = durationTicks;
@@ -218,8 +256,10 @@ public class ExecutionSystem {
     public Optional<Mob> getExecutableTarget(ServerPlayer player) {
         if (!canExecute(player)) return Optional.empty();
 
-        return player.level().getEntitiesOfClass(Mob.class,
-                player.getBoundingBox().inflate(getExecutionRange()))
+        AABB searchBounds = Objects.requireNonNull(player.getBoundingBox(), "player.getBoundingBox()")
+            .inflate(getExecutionRange());
+
+        return player.level().getEntitiesOfClass(Mob.class, searchBounds)
             .stream()
             .filter(this::canBeExecuted)
             .filter(mob -> isQuestMob(mob, player))
@@ -262,21 +302,31 @@ public class ExecutionSystem {
         activeExecutions.put(playerId, state);
 
         // Apply invincibility
-        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, durationTicks, 4, false, false));
+        Holder<MobEffect> resistance = Objects.requireNonNull(
+            MobEffects.DAMAGE_RESISTANCE,
+            "MobEffects.DAMAGE_RESISTANCE"
+        );
+        player.addEffect(new MobEffectInstance(resistance, durationTicks, 4, false, false));
 
         // Lock target in place
         target.setNoAi(true);
 
         // Visual/audio feedback
         if (player.level() instanceof ServerLevel level) {
-            level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 1.0f, 1.5f);
+            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
+            SoundEvent chargeSound = Objects.requireNonNull(
+                SoundEvents.WARDEN_SONIC_CHARGE,
+                "SoundEvents.WARDEN_SONIC_CHARGE"
+            );
+            level.playSound(null, playerPos, chargeSound, SoundSource.PLAYERS, 1.0f, 1.5f);
 
             // Initial particles
+            SimpleParticleType critParticles = Objects.requireNonNull(ParticleTypes.CRIT, "ParticleTypes.CRIT");
             for (int i = 0; i < 20; i++) {
                 double x = target.getX() + (level.random.nextDouble() - 0.5) * 2;
                 double y = target.getY() + level.random.nextDouble() * target.getBbHeight();
                 double z = target.getZ() + (level.random.nextDouble() - 0.5) * 2;
-                level.sendParticles(ParticleTypes.CRIT, x, y, z, 1, 0, 0, 0, 0.1);
+                level.sendParticles(critParticles, x, y, z, 1, 0, 0, 0, 0.1);
             }
         }
 
@@ -331,11 +381,15 @@ public class ExecutionSystem {
 
             // Tick visual effects
             if (state.ticksRemaining % 5 == 0) {
+                SimpleParticleType hitParticles = Objects.requireNonNull(
+                    ParticleTypes.ENCHANTED_HIT,
+                    "ParticleTypes.ENCHANTED_HIT"
+                );
                 for (int i = 0; i < 5; i++) {
                     double x = target.getX() + (level.random.nextDouble() - 0.5) * 1.5;
                     double y = target.getY() + level.random.nextDouble() * target.getBbHeight();
                     double z = target.getZ() + (level.random.nextDouble() - 0.5) * 1.5;
-                    level.sendParticles(ParticleTypes.ENCHANTED_HIT, x, y, z, 1, 0, 0, 0, 0);
+                    level.sendParticles(hitParticles, x, y, z, 1, 0, 0, 0, 0);
                 }
             }
 
@@ -385,27 +439,41 @@ public class ExecutionSystem {
             target.getPersistentData().putFloat("execution_drop_boost", getDropBoost());
 
             // Kill instantly
-            target.hurt(player.damageSources().playerAttack(player), Float.MAX_VALUE);
+            DamageSource executionDamage = Objects.requireNonNull(
+                player.damageSources().playerAttack(player),
+                "playerAttack damage source"
+            );
+            target.hurt(executionDamage, Float.MAX_VALUE);
         }
 
         // Visual/audio feedback
         if (player.level() instanceof ServerLevel level) {
-            level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1.0f, 1.5f);
+            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
+            SoundEvent levelUpSound = Objects.requireNonNull(
+                SoundEvents.PLAYER_LEVELUP,
+                "SoundEvents.PLAYER_LEVELUP"
+            );
+            level.playSound(null, playerPos, levelUpSound, SoundSource.PLAYERS, 1.0f, 1.5f);
 
             // Explosion of particles
+            SimpleParticleType totemParticles = Objects.requireNonNull(
+                ParticleTypes.TOTEM_OF_UNDYING,
+                "ParticleTypes.TOTEM_OF_UNDYING"
+            );
             for (int i = 0; i < 50; i++) {
                 double x = player.getX() + (level.random.nextDouble() - 0.5) * 3;
                 double y = player.getY() + level.random.nextDouble() * 2;
                 double z = player.getZ() + (level.random.nextDouble() - 0.5) * 3;
-                level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, x, y, z, 1, 0, 0.5, 0, 0.2);
+                level.sendParticles(totemParticles, x, y, z, 1, 0, 0.5, 0, 0.2);
             }
         }
 
         // Send feedback
-        player.displayClientMessage(
+        Component executedMessage = Objects.requireNonNull(
             Component.literal("§6§lEXECUTED! §r§a+" + styleGain + " Style §r§c+" + String.format("%.1f", hpRegen) + " HP"),
-            true
+            "execution completed message"
         );
+        player.displayClientMessage(executedMessage, true);
 
         LOGGER.info("[Execution] {} completed execution: +{} style, +{} HP",
             player.getName().getString(), styleGain, hpRegen);
@@ -423,10 +491,18 @@ public class ExecutionSystem {
         if (state == null) return null;
 
         // Remove invincibility
-        player.removeEffect(MobEffects.DAMAGE_RESISTANCE);
+        Holder<MobEffect> resistance = Objects.requireNonNull(
+            MobEffects.DAMAGE_RESISTANCE,
+            "MobEffects.DAMAGE_RESISTANCE"
+        );
+        player.removeEffect(resistance);
 
         // Apply vulnerability debuff
-        player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 60, 0, false, true));
+        Holder<MobEffect> weakness = Objects.requireNonNull(
+            MobEffects.WEAKNESS,
+            "MobEffects.WEAKNESS"
+        );
+        player.addEffect(new MobEffectInstance(weakness, 60, 0, false, true));
 
         // Mark player as vulnerable for damage calculation
         player.getPersistentData().putLong("execution_interrupted", System.currentTimeMillis() + 3000);
@@ -440,14 +516,20 @@ public class ExecutionSystem {
             }
 
             // Negative feedback
-            level.playSound(null, player.blockPosition(), SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS, 1.0f, 0.5f);
+            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
+            SoundEvent shieldBreakSound = Objects.requireNonNull(
+                SoundEvents.SHIELD_BREAK,
+                "SoundEvents.SHIELD_BREAK"
+            );
+            level.playSound(null, playerPos, shieldBreakSound, SoundSource.PLAYERS, 1.0f, 0.5f);
         }
 
         // Send feedback
-        player.displayClientMessage(
+        Component interruptedMessage = Objects.requireNonNull(
             Component.literal("§c§lINTERRUPTED! §r§7Vulnerability: 2x damage for 3 sec"),
-            true
+            "execution interrupted message"
         );
+        player.displayClientMessage(interruptedMessage, true);
 
         LOGGER.info("[Execution] {} execution was interrupted!", player.getName().getString());
 

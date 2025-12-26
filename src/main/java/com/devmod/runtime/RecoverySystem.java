@@ -30,16 +30,6 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.DevMod;
 import com.devmod.util.ConfigPaths;
-
-/**
- * Recovery system for players who disconnected during instance operations.
- *
- * Handles:
- * - Player login recovery (restore from snapshot if needed)
- * - Server startup cleanup (orphaned instances, pending snapshots)
- * - Snapshot persistence
- */
-
 public class RecoverySystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RecoverySystem.class);
     public static final RecoverySystem INSTANCE = new RecoverySystem();

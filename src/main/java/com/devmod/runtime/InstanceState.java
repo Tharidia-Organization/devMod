@@ -1,18 +1,6 @@
 package com.devmod.runtime;
 
 import java.util.Set;
-
-/**
- * State of an instance dimension lifecycle.
- *
- * Valid transitions:
- * - CREATING -> READY (success) or DESTROYING (failure)
- * - READY -> ACTIVE (player entered) or DESTROYING (cancelled)
- * - ACTIVE -> COMPLETING (quest ended)
- * - COMPLETING -> DESTROYING (cleanup done)
- * - DESTROYING -> DESTROYED (final cleanup)
- * - DESTROYED is terminal (no transitions out)
- */
 public enum InstanceState {
     /**
      * Dimension is being created and arena is being generated.

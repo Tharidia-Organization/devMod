@@ -7,6 +7,8 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
@@ -31,22 +33,6 @@ import com.devmod.DevMod;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.room.RoomService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Event handlers for loot and economy tracking.
- *
- * Hooks into:
- * - Mob drop events (LivingDropsEvent)
- * - Item crafting events (PlayerEvent.ItemCraftedEvent)
- * - Item smelting events (PlayerEvent.ItemSmeltedEvent)
- *
- * Note: Item pickup tracking is done via tick-based monitoring in TelemetryEvents
- * because NeoForge doesn't have a direct ItemPickupEvent.
- *
- * Logs telemetry via EconomyMetricsService.
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class LootTrackingEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

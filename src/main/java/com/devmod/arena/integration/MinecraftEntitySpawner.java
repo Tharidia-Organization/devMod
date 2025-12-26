@@ -19,18 +19,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 
 import com.devmod.arena.builder.ArenaBuilder;
-
-/**
- * Minecraft/NeoForge implementation of EntitySpawner.
- *
- * <p>Handles entity spawning in ServerLevel with:</p>
- * <ul>
- *   <li>Entity type resolution from string</li>
- *   <li>UUID tracking for removal</li>
- *   <li>Spawn reason configuration</li>
- *   <li>Initial position/rotation setup</li>
- * </ul>
- */
 public class MinecraftEntitySpawner implements ArenaBuilder.EntitySpawner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MinecraftEntitySpawner.class);

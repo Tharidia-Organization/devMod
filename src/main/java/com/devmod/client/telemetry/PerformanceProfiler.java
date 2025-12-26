@@ -18,20 +18,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-
-/**
- * Performance Profiler - Sistema di profiling in tempo reale per DevMod.
- *
- * Mostra:
- * - FPS correnti/medi/minimi
- * - Frame time in ms (con grafico)
- * - Tempo impiegato da ogni sistema della mod
- * - TPS (Ticks Per Second) stimato
- * - Memoria usata
- * - Contatori attivi (entità tracciate, pannelli VFX, etc.)
- *
- * Toggle: Integrato nel FPS Tracker (Tasto F) - modalità estesa
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class PerformanceProfiler {

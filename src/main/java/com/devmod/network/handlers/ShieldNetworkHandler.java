@@ -8,11 +8,6 @@ import com.devmod.network.NetworkHandler;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.network.ShieldStatePayload;
-
-/**
- * Network handler for shield visual effect packets.
- * Extracted from NetworkHandler for single responsibility.
- */
 public final class ShieldNetworkHandler extends NetworkHandlerBase {
 
     private ShieldNetworkHandler() {}

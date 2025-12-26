@@ -32,21 +32,6 @@ import com.devmod.endurance.FlowStateTracker;
 import com.devmod.endurance.MomentumTracker;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.WaveObjectiveState;
-
-/**
- * HUD Overlay for Endurance Quest.
- *
- * Displays during an active quest:
- * - Current wave / total (or "Endless" if in endless mode)
- * - Remaining mobs in wave (with progress bar)
- * - Active wave modifiers (icons/names)
- * - Session timer and accumulated points
- * - Kill count and damage dealt/taken
- * - Combo and Style rank (DMC-style)
- *
- * Position: top-left (below boss bars)
- * Style: Compact, semi-transparent, consistent with other DevMod overlays
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class EnduranceQuestOverlay {

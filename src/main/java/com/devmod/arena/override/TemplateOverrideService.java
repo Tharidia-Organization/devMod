@@ -20,24 +20,6 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Unified template override service (DD5, DD29).
- *
- * <p>Consolidates override management for:
- * <ul>
- *   <li>DD5: Session-based overrides with cleanup hooks</li>
- *   <li>DD29: Force template capability with persistence</li>
- * </ul>
- *
- * <p>Supports:
- * <ul>
- *   <li>Player, Party, and Quest scoped overrides</li>
- *   <li>TTL-based expiration</li>
- *   <li>NeoForge data attachment persistence for relog survival</li>
- *   <li>Permission-based force template sessions</li>
- * </ul>
- */
 public class TemplateOverrideService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateOverrideService.class);

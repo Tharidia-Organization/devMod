@@ -23,13 +23,6 @@ import net.minecraft.sounds.SoundSource;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceEventCombat;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
-/**
- * Manages active Blood Contracts during Endurance Quest waves.
- *
- * Tracks signed contracts per player/quest, applies effects,
- * checks for violations, and calculates reward multipliers.
- */
 public final class ActiveContractManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActiveContractManager.class);

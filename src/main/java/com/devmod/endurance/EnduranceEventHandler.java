@@ -34,24 +34,6 @@ import com.devmod.party.QuestStartSequence;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
 import com.devmod.util.I18n;
-
-/**
- * Central Event Handler for the Endurance Quest system.
- *
- * This handler integrates all the subsystems:
- * - EnduranceQuestManager: Core quest logic
- * - ComboSystem: Style scoring (DMC-style)
- * - PerkSystem: Roguelike upgrades
- * - BossWaveSystem: Boss mechanics
- * - MutatorSystem: Dynamic modifiers
- * - RewardSystem: Loot and currency
- * - CombatTracker: Stats tracking
- *
- * Delegates to:
- * - EnduranceEventCombat: Combat event processing (damage, death, critical hits)
- * - EnduranceEventTick: Server tick handlers, wave sync, arena cleanup
- */
-
 @EventBusSubscriber(modid = "devmod")
 public class EnduranceEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventHandler.class);

@@ -8,11 +8,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
-
-/**
- * DevMod custom attributes (weapon-related).
- * Source of truth for attribute IDs and ranges.
- */
 public final class ModAttributes {
     private ModAttributes() {}
 

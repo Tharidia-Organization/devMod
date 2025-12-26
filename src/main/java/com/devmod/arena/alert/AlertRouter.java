@@ -20,16 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-/**
- * Alert routing system with delivery to all channels and retry for critical alerts (DD19).
- *
- * Features:
- * - Delivers alerts to all registered channels
- * - Retry queue for critical channels (log, telemetry)
- * - Exponential backoff for failed deliveries
- * - Non-blocking async delivery
- */
 public class AlertRouter implements AutoCloseable {
 
     private static final Logger LOGGER = Logger.getLogger(AlertRouter.class.getName());

@@ -13,13 +13,6 @@ import net.minecraft.util.Mth;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Text input field component for the editor.
- * Supports text/numeric input with validation.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.17
- */
 public class EditorTextField {
 
     // ═══════════════════════════════════════════════════════════════

@@ -4,11 +4,6 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-
-/**
- * Tracks an individual player's progress through a season pass.
- * Stores XP, tier, claimed rewards, and premium status.
- */
 public class PlayerSeasonProgress {
 
     private final UUID playerId;

@@ -18,10 +18,6 @@ import com.devmod.client.ui.editor.sections.TextNoteSection;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
 import com.devmod.config.FuelConfigManager;
 import com.devmod.stats.FuelStats;
-
-/**
- * UI components and section builders for FuelModule.
- */
 public class FuelModuleUI {
 
     private final FuelModule module;

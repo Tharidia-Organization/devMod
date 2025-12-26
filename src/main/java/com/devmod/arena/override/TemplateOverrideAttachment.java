@@ -12,19 +12,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
-
-/**
- * DD29: Unified template override attachment for NeoForge 1.21+ Data Attachments.
- *
- * <p>Consolidates:
- * <ul>
- *   <li>TemplateOverrideCapability - NBT serialization</li>
- *   <li>ForceTemplateCapability - Session tracking</li>
- * </ul>
- *
- * <p>Provides persistence of template overrides across player relog.
- * Attached to players and serialized with player data.
- */
 public class TemplateOverrideAttachment {
 
     public static final String MODID = "devmod";

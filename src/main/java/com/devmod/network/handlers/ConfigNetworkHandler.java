@@ -16,14 +16,6 @@ import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryPacketHandler;
 import com.devmod.util.I18n;
-
-/**
- * Network handler for config sync, recipe sync, and telemetry packets.
- * Extracted from NetworkHandler for single responsibility.
- *
- * <p>Client-side handlers delegate to ClientConfigHandlers with proper dist checks
- * to ensure dedicated server compatibility.</p>
- */
 public final class ConfigNetworkHandler extends NetworkHandlerBase {
 
     private ConfigNetworkHandler() {}

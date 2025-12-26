@@ -5,11 +5,6 @@ import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Snapshot of item states before a batch operation.
- * Used for undo functionality in MultiEdit operations.
- */
 public class BatchUndoSnapshot {
     private final List<ItemStack> originalStacks;
     private final List<Integer> slots;

@@ -4,16 +4,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.Item;
-
 import com.google.gson.JsonObject;
 
-/**
- * Tracks all kill-related statistics.
- * Extracted from TesterProgress for single responsibility.
- */
-
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Item;
 public class KillStatistics {
     public static final KillStatistics INSTANCE = new KillStatistics();
 

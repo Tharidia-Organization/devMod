@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,18 +17,6 @@ import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.PanelType;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.damage.DamageBreakdown;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Panel that shows combat information for an impact.
- *
- * Displayed information:
- * - Damage dealt (base and final)
- * - Body part hit
- * - Active modifiers
- * - Damage breakdown
- */
 public class CombatPanel extends FloatingPanel {
 
     private final ImpactData impactData;

@@ -10,18 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Force Template Capability implementing DD29: forceTemplateId Session.
- *
- * <p>Key features:
- * <ul>
- *   <li>Session-scoped template forcing</li>
- *   <li>Permission-based capability check</li>
- *   <li>Automatic expiration</li>
- *   <li>Telemetry for usage tracking</li>
- * </ul>
- */
 public class ForceTemplateCapability {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ForceTemplateCapability.class);

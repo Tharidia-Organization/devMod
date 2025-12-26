@@ -1,10 +1,6 @@
 package com.devmod.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
-
-/**
- * Client-only configuration for Item Editor preferences.
- */
 public final class EditorClientConfig {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 

@@ -8,7 +8,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.QuestCompletionPayload;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
-
 @OnlyIn(Dist.CLIENT)
 public final class EnduranceUiCache {
     @Nullable

@@ -13,10 +13,6 @@ import java.util.Set;
 
 import com.devmod.arena.serialization.TemplateSerializer;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Loads templates from disk with schema validation and telemetry hooks.
- */
 public class TemplateLoader {
 
     private final TemplateSerializer serializer = new TemplateSerializer();

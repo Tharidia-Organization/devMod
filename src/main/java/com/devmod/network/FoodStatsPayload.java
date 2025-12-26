@@ -11,11 +11,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.DevMod;
-
-/**
- * Network payload for food stats synchronization.
- * Sent from client to server when applying food modifications.
- */
 public record FoodStatsPayload(
     ItemStack item,
     CompoundTag statsTag,

@@ -22,13 +22,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.debug.client.DebugRenderBools;
-
-/**
- * Debug overlays settings page.
- * Provides toggles for all debug visualization overlays including
- * Minecraft's native debug APIs (similar to DebugUtils mod).
- */
-
 public class DebugOverlaysPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;

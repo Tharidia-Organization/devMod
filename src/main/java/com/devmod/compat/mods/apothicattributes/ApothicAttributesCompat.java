@@ -23,26 +23,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Apothic Attributes.
- *
- * Apothic Attributes provides an extensive attribute system including:
- * - Critical Hit Chance/Damage
- * - Life Steal, Armor Shred, Armor Pierce
- * - Projectile Damage, Draw Speed
- * - Dodge Chance, Elytra Flight
- * - Mining Speed, Experience Gain
- * - Healing Received, Ghost Health
- *
- * This integration allows DevMod to:
- * - Read extended attributes for damage calculations
- * - Display crit/lifesteal stats in HUD
- * - Include extended attributes in telemetry
- * - Support attribute editing in ItemEditor
- *
- * @see <a href="https://github.com/Shadows-of-Fire/Apothic-Attributes">GitHub</a>
- */
 public class ApothicAttributesCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApothicAttributesCompat.class);
     public static final String MOD_ID = "apothicattributes";

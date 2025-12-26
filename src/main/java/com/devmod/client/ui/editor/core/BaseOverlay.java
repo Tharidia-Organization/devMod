@@ -8,15 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.animation.UiAnimation;
 import com.devmod.client.ui.editor.overlay.EditorOverlay;
-
-/**
- * Abstract base class for modal overlay panels.
- * Implements {@link EditorOverlay} interface for consistent overlay management.
- * Provides common functionality for backdrop rendering, panel centering,
- * and ESC key handling.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#37-confirmation-dialogs
- */
 public abstract class BaseOverlay implements EditorOverlay {
 
     protected boolean visible = false;

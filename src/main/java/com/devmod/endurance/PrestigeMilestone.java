@@ -3,18 +3,6 @@ package com.devmod.endurance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-/**
- * Prestige Milestones System - Permanent unlocks at prestige thresholds.
- *
- * Creates "aha moments" and long-term goals for players by rewarding
- * accumulated prestige with meaningful permanent unlocks.
- *
- * Design Philosophy:
- * - Milestones should be visible BEFORE they're achieved (aspirational)
- * - Each unlock should feel significant and game-changing
- * - Later milestones are more spaced out (logarithmic progression)
- */
 public class PrestigeMilestone {
 
     private final int requiredPrestige;

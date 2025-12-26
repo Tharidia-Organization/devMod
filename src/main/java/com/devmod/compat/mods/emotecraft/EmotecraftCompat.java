@@ -16,24 +16,6 @@ import net.minecraft.world.entity.player.Player;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Emotecraft.
- *
- * Emotecraft provides:
- * - Player emote animations
- * - Custom emote support
- * - Emote wheel UI
- * - Animation playback system
- *
- * This integration allows DevMod to:
- * - Detect when player is emoting
- * - Get current emote name for HUD
- * - Track emote usage for telemetry
- * - Potentially trigger emotes from Arena events
- *
- * @see <a href="https://github.com/KosmX/emotes">Emotecraft GitHub</a>
- */
 public class EmotecraftCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmotecraftCompat.class);
     public static final String MOD_ID = "emotecraft";

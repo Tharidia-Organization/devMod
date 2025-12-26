@@ -12,11 +12,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_HEIGHT_SMALL;
 import static com.devmod.client.ui.testing.panel.PanelConstants.ROW_SPACING;
 import static com.devmod.client.ui.testing.panel.PanelConstants.TITLE_HEIGHT;
-
-/**
- * Grid layout panel for displaying buttons in a grid formation.
- * Useful for position selectors, color pickers, etc.
- */
 public record GridPanel(
     String id,
     String title,

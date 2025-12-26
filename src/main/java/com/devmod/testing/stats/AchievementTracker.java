@@ -4,11 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
-
-/**
- * Tracks special achievements unlocked during testing.
- * Extracted from TesterProgress for single responsibility.
- */
 public class AchievementTracker {
     private static final Logger LOGGER = LoggerFactory.getLogger(AchievementTracker.class);
     public static final AchievementTracker INSTANCE = new AchievementTracker();

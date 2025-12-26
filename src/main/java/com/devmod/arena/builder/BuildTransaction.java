@@ -9,24 +9,6 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Transactional build with full rollback capability (DD7).
- *
- * <p>Tracks:
- * <ul>
- *   <li>Block changes (using CompactBlockTracker)</li>
- *   <li>Spawned entities (UUID list)</li>
- *   <li>Forced chunks (for ticket release)</li>
- * </ul>
- *
- * <p>On failure or abort:
- * <ol>
- *   <li>Remove spawned entities</li>
- *   <li>Revert blocks in reverse order</li>
- *   <li>Release chunk tickets</li>
- * </ol>
- */
 public class BuildTransaction {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BuildTransaction.class);

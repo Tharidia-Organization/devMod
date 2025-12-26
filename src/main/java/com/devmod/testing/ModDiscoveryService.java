@@ -18,13 +18,6 @@ import net.minecraft.world.item.Item;
 
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforgespi.language.IModInfo;
-
-/**
- * Service that discovers all loaded mods and their content.
- * Scans registries to find items, entities, blocks, effects, etc. from each mod.
- *
- * This enables automatic test generation for any modpack configuration.
- */
 public class ModDiscoveryService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModDiscoveryService.class);
 

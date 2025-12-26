@@ -1,9 +1,10 @@
 package com.devmod.client.overlay;
 
-import com.devmod.DevMod;
-import com.devmod.client.input.KeyInputHandler;
-import com.devmod.client.ui.unified.persistence.SettingsManager;
-import com.devmod.util.I18n;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -12,26 +13,18 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
-
-/**
- * Welcome Toast Overlay - Shows a non-intrusive notification for first-time users.
- *
- * This replaces the chat-based fallback notification with a proper UI overlay that:
- * - Slides in from the top
- * - Shows key binding information
- * - Auto-dismisses after a few seconds
- * - Can be dismissed early with ESC
- */
+import com.devmod.DevMod;
+import com.devmod.client.input.KeyInputHandler;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.util.I18n;
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class WelcomeToastOverlay {

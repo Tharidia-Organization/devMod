@@ -6,24 +6,6 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * User-Friendly Error implementing DD46: Default Fail Message.
- *
- * <p>Key features:
- * <ul>
- *   <li>User-friendly messages without technical details</li>
- *   <li>Stack traces logged but NOT shown to user</li>
- *   <li>Localized messages by error type</li>
- *   <li>Error correlation ID for support</li>
- * </ul>
- *
- * <p>DD46 Requirements:
- * <ul>
- *   <li>NO: "NullPointerException at ArenaBuilder.java:234"</li>
- *   <li>YES: "L'arena non è disponibile. Riprova più tardi."</li>
- * </ul>
- */
 public record UserFriendlyError(
     /** Unique error ID for correlation in logs */
     UUID errorId,

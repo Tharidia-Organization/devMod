@@ -17,8 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -26,10 +24,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Manages the tester's gamification profile including XP, levels, achievements, and streaks.
- * This creates an engaging experience that motivates testers to complete all tests.
- */
+import com.devmod.util.ConfigPaths;
 public class TesterProfile {
     private static final Logger LOGGER = LoggerFactory.getLogger(TesterProfile.class);
     // Lazy initialization to avoid NPE during class loading (FMLPaths not ready yet)

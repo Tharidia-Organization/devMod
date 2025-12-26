@@ -14,27 +14,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Spell Engine by ZsoltMolnarrr.
- *
- * Spell Engine provides:
- * - Data-driven spell definitions (JSON-based)
- * - SpellContainer system for items
- * - Trigger system (14+ types: melee, arrow, spell, damage, etc.)
- * - Targeting modes (Aim, Beam, Area, Caster, etc.)
- * - Equipment set bonuses with spells
- *
- * This integration allows DevMod to:
- * - Detect active spell casting
- * - Read spell container data from items
- * - Monitor spell cooldowns
- * - Track spell damage in telemetry
- * - Display spell info in entity overlays
- *
- * @see <a href="https://github.com/ZsoltMolnarrr/SpellEngine">GitHub</a>
- * @see <a href="https://modrinth.com/mod/spell-engine">Modrinth</a>
- */
 public class SpellEngineCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpellEngineCompat.class);
     public static final String MOD_ID = "spell_engine";

@@ -3,11 +3,6 @@ package com.devmod.actions;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
-
-/**
- * Result of executing an action through ActionRegistry.
- * Provides structured information about success, failure, or blocking.
- */
 public record ActionResult(
     Status status,
     @Nullable String errorCode,

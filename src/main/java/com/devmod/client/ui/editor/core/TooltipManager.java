@@ -9,19 +9,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
-
-/**
- * Centralized tooltip rendering manager.
- * Collects tooltips during the render pass and renders them at the end
- * to ensure they appear above all other UI elements.
- *
- * Usage:
- * 1. Call beginFrame() at the start of each render cycle
- * 2. Components register their tooltips via queueTooltip()
- * 3. Call renderAll() at the end of the render pass
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.2
- */
 public final class TooltipManager {
 
     // ═══════════════════════════════════════════════════════════════

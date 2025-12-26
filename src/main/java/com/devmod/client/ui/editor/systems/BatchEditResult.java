@@ -2,12 +2,6 @@ package com.devmod.client.ui.editor.systems;
 
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * Result of a batch edit operation.
- * Keeps structured failure details while remaining backwards-compatible
- * by exposing a `failures()` list of human-readable strings.
- */
 public class BatchEditResult {
     public static class FailureDetail {
         public final String itemName;

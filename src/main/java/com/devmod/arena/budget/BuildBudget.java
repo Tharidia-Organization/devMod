@@ -4,16 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.builder.BuildLimitExceededException;
-
-/**
- * Build budget with soft/hard limits (DD11).
- *
- * <p>Thresholds:
- * <ul>
- *   <li>WARN at 80% - log warning, continue</li>
- *   <li>ERROR at 100% - throw exception, abort</li>
- * </ul>
- */
 public class BuildBudget {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BuildBudget.class);

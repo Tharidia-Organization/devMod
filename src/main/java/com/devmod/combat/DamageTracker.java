@@ -12,17 +12,6 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 
 import static com.devmod.DevMod.MODID;
-
-/**
- * Traccia il danno REALE inflitto ai mob usando l'API NeoForge.
- *
- * LivingDamageEvent.Post fornisce:
- * - getNewDamage(): "the amount of health this entity lost during this sequence"
- * - getOriginalDamage(): "the original damage when LivingEntity#hurt was invoked"
- * - getBlockedDamage(): "the amount of damage reduced by a blocking action"
- *
- * Questo è il danno REALE già calcolato da Minecraft, non un ricalcolo.
- */
 @EventBusSubscriber(modid = MODID)
 public class DamageTracker {
 

@@ -29,13 +29,6 @@ import com.devmod.client.ui.editor.modules.WeaponModule;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.DatapackIO;
-
-/**
- * Manages data operations for the item editor: export, import, presets, and templates.
- * Encapsulates pure data operations and provides callbacks for UI integration.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#36-data-persistence
- */
 public final class ItemEditorDataService {
 
     private static final String DEFAULT_DATAPACK_NAME = "devmod_balance_auto";

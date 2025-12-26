@@ -321,9 +321,9 @@ Codebase follows good extraction patterns. No high-value extraction opportunitie
 ## Quality Pass Summary (2025-12-25 to 2025-12-26)
 
 ### Final Metrics
-- **Wildcard imports**: 149 → 15 (90% reduction)
-- **Files modified**: 50+ files across 15 batches
-- **Build status**: All changes compile successfully
+- **Wildcard imports**: 149 → 0 (main/test; JUnit static wildcard retained)
+- **Files modified**: 900+ files across 18 batches
+- **Build status**: All changes compile successfully; checkstyleMain clean
 
 ### Key Improvements
 1. Explicit imports for better IDE support and faster compilation
@@ -332,6 +332,7 @@ Codebase follows good extraction patterns. No high-value extraction opportunitie
 4. Class documentation for large undocumented files
 5. Endurance flow fixes for directive chains and rewards
 6. Test stability improvements (configurable thresholds)
+7. Import ordering enforced via Checkstyle (external-com grouping fix)
 
 ---
 
@@ -361,3 +362,18 @@ None (Quality pass complete)
 
 ### Results
 - Minor null-safety cleanup in core flow; no behavior change
+
+---
+
+## Batch 18: Import Order + Checkstyle Enforcement (2025-12-26)
+
+### Scope
+- Standardized import ordering across main sources to: java → javax → external → net.minecraft → net.neoforged → com.devmod
+- Removed unused imports in targeted compat/ui/config classes
+- Replaced wildcard static imports in `StatusPanel.java` with explicit static imports
+- Added missing `InteractionHand` import in `InteractionEvents.java`
+- Fixed Checkstyle external-com grouping regex and enabled XML reports in `build.gradle`
+
+### Results
+- checkstyleMain clean after reorder
+- Import order now enforced by Checkstyle

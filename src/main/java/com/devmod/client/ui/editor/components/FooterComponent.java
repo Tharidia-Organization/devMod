@@ -13,12 +13,6 @@ import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Footer component with undo/redo, actions menu, and apply button.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.7 (Footer Zone)
- */
 public class FooterComponent {
 
     // ═══════════════════════════════════════════════════════════════

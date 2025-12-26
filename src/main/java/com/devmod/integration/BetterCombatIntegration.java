@@ -6,21 +6,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.world.entity.player.Player;
-
-/**
- * Integration with Better Combat mod.
- * Allows reading attack information (combo name, extended reach, etc.)
- *
- * NOTE: This class is loaded only if Better Combat is present.
- * Uses reflection to avoid hard dependency.
- */
 public class BetterCombatIntegration {
     private static final Logger LOGGER = LoggerFactory.getLogger(BetterCombatIntegration.class);
     private static boolean initialized = false;
     private static boolean available = false;
 
     // Cache for reflection methods
+    @Nullable
     private static Class<?> playerAttackHelperClass;
+    @Nullable
     private static Class<?> weaponAttributesClass;
 
     /**
@@ -59,6 +53,7 @@ public class BetterCombatIntegration {
     @Nullable
     public static String getCurrentAttackName(Player player) {
         if (!available || player == null) return null;
+        if (playerAttackHelperClass == null || weaponAttributesClass == null) return null;
 
         try {
             // Better Combat stores attack info in player's persistent data or capability
@@ -100,6 +95,7 @@ public class BetterCombatIntegration {
      */
     public static double getExtendedReach(Player player) {
         if (!available || player == null) return 0;
+        if (playerAttackHelperClass == null || weaponAttributesClass == null) return 0;
 
         try {
             var mainHand = player.getMainHandItem();
@@ -133,6 +129,7 @@ public class BetterCombatIntegration {
      */
     public static boolean isInCombo(Player player) {
         if (!available || player == null) return false;
+        if (playerAttackHelperClass == null) return false;
 
         try {
             // Check if player has combo state
@@ -157,6 +154,7 @@ public class BetterCombatIntegration {
      */
     public static int getComboCount(Player player) {
         if (!available || player == null) return 0;
+        if (playerAttackHelperClass == null) return 0;
 
         try {
             var getComboCountMethod = playerAttackHelperClass.getMethod(

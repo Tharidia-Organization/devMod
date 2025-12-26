@@ -19,20 +19,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.client.testing.IntegratedTestSession;
 import com.devmod.testing.TestCase;
-
-/**
- * Unified HUD overlay for integrated test sessions.
- *
- * Shows:
- * - Current test session type and status
- * - Wave progress (X/Y waves completed)
- * - Kill count and duration
- * - Linked TestCase progress (if any)
- * - Quick action hints (keys to press)
- *
- * Position: Left side of screen, below crosshair
- * Toggle: Automatically shows when IntegratedTestSession is active
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class IntegratedTestOverlay {
 

@@ -2,19 +2,6 @@ package com.devmod.arena.naming;
 
 import java.util.Random;
 import java.util.regex.Pattern;
-
-/**
- * Arena instance name with validation (DD26).
- *
- * <p>Rules:
- * <ul>
- *   <li>Min 3, Max 32 characters</li>
- *   <li>Only lowercase alphanumeric and single underscores [a-z0-9_]</li>
- *   <li>Must start with letter</li>
- *   <li>Cannot end with underscore</li>
- *   <li>No consecutive underscores</li>
- * </ul>
- */
 public record InstanceName(String value) {
 
     private static final int MIN_LENGTH = 3;  // DD26: minimum length

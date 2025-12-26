@@ -14,13 +14,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Secure structure loader/validator for structure NBT (spec v2.23).
- *
- * Path and manifest validation follow TODO_ARENA_TEMPLATE. Actual world
- * placement is out of scope; this class only validates and parses NBT data.
- */
 public class StructureNbtLoader {
 
     private static final HexFormat HEX = HexFormat.of();

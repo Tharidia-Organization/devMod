@@ -9,15 +9,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.DevMod;
-
-/**
- * Event handlers for the debug system.
- *
- * Debug rendering is handled by DebugRendererMixin (client) which renders when
- * DebugRenderBools are enabled. Debug data is sent by:
- * 1. DebugPacketsMixin (server) - intercepts vanilla DebugPackets calls
- * 2. NativeDebugSender (server tick) - actively sends debug packets for enabled features
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class DebugEvents {
 

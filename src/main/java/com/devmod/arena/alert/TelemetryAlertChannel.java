@@ -5,10 +5,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Telemetry alert channel (emits arena.alert events).
- */
 public class TelemetryAlertChannel implements AlertRouter.AlertChannel {
 
     private final ArenaTelemetry telemetry;

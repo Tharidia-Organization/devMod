@@ -13,21 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
-
-/**
- * VOXEL-LAB M10: Movement Desire Lines
- *
- * Tracks movement patterns to identify "desire lines" - the paths players
- * naturally take through a space, which may differ from intended paths.
- *
- * Features:
- * - Tracks movement segments (from A to B)
- * - Aggregates into paths by frequency
- * - Identifies most common routes per room
- * - Detects shortcuts and unexpected paths
- *
- * This data helps level designers understand actual player flow vs designed flow.
- */
 public class DesireLinesService {
     public static final DesireLinesService INSTANCE = new DesireLinesService();
 

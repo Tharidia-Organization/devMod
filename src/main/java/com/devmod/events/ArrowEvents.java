@@ -33,11 +33,6 @@ import com.devmod.DevMod;
 import com.devmod.collision.integration.OBBHitHelper;
 import com.devmod.combat.HitHelper;
 import com.devmod.util.I18n;
-
-/**
- * Server-side arrow event handler for projectile impacts.
- * Client VFX are delegated to ClientVFXHelper via safe dist checks.
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class ArrowEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArrowEvents.class);

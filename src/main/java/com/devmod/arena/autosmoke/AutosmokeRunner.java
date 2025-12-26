@@ -23,19 +23,6 @@ import com.devmod.arena.cleanup.CleanupResult;
 import com.devmod.arena.override.ForceTemplateCapability;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
-
-/**
- * DD32-34: Autosmoke test runner with guard, thresholds, and reporting.
- *
- * <p>Executes smoke tests against arena templates with:</p>
- * <ul>
- *   <li>Triple guard protection (ENV, flag, marker file)</li>
- *   <li>Configurable thresholds per template</li>
- *   <li>Report generation with context (git commit, config hash)</li>
- *   <li>CSV/JSON export</li>
- *   <li>Exception whitelist for known safe failures</li>
- * </ul>
- */
 public class AutosmokeRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeRunner.class);

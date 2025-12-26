@@ -4,14 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-
-/**
- * Validates recipe data for correctness.
- */
 public final class RecipeValidator {
 
     private static final Pattern RESOURCE_LOCATION_PATTERN = Pattern.compile("^[a-z0-9_.-]+:[a-z0-9_/.-]+$");
@@ -46,6 +45,7 @@ public final class RecipeValidator {
             return !warnings.isEmpty();
         }
 
+        @Nullable
         public String getFirstError() {
             return errors.isEmpty() ? null : errors.getFirst();
         }
@@ -264,15 +264,16 @@ public final class RecipeValidator {
             return;
         }
 
-        if (result.itemId() == null) {
+        ResourceLocation itemId = result.itemId();
+        if (itemId == null) {
             errors.add("Result item ID cannot be null");
             return;
         }
 
         // Check item exists
-        Item item = BuiltInRegistries.ITEM.get(result.itemId());
+        Item item = BuiltInRegistries.ITEM.get(itemId);
         if (item == null || item == Items.AIR) {
-            errors.add("Result item does not exist: " + result.itemId());
+            errors.add("Result item does not exist: " + itemId);
         }
 
         if (result.count() <= 0) {
@@ -300,14 +301,18 @@ public final class RecipeValidator {
         } else if (ingredient.isTag()) {
             // Check if tag has any items
             var tagItems = ingredient.getTagItems();
-            if (tagItems.isEmpty()) {
-                warnings.add("Tag has no items: " + ingredient.tag().location());
+            TagKey<Item> tag = ingredient.tag();
+            if (tag != null && tagItems.isEmpty()) {
+                warnings.add("Tag has no items: " + tag.location());
             }
         } else if (ingredient.isAlternatives()) {
-            for (ResourceLocation alt : ingredient.alternatives()) {
-                Item item = BuiltInRegistries.ITEM.get(alt);
-                if (item == null || item == Items.AIR) {
-                    errors.add("Alternative item does not exist: " + alt);
+            List<ResourceLocation> alternatives = ingredient.alternatives();
+            if (alternatives != null) {
+                for (ResourceLocation alt : alternatives) {
+                    Item item = BuiltInRegistries.ITEM.get(alt);
+                    if (item == null || item == Items.AIR) {
+                        errors.add("Alternative item does not exist: " + alt);
+                    }
                 }
             }
         }

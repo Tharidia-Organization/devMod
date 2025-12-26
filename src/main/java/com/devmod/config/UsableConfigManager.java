@@ -20,6 +20,10 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -30,15 +34,6 @@ import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.components.UsableComponents;
 import com.devmod.stats.UsableStats;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
-/**
- * Configuration manager for usable item stats (cooldowns, use duration, throwable properties).
- * Follows the same pattern as WeaponConfigManager.
- */
 public class UsableConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UsableConfigManager.class);

@@ -19,29 +19,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
 import com.devmod.telemetry.RoomDefinition;
-
-/**
- * VOXEL-LAB M52: Entity Count per Room
- *
- * Tracks entity counts in each configured room.
- * Provides breakdown by entity type:
- * - Hostile mobs
- * - Passive mobs
- * - NPCs (villagers, etc.)
- * - Players
- * - Bosses
- *
- * PERFORMANCE FIX: Uses incremental processing - scans one room per tick
- * instead of all rooms at once. This prevents TPS drops when many rooms
- * are configured or structures generate many entities.
- *
- * Processing cycle:
- * - Tick 1: Scan room 0
- * - Tick 2: Scan room 1
- * - ...
- * - Tick N: Scan room N-1, finalize global stats
- * - Tick N+1: Start new cycle
- */
 public class RoomEntityCounter {
     public static final RoomEntityCounter INSTANCE = new RoomEntityCounter();
 

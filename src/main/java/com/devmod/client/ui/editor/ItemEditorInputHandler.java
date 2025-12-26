@@ -23,11 +23,6 @@ import com.devmod.client.ui.editor.systems.MultiEditManager;
 import com.devmod.client.ui.editor.systems.MultiEditPanel;
 import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
 import com.devmod.client.ui.editor.systems.TemplateOverlay;
-
-/**
- * Handles all input logic for ItemEditorScreen.
- * Extracted for single responsibility.
- */
 public class ItemEditorInputHandler {
 
     // Hotbar constants

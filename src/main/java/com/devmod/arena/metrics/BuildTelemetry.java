@@ -4,13 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Telemetry wrapper that enforces context in all events (DD13).
- *
- * <p>All arena.build.* events MUST be emitted through this wrapper
- * to ensure consistent context inclusion.
- */
 public class BuildTelemetry {
 
     private final ArenaTelemetry telemetry;

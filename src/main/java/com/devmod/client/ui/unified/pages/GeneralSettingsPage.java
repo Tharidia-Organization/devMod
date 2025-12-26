@@ -15,11 +15,6 @@ import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
-
-/**
- * General settings page with toggle controls for overlay visibility, render mode, and colors.
- * Integrates with ModConfig for persistent settings.
- */
 public class GeneralSettingsPage implements SettingsPage {
 
     // Track original values for unsaved changes detection

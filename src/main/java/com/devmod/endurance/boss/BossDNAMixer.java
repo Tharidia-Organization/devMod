@@ -12,25 +12,6 @@ import org.slf4j.LoggerFactory;
 import com.devmod.endurance.BossWaveSystem.BossAbility;
 import com.devmod.endurance.BossWaveSystem.BossArchetype;
 import com.devmod.endurance.BossWaveSystem.BossFight;
-
-/**
- * Boss DNA Mixing System - Dynamic Boss Generation.
- *
- * Creates unique bosses by mixing archetypes:
- * - 70% primary archetype (stats, main abilities)
- * - 30% secondary archetype (1-2 inherited abilities, color blend)
- *
- * RARE VARIANTS:
- * - CHIMERA (5%): 3 archetypes mixed, all abilities available
- * - MIRROR (3%): Copies player's equipped gear stats
- * - EVOLVING (2%): Changes archetype at each phase transition
- *
- * Design Philosophy:
- * Prevents predictable boss encounters. Players can't memorize
- * a single boss pattern because each spawn is procedurally unique.
- * This keeps veteran players engaged and creates stories
- * ("I fought a Berserker-Elemental that teleported AND threw fireballs!")
- */
 public class BossDNAMixer {
     private static final Logger LOGGER = LoggerFactory.getLogger(BossDNAMixer.class);
 

@@ -11,12 +11,6 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
-
-/**
- * Adapter that applies Item Editor presets (from ItemEditorDataManager) to ItemStack instances
- * by delegating to the existing Weapon/Armor config managers. This keeps application
- * logic consistent with how the editor stores and reads stats.
- */
 public class ItemEditorPresetManager implements PresetManager {
 
     public static final ItemEditorPresetManager INSTANCE = new ItemEditorPresetManager();

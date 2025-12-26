@@ -18,11 +18,6 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-
-/**
- * Handles persistence of player quest statistics.
- * Manages loading, saving, and updating player stats data.
- */
 public class EnduranceQuestPersistence {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestPersistence.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

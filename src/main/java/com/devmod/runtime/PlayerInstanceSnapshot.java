@@ -18,14 +18,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.GameType;
-
-/**
- * Complete snapshot of a player's state before entering an instance.
- * This is persisted to disk IMMEDIATELY to ensure recovery is always possible.
- *
- * The snapshot contains everything needed to fully restore the player
- * to their original state if anything goes wrong during the instance.
- */
 public class PlayerInstanceSnapshot {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlayerInstanceSnapshot.class);
     private static final int CURRENT_VERSION = 1;

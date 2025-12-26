@@ -5,10 +5,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.devmod.arena.registry.ArenaTemplate;
-
-/**
- * Result of policy resolution - the selected template and policy combination.
- */
 public record ResolvedArena(
     /** The resolved arena template */
     ArenaTemplate template,

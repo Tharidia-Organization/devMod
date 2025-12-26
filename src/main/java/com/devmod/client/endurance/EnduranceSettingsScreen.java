@@ -17,11 +17,6 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.config.GameMechanicsConfig;
 import com.devmod.util.I18n;
-
-/**
- * Settings screen for configuring Endurance Quest game mechanics.
- * Provides sliders for all GameMechanicsConfig options organized by category.
- */
 @OnlyIn(Dist.CLIENT)
 public class EnduranceSettingsScreen extends Screen {
 

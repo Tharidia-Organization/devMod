@@ -3,20 +3,11 @@ package com.devmod.testing.stats;
 import java.util.EnumMap;
 import java.util.Map;
 
+import com.google.gson.JsonObject;
+
 import net.minecraft.world.damagesource.DamageSource;
 
 import com.devmod.testing.stats.HazardTypeRegistry.HazardType;
-
-import com.google.gson.JsonObject;
-
-/**
- * Tracks environmental damage taken (fall, fire, lava, etc.).
- * Extracted from TesterProgress for single responsibility.
- *
- * <p>Now uses {@link HazardTypeRegistry} for config-driven hazard classification
- * instead of hardcoded string matching.
- */
-
 public class EnvironmentalDamageStats {
     public static final EnvironmentalDamageStats INSTANCE = new EnvironmentalDamageStats();
 

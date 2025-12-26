@@ -17,14 +17,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.integration.ModIntegrationManager;
-
-/**
- * Represents an entity tracked by the attribute monitoring system.
- * Maintains an attribute snapshot and tracks changes.
- *
- * <p><b>CLIENT-ONLY</b>: This class uses Minecraft.getInstance() for LoS calculations
- * and should never be instantiated or used on a dedicated server.
- */
 @OnlyIn(Dist.CLIENT)
 public class TrackedEntity {
 

@@ -7,26 +7,6 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * DD40: Security Limits Enforcer - Hard caps for arena resources.
- *
- * <p>Hard limits that CANNOT be exceeded:
- * <ul>
- *   <li>Arena size: ≤ 256 blocks per axis</li>
- *   <li>Hazard count: ≤ 50</li>
- *   <li>Spawn slot count: ≤ 100</li>
- *   <li>Entity count: ≤ 200</li>
- *   <li>Block count: ≤ 100,000</li>
- * </ul>
- *
- * <p>These limits are enforced regardless of configuration to prevent:
- * <ul>
- *   <li>Memory exhaustion attacks</li>
- *   <li>Server lag from oversized arenas</li>
- *   <li>Chunk loading issues</li>
- * </ul>
- */
 public class SecurityLimitsEnforcer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SecurityLimitsEnforcer.class);

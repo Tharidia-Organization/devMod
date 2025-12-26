@@ -1,11 +1,5 @@
 package com.devmod.client.compat.mods.fancymenu;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import net.minecraft.client.gui.screens.Screen;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
@@ -13,23 +7,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Compatibility module for FancyMenu.
- *
- * FancyMenu provides:
- * - Custom menu layouts and designs
- * - Button placement and styling
- * - Background images and animations
- * - Menu customization UI
- *
- * This integration allows DevMod to:
- * - Detect FancyMenu-customized screens
- * - Check for conflicts with DevMod overlays
- * - Coordinate UI element placement
- * - Avoid overlay conflicts
- *
- * @see <a href="https://github.com/Keksuccino/FancyMenu">FancyMenu GitHub</a>
- */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.client.gui.screens.Screen;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 public class FancyMenuCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(FancyMenuCompat.class);
     public static final String MOD_ID = "fancymenu";

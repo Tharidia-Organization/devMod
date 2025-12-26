@@ -6,13 +6,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.devmod.DevMod;
 import com.devmod.config.EditorClientConfig;
-
-/**
- * Editor config bridge for UI scale and related toggles.
- * Uses NeoForge config system with fallback to system properties / env.
- *
- * Supports runtime config change listeners for reactive UI updates.
- */
 public final class EditorConfig {
 
     private EditorConfig() {}

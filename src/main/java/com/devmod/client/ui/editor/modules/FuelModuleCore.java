@@ -11,11 +11,6 @@ import com.devmod.DevMod;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.config.FuelConfigManager;
 import com.devmod.stats.FuelStats;
-
-/**
- * Core stats management for FuelModule.
- * Handles loading, saving, and state management.
- */
 public class FuelModuleCore {
 
     static final String NBT_KEY = "FuelModStats";

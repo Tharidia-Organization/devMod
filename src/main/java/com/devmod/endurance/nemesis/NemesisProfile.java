@@ -18,13 +18,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Nemesis Profile - Tracks a boss's memory of player encounters.
- *
- * Each boss type accumulates a profile based on how players fight it,
- * allowing the boss to adapt its abilities and behavior over time.
- */
 public class NemesisProfile {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NemesisProfile.class);

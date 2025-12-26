@@ -12,21 +12,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-
-/**
- * Rising Phoenix Comeback System
- *
- * Creates epic "clutch moments" when players are on the brink of death.
- * When health drops critically low during an Endurance Quest, the player
- * receives temporary buffs that can turn the tide of battle.
- *
- * Design Philosophy:
- * - Triggers at critical health (< 20%)
- * - Provides meaningful but not game-breaking buffs
- * - Has cooldown to prevent constant abuse
- * - Visual/audio feedback makes the moment feel special
- * - Integrates with combo system for bonus style
- */
 public class ComebackSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ComebackSystem.class);

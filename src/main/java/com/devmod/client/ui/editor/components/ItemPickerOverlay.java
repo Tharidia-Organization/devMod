@@ -22,15 +22,6 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Overlay for picking items from the creative inventory.
- * Features:
- * - Search by name or ID
- * - Tab to switch between Items and Tags
- * - Grid display with scrolling
- * - Click to select
- */
 public class ItemPickerOverlay extends BaseOverlay {
 
     // ═══════════════════════════════════════════════════════════════

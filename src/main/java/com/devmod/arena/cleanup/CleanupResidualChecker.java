@@ -8,26 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.config.ArenaTemplateConfig.AlertThresholds;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Checks cleanup residuals against AlertThresholds and emits telemetry.
- *
- * <p>After arena cleanup, this checker:
- * <ul>
- *   <li>Compares residual counts against configured thresholds</li>
- *   <li>Emits telemetry events for monitoring and alerting</li>
- *   <li>Logs warnings/errors based on severity</li>
- * </ul>
- *
- * <p>Threshold levels (from AlertThresholds):
- * <ul>
- *   <li>entitiesResidual: warn=0, error=5 (default)</li>
- *   <li>blocksResidual: warn=0, error=10 (default)</li>
- * </ul>
- *
- * @see AlertThresholds
- * @see CleanupResult
- */
 public class CleanupResidualChecker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CleanupResidualChecker.class);

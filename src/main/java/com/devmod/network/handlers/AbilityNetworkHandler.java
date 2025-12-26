@@ -8,11 +8,6 @@ import com.devmod.abilities.AbilityActionPayload;
 import com.devmod.abilities.DashAbilitySystem;
 import com.devmod.abilities.DodgeAbilitySystem;
 import com.devmod.abilities.StaminaSyncPayload;
-
-/**
- * Network handler for ability system packets (dash, dodge, stamina).
- * Extracted from NetworkHandler for single responsibility.
- */
 public final class AbilityNetworkHandler extends NetworkHandlerBase {
 
     private AbilityNetworkHandler() {}

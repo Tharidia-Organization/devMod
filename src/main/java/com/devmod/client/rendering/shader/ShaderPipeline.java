@@ -15,14 +15,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
-
-/**
- * Encapsulates shader registration and RenderType creation (custom + fallback).
- *
- * <p>This keeps shader wiring uniform across effects and guarantees a usable
- * RenderType even when the custom shader fails to load.</p>
- */
-
 @OnlyIn(Dist.CLIENT)
 public final class ShaderPipeline {
     private final String name;

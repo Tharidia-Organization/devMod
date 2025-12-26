@@ -6,22 +6,6 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.devmod.arena.registry.TemplateType;
-
-/**
- * DD13: Sealed interface for template lifecycle events.
- *
- * <p>Provides type-safe event discrimination for:
- * <ul>
- *   <li>{@link TemplateRegistered} - Template added to registry</li>
- *   <li>{@link TemplateUnregistered} - Template removed from registry</li>
- *   <li>{@link BuildStarted} - Arena build initiated</li>
- *   <li>{@link BuildCompleted} - Arena build finished successfully</li>
- *   <li>{@link BuildFailed} - Arena build failed</li>
- *   <li>{@link BuildCancelled} - Arena build was cancelled</li>
- * </ul>
- *
- * <p>All events are immutable records with timestamp for audit trails.
- */
 public sealed interface TemplateEvent
     permits TemplateEvent.TemplateRegistered,
             TemplateEvent.TemplateUnregistered,

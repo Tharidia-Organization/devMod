@@ -1,11 +1,6 @@
 package com.devmod.client.ui.testing;
 
 import net.minecraft.client.gui.GuiGraphics;
-
-/**
- * Interface for VoxelLab tab pages.
- * Each page represents the content for one tab in the VoxelLab screen.
- */
 public interface VoxelLabPage {
 
     /**

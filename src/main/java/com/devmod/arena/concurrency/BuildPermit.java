@@ -2,16 +2,6 @@ package com.devmod.arena.concurrency;
 
 import java.time.Duration;
 import java.time.Instant;
-
-/**
- * Sealed interface for build permit results (DD61).
- *
- * <p>A build permit is either:
- * <ul>
- *   <li>{@link Granted} - Build can proceed</li>
- *   <li>{@link Rejected} - Build must wait (includes retry-after)</li>
- * </ul>
- */
 public sealed interface BuildPermit permits BuildPermit.Granted, BuildPermit.Rejected {
 
     /**

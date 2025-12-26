@@ -24,18 +24,6 @@ import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.InstanceArenaManager;
 import com.devmod.endurance.QuestType;
 import com.devmod.util.I18n;
-
-/**
- * Manages the quest start sequence for party quests.
- *
- * FLOW:
- * 1. PRE-VALIDATION: Check all members (online, not in combat, not dead, etc.)
- * 2. COUNTDOWN: 5-4-3-2-1 countdown with cancel option
- * 3. TELEPORT: Teleport all members to arena simultaneously
- * 4. WAITING_FOR_ARRIVALS: Wait for all clients to confirm arrival (timeout 30s)
- * 5. WAVE_COUNTDOWN: 3-2-1 before starting wave 1
- * 6. STARTED: Begin the quest
- */
 public class QuestStartSequence {
     private static final Logger LOGGER = LoggerFactory.getLogger(QuestStartSequence.class);
 

@@ -9,11 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.client.ui.editor.EditorSection;
-
-/**
- * Centralized layout calculator for editor panel bounds.
- * Follows EDITOR_DESIGN_SYSTEM.md Section 1.3 and 12.
- */
 public class EditorLayout {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EditorLayout.class);

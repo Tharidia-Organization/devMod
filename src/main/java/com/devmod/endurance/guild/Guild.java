@@ -10,10 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * Represents a guild/clan in the Endurance Quest system.
- */
 public class Guild {
 
     private final String id;

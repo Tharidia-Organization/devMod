@@ -27,17 +27,6 @@ import com.devmod.quest.QuestData;
 import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
 import com.devmod.util.I18n;
-
-/**
- * Extended UI for managing quests.
- *
- * Features:
- * - List of available quests
- * - Detail of selected quest with all tasks
- * - Editor for notes on quests and tasks
- * - Quest creation/deletion
- * - Synchronization with QuestHudOverlay
- */
 @OnlyIn(Dist.CLIENT)
 public class QuestEditorScreen extends ModScreen {
 

@@ -35,10 +35,6 @@ import com.devmod.endurance.PersonalRecordsSyncPayload;
 import com.devmod.endurance.RequestPersonalRecordsPayload;
 import com.devmod.endurance.StartQuestPayload;
 import com.devmod.util.I18n;
-
-/**
- * Main UI screen for browsing and starting Endurance Quests.
- */
 @OnlyIn(Dist.CLIENT)
 public class EnduranceQuestScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestScreen.class);

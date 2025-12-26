@@ -5,11 +5,6 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
-
-/**
- * Analytics handlers for TelemetryDashboardServer.
- * Contains aggregated data queries for charts and visualizations.
- */
 public class TelemetryAnalyticsHandlers {
 
     private final TelemetryDashboardServer server;

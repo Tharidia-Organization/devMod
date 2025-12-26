@@ -15,18 +15,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Collects heatmap data for arena analytics.
- * DD49: Heatmap Privacy - 5x5 cell, hourly bucket, no player ID.
- *
- * <p>This collector:
- * - Aggregates positions into 5x5 block cells
- * - Groups data into hourly buckets
- * - Never stores player IDs
- * - Flushes batch every 5 minutes
- * - Retains data for 30 days with weekly aggregation
- */
 public class HeatmapCollector {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HeatmapCollector.class);

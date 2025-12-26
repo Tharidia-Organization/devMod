@@ -14,11 +14,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Filters ammo types for ranged weapons based on configured ammo filters.
- * Supports both item ID matching and tag-based filtering.
- */
 public final class AmmoFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(AmmoFilter.class);
 

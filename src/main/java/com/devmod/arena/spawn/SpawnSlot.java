@@ -1,10 +1,6 @@
 package com.devmod.arena.spawn;
 
 import java.util.UUID;
-
-/**
- * Represents a spawn slot position in the arena.
- */
 public record SpawnSlot(
     UUID id,
     double x,

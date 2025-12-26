@@ -17,6 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -38,20 +42,6 @@ import com.devmod.DevMod;
 import com.devmod.components.ArmorComponents;
 import com.devmod.network.PacketValidator;
 import com.devmod.stats.ArmorStats;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
-/**
- * Manages armor configuration storage and retrieval.
- * Follows the same pattern as WeaponConfigManager for consistency.
- *
- * Storage hierarchy:
- * 1. NBT Data (per-item instance) - highest priority
- * 2. Global Config (per-item type) - from JSON file
- * 3. Default Values - ArmorStats with all zeros
- */
 public class ArmorConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArmorConfigManager.class);

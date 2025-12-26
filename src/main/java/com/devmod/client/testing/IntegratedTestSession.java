@@ -21,23 +21,6 @@ import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
-
-/**
- * Unified service that integrates:
- * - TestingHub (test case management)
- * - EnduranceQuest (controlled test environment)
- * - TelemetryService (data collection)
- * - HUD Overlays (real-time feedback)
- *
- * This is the "collante" (glue) that connects all testing systems.
- *
- * Workflow:
- * 1. User selects test type via QuickTestWizard or TestingHub
- * 2. IntegratedTestSession configures overlays and starts telemetry
- * 3. EnduranceQuest provides controlled mob spawning
- * 4. TelemetryService collects combat data
- * 5. Test completion triggers auto-validation in TestingHub
- */
 public class IntegratedTestSession {
     private static final Logger LOGGER = LoggerFactory.getLogger(IntegratedTestSession.class);
 

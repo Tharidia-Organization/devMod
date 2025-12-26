@@ -26,20 +26,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.config.Config;
 import com.devmod.endurance.GamificationManager.BadgeRarity;
-
-/**
- * Premium badge unlock popup overlay with advanced animations.
- * Redesigned for a compact horizontal layout (~4-5% screen height).
- *
- * Features:
- * - Compact horizontal layout (320x45px)
- * - Progressive visual effects per rarity
- * - Smooth elastic animations
- * - Entry flash for RARE+
- * - Pulsing glow effects
- * - Floating particles for EPIC/LEGENDARY
- * - Sound effects with debug logging
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class BadgePopupOverlay {
 

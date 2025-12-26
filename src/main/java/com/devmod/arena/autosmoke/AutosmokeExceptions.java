@@ -3,13 +3,6 @@ package com.devmod.arena.autosmoke;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * DD33: Autosmoke Assert Exceptions - soglie per size + whitelist
- *
- * Manages whitelist of templates/tests that are exempt from certain assertions.
- * Use sparingly - only for known edge cases that cannot be fixed.
- */
 public class AutosmokeExceptions {
 
     private static final AutosmokeExceptions INSTANCE = new AutosmokeExceptions();

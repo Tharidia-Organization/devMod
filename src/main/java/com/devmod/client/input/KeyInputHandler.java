@@ -4,42 +4,14 @@ import java.util.Objects;
 
 import org.lwjgl.glfw.GLFW;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import net.minecraft.client.KeyMapping;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
-
-import com.mojang.blaze3d.platform.InputConstants;
-
-/**
- * Contains all keybind definitions for DevMod.
- *
- * <p>This class is client-only and will not be loaded on dedicated servers.
- *
- * <h2>Keybind Categories</h2>
- * <ul>
- *   <li><b>Primary Access</b>: G (Radial Menu) - Main entry point to all DevMod tools</li>
- *   <li><b>Screens</b>: K (Settings), M (Item Editor), J (Dashboard), N (QA Testing)</li>
- *   <li><b>Debug Overlays</b>: O, L, H, R, P, V, Y, C, B, Z</li>
- *   <li><b>Performance</b>: F6, F8, F9 (Entity Density, FPS, Profiler)</li>
- *   <li><b>Quest System</b>: \, [, ], F10, F11, F12</li>
- * </ul>
- *
- * <h2>Design Notes</h2>
- * <ul>
- *   <li>Most overlays are accessible via the Radial Menu (G key)</li>
- *   <li>Direct keybinds are for power users who want quick access</li>
- *   <li>F-keys are reserved for less frequently used features</li>
- *   <li>Letter keys use mnemonics (L=Light, H=Heatmap, P=Pathfinding)</li>
- * </ul>
- *
- * <p><b>Defaults:</b> Only the Radial Menu is bound by default. All other keybinds ship
- * unassigned; the keys documented below are suggested mappings.</p>
- *
- * @see com.devmod.client.ui.radial.RadialMenuScreen
- */
 @OnlyIn(Dist.CLIENT)
 public class KeyInputHandler {
 

@@ -4,10 +4,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.core.BlockPos;
-
-/**
- * Session-scoped tracker for spawn slot occupancy.
- */
 public class SpawnOccupancyTracker {
 
     private final Set<Long> occupied = ConcurrentHashMap.newKeySet();

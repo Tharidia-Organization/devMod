@@ -12,23 +12,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.scroll.ScrollManager;
 import com.devmod.client.ui.scroll.ScrollMetrics;
 import com.devmod.client.ui.scroll.ScrollMode;
-
-/**
- * Abstract base class for settings pages that support scrolling.
- * Now uses the unified {@link ScrollManager} for consistent scroll behavior.
- *
- * <p>Key improvements over the old implementation:
- * <ul>
- *   <li>Bounds checking - only handles scroll when mouse is over content</li>
- *   <li>Delta-based drag - consistent scrollbar behavior (not centering)</li>
- *   <li>Safe scissoring - try/finally prevents scissor leaks</li>
- * </ul>
- *
- * Subclasses only need to implement:
- * - renderScrollableContent(): draw the actual content
- * - calculateTotalContentHeight(): return total height of content
- * - handleContentClick(): handle clicks on content (with adjusted Y)
- */
 public abstract class ScrollableSettingsPage implements SettingsPage {
 
     protected static final int SCROLLBAR_WIDTH = 6;

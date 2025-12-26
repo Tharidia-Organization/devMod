@@ -8,11 +8,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from server to client to synchronize quest state for HUD display.
- * This keeps the client informed about the active quest state.
- */
 public record QuestSyncPayload(
     boolean hasActiveQuest,
     String questName,

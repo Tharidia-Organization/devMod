@@ -1,21 +1,6 @@
 package com.devmod.runtime;
 
 import java.util.Set;
-
-/**
- * State of a player relative to the instance system.
- * Used for tracking and recovery.
- *
- * Valid transitions (forward flow):
- * - NORMAL -> PREPARING (quest accepted, snapshot saved)
- * - PREPARING -> IN_TRANSIT (teleport started)
- * - IN_TRANSIT -> IN_INSTANCE (teleport complete)
- * - IN_INSTANCE -> RETURNING (quest ended)
- * - RETURNING -> NORMAL (recovery complete)
- *
- * Recovery transitions (always valid to NORMAL):
- * - Any state can transition to NORMAL during recovery
- */
 public enum PlayerInstanceState {
     /**
      * Player is in the normal world, not involved with any instance.

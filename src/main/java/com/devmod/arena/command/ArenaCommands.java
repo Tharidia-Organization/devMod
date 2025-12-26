@@ -16,6 +16,13 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -45,32 +52,6 @@ import com.devmod.arena.security.ArenaCommandAudit;
 import com.devmod.arena.security.ArenaCommandPermissions;
 import com.devmod.arena.security.ArenaCommandPermissions.CommandCategory;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-
-/**
- * DD30: Arena dev commands for template management and testing.
- *
- * <p>Commands:</p>
- * <ul>
- *   <li>/arena create &lt;template&gt; - Create arena from template</li>
- *   <li>/arena template list - List all templates</li>
- *   <li>/arena template info &lt;id&gt; - Show template details</li>
- *   <li>/arena template reload - Hot-reload templates</li>
- *   <li>/arena validate &lt;id&gt; - Validate template (dry-run)</li>
- *   <li>/arena force &lt;id&gt; [minutes] - Force template for session (DD29)</li>
- *   <li>/arena force clear - Clear forced template</li>
- *   <li>/arena metrics &lt;id&gt; - Show template build metrics</li>
- *   <li>/arena autosmoke run - Run autosmoke tests</li>
- *   <li>/arena autosmoke status - Show autosmoke status</li>
- *   <li>/arena debug - Debug commands</li>
- * </ul>
- */
 @SuppressWarnings("null") // Minecraft API null annotations are overly strict
 public class ArenaCommands {
 

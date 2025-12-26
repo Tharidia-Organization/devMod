@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -35,10 +37,7 @@ import com.devmod.testing.stats.HazardTypeRegistry;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.DamageTypeConfig;
 
-import com.mojang.logging.LogUtils;
-
 import static com.devmod.DevMod.MODID;
-
 @EventBusSubscriber(modid = MODID)
 public class CommonModEvents {
 	private static final Logger LOGGER = LogUtils.getLogger();

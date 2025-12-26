@@ -10,10 +10,6 @@ import com.devmod.DevMod;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.config.FoodConfigManager;
 import com.devmod.stats.FoodStats;
-
-/**
- * Core logic for FoodModule: stats management, loading, saving.
- */
 public class FoodModuleCore {
 
     @SuppressWarnings("unused")

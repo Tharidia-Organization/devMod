@@ -1,6 +1,6 @@
 package com.devmod.client.events;
 
-import net.minecraft.world.InteractionHand; // <--- Important
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Mob;
 
@@ -16,7 +16,6 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 
 import static com.devmod.DevMod.MODID;
-
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class InteractionEvents {
 

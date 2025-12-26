@@ -8,10 +8,11 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-/**
- * Hazard validation according to TODO_ARENA_TEMPLATE v2.23 (DD8).
- */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 public class HazardValidator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HazardValidator.class);
 
     private static final Set<String> SUPPORTED_TYPES = Set.of(
         "lava_ring", "lava_pool", "void_pit", "spike_trap",
@@ -33,6 +34,7 @@ public class HazardValidator {
     private static final double MAX_COVERAGE = 0.30; // 30%
     private static final double WARN_COVERAGE = 0.25; // 25%
 
+    @Nullable
     private final HazardTelemetry telemetry;
     @Nullable
     private final Set<String> registeredCustomBuilders;
@@ -41,11 +43,11 @@ public class HazardValidator {
         this(null, null);
     }
 
-    public HazardValidator(HazardTelemetry telemetry) {
+    public HazardValidator(@Nullable HazardTelemetry telemetry) {
         this(telemetry, null);
     }
 
-    public HazardValidator(HazardTelemetry telemetry, @Nullable Set<String> registeredCustomBuilders) {
+    public HazardValidator(@Nullable HazardTelemetry telemetry, @Nullable Set<String> registeredCustomBuilders) {
         this.telemetry = telemetry;
         this.registeredCustomBuilders = registeredCustomBuilders;
     }
@@ -74,9 +76,9 @@ public class HazardValidator {
             }
 
             // Type limit
-            typeCounts.merge(hazard.type(), 1, (a, b) -> a + b);
+            int count = typeCounts.merge(hazard.type(), 1, Integer::sum);
             int limit = TYPE_LIMITS.getOrDefault(hazard.type(), Integer.MAX_VALUE);
-            if (typeCounts.get(hazard.type()) > limit) {
+            if (count > limit) {
                 errors.add("Hazard[%d] exceeds type limit %d for '%s'".formatted(i, limit, hazard.type()));
                 emitValidationFailed(template.id(), "type_limit_" + hazard.type());
             }
@@ -86,7 +88,7 @@ public class HazardValidator {
 
             // Overlap with spawn slots (best effort: use center/radius if available)
             if (spawnSlots != null && !spawnSlots.isEmpty()) {
-                maybeValidateOverlapWithSpawn(template.id(), hazard, i, spawnSlots, bounds, errors);
+                maybeValidateOverlapWithSpawn(template.id(), hazard, i, spawnSlots, errors);
             }
 
             // Rough coverage estimate: use radius/area when available
@@ -257,7 +259,6 @@ public class HazardValidator {
         ArenaTemplate.Hazard hazard,
         int idx,
         List<ArenaTemplate.SpawnSlot> spawnSlots,
-        Bounds bounds,
         List<String> errors
     ) {
         // Only best-effort if center+radius present
@@ -333,7 +334,8 @@ public class HazardValidator {
         return 0.0;
     }
 
-    private int[] posParam(ArenaTemplate.Hazard hazard, String key, List<String> errors, int idx) {
+    @Nullable
+    private int[] posParam(ArenaTemplate.Hazard hazard, String key, @Nullable List<String> errors, int idx) {
         Object v = hazard.params() != null ? hazard.params().get(key) : null;
         if (v instanceof List<?> list && list.size() == 3) {
             int[] arr = new int[3];
@@ -371,26 +373,25 @@ public class HazardValidator {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void safePut(List<ArenaTemplate.Hazard> hazards, int idx, ArenaTemplate.Hazard hazard, String key, Object value, List<String> warnings) {
+        Map<String, Object> params = hazard.params();
+        if (params == null) {
+            return;
+        }
         try {
-            if (hazard.params() instanceof Map<?, ?> map) {
-                try {
-                    ((Map<String, Object>) map).put(key, value);
-                    return;
-                } catch (UnsupportedOperationException ex) {
-                    Map<String, Object> mutable = new HashMap<>((Map<String, Object>) map);
-                    mutable.put(key, value);
-                    try {
-                        hazards.set(idx, new ArenaTemplate.Hazard(hazard.type(), mutable, hazard.y(), hazard.yMode()));
-                        warnings.add(warn(idx, "params map was immutable; replaced with mutable copy for clamp"));
-                    } catch (Exception ignored) {
-                        // cannot replace (immutable list), ignore but at least clamped map exists for downstream use
-                    }
-                }
+            params.put(key, value);
+            return;
+        } catch (UnsupportedOperationException ex) {
+            Map<String, Object> mutable = new HashMap<>(params);
+            mutable.put(key, value);
+            try {
+                hazards.set(idx, new ArenaTemplate.Hazard(hazard.type(), mutable, hazard.y(), hazard.yMode()));
+                warnings.add(warn(idx, "params map was immutable; replaced with mutable copy for clamp"));
+            } catch (Exception e) {
+                LOGGER.debug("Failed to replace hazard params after clamp: {}", e.getMessage());
             }
-        } catch (UnsupportedOperationException ignored) {
-            // Map is immutable; ignore.
+        } catch (Exception e) {
+            LOGGER.debug("Failed to apply hazard param clamp: {}", e.getMessage());
         }
     }
 

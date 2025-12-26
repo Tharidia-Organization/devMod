@@ -16,11 +16,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.recipe.CraftingRecipeData;
 import com.devmod.recipe.CraftingType;
 import com.devmod.recipe.IngredientData;
-
-/**
- * Interactive 3x3 grid component for crafting recipe editing.
- * Supports drag-drop, selection, and ingredient display.
- */
 public class RecipeGridComponent {
 
     // ═══════════════════════════════════════════════════════════════

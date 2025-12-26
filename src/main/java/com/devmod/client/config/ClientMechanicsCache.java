@@ -10,20 +10,6 @@ import net.minecraft.nbt.CompoundTag;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-/**
- * Client-side cache for synchronized GameMechanicsConfig values.
- *
- * <p>Provides 3-tier fallback for all config values:
- * <ol>
- *   <li>Quest-specific overrides (if in active quest)</li>
- *   <li>Global synced config (from server)</li>
- *   <li>Hardcoded defaults (safety fallback)</li>
- * </ol>
- *
- * @see com.devmod.config.GameMechanicsConfig
- * @see com.devmod.network.GameMechanicsSyncPayload
- */
 @OnlyIn(Dist.CLIENT)
 public final class ClientMechanicsCache {
     public static final ClientMechanicsCache INSTANCE = new ClientMechanicsCache();

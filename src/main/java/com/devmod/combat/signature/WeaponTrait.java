@@ -8,13 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Weapon Trait - A permanent bonus unlocked on a signature weapon.
- *
- * Traits are earned by accumulating specific statistics and provide
- * passive bonuses to the weapon's effectiveness.
- */
 public class WeaponTrait {
 
     private final ResourceLocation id;

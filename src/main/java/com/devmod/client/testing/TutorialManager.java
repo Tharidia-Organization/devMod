@@ -16,35 +16,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.client.Minecraft;
-
-import com.devmod.testing.TestCase;
-import com.devmod.util.ConfigPaths;
-import com.devmod.util.I18n;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Manages the gamification tutorial system for QA testers.
- *
- * Features:
- * - Onboarding flow for new testers
- * - Step-by-step tutorial progression
- * - Achievement unlocks for milestones
- * - Suggested next tests based on category completion
- * - XP/Level system for motivation
- *
- * Tutorial Phases:
- * 1. WELCOME - First time setup and introduction
- * 2. BASICS - Learn how to use the QA system
- * 3. FIRST_TEST - Complete first test with guidance
- * 4. EXPLORATION - Free exploration with hints
- * 5. ADVANCED - Unlocked after completing 50% tests
- * 6. MASTERY - Unlocked after completing all tests
- */
+import net.minecraft.client.Minecraft;
+
+import com.devmod.testing.TestCase;
+import com.devmod.util.ConfigPaths;
+import com.devmod.util.I18n;
 public class TutorialManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(TutorialManager.class);
     public static final TutorialManager INSTANCE = new TutorialManager();

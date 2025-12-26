@@ -17,18 +17,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-
-/**
- * FPS Tracker con overlay HUD per monitoraggio performance.
- *
- * Mostra:
- * - FPS correnti e media
- * - Frame time in ms
- * - Memoria usata/allocata
- * - Mini grafico FPS history
- *
- * Toggle: Tasto F (configurabile)
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class FpsTracker {

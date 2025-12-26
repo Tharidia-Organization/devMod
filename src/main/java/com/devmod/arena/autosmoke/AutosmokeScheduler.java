@@ -18,19 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.alert.AlertRouter;
 import com.devmod.arena.alert.ErrorContext;
-
-/**
- * DD34: Autosmoke Scheduler with cron-style scheduling.
- *
- * <p>Features:</p>
- * <ul>
- *   <li>Cron-style schedule configuration (default: 0 3 * * * = daily at 3 AM)</li>
- *   <li>Manual trigger support</li>
- *   <li>Run status tracking</li>
- *   <li>Report callbacks</li>
- *   <li>Graceful shutdown</li>
- * </ul>
- */
 public class AutosmokeScheduler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeScheduler.class);

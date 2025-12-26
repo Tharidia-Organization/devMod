@@ -7,20 +7,6 @@ import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.rendering.DebugRenderer;
 import com.devmod.client.ui.hub.TestingHub;
-
-/**
- * Client-side delegate for TestHarnessCommands.
- *
- * This class isolates all client-only singleton access (DebugRenderer.INSTANCE,
- * Impact3DPanelManager.INSTANCE, etc.) from the common TestHarnessCommands class.
- *
- * This prevents ClassNotFoundException/NoClassDefFoundError on dedicated servers
- * where client classes like GuiGraphics, Font, and Minecraft are not available.
- *
- * All methods in this class are safe to call ONLY from client-side code.
- * The caller (TestHarnessCommands) must verify FMLEnvironment.dist.isClient()
- * before invoking any method here.
- */
 public final class TestHarnessClientDelegate {
 
     private TestHarnessClientDelegate() {} // Utility class

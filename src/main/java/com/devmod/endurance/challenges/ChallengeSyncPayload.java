@@ -10,10 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Payload to sync daily challenges and progress to clients.
- */
 public record ChallengeSyncPayload(
         List<ChallengeData> challenges
 ) implements CustomPacketPayload {

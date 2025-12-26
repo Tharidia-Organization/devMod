@@ -43,13 +43,6 @@ import com.devmod.combat.HitHelper;
 import com.devmod.testing.TestCase;
 import com.devmod.testing.TesterProfile;
 import com.devmod.testing.TesterProgress;
-
-/**
- * Event tracker that hooks into game events to automatically update TesterProgress.
- * This enables event-driven auto-completion of tests without polling.
- *
- * Tracks: kills, damage, explosions, potions, effects, and more.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class QAEventTracker {
     private static final Logger LOGGER = LoggerFactory.getLogger(QAEventTracker.class);

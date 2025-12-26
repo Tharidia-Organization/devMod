@@ -2,6 +2,9 @@ package com.devmod.client.rendering;
 
 import java.util.Objects;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.entity.LivingEntity;
@@ -41,10 +44,6 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.Config;
 import com.devmod.stats.ArmorStats;
 import com.devmod.util.I18n;
-
-import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.vertex.PoseStack;
-
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class RenderEvents {
 

@@ -1,19 +1,19 @@
 package com.devmod.client.ui.testing.panel;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import static com.devmod.client.ui.testing.panel.PanelConstants.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 
-/**
- * Status indicators panel showing multiple boolean states and optional message.
- */
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_ERROR;
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_SEPARATOR;
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_SUCCESS;
+import static com.devmod.client.ui.testing.panel.PanelConstants.ROW_HEIGHT;
+import static com.devmod.client.ui.testing.panel.PanelConstants.SEPARATOR_HEIGHT;
 public record StatusPanel(
     String id,
     List<StatusItem> items,

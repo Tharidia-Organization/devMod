@@ -7,12 +7,6 @@ import javax.annotation.Nullable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-
-/**
- * Tracks an entity's position for floating panel attachment.
- * Uses WeakReference to avoid memory leaks when entities are removed.
- * Provides smoothed position for visual stability.
- */
 public class EntityTracker {
 
     private final WeakReference<Entity> entityRef;

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -12,21 +14,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Singleton that manages all active Impact 3D panels.
- *
- * Responsibilities:
- * - Maintains the list of active panels
- * - Spawns new panels when an impact occurs
- * - Updates panels every client tick
- * - Renders all panels
- * - Removes expired panels
- * - Manages the maximum panel limit
- */
-
 public class Impact3DPanelManager {
 
     // Singleton instance

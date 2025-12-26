@@ -5,11 +5,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
-
-/**
- * Shared utility methods for VoxelLab pages.
- * Provides safe config value access with null-safety and exception handling.
- */
 public final class PageUtils {
 
     private PageUtils() {

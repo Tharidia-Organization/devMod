@@ -21,13 +21,6 @@ import com.devmod.runtime.RecoverySystem;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
-
-/**
- * Handles active quest session lifecycle events.
- * Manages abandoning, death handling, respawn choices, and wave completion.
- *
- * Invariant: execute on the server thread; cleanup order matters because arena systems must stop before teleport.
- */
 public class EnduranceSessionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceSessionHandler.class);
 

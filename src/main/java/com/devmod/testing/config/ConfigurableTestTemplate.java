@@ -11,11 +11,6 @@ import com.devmod.testing.ModDiscoveryService.ModInfo;
 import com.devmod.testing.TestCase;
 import com.devmod.testing.TestCase.TestPriority;
 import com.devmod.testing.TesterProgress;
-
-/**
- * Test template that generates tests from JSON configuration.
- * Replaces hardcoded templates like IronSpellbooksTestTemplate.
- */
 public class ConfigurableTestTemplate implements TestTemplate {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurableTestTemplate.class);
 

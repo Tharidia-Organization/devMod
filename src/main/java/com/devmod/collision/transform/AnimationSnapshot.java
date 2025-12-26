@@ -11,23 +11,6 @@ import javax.annotation.Nullable;
 import org.joml.Matrix4f;
 
 import net.minecraft.world.phys.Vec3;
-
-/**
- * Immutable snapshot of an entity's current pose/animation state.
- * Captured once per tick and reused for all hit tests.
- *
- * Contains:
- * - Entity position and rotation
- * - Per-bone transforms from the model
- * - Validity tracking
- *
- * Usage:
- * <pre>
- * AnimationSnapshot snapshot = AnimationSnapshot.capture(entity, partialTick);
- * Matrix4f headTransform = snapshot.getPartTransform("head");
- * </pre>
- */
-
 public record AnimationSnapshot(
     int entityId,
     long tickCaptured,

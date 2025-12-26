@@ -3,17 +3,6 @@ package com.devmod.collision.transform;
 import javax.annotation.Nonnull;
 
 import net.minecraft.world.entity.LivingEntity;
-
-/**
- * Interface for providing animation transforms to the collision system.
- *
- * This abstraction allows the OBB system to work on both client and server:
- * - Client: Uses ModelPartTransformExtractor to capture real bone transforms
- * - Server: Uses simplified transforms based on entity pose only
- *
- * The collision system queries this interface and gets the appropriate
- * implementation based on the current side.
- */
 public interface TransformProvider {
 
     /**

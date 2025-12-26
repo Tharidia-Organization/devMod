@@ -12,11 +12,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-/**
- * Payload for entity pathing debug data (server to client).
- * Contains the actual path nodes calculated by the server.
- */
 public record EntityPathingPayload(
     int entityId,
     String entityName,

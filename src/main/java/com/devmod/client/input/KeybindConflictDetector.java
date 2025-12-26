@@ -15,22 +15,6 @@ import net.minecraft.client.Options;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-/**
- * Detects keybind conflicts between DevMod and other mods/vanilla.
- *
- * <p>This utility scans all registered keybinds and identifies conflicts where
- * multiple actions are bound to the same key in the same context.</p>
- *
- * <h2>Usage</h2>
- * <pre>{@code
- * List<KeybindConflict> conflicts = KeybindConflictDetector.detectConflicts();
- * for (KeybindConflict conflict : conflicts) {
- *     System.out.println(conflict.devModKey().getTranslatedKeyMessage() + " conflicts with " +
- *                        conflict.otherKey().getTranslatedKeyMessage());
- * }
- * }</pre>
- */
 @OnlyIn(Dist.CLIENT)
 public final class KeybindConflictDetector {
     private static final Logger LOGGER = LoggerFactory.getLogger(KeybindConflictDetector.class);

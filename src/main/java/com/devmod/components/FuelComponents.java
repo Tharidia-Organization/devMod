@@ -12,11 +12,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
-
-/**
- * Data components for fuel item persistent data.
- * Provides a typed container for fuel stats (burn time, cook time).
- */
 public final class FuelComponents {
     private FuelComponents() {}
 

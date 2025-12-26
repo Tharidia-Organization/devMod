@@ -25,16 +25,6 @@ import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
-
-/**
- * Onboarding Tutorial Overlay - Guides new users through DevMod features.
- *
- * This overlay:
- * - Shows step-by-step instructions
- * - Detects when user performs required actions
- * - Automatically advances to next step
- * - Can be dismissed or skipped
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class OnboardingOverlay {

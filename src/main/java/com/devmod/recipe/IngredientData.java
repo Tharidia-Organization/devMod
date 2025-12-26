@@ -6,6 +6,12 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -14,17 +20,6 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-
-/**
- * Represents a flexible ingredient (item, tag, or alternatives).
- * Immutable record for recipe ingredient data.
- */
 public record IngredientData(
     @Nullable ResourceLocation item,
     @Nullable TagKey<Item> tag,

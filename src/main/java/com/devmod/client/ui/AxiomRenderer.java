@@ -5,11 +5,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Utility class for rendering Axiom-style UI elements.
- * Provides consistent rendering methods for all mod screens.
- */
 public final class AxiomRenderer {
 
     private AxiomRenderer() {}

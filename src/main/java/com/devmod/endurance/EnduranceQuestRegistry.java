@@ -26,12 +26,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-
-/**
- * Registry that scans all available mob types from vanilla and mods,
- * automatically generating quest configurations for each.
- */
-
 public class EnduranceQuestRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestRegistry.class);
 

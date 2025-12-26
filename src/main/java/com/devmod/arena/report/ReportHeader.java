@@ -9,18 +9,6 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.Properties;
-
-/**
- * Report Header implementing DD34: Report Header Git Commit.
- *
- * <p>Key features:
- * <ul>
- *   <li>Git commit hash in report header</li>
- *   <li>Configuration hash for reproducibility</li>
- *   <li>Build timestamp and version info</li>
- *   <li>Environment metadata</li>
- * </ul>
- */
 public record ReportHeader(
     /** DD34: Git commit hash (short) */
     String gitCommit,

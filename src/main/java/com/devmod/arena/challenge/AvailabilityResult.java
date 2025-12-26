@@ -3,20 +3,6 @@ package com.devmod.arena.challenge;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-
-/**
- * Availability Result sealed interface implementing DD55: Challenge Generation.
- *
- * <p>Represents the result of an availability check for challenge generation.
- * The 5 availability checks are:
- * <ol>
- *   <li>Level check - player meets minimum level</li>
- *   <li>Prerequisite check - required challenges completed</li>
- *   <li>Cooldown check - not on cooldown from recent completion</li>
- *   <li>Template availability check - challenge template is active</li>
- *   <li>Time window check - within valid time window</li>
- * </ol>
- */
 public sealed interface AvailabilityResult {
 
     /**

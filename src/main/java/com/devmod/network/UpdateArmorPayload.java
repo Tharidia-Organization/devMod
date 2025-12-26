@@ -10,13 +10,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.stats.ArmorStats;
-
-/**
- * Network payload for updating armor statistics.
- * Sent from ItemEditorScreen (Armor module) to server.
- *
- * Supports both global (per-item-type) and specific (per-item-instance) configurations.
- */
 public record UpdateArmorPayload(
     boolean isGlobal,           // true = global config, false = specific item
     int slot,                   // Equipment slot index (0=HEAD, 1=CHEST, 2=LEGS, 3=FEET)

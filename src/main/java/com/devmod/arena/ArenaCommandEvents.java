@@ -54,7 +54,6 @@ import com.devmod.arena.registry.TemplateRegistryBootstrap;
 import com.devmod.arena.security.ArenaCommandPermissions;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.devmod.endurance.EnduranceQuestManager;
-
 @EventBusSubscriber(modid = DevMod.MODID)
 public final class ArenaCommandEvents {
 

@@ -27,22 +27,6 @@ import com.devmod.stats.WeaponStats;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-
-/**
- * GameTests for DevMod critical features.
- *
- * Run with: ./gradlew runGameTestServer
- *
- * Tests are organized by batch:
- * - "core": Critical weapon/damage systems (required=true)
- * - "network": Network payload serialization (required=true)
- * - "entities": Mob configuration and body part detection
- * - "config": Configuration persistence tests
- *
- * All tests use shared templates: "empty" (3x3x3) and "empty_5x5" (5x5x5).
- *
- * Total: 15 tests
- */
 @GameTestHolder(DevMod.MODID)
 @PrefixGameTestTemplate(false)
 public class DevModGameTests {

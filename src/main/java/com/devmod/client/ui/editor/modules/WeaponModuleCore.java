@@ -14,11 +14,6 @@ import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
-
-/**
- * Core stats management for WeaponModule.
- * Handles loading, saving, delta computation, and state management.
- */
 public class WeaponModuleCore {
 
     static final String NBT_KEY = "WeaponModStats";

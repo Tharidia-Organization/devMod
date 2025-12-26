@@ -6,11 +6,6 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.GameRenderer;
-
-import com.devmod.client.ui.radial.config.RadialMenuConstants;
-
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -19,27 +14,10 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
-/**
- * Geometric rendering primitives for the Radial Menu.
- *
- * <p>This class provides optimized methods for rendering:</p>
- * <ul>
- *   <li>Circles (filled)</li>
- *   <li>Rings/Annuli (filled between two radii)</li>
- *   <li>Arc segments (pie slices)</li>
- *   <li>Arc outlines</li>
- *   <li>Lines</li>
- *   <li>Radial gradients</li>
- * </ul>
- *
- * <p>Performance optimizations:</p>
- * <ul>
- *   <li>Precalculated sin/cos lookup tables</li>
- *   <li>Configurable segment counts via {@link RadialMenuConstants}</li>
- *   <li>Reusable color extraction</li>
- * </ul>
- */
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.GameRenderer;
 
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 public final class RadialGeometry {
 
     private RadialGeometry() {

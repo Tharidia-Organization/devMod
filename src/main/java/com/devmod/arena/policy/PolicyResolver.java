@@ -26,21 +26,6 @@ import com.devmod.arena.override.TemplateOverride;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Policy Resolver with weighted scoring, tie-break rules, and per-player locking.
- *
- * <p>Implements:
- * <ul>
- *   <li>DD3: Deterministic tie-break (score -> version -> id)</li>
- *   <li>DD4: Telemetry for weight taratura</li>
- *   <li>DD6: Lock per player with 5s timeout</li>
- *   <li>DD60: Lock map cleanup (scheduled every 5 minutes)</li>
- *   <li>DD62: Lock contention telemetry</li>
- * </ul>
- *
- * @see <a href="TODO_ARENA_TEMPLATE.md">Arena Template Design Document</a>
- */
 public class PolicyResolver implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolicyResolver.class);
 

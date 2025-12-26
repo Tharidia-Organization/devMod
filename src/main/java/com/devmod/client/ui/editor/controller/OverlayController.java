@@ -7,16 +7,6 @@ import java.util.function.Consumer;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-/**
- * Controller for managing overlay visibility state in ItemEditorScreen.
- * Client-only.
- * Implements a simple overlay stack for switching with support for returning
- * to previously opened overlays when the top is closed.
- *
- * <p>This controller is decoupled from the actual overlay implementations -
- * it only manages the state and notifies listeners when state changes.
- */
 @OnlyIn(Dist.CLIENT)
 public final class OverlayController {
 

@@ -17,10 +17,6 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import com.devmod.DevMod;
 import com.devmod.network.PacketValidator;
 import com.devmod.stats.RangedWeaponStats;
-
-/**
- * Runtime hooks to apply ranged overrides (doc 16) to arrows when they spawn.
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public final class RangedProjectileHooks {
 

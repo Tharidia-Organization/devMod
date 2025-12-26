@@ -10,16 +10,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.arena.ArenaDebugState;
-
-/**
- * DD30: HUD Visibility - permission + toggle esplicito
- *
- * Debug HUD overlay for arena instances.
- * Only renders if player has permission AND has explicitly enabled the toggle.
- *
- * <p>NOTE: Permission constant and state are now in {@link ArenaDebugState}
- * in the common package for dedicated server compatibility.</p>
- */
 public class ArenaDebugHud {
 
     private static final ArenaDebugHud INSTANCE = new ArenaDebugHud();

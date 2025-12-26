@@ -1,42 +1,35 @@
 package com.devmod.client.ui.hub;
 
-import com.devmod.client.telemetry.UiTelemetry;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.testing.ActiveTestHudOverlay;
-import com.devmod.testing.TestCase;
-import com.devmod.client.testing.TestingSession;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.util.I18n;
+import java.util.Objects;
+import java.util.Set;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.lwjgl.glfw.GLFW;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.lwjgl.glfw.GLFW;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.Objects;
-import java.util.Set;
-
-/**
- * Central unified hub for testing.
- * Combines: test selection, quick tools, progress tracking.
- *
- * 3-panel layout:
- * - Left: CategoryPanel (categories + test list + search)
- * - Center: TestDetailPanel (selected test details)
- * - Right: QuickToolsPanel (toggle overlay + editor shortcuts)
- * - Footer: ProgressFooter (progress bar + actions)
- */
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.testing.ActiveTestHudOverlay;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.testing.TestCase;
+import com.devmod.util.I18n;
 @OnlyIn(Dist.CLIENT)
 public class TestingHub extends Screen {
 

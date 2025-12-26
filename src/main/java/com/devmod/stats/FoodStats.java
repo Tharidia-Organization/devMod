@@ -7,11 +7,6 @@ import java.util.Objects;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-
-/**
- * Data class holding all modifiable food item statistics.
- * Supports NBT serialization for persistence and network sync.
- */
 public class FoodStats {
 
     // ═══════════════════════════════════════════════════════════════

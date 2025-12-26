@@ -25,22 +25,6 @@ import com.devmod.client.ui.editor.systems.MultiEditManager;
 import com.devmod.client.ui.editor.systems.MultiEditPanel;
 import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
 import com.devmod.client.ui.editor.systems.TemplateOverlay;
-
-/**
- * Routes input events (mouse, keyboard) to the appropriate handlers.
- * Client-only.
- * Centralizes the input dispatch logic that was previously in ItemEditorScreen.
- *
- * <p>The router maintains a priority-based dispatch order:
- * <ol>
- *   <li>Modal overlays (help, dialogs, low-confidence)</li>
- *   <li>Module overlays</li>
- *   <li>Panel overlays (templates, crafting, presets, history)</li>
- *   <li>Components (header, footer, leftColumn, scrollArea)</li>
- *   <li>Active module</li>
- *   <li>Multi-edit panel</li>
- * </ol>
- */
 @OnlyIn(Dist.CLIENT)
 public final class InputRouter {
 

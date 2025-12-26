@@ -12,24 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Sodium.
- *
- * Sodium provides:
- * - Rendering engine replacement
- * - Chunk rendering optimization
- * - GPU-accelerated rendering
- * - Modern OpenGL usage
- *
- * This integration allows DevMod to:
- * - Detect Sodium presence and version
- * - Check graphics settings
- * - Monitor render performance metrics
- * - Include Sodium info in telemetry
- *
- * @see <a href="https://github.com/CaffeineMC/sodium-fabric">Sodium GitHub</a>
- */
 public class SodiumCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(SodiumCompat.class);
     public static final String MOD_ID = "sodium";

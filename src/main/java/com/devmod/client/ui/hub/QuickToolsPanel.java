@@ -1,21 +1,5 @@
 package com.devmod.client.ui.hub;
 
-import com.devmod.actions.ActionContext;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.endurance.ClientQuestCache;
-import com.devmod.endurance.EnduranceQuestState;
-import com.devmod.endurance.QuestActionPayload;
-import com.devmod.client.testing.TestingSession;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
@@ -24,13 +8,22 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-/**
- * Right panel with:
- * - Quick toggles for overlays/tools
- * - Quick access to editors
- * - Current session info
- */
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.actions.ActionContext;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.EnduranceQuestState;
+import com.devmod.endurance.QuestActionPayload;
 public class QuickToolsPanel implements HubPanel {
 
     private final int x, y, width, height;

@@ -16,22 +16,6 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.fml.loading.FMLEnvironment;
-
-/**
- * Physics-based projectile deflection system for energy shields.
- *
- * <p>Provides realistic ray-sphere intersection deflection instead of
- * simple velocity reversal. Supports configurable spread, speed multipliers,
- * and "return to sender" functionality.</p>
- *
- * <p>Key improvements over basic reflection:</p>
- * <ul>
- *   <li>Angle based on sphere surface normal at impact point</li>
- *   <li>Configurable randomness for tactical gameplay</li>
- *   <li>Speed reduction/amplification after deflection</li>
- *   <li>Visual feedback integration with EnergyShieldRenderer</li>
- * </ul>
- */
 public class ShieldDeflector {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShieldDeflector.class);
 

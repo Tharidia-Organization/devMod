@@ -15,6 +15,11 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import com.devmod.arena.policy.ArenaPolicy.AscensionOverrides;
 import com.devmod.arena.policy.ArenaPolicy.BargainOverrides;
 import com.devmod.arena.policy.ArenaPolicy.ChallengeOverrides;
@@ -31,32 +36,6 @@ import com.devmod.arena.policy.ArenaPolicy.SeasonPassOverrides;
 import com.devmod.arena.policy.ArenaPolicy.StyleRankOverrides;
 import com.devmod.arena.policy.ArenaPolicy.TensionOverrides;
 import com.devmod.arena.policy.ArenaPolicy.WaveOverrides;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-/**
- * Runtime manager for GameplayOverrides loaded from JSON files.
- *
- * Allows modpack creators and testers to define per-arena or per-difficulty
- * gameplay parameter overrides in JSON files that can be hot-reloaded.
- *
- * Directory structure:
- *   config/devmod/overrides/
- *     ├── default.json           (fallback overrides)
- *     ├── arena_boss.json        (arena-specific)
- *     ├── difficulty_hard.json   (difficulty-specific)
- *     └── test_mode.json         (custom profile)
- *
- * Usage:
- *   GameplayOverridesManager.INSTANCE.loadAll();
- *   GameplayOverrides overrides = GameplayOverridesManager.INSTANCE.get("arena_boss");
- *
- * @see GameMechanicsConfig for global defaults
- * @see GameplayOverrides for per-instance structure
- */
 public class GameplayOverridesManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(GameplayOverridesManager.class);
     private static final Gson GSON = new GsonBuilder()

@@ -19,13 +19,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
 import static java.util.Objects.requireNonNull;
-
-/**
- * Manages Soul Imprints for weapons during Endurance Quests.
- *
- * Tracks combat statistics and applies them to the player's held weapon,
- * allowing weapons to evolve and gain permanent traits over time.
- */
 public class SoulImprintManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SoulImprintManager.class);

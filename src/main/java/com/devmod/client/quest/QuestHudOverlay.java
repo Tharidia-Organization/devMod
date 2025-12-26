@@ -19,22 +19,6 @@ import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.quest.QuestData;
 import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
-
-/**
- * Compact HUD Overlay to display quick tasks.
- * Position: bottom right.
- *
- * Shows:
- * - Current quest name
- * - Progress (e.g. 2/5 tasks)
- * - Next task (short text)
- * - Quick note (if present)
- * - Keybind hint [ ] \
- *
- * Features:
- * - Task completion animation
- * - Synchronization with QuestEditorScreen
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class QuestHudOverlay {

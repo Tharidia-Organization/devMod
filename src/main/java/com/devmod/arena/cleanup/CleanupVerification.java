@@ -2,11 +2,6 @@ package com.devmod.arena.cleanup;
 
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * Verification result for post-cleanup checks.
- * DD37: Verifies arena is in clean state after cleanup execution.
- */
 public record CleanupVerification(
     boolean entitiesClean,
     boolean blockEntitiesClean,

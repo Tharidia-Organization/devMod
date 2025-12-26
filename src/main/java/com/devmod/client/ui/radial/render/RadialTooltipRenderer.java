@@ -16,20 +16,6 @@ import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.model.MacroCategory;
-
-/**
- * Renders tooltips, help text, and UI indicators for the Radial Menu.
- *
- * <p>This renderer handles:</p>
- * <ul>
- *   <li>Item and category tooltips</li>
- *   <li>Macro-category tooltips</li>
- *   <li>Help text at screen bottom</li>
- *   <li>Breadcrumb navigation display</li>
- *   <li>Edit mode indicator</li>
- *   <li>Theme indicator</li>
- * </ul>
- */
 public final class RadialTooltipRenderer {
 
     private RadialTooltipRenderer() {

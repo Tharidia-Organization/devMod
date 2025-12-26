@@ -9,7 +9,6 @@ import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-
 public final class RadialAction {
     /**
      * UI Feedback type shown when action completes or fails.
@@ -192,8 +191,11 @@ public final class RadialAction {
 
     public static final class Builder {
         private final String id;
+        @Nullable
         private String labelKey;
+        @Nullable
         private String descriptionKey;
+        @Nullable
         private ActionCategory category;
         @Nullable
         private ActionType actionType;

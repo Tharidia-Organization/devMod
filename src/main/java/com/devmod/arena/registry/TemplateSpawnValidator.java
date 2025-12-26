@@ -13,10 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * SpawnSlot validation (bounds, duplicates, forbidden zones, hazards overlap, required tags).
- */
 public class TemplateSpawnValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateSpawnValidator.class);

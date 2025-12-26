@@ -14,18 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
-
-/**
- * Season Pass / Battle Pass system for Endurance Quest.
- * Provides tiered progression with free and premium reward tracks.
- *
- * Season Structure:
- * - 100 tiers per season
- * - Free track: Basic rewards every tier
- * - Premium track: Enhanced rewards + exclusive cosmetics
- * - Season duration: ~90 days
- * - XP earned through gameplay (kills, waves, challenges, style)
- */
 public class SeasonPassSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(SeasonPassSystem.class);
 

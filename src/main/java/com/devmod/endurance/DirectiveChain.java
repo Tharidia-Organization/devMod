@@ -2,17 +2,6 @@ package com.devmod.endurance;
 
 import java.util.List;
 import java.util.UUID;
-
-/**
- * A multi-wave narrative arc that links directives into a cohesive story.
- *
- * Directive Chains provide:
- * - Multi-wave themed objectives (3-5 waves)
- * - Escalating difficulty and rewards
- * - Narrative flavor text for each step
- * - Major bonus reward for chain completion
- * - Risk: abandoning mid-chain forfeits bonus
- */
 public record DirectiveChain(
     String id,
     String name,

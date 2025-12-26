@@ -1,6 +1,11 @@
 package com.devmod.client.ui.testing;
 
-import com.devmod.config.Config;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+import net.neoforged.neoforge.common.ModConfigSpec;
+
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -8,16 +13,7 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.ui.editor.components.EditorButton;
-import net.neoforged.neoforge.common.ModConfigSpec;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
-/**
- * Factory and manager for Impact HUD control buttons.
- * Centralizes button creation and state synchronization.
- */
+import com.devmod.config.Config;
 public final class ImpactHudButtons {
 
     // ═══════════════════════════════════════════════════════════════

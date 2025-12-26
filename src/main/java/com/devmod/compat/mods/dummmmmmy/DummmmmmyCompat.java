@@ -24,24 +24,6 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Dummmmmmy (Training Dummies).
- *
- * Dummmmmmy provides:
- * - Target dummy entities for combat testing
- * - Damage tracking and DPS calculation
- * - Configurable dummy health and properties
- * - Damage breakdown by type
- *
- * This integration allows DevMod to:
- * - Spawn dummies for Arena practice
- * - Track DPS during combat sessions
- * - Reset dummy damage counters
- * - Get damage statistics for telemetry
- *
- * @see <a href="https://www.curseforge.com/minecraft/mc-mods/dummmmmmy">Dummmmmmy CurseForge</a>
- */
 public class DummmmmmyCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(DummmmmmyCompat.class);
     public static final String MOD_ID = "dummmmmmy";

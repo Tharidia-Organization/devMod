@@ -34,12 +34,6 @@ import com.devmod.integration.PufferfishCompat;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.DatapackIO;
-
-/**
- * Handles data operations for ItemEditorScreen: export, import, presets, templates.
- * Extracted for single responsibility.
- */
-
 public class ItemEditorDataOps {
 
     private static final String DEFAULT_DATAPACK_NAME = "devmod_balance_auto";

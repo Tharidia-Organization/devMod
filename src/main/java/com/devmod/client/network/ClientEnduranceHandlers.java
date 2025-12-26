@@ -21,14 +21,6 @@ import com.devmod.endurance.ShopSyncPayload;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.util.I18n;
-
-/**
- * Client-side handlers for Endurance network packets.
- * This class is only loaded on the client and handles all client-specific cache updates.
- *
- * IMPORTANT: This class must ONLY be called from client-side code or via side-check guards.
- * Direct invocation from common code will cause ClassNotFoundException on dedicated servers.
- */
 @OnlyIn(Dist.CLIENT)
 public final class ClientEnduranceHandlers {
 

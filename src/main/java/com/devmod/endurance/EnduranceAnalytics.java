@@ -24,17 +24,11 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.resources.ResourceLocation;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-/**
- * Analytics storage and aggregation for Endurance Quest data.
- * Stores detailed combat logs and provides analysis for game balance.
- */
-
+import net.minecraft.resources.ResourceLocation;
 public class EnduranceAnalytics {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceAnalytics.class);
     private static final Gson GSON = new GsonBuilder()

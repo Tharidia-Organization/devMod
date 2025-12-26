@@ -35,7 +35,7 @@
             Static imports come last.
         -->
         <module name="ImportOrder">
-            <property name="groups" value="java,javax,org,/^com\\.(?!devmod)/,net.minecraft,net.neoforged,com.devmod"/>
+            <property name="groups" value="java,javax,org,/^com\.(?!devmod\.).*/,net.minecraft,net.neoforged,com.devmod"/>
             <property name="ordered" value="true"/>
             <property name="separated" value="true"/>
             <property name="option" value="bottom"/>

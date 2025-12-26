@@ -1,13 +1,6 @@
 package com.devmod.client.ui.editor.debug;
 
 import java.util.List;
-
-/**
- * Debug information displayed in overlay.
- * Aggregates all debug state for a single frame.
- *
- * @see docs/editor-design-system/14-debug-overlay.md
- */
 public record DebugInfo(
     // Layout
     float scale,

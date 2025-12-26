@@ -6,10 +6,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 
 import com.devmod.DevMod;
-
-/**
- * DevMod tag definitions for weapon detection and editor filters.
- */
 public final class ModTags {
     private ModTags() {}
 

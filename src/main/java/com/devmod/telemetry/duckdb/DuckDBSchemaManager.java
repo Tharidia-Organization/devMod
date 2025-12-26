@@ -7,25 +7,6 @@ import java.sql.Statement;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Manages DuckDB schema creation and migrations.
- *
- * Creates all telemetry tables on first run and handles schema versioning
- * for future migrations. Tables are organized by category:
- *
- * - Combat (5): hits, deaths, heals, spawns, fights
- * - Endurance (10): sessions, waves, wave_kills, combos, perks, mutators, rewards, parties, bosses, performance
- * - Player (3): snapshots, attribute_changes, abilities
- * - Progression (6): blocks, xp, advancements, dimensions, trades, fishing
- * - Economy (4): mob_kills, mob_drops, item_pickups, item_usage
- * - Spatial (3): heatmaps, alerts, room_transitions
- * - Dungeon (1): dungeon_runs (P2-B)
- * - Arena (3): arena_template_builds, arena_template_usage, arena_spatial_events (Fase 1 + heatmaps)
- * - System (2): performance, migrations
- *
- * Total: 37 tables
- */
 public final class DuckDBSchemaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBSchemaManager.class);
 

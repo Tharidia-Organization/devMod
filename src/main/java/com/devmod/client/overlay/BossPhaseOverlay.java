@@ -23,19 +23,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.telemetry.boss.BossPhaseService;
 import com.devmod.telemetry.boss.UnifiedBossDetector;
-
-/**
- * HUD Overlay for displaying boss phase information.
- *
- * Shows:
- * - Boss name and type
- * - Current phase (if tracked)
- * - HP percentage and threshold for next phase
- * - Phase duration timer
- *
- * Toggle: B key
- * Position: Below boss bar
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class BossPhaseOverlay {

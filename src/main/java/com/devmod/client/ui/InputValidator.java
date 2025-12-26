@@ -2,11 +2,6 @@ package com.devmod.client.ui;
 
 import java.util.Optional;
 import java.util.function.Predicate;
-
-/**
- * Centralized input validation for UI fields.
- * Provides safe parsing with range checking and optional results.
- */
 public class InputValidator {
 
     /**

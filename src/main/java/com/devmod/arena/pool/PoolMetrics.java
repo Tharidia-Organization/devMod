@@ -4,12 +4,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Metrics tracking for arena pool with auto-disable (DD65).
- *
- * <p>Tracks hit/miss ratio and auto-disables pool when miss rate exceeds 50%.
- */
 public class PoolMetrics {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PoolMetrics.class);

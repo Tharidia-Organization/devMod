@@ -1,6 +1,7 @@
 package com.devmod.arena.event;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,21 +12,6 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * DD13: Event dispatcher for template lifecycle events.
- *
- * <p>Provides centralized event emission and listener registration for all
- * {@link TemplateEvent} types. Supports:
- * <ul>
- *   <li>Type-safe event subscription by event class</li>
- *   <li>Global listeners for all events</li>
- *   <li>Synchronous and asynchronous event emission</li>
- *   <li>Event filtering by template ID or arena ID</li>
- * </ul>
- *
- * <p>Thread-safe for concurrent listener registration and event emission.
- */
 public class TemplateEventDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateEventDispatcher.class);
@@ -69,7 +55,7 @@ public class TemplateEventDispatcher {
         List<ListenerEntry<? extends TemplateEvent>> typeListeners =
             listeners.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>());
 
-        ListenerEntry<T> entry = new ListenerEntry<>(listener);
+        ListenerEntry<T> entry = new ListenerEntry<>(eventType, listener);
         typeListeners.add(entry);
 
         LOGGER.debug("Registered listener for {} (total: {})",
@@ -88,7 +74,7 @@ public class TemplateEventDispatcher {
      * @return a registration handle for unregistering
      */
     public ListenerRegistration registerGlobal(Consumer<TemplateEvent> listener) {
-        ListenerEntry<TemplateEvent> entry = new ListenerEntry<>(listener);
+        ListenerEntry<TemplateEvent> entry = new ListenerEntry<>(TemplateEvent.class, listener);
         globalListeners.add(entry);
         LOGGER.debug("Registered global listener (total: {})", globalListeners.size());
 
@@ -124,7 +110,6 @@ public class TemplateEventDispatcher {
      *
      * @param event the event to emit
      */
-    @SuppressWarnings("unchecked")
     public void emit(TemplateEvent event) {
         if (!enabled) {
             LOGGER.trace("Event dispatcher disabled, skipping: {}", event.eventType());
@@ -139,34 +124,42 @@ public class TemplateEventDispatcher {
             listeners.get(event.getClass());
 
         if (typeListeners != null) {
+            List<ListenerEntry<? extends TemplateEvent>> staleEntries = null;
             for (ListenerEntry<? extends TemplateEvent> entry : typeListeners) {
-                Consumer<? extends TemplateEvent> listener = entry.get();
-                if (listener == null) {
-                    typeListeners.remove(entry);
-                    continue;
-                }
                 try {
-                    ((Consumer<TemplateEvent>) listener).accept(event);
+                    if (!entry.tryAccept(event)) {
+                        if (staleEntries == null) {
+                            staleEntries = new ArrayList<>();
+                        }
+                        staleEntries.add(entry);
+                    }
                 } catch (Exception e) {
                     LOGGER.error("Listener threw exception for event {}: {}",
                         event.eventType(), e.getMessage(), e);
                 }
             }
+            if (staleEntries != null) {
+                typeListeners.removeAll(staleEntries);
+            }
         }
 
         // Notify global listeners
+        List<ListenerEntry<TemplateEvent>> staleGlobals = null;
         for (ListenerEntry<TemplateEvent> entry : globalListeners) {
-            Consumer<TemplateEvent> listener = entry.get();
-            if (listener == null) {
-                globalListeners.remove(entry);
-                continue;
-            }
             try {
-                listener.accept(event);
+                if (!entry.tryAccept(event)) {
+                    if (staleGlobals == null) {
+                        staleGlobals = new ArrayList<>();
+                    }
+                    staleGlobals.add(entry);
+                }
             } catch (Exception e) {
                 LOGGER.error("Global listener threw exception for event {}: {}",
                     event.eventType(), e.getMessage(), e);
             }
+        }
+        if (staleGlobals != null) {
+            globalListeners.removeAll(staleGlobals);
         }
     }
 
@@ -180,14 +173,21 @@ public class TemplateEventDispatcher {
     }
 
     private static final class ListenerEntry<T extends TemplateEvent> {
+        private final Class<T> eventType;
         private final WeakReference<Consumer<T>> ref;
 
-        private ListenerEntry(Consumer<T> listener) {
+        private ListenerEntry(Class<T> eventType, Consumer<T> listener) {
+            this.eventType = eventType;
             this.ref = new WeakReference<>(listener);
         }
 
-        private Consumer<T> get() {
-            return ref.get();
+        private boolean tryAccept(TemplateEvent event) {
+            Consumer<T> listener = ref.get();
+            if (listener == null) {
+                return false;
+            }
+            listener.accept(eventType.cast(event));
+            return true;
         }
     }
 

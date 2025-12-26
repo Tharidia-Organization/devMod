@@ -16,17 +16,11 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.arena.registry.TemplateValidator;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Validates policy JSON against allowed fields with STRICT/PERMISSIVE/LENIENT modes.
- *
- * <p>This mirrors SchemaValidator for templates but scoped to ArenaPolicy (L2).
- */
+import com.devmod.arena.registry.TemplateValidator;
 public final class PolicySchemaValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolicySchemaValidator.class);

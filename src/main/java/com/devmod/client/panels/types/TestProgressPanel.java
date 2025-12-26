@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,18 +17,6 @@ import com.devmod.client.panels.core.PanelType;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.testing.TestCase;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Panel that shows the current testing session progress.
- *
- * Displays:
- * - Current test (name and category)
- * - Session progress bar
- * - Passed/failed/pending count
- * - Next test step
- */
 public class TestProgressPanel extends FloatingPanel {
 
     // Cache dati sessione

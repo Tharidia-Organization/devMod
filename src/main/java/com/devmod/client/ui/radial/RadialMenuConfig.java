@@ -9,8 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraft.client.Minecraft;
-
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +16,9 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import net.minecraft.client.Minecraft;
 
-/**
- * Configuration system for the Radial Menu.
- * Supports customizable colors, behavior options, and theme presets.
- */
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 public class RadialMenuConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(RadialMenuConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

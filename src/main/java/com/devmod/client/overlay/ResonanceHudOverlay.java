@@ -17,15 +17,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.endurance.resonance.ResonanceNotificationPayload;
-
-/**
- * Client-side HUD overlay for Resonance Chain notifications.
- *
- * Displays dramatic announcements when resonance is triggered:
- * - DUO: Gold flash, "RESONANCE!" text
- * - TRINITY: Purple flash, "TRINITY!" with ring effect
- * - APOCALYPSE: Red flash, "APOCALYPSE!" with screen shake
- */
 @OnlyIn(Dist.CLIENT)
 public class ResonanceHudOverlay implements LayeredDraw.Layer {
 

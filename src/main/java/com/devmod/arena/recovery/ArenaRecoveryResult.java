@@ -4,12 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
-
-/**
- * Sealed interface for arena recovery results (DD27).
- *
- * <p>Represents the outcome of attempting to recover an arena from snapshot.
- */
 public sealed interface ArenaRecoveryResult {
 
     /**

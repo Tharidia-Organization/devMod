@@ -3,11 +3,6 @@ package com.devmod.endurance;
 import java.util.UUID;
 
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Represents a single Endurance Quest instance for a specific mob type.
- * Each quest is a standalone challenge where the player fights waves of that mob.
- */
 public class EnduranceQuest {
 
     private final UUID questId;

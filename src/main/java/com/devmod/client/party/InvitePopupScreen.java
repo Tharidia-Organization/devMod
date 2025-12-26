@@ -1,37 +1,30 @@
 package com.devmod.client.party;
 
-import com.devmod.party.InviteResponsePayload;
-import com.devmod.party.PartyInvite;
-import com.devmod.party.PartyNotificationPayload;
+import java.util.Objects;
+import java.util.UUID;
 
-import com.devmod.endurance.QuestType;
-import com.devmod.client.ui.components.CountdownTimer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.devmod.client.ui.components.CountdownTimer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.QuestType;
+import com.devmod.party.InviteResponsePayload;
+import com.devmod.party.PartyInvite;
+import com.devmod.party.PartyNotificationPayload;
 import com.devmod.util.I18n;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
-import java.util.UUID;
-
-/**
- * Modal popup screen shown when receiving a party invite.
- *
- * Features:
- * - Shows sender name and quest type
- * - 30-second countdown timer
- * - Accept/Decline buttons
- * - Auto-closes on timeout
- */
 @OnlyIn(Dist.CLIENT)
 public class InvitePopupScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(InvitePopupScreen.class);

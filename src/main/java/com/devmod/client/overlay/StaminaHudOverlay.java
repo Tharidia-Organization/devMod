@@ -15,11 +15,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.abilities.ClientStaminaCache;
-
-/**
- * HUD overlay for displaying player stamina bar.
- * Shows stamina bar above the hotbar when not full or recently used.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class StaminaHudOverlay {

@@ -21,18 +21,6 @@ import net.minecraft.world.entity.LivingEntity;
 import com.devmod.endurance.challenges.DailyChallengeManager;
 import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
-/**
- * Devil May Cry-inspired Combo and Style Scoring System.
- *
- * Features:
- * - Style Ranks (D → C → B → A → S → SS → SSS)
- * - Combo counter with decay
- * - Variety bonus for using different attacks
- * - Timing bonuses for perfect dodges and parries
- * - Multiplier system that affects all point gains
- */
-
 public class ComboSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComboSystem.class);
 

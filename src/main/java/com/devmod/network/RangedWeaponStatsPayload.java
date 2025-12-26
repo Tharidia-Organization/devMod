@@ -11,10 +11,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Client-to-server payload for ranged weapon stats.
- */
 public record RangedWeaponStatsPayload(
     @Nonnull ItemStack item,
     @Nonnull CompoundTag statsTag,

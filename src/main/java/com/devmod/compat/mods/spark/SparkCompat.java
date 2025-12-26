@@ -7,25 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Spark Profiler.
- *
- * Spark provides:
- * - Performance profiling (CPU, memory)
- * - TPS and MSPT monitoring
- * - Health reports (CPU, memory, disk usage)
- * - GC statistics
- *
- * This integration allows DevMod to:
- * - Access TPS data for telemetry
- * - Monitor MSPT for performance tracking
- * - Include server health in telemetry
- * - Detect when profiler is running
- *
- * @see <a href="https://spark.lucko.me/docs/Developer-API">Spark Developer API</a>
- * @see <a href="https://github.com/lucko/spark">GitHub</a>
- */
 public class SparkCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(SparkCompat.class);
     public static final String MOD_ID = "spark";

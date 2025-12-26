@@ -12,17 +12,6 @@ import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.SliderDescriptions;
 import com.devmod.client.ui.editor.core.TooltipManager;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Small info button ("?") that shows a tooltip on hover.
- * Used alongside sliders to explain what each stat does and how it's calculated.
- *
- * Supports two modes:
- * 1. Direct text: Pass a description string directly
- * 2. I18n key: Pass a SliderDescriptions key for automatic translation lookup
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.2
- */
 public final class InfoButton {
 
     // ═══════════════════════════════════════════════════════════════

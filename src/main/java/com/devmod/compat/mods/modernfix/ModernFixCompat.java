@@ -13,24 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for ModernFix.
- *
- * ModernFix provides:
- * - Memory usage optimizations
- * - Startup time improvements
- * - Dynamic resource management
- * - Mod compatibility fixes
- *
- * This integration allows DevMod to:
- * - Detect ModernFix presence and config
- * - Track enabled optimizations
- * - Monitor memory improvements
- * - Include ModernFix info in telemetry
- *
- * @see <a href="https://github.com/embeddedt/ModernFix">ModernFix GitHub</a>
- */
 public class ModernFixCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModernFixCompat.class);
     public static final String MOD_ID = "modernfix";

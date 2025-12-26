@@ -10,6 +10,8 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 
 import com.devmod.telemetry.dungeon.DungeonRunService;
@@ -18,23 +20,6 @@ import com.devmod.telemetry.spatial.BacktrackingService;
 import com.devmod.telemetry.spatial.DesireLinesService;
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * VOXEL-LAB FASE 6: JSON Report Export
- *
- * Generates a comprehensive JSON report containing all telemetry data
- * for analysis or import into external tools.
- *
- * Report structure:
- * - metadata: timestamp, version, session info
- * - heatmaps: all heatmap data organized by type
- * - rooms: room statistics and entity counts
- * - dungeons: dungeon run results and statistics
- * - backtracking: confusion metrics per room
- * - desire_lines: movement pattern analysis
- */
 public class JsonReportExporter {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String VERSION = "1.0.0";

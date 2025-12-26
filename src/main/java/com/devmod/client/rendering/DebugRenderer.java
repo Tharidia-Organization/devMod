@@ -7,6 +7,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -15,26 +19,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.config.Config;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.logging.LogUtils;
-
-/**
- * Sistema centralizzato per rendering debug in-world con supporto completo
- *
- * Features:
- * - Box (wireframe e solid)
- * - Line (con width)
- * - Label (billboard text)
- * - Sphere (wireframe)
- * - Circle (flat e billboard)
- * - Arrow (directional)
- * - Timeout automatico per shape temporanee
- * - Layer system per z-ordering
- */
-// Minecraft API methods are not annotated but never return null in practice
-
 public class DebugRenderer {
     public static final DebugRenderer INSTANCE = new DebugRenderer();
     private static final Logger LOGGER = LogUtils.getLogger();

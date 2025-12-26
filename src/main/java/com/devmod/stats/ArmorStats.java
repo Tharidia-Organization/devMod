@@ -1,14 +1,6 @@
 package com.devmod.stats;
 
 import net.minecraft.nbt.CompoundTag;
-
-/**
- * Armor statistics for damage reduction.
- * Applied to victim during damage calculations.
- *
- * Unlike WeaponStats (attacker-side: body part multipliers, armor penetration),
- * ArmorStats are victim-side: damage reduction by damage type.
- */
 public class ArmorStats {
 
     // Damage type reductions (0.0 = no reduction, 1.0 = 100% reduction)

@@ -11,11 +11,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.network.MobConfigConfirmPayload;
-
-/**
- * Client-side handler for configuration confirmation feedback.
- * Shows visual/audio feedback when server confirms config changes.
- */
 @OnlyIn(Dist.CLIENT)
 public class ClientConfigFeedbackPayload {
 

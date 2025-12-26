@@ -18,11 +18,6 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.stats.ArmorStats;
-
-/**
- * Handles shield blocking mechanics including damage reduction,
- * projectile deflection, and shatter effects.
- */
 public final class ShieldBlockHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShieldBlockHandler.class);
     private static final float DEFAULT_SHIELD_RADIUS = 1.2f;

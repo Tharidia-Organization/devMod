@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import net.minecraft.network.chat.Component;
-
 public final class ActionPreconditions {
     private ActionPreconditions() {}
 

@@ -30,18 +30,6 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.util.I18n;
-
-/**
- * Premium Welcome screen with cinematic reveal animation.
- *
- * Features:
- * - Dramatic scale + fade entrance
- * - Staggered feature list reveal
- * - Floating particle background
- * - Animated logo/title
- * - Smooth hover effects on buttons
- * - Sound feedback
- */
 @OnlyIn(Dist.CLIENT)
 
 public class WelcomeScreen extends Screen {

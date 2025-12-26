@@ -1,11 +1,6 @@
 package com.devmod.testing.stats;
 
 import com.google.gson.JsonObject;
-
-/**
- * Tracks explosion-related statistics.
- * Extracted from TesterProgress for single responsibility.
- */
 public class ExplosionStatistics {
     public static final ExplosionStatistics INSTANCE = new ExplosionStatistics();
 

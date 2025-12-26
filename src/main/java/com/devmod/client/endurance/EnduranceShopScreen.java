@@ -26,10 +26,6 @@ import com.devmod.endurance.RequestShopSyncPayload;
 import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.ShopPurchasePayload;
 import com.devmod.util.I18n;
-
-/**
- * Shop screen for purchasing permanent upgrades with Endurance Tokens.
- */
 @OnlyIn(Dist.CLIENT)
 public class EnduranceShopScreen extends Screen {
 

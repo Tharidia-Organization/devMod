@@ -12,11 +12,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-/**
- * Payload for entity AI goals debug data (server to client).
- * Shows active and available goals with priorities.
- */
 public record EntityGoalsPayload(
     int entityId,
     String entityName,

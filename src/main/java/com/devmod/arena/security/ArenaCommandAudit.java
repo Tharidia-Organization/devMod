@@ -7,13 +7,6 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * DD31: Command Permissions - modello granulare + audit log
- *
- * Audit logging for arena commands, especially mutating operations.
- * Uses a separate logger (arena.audit) for easy filtering and analysis.
- */
 public class ArenaCommandAudit {
 
     private static final ArenaCommandAudit INSTANCE = new ArenaCommandAudit();

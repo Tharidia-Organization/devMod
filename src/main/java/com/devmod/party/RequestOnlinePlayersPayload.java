@@ -8,11 +8,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from client to server to request the list of online players.
- * Server responds with OnlinePlayersPayload.
- */
 public record RequestOnlinePlayersPayload() implements CustomPacketPayload {
 
     public static final Type<RequestOnlinePlayersPayload> TYPE = new Type<>(

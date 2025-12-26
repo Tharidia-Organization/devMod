@@ -25,13 +25,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
-
-/**
- * Nemesis Evolution Manager - Tracks boss memories and applies adaptations.
- *
- * Each player has separate nemesis profiles for each boss type they encounter.
- * Profiles persist across sessions and accumulate over time.
- */
 public class NemesisEvolutionManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NemesisEvolutionManager.class);

@@ -15,27 +15,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.collision.bodypart.BodyPartHierarchy;
-
-/**
- * Central registry mapping EntityType → BodyPartHierarchy.
- *
- * Supports:
- * - Built-in vanilla entity definitions
- * - Modded entity registration via API
- * - Fallback to adaptive AABB for unknown entities
- *
- * Thread-safe singleton with lazy-loading.
- *
- * Usage:
- * <pre>
- * // Get hierarchy for an entity
- * BodyPartHierarchy hierarchy = BodyPartRegistry.INSTANCE.getHierarchy(entity);
- *
- * // Register custom hierarchy for modded entity
- * BodyPartRegistry.INSTANCE.register(MyEntityType.MY_MOB, myHierarchy);
- * </pre>
- */
-
 public final class BodyPartRegistry {
 
     /**

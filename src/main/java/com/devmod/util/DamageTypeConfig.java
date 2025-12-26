@@ -11,29 +11,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.resources.ResourceKey;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-/**
- * Configuration-driven damage type label management.
- * Loads damage type -> display label mappings from JSON config file.
- *
- * Config format (damage_types.json):
- * {
- *   "minecraft:on_fire": "§6Fire Damage",
- *   "minecraft:lava": "§cLava Damage",
- *   "mymod:custom_damage": "§bCustom Damage"
- * }
- *
- * Supports:
- * - Minecraft color codes (§ prefixed)
- * - Custom mod damage types
- * - Hot-reloading via reload() method
- * - Fallback to hardcoded defaults if config missing
- */
+import net.minecraft.resources.ResourceKey;
 public final class DamageTypeConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("DevMod/DamageTypeConfig");

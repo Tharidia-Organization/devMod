@@ -15,25 +15,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for RpgSeries mods (Archers, Paladins, Wizards, etc.).
- *
- * These mods by the Spell Engine author provide:
- * - Class-specific weapons and abilities
- * - Archers: Bows, crossbows, special arrows
- * - Paladins: Healing, smite, holy weapons
- * - Wizards: Staffs, spell casting, magic weapons
- * - Integration with Spell Engine
- *
- * This integration allows DevMod to:
- * - Detect RpgSeries weapons and items
- * - Track class-specific abilities
- * - Display weapon stats in HUD
- * - Include class info in telemetry
- *
- * @see <a href="https://github.com/ZsoltMolnaique/SpellEngine">Spell Engine GitHub</a>
- */
 public class RpgSeriesCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(RpgSeriesCompat.class);
 

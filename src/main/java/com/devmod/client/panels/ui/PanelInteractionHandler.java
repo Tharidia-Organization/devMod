@@ -12,16 +12,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.FloatingPanelManager;
-
-/**
- * Handles mouse interactions with floating panels in the 3D world.
- *
- * Features:
- * - Ray casting from mouse to find panels under cursor
- * - Click handling (left/right/middle)
- * - Hover detection
- * - Drag support (future)
- */
 public class PanelInteractionHandler {
 
     public static final PanelInteractionHandler INSTANCE = new PanelInteractionHandler();

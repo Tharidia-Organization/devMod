@@ -14,11 +14,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
-
-/**
- * Data components for usable item persistent data.
- * Provides a typed container for usable stats (cooldowns, use duration, throwable properties).
- */
 public final class UsableComponents {
     private UsableComponents() {}
 

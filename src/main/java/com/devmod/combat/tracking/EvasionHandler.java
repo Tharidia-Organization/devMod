@@ -16,11 +16,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.fml.loading.FMLEnvironment;
-
-/**
- * Tracks melee attack attempts to detect when entities (e.g. Endermen) evade attacks.
- * Thread-safe implementation using ScheduledExecutorService.
- */
 public final class EvasionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EvasionHandler.class);
 

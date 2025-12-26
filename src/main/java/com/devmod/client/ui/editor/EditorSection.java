@@ -3,13 +3,6 @@ package com.devmod.client.ui.editor;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-
-/**
- * Sealed interface for editor content sections.
- * Each section type defines a specific kind of editable content.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#33-editor-section-types
- */
 public sealed interface EditorSection permits
     EditorSection.SliderSection,
     EditorSection.ToggleSection,

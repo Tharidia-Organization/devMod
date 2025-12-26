@@ -4,13 +4,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-
-/**
- * Performance cache for editor computations.
- * Caches expensive calculations with TTL-based expiration.
- *
- * Based on EDITOR_DESIGN_SYSTEM.md Section 2.40.1
- */
 public class EditorCache {
 
     // ═══════════════════════════════════════════════════════════════

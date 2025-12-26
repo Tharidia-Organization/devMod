@@ -3,19 +3,6 @@ package com.devmod.arena.identity;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
-
-/**
- * Immutable arena identity (DD58).
- *
- * <p>The arenaId (roomId) is immutable once created.
- * For reconnection scenarios, use separate sessionId tracking.
- *
- * @param arenaId The immutable arena identifier
- * @param templateId The template used to create this arena
- * @param createdAt Timestamp when the arena was created
- * @param region The region where this arena is hosted
- * @param roomIdentifier DD58: Hierarchical room identifier with srv-wld-inst format
- */
 public record ArenaIdentity(
     UUID arenaId,
     String templateId,

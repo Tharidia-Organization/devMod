@@ -9,25 +9,16 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 
-import net.minecraft.server.level.ServerPlayer;
-
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
-import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 
-/**
- * Server-side handler for telemetry batch packets.
- *
- * Security features:
- * - Rate limiting: Max 100 events/second per player
- * - Event validation: Check event types and data sizes
- * - Timestamp validation: Reject events with future or very old timestamps
- */
+import net.minecraft.server.level.ServerPlayer;
+
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
+import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
 public class TelemetryPacketHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
 

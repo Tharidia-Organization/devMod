@@ -11,18 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.registry.ArenaTemplate;
-
-/**
- * Template Recovery Handler implementing DD27: Recovery Template Missing.
- *
- * <p>Key features:
- * <ul>
- *   <li>Fallback to default template when requested template is missing</li>
- *   <li>Telemetry for missing template events</li>
- *   <li>Configurable fallback chain</li>
- *   <li>Rate limiting for repeated failures</li>
- * </ul>
- */
 public class TemplateRecoveryHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateRecoveryHandler.class);

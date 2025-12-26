@@ -4,16 +4,6 @@ import java.util.UUID;
 import java.util.function.BiPredicate;
 
 import net.minecraft.network.chat.Component;
-
-/**
- * Represents a weekly challenge with harder objectives and better rewards.
- *
- * Weekly challenges:
- * - Rotate every 7 days (Monday UTC reset)
- * - Track cumulative progress across multiple sessions
- * - Offer 3-5x the rewards of daily challenges
- * - Include multi-run objectives (e.g., complete 5 runs without dying)
- */
 public class WeeklyChallenge {
 
     private final String id;

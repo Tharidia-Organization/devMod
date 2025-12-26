@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -120,21 +121,6 @@ import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_CHOICES;
 import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_SELECTION;
 import static com.devmod.network.ChannelId.WEAPON_LEGACY;
 import static com.devmod.network.ChannelId.WEAPON_STATS_V2;
-
-/**
- * Network packet registration and routing.
- *
- * <p>This class registers all network channels and delegates handling to
- * domain-specific handlers for better separation of concerns:
- * <ul>
- *   <li>{@link MobItemNetworkHandler} - mob, weapon, armor, equipment packets</li>
- *   <li>{@link EnduranceNetworkHandler} - endurance quest packets</li>
- *   <li>{@link PartyNetworkHandler} - party system packets</li>
- *   <li>{@link AbilityNetworkHandler} - ability (dash, dodge, stamina) packets</li>
- *   <li>{@link ShieldNetworkHandler} - shield visual effect packets</li>
- *   <li>{@link ConfigNetworkHandler} - config sync, recipe, telemetry packets</li>
- * </ul>
- */
 @EventBusSubscriber(modid = MODID)
 public class NetworkHandler {
     /**
@@ -206,6 +192,7 @@ public class NetworkHandler {
         void handleChallengeSync(ChallengeSyncPayload payload);
     }
 
+    @Nullable
     private static volatile ClientPayloadHooks clientPayloadHooks;
 
     public static void setClientPayloadHooks(@Nonnull ClientPayloadHooks hooks) {

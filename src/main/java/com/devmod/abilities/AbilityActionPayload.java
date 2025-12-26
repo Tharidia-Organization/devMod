@@ -2,17 +2,15 @@ package com.devmod.abilities;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-/**
- * Payload for ability actions (dash, dodge) from client to server.
- */
-public record AbilityActionPayload(AbilityType ability, int direction) implements CustomPacketPayload {
+public record AbilityActionPayload(@Nullable AbilityType ability, int direction) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<AbilityActionPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(
@@ -50,7 +48,7 @@ public record AbilityActionPayload(AbilityType ability, int direction) implement
 
     /**
      * Create a dodge action payload with direction.
-     * @param direction 0=BACK, 1=LEFT, 2=RIGHT, 3=FORWARD
+     * @param dir Direction to dodge (BACK, LEFT, RIGHT, FORWARD)
      */
     public static AbilityActionPayload dodge(DodgeAbilitySystem.DodgeDirection dir) {
         return new AbilityActionPayload(AbilityType.DODGE, dir != null ? dir.ordinal() : 0);

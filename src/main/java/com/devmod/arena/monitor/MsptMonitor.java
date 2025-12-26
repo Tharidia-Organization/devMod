@@ -7,19 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Monitors MSPT (milliseconds per tick) using a sliding window.
- * DD38: Baseline capture with median, sliding window of 100 samples over 5 seconds.
- *
- * <p>Key specifications (DD38):
- * <ul>
- *   <li>BASELINE_SAMPLES = 20 (1 second of samples at 20 TPS)</li>
- *   <li>WINDOW_SIZE = 100 (5 seconds sliding window)</li>
- *   <li>Confidence formula: Math.max(0, 1.0 - (stdDev / 10.0))</li>
- *   <li>Backpressure: confidence > 0.7 AND buildImpact > 20.0ms</li>
- * </ul>
- */
 public class MsptMonitor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MsptMonitor.class);

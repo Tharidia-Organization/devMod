@@ -17,11 +17,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.util.I18n;
-
-/**
- * Loading overlay shown when creating an instance dimension.
- * Provides clear visual feedback during async operations.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class InstanceLoadingOverlay {
 

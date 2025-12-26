@@ -13,11 +13,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_HEIGHT_MEDIUM;
 import static com.devmod.client.ui.testing.panel.PanelConstants.ROW_SPACING;
 import static com.devmod.client.ui.testing.panel.PanelConstants.TITLE_HEIGHT;
-
-/**
- * Showcase panel for demonstrating UI components with descriptions.
- * Displays items in a grid with a description label below each item.
- */
 public final class ShowcasePanel implements UIPanel {
 
     private final String id;

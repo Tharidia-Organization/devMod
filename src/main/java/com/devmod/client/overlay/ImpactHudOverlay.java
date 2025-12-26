@@ -17,15 +17,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.config.Config;
-
-/**
- * HUD Overlay to show real-time impact analysis.
- *
- * Registered above the crosshair, shows:
- * - Impact Analysis Panel (damage breakdown)
- * - Mod Specifics Panel (Pehkui, Better Combat)
- * - Entity Info (optional)
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 // Minecraft API methods are not annotated but never return null in practice
 

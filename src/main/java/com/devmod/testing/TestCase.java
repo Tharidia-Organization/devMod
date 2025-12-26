@@ -5,16 +5,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-/**
- * Represents a single test case in the QA Testing Framework.
- * Similar to Minecraft achievements but for mod functionality testing.
- * Supports serialization for session persistence.
- *
- * Supports two types of auto-completion:
- * 1. Boolean autoValidator (legacy) - simple pass/fail check
- * 2. Progress-based progressChecker - returns 0.0 to 1.0 for incremental progress
- */
 public class TestCase {
 
     private final String id;

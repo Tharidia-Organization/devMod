@@ -19,10 +19,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-
-/**
- * Autosmoke report writer (JSON + CSV) with daily files and retention.
- */
 public class AutosmokeReportWriter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeReportWriter.class);

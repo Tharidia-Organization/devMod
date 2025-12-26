@@ -29,11 +29,6 @@ import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
-
-/**
- * Debug Overlays Page - Configuration for all debug visualizers.
- * Controls 15+ debug rendering systems.
- */
 public class DebugOverlaysPage extends AbstractVoxelLabPage {
 
     // Core toggles

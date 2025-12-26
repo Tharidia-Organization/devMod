@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,17 +18,6 @@ import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.PanelType;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.hub.ToolType;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Panel that shows the status of active overlays/tools.
- *
- * Displays:
- * - List of active tools with hotkeys
- * - Colored indicators for on/off state
- * - Active tool count
- */
 public class ToolStatusPanel extends FloatingPanel {
 
     // Tool states cache

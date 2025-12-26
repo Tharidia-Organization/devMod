@@ -18,11 +18,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-
-/**
- * Overlay for token gain animation.
- * Shows "+X Tokens" floating upward with fade-out effect.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class TokenGainOverlay {

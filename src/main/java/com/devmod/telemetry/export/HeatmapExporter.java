@@ -16,26 +16,12 @@ import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * VOXEL-LAB: Heatmap Export to PNG
- *
- * Exports heatmap data as PNG images for analysis and sharing.
- * Each heatmap type is rendered as a 2D top-down view with color gradient.
- *
- * Color scheme:
- * - Blue (cold): Low activity
- * - Green: Medium-low activity
- * - Yellow: Medium activity
- * - Orange: Medium-high activity
- * - Red (hot): High activity
- */
 public class HeatmapExporter {
     private static final Logger LOGGER = LogUtils.getLogger();
 

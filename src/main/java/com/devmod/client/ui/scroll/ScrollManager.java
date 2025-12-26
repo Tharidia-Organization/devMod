@@ -9,33 +9,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.editor.core.ResponsiveLayout.Rect;
 import com.devmod.client.ui.scroll.impl.InstantScrollBehavior;
 import com.devmod.client.ui.scroll.impl.SmoothScrollBehavior;
-
-/**
- * Unified scroll manager for all scrollable components.
- * Centralizes mouse wheel, scrollbar drag, and keyboard navigation.
- *
- * <p>Key features:
- * <ul>
- *   <li>Bounds checking - only handles events when mouse is over the scroll area</li>
- *   <li>Delta-based drag - consistent scrollbar behavior (not centering)</li>
- *   <li>Keyboard navigation - PAGE UP/DOWN, HOME/END, arrow keys</li>
- *   <li>Safe scissoring - try/finally pattern prevents scissor leaks</li>
- *   <li>Consistent metrics - uniform scrollbar dimension calculations</li>
- * </ul>
- *
- * <p>Usage:
- * <pre>{@code
- * private final ScrollManager scroll = new ScrollManager(ScrollMode.SMOOTH);
- *
- * void render(GuiGraphics g, int mouseX, int mouseY) {
- *     scroll.update(bounds, contentHeight);
- *     scroll.withScissor(g, () -> {
- *         renderContent(g, -scroll.getScrollOffset());
- *     });
- *     renderScrollbar(g, scroll.calculateMetrics());
- * }
- * }</pre>
- */
 public class ScrollManager {
 
     // ═══════════════════════════════════════════════════════════════

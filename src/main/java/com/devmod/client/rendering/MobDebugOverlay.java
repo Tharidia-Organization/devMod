@@ -10,12 +10,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.MobConfigManager;
-
-/**
- * Gestisce il rendering delle informazioni debug per i mob guardati dal player
- */
-// Minecraft API methods are not annotated but never return null in practice
-
 public class MobDebugOverlay {
 
     private static final int COLOR_HITBOX = 0x80FFFF00; // Transparent yellow

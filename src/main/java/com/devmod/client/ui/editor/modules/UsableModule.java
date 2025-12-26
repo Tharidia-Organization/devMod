@@ -13,15 +13,6 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.ModuleTab;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.stats.UsableStats;
-
-/**
- * Editor module for usable item statistics.
- * Allows editing use duration, cooldowns, and throwable properties.
- *
- * Delegates to:
- * - UsableModuleCore: Stats management, loading, saving
- * - UsableModuleUI: UI components and section builders
- */
 public class UsableModule extends AbstractEditorModule {
 
     public enum UsableVariant { STANDARD, THROWABLE, CHARGEABLE, BLOCKABLE }

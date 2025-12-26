@@ -5,14 +5,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-
-/**
- * Immutable snapshot of arena template session state.
- * Used for hot-reload session management (DD16).
- *
- * This record captures the complete state at a point in time,
- * enabling version drift detection at end of session.
- */
 public record ArenaTemplateSnapshot(
     UUID sessionId,
     String templateId,

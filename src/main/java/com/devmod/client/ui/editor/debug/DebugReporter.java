@@ -3,16 +3,6 @@ package com.devmod.client.ui.editor.debug;
 import java.util.List;
 
 import com.devmod.client.ui.editor.core.Bounds;
-
-/**
- * Interface for components that report debug info.
- * Implement this interface to have your component's bounds and warnings
- * shown in the debug overlay.
- *
- * @see DebugOverlay
- * @see DebugWarning
- * @see docs/editor-design-system/14-debug-overlay.md
- */
 public interface DebugReporter {
 
     /**

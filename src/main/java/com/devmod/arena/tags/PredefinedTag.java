@@ -6,12 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-/**
- * Predefined tags for arena templates (DD28).
- *
- * <p>Provides autocomplete and typo detection for template tags.
- */
 public enum PredefinedTag {
 
     // Layout tags

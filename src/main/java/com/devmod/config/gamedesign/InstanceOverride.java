@@ -4,14 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-
-/**
- * Partial configuration override for a specific instance (quest/arena).
- *
- * Only non-null values are applied as overrides.
- * This allows selective overriding of specific parameters while
- * inheriting the rest from global config.
- */
 public class InstanceOverride {
 
     private final String instanceName;

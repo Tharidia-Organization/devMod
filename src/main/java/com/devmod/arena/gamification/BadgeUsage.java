@@ -3,17 +3,6 @@ package com.devmod.arena.gamification;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-
-/**
- * Badge Usage tracking implementing DD52: Badge Template Tracking.
- *
- * <p>Key features:
- * <ul>
- *   <li>Usage table as source of truth</li>
- *   <li>Version-agnostic tracking</li>
- *   <li>Migration support from badge_awards to badge_usage</li>
- * </ul>
- */
 public final class BadgeUsage {
 
     /**

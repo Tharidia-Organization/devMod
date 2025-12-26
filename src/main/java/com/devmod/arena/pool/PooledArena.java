@@ -4,12 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-
-/**
- * A pooled arena instance with state tracking (DD64).
- *
- * <p>Supports atomic state transitions and unused detection.
- */
 public class PooledArena {
 
     private static final Duration UNUSED_THRESHOLD = Duration.ofMinutes(10);

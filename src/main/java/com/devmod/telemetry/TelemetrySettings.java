@@ -8,11 +8,10 @@ import java.nio.file.Path;
 
 import org.slf4j.Logger;
 
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.mojang.logging.LogUtils;
 
+import com.devmod.util.ConfigPaths;
 public record TelemetrySettings(long stuckMs, long campingMs, int campingHits, long aggroDropMs, long outOfBoundsMs, double outOfBoundsDeltaY, double bossHpThreshold, boolean bossPhaseDetectionEnabled, boolean skillTrackingEnabled) {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new Gson();

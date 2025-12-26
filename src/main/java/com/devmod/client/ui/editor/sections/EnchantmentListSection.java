@@ -24,11 +24,6 @@ import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Section displaying and allowing editing of item enchantments.
- * Shows current enchantments with level sliders, allows adding/removing.
- */
 public final class EnchantmentListSection implements EditorSection.CustomSection {
 
     private static final int HEADER_HEIGHT = EditorDimensions.SECTION_HEADER_HEIGHT;

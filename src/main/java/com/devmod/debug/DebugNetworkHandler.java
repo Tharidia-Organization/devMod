@@ -15,18 +15,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import static com.devmod.network.ChannelId.DEBUG_SYNC;
 import static com.devmod.network.ChannelId.DEBUG_TOGGLE;
-
-/**
- * Handles registration and processing of debug network packets.
- *
- * Note: We use Minecraft's NATIVE debug payloads (PathfindingDebugPayload, etc.)
- * which are sent by the DebugPacketsMixin. Those don't need registration here
- * because they're vanilla payloads.
- *
- * We only register:
- * - DebugTogglePayload: client -> server (player requests to toggle a feature)
- * - DebugSyncPayload: server -> client (tells client to enable/disable renderer)
- */
 public class DebugNetworkHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugNetworkHandler.class);
 

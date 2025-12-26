@@ -9,13 +9,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.bridge.ClientUiBridge;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
-
-/**
- * Client-side implementation of {@link ClientUiBridge}.
- *
- * <p>This class is only loaded on the client and provides actual
- * screen opening functionality using Minecraft.getInstance().
- */
 @OnlyIn(Dist.CLIENT)
 public class ClientUiBridgeImpl implements ClientUiBridge {
 

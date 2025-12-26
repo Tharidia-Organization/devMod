@@ -11,11 +11,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Typed armor stats payload (v2) that mirrors WeaponStatsPayload.
- * Carries the serialized stats tag plus the target slot for specific applications.
- */
 public record ArmorStatsPayload(
     @Nonnull ItemStack item,
     @Nonnull CompoundTag statsTag,

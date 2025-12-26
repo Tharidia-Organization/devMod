@@ -6,29 +6,14 @@ import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 
 import com.devmod.arena.ArenaDebugState;
-
-import com.mojang.blaze3d.platform.InputConstants;
-
-/**
- * DD30: Arena Debug HUD Keybind - F7 toggle for HUD visibility.
- *
- * <p>This keybind toggles the Arena Debug HUD overlay for the current player.
- * The HUD will only be visible if:</p>
- * <ul>
- *   <li>Player has the required permission (devmod.arena.debug.hud)</li>
- *   <li>Player has explicitly enabled the toggle via this keybind</li>
- *   <li>Global HUD is enabled (server-side setting)</li>
- * </ul>
- *
- * <p><b>Default key:</b> Shift+H (H alone is for Heatmap)</p>
- * <p><b>Mnemonic:</b> H = "HUD" debug</p>
- */
 public class ArenaHudKeyBinding {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaHudKeyBinding.class);

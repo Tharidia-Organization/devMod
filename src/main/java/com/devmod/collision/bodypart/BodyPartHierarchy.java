@@ -20,34 +20,6 @@ import org.joml.Matrix4f;
 
 import com.devmod.collision.transform.AnimationSnapshot;
 import com.devmod.combat.HitHelper;
-
-/**
- * Manages the parent-child relationships between body parts.
- * Transforms propagate from root → children.
- *
- * Structure mirrors PlayerAnimationLibrary but for collision:
- * <pre>
- * Root (entity position/rotation)
- *   └─ Body
- *        ├─ Head
- *        ├─ Left Arm
- *        └─ Right Arm
- *   ├─ Left Leg
- *   └─ Right Leg
- * </pre>
- *
- * Usage:
- * <pre>
- * BodyPartHierarchy hierarchy = BodyPartHierarchy.builder()
- *     .addPart(bodyDef)
- *     .addPart(headDef)
- *     .addPart(leftArmDef)
- *     .build();
- *
- * BodyPartInstance[] parts = hierarchy.computeWorldTransforms(snapshot);
- * </pre>
- */
-
 public final class BodyPartHierarchy {
 
     private final Map<String, BodyPartDefinition> parts;

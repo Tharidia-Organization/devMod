@@ -1,10 +1,6 @@
 package com.devmod.client.ui.radial.animation;
 
 import java.util.Objects;
-
-/**
- * Functional interface for easing functions using primitive float to avoid boxing.
- */
 @FunctionalInterface
 interface FloatFunction {
     float apply(float value);

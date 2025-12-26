@@ -15,17 +15,6 @@ import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.network.ArmorStatsPayload;
 import com.devmod.stats.ArmorStats;
-
-/**
- * Editor module for armor statistics.
- * Allows editing damage reductions, armor bonuses, and special effects.
- *
- * Delegates to:
- * - ArmorModuleCore: Stats management, loading, saving, comparison
- * - ArmorModuleUI: UI components and section builders
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 3.4
- */
 public class ArmorModule extends AbstractEditorModule {
 
     private static final String NBT_KEY = "ArmorModStats";

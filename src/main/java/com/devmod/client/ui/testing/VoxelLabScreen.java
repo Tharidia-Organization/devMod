@@ -1,27 +1,23 @@
 package com.devmod.client.ui.testing;
 
-import com.devmod.client.telemetry.UiTelemetry;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import javax.annotation.Nonnull;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Objects;
-
-/**
- * VoxelLab - Unified settings screen for all DevMod configurable services.
- *
- * <p>Provides a tabbed interface for configuring 60+ services organized into
- * logical categories: Overview, Debug, HUD, Telemetry, Effects, Combat, and Showcase.</p>
- */
+import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
 @OnlyIn(Dist.CLIENT)
 public class VoxelLabScreen extends Screen {
 

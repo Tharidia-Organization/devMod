@@ -4,14 +4,10 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
-
 import com.google.gson.JsonObject;
 
-/**
- * Data for smelting recipes (furnace, blast furnace, smoker, campfire).
- */
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 public record SmeltingRecipeData(
     ResourceLocation id,
     SmeltingType smeltingType,

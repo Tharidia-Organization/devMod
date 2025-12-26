@@ -8,11 +8,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-/**
- * Payload sent from server to client when combo is lost or rank drops.
- * Triggers visual/audio feedback for combo miss.
- */
 public record ComboDecayPayload(int lostCombo, int previousRankOrdinal, int newRankOrdinal) implements CustomPacketPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "combo_decay"));

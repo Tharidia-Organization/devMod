@@ -13,19 +13,6 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import com.devmod.DevMod;
 import com.devmod.telemetry.boss.UnifiedBossDetector;
-
-/**
- * Auto-detects boss phases based on HP thresholds.
- *
- * Bosses are identified as entities with >=100 max HP (configurable).
- * Phases are detected at 75%, 50%, 25% HP thresholds.
- *
- * Example phases:
- * - Phase 1: 100% - 75% HP
- * - Phase 2: 75% - 50% HP
- * - Phase 3: 50% - 25% HP
- * - Phase 4 (Enrage): <25% HP
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class BossPhaseDetector {
     private static final Map<UUID, BossState> bossStates = new HashMap<>();

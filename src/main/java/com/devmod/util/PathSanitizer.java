@@ -9,17 +9,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Utility for sanitizing file paths to prevent directory traversal attacks.
- * All file I/O operations should use this class to validate paths.
- *
- * Security features:
- * - Prevents directory traversal (../)
- * - Validates paths are within allowed directories (derived from ConfigPaths)
- * - Validates file extensions
- * - Normalizes paths to canonical form
- */
 public final class PathSanitizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(PathSanitizer.class);
 

@@ -7,19 +7,6 @@ import net.minecraft.world.entity.EntityType;
 import com.devmod.collision.bodypart.BodyPartDefinition;
 import com.devmod.collision.bodypart.BodyPartHierarchy;
 import com.devmod.combat.HitHelper;
-
-/**
- * Pre-defined body part configurations for vanilla entities.
- *
- * Each definition corresponds to the actual ModelPart names used
- * by Minecraft's entity models, enabling accurate transform tracking.
- *
- * ModelPart names reference:
- * - Humanoid: head, body, rightArm, leftArm, rightLeg, leftLeg
- * - Quadruped: head, body, leg0, leg1, leg2, leg3
- * - Spider: head, body0, body1, leg0-leg7
- */
-
 public final class VanillaBodyParts {
 
     private VanillaBodyParts() {} // Utility class

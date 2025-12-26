@@ -24,19 +24,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-
-/**
- * HUD Overlay for displaying entity density information.
- *
- * Shows:
- * - Current room name (if defined)
- * - Total entity count in room/area
- * - Breakdown by category (hostile, passive, players)
- * - Density warning if threshold exceeded
- *
- * Toggle: E key (configurable)
- * Position: Top-left corner
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class EntityDensityOverlay {

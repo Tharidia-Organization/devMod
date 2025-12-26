@@ -24,18 +24,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-
-/**
- * Main orchestrator for the instance dimension system.
- *
- * Coordinates between:
- * - InstanceRegistry (data persistence)
- * - DynamicDimensionManager (dimension creation/destruction)
- * - RecoverySystem (player state snapshots)
- * - EnduranceQuestManager (quest logic)
- *
- * Provides the high-level API for starting and ending instance quests.
- */
 public class InstanceManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceManager.class);
     public static final InstanceManager INSTANCE = new InstanceManager();

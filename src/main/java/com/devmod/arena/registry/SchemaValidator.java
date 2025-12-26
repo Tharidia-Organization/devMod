@@ -19,17 +19,6 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
-/**
- * Validates template JSON against allowed top-level fields with configurable severity.
- *
- * <p>Implements STRICT/PERMISSIVE/LENIENT behavior:
- * <ul>
- *   <li>STRICT: unknown fields -> ERROR</li>
- *   <li>PERMISSIVE: unknown fields -> WARN</li>
- *   <li>LENIENT: unknown fields ignored</li>
- * </ul>
- */
 public final class SchemaValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaValidator.class);

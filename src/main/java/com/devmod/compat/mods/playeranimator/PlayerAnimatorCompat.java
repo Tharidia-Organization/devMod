@@ -13,24 +13,6 @@ import net.minecraft.world.entity.player.Player;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Player Animation Library.
- *
- * Player Animation Lib provides:
- * - Custom animation system for players
- * - Animation state machine
- * - Keyframe-based animations
- * - Animation blending
- *
- * This integration allows DevMod to:
- * - Detect when custom animations are playing
- * - Track animation states for telemetry
- * - Coordinate with combat animations
- * - Support animation-based abilities
- *
- * @see <a href="https://github.com/KosmX/player-anim">Player Animation Lib GitHub</a>
- */
 public class PlayerAnimatorCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlayerAnimatorCompat.class);
     public static final String MOD_ID = "playeranimator";

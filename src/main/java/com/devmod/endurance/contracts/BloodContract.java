@@ -8,15 +8,6 @@ import javax.annotation.Nonnull;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-
-/**
- * Blood Contract - High-risk, high-reward challenge contract.
- *
- * Players can sign blood contracts before waves for massive reward multipliers,
- * but with dangerous consequences if the contract conditions are violated.
- *
- * Inspired by roguelike "curse" mechanics and DMC style ranking pressure.
- */
 public final class BloodContract {
 
     private final ResourceLocation id;

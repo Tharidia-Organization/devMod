@@ -5,6 +5,8 @@ import java.util.Objects;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -28,22 +30,6 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * VOXEL-LAB Debug Overlay: Entity Info Floating Labels
- *
- * Displays floating info labels above entities showing:
- * - Entity type and ID
- * - Health/max health
- * - Armor value
- * - Attack damage (for mobs)
- * - Current AI goal (for mobs)
- * - Distance to player
- *
- * Toggle: Part of Debug Overlay system (G key)
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class EntityInfoOverlay {

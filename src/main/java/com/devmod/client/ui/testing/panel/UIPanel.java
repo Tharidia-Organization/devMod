@@ -1,16 +1,6 @@
 package com.devmod.client.ui.testing.panel;
 
 import net.minecraft.client.gui.GuiGraphics;
-
-/**
- * Sealed interface for composable UI panels in VoxelLab.
- *
- * <p>This is the base interface; concrete panel types are in separate files
- * for better organization and maintainability.</p>
- *
- * @see PanelConstants
- * @see PanelContainer
- */
 public sealed interface UIPanel permits
     HeaderPanel,
     SectionPanel,

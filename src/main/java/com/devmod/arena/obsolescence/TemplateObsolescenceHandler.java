@@ -10,13 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Handler for template obsolescence with session-safe removal (DD71).
- *
- * <p>Ensures templates are not removed while sessions are active.
- * Provides successor mapping for deprecated templates.
- */
 public class TemplateObsolescenceHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateObsolescenceHandler.class);

@@ -1,10 +1,6 @@
 package com.devmod.client.ui.testing.panel;
 
 import net.minecraft.client.gui.GuiGraphics;
-
-/**
- * Simple spacer panel for layout purposes.
- */
 public record SpacerPanel(
     String id,
     int height

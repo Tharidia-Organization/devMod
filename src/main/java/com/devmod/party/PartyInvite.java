@@ -3,11 +3,6 @@ package com.devmod.party;
 import java.util.UUID;
 
 import com.devmod.endurance.QuestType;
-
-/**
- * Represents an invitation to join a party for an Endurance Quest.
- * Invites have a timeout and can be accepted, declined, or expire.
- */
 public class PartyInvite {
 
     /** Timeout for invites in milliseconds (30 seconds) */

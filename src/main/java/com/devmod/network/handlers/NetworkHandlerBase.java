@@ -6,6 +6,8 @@ import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,13 +17,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.network.PacketValidator;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Base class with shared utilities for all network handlers.
- * Extracted from NetworkHandler for single responsibility.
- */
 public abstract class NetworkHandlerBase {
     protected static final Logger LOGGER = LogUtils.getLogger();
 

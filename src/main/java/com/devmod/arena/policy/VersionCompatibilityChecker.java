@@ -1,14 +1,6 @@
 package com.devmod.arena.policy;
 
 import com.devmod.arena.registry.ArenaTemplate;
-
-/**
- * Simple compatibility checker between a policy and a template.
- *
- * Mirrors the Versioning Strategy in TODO_ARENA_TEMPLATE v2.3:
- * - template.version must be within [minTemplateVersion, maxTemplateVersion] if set
- * - if template.breakingChange is true, policy.version must be >= template.version
- */
 public class VersionCompatibilityChecker {
 
     public record VersionCheck(boolean compatible, String reason) {

@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 
 import com.devmod.arena.api.ArenaHandle;
@@ -26,23 +28,6 @@ import com.devmod.endurance.WaveManager;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Centralized telemetry service for Endurance Quest systems.
- *
- * Tracks:
- * - Wave progression (start, end, kills, timing)
- * - Combo/Style system (rank changes, milestones, breaks)
- * - Perk selection (choices, tier distribution)
- * - Mutator system (active mutators, effects)
- * - Reward system (currency, loot, achievements)
- * - Party events (create, join, leave)
- * - Boss encounters (archetypes, abilities, phases)
- *
- * All events are written to endurance.ndjson via TelemetryService.
- */
 public class EnduranceTelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
 

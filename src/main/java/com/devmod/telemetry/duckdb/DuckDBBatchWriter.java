@@ -21,43 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Asynchronous batch writer for DuckDB telemetry.
- *
- * <p><b>Performance optimizations:</b>
- * <ul>
- *   <li>Non-blocking queue per table type (~0.1ms enqueue overhead)</li>
- *   <li>Batch inserts (100 rows per batch for optimal throughput)</li>
- *   <li>Scheduled flush every 5 seconds or when batch size reached</li>
- *   <li>Prepared statement caching for reuse</li>
- * </ul>
- *
- * <p><b>Thread Safety:</b>
- * This class is thread-safe. Multiple threads may safely call queue*() methods concurrently.
- * <ul>
- *   <li>All queue*() methods are non-blocking and safe for game thread use</li>
- *   <li>Internal queues use {@link java.util.concurrent.ConcurrentHashMap} and
- *       {@link java.util.concurrent.LinkedBlockingQueue}</li>
- *   <li>Statistics counters use {@link java.util.concurrent.atomic.AtomicLong} /
- *       {@link java.util.concurrent.atomic.AtomicInteger}</li>
- *   <li>Flush operations are serialized via scheduled executor (single writer thread)</li>
- *   <li>Shutdown performs graceful flush before closing connections</li>
- * </ul>
- *
- * <p><b>Thread model:</b>
- * <ul>
- *   <li>Game thread(s): call queue*() methods (non-blocking)</li>
- *   <li>Writer thread: single scheduled thread flushes batches to DuckDB</li>
- * </ul>
- *
- * <p><b>Usage:</b>
- * <pre>
- *   writer.queueCombatHit(ts, room, attacker, target, damage, ...);
- *   // Later, on shutdown:
- *   writer.shutdown();
- * </pre>
- */
 public class DuckDBBatchWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBBatchWriter.class);
 

@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,16 +16,6 @@ import com.devmod.arena.config.FeatureFlagManager;
 import com.devmod.arena.config.FeatureFlagRegistry;
 import com.devmod.arena.config.InstanceLimitConfig;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Bootstrap helper to create and load {@link ArenaTemplateRegistry} with sane defaults.
- *
- * <p>Default directory: {@code config/devmod/arena_templates/} (override via
- * sysprop {@code devmod.template.dir} or env {@code DEVMOD_TEMPLATE_DIR}).</p>
- *
- * <p>Validation mode: sysprop {@code devmod.template.validationMode} or env
- * {@code DEVMOD_TEMPLATE_VALIDATION_MODE} (STRICT default).</p>
- */
 public class TemplateRegistryBootstrap implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateRegistryBootstrap.class);
@@ -36,8 +28,10 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
     private ArenaTemplateConfig config;
     private ArenaTemplateConfig.ConfigSnapshot configSnapshot;
     private final AtomicBoolean watcherReloadInProgress = new AtomicBoolean(false);
+    @Nullable
     private TemplateDirectoryWatcher watcher;
 
+    @Nullable
     private TemplateLoader.LoadResult lastLoadResult;
 
     private TemplateRegistryBootstrap(ArenaTelemetry telemetry,

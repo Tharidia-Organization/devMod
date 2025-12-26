@@ -10,11 +10,6 @@ import net.minecraft.world.item.component.CustomData;
 import com.devmod.components.ArmorComponents;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.stats.ArmorStats;
-
-/**
- * Helper for migrating armor stats from NBT to components.
- * Minimal implementation for auto-migration support.
- */
 public final class ArmorMigrationHelper {
     
     private static final String NBT_KEY = "ArmorModStats";

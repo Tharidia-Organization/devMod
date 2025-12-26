@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 public final class LegacyCallCheck {
     private static final String DEFAULT_SOURCE_ROOT = "src/main/java";
     private static final String DEFAULT_REPORT_PATH = "build/reports/legacy-usage.txt";

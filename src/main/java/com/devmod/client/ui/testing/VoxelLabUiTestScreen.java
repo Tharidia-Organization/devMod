@@ -1,8 +1,21 @@
 package com.devmod.client.ui.testing;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
-import com.devmod.config.Config;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.testing.panel.CollapsiblePanel;
@@ -13,27 +26,7 @@ import com.devmod.client.ui.testing.panel.PanelContainer;
 import com.devmod.client.ui.testing.panel.SectionPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.client.ui.testing.panel.UIPanel;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-/**
- * VoxelLab - Complete UI testing and Impact HUD management screen.
- *
- * <p>Uses the refactored UIPanel hierarchy for type-safe, composable UI.</p>
- *
- * @see UIPanel
- * @see PanelContainer
- * @see ImpactHudButtons
- */
+import com.devmod.config.Config;
 @OnlyIn(Dist.CLIENT)
 public class VoxelLabUiTestScreen extends Screen {
 

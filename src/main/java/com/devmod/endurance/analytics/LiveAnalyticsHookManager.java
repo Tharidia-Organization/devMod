@@ -10,19 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.CombatTracker;
 import com.devmod.endurance.ComboSystem;
-
-/**
- * Central dispatcher for live analytics hooks during Endurance Quests.
- *
- * Responsibilities:
- * - Aggregates metrics from CombatTracker, ComboSystem, etc.
- * - Dispatches events to registered AnalyticsHook listeners
- * - Detects struggle/opportunity patterns for gamified feedback
- * - Manages cooldowns to prevent notification spam
- *
- * Thread-safety: Uses CopyOnWriteArrayList for listener management.
- * All callbacks executed on server tick thread.
- */
 public class LiveAnalyticsHookManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LiveAnalyticsHookManager.class);
 

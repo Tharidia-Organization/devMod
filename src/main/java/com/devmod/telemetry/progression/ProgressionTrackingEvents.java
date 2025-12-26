@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,23 +31,6 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import com.devmod.DevMod;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Event handlers for player progression tracking.
- *
- * Hooks into:
- * - Block break/place events
- * - XP and level events
- * - Advancement events
- * - Dimension change events
- * - Combat events (attacks, critical hits)
- * - Trading events
- * - Fishing events
- *
- * Logs telemetry via PlayerProgressionService.
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class ProgressionTrackingEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

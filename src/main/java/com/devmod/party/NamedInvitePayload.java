@@ -10,11 +10,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
-
-/**
- * Payload sent from client to server to invite a player by name.
- * The server will resolve the name to UUID and create the invite.
- */
 public record NamedInvitePayload(
     String targetPlayerName,
     int questTypeOrdinal

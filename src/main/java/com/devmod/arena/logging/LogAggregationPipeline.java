@@ -20,26 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * DD59: Unified Log Aggregation Pipeline.
- *
- * <p>Connects telemetry events to structured logging with filtering,
- * transformation, and multi-destination routing:
- *
- * <pre>
- *   ArenaTelemetry → Filter → Transform → [NdjsonWriter, DuckDB, Metrics]
- * </pre>
- *
- * <p>Features:
- * <ul>
- *   <li>Event filtering by name pattern and severity</li>
- *   <li>Field transformation and enrichment</li>
- *   <li>Multi-destination routing (NDJSON, database, metrics)</li>
- *   <li>Batching for efficiency</li>
- *   <li>Backpressure handling</li>
- * </ul>
- */
 public class LogAggregationPipeline implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LogAggregationPipeline.class);

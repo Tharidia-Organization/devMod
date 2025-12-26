@@ -13,10 +13,6 @@ import java.util.Set;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-
-/**
- * Parses a StructureManifest from JSON, applying sane defaults per spec v2.23.
- */
 public final class StructureManifestParser {
 
     /**

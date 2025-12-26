@@ -1,18 +1,6 @@
 package com.devmod.arena.rollout;
 
 import java.time.Duration;
-
-/**
- * Success criteria for rollout phases (DD72).
- *
- * <p>KPIs:
- * <ul>
- *   <li>build_p95 &lt; 500ms</li>
- *   <li>build_success &gt; 99%</li>
- *   <li>rollback_rate &lt; 1%</li>
- *   <li>completion_rate &gt; 75%</li>
- * </ul>
- */
 public record RolloutSuccessCriteria(
     Duration maxBuildP95,
     double maxRollbackRate,

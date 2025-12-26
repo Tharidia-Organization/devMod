@@ -9,29 +9,16 @@ import javax.annotation.Nonnull;
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.telemetry.spatial.HeatmapService;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.logging.LogUtils;
-
-/**
- * FASE 4 REQ-A10: Safe Spot / Camping Visualizer
- *
- * Visualizza le posizioni dove i player campano (safe spots):
- * - Box rosso lampeggiante per safe spots rilevati
- * - Intensità basata su quanto tempo/quanti hit da quella posizione
- * - Labels con statistiche (hit count, duration)
- *
- * I dati vengono caricati dalla telemetria camping.
- *
- * Attivazione: Tasto C (Camping)
- */
 public class SafeSpotVisualizer {
     public static final SafeSpotVisualizer INSTANCE = new SafeSpotVisualizer();
     private static final Logger LOGGER = LogUtils.getLogger();

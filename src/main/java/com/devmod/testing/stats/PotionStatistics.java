@@ -4,12 +4,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.JsonObject;
-
-/**
- * Tracks potion and effect usage statistics.
- * Extracted from TesterProgress for single responsibility.
- */
-
 public class PotionStatistics {
     public static final PotionStatistics INSTANCE = new PotionStatistics();
 

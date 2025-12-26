@@ -8,18 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Compact badge indicating the source/origin of a stat value.
- * Used alongside sliders/toggles to show where the current value comes from.
- *
- * Sources:
- * - DEV: Value modified by DevMod (from component or config)
- * - NBT: Value loaded from item NBT data
- * - VANILLA: Default vanilla value (no modification)
- *
- * @see docs/editor-design-system/15-armor-properties.todo.md
- */
 public class SourceBadge {
 
     /**

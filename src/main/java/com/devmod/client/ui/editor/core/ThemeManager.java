@@ -2,31 +2,6 @@ package com.devmod.client.ui.editor.core;
 
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * Singleton manager for editor UI themes.
- * Handles theme switching and notifies listeners of changes.
- *
- * Usage:
- * <pre>
- * // Get current theme
- * Theme theme = ThemeManager.INSTANCE.current();
- * int bg = theme.panelBackground();
- *
- * // Switch theme
- * ThemeManager.INSTANCE.setTheme(LightTheme.INSTANCE);
- *
- * // Toggle between dark/light
- * ThemeManager.INSTANCE.toggle();
- *
- * // Listen for changes
- * ThemeManager.INSTANCE.addListener(theme -> updateColors());
- * </pre>
- *
- * @see Theme
- * @see DarkTheme
- * @see LightTheme
- */
 public final class ThemeManager {
 
     public static final ThemeManager INSTANCE = new ThemeManager();

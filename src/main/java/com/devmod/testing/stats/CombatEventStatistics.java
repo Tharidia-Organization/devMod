@@ -1,11 +1,6 @@
 package com.devmod.testing.stats;
 
 import com.google.gson.JsonObject;
-
-/**
- * Tracks combat event statistics (evasions, blocks, parries, etc.).
- * Extracted from TesterProgress for single responsibility.
- */
 public class CombatEventStatistics {
     public static final CombatEventStatistics INSTANCE = new CombatEventStatistics();
 

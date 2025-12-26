@@ -13,25 +13,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for EMI (Emi Mod Index).
- *
- * EMI provides:
- * - Recipe viewing and lookup
- * - Item index with search
- * - Usage and crafting trees
- * - Favorites and bookmarks
- * - Integration API for other mods
- *
- * This integration allows DevMod to:
- * - Open recipe viewer for items from ItemEditor
- * - Search EMI index programmatically
- * - Add custom recipe categories
- * - Show crafting info in tooltips
- *
- * @see <a href="https://github.com/emilyploszaj/emi">EMI GitHub</a>
- */
 public class EmiCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmiCompat.class);
     public static final String MOD_ID = "emi";
@@ -43,11 +24,9 @@ public class EmiCompat implements CompatModule {
     // Cached reflection references
     private static Class<?> emiApiClass;
     private static Class<?> emiStackClass;
-    private static Class<?> emiRecipeClass;
     private static Method getStackFromItemStackMethod;
     private static Method viewRecipesMethod;
     private static Method viewUsesMethod;
-    private static Method focusMethod;
     private static Method isCheatModeMethod;
 
     @Override
@@ -110,8 +89,6 @@ public class EmiCompat implements CompatModule {
             // Get EmiApi methods
             viewRecipesMethod = emiApiClass.getMethod("displayRecipes", emiStackClass);
             viewUsesMethod = emiApiClass.getMethod("displayUses", emiStackClass);
-            focusMethod = emiApiClass.getMethod("focusRecipe",
-                Class.forName("dev.emi.emi.api.recipe.EmiRecipe"));
 
             // Try to get cheat mode check
             try {

@@ -1,8 +1,6 @@
 package com.devmod.compat.mods.easynpc;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,25 +20,6 @@ import net.minecraft.world.entity.EntityType;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Easy NPC.
- *
- * Easy NPC provides:
- * - Custom NPC creation with configurable appearance
- * - Dialog systems with multiple options
- * - Actions and behaviors (trading, commands, etc.)
- * - NPC presets and templates
- * - Pathing and navigation
- *
- * This integration allows DevMod to:
- * - Spawn NPCs for Arena scenarios (trainers, vendors, quest givers)
- * - Configure NPC dialogs for arena tutorials
- * - Create wave-based NPC enemies
- * - Use NPC presets from templates
- *
- * @see <a href="https://github.com/MarkusBordihn/Easy-NPC">Easy NPC GitHub</a>
- */
 public class EasyNpcCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(EasyNpcCompat.class);
     public static final String MOD_ID = "easy_npc";
@@ -50,11 +29,8 @@ public class EasyNpcCompat implements CompatModule {
     private static boolean apiAvailable = false;
 
     // Cached reflection references
+    @Nullable
     private static Class<?> easyNpcEntityClass;
-    private static Class<?> easyNpcSpawnerClass;
-    private static Class<?> npcPresetClass;
-    private static Method spawnNpcMethod;
-    private static Method setNpcPresetMethod;
 
     // Track spawned NPCs for cleanup
     private static final Map<String, UUID> spawnedNpcs = new HashMap<>();
@@ -110,21 +86,9 @@ public class EasyNpcCompat implements CompatModule {
                     easyNpcEntityClass = Class.forName(pkg + ".EasyNPCEntity");
                     LOGGER.debug("[Compat:easy_npc] Found EasyNPCEntity at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
-            }
-
-            // Try to find spawner/helper classes
-            try {
-                easyNpcSpawnerClass = Class.forName("de.markusbordihn.easynpc.spawner.NPCSpawner");
-            } catch (ClassNotFoundException e) {
-                LOGGER.debug("[Compat:easy_npc] NPCSpawner not found");
-            }
-
-            // Try to find preset class
-            try {
-                npcPresetClass = Class.forName("de.markusbordihn.easynpc.preset.NPCPreset");
-            } catch (ClassNotFoundException e) {
-                LOGGER.debug("[Compat:easy_npc] NPCPreset not found");
+                } catch (ClassNotFoundException e) {
+                    LOGGER.debug("[Compat:easy_npc] EasyNPCEntity not found at {}", pkg);
+                }
             }
 
             if (easyNpcEntityClass != null) {
@@ -325,12 +289,12 @@ public class EasyNpcCompat implements CompatModule {
      * @param level The server level
      * @return List of entities
      */
-    public static List<Entity> getArenaTaggedNpcs(ServerLevel level) {
+    public static List<Entity> getArenaTaggedNpcs(@Nullable ServerLevel level) {
+        List<Entity> result = new ArrayList<>();
         if (level == null) {
-            return Collections.emptyList();
+            return result;
         }
 
-        List<Entity> result = new ArrayList<>();
         for (Entity entity : level.getAllEntities()) {
             if (entity.getTags().contains(DEVMOD_TAG)) {
                 result.add(entity);

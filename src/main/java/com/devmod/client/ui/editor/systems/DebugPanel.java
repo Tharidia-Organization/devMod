@@ -19,11 +19,6 @@ import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
-
-/**
- * Lightweight dev-only debug panel used by the editor screen.
- * Shows quick item info, a small session log, and supports copying/exporting logs.
- */
 public class DebugPanel {
 
     private static final int MAX_ENTRIES = 64;

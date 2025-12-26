@@ -13,11 +13,6 @@ import net.minecraft.world.entity.Mob;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.config.MobPresetManager;
-
-/**
- * Rendering logic for MobConfigScreen.
- * Handles all drawing operations for panels, tabs, sliders, dialogs, and tooltips.
- */
 public class MobConfigScreenRenderer {
 
     // Layout constants

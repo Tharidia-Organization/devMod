@@ -8,20 +8,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Telemetry service for Arena events.
- *
- * <p>Implements DD4 (Weight Taratura) - emits detailed scoring events for analysis.
- * <p>Implements DD20 (NDJSON Write Non-blocking) - async buffer with non-blocking offer.
- *
- * @see <a href="TODO_ARENA_TEMPLATE.md">Arena Template Design Document</a>
- */
 public class ArenaTelemetry {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaTelemetry.class);
     private static final int BUFFER_SIZE = 10_000;
+    @Nullable
     private static volatile Consumer<TelemetryEvent> globalHandler;
 
     private final BlockingQueue<TelemetryEvent> buffer = new LinkedBlockingQueue<>(BUFFER_SIZE);

@@ -9,11 +9,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from client to server to confirm arrival in the arena.
- * Server waits for all party members to confirm before starting Wave 1.
- */
 public record ArrivalConfirmPayload(
     UUID partyId
 ) implements CustomPacketPayload {

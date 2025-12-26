@@ -15,30 +15,14 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.server.level.ServerPlayer;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
-/**
- * Leaderboard System for Endurance Quests.
- *
- * Tracks player performance across multiple categories:
- * - Waves completed (per arena and global)
- * - Best time (for fixed-wave quests)
- * - Highest style score
- * - Most kills in a single run
- * - Longest endless streak
- *
- * Design Philosophy:
- * - Multiple categories so different playstyles can shine
- * - Per-arena boards for fair comparison
- * - Weekly resets for fresh competition
- * - All-time records for legacy
- */
+import net.minecraft.server.level.ServerPlayer;
 public class LeaderboardSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LeaderboardSystem.class);

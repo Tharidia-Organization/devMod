@@ -11,13 +11,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * History panel component showing edit history for the current module.
- * Displays a scrollable list of history entries with a clear button.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 3.7
- */
 public class HistoryPanel {
 
     // ═══════════════════════════════════════════════════════════════

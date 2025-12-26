@@ -12,18 +12,6 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
-
-/**
- * PERFORMANCE FIX: Async telemetry I/O writer.
- *
- * Prevents server tick blocking by writing telemetry data in a background thread.
- * Uses BlockingQueue for thread-safe communication between game thread and writer thread.
- *
- * Before: writeFile() called directly in server tick → 5-20ms lag spike
- * After: writeFile() queued → <0.1ms overhead → background thread writes
- *
- * Impact: ~95% reduction in telemetry I/O lag
- */
 public class AsyncTelemetryWriter {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int QUEUE_CAPACITY = 1000; // Max 1000 pending writes

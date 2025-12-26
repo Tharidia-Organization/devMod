@@ -11,6 +11,10 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -19,16 +23,6 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-
-/**
- * Minimal datapack export/import utilities for DevMod overrides.
- * Structure follows docs/editor-design-system/06-persistence.md:
- * datapacks/<pack>/data/devmod/item_modifiers/{armor|weapons}/<item>.json
- */
 public final class DatapackIO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DatapackIO.class);

@@ -12,25 +12,6 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * G6: Webhook alert channel for generic HTTP webhook endpoints.
- *
- * <p>Delivers alerts as JSON payloads to configured webhook URLs.
- * Supports custom headers and timeout configuration.
- *
- * <p>JSON payload format:
- * <pre>
- * {
- *   "error_id": "uuid",
- *   "code": "ARENA_BUILD_FAILED",
- *   "severity": "ERROR",
- *   "message": "...",
- *   "context": { ... },
- *   "timestamp": "2024-01-01T00:00:00Z"
- * }
- * </pre>
- */
 public class WebhookAlertChannel implements AlertRouter.AlertChannel {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WebhookAlertChannel.class);

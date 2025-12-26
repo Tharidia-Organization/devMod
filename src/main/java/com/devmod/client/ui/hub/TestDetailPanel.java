@@ -1,24 +1,17 @@
 package com.devmod.client.ui.hub;
 
-import com.devmod.testing.TestCase;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-
 import java.util.EnumMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-/**
- * Central panel showing selected test details:
- * - Name and description
- * - Step-by-step instructions
- * - Required tools
- * - Verdict buttons (PASS/FAIL/SKIP)
- */
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.testing.TestCase;
 public class TestDetailPanel implements HubPanel {
 
     private final int x, y, width, height;

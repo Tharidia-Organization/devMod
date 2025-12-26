@@ -6,21 +6,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
-
-/**
- * Context for arena metrics and telemetry (DD13).
- *
- * <p>All arena.build.* events MUST include this context for proper correlation.
- * The context is immutable and thread-safe.
- *
- * <p>Events and extra fields:
- * <ul>
- *   <li>arena.build.start: estimatedMs, estimatedBlocks</li>
- *   <li>arena.build.end: actualMs, actualBlocks, success</li>
- *   <li>arena.build.fail: reason, exception, blocksPlaced, rollbackMs</li>
- *   <li>arena.build.rollback: blocksReverted, entitiesRemoved, durationMs</li>
- * </ul>
- */
 public record ArenaMetricsContext(
     String templateId,
     int templateVersion,

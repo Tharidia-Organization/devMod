@@ -6,6 +6,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
@@ -15,24 +18,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * FASE 4 REQ-A1: Heatmap Visualizer
- *
- * Visualizza heatmap in-world con:
- * - Colorazione gradiente (blu→verde→giallo→rosso basato su densità)
- * - Multiple layer (death, movement, camping, stuck, aggro_drop, kiting)
- * - Toggle per ogni tipo di heatmap
- * - Normalizzazione automatica basata su max count
- *
- * Uso:
- * - HeatmapVisualizer.INSTANCE.toggle(HeatmapType.DEATH)
- * - HeatmapVisualizer.INSTANCE.setData(HeatmapType.DEATH, data)
- */
-
 public class HeatmapVisualizer {
     public static final HeatmapVisualizer INSTANCE = new HeatmapVisualizer();
 

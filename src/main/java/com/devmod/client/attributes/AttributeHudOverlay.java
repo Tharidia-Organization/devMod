@@ -20,16 +20,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.attributes.AttributeLogEntry;
 import com.devmod.util.I18n;
-
-/**
- * 2D HUD Overlay for the attribute monitoring system.
- * Shows a side panel with:
- * - Primary target attributes
- * - Tracked entities list
- * - Event log history
- *
- * Inspired by the "Attribute Monitoring System" reference image
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class AttributeHudOverlay {

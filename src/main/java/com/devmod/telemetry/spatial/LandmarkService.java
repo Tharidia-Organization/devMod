@@ -18,24 +18,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.phys.Vec3;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
 
-/**
- * Service for tracking player observations of landmarks.
- * M26: Landmark Observation metric.
- *
- * Landmarks are points of interest defined in config that players should notice.
- * Tracks when players look at landmarks to measure level readability.
- *
- * Thread-safe singleton for concurrent access.
- */
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 public class LandmarkService {
     public static final LandmarkService INSTANCE = new LandmarkService();
     private static final Logger LOGGER = LogUtils.getLogger();

@@ -8,6 +8,9 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -21,22 +24,6 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Line of Sight Visualizer - Shows what mobs can see from their perspective
- *
- * Features:
- * - View cone (FOV) visualization showing mob's field of view
- * - LoS rays to player (green = visible, red = blocked)
- * - Blocking obstacles highlighted
- * - Shows potential targets in mob's view cone
- *
- * Activation: Toggle in VoxelLab Dashboard or keybind
- */
-
 public class LineOfSightVisualizer {
     public static final LineOfSightVisualizer INSTANCE = new LineOfSightVisualizer();
 

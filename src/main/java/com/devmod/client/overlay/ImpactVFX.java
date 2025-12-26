@@ -8,6 +8,9 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -17,19 +20,6 @@ import net.minecraft.world.phys.Vec3;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.config.Config;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Manages 3D impact visual effects:
- * - Energy Vortex Core (energy spiral at center)
- * - Slash Animation (arc following the hit)
- * - Connection Lines (lines from core to HUD panel)
- *
- * Supports GPU-accelerated rendering via custom shader with CPU fallback.
- */
-
 public class ImpactVFX {
 
     // Active effects list (thread-safe to avoid ConcurrentModificationException)

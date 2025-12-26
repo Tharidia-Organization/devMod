@@ -3,16 +3,6 @@ package com.devmod.util;
 import java.nio.file.Path;
 
 import net.neoforged.fml.loading.FMLPaths;
-
-/**
- * Centralized path management for all DevMod configuration files.
- * Uses FMLPaths to ensure paths work correctly in both dev and production environments.
- *
- * Why this class exists:
- * - Path.of("config/devmod") depends on working directory (breaks in production)
- * - Paths.get("run/config/...") only works in dev environment
- * - FMLPaths.CONFIGDIR.get() always returns the correct config directory
- */
 public final class ConfigPaths {
 
     private ConfigPaths() {}

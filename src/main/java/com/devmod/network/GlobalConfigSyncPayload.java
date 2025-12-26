@@ -11,14 +11,6 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
-
-/**
- * Server-to-client payload for global config synchronization.
- * Used to sync ArmorConfigManager and WeaponConfigManager data to all clients
- * when config changes are made.
- *
- * @see docs/editor-design-system/06-persistence.md
- */
 public record GlobalConfigSyncPayload(
     CompoundTag armorConfigs,
     CompoundTag weaponConfigs

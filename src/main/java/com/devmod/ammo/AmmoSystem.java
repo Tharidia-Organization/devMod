@@ -21,13 +21,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import com.devmod.components.RangedComponents;
-
-/**
- * Custom ammo filtering system for ranged weapons.
- * Provides utility methods for checking valid ammo and retrieving matching items.
- *
- * @see docs/editor-design-system/16-ranged-weapons.md
- */
 public final class AmmoSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(AmmoSystem.class);
 

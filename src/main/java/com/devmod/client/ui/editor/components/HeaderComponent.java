@@ -14,12 +14,6 @@ import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Header component containing tabs, mode badges, and close button.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.4 (Header Zone)
- */
 public class HeaderComponent {
 
     // ═══════════════════════════════════════════════════════════════

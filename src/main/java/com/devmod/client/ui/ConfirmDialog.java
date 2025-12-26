@@ -14,11 +14,6 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
-
-/**
-    * Reusable confirmation dialog overlay that leverages the unified editor primitives
-    * (BaseOverlay, EditorButton, Typography) so it can be dropped into any screen.
-    */
 public final class ConfirmDialog extends BaseOverlay {
 
     private static final int PANEL_WIDTH = 340;

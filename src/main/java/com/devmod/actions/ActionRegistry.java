@@ -17,7 +17,6 @@ import net.minecraft.network.chat.Component;
 import com.devmod.DevMod;
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.TelemetryService;
-
 public final class ActionRegistry {
     private static final Map<String, RadialAction> ACTIONS = new ConcurrentHashMap<>();
 
@@ -94,7 +93,7 @@ public final class ActionRegistry {
             DevMod.LOGGER.error("[ActionRegistry] Failed to invoke action {}", id, e);
             context.sendFailure(Component.translatable("devmod.action.failed", action.getLabel()));
             ActionResult result = ActionResult.failed(ActionResult.ERROR_EXCEPTION,
-                e.getMessage(), durationMs);
+                Objects.requireNonNullElse(e.getMessage(), "Unknown error"), durationMs);
             logInvocationExtended(id, action, context, result);
             return result;
         }

@@ -3,19 +3,16 @@ package com.devmod.arena.config;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-/**
- * Configuration for the arena template system (feature flags, budgets, alerts).
- *
- * Sources (priority):
- * 1) System properties (devmod.arena.*)
- * 2) Environment variables (DEVMOD_ARENA_*)
- * 3) Code defaults
- *
- * Note: This is a lightweight holder; integration points (builder/registry/alerts)
- * can consume the snapshot for consistency during a build.
- */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Splitter;
 public class ArenaTemplateConfig {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArenaTemplateConfig.class);
+    private static final Splitter CSV_SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
 
     // === Defaults ===
     private static final String DEFAULT_TEMPLATE_DIR = "config/devmod/arena_templates/";
@@ -308,7 +305,7 @@ public class ArenaTemplateConfig {
 
     private static boolean isValidValidationMode(String mode) {
         if (mode == null) return false;
-        String normalized = mode.trim().toLowerCase();
+        String normalized = mode.trim().toLowerCase(Locale.ROOT);
         return "strict".equals(normalized) || "permissive".equals(normalized) || "lenient".equals(normalized);
     }
 
@@ -317,13 +314,17 @@ public class ArenaTemplateConfig {
         if (s != null && !s.isBlank()) {
             try {
                 return Integer.parseInt(s);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Invalid int for {}: {}", sys, s);
+            }
         }
         String e = System.getenv(env);
         if (e != null && !e.isBlank()) {
             try {
                 return Integer.parseInt(e);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ex) {
+                LOGGER.warn("Invalid int for {}: {}", env, e);
+            }
         }
         return def;
     }
@@ -333,13 +334,17 @@ public class ArenaTemplateConfig {
         if (s != null && !s.isBlank()) {
             try {
                 return Long.parseLong(s);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Invalid long for {}: {}", sys, s);
+            }
         }
         String e = System.getenv(env);
         if (e != null && !e.isBlank()) {
             try {
                 return Long.parseLong(e);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ex) {
+                LOGGER.warn("Invalid long for {}: {}", env, e);
+            }
         }
         return def;
     }
@@ -349,13 +354,17 @@ public class ArenaTemplateConfig {
         if (s != null && !s.isBlank()) {
             try {
                 return Double.parseDouble(s);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Invalid double for {}: {}", sys, s);
+            }
         }
         String e = System.getenv(env);
         if (e != null && !e.isBlank()) {
             try {
                 return Double.parseDouble(e);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ex) {
+                LOGGER.warn("Invalid double for {}: {}", env, e);
+            }
         }
         return def;
     }
@@ -387,14 +396,7 @@ public class ArenaTemplateConfig {
 
     private static List<String> parseCsv(String csv, List<String> def) {
         if (csv == null || csv.isBlank()) return def;
-        String[] parts = csv.split(",");
-        List<String> result = new ArrayList<>();
-        for (String p : parts) {
-            String trimmed = p.trim();
-            if (!trimmed.isEmpty()) {
-                result.add(trimmed);
-            }
-        }
+        List<String> result = CSV_SPLITTER.splitToList(csv);
         return result.isEmpty() ? def : result;
     }
 }

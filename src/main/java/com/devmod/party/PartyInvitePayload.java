@@ -10,11 +10,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
-
-/**
- * Payload sent from client to server to invite a player to a party.
- * The server will validate the invite and forward a notification to the target player.
- */
 public record PartyInvitePayload(
     UUID targetPlayerId,
     int questTypeOrdinal

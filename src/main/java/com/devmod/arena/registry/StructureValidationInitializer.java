@@ -4,21 +4,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Helper to wire structure manifest + provider into the registry.
- *
- * Usage:
- * <pre>
- *   StructureValidationInitializer.configure(
- *       registry,
- *       Path.of("config/devmod/structures_manifest.json"),
- *       getClass().getClassLoader()
- *   );
- * </pre>
- */
 public final class StructureValidationInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StructureValidationInitializer.class);
@@ -28,7 +17,7 @@ public final class StructureValidationInitializer {
     public static void configure(ArenaTemplateRegistry registry,
                                  Path manifestPath,
                                  ClassLoader resourceLoader,
-                                 com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
+                                 @Nullable com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         try {
             if (!Files.exists(manifestPath)) {
                 LOGGER.info("Structure manifest not found at {}, enabling fallback validation", manifestPath);

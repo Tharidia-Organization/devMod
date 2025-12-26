@@ -6,23 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Momentum System - Pacing Enforcement.
- *
- * Punishes passive play, rewards aggressive engagement.
- * Momentum builds with kills and decays when idle.
- *
- * STATES:
- * - STAGNANT (0%): Player too passive → mob spawn +20%, style decay 2x
- * - BUILDING (1-99%): Normal play, momentum building
- * - OVERDRIVE (100%): Peak aggression → 1.5x damage, 2x style for 15 sec
- *
- * Design Philosophy:
- * This system prevents camping/kiting strategies and encourages
- * players to maintain constant aggression. The OVERDRIVE reward
- * creates power fantasy moments while STAGNANT punishes passivity.
- */
 public class MomentumTracker {
     private static final Logger LOGGER = LoggerFactory.getLogger(MomentumTracker.class);
 

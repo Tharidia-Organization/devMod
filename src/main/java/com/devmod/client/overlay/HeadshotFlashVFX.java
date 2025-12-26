@@ -12,13 +12,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-
-/**
- * Red flash effect for headshots.
- * Trigger: bodyPart == HEAD
- * Duration: 300ms
- * Color: Semi-transparent red fade-out
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class HeadshotFlashVFX {
 

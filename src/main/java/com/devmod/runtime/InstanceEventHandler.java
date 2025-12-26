@@ -20,16 +20,6 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.DevMod;
-
-/**
- * Event handler for the instance dimension system.
- *
- * Hooks into:
- * - Server lifecycle (start/stop)
- * - Server tick (for processing teleports and destructions)
- * - Player login/logout (for recovery and cleanup)
- * - Player death (for quest failure)
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class InstanceEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceEventHandler.class);

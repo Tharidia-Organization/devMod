@@ -12,12 +12,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 
 import com.devmod.client.effects.ShakeManager;
-
-/**
- * Mixin for GameRenderer functionality:
- * - Disables menu blur for DevMod screens
- * - Updates screen shake effects each tick
- */
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
 

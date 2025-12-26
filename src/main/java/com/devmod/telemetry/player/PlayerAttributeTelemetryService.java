@@ -8,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
@@ -22,25 +24,6 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.util.BitPackedFlags;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Telemetry service for tracking comprehensive player attributes.
- *
- * Tracks:
- * - Health (hearts, HP, max HP, absorption)
- * - Food (hunger level, saturation, exhaustion)
- * - Movement (speed, velocity, sprint/sneak state)
- * - Combat attributes (melee, magic, ranged multipliers and cooldowns)
- * - Defensive attributes (armor, damage reduction)
- * - Physical (reach, hitbox via Pehkui)
- * - Special abilities (stamina, dash, dodge) - from perk system
- * - Resource gathering speed
- * - View distance bonuses
- *
- * Data written to player_attributes.ndjson via TelemetryService.
- */
 public class PlayerAttributeTelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
 

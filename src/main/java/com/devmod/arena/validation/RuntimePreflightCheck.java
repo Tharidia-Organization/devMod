@@ -12,20 +12,6 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * DD40: Runtime Preflight Check with instance-only gate.
- *
- * <p>Performs runtime checks before arena build:
- * <ul>
- *   <li>Chunk loading verification with timeout</li>
- *   <li>Instance-only gate (rejects overworld/nether/end)</li>
- *   <li>MSPT/TPS threshold check</li>
- *   <li>Concurrent arena limit check</li>
- * </ul>
- *
- * <p>All checks must pass before build can proceed.
- */
 public class RuntimePreflightCheck {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuntimePreflightCheck.class);

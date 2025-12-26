@@ -17,13 +17,6 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.VirtualizedList;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Overlay for selecting and managing presets with hierarchical display.
- * Shows presets organized by scope: Modpack > Category > Global > User
- *
- * @see PresetRegistry for the underlying preset system
- */
 public class PresetSelectorOverlay extends BaseOverlay {
 
     // ═══════════════════════════════════════════════════════════════

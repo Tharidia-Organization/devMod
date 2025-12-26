@@ -8,15 +8,6 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.collision.transform.AnimationSnapshot;
 import com.devmod.collision.transform.TransformProvider;
-
-/**
- * Client-side transform provider that wraps ModelPartTransformExtractor.
- *
- * This class implements the TransformProvider interface and delegates
- * to the existing ModelPartTransformExtractor for actual transform capture.
- *
- * This class should ONLY be loaded on the client side.
- */
 public final class ClientTransformProvider implements TransformProvider {
 
     public static final ClientTransformProvider INSTANCE = new ClientTransformProvider();

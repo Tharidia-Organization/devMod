@@ -12,15 +12,6 @@ import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Mode badge component for displaying editor scope/mode.
- * Shows GLOBAL/SPECIFIC scope or PREVIEW/APPLY mode.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.8 (Mode Badge)
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.4 (Header Zone)
- * @see EDITOR_DESIGN_SYSTEM.md Section 3.4 (Dual-Mode System)
- */
 public class ModeBadge {
 
     // ═══════════════════════════════════════════════════════════════

@@ -1,11 +1,6 @@
 package com.devmod.client.ui.unified;
 
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Available categories in the unified settings panel.
- * Each category has an icon, label, and accent color.
- */
 public enum SettingsCategory {
     GENERAL("General", "G", UIConstants.Status.INFO(), "General mod settings"),
     EDITOR("Editor", "E", UIConstants.Accent.CYAN(), "Item Editor UI settings"),

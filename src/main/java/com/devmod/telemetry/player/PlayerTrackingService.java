@@ -20,19 +20,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.room.RoomService;
-
-/**
- * Service for tracking player positions, room transitions, and movement patterns.
- * Extracted from TelemetryService for better separation of concerns.
- *
- * Tracks:
- * - Player room transitions (room_time.ndjson)
- * - Movement sampling for heatmaps (every 2 seconds)
- * - Out-of-bounds detection (vertical delta)
- * - Backtracking detection in dungeons
- *
- * Thread-safe singleton for concurrent access.
- */
 public class PlayerTrackingService {
     public static final PlayerTrackingService INSTANCE = new PlayerTrackingService();
 

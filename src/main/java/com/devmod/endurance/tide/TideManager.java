@@ -16,15 +16,6 @@ import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
-
-/**
- * Tide Manager - Tracks and manages the global threat level.
- *
- * The Tide rises with player failures (deaths, failed quests) and falls
- * with successes (quest completions, boss kills, SSS waves).
- *
- * When Tide reaches 1000, The Harbinger appears across all active quests.
- */
 public class TideManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TideManager.class);

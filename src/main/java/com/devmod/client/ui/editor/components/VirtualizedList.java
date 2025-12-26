@@ -12,14 +12,6 @@ import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.ScrollState;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Virtualized list component for efficient rendering of long lists.
- * Only renders visible items, with smooth scrolling support.
- *
- * @param <T> Type of items in the list
- * @see EDITOR_DESIGN_SYSTEM.md Component System
- */
 public class VirtualizedList<T> {
 
     private static final int DEFAULT_ROW_HEIGHT = 24;

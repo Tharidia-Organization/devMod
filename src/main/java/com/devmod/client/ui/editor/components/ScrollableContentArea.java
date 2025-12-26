@@ -13,16 +13,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.scroll.ScrollManager;
 import com.devmod.client.ui.scroll.ScrollMetrics;
 import com.devmod.client.ui.scroll.ScrollMode;
-
-/**
- * Scrollable content area for module content.
- * Handles scrolling, scissoring, and scrollbar rendering.
- *
- * <p>Now uses the unified {@link ScrollManager} for consistent scroll behavior.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.6 (Content Area)
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.11 (Scrollable Content Area)
- */
 public class ScrollableContentArea {
 
     // ═══════════════════════════════════════════════════════════════

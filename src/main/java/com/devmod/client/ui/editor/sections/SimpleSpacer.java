@@ -1,7 +1,6 @@
 package com.devmod.client.ui.editor.sections;
 
 import com.devmod.client.ui.editor.EditorSection;
-
 public final class SimpleSpacer implements EditorSection.SpacerSection {
     private final String id;
     private final int height;

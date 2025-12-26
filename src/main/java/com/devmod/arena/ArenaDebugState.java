@@ -3,16 +3,6 @@ package com.devmod.arena;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * DD30: HUD Visibility - permission + toggle esplicito
- *
- * Manages the debug HUD state for arena instances.
- * Toggle is explicitly OFF by default - must be enabled per-player.
- *
- * <p>NOTE: This class is in the common package so it can be accessed
- * by both server-side commands and client-side HUD rendering.</p>
- */
 public class ArenaDebugState {
 
     private static final ArenaDebugState INSTANCE = new ArenaDebugState();

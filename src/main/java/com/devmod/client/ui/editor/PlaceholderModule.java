@@ -11,11 +11,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Placeholder module for development/testing.
- * Will be replaced by actual WeaponModule and ArmorModule implementations.
- */
 public class PlaceholderModule implements EditorModule {
 
     private final String id;

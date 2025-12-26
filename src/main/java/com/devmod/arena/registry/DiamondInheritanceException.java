@@ -1,10 +1,6 @@
 package com.devmod.arena.registry;
 
 import java.util.Set;
-
-/**
- * Thrown when a diamond inheritance pattern is detected (duplicate ancestor).
- */
 public class DiamondInheritanceException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 

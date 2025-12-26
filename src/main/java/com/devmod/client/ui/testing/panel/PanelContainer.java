@@ -15,15 +15,6 @@ import static com.devmod.client.ui.testing.panel.PanelConstants.PANEL_SPACING;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SCROLLBAR_PADDING;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SCROLLBAR_THUMB_MIN_HEIGHT;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SCROLLBAR_WIDTH;
-
-/**
- * Container that manages a list of UIPanel instances with automatic layout,
- * scrolling, and background rendering.
- *
- * <p>Supports fluent configuration and efficient viewport culling.</p>
- *
- * @see UIPanel
- */
 public final class PanelContainer {
 
     private final List<UIPanel> panels = new ArrayList<>();

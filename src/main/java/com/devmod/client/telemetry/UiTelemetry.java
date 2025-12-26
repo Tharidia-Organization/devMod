@@ -9,29 +9,10 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import com.mojang.logging.LogUtils;
 
-/**
- * Client-side UI telemetry helper.
- *
- * Provides standardized tracking for screen open/close/action events
- * following the {@code {category}.{screen}.{action}} schema.
- *
- * Usage:
- * <pre>
- * // In screen constructor or init:
- * UiTelemetry.screenOpened("editor", "item_editor");
- *
- * // In screen onClose:
- * UiTelemetry.screenClosed("editor", "item_editor", durationMs);
- *
- * // For actions:
- * UiTelemetry.action("editor", "item_editor", "save_preset", Map.of("preset", presetName));
- * </pre>
- */
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public final class UiTelemetry {
     private static final Logger LOGGER = LogUtils.getLogger();

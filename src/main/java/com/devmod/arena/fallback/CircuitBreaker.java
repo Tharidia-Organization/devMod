@@ -3,16 +3,6 @@ package com.devmod.arena.fallback;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-/**
- * Circuit Breaker implementation for arena fallback strategy.
- * DD45: Fallback Chain Limits - threshold 3, window 5min, cooldown 30s.
- *
- * States:
- * - CLOSED: Normal operation, requests pass through
- * - OPEN: Circuit is tripped, requests fail fast
- * - HALF_OPEN: Testing if service has recovered
- */
 public class CircuitBreaker {
 
     public enum State {

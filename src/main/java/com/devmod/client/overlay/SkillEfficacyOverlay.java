@@ -17,19 +17,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.telemetry.skills.SkillTrackingService;
-
-/**
- * HUD Overlay for displaying skill efficacy information.
- *
- * Shows:
- * - Last 5 skills used
- * - Hit rate percentage
- * - Total damage dealt
- * - Cooldown status
- *
- * Toggle: F5 key (configurable)
- * Position: Right side, below Impact HUD
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class SkillEfficacyOverlay {

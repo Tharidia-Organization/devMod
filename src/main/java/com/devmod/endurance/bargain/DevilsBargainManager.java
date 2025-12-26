@@ -24,25 +24,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-
-/**
- * Devil's Bargain Manager - Mid-Run Risk/Reward System.
- *
- * Every 3 waves, an altar appears offering curses.
- * Players can accept curses to stack difficulty for increased rewards.
- *
- * Key Features:
- * - Curse pool with 3 tiers (Minor, Major, Cursed)
- * - Stacking reward multipliers
- * - Curse effects applied in real-time
- * - Visual feedback for cursed players
- *
- * Design Philosophy:
- * This system lets skilled players push their limits for greater rewards.
- * It creates meaningful choices: "Do I take another curse for 1.5x rewards,
- * or play it safe?" The stacking nature means late-game runs with 5+ curses
- * feel genuinely different from normal runs.
- */
 public class DevilsBargainManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DevilsBargainManager.class);
 

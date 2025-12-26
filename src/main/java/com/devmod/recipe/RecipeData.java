@@ -4,21 +4,10 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
-
 import com.google.gson.JsonObject;
 
-/**
- * Sealed interface for all recipe data types.
- * Provides type-safe pattern matching and common contract.
- *
- * Permits:
- * - CraftingRecipeData (shaped + shapeless)
- * - SmeltingRecipeData (smelting, blasting, smoking, campfire)
- * - SmithingRecipeData (transform, trim)
- * - StonecuttingRecipeData
- */
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 public sealed interface RecipeData permits
     CraftingRecipeData,
     SmeltingRecipeData,
@@ -128,6 +117,7 @@ public sealed interface RecipeData permits
     /**
      * Get the result of this recipe (if applicable).
      */
+    @Nullable
     default ResultData getResult() {
         return switch (this) {
             case CraftingRecipeData c -> c.result();

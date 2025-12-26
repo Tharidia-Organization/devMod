@@ -7,13 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
-
-/**
- * Detects version and configuration drift at end of arena template sessions (DD16).
- *
- * This component compares the initial snapshot taken at session start
- * with the current state at session end to detect any changes.
- */
 public class VersionDriftDetector {
 
     private static final Logger LOGGER = Logger.getLogger(VersionDriftDetector.class.getName());

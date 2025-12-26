@@ -12,20 +12,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Rate limiter for arena build operations (DD61).
- *
- * <p>DD61 Limits:
- * <ul>
- *   <li>Token bucket: 10 req/s burst, 5 req/s sustained</li>
- *   <li>Per-player rate limiting</li>
- *   <li>Max 3 concurrent builds (global)</li>
- *   <li>Queue max 10 waiting requests</li>
- *   <li>60s timeout for queued requests</li>
- *   <li>Retry-after header for rejected builds</li>
- * </ul>
- */
 public class ArenaBuildRateLimiter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaBuildRateLimiter.class);

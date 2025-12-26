@@ -26,19 +26,6 @@ import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
-/**
- * Resonance Chain System - Party Combo Synergy.
- *
- * When multiple players hit the same enemy within a tight time window,
- * a "Resonance Chain" triggers, multiplying damage and granting massive
- * style bonuses to all participants.
- *
- * Tiers:
- * - DUO (2 players, 500ms): 1.5x damage, +200 style each
- * - TRINITY (3 players, 300ms): 2.5x damage, +500 style, AoE shockwave
- * - APOCALYPSE (4 players, 200ms): 5.0x damage, +1000 style, instant SSS
- */
 public final class ResonanceChainSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ResonanceChainSystem.class);

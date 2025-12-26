@@ -11,26 +11,6 @@ import java.util.Set;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
-
-/**
- * Handles fuzzy search functionality for the Radial Menu.
- *
- * <p>This class provides:</p>
- * <ul>
- *   <li>Multi-strategy fuzzy matching (prefix, substring, character sequence)</li>
- *   <li>Configurable scoring weights via {@link RadialMenuConstants}</li>
- *   <li>Result limiting and sorting</li>
- *   <li>Testable without Minecraft runtime</li>
- * </ul>
- *
- * <p>Scoring strategy:</p>
- * <ol>
- *   <li><strong>Prefix match</strong>: Query matches start of name (highest score)</li>
- *   <li><strong>Substring match</strong>: Query found anywhere in name</li>
- *   <li><strong>Description match</strong>: Query found in description (additive)</li>
- *   <li><strong>Fuzzy match</strong>: All query characters found in order (lowest score)</li>
- * </ol>
- */
 public final class RadialSearchHandler {
 
     private RadialSearchHandler() {

@@ -9,17 +9,6 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Network payload for synchronizing shield state between client and server.
- *
- * <p>Used to sync:</p>
- * <ul>
- *   <li>Shield active/inactive state</li>
- *   <li>Shield strength (for visual feedback)</li>
- *   <li>Shattered state and regeneration progress</li>
- * </ul>
- */
 public record ShieldStatePayload(
     int entityId,
     boolean isActive,

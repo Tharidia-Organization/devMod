@@ -16,16 +16,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.telemetry.TelemetryService;
-
-/**
- * Compact HUD overlay showing telemetry recording status.
- * Displays in the top-right corner when telemetry is active.
- *
- * Shows:
- * - Recording indicator (pulsing red dot)
- * - Current room being tracked
- * - Time recording
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class TelemetryStatusOverlay {
 

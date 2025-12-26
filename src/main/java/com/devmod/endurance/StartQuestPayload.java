@@ -12,11 +12,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from client to server to start an Endurance Quest.
- * Supports both solo play and multiplayer party quests.
- */
 public record StartQuestPayload(
     String mobId,
     int totalWaves,

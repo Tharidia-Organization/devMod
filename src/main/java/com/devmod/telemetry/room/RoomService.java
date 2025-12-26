@@ -9,14 +9,6 @@ import net.minecraft.server.level.ServerLevel;
 
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
-
-/**
- * Central service for room definition management and resolution.
- * Handles loading, storing, and querying room definitions.
- *
- * Extracted from TelemetryService for better separation of concerns.
- * Thread-safe singleton.
- */
 public class RoomService {
     public static final RoomService INSTANCE = new RoomService();
 

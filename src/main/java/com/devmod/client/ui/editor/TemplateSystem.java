@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import net.minecraft.world.item.ItemStack;
-
 public class TemplateSystem {
     public enum TemplateType { WEAPON, ARMOR, ENCHANT, ATTRIBUTE, HYBRID }
     

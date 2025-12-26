@@ -1,10 +1,6 @@
 package com.devmod.arena.registry;
 
 import java.util.Map;
-
-/**
- * Centralized merge strategy map for ArenaTemplate inheritance.
- */
 public final class TemplateMergeRules {
 
     public enum MergeStrategy {

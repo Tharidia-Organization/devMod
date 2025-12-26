@@ -9,26 +9,6 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * DD65: Unified graceful degradation manager for arena subsystem.
- *
- * <p>Coordinates degradation across multiple services:
- * <ul>
- *   <li>Pool degradation: Disables prebuild pool on high miss rate</li>
- *   <li>Build degradation: Falls back to sync builds on async failures</li>
- *   <li>External service degradation: Uses circuit breakers</li>
- *   <li>Feature degradation: Disables non-essential features under load</li>
- * </ul>
- *
- * <p>Degradation levels:
- * <ul>
- *   <li>NORMAL: All features enabled</li>
- *   <li>DEGRADED: Non-essential features disabled</li>
- *   <li>MINIMAL: Only critical functionality</li>
- *   <li>EMERGENCY: Reject new requests, drain existing</li>
- * </ul>
- */
 public class GracefulDegradationManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GracefulDegradationManager.class);

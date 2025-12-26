@@ -8,11 +8,6 @@ import java.util.function.Consumer;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Manages editing multiple items simultaneously.
- * Lightweight implementation matching the design doc `EDITOR_DESIGN_SYSTEM.md`.
- */
 public class MultiEditManager {
 
     private static final long BATCH_TIMEOUT_MS = 5000; // 5 seconds max for batch operations

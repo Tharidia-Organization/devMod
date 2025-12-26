@@ -11,17 +11,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-
-/**
- * Record Banner Overlay - shows "NEW RECORD!" banner when player beats personal record.
- * TASK-008: P1 High Priority
- *
- * Features:
- * - Gold banner slides down from top
- * - Shows record type (wave, score, time, etc.)
- * - Particle sparkle effect
- * - Stays for 4 seconds then fades
- */
 public class RecordBannerOverlay {
 
     private static final long DISPLAY_DURATION_MS = 4000;

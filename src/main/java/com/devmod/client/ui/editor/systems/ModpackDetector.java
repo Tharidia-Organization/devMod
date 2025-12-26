@@ -10,23 +10,14 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforgespi.language.IModInfo;
 
 import com.devmod.DevMod;
-
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-/**
- * Detects the current modpack using multiple strategies.
- *
- * Detection order (first match wins):
- * 1. Explicit config file: config/devmod/modpack.txt
- * 2. CurseForge/Modrinth manifest: manifest.json in game root
- * 3. Known mod combinations (signature detection)
- */
 public final class ModpackDetector {
 
     // Known modpack signatures: modpack ID -> required mod IDs

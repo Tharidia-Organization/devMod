@@ -22,13 +22,6 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
-
-/**
- * Death screen for Endurance Quest with respawn options.
- * Displayed when player dies during a quest, offering:
- * - Respawn and continue (-100 points penalty)
- * - Give up and collect partial rewards
- */
 @OnlyIn(Dist.CLIENT)
 public class QuestDeathScreen extends Screen {
 

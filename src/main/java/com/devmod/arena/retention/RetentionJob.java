@@ -11,19 +11,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Scheduled retention job for arena data (DD23).
- *
- * <p>Runs daily at 04:00 to:
- * <ul>
- *   <li>Archive old NDJSON files</li>
- *   <li>Prune old DuckDB records</li>
- *   <li>Clean up orphaned files</li>
- * </ul>
- *
- * <p>Uses a dedicated logger 'arena.retention' for audit.
- */
 public class RetentionJob implements AutoCloseable {
 
     // DD23: Separate logger for retention audit

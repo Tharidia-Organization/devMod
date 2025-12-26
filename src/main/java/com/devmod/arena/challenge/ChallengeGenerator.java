@@ -9,17 +9,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * Challenge Generator implementing DD55: Challenge Generation.
- *
- * <p>Key features:
- * <ul>
- *   <li>5 availability checks: level, prerequisite, cooldown, template, time window</li>
- *   <li>Fallback to generic challenge when none available</li>
- *   <li>Support for multiple challenge types</li>
- * </ul>
- */
 public final class ChallengeGenerator {
 
     /**

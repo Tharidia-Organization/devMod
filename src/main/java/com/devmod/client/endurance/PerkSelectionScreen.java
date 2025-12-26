@@ -1,30 +1,26 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.PerkChoicesPayload;
-import com.devmod.endurance.PerkSelectionPayload;
-
-import com.devmod.client.ui.components.CountdownTimer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.util.I18n;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.sounds.SoundEvents;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.PacketDistributor;
-import org.lwjgl.glfw.GLFW;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Perk selection screen shown after completing a wave.
- * Displays 3 perk choices with tier colors, descriptions, and stack info.
- * Uses standard UIConstants for consistent theming.
- */
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import com.devmod.client.ui.components.CountdownTimer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.PerkChoicesPayload;
+import com.devmod.endurance.PerkSelectionPayload;
+import com.devmod.util.I18n;
 @OnlyIn(Dist.CLIENT)
 public class PerkSelectionScreen extends Screen {
 

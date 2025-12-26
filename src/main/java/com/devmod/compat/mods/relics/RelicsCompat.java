@@ -14,25 +14,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Relics mod.
- *
- * Relics provides:
- * - Powerful artifact items with abilities
- * - Leveling system for relics
- * - Active and passive abilities
- * - Experience-based progression
- * - Relic slots (via Curios/Trinkets)
- *
- * This integration allows DevMod to:
- * - Detect equipped relics
- * - Track relic levels and experience
- * - Monitor active abilities for HUD
- * - Include relic stats in telemetry
- *
- * @see <a href="https://github.com/SSKirillSS/relics">Relics GitHub</a>
- */
 public class RelicsCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(RelicsCompat.class);
     public static final String MOD_ID = "relics";

@@ -24,13 +24,6 @@ import com.devmod.DevMod;
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.ComboSystem;
-
-/**
- * Registry of all available Blood Contracts.
- *
- * Contracts are organized by tier and effect type.
- * The system offers 3 random contracts per wave checkpoint.
- */
 public final class BloodContractRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BloodContractRegistry.class);

@@ -9,6 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -31,14 +34,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.Config;
 import com.devmod.effects.TrailEffect;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Manages projectile trail effects.
- * Tracks projectiles and renders glowing trails behind them.
- */
 public class TrailManager {
 
     public static final TrailManager INSTANCE = new TrailManager();

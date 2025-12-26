@@ -17,11 +17,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.DevMod;
-
-/**
- * Confirmation screen for opening external URLs.
- * Provides "Open in Browser" and "Copy URL" options with fallback handling.
- */
 @OnlyIn(Dist.CLIENT)
 public class OpenExternalConfirmScreen extends Screen {
 

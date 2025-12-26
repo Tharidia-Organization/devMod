@@ -4,10 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Record types for arena telemetry data.
- * Used by DuckDBBatchWriter and DuckDBQueryAPI for unified arena analytics.
- */
+import javax.annotation.Nullable;
 public final class ArenaRecords {
 
     private ArenaRecords() {}
@@ -18,12 +15,12 @@ public final class ArenaRecords {
     public record BuildRecord(
         UUID buildId,
         String templateId,
-        String templateVersion,
+        @Nullable String templateVersion,
         Instant startedAt,
         Instant completedAt,
-        Long durationMs,
+        @Nullable Long durationMs,
         String status,
-        String errorMessage
+        @Nullable String errorMessage
     ) {
         public static BuildRecord success(String templateId, String version, Instant startedAt, long durationMs) {
             return new BuildRecord(
@@ -58,30 +55,30 @@ public final class ArenaRecords {
     public record BuildEventRecord(
         UUID arenaId,
         String templateId,
-        Integer templateVersion,
-        String policyId,
-        Integer policyVersion,
+        @Nullable Integer templateVersion,
+        @Nullable String policyId,
+        @Nullable Integer policyVersion,
         Instant startedAt,
         Instant completedAt,
-        Long estimatedBlocks,
-        Long actualBlocks,
-        Long estimatedMs,
-        Long actualMs,
-        Boolean success,
-        String errorMessage,
-        Long rollbackMs,
-        Integer blocksReverted,
-        Integer originX,
-        Integer originY,
-        Integer originZ,
-        String dimension,
-        Double baselineMspt,
-        Double avgMspt,
-        Double peakMspt,
-        Double maxBuildImpactMs,
-        Integer pauseCount,
-        Integer throttleCount,
-        Boolean perfAborted
+        @Nullable Long estimatedBlocks,
+        @Nullable Long actualBlocks,
+        @Nullable Long estimatedMs,
+        @Nullable Long actualMs,
+        @Nullable Boolean success,
+        @Nullable String errorMessage,
+        @Nullable Long rollbackMs,
+        @Nullable Integer blocksReverted,
+        @Nullable Integer originX,
+        @Nullable Integer originY,
+        @Nullable Integer originZ,
+        @Nullable String dimension,
+        @Nullable Double baselineMspt,
+        @Nullable Double avgMspt,
+        @Nullable Double peakMspt,
+        @Nullable Double maxBuildImpactMs,
+        @Nullable Integer pauseCount,
+        @Nullable Integer throttleCount,
+        @Nullable Boolean perfAborted
     ) {
         public static BuildEventRecord fromBuildRecord(BuildRecord build) {
             Integer version = null;
@@ -126,13 +123,13 @@ public final class ArenaRecords {
      */
     public record BuildPerformanceRecord(
         UUID arenaId,
-        Double baselineMspt,
-        Double avgMspt,
-        Double peakMspt,
-        Double maxBuildImpactMs,
-        Integer pauseCount,
-        Integer throttleCount,
-        Boolean perfAborted
+        @Nullable Double baselineMspt,
+        @Nullable Double avgMspt,
+        @Nullable Double peakMspt,
+        @Nullable Double maxBuildImpactMs,
+        @Nullable Integer pauseCount,
+        @Nullable Integer throttleCount,
+        @Nullable Boolean perfAborted
     ) {}
 
     /**
@@ -140,9 +137,9 @@ public final class ArenaRecords {
      */
     public record BuildPerformanceSample(
         Instant timestamp,
-        Double baselineMspt,
-        Double avgMspt,
-        Double peakMspt
+        @Nullable Double baselineMspt,
+        @Nullable Double avgMspt,
+        @Nullable Double peakMspt
     ) {}
 
     /**
@@ -186,7 +183,7 @@ public final class ArenaRecords {
     public record SpatialEventRecord(
         UUID eventId,
         String templateId,
-        Integer templateVersion,
+        @Nullable Integer templateVersion,
         UUID sessionId,
         String eventType,
         int gridX,

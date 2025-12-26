@@ -21,6 +21,10 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -47,11 +51,6 @@ import com.devmod.components.WeaponComponents;
 import com.devmod.integration.PufferfishCompat;
 import com.devmod.network.PacketValidator;
 import com.devmod.stats.WeaponStats;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
 public class WeaponConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeaponConfigManager.class);

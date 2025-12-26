@@ -8,17 +8,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 
 import com.devmod.DevMod;
-
-/**
- * Tracks potion/effect usage as "skills" for telemetry analytics.
- *
- * Skills tracked:
- * - Potion applications (healing, regeneration, strength, etc.)
- * - Harmful effect applications (poison, wither, etc.)
- *
- * A skill "hits" when it successfully affects an entity (damage/heal).
- * A skill "whiffs" when it expires without doing anything meaningful.
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class EffectSkillTracker {
 

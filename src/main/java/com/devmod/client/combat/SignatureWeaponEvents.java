@@ -12,11 +12,6 @@ import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 import com.devmod.DevMod;
 import com.devmod.combat.signature.SoulImprint;
-
-/**
- * Client-side event handlers for Signature Weapon system.
- * Handles tooltip rendering and name display modifications.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class SignatureWeaponEvents {
 

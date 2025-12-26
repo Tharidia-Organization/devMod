@@ -4,12 +4,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
-
-/**
- * Options for arena resolution (DD14).
- *
- * <p>Used by prepareArenaForPartyV2() to configure arena selection and build.
- */
 public record ResolveOptions(
     // Party context
     UUID partyId,

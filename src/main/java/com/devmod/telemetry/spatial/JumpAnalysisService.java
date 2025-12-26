@@ -17,19 +17,6 @@ import net.minecraft.world.phys.Vec3;
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
 import com.devmod.telemetry.util.BitPackedFlags;
-
-/**
- * Service for tracking and analyzing jump patterns (M18).
- *
- * Features:
- * - Jump frequency tracking per room
- * - Jump height analysis
- * - Jump direction patterns
- * - Failed jump detection (short jumps, wall collisions)
- * - Parkour segment difficulty estimation
- *
- * Thread-safe for concurrent access from multiple server threads.
- */
 public class JumpAnalysisService {
     public static final JumpAnalysisService INSTANCE = new JumpAnalysisService();
 

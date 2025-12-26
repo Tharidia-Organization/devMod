@@ -23,13 +23,6 @@ import com.devmod.DevMod;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.party.ArrivalConfirmPayload;
 import com.devmod.party.QuestSequencePayload;
-
-/**
- * Client-side overlay that shows the quest start sequence countdown.
- * Displays: phase name, countdown timer, arrival status, and progress bar.
- *
- * Registered as a GUI layer to render properly in the HUD.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class QuestSequenceOverlay {
 

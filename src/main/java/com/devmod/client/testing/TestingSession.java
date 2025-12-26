@@ -29,6 +29,13 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import net.minecraft.client.Minecraft;
 
 import com.devmod.client.overlay.ImpactData;
@@ -43,18 +50,6 @@ import com.devmod.testing.DynamicTestGenerator;
 import com.devmod.testing.ModDiscoveryService;
 import com.devmod.testing.TestCase;
 import com.devmod.util.ConfigPaths;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-/**
- * Manages the QA Testing Session with all test cases for DevMod.
- * Provides achievement-style progression tracking and report generation.
- */
 public class TestingSession {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestingSession.class);
     public static final TestingSession INSTANCE = new TestingSession();

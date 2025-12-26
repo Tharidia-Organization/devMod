@@ -9,13 +9,6 @@ import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Section header component for grouping related controls.
- * Supports collapsible sections with optional icon.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 3.3 (EditorSection.Header)
- */
 public class SectionHeader {
 
     // ═══════════════════════════════════════════════════════════════

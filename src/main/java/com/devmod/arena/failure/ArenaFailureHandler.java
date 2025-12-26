@@ -9,16 +9,6 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Handles arena failures with user-friendly messages and logging.
- * DD46: Default Fail Message - user-friendly, no tech details.
- *
- * <p>This handler:
- * - Shows player-friendly messages (no technical details)
- * - Logs full stack traces for debugging
- * - Triggers alerts for critical failures
- */
 public class ArenaFailureHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaFailureHandler.class);

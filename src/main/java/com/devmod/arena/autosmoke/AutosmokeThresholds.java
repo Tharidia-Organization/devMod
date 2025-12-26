@@ -3,13 +3,6 @@ package com.devmod.arena.autosmoke;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-
-/**
- * DD33: Autosmoke Assert Exceptions - soglie per size + whitelist
- *
- * Defines threshold configurations for autosmoke tests.
- * Three preset modes: STRICT, LARGE, ASYNC
- */
 public record AutosmokeThresholds(
     /** Maximum players allowed in test arena */
     int maxPlayers,

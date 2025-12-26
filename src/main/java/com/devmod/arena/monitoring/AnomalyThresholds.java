@@ -1,12 +1,6 @@
 package com.devmod.arena.monitoring;
 
 import java.time.Duration;
-
-/**
- * Anomaly detection thresholds for 48h monitoring (DD68).
- *
- * <p>Defines thresholds for various metrics with escalation levels.
- */
 public record AnomalyThresholds(
     // Build metrics - DD57: P50, P95, P99 percentiles
     Duration buildP50Warn,

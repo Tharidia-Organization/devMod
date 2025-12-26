@@ -6,6 +6,9 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
@@ -27,11 +30,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import com.devmod.ModConfig;
 import com.devmod.config.Config;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
 import static com.devmod.DevMod.MODID;
-
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 // Minecraft API methods are not annotated but never return null in practice
 

@@ -15,18 +15,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-/**
- * Leaderboard Service implementing DD56: Leaderboard Batch.
- *
- * <p>Key features:
- * <ul>
- *   <li>Scheduled calculation at 03:00 daily</li>
- *   <li>Redis cache with 25h TTL</li>
- *   <li>O(1) player rank lookup via secondary index</li>
- *   <li>Pagination support</li>
- * </ul>
- */
 public final class LeaderboardService {
 
     /**

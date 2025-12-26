@@ -34,18 +34,6 @@ import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.registry.ValidationResult;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Transactional arena builder with full rollback capability (DD7-10).
- *
- * <p>Features:
- * <ul>
- *   <li>DD7: Full transaction support with block/entity/chunk tracking</li>
- *   <li>DD8: Memory-safe with 150k block limit</li>
- *   <li>DD9: Chunk loading with polling and timeout</li>
- *   <li>DD10: Build time estimation (heuristic + historical)</li>
- * </ul>
- */
 public class ArenaBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaBuilder.class);

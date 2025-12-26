@@ -8,13 +8,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Network payload for synchronizing shield impact events.
- *
- * <p>Sent from server to nearby clients when a shield blocks damage,
- * triggering visual effects (ripples, flash, particles).</p>
- */
 public record ShieldImpactPayload(
     int entityId,
     double impactX,

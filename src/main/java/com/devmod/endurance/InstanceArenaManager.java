@@ -13,17 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.runtime.InstanceManager;
 import com.devmod.runtime.InstanceRegistry;
-
-/**
- * Adapter that integrates the Instance Dimension System with EnduranceQuestManager.
- *
- * When enabled, quests run in isolated temporary dimensions instead of the overworld.
- * This provides:
- * - Complete isolation between quest instances
- * - No residual data after quest completion
- * - Parallel instances for multiple players
- * - Automatic cleanup on disconnect/crash
- */
 public class InstanceArenaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceArenaManager.class);
     public static final InstanceArenaManager INSTANCE = new InstanceArenaManager();

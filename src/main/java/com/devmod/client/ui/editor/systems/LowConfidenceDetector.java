@@ -19,14 +19,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.modules.RangedModule;
 import com.devmod.client.ui.editor.modules.WeaponModule;
 import com.devmod.config.EditorClientConfig;
-
-/**
- * Handles low-confidence weapon type detection warnings.
- * Displays a dialog when the weapon type detection confidence is below threshold,
- * allowing user to continue, whitelist, or cancel.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#37-confirmation-dialogs
- */
 public final class LowConfidenceDetector extends BaseOverlay {
 
     // Dialog dimensions

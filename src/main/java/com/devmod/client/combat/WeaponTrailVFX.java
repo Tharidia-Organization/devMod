@@ -6,6 +6,9 @@ import java.util.Objects;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -24,23 +27,6 @@ import net.neoforged.fml.ModList;
 import com.devmod.DevMod;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Weapon Trail VFX System - Renders luminous trails following weapon swings.
- *
- * <p>Features:</p>
- * <ul>
- *   <li>GPU shader with HSV color enhancement (like EpicFightSwordLight)</li>
- *   <li>Ribbon geometry generated from weapon position history</li>
- *   <li>Emissive glow effect</li>
- *   <li>Configurable colors and intensity</li>
- *   <li>CPU fallback when shader unavailable</li>
- * </ul>
- */
-
 public class WeaponTrailVFX {
 
     // Singleton instance

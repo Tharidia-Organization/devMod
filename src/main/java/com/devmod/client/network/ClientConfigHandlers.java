@@ -15,14 +15,6 @@ import com.devmod.network.MobConfigConfirmPayload;
 import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.recipe.RecipeConfigManager;
 import com.devmod.util.I18n;
-
-/**
- * Client-side handlers for config sync network packets.
- * This class is only loaded on the client and handles all client-specific operations.
- *
- * IMPORTANT: This class must ONLY be called from client-side code or via side-check guards.
- * Direct invocation from common code will cause ClassNotFoundException on dedicated servers.
- */
 @OnlyIn(Dist.CLIENT)
 public final class ClientConfigHandlers {
 

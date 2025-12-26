@@ -18,11 +18,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.config.MobPresetManager;
 import com.devmod.network.UpdateMobStatsPayload;
-
-/**
- * State management for MobConfigScreen.
- * Handles values, presets, animations, and save/load operations.
- */
 public class MobConfigScreenState {
 
     // Slider max values

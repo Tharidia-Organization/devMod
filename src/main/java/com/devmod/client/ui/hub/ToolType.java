@@ -6,12 +6,6 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
 import com.devmod.actions.client.ClientActionContexts;
-
-/**
- * Enum representing the available tools/overlays in the TestingHub.
- * Each tool has a hotkey, a method to check if it's active,
- * and a method to toggle it.
- */
 public enum ToolType {
     DEBUG("Debug Overlay", "G", ActionIds.DEBUG_OVERLAY_TOGGLE),
     LIGHT_LEVEL("Light Levels", "L", ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE),

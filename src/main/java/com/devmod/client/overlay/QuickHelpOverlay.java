@@ -17,13 +17,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.input.KeyInputHandler;
-
-/**
- * Quick Help Overlay - Shows main keybinds during gameplay.
- *
- * Toggled with F1. Displays a semi-transparent overlay with the most
- * important keybinds for quick reference without opening a menu.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class QuickHelpOverlay {

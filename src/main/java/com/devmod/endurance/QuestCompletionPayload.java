@@ -12,11 +12,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Network payload sent from server to client when quest is completed.
- * Contains all the reward information for display in QuestCompletionScreen.
- */
 public record QuestCompletionPayload(
     // Quest info
     String questName,

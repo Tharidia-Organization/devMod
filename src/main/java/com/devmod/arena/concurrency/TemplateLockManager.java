@@ -12,18 +12,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Lock manager for template operations with automatic cleanup (DD60, DD62).
- *
- * <p>Features:
- * <ul>
- *   <li>DD60: 60s stale threshold (lock expiry)</li>
- *   <li>DD60: Scheduled cleanup every 10 seconds</li>
- *   <li>DD62: Lock striping for reduced contention</li>
- *   <li>No memory leak for dynamic templates</li>
- * </ul>
- */
 public class TemplateLockManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateLockManager.class);

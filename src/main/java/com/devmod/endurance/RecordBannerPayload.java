@@ -8,11 +8,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-/**
- * Payload sent from server to client when a new personal record is achieved.
- * Triggers the "NEW RECORD!" banner overlay.
- */
 public record RecordBannerPayload(String recordType, String recordValue) implements CustomPacketPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "record_banner"));

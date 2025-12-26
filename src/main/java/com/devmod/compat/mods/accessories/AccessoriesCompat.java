@@ -1,14 +1,5 @@
 package com.devmod.compat.mods.accessories;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,26 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Compatibility module for Accessories.
- *
- * Accessories is a modern equipment slot API providing:
- * - Flexible slot system (rings, necklaces, capes, etc.)
- * - Data-driven slot definitions
- * - Attribute modifiers from accessories
- * - Rendering support for worn items
- *
- * This integration allows DevMod to:
- * - Detect equipped accessories for stat calculations
- * - Display accessory info in HUD overlays
- * - Support accessories in the item editor
- * - Include accessory stats in telemetry
- *
- * Note: Accessories is similar to Curios but with a different API.
- * Both may be present in a modpack.
- *
- * @see <a href="https://github.com/wisp-forest/accessories">Accessories GitHub</a>
- */
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 public class AccessoriesCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccessoriesCompat.class);
     public static final String MOD_ID = "accessories";

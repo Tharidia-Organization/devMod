@@ -1,12 +1,6 @@
 package com.devmod.client.ui.editor.systems;
 
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Facade used by the MultiEdit subsystem to apply presets to ItemStack instances.
- * Projects with domain-specific preset managers (eg. MobPresetManager) can implement
- * this interface to provide a unified API.
- */
 public interface PresetManager {
     /**
      * Apply the preset to the provided item in the given slot index.

@@ -24,25 +24,6 @@ import com.devmod.runtime.InstanceState;
 import com.devmod.runtime.PlayerInstanceSnapshot;
 import com.devmod.runtime.PlayerInstanceState;
 import com.devmod.runtime.RecoverySystem;
-
-/**
- * L0 Boot Verification GameTests
- *
- * These tests verify that DevMod initializes correctly without breaking the game.
- * All tests in this class are REQUIRED - any failure blocks further testing.
- *
- * Run with: ./gradlew runGameTestServer
- *
- * Test Coverage:
- * - L0-01: Server startup
- * - L0-02: Instance system initialization
- * - L0-03: Recovery system initialization
- * - L0-04: Dimension manager initialization
- * - L0-05: Registry accessibility
- * - L0-06: Config managers accessible
- * - L0-07: Entity types registered
- * - L0-08: Items accessible
- */
 @GameTestHolder(DevMod.MODID)
 @PrefixGameTestTemplate(false)
 public class L0BootVerificationTests {

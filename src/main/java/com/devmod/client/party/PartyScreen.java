@@ -1,15 +1,19 @@
 package com.devmod.client.party;
 
-import com.devmod.party.NamedInvitePayload;
-import com.devmod.party.PartyActionPayload;
-import com.devmod.party.PartyData;
-import com.devmod.party.PartySyncPayload;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-import com.devmod.endurance.EnduranceQuestRegistry;
-import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
-import com.devmod.endurance.QuestType;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,26 +24,20 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-/**
- * Epic Party Management Screen - Guild Hall Style
- * Features animated borders, glow effects, and RPG-style presentation.
- */
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.EnduranceQuestRegistry;
+import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
+import com.devmod.endurance.QuestType;
+import com.devmod.party.NamedInvitePayload;
+import com.devmod.party.PartyActionPayload;
+import com.devmod.party.PartyData;
+import com.devmod.party.PartySyncPayload;
 @OnlyIn(Dist.CLIENT)
 public class PartyScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyScreen.class);

@@ -13,15 +13,6 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatRegistry;
-
-/**
- * Manages integrations with external mods (Pehkui, Better Combat, Distant Horizons, etc.)
- * All dependencies are soft (optional) - the mod works without them.
- *
- * NOTE: This class works alongside the new CompatRegistry system.
- * Legacy integrations are maintained here for backwards compatibility.
- * New integrations should use the CompatModule pattern.
- */
 public class ModIntegrationManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModIntegrationManager.class);
 
@@ -147,7 +138,8 @@ public class ModIntegrationManager {
      * Gets the visual scale of an entity from Pehkui.
      * @return scale (1.0 = normal), or null if Pehkui is not present
      */
-    public static Float getPehkuiScale(LivingEntity entity) {
+    @Nullable
+    public static Float getPehkuiScale(@Nullable LivingEntity entity) {
         if (!pehkuiLoaded || entity == null) return null;
         try {
             return PehkuiIntegration.getScale(entity);
@@ -162,7 +154,8 @@ public class ModIntegrationManager {
      * Can be different from the visual scale.
      * @return hitbox scale, or null if Pehkui is not present
      */
-    public static Float getPehkuiHitboxScale(LivingEntity entity) {
+    @Nullable
+    public static Float getPehkuiHitboxScale(@Nullable LivingEntity entity) {
         if (!pehkuiLoaded || entity == null) return null;
         try {
             return PehkuiIntegration.getHitboxScale(entity);

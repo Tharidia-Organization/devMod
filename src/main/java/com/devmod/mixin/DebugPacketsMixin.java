@@ -31,12 +31,6 @@ import net.minecraft.world.level.pathfinder.Path;
 
 import com.devmod.debug.DebugFeature;
 import com.devmod.debug.DebugManager;
-
-/**
- * Mixin into Minecraft's DebugPackets class to actually send debug packets.
- * In release builds, these methods are empty - this mixin makes them work.
- * Similar to what DebugUtils mod does.
- */
 @Mixin(DebugPackets.class)
 public class DebugPacketsMixin {
 

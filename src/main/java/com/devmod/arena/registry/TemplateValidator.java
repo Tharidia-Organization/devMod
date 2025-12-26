@@ -2,11 +2,10 @@ package com.devmod.arena.registry;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
-/**
- * Template validator orchestrating hazard + spawn validation and basic schema checks.
- */
+import javax.annotation.Nullable;
 public class TemplateValidator {
 
     private static final int MAX_SIZE = 256;
@@ -23,12 +22,19 @@ public class TemplateValidator {
 
     private ValidationMode mode = ValidationMode.STRICT;
     private InstanceSettingsValidator.InstanceLimits instanceLimits = InstanceSettingsValidator.InstanceLimits.defaults();
+    @Nullable
     private InstanceSettingsValidator.Telemetry instanceTelemetry;
+    @Nullable
     private StructureManifest structureManifest;
+    @Nullable
     private StructureDataProvider structureDataProvider;
+    @Nullable
     private StructureFallbackConfig structureFallbackConfig;
+    @Nullable
     private StructureTelemetry structureTelemetry;
+    @Nullable
     private HazardValidator.HazardTelemetry hazardTelemetry;
+    @Nullable
     private java.util.Set<String> registeredCustomHazards;
     private static final int EXPECTED_SCHEMA_VERSION = 1;
     private static final List<String> ALLOWED_PARTICLE_AREAS = List.of("bounds", "chunks");
@@ -73,7 +79,7 @@ public class TemplateValidator {
      */
     public static ValidationMode fromString(String value, ValidationMode defaultMode) {
         if (value == null || value.isBlank()) return defaultMode;
-        return switch (value.trim().toLowerCase()) {
+        return switch (value.trim().toLowerCase(Locale.ROOT)) {
             case "strict" -> ValidationMode.STRICT;
             case "permissive" -> ValidationMode.PERMISSIVE;
             case "lenient" -> ValidationMode.LENIENT;
@@ -163,7 +169,7 @@ public class TemplateValidator {
         validateCeiling(template.ceiling(), errors);
         validateUnderfloor(template.underfloor(), errors);
         validateBoundsClosure(template, errors, warnings);
-        validatePalette(template.palette(), warnings, errors);
+        validatePalette(template.palette(), errors);
         validateBiome(template.biome(), errors);
         validateCompat(template.compat(), errors);
         validateForbiddenZones(template, template.forbiddenZones(), sizeX, sizeZ, errors);
@@ -319,7 +325,7 @@ public class TemplateValidator {
         }
     }
 
-    private void validatePalette(ArenaTemplate.Palette palette, List<String> warnings, List<String> errors) {
+    private void validatePalette(ArenaTemplate.Palette palette, List<String> errors) {
         if (palette == null) return;
         if (palette.accent() == null || palette.accent().isBlank()) {
             errors.add("palette.accent is required");
@@ -378,8 +384,11 @@ public class TemplateValidator {
                 warnings.add("tags contains blank entry");
             } else if (tag.contains(" ")) {
                 warnings.add("tag '%s' contains whitespace".formatted(tag));
-            } else if (DIMENSION_TAGS.contains(tag.toLowerCase())) {
-                dimensionFound.add(tag.toLowerCase());
+            } else {
+                String normalized = tag.toLowerCase(Locale.ROOT);
+                if (DIMENSION_TAGS.contains(normalized)) {
+                    dimensionFound.add(normalized);
+                }
             }
         }
         if (dimensionFound.size() > 1) {

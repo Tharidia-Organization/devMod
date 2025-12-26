@@ -5,15 +5,14 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import com.mojang.brigadier.context.CommandContext;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-
-import com.mojang.brigadier.context.CommandContext;
-
 public final class ActionContext {
     @Nullable
     private final Player player;

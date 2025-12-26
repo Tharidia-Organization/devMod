@@ -3,23 +3,6 @@ package com.devmod.client.ui.components;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Reusable scrollable area component for consistent scroll behavior across UI screens.
- *
- * Features:
- * - Configurable scroll speed and bounds
- * - Optional scrollbar rendering
- * - Scissor-based content clipping
- * - Consistent mouse wheel handling
- *
- * Usage:
- * 1. Create instance with bounds and content height
- * 2. Call beginScissor() before rendering content
- * 3. Render content with getScrollOffset() applied to Y positions
- * 4. Call endScissor() after rendering
- * 5. Forward mouseScrolled() events to handle()
- */
 public class ScrollableArea {
 
     // Configuration

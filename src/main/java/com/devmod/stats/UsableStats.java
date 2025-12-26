@@ -5,11 +5,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.minecraft.nbt.CompoundTag;
-
-/**
- * Usable item statistics for items with cooldowns, use durations, and throwable properties.
- * Applied to items like snowballs, potions, goat horns, shields, bows, etc.
- */
 public class UsableStats {
     // ═══════════════════════════════════════════════════════════════
     // USE PROPERTIES

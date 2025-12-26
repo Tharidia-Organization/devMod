@@ -9,17 +9,6 @@ import javax.annotation.Nullable;
 
 import com.devmod.arena.policy.ResolveContext;
 import com.devmod.arena.policy.ResolvedArena;
-
-/**
- * Arena Service V2 API implementing DD14: API Migration.
- *
- * <p>Key features:
- * <ul>
- *   <li>prepareArenaForPartyV2 with ArenaHandle return type</li>
- *   <li>Full resolution context support</li>
- *   <li>Async operations with CompletableFuture</li>
- * </ul>
- */
 public interface ArenaService {
 
     // ========================================

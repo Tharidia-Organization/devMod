@@ -5,14 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 import net.minecraft.client.gui.Font;
-
-/**
- * Utility for detecting rendering issues like overflow, truncation, and misalignment.
- *
- * @see DebugWarning
- * @see WarningType
- * @see docs/editor-design-system/14-debug-overlay.md
- */
 public final class OverflowDetector {
 
     private OverflowDetector() {} // Static utility class

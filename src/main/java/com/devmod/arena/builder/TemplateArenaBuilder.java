@@ -10,13 +10,6 @@ import com.devmod.arena.policy.ResolvedArena;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Template-focused builder entrypoint.
- *
- * <p>Thin wrapper around {@link ArenaBuilder} that preserves the legacy API
- * while offering policy-aware build helpers.</p>
- */
 public class TemplateArenaBuilder extends ArenaBuilder {
 
     public TemplateArenaBuilder(

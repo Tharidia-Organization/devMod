@@ -10,11 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Payload for syncing debug feature state from server to client.
- * Tells the client to enable/disable a specific debug renderer.
- */
 public record DebugSyncPayload(String featureId, boolean enabled) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<DebugSyncPayload> TYPE =

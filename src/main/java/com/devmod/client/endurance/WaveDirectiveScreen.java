@@ -1,28 +1,26 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.WaveDirectiveChoicesPayload;
-import com.devmod.endurance.WaveDirectiveSelectionPayload;
-
-import com.devmod.client.ui.components.CountdownTimer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.util.I18n;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.PacketDistributor;
-
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Simple directive selection screen shown between waves.
- */
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import com.devmod.client.ui.components.CountdownTimer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.WaveDirectiveChoicesPayload;
+import com.devmod.endurance.WaveDirectiveSelectionPayload;
+import com.devmod.util.I18n;
 @OnlyIn(Dist.CLIENT)
 public class WaveDirectiveScreen extends Screen {
     private static final int PANEL_WIDTH = 360;

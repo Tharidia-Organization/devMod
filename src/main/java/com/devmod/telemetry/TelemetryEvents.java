@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -30,10 +32,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import com.devmod.DevMod;
 import com.devmod.config.Config;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
-
-import com.mojang.logging.LogUtils;
-
-// EntityJoinLevelEvent handling moved to DeferredEntityProcessor for performance.
 @EventBusSubscriber(modid = DevMod.MODID)
 public class TelemetryEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

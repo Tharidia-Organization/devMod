@@ -12,24 +12,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Shield API.
- *
- * Shield API provides:
- * - Custom shield mechanics and properties
- * - Blocking angle configuration
- * - Shield enchantments support
- * - Damage reduction calculations
- *
- * This integration allows DevMod to:
- * - Detect custom shields
- * - Get shield properties (block angle, cooldown)
- * - Track shield blocking state
- * - Include shield stats in combat telemetry
- *
- * @see <a href="https://github.com/ZsoltMolnaique/ShieldAPI">Shield API GitHub</a>
- */
 public class ShieldApiCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShieldApiCompat.class);
     public static final String MOD_ID = "shield_api";

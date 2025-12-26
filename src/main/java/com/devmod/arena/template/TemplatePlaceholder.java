@@ -8,23 +8,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.Nullable;
-
-/**
- * Template Placeholder System (DD9).
- *
- * <p>Supports dynamic content substitution in templates using ${key} syntax.
- *
- * <p>Built-in placeholders:
- * <ul>
- *   <li>${player_name} - Primary player's name</li>
- *   <li>${player_uuid} - Primary player's UUID</li>
- *   <li>${party_size} - Number of players in party</li>
- *   <li>${arena_id} - Arena instance ID</li>
- *   <li>${template_id} - Template ID</li>
- *   <li>${timestamp} - ISO-8601 timestamp</li>
- *   <li>${random_int} - Random integer 0-999</li>
- * </ul>
- */
 public class TemplatePlaceholder {
 
     /**

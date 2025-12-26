@@ -28,12 +28,6 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Crafting recipe + value analysis overlay.
- * Extends BaseOverlay for consistent modal behavior with dynamic height.
- * Mirrors docs/editor-design-system/03-crafting-analysis.md (Section 2.6).
- */
 public class CraftingInfoPanel extends BaseOverlay {
 
     public record IngredientValue(ItemStack item, int count, RarityTier rarity, int value) {}

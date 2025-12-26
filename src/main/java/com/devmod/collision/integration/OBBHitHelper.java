@@ -16,28 +16,6 @@ import com.devmod.collision.transform.AnimationSnapshot;
 import com.devmod.collision.transform.TransformProviderRegistry;
 import com.devmod.combat.HitHelper;
 import com.devmod.config.Config;
-
-/**
- * Drop-in replacement/enhancement for HitHelper using OBB system.
- *
- * Maintains API compatibility with existing code while adding
- * rotation-aware body part detection.
- *
- * Usage:
- * <pre>
- * // Instead of:
- * HitHelper.HitResult result = HitHelper.rayTraceBodyPartWithHitPoint(attacker, target);
- *
- * // Use:
- * HitHelper.HitResult result = OBBHitHelper.rayTraceBodyPart(attacker, target);
- * </pre>
- *
- * The system automatically falls back to AABB-based detection when:
- * - OBB system is disabled in config
- * - Entity has no registered body parts
- * - An error occurs during OBB calculation
- */
-
 public final class OBBHitHelper {
 
     private OBBHitHelper() {} // Utility class

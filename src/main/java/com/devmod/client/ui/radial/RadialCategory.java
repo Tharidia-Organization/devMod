@@ -6,11 +6,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Represents a category in the radial menu.
- * Categories can contain items and optionally subcategories.
- */
 public class RadialCategory {
     private final String id;
     private final String name;

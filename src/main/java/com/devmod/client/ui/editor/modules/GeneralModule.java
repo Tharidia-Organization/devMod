@@ -37,22 +37,6 @@ import com.devmod.client.ui.editor.sections.ModuleCardSection;
 import com.devmod.client.ui.editor.sections.ModuleSummarySection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-
-/**
- * General/Navigation Hub module for the Item Editor.
- *
- * <p>Serves as the central navigation point when opening items that could be
- * edited by multiple specialized modules. Provides:</p>
- * <ul>
- *   <li><b>Overview Tab</b> - Navigation cards to switch to specialized modules</li>
- *   <li><b>Quick Settings Tab</b> - Basic item properties (stack size, durability)</li>
- *   <li><b>Status Tab</b> - Cross-module summaries showing key stats</li>
- *   <li><b>Info Tab</b> - Read-only item metadata</li>
- * </ul>
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 27 (Navigation Hub)
- */
-
 public class GeneralModule extends AbstractEditorModule {
 
     // ═══════════════════════════════════════════════════════════════

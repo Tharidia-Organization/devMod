@@ -8,6 +8,10 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -29,14 +33,6 @@ import com.devmod.DevMod;
 import com.devmod.config.EditorClientConfig;
 import com.devmod.tags.ModTags;
 import com.devmod.util.ConfigPaths;
-
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-/**
- * Weapon type detection with confidence and explicit detection method.
- */
 public class WeaponTypeDetector {
 
     public record DetectionResult(

@@ -12,24 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Entity Culling.
- *
- * Entity Culling provides:
- * - Occlusion culling for entities
- * - Block entity culling
- * - Frustum-based visibility checks
- * - Reduced render calls for hidden entities
- *
- * This integration allows DevMod to:
- * - Detect Entity Culling presence
- * - Track culling statistics
- * - Monitor performance impact
- * - Include culling metrics in telemetry
- *
- * @see <a href="https://github.com/tr7zw/EntityCulling">Entity Culling GitHub</a>
- */
 public class EntityCullingCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(EntityCullingCompat.class);
     public static final String MOD_ID = "entityculling";

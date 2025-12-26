@@ -5,10 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-/**
- * Console alert channel for local visibility.
- */
 public class ConsoleAlertChannel implements AlertRouter.AlertChannel {
 
     private static final DateTimeFormatter TS_FORMAT = DateTimeFormatter.ISO_INSTANT;

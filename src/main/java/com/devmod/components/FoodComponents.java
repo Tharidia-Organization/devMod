@@ -12,11 +12,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
-
-/**
- * Data components for food item persistent data.
- * Provides a typed container for food stats (nutrition, saturation, effects).
- */
 public final class FoodComponents {
     private FoodComponents() {}
 

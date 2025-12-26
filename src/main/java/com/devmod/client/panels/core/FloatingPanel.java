@@ -6,25 +6,14 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.panels.tracking.EntityTracker;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Abstract base class for all floating panels in the 3D world.
- *
- * A FloatingPanel is a UI element that:
- * - Exists in the 3D world (not on the 2D screen)
- * - Can track an entity or have a fixed position
- * - Has a lifecycle with spawn/despawn animations
- * - Can be pinned, minimized, dragged
- * - Always faces the camera (billboard)
- */
 public abstract class FloatingPanel {
 
     // === Identificazione ===

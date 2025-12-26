@@ -11,18 +11,13 @@ import java.util.List;
 
 import org.slf4j.Logger;
 
-import net.minecraft.core.BlockPos;
-
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
 
-/**
- * Loads room definitions from config/devmod/telemetry_rooms.json.
- * If the file does not exist, a sample is created and an empty list is returned.
- */
+import net.minecraft.core.BlockPos;
+
+import com.devmod.util.ConfigPaths;
 public class TelemetryConfig {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new Gson();

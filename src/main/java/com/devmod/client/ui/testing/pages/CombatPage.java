@@ -21,12 +21,6 @@ import com.devmod.util.I18n;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.nonNullDouble;
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
-
-/**
- * Combat Page - Configuration for combat mechanics and damage systems.
- * Controls body part detection, damage multipliers, and armor penetration.
- */
-
 public class CombatPage extends AbstractVoxelLabPage {
 
     // Body part system

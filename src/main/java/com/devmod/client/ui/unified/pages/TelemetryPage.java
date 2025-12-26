@@ -18,11 +18,6 @@ import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
-
-/**
- * Telemetry settings page - analytics export and summaries.
- * Uses responsive button layout that adapts to available width.
- */
 public class TelemetryPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 20;

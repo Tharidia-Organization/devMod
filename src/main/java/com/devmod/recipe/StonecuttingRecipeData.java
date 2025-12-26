@@ -4,14 +4,10 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
-
 import com.google.gson.JsonObject;
 
-/**
- * Data for stonecutting recipes.
- */
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 public record StonecuttingRecipeData(
     ResourceLocation id,
     IngredientData ingredient,

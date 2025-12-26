@@ -12,15 +12,6 @@ import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-
-/**
- * DD29: forceTemplateId Persistence - session state + capability per relog
- *
- * Manages template overrides for arena instances. Supports:
- * - Session-based override storage
- * - Attachment-based persistence for relog survival (NeoForge 1.21+)
- * - TTL-based expiration for temporary overrides
- */
 public class TemplateOverrideManager {
 
     private static final TemplateOverrideManager INSTANCE = new TemplateOverrideManager();

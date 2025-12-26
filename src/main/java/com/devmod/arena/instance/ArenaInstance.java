@@ -12,31 +12,6 @@ import com.devmod.arena.identity.ArenaIdentity;
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.arena.pool.PoolState;
 import com.devmod.arena.registry.ArenaTemplate;
-
-/**
- * DD2: Unified Arena Instance (L2 Runtime Layer).
- *
- * <p>ArenaInstance combines:
- * <ul>
- *   <li>L1 Template: Physical layout (ArenaTemplate)</li>
- *   <li>L2 Policy: Gameplay rules (ArenaPolicy)</li>
- *   <li>Identity: Unique identification (ArenaIdentity)</li>
- *   <li>State: Lifecycle state machine (PoolState)</li>
- * </ul>
- *
- * <p>This is the primary runtime representation of an arena, used for:
- * <ul>
- *   <li>Context passing between systems</li>
- *   <li>State tracking and transitions</li>
- *   <li>Unified access to template + policy data</li>
- * </ul>
- *
- * <p>State machine transitions (DD64):
- * <pre>
- *   BUILDING → READY → RESERVED → IN_USE → CLEANUP → READY (recycled)
- *                                                  └→ DISPOSED (evicted)
- * </pre>
- */
 public class ArenaInstance {
 
     private final ArenaIdentity identity;

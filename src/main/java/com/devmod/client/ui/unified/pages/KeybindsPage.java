@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
@@ -17,12 +18,6 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
-
-/**
- * Keybinds settings page - displays all mod keybindings.
- * Shows key assignments and descriptions for quick reference.
- * Implements proper scrolling with visible scrollbar.
- */
 public class KeybindsPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 20;
@@ -138,9 +133,18 @@ public class KeybindsPage implements SettingsPage {
         sections.add(new KeybindSection("Help", help));
     }
 
-    /** Helper to create KeybindEntry with KeyMapping reference */
+    /**
+     * Helper to create KeybindEntry with KeyMapping reference.
+     * Validates all inputs are non-null before constructing the entry.
+     */
     private KeybindEntry entry(String name, KeyMapping keyMapping, String description) {
-        return new KeybindEntry(name, getKeyName(keyMapping), description, keyMapping);
+        KeyMapping validatedMapping = Objects.requireNonNull(keyMapping, "keyMapping");
+        return new KeybindEntry(
+            Objects.requireNonNull(name, "name"),
+            getKeyName(validatedMapping),
+            Objects.requireNonNull(description, "description"),
+            validatedMapping
+        );
     }
 
     @Nonnull
@@ -336,8 +340,8 @@ public class KeybindsPage implements SettingsPage {
 
                 // Jump to clicked position (centering thumb on click)
                 if (trackHeight > 0) {
-                    float clickRatio = (float)(mouseY - contentY - thumbHeight / 2) / trackHeight;
-                    clickRatio = Math.max(0, Math.min(1, clickRatio));
+                    float clickRatio = (float)(mouseY - contentY - thumbHeight / 2.0) / trackHeight;
+                    clickRatio = Math.max(0f, Math.min(1f, clickRatio));
                     scrollOffset = (int)(maxScrollOffset * clickRatio);
                 }
                 return true;
@@ -373,8 +377,8 @@ public class KeybindsPage implements SettingsPage {
 
             if (trackHeight > 0) {
                 // Center thumb on mouse position
-                float dragRatio = (float)(mouseY - lastContentY - thumbHeight / 2) / trackHeight;
-                dragRatio = Math.max(0, Math.min(1, dragRatio));
+                float dragRatio = (float)(mouseY - lastContentY - thumbHeight / 2.0) / trackHeight;
+                dragRatio = Math.max(0f, Math.min(1f, dragRatio));
                 scrollOffset = (int)(maxScrollOffset * dragRatio);
             }
             return true;

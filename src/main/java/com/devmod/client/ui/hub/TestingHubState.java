@@ -1,19 +1,14 @@
 package com.devmod.client.ui.hub;
 
-import com.devmod.testing.TestCase;
-import com.devmod.client.testing.TestingSession;
-import com.devmod.client.testing.TutorialManager;
-import com.devmod.client.testing.ActiveTestHudOverlay;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Singleton that maintains the persistent state of TestingHub.
- * Survives screen close/reopen.
- */
+import com.devmod.client.testing.ActiveTestHudOverlay;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.testing.TutorialManager;
+import com.devmod.testing.TestCase;
 public class TestingHubState {
 
     public static final TestingHubState INSTANCE = new TestingHubState();

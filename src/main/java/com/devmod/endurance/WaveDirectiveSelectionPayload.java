@@ -10,10 +10,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Network payload sent from client to server when player selects a wave directive.
- */
 public record WaveDirectiveSelectionPayload(String directiveId, int waveNumber) implements CustomPacketPayload {
 
     private static final int MAX_STRING_LENGTH = 128;

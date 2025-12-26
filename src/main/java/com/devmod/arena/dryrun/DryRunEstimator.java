@@ -8,17 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Dry-Run Estimator implementing DD10: Dry-Run Euristica.
- *
- * <p>Key features:
- * <ul>
- *   <li>Estimate build time using heuristics + historical P75 from DuckDB</li>
- *   <li>No actual block placement during estimation</li>
- *   <li>Cache estimates for 5 minutes</li>
- * </ul>
- */
 public class DryRunEstimator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DryRunEstimator.class);

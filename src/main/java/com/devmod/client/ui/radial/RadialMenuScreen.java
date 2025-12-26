@@ -1,21 +1,17 @@
 package com.devmod.client.ui.radial;
 
-import com.devmod.client.telemetry.UiTelemetry;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionResult;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.overlay.OnboardingOverlay;
-import com.devmod.client.ui.radial.animation.RadialAnimator;
-import com.devmod.client.ui.radial.config.RadialMenuConstants;
-import com.devmod.client.ui.radial.input.RadialSearchHandler;
-import com.devmod.client.ui.radial.model.MacroCategory;
-import com.devmod.client.ui.radial.render.RadialCategoryRenderer;
-import com.devmod.client.ui.radial.render.RadialGeometry;
-import com.devmod.client.ui.radial.render.RadialHubRenderer;
-import com.devmod.client.ui.radial.render.RadialTooltipRenderer;
-import com.devmod.client.ui.unified.persistence.SettingsManager;
-import com.devmod.util.I18n;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -28,38 +24,26 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Stack;
-
-/**
- * RADIAL MENU V3 - MACRO-CATEGORY EDITION
- *
- * Architecture:
- * - Center hub divided into 6 macro-category segments (ANALYZE, TELEMETRY, COMBAT, ARENA, PLAY, TOOLS)
- * - Each macro-category controls a focused set of categories in the outer ring
- * - Total capacity: 36 categories (6 macros x 6 categories max)
- * - Clicking center segment switches active macro-category
- * - Smooth transitions between macro-categories
- * - State persisted across menu opens
- *
- * UX Features:
- * - Clean, readable layout with proper spacing
- * - Large clickable areas - no overlap
- * - Fast, non-distracting animations
- * - Fuzzy search (type to filter)
- * - Keyboard shortcuts for power users
- */
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.ActionResult;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.overlay.OnboardingOverlay;
+import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.ui.radial.animation.RadialAnimator;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.input.RadialSearchHandler;
+import com.devmod.client.ui.radial.model.MacroCategory;
+import com.devmod.client.ui.radial.render.RadialCategoryRenderer;
+import com.devmod.client.ui.radial.render.RadialGeometry;
+import com.devmod.client.ui.radial.render.RadialHubRenderer;
+import com.devmod.client.ui.radial.render.RadialTooltipRenderer;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.util.I18n;
 @OnlyIn(Dist.CLIENT)
 public final class RadialMenuScreen extends Screen {
 

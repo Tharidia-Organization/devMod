@@ -3,6 +3,8 @@ package com.devmod.integration;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -13,11 +15,6 @@ import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import com.devmod.DevMod;
-
-/**
- * Optional Pufferfish Attributes compatibility.
- * Provides mapping to external attributes when the mod is present.
- */
 public final class PufferfishCompat {
     private static final String MODID = "puffish_attributes";
     private static final boolean LOADED = isLoadedSafe();
@@ -45,6 +42,7 @@ public final class PufferfishCompat {
      * Map a DevMod attribute to a Pufferfish equivalent if available.
      * This implementation compares attribute holders directly for robustness.
      */
+    @Nullable
     public static Attribute map(DeferredHolder<Attribute, Attribute> attribute) {
         if (!LOADED) {
             return attribute.isBound() ? attribute.get() : null;
@@ -73,7 +71,8 @@ public final class PufferfishCompat {
      * Map a resource-location based attribute to Pufferfish if it is in devmod namespace.
      * Returns holder from provided registry or null if none exists.
      */
-    public static Holder.Reference<Attribute> map(ResourceLocation id, Registry<Attribute> registry) {
+    @Nullable
+    public static Holder.Reference<Attribute> map(@Nullable ResourceLocation id, Registry<Attribute> registry) {
         if (id == null) return null;
         Holder.Reference<Attribute> original = registry.getHolder(Objects.requireNonNull(id)).orElse(null);
         if (!LOADED || !DevMod.MODID.equals(id.getNamespace())) {

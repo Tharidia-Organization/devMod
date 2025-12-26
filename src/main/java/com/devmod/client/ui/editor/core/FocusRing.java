@@ -3,13 +3,6 @@ package com.devmod.client.ui.editor.core;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
-
-/**
- * Focus ring specification for keyboard navigation.
- * Provides visual feedback for focused elements.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#13-accessibility-standards
- */
 public final class FocusRing {
     private FocusRing() {}
 

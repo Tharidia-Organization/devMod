@@ -3,24 +3,6 @@ package com.devmod.arena.api;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-
-/**
- * Handle to a prepared arena (DD15).
- *
- * <p>Standard return type for arena preparation. Contains all info
- * needed to use the arena after build.
- *
- * <p>Call-sites to migrate:
- * <ul>
- *   <li>QuestStartSequence.prepareArena() - use ArenaHandle</li>
- *   <li>EnduranceQuestManager.startPreparedQuest() - accept ArenaHandle</li>
- *   <li>InstanceArenaManager.startInstanceQuestForParty() - return ArenaHandle</li>
- *   <li>WaveManager.spawnWave() - use handle.mobSpawnPositions()</li>
- *   <li>EndurancePlayerStateManager.teleportToArena() - use handle.primaryPlayerSpawn()</li>
- *   <li>ArenaCleanupTask - accept ArenaHandle</li>
- *   <li>EnduranceTelemetryService.logArenaEvent() - extract context from handle</li>
- * </ul>
- */
 public record ArenaHandle(
     UUID arenaId,
     UUID instanceId,

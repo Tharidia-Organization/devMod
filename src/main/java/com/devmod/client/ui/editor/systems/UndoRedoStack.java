@@ -5,12 +5,6 @@ import java.util.Deque;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
-/**
- * Undo/Redo stack for editor actions.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#36-undoredo-stack
- */
 public final class UndoRedoStack<T> {
 
     private final Deque<UndoState<T>> undoStack = new ArrayDeque<>();

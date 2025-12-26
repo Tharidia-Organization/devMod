@@ -5,6 +5,9 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
@@ -16,22 +19,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 
 import com.devmod.DevMod;
-
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
-
-/**
- * Centralized registry for all VFX shaders (ImpactVFX, Heatmap, Pathfinding).
- *
- * <p>Pattern follows ShieldShaderRegistry with support for multiple shaders.</p>
- *
- * <p>Registered shaders:</p>
- * <ul>
- *   <li>impact_vfx - Combat impact effects (vortex, slash, lines)</li>
- *   <li>heatmap - Block heatmap visualization (future)</li>
- *   <li>pathfinding - Mob pathfinding debug (future)</li>
- * </ul>
- */
 @SuppressWarnings("removal") // RenderStateShard.ShaderStateShard uses deprecated shader APIs
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)

@@ -16,24 +16,6 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for AzureLib animation library.
- *
- * AzureLib is an alternative to GeckoLib providing:
- * - Entity animation system
- * - Bone-based model transformations
- * - Animation controllers
- * - Armor animation support (azurelibarmor)
- *
- * This integration allows DevMod to:
- * - Detect AzureLib animated entities
- * - Extract bone transforms for collision
- * - Track animation states for telemetry
- * - Support AzureLib mobs in Arena
- *
- * @see <a href="https://github.com/AzureDoom/AzureLib">AzureLib GitHub</a>
- */
 public class AzureLibCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(AzureLibCompat.class);
     public static final String MOD_ID = "azurelib";

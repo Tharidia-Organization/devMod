@@ -4,12 +4,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
-
-/**
- * Context for policy resolution.
- *
- * <p>Contains all the information needed to select the best policy for a request.
- */
 public record ResolveContext(
     /** Player ID making the request */
     UUID playerId,

@@ -11,11 +11,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from server to client containing list of online players.
- * Used for the party invite player selection UI.
- */
 public record OnlinePlayersPayload(
     List<PlayerInfo> players
 ) implements CustomPacketPayload {

@@ -12,14 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Validates spawn slots with caching for O(1) runtime lookup.
- * DD48: RuntimeSpawnValidator Performance - O(n^2) at load, O(1) runtime.
- *
- * <p>This validator pre-computes valid slot combinations at load time,
- * storing results in a cache for fast runtime lookups.
- */
 public class RuntimeSpawnValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuntimeSpawnValidator.class);

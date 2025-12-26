@@ -40,28 +40,6 @@ import com.devmod.arena.policy.ResolvedArena;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Integration layer between Arena system and Quest system.
- *
- * <p>Implements:
- * <ul>
- *   <li>DD15: ArenaHandle as standard return type</li>
- *   <li>Quest flow integration for Endurance and other quest types</li>
- *   <li>Async arena preparation</li>
- *   <li>Session lifecycle management</li>
- * </ul>
- *
- * <p>Call-sites to integrate:
- * <ul>
- *   <li>QuestStartSequence.prepareArena() - use ArenaHandle</li>
- *   <li>EnduranceQuestManager.startPreparedQuest() - accept ArenaHandle</li>
- *   <li>InstanceArenaManager.startInstanceQuestForParty() - return ArenaHandle</li>
- *   <li>WaveManager.spawnWave() - use handle.mobSpawnPositions()</li>
- *   <li>EndurancePlayerStateManager.teleportToArena() - use handle.primaryPlayerSpawn()</li>
- *   <li>ArenaCleanupTask - accept ArenaHandle</li>
- * </ul>
- */
 @SuppressWarnings("unused") // templateRegistry and policyRegistry reserved for future query APIs
 public class ArenaQuestIntegration {
 

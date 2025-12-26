@@ -26,11 +26,6 @@ import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
-
-/**
- * Server tick handlers for EnduranceQuest system.
- * Handles wave sync, arena cleanup, mob validation, and periodic updates.
- */
 public class EnduranceEventTick {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventTick.class);
 

@@ -5,16 +5,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.minecraft.world.phys.Vec3;
-
-/**
- * Utility for smoothing 3D positions with various algorithms.
- *
- * Supports:
- * - Linear interpolation (lerp)
- * - Exponential smoothing
- * - Spring physics
- * - Critically damped spring (no oscillation)
- */
 public class PositionSmoother {
 
     // === Current State ===

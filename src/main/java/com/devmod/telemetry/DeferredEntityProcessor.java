@@ -8,6 +8,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -15,27 +17,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 import com.devmod.config.MobConfigManager;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Deferred Entity Processor - Queue-based system for heavy entity operations.
- *
- * PROBLEM: When structures (villages, etc.) generate, dozens of entities spawn
- * in a single tick, causing TPS drops to 0 when each entity triggers:
- * - MobConfigManager.hasConfig() + attribute modifications
- * - TelemetryService.logSpawn() + file I/O
- * - Various tracking registrations
- *
- * SOLUTION: Queue spawned entities and process them incrementally across ticks.
- * - Max entities processed per tick is configurable
- * - Entities are stored as WeakReferences to avoid memory leaks if despawned
- * - Processing is distributed to maintain stable TPS
- *
- * Performance impact:
- * - Before: 50 entities spawn = 50x processing in 1 tick = TPS drop
- * - After: 50 entities spawn = 5 entities/tick over 10 ticks = stable TPS
- */
 public class DeferredEntityProcessor {
     private static final Logger LOGGER = LogUtils.getLogger();
 

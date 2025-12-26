@@ -27,18 +27,6 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Registry for Arena Policies with hot-reload and validation.
- *
- * <p>Implements:
- * <ul>
- *   <li>DD1-like versioning: Last-Wins for same policy ID</li>
- *   <li>Template compatibility validation on load</li>
- *   <li>Hot-reload with atomic swap</li>
- *   <li>Telemetry integration</li>
- * </ul>
- */
 public class ArenaPolicyRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaPolicyRegistry.class);
 

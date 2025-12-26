@@ -20,15 +20,6 @@ import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Templates overlay (MVP) with virtualized list and preview.
- * Extends BaseOverlay for consistent modal behavior.
- * Uses VirtualizedList component for consistent scroll behavior.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.42 (Templates)
- * @see 13-scroll-system.md (Scroll Policy)
- */
 public class TemplateOverlay extends BaseOverlay {
 
     private static final int PANEL_WIDTH = 340;

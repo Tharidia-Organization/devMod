@@ -3,13 +3,6 @@ package com.devmod.arena.policy;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
-/**
- * Arena Policy definition (L2 Gameplay layer).
- *
- * <p>Policies define gameplay rules that get applied on top of templates:
- * which template to use for which mob/quest/difficulty combination.
- */
 public record ArenaPolicy(
     /** Unique policy identifier */
     String id,

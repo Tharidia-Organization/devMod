@@ -11,6 +11,9 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -25,38 +28,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Pathfinding Debugger - Visualizes mob navigation paths in real-time
- *
- * ╔═══════════════════════════════════════════════════════════════════╗
- * ║  🚀 SPECTACULAR PATHFINDING VISUALIZATION 🚀                      ║
- * ╠═══════════════════════════════════════════════════════════════════╣
- * ║  START MARKER (Mob Position):                                     ║
- * ║  - Animated rotating CYAN beacon with vertical beam               ║
- * ║  - Double rotating rings (horizontal planes)                      ║
- * ║  - Pulsing glow effect                                            ║
- * ║  - "▶ START" label                                                ║
- * ║                                                                   ║
- * ║  DESTINATION MARKER:                                              ║
- * ║  - Large GOLD/YELLOW target crosshair                             ║
- * ║  - Diamond frame rotating around destination                      ║
- * ║  - Vertical beacon reaching to the sky                            ║
- * ║  - "◆ DESTINATION" label                                          ║
- * ║                                                                   ║
- * ║  PATH VISUALIZATION:                                              ║
- * ║  - Gradient color from cyan (start) to gold (end)                 ║
- * ║  - Animated "marching ants" effect on path                        ║
- * ║  - Node markers with pulsing effect                               ║
- * ║  - Direction arrows showing movement direction                    ║
- * ╚═══════════════════════════════════════════════════════════════════╝
- *
- * Activation: Toggle in VoxelLab Dashboard
- */
-
 public class PathfindingDebugger {
     public static final PathfindingDebugger INSTANCE = new PathfindingDebugger();
 

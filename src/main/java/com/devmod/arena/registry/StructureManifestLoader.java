@@ -9,16 +9,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.Gson;
-
-/**
- * Loader for structure manifest JSON (spec v2.23).
- *
- * Defaults:
- * - allowedNamespaces: ["devmod"]
- * - maxFileSizeBytes: 512_000
- * - maxBlockCount: 100_000
- * - maxEntityCount: 50
- */
 public class StructureManifestLoader {
 
     private static final Gson GSON = new Gson();

@@ -12,11 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.level.ServerPlayer;
-
-/**
- * Manages debug feature states for players.
- * Server-side manager that tracks which debug features are enabled per player.
- */
 public class DebugManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugManager.class);
 

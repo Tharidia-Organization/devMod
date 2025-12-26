@@ -3,13 +3,6 @@ package com.devmod.stats;
 import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.config.Config;
-
-/**
- * Weapon statistics for damage calculation.
- * Applied to attacker during combat.
- *
- * Based on EDITOR_DESIGN_SYSTEM.md Section 2.23 and related.
- */
 public class WeaponStats {
     // ═══════════════════════════════════════════════════════════════
     // HIT LOCATION MULTIPLIERS

@@ -8,33 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-/**
- * Lightweight UI animation helper for screen transitions and effects.
- *
- * Provides simple factory methods for common animations:
- * - Fade in/out
- * - Slide up/down
- * - Scale (pop effect)
- * - Combined fade + slide
- *
- * Usage:
- * <pre>
- * // In screen class
- * private final UiAnimation openAnim = UiAnimation.fadeSlideUp(200);
- *
- * // In init()
- * openAnim.start();
- *
- * // In render()
- * openAnim.update();
- * float alpha = openAnim.getAlpha();
- * int offsetY = openAnim.getSlideOffset(20);
- *
- * // In onClose() for animated close
- * openAnim.reverse(() -> super.onClose());
- * </pre>
- */
 @OnlyIn(Dist.CLIENT)
 public class UiAnimation {
 

@@ -8,13 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Structure data provider that loads NBT bytes from the classpath/resources,
- * using ResourceLocation-style paths (e.g., devmod:structures/my_boss).
- *
- * Expected resource layout: {@code data/<namespace>/structures/<path>.nbt}
- */
 public class ClasspathStructureDataProvider implements TemplateValidator.StructureDataProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathStructureDataProvider.class);

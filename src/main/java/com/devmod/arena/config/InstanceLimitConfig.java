@@ -1,15 +1,6 @@
 package com.devmod.arena.config;
 
 import com.devmod.arena.registry.InstanceSettingsValidator;
-
-/**
- * Lightweight configuration for instance limits (chunkRadius/tickDistance).
- *
- * Sources (priority):
- * 1) System properties: devmod.instance.maxChunkRadius / devmod.instance.maxTickDistance
- * 2) Environment variables: DEVMOD_MAX_CHUNK_RADIUS / DEVMOD_MAX_TICK_DISTANCE
- * 3) Defaults: 8 / 10
- */
 public record InstanceLimitConfig(int maxChunkRadius, int maxTickDistance) {
 
     private static final int DEFAULT_CHUNK_RADIUS = 8;

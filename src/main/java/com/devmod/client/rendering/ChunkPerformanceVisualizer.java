@@ -7,6 +7,9 @@ import java.util.Objects;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -25,25 +28,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Chunk Performance Visualizer (M54).
- *
- * Renders chunk borders with color-coded performance indicators:
- * - Green: Low load (0-10 entities, 0-5 block entities)
- * - Yellow: Medium load (10-30 entities, 5-15 block entities)
- * - Red: High load (30+ entities, 15+ block entities)
- *
- * Also shows:
- * - Entity count per chunk
- * - Block entity count (tile entities)
- * - Chunk loading state
- *
- * Toggle via keybind.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class ChunkPerformanceVisualizer {
     public static final ChunkPerformanceVisualizer INSTANCE = new ChunkPerformanceVisualizer();

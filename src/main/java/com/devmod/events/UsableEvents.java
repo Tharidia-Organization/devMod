@@ -5,6 +5,8 @@ import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -16,16 +18,6 @@ import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import com.devmod.DevMod;
 import com.devmod.config.UsableConfigManager;
 import com.devmod.stats.UsableStats;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Event handlers for usable items.
- *
- * Hooks into:
- * - LivingEntityUseItemEvent.Start - Modify use duration at start
- * - LivingEntityUseItemEvent.Finish - Apply cooldown after use
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class UsableEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

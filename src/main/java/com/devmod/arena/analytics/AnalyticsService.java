@@ -18,15 +18,6 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * DD36: Analytics Query Limits - 30 giorni max, pagination, timeout 10s
- *
- * Service for executing analytics queries with:
- * - 10 second query timeout
- * - Async export job for queries > 30 days
- * - Pagination support
- */
 public class AnalyticsService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AnalyticsService.class);

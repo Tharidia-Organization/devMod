@@ -18,19 +18,6 @@ import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.security.ArenaCommandAudit;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * DD36: Hot-reload admin endpoint for arena templates.
- *
- * <p>Features:</p>
- * <ul>
- *   <li>Atomic template reload with validation</li>
- *   <li>Rate limiting (1 reload per 10 seconds)</li>
- *   <li>Audit logging of all reload attempts</li>
- *   <li>Telemetry integration</li>
- *   <li>Rollback on failure</li>
- * </ul>
- */
 public class HotReloadEndpoint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HotReloadEndpoint.class);

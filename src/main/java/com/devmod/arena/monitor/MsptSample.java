@@ -1,11 +1,6 @@
 package com.devmod.arena.monitor;
 
 import java.time.Instant;
-
-/**
- * A single MSPT (milliseconds per tick) sample with metadata.
- * DD38: Used in sliding window for baseline comparison.
- */
 public record MsptSample(
     double mspt,
     Instant timestamp,

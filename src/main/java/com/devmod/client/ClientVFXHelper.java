@@ -13,12 +13,6 @@ import com.devmod.client.overlay.ImpactData;
 import com.devmod.client.overlay.ImpactVFX;
 import com.devmod.combat.HitHelper.BodyPart;
 import com.devmod.damage.DamageBreakdown;
-
-/**
- * Client-only helper for VFX operations.
- * This class is only loaded on the client side and contains all Minecraft.getInstance() calls.
- * Called via DistExecutor from common code.
- */
 public final class ClientVFXHelper {
 
     private ClientVFXHelper() {

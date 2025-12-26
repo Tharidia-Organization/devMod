@@ -14,16 +14,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.client.overlay.ImpactData;
-
-/**
- * Proxy class for safe client-side VFX calls from common code.
- *
- * This class uses reflection to invoke ClientVFXHelper methods only on the client,
- * preventing class loading issues on dedicated servers.
- *
- * The @OnlyIn(Dist.CLIENT) methods are stripped on servers, and the public methods
- * check the distribution before attempting any client-only operations.
- */
 public final class ClientVFXProxy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientVFXProxy.class);

@@ -11,11 +11,6 @@ import net.minecraft.world.item.component.CustomData;
 import com.devmod.DevMod;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.stats.UsableStats;
-
-/**
- * Core stats management for UsableModule.
- * Handles loading, saving, and state management.
- */
 public class UsableModuleCore {
 
     static final String NBT_KEY = "UsableModStats";

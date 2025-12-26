@@ -3,11 +3,6 @@ package com.devmod.stats;
 import java.util.Objects;
 
 import net.minecraft.nbt.CompoundTag;
-
-/**
- * Data class holding all modifiable fuel item statistics.
- * Supports NBT serialization for persistence and network sync.
- */
 public class FuelStats {
 
     // ═══════════════════════════════════════════════════════════════

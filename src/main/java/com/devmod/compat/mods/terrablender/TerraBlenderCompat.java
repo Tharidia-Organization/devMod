@@ -13,24 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for TerraBlender.
- *
- * TerraBlender provides:
- * - Custom biome registration API
- * - Region-based biome placement
- * - Biome parameter blending
- * - Multi-mod biome compatibility
- *
- * This integration allows DevMod to:
- * - Detect TerraBlender presence
- * - Get registered biome region info
- * - Track custom biome providers
- * - Include biome metadata in telemetry
- *
- * @see <a href="https://github.com/Glitchfiend/TerraBlender">TerraBlender GitHub</a>
- */
 public class TerraBlenderCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(TerraBlenderCompat.class);
     public static final String MOD_ID = "terrablender";

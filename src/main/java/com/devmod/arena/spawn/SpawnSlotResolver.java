@@ -14,17 +14,6 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
-
-/**
- * Resolves spawn slots based on constraints.
- * DD47: SpawnSlots Distance - melee 3-15, ranged 12-30, LOS+ground+forbidden.
- *
- * <p>This resolver:
- * - Validates distance constraints
- * - Checks line of sight using raycast
- * - Validates ground presence
- * - Checks forbidden zones
- */
 public class SpawnSlotResolver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpawnSlotResolver.class);

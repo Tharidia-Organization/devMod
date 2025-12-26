@@ -7,6 +7,8 @@ import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -14,26 +16,6 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.arena.BuildPhase;
 import com.devmod.arena.ProgressFlags;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * DD39: Network payload for build progress synchronization.
- *
- * <p>Compact 28-byte packet for efficient progress updates:</p>
- * <pre>
- * Layout (28 bytes):
- *   0-15:  arenaId (UUID = 2 longs = 16 bytes)
- *   16:    phase (1 byte)
- *   17-18: progress (2 bytes, 0-10000 for 0.00%-100.00%)
- *   19-22: blocksPlaced (4 bytes)
- *   23-26: totalBlocks (4 bytes)
- *   27:    flags (1 byte)
- * </pre>
- *
- * <p>Rate limited at 4Hz (250ms interval) with 1% delta threshold
- * by {@link com.devmod.arena.ui.BuildProgressOverlay}.</p>
- */
 public record BuildProgressPayload(
     UUID arenaId,
     BuildPhase phase,

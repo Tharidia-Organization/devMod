@@ -9,7 +9,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
 public final class TextNoteSection implements EditorSection.CustomSection {
     private static final int DEFAULT_HEIGHT = 16;
     private static final int DEFAULT_TEXT_INSET_X = 8;

@@ -2,11 +2,6 @@ package com.devmod.endurance;
 
 import java.util.HashMap;
 import java.util.Map;
-
-/**
- * Client-side cache for shop/wallet data synced from server.
- * Updated when ShopSyncPayload is received.
- */
 public class ClientShopCache {
 
     private static int tokens = 0;

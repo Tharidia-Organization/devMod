@@ -2,21 +2,13 @@ package com.devmod.client.rendering.shader;
 
 import java.util.Objects;
 
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-import com.mojang.blaze3d.vertex.VertexFormat;
-
-/**
- * Immutable description of a RenderType pair (custom + fallback) used by a shader pipeline.
- *
- * <p>The primary format is used when the custom shader is available, while the fallback
- * format/name pair is used if shader loading fails so the render path still works.</p>
- */
-
 @OnlyIn(Dist.CLIENT)
 public record ShaderRenderTypeConfig(
     String name,

@@ -18,24 +18,6 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for JourneyMap.
- *
- * JourneyMap provides:
- * - Minimap and fullscreen map
- * - Waypoints with custom icons and colors
- * - Map overlays (polygons, markers, lines)
- * - Dimension-aware mapping
- *
- * This integration allows DevMod to:
- * - Create waypoints for Arena locations
- * - Show arena boundaries on the map
- * - Mark spawn points and objectives
- * - Track player positions during arena runs
- *
- * @see <a href="https://journeymap.info/JourneyMap_API">JourneyMap API</a>
- */
 public class JourneyMapCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(JourneyMapCompat.class);
     public static final String MOD_ID = "journeymap";

@@ -17,17 +17,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-
-/**
- * Servizio per il tracking delle entità e comportamenti.
- *
- * Gestisce:
- * - Position tracking (stuck detection)
- * - Aggro tracking (aggro drop detection)
- * - Spawn info (posizione e mondo di spawn)
- * - Camping detection (player che attaccano dalla stessa posizione)
- * - Minion wave tracking (concurrent minions)
- */
 public class EntityTrackingService {
     public static final EntityTrackingService INSTANCE = new EntityTrackingService();
 

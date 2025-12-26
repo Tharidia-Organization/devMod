@@ -8,6 +8,7 @@ import java.util.Set;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -45,11 +46,6 @@ import com.devmod.network.NetworkHandler;
 import com.devmod.network.PacketValidator;
 import com.devmod.network.PacketValidator.ValidationResult;
 import com.devmod.util.I18n;
-
-/**
- * Network handler for Endurance Quest system packets.
- * Extracted from NetworkHandler for single responsibility.
- */
 public final class EnduranceNetworkHandler extends NetworkHandlerBase {
 
     private EnduranceNetworkHandler() {}

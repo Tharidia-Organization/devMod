@@ -15,19 +15,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
-
-/**
- * Service for tracking economy and loot metrics (M42-M50).
- *
- * Features:
- * - M42: Loot distribution fairness (chest openings, drops)
- * - M44: Item acquisition tracking
- * - M45: Quest completion rewards
- * - M46: Reward relevance (used vs sold vs discarded)
- * - M50: Resource scarcity pressure
- *
- * Thread-safe for concurrent access from multiple server threads.
- */
 public class EconomyMetricsService {
     public static final EconomyMetricsService INSTANCE = new EconomyMetricsService();
 

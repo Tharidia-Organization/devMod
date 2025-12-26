@@ -9,11 +9,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Unified payload for party actions (C2S).
- * Handles: ready toggle, leave, kick, quest type change, mob type change, disband, start quest.
- */
 public record PartyActionPayload(
     Action action,
     @Nullable UUID targetPlayerId,  // For KICK action

@@ -6,19 +6,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-/**
- * Tracks interactions with modded content (weapons, mobs, effects, armor).
- * Extracted from TesterProgress for single responsibility.
- */
-
 public class ModInteractionTracker {
     public static final ModInteractionTracker INSTANCE = new ModInteractionTracker();
 

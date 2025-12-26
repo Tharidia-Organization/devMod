@@ -9,6 +9,11 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
@@ -25,18 +30,6 @@ import com.devmod.testing.stats.OverlayUsageTracker;
 import com.devmod.testing.stats.PotionStatistics;
 import com.devmod.testing.stats.SessionStatistics;
 import com.devmod.util.ConfigPaths;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-/**
- * Facade for all tester gameplay statistics.
- * Delegates to specialized statistics services for single responsibility.
- *
- * Statistics are persisted to disk and survive game restarts.
- */
 public class TesterProgress {
     private static final Logger LOGGER = LoggerFactory.getLogger(TesterProgress.class);
     // Lazy initialization to avoid NPE during class loading (FMLPaths not ready yet)

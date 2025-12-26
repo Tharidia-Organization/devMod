@@ -11,19 +11,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 
 import com.devmod.DevMod;
-
-/**
- * Provides test structure templates for DevMod GameTests.
- *
- * Structures are defined programmatically to avoid NBT file management.
- * Each structure is a simple empty platform with stone floor.
- *
- * Available templates:
- * - empty_3x3: 3x3x3 test area (for unit tests)
- * - empty_5x5: 5x5x5 test area (for entity tests)
- * - combat_arena: 7x5x7 arena for combat tests
- */
-
 @EventBusSubscriber(modid = DevMod.MODID)
 public class DevModTestStructures {
 

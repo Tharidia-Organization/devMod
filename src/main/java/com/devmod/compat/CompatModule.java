@@ -1,23 +1,10 @@
 package com.devmod.compat;
 
+import java.util.StringTokenizer;
+
 import javax.annotation.Nullable;
 
 import com.devmod.actions.ActionRegistry;
-
-/**
- * Interface for mod compatibility modules.
- * Each module handles integration with a single external mod.
- *
- * Lifecycle:
- * 1. Module is registered with CompatRegistry
- * 2. CompatRegistry checks if modId() is loaded
- * 3. If loaded, initCommon() is called during FMLCommonSetupEvent
- * 4. If client, initClient() is called during FMLClientSetupEvent
- * 5. registerActions() is called to add radial menu actions
- *
- * All methods must be safe to call even if the mod is not present.
- * Use reflection or Optional patterns to avoid hard class dependencies.
- */
 public interface CompatModule {
 
     /**
@@ -152,16 +139,15 @@ public interface CompatModule {
      */
     private static int compareVersions(String v1, String v2) {
         // Strip any suffix after + or -
-        v1 = v1.split("[+-]")[0];
-        v2 = v2.split("[+-]")[0];
+        v1 = stripSuffix(v1);
+        v2 = stripSuffix(v2);
 
-        String[] parts1 = v1.split("\\.");
-        String[] parts2 = v2.split("\\.");
+        StringTokenizer parts1 = new StringTokenizer(v1, ".");
+        StringTokenizer parts2 = new StringTokenizer(v2, ".");
 
-        int length = Math.max(parts1.length, parts2.length);
-        for (int i = 0; i < length; i++) {
-            int p1 = i < parts1.length ? parseVersionPart(parts1[i]) : 0;
-            int p2 = i < parts2.length ? parseVersionPart(parts2[i]) : 0;
+        while (parts1.hasMoreTokens() || parts2.hasMoreTokens()) {
+            int p1 = parts1.hasMoreTokens() ? parseVersionPart(parts1.nextToken()) : 0;
+            int p2 = parts2.hasMoreTokens() ? parseVersionPart(parts2.nextToken()) : 0;
             if (p1 != p2) {
                 return p1 - p2;
             }
@@ -169,11 +155,26 @@ public interface CompatModule {
         return 0;
     }
 
+    private static String stripSuffix(String version) {
+        int plus = version.indexOf('+');
+        int dash = version.indexOf('-');
+        int cut = -1;
+        if (plus >= 0 && dash >= 0) {
+            cut = Math.min(plus, dash);
+        } else if (plus >= 0) {
+            cut = plus;
+        } else if (dash >= 0) {
+            cut = dash;
+        }
+        return cut >= 0 ? version.substring(0, cut) : version;
+    }
+
     private static int parseVersionPart(String part) {
         try {
             // Extract leading digits
             StringBuilder digits = new StringBuilder();
-            for (char c : part.toCharArray()) {
+            for (int i = 0; i < part.length(); i++) {
+                char c = part.charAt(i);
                 if (Character.isDigit(c)) {
                     digits.append(c);
                 } else {

@@ -8,7 +8,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.arena.policy.ArenaPolicy.AscensionOverrides;
 import com.devmod.arena.policy.ArenaPolicy.ChallengeOverrides;
 import com.devmod.arena.policy.ArenaPolicy.ComboOverrides;
@@ -19,27 +18,6 @@ import com.devmod.arena.policy.ArenaPolicy.SeasonPassOverrides;
 import com.devmod.arena.policy.ArenaPolicy.StyleRankOverrides;
 import com.devmod.arena.policy.ArenaPolicy.TensionOverrides;
 import com.devmod.config.GameMechanicsConfig;
-
-/**
- * Centralized configuration manager for Endurance Quest systems.
- *
- * Implements a 3-tier configuration hierarchy:
- * <ol>
- *   <li><b>Runtime Override</b> - Per-instance overrides for testing specific mobs/mods</li>
- *   <li><b>ArenaPolicy Override</b> - Per-arena/quest overrides from JSON files</li>
- *   <li><b>GameMechanicsConfig</b> - Global defaults from NeoForge config</li>
- * </ol>
- *
- * All getter methods follow this fallback pattern:
- * <pre>
- * 1. Check runtime override (if set for this quest/instance)
- * 2. Check ArenaPolicy override (if arena has custom config)
- * 3. Return global default from GameMechanicsConfig
- * </pre>
- *
- * @see GameMechanicsConfig
- * @see ArenaPolicy.GameplayOverrides
- */
 public class EnduranceConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceConfigManager.class);
 

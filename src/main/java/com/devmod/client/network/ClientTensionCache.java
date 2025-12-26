@@ -2,12 +2,6 @@ package com.devmod.client.network;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-/**
- * Client-side cache for Tension System state.
- * Updated via network packets from server.
- * Used by EnduranceQuestOverlay for HUD display.
- */
 @OnlyIn(Dist.CLIENT)
 public final class ClientTensionCache {
 

@@ -7,11 +7,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from client to server to respond to a party invite.
- * Contains the invite ID and whether the player accepted or declined.
- */
 public record InviteResponsePayload(
     UUID inviteId,
     boolean accepted

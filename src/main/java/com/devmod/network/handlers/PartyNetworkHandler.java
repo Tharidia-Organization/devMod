@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,11 +28,6 @@ import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.util.I18n;
-
-/**
- * Network handler for Party system packets.
- * Extracted from NetworkHandler for single responsibility.
- */
 public final class PartyNetworkHandler extends NetworkHandlerBase {
 
     private PartyNetworkHandler() {}
@@ -409,7 +406,7 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
     }
 
     public static void notifyPartyMembers(MinecraftServer server, UUID partyId,
-            PartyNotificationPayload notification, UUID excludePlayer) {
+            PartyNotificationPayload notification, @Nullable UUID excludePlayer) {
         Optional<PartyData> partyOpt = PartyManager.INSTANCE.getPartyOpt(partyId);
         if (partyOpt.isEmpty()) return;
 

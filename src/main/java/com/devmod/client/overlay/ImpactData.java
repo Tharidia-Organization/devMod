@@ -19,14 +19,6 @@ import com.devmod.combat.HitHelper.BodyPart;
 import com.devmod.damage.DamageBreakdown;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.util.I18n;
-
-/**
- * Contains data for the last impact for the HUD.
- * Thread-safe with auto-expire after DISPLAY_DURATION_MS.
- *
- * MULTIPLAYER-SAFE: Data is isolated by attacker UUID.
- * Each client sees only their own impacts, not other players'.
- */
 public class ImpactData {
 
     // Thread-safe map: attacker UUID -> last impact for that player

@@ -22,20 +22,6 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.config.MobPresetManager;
 import com.devmod.util.I18n;
-
-/**
- * Advanced Mob Configuration Screen with:
- * - 3D animated mob preview with mouse rotation
- * - Visual sliders with real-time feedback
- * - Preset system (Tank, Glass Cannon, Balanced, etc.)
- * - Before/After comparison
- * - Tabbed interface (Stats/Combat/AI)
- * - Smooth animations
- *
- * Delegates to:
- * - MobConfigScreenState: State management, values, presets
- * - MobConfigScreenRenderer: All rendering operations
- */
 @OnlyIn(Dist.CLIENT)
 public class MobConfigScreen extends Screen {
 

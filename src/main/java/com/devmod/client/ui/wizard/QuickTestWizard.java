@@ -23,22 +23,6 @@ import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.util.I18n;
-
-/**
- * Quick Test Wizard - Guided workflow to start integrated testing.
- *
- * Connects:
- * - Mob configuration (what to test)
- * - Endurance quest system (controlled test environment)
- * - Telemetry (data collection)
- * - Overlays (real-time feedback)
- *
- * Steps:
- * 1. Select test type (Combat, Boss, Dungeon, Custom)
- * 2. Configure target (mob type, wave count, difficulty)
- * 3. Enable overlays (auto-suggest based on test type)
- * 4. Start test (launches integrated session)
- */
 @OnlyIn(Dist.CLIENT)
 public class QuickTestWizard extends Screen {
 

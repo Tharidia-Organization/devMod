@@ -6,6 +6,9 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,20 +19,6 @@ import com.devmod.ModConfig;
 import com.devmod.combat.HitHelper;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Sistema di rendering avanzato per body part hitboxes
- *
- * Features:
- * - Wireframe outline + transparent faces (stile PhantomShapes)
- * - Color-coded per body part (HEAD cyan, ARMS yellow, BODY green, LEGS red)
- * - Billboard labels con moltiplicatori
- * - Adaptive rendering per non-humanoid entities
- * - Pulsing effect per parte colpita (opzionale)
- */
 public class BodyPartRenderer {
 
     // Color definitions (ARGB format)

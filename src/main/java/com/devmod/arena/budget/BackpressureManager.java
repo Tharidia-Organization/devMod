@@ -2,16 +2,6 @@ package com.devmod.arena.budget;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Manages backpressure for async builds based on server MSPT (DD12).
- *
- * <p>When MSPT exceeds threshold:
- * <ul>
- *   <li>Reduces blocks-per-tick</li>
- *   <li>Gradually recovers when MSPT normalizes</li>
- * </ul>
- */
 public class BackpressureManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BackpressureManager.class);

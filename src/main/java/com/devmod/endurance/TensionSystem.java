@@ -9,32 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
-
-/**
- * Dynamic Tension System for Endurance Quests.
- *
- * Replaces predictable "boss every 5 waves" with a tension accumulator
- * that makes boss spawns feel earned and unpredictable.
- *
- * Design Philosophy:
- * - Tension builds based on player performance
- * - Boss spawns when tension exceeds a random threshold
- * - Creates "pressure cooker" moments where you FEEL the boss coming
- * - Good play accelerates tension (you earn the boss faster)
- * - Poor play delays bosses (giving you time to recover)
- *
- * Tension Sources:
- * - Base: +0.12 per wave completed
- * - No-hit wave: +0.20 bonus
- * - High combo (50+): +0.08 bonus
- * - Style rank S+: +0.10 bonus
- * - Kill streak (10+ rapid): +0.05 bonus
- *
- * Boss Trigger:
- * - Threshold randomized between 0.70 and 1.00 each cycle
- * - When tension >= threshold, next wave is a boss wave
- * - After boss: tension resets to 0, new threshold generated
- */
 public class TensionSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TensionSystem.class);

@@ -17,11 +17,6 @@ import com.devmod.util.I18n;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetInt;
-
-/**
- * Telemetry Page - Configuration for data collection and analytics.
- * Controls telemetry recording, export, and event tracking.
- */
 public class TelemetryPage extends AbstractVoxelLabPage {
 
     // Master toggle

@@ -8,33 +8,15 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * FASE 4 REQ-A7: Vertical Levels Visualizer
- *
- * Visualizza le zone verticali delle room:
- * - Verde = Floor zone (33% inferiore)
- * - Giallo = Mid zone (33% centrale)
- * - Rosso = High zone (33% superiore)
- *
- * Utile per analizzare la distribuzione verticale del gameplay.
- *
- * Attivazione: Tasto Y (Y-axis/Vertical)
- *
- * Performance optimizations:
- * - Max 10 active rooms rendered at a time
- * - Per-room active toggle
- * - Labels cleared when visualizer disabled
- */
 public class VerticalLevelsVisualizer {
     public static final VerticalLevelsVisualizer INSTANCE = new VerticalLevelsVisualizer();
 

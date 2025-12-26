@@ -4,6 +4,9 @@ import java.util.Objects;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -14,26 +17,6 @@ import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * FASE 4 REQ-A2: Light Level Overlay
- *
- * Displays light levels on blocks around the player:
- * - Green (light >= 8): Safe, no mob spawns
- * - Yellow (light 1-7): Partially dark
- * - Red (light 0): Mobs can spawn!
- *
- * Also shows:
- * - Light level number on each block (optional)
- * - Only solid surfaces where mobs could spawn
- *
- * Activation: L key (configurable)
- */
-// Minecraft API methods are not annotated but never return null in practice
-
 @OnlyIn(Dist.CLIENT)
 public class LightLevelOverlay {
     public static final LightLevelOverlay INSTANCE = new LightLevelOverlay();

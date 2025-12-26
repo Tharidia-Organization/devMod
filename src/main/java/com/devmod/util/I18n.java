@@ -1,15 +1,11 @@
 package com.devmod.util;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-
-import javax.annotation.Nonnull;
 import java.util.Objects;
 
-/**
- * Internationalization helper for DevMod.
- * Provides convenient methods to create translated components.
- */
+import javax.annotation.Nonnull;
+
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 public final class I18n {
     private I18n() {}
 

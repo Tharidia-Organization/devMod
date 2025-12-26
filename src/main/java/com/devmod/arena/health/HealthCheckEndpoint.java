@@ -14,19 +14,6 @@ import org.slf4j.LoggerFactory;
 import com.devmod.arena.fallback.CircuitBreaker;
 import com.devmod.arena.pool.PrebuildPoolManager;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-
-/**
- * DD64: Pure health check endpoint for arena subsystem.
- *
- * <p>Provides standardized health probes:
- * <ul>
- *   <li>Liveness: Is the service running?</li>
- *   <li>Readiness: Can the service accept requests?</li>
- *   <li>Startup: Has the service finished initializing?</li>
- * </ul>
- *
- * <p>Returns structured health status for Kubernetes/load balancer integration.
- */
 public class HealthCheckEndpoint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HealthCheckEndpoint.class);

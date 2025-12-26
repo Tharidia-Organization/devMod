@@ -7,11 +7,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.endurance.PersonalRecordsSyncPayload;
-
-/**
- * Client-side cache for player's personal quest records.
- * Updated via PersonalRecordsSyncPayload from server.
- */
 @OnlyIn(Dist.CLIENT)
 public class ClientPersonalRecordsCache {
 

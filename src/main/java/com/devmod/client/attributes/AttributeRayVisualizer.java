@@ -6,26 +6,14 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * 3D visualizer for Line of Sight rays for the attribute monitoring system.
- *
- * Shows:
- * - Green rays towards entities with clear LoS
- * - Yellow/red rays towards entities with blocked LoS
- * - Markers on blocking points
- * - Primary target indicator
- *
- * Inspired by the reference image with colored rays towards entities.
- */
 public class AttributeRayVisualizer {
     public static final AttributeRayVisualizer INSTANCE = new AttributeRayVisualizer();
 

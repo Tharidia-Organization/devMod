@@ -13,15 +13,6 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.ModuleTab;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.stats.FoodStats;
-
-/**
- * Editor module for food item statistics.
- * Allows editing nutrition, saturation, consumption time, and effects.
- *
- * Delegates to:
- * - FoodModuleCore: Stats management, loading, saving
- * - FoodModuleUI: UI components and section builders
- */
 public class FoodModule extends AbstractEditorModule {
 
     // Delegate classes (lazy initialized to avoid this-escape)

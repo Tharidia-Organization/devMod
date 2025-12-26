@@ -28,10 +28,6 @@ import com.devmod.client.ui.editor.sections.TextNoteSection;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
-
-/**
- * UI components and section builders for WeaponModule.
- */
 public class WeaponModuleUI {
 
     private final WeaponModule module;

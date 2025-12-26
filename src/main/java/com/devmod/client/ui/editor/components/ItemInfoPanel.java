@@ -15,14 +15,6 @@ import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.StringBuilderCache;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Item info panel showing item name, key stats, and dirty indicator.
- * Displayed in the left column below the slot selector.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.5 (Left Column - Item Info)
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.10 (Item Info Panel)
- */
 public class ItemInfoPanel {
 
     // ═══════════════════════════════════════════════════════════════

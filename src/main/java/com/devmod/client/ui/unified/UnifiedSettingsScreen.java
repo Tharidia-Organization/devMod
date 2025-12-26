@@ -32,11 +32,6 @@ import com.devmod.client.ui.unified.pages.TelemetryPage;
 import com.devmod.client.ui.unified.pages.VisualizersPage;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
-
-/**
- * Unified settings screen for all mod settings.
- * Layout with sidebar for navigation and content area for pages.
- */
 @OnlyIn(Dist.CLIENT)
 public class UnifiedSettingsScreen extends Screen {
 

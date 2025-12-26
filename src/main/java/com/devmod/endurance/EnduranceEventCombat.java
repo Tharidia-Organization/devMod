@@ -22,11 +22,6 @@ import com.devmod.arena.api.ArenaHandle;
 import com.devmod.combat.signature.SoulImprintManager;
 import com.devmod.endurance.challenges.DailyChallengeManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
-/**
- * Combat event processing for EnduranceQuest system.
- * Handles damage, kills, critical hits, and combat tracking.
- */
 public class EnduranceEventCombat {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventCombat.class);
 

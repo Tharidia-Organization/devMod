@@ -10,16 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.client.testing.TestingSession;
-
-/**
- * Rileva automaticamente il contesto di gioco e notifica i listener.
- *
- * Il detector analizza:
- * - Tempo dall'ultimo evento di combattimento
- * - Stato della sessione di testing
- * - Entita' target del player
- * - Override manuale dell'utente
- */
 public class ContextDetector {
 
     public static final ContextDetector INSTANCE = new ContextDetector();

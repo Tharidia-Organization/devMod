@@ -12,16 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Manager for template overrides with session cleanup hooks.
- *
- * <p>Implements DD5: Override Scope - Session-based with Cleanup.
- *
- * <p>Storage: Map<UUID, TemplateOverride> in memory, NOT persisted.
- *
- * @see <a href="TODO_ARENA_TEMPLATE.md">Arena Template Design Document</a>
- */
 public class OverrideManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(OverrideManager.class);
 

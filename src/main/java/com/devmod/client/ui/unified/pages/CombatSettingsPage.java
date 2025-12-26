@@ -20,11 +20,6 @@ import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
-
-/**
- * Combat settings page - weapon stats and damage configuration.
- * Shows current weapon stats and allows quick access to weapon editor.
- */
 public class CombatSettingsPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 20;

@@ -12,10 +12,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Network payload for syncing season pass data to clients.
- */
 public record SeasonPassPayload(
     // Season info
     int seasonNumber,

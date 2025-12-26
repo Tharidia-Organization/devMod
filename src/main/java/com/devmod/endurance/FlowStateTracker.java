@@ -9,20 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.ComboSystem.ActionType;
-
-/**
- * Tracks player action variety to encourage dynamic combat.
- *
- * FLOW STATES:
- * - STALE: Same action 3+ times in a row → -50% style points
- * - FRESH: New action type in combo → +25% style for 2 seconds
- * - VIRTUOSO: 5+ unique actions in current combo → 2x global multiplier
- *
- * Design Philosophy:
- * This system prevents "optimal rotation" gameplay where players spam
- * the same attack. It rewards creative, varied combat and creates
- * emergent "rhythm" where players must think about their next move.
- */
 public class FlowStateTracker {
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowStateTracker.class);
 

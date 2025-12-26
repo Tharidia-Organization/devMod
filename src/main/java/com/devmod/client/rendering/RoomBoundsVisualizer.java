@@ -8,6 +8,9 @@ import java.util.Set;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -18,20 +21,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * FASE 4 REQ-A3: Room Bounds Visualizer
- *
- * Visualizza i confini delle room configurate in telemetry_rooms.json:
- * - Box wireframe colorato per ogni room
- * - Label con nome della room
- * - Colori diversi per room diverse
- *
- * Attivazione: Tasto R (Room bounds)
- */
 public class RoomBoundsVisualizer {
     public static final RoomBoundsVisualizer INSTANCE = new RoomBoundsVisualizer();
 

@@ -12,12 +12,6 @@ import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Left column containing preview, slot selector, and item info.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.5 (Left Column)
- */
 public class LeftColumnComponent {
 
     // ═══════════════════════════════════════════════════════════════

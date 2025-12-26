@@ -12,11 +12,6 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import com.devmod.integration.ModIntegrationManager;
-
-/**
- * Detailed breakdown of damage calculation for the HUD.
- * Shows each component: base, enchants, Pehkui bonus, body part multiplier.
- */
 public class DamageBreakdown {
     public final float baseWeaponDamage;
     public final List<EnchantBonus> enchantBonuses;

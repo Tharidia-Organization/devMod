@@ -5,6 +5,11 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -17,15 +22,6 @@ import com.devmod.recipe.RecipeData;
 import com.devmod.recipe.SmeltingRecipeData;
 import com.devmod.recipe.SmithingRecipeData;
 import com.devmod.recipe.StonecuttingRecipeData;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-
-/**
- * Payload for synchronizing recipe data from server to client.
- * This is the playToClient counterpart to RecipeSyncPayload.
- */
 public record RecipeClientSyncPayload(
     @Nonnull List<RecipeData> recipes,
     @Nonnull SyncOperation operation
@@ -178,6 +174,7 @@ public record RecipeClientSyncPayload(
         );
     }
 
+    @Nullable
     private static RecipeData decodeRecipe(FriendlyByteBuf buffer) {
         try {
             // ID
@@ -189,6 +186,9 @@ public record RecipeClientSyncPayload(
             // JSON
             String jsonStr = buffer.readUtf();
             JsonObject json = GSON.fromJson(jsonStr, JsonObject.class);
+            if (json == null) {
+                return null;
+            }
 
             // Parse based on JSON type field
             return RecipeData.fromJson(id, json);

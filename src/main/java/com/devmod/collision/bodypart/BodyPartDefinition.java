@@ -9,27 +9,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.collision.obb.OrientedBoundingBox;
 import com.devmod.combat.HitHelper;
-
-/**
- * Immutable definition of a body part for an entity type.
- * Loaded from registry or JSON datapack.
- *
- * Does NOT contain runtime state - see BodyPartInstance for that.
- *
- * Example usage:
- * <pre>
- * BodyPartDefinition head = new BodyPartDefinition(
- *     "head",
- *     HitHelper.BodyPart.HEAD,
- *     new Vec3(0, 0.75, 0),      // offset from parent
- *     new Vec3(0.25, 0.25, 0.25), // half-extents
- *     "head",                     // ModelPart bone name
- *     "body",                     // parent body part
- *     0xFF00FFFF,                // cyan color
- *     2.0f                       // 2x damage multiplier
- * );
- * </pre>
- */
 public record BodyPartDefinition(
     @Nonnull String id,                          // Unique identifier (e.g., "head", "left_arm")
     @Nonnull HitHelper.BodyPart bodyPartType,    // Maps to existing enum for compatibility

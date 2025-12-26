@@ -6,6 +6,9 @@ import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,21 +18,6 @@ import com.devmod.collision.bodypart.BodyPartInstance;
 import com.devmod.collision.integration.OBBHitHelper;
 import com.devmod.collision.obb.OrientedBoundingBox;
 import com.devmod.config.Config;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Renders OBB hitboxes for debugging.
- * Extends existing BodyPartRenderer with rotation support.
- *
- * Features:
- * - Wireframe OBB with rotation visible
- * - Color-coded by body part type
- * - Shows local axes to visualize orientation (RGB = XYZ)
- * - Animation-synced updates
- */
-
 public final class OBBDebugRenderer {
 
     private OBBDebugRenderer() {} // Utility class

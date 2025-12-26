@@ -5,21 +5,6 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-/**
- * Contract interface for all editor overlays.
- * Client-only.
- * Defines the common API that ItemEditorScreen uses to interact with overlays.
- *
- * <p>This interface enables:
- * <ul>
- *   <li>Type-safe overlay management in OverlayController</li>
- *   <li>Consistent behavior across all overlay implementations</li>
- *   <li>Decoupling of overlays from the main screen</li>
- * </ul>
- *
- * @see com.devmod.client.ui.editor.core.BaseOverlay for the abstract base implementation
- */
 @OnlyIn(Dist.CLIENT)
 public interface EditorOverlay {
 

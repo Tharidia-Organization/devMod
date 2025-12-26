@@ -11,21 +11,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.combat.HitHelper;
-
-/**
- * SINGLE SOURCE OF TRUTH for body part AABB calculation
- *
- * Centralizes all hitbox subdivision logic into body parts.
- * Used by:
- * - BodyPartRenderer (debug overlay rendering)
- * - HitHelper (raycast detection)
- * - Other systems that need consistent body part AABBs
- *
- * DESIGN:
- * - Immutable BodyPartAABB record for each part
- * - Static calculateAllBodyParts() method returns complete array
- * - Supports adaptive mode (humanoid, horizontal, tall)
- */
 public class BodyPartCalculator {
 
     /**

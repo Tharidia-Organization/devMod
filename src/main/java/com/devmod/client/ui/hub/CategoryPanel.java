@@ -1,16 +1,5 @@
 package com.devmod.client.ui.hub;
 
-import com.devmod.testing.TestCase;
-import com.devmod.client.testing.TestingSession;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.util.I18n;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.network.chat.Component;
-
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,14 +8,18 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/**
- * Left panel with:
- * - Search box
- * - Status filters
- * - Expandable categories list
- * - Test list for selected category
- */
+import javax.annotation.Nonnull;
 
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
+
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.testing.TestCase;
+import com.devmod.util.I18n;
 public class CategoryPanel implements HubPanel {
 
     private final int x, y, width, height;

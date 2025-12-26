@@ -5,6 +5,8 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -21,13 +23,6 @@ import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import com.devmod.DevMod;
 import com.devmod.config.FoodConfigManager;
 import com.devmod.stats.FoodStats;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Event handlers for food item modifications.
- * Intercepts food consumption to apply custom nutrition, saturation, and effects.
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class FoodEvents {
 

@@ -4,23 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-/**
- * Network payload for sending batched telemetry events from client to server.
- *
- * Events are compressed using:
- * - Event type ID (byte) instead of string
- * - Relative timestamps (delta from batch timestamp)
- * - Minimal JSON encoding
- *
- * Rate limiting: Server accepts max 100 events/second per player.
- */
 public record TelemetryBatchPayload(
     long batchTimestamp,
     List<CompressedEvent> events
@@ -128,6 +119,7 @@ public record TelemetryBatchPayload(
             this.id = (byte) id;
         }
 
+        @Nullable
         public static EventType fromId(byte id) {
             for (EventType type : values()) {
                 if (type.id == id) {

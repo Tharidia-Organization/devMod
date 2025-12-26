@@ -9,11 +9,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.arena.api.ArenaHandle;
-
-/**
- * Runtime arena context derived from an ArenaHandle plus the active ServerLevel.
- * Replaces legacy ArenaManager.Arena adapter usage.
- */
 public final class ArenaContext {
 
     private final ServerLevel level;

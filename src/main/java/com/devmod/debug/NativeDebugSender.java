@@ -23,12 +23,6 @@ import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raids;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
-
-/**
- * Uses Minecraft's NATIVE debug payload system.
- * These are the same packets that Mojang uses internally for debugging.
- * The client already has renderers for these - we just need to send the packets.
- */
 @SuppressWarnings("unused") // Native debug sending is temporarily disabled; keep code for future use
 public class NativeDebugSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeDebugSender.class);

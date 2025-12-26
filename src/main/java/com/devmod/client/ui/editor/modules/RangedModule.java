@@ -34,11 +34,6 @@ import com.devmod.client.ui.editor.sections.InputSectionAdapter;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
 import com.devmod.network.RangedWeaponStatsPayload;
-
-/**
- * Editor module for ranged weapons (bow/crossbow).
- * Uses CustomData "RangedStats" via RangedWeaponModule helper.
- */
 public class RangedModule extends AbstractEditorModule {
 
     public enum RangedVariant { BOW, CROSSBOW, TRIDENT, GENERIC }

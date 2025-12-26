@@ -2,16 +2,6 @@ package com.devmod.endurance;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Singleton class responsible for scaling difficulty based on player count and quest type.
- * Used by WaveManager, BossWaveSystem, and EnduranceQuestRegistry.
- *
- * Formulas:
- * - Mob Count: baseMobCount * sqrt(playerCount) * questTypeMultiplier
- * - Boss HP: baseHP * (1 + (playerCount - 1) * 0.3) * questTypeMultiplier
- * - Boss Damage: baseDamage * (1 + (playerCount - 1) * 0.1)
- */
 public class DifficultyScaler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DifficultyScaler.class);
 

@@ -11,27 +11,6 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Spell Power by ZsoltMolnarrr.
- *
- * Spell Power provides:
- * - Spell school attributes (Arcane, Fire, Frost, Healing, Lightning, Soul)
- * - Secondary attributes (Critical Chance, Critical Damage, Haste)
- * - Spell power calculation API
- * - Magical resistance system
- * - Vulnerability/weakness mechanics
- *
- * This integration allows DevMod to:
- * - Query spell power values for entities
- * - Display magic stats in HUD overlays
- * - Include spell power in damage calculations
- * - Track magical damage types in telemetry
- * - Support spell power items in the item editor
- *
- * @see <a href="https://github.com/ZsoltMolnarrr/SpellPower">GitHub</a>
- * @see <a href="https://modrinth.com/mod/spell-power">Modrinth</a>
- */
 public class SpellPowerCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpellPowerCompat.class);
     public static final String MOD_ID = "spell_power";

@@ -17,27 +17,6 @@ import com.devmod.arena.alert.ErrorContext;
 import com.devmod.telemetry.duckdb.ArenaRecords;
 import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-
-/**
- * Dashboard Validation Job (DD69).
- *
- * <p>Automated validation runs daily at 02:00:
- * <ul>
- *   <li>Row count validation: NDJSON vs DuckDB</li>
- *   <li>Aggregate validation: Dashboard vs raw query</li>
- *   <li>Temporal consistency: No gaps, no future timestamps</li>
- *   <li>Referential integrity: Foreign key checks</li>
- * </ul>
- *
- * <p>Manual checklist items (weekly):
- * <ul>
- *   <li>Data freshness (last update < 1h)</li>
- *   <li>Row count spot check</li>
- *   <li>Aggregate spot check</li>
- *   <li>Cross-reference validation</li>
- *   <li>Visual dashboard inspection</li>
- * </ul>
- */
 public class DashboardValidationJob {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DashboardValidationJob.class);

@@ -5,22 +5,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.client.collision.transform.ModelPartTransformCapture;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-
-/**
- * Mixin to capture ModelPart transforms during entity rendering.
- * This starts/stops the transform capture around the model rendering
- * so that ModelPartTransformMixin can capture each part's transform.
- *
- * Works with all entities that use LivingEntityRenderer.
- */
-
 @Mixin(LivingEntityRenderer.class)
 public class LivingEntityRendererMixin<T extends LivingEntity> {
 

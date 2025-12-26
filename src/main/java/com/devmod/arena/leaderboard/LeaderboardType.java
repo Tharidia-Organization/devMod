@@ -1,17 +1,6 @@
 package com.devmod.arena.leaderboard;
 
 import java.time.Duration;
-
-/**
- * Leaderboard Type enum implementing DD56: Leaderboard Batch.
- *
- * <p>Key features:
- * <ul>
- *   <li>Multiple leaderboard types with SQL queries</li>
- *   <li>Configurable cache TTL per type</li>
- *   <li>Support for different ranking algorithms</li>
- * </ul>
- */
 public enum LeaderboardType {
 
     /**

@@ -16,17 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.actions.ActionRegistry;
-
-/**
- * Central registry for all mod compatibility modules.
- * Handles registration, initialization, and lifecycle management.
- *
- * Usage:
- * 1. Register modules during mod construction
- * 2. Call initCommon() during FMLCommonSetupEvent
- * 3. Call initClient() during FMLClientSetupEvent (client only)
- * 4. Call shutdown() during server stopping
- */
 public final class CompatRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompatRegistry.class);
 
@@ -271,7 +260,7 @@ public final class CompatRegistry {
         Collections.sort(sortedIds);
 
         for (String modId : sortedIds) {
-            CompatModule module = MODULES.get(modId);
+            CompatModule module = Objects.requireNonNull(MODULES.get(modId), "Missing module for " + modId);
             boolean loaded = Compat.isLoaded(modId);
             boolean active = INITIALIZED_COMMON.contains(modId);
             String version = Compat.getVersion(modId);

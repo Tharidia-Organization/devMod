@@ -12,16 +12,6 @@ import com.devmod.telemetry.boss.BossPhaseService;
 import com.devmod.telemetry.dungeon.DungeonSessionService;
 import com.devmod.telemetry.room.RoomAnalysisService;
 import com.devmod.telemetry.skills.SkillTrackingService;
-
-/**
- * Service for periodic memory cleanup of telemetry and tracking data.
- * Prevents memory leaks during long gaming sessions by:
- * 1. Removing stale entity data (dead mobs, disconnected players)
- * 2. Limiting collection sizes
- * 3. Periodic cleanup of old tracking data
- *
- * Should be called periodically (e.g., every 5 minutes) from server tick.
- */
 public class MemoryCleanupService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MemoryCleanupService.class);
     public static final MemoryCleanupService INSTANCE = new MemoryCleanupService();

@@ -16,21 +16,6 @@ import net.minecraft.world.entity.LivingEntity;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
-
-/**
- * Service for tracking spatial metrics and environmental hazards.
- * Extracted from TelemetryService for better separation of concerns.
- *
- * <p>Features:
- * <ul>
- * <li>M42: Choke point detection (quit positions)</li>
- * <li>M52: Entity density per room</li>
- * <li>M13: Invisible collision detection</li>
- * <li>M14: Parkour fall points</li>
- * </ul>
- *
- * <p>Thread-safe for concurrent access from multiple server threads.
- */
 public class SpatialMetricsService {
     public static final SpatialMetricsService INSTANCE = new SpatialMetricsService();
 

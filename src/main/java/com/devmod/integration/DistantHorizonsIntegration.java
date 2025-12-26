@@ -12,21 +12,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
 import net.neoforged.fml.ModList;
-
-/**
- * Integration with Distant Horizons mod for LOD (Level of Detail) rendering.
- *
- * This integration handles:
- * - Registering dynamic instance dimensions so DH knows about them
- * - Preventing LOD data conflicts between dimensions
- * - Properly cleaning up LOD data when instances are destroyed
- *
- * All calls are safe even if DH is not installed - methods gracefully no-op.
- *
- * Based on Distant Horizons API documentation:
- * https://gitlab.com/distant-horizons-team/distant-horizons-api-example
- * https://distant-horizons-team.gitlab.io/distant-horizons/
- */
 public class DistantHorizonsIntegration {
     private static final Logger LOGGER = LoggerFactory.getLogger(DistantHorizonsIntegration.class);
 

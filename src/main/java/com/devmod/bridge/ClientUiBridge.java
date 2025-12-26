@@ -2,21 +2,6 @@ package com.devmod.bridge;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Bridge interface for client UI operations.
- *
- * <p>This allows common/server code to request UI operations without
- * importing client-only classes like Screen, Minecraft, etc.
- *
- * <p>On the client side, the implementation opens actual screens.
- * On the server side, operations are no-ops (or can send packets to client).
- *
- * <p>Usage:
- * <pre>
- * ClientUiBridge.get().openSettings();
- * </pre>
- */
 public interface ClientUiBridge {
 
     Logger LOGGER = LoggerFactory.getLogger(ClientUiBridge.class);

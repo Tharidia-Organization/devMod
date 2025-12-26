@@ -11,7 +11,6 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
 public final class InfoListSection implements EditorSection.CustomSection {
     private static final int LINE_HEIGHT = 12;
     private static final int TEXT_INSET_X = 8;

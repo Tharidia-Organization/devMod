@@ -13,41 +13,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.util.I18n;
-
-/**
- * Reusable loading indicator component for screens.
- *
- * <h2>Usage</h2>
- * <pre>{@code
- * // In your screen:
- * private final LoadingIndicator loadingIndicator = new LoadingIndicator();
- *
- * // When starting an async operation:
- * loadingIndicator.start("Loading data...");
- *
- * // In render():
- * if (loadingIndicator.isLoading()) {
- *     loadingIndicator.render(graphics, font, x, y, width, height);
- * } else {
- *     // Render normal content
- * }
- *
- * // When operation completes:
- * loadingIndicator.stop();
- *
- * // If operation fails:
- * loadingIndicator.showError("Failed to load data");
- * }</pre>
- *
- * <h2>Features</h2>
- * <ul>
- *   <li>Spinning animation</li>
- *   <li>Status message</li>
- *   <li>Elapsed time display</li>
- *   <li>Error state with retry option</li>
- *   <li>Timeout detection</li>
- * </ul>
- */
 @OnlyIn(Dist.CLIENT)
 public class LoadingIndicator {
 

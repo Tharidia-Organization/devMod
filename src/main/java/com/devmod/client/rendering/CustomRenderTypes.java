@@ -2,16 +2,11 @@ package com.devmod.client.rendering;
 
 import java.util.Objects;
 
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.RenderType;
-
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
-/**
- * Custom RenderTypes for PhantomShapes-style rendering.
- * Provides POSITION_COLOR format with transparency support.
- */
+import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.RenderType;
 public class CustomRenderTypes extends RenderType {
 
     // Dummy constructor - never called

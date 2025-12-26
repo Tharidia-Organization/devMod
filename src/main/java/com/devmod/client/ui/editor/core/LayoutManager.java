@@ -2,14 +2,6 @@ package com.devmod.client.ui.editor.core;
 
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * Provides utility methods for calculating component layouts based on the design system.
- * This includes helpers for arranging components in rows and sections.
- *
- * @see EditorSpacing
- * @see UIConstants
- */
 public final class LayoutManager {
 
     private LayoutManager() {}

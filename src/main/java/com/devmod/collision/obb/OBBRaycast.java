@@ -7,19 +7,6 @@ import javax.annotation.Nullable;
 
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-
-/**
- * Ray-OBB intersection using the Slab Method.
- * Optimized for real-time combat with early-exit conditions.
- *
- * Algorithm:
- * 1. Transform ray into OBB local space
- * 2. Perform AABB slab test in local space
- * 3. Transform hit point back to world space
- *
- * Performance: ~0.002ms per test (15-20 floating point operations)
- */
-
 public final class OBBRaycast {
 
     private OBBRaycast() {} // Utility class

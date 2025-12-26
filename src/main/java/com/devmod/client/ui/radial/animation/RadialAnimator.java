@@ -6,23 +6,6 @@ import java.util.Objects;
 import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
-
-/**
- * Coordinates all animations for the Radial Menu.
- *
- * <p>This class manages:</p>
- * <ul>
- *   <li>Open/close animations</li>
- *   <li>Category selection animations</li>
- *   <li>Item hover animations</li>
- *   <li>Macro transition animations</li>
- *   <li>Search box animations</li>
- *   <li>Pulse/wave effects</li>
- * </ul>
- *
- * <p>Animation state is mutable for performance reasons (called every frame).
- * Create one instance per screen and call {@link #update(float, boolean)} each tick.</p>
- */
 public final class RadialAnimator {
 
     // ================================================================

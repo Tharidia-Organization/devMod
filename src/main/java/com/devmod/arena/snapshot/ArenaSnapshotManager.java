@@ -26,18 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-/**
- * Manages arena snapshots for recovery and drift detection.
- *
- * <p>Implements:
- * <ul>
- *   <li>Session state snapshots</li>
- *   <li>Version drift detection (template changed during session)</li>
- *   <li>Crash recovery from persisted snapshots</li>
- *   <li>Snapshot cleanup based on retention policy</li>
- * </ul>
- */
 public class ArenaSnapshotManager implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaSnapshotManager.class);

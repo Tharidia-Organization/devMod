@@ -9,13 +9,6 @@ import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestState;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.WaveObjectiveState;
-
-/**
- * Client-side cache for quest data received from the server.
- * Used by HUD overlays to display quest information.
- *
- * This is a simple static cache that gets updated when sync packets arrive.
- */
 @OnlyIn(Dist.CLIENT)
 public class ClientQuestCache {
 

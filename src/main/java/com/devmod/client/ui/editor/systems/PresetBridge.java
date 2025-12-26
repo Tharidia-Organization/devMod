@@ -8,13 +8,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.devmod.client.ui.editor.ItemEditorDataManager;
-
-/**
- * Bridge utilities for converting between PresetRegistry.RegistryPreset and ItemEditorDataManager.PresetData.
- *
- * This allows the new hierarchical PresetRegistry to work seamlessly with the existing UI
- * that expects PresetData objects.
- */
 public final class PresetBridge {
 
     private PresetBridge() {}

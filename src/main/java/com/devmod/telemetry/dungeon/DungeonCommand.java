@@ -7,6 +7,14 @@ import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -21,25 +29,6 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
-
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import com.mojang.logging.LogUtils;
-
-/**
- * P2-B Debug command for dungeon run testing.
- *
- * Usage:
- *   /devmod dungeon start <dungeon_id>
- *   /devmod dungeon end <SUCCESS|DEATH|ABANDONED|TIMEOUT> [kills] [deaths] [reward_count]
- *   /devmod dungeon status
- *
- * This uses the real DungeonRunService pipeline (not direct SQL insert).
- */
 public class DungeonCommand {
     private static final Logger LOGGER = LogUtils.getLogger();
 

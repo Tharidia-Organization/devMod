@@ -1,11 +1,6 @@
 package com.devmod.testing.stats;
 
 import com.google.gson.JsonObject;
-
-/**
- * Tracks overlay and screen usage statistics.
- * Extracted from TesterProgress for single responsibility.
- */
 public class OverlayUsageTracker {
     public static final OverlayUsageTracker INSTANCE = new OverlayUsageTracker();
 

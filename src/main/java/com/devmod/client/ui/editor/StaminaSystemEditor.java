@@ -16,7 +16,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.abilities.StaminaSystem;
-
 @OnlyIn(Dist.CLIENT)
 public class StaminaSystemEditor extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(StaminaSystemEditor.class);

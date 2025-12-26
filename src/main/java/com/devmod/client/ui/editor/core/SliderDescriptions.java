@@ -3,15 +3,6 @@ package com.devmod.client.ui.editor.core;
 import java.util.Objects;
 
 import net.minecraft.client.resources.language.I18n;
-
-/**
- * Centralized registry for slider descriptions.
- * Uses Minecraft's i18n system for translations.
- *
- * All description keys follow the pattern: devmod.slider.{category}.{id}.desc
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.2
- */
 public final class SliderDescriptions {
 
     private SliderDescriptions() {} // Utility class

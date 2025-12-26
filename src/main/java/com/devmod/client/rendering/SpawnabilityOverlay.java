@@ -6,6 +6,9 @@ import java.util.Objects;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -18,26 +21,6 @@ import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * VOXEL-LAB M27: Spawnability Map
- *
- * Visualizes where hostile mobs can naturally spawn:
- * - RED: Hostile mob spawn valid (light <= 0, solid block below, air above)
- * - ORANGE: Spawn valid in darkness only (light 1-7, valid surface)
- * - GREEN: Safe - no mob can spawn (light >= 8 or invalid surface)
- *
- * Checks:
- * 1. Block light level (hostile mobs spawn at light level 0)
- * 2. Solid spawn surface below
- * 3. Air/passable blocks above for mob height
- * 4. Not on glass/slabs/invalid spawn blocks
- *
- * Toggle: S key (configurable)
- */
 @OnlyIn(Dist.CLIENT)
 public class SpawnabilityOverlay {
     public static final SpawnabilityOverlay INSTANCE = new SpawnabilityOverlay();

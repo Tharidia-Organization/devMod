@@ -11,17 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Manages directive chains - multi-wave narrative arcs.
- *
- * Features:
- * - Predefined chains with themed objectives
- * - Chain progress tracking per quest
- * - Condition checking between steps
- * - Bonus rewards on chain completion
- * - Integration with WaveDirector for directive selection
- */
 public final class DirectiveChainManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DirectiveChainManager.class);
 

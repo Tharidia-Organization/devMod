@@ -9,10 +9,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 
 import com.devmod.arena.builder.BuildTransaction;
-
-/**
- * Ensures baseline metric definitions match legacy (build_ms, entities_residual, blocks_residual).
- */
 public final class MetricsCompatibilityLayer {
 
     private MetricsCompatibilityLayer() {}

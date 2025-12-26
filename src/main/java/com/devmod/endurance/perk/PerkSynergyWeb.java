@@ -27,21 +27,6 @@ import net.minecraft.world.level.saveddata.SavedData;
 
 import com.devmod.endurance.PerkSynergySystem;
 import com.devmod.endurance.PerkSystem;
-
-/**
- * Perk Synergy Web - Hidden Combinations & Discovery System.
- *
- * This system adds a discovery layer on top of the existing PerkSystem:
- * - Hidden perks that appear as "???" until discovered
- * - Unlock conditions based on perk combinations and achievements
- * - Persistent tracking of player discoveries
- * - Sacrifice mechanic: remove perks to unlock stronger variants
- *
- * Design Philosophy:
- * Hidden perks create an exploration meta-game within the roguelike loop.
- * Players are rewarded for experimenting with different builds, and
- * discovering a hidden perk feels like uncovering a secret.
- */
 public class PerkSynergyWeb {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSynergyWeb.class);
 

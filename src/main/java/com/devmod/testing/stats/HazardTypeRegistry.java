@@ -18,9 +18,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.damagesource.DamageSource;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -28,20 +25,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
-/**
- * Config-driven registry for environmental hazard types.
- * Replaces hardcoded string matching with configurable patterns.
- *
- * <p>Features:
- * <ul>
- *   <li>Fail-fast validation on malformed configs</li>
- *   <li>Extensible hazard type definitions</li>
- *   <li>Priority-based matching (first match wins)</li>
- *   <li>Default config generation on first run</li>
- * </ul>
- *
- * <p>Config file location: config/devmod/hazard_types.json
- */
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.damagesource.DamageSource;
 public class HazardTypeRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(HazardTypeRegistry.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

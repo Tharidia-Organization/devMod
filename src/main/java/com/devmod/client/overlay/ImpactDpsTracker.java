@@ -5,10 +5,6 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * Tracks rolling DPS per player for the Impact HUD.
- */
 public final class ImpactDpsTracker {
     private static final long WINDOW_MS = 5000;
     private static final int MAX_RECORDS = 100;

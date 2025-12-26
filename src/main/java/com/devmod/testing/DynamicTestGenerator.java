@@ -17,13 +17,6 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.testing.ModDiscoveryService.ModInfo;
 import com.devmod.testing.TestCase.TestPriority;
-
-/**
- * Automatically generates test cases based on discovered mod content.
- * Creates tests for weapons, mobs, effects, and mod-specific features.
- *
- * Test generation is modular and extensible through TestTemplates.
- */
 public class DynamicTestGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTestGenerator.class);
 

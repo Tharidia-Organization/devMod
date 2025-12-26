@@ -9,13 +9,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-
-/**
- * Interface for editor content modules.
- * Modules provide content structure, NOT layout/positions.
- *
- * @see EDITOR_DESIGN_SYSTEM.md#32-editor-module-interface
- */
 public interface EditorModule {
 
     // ═══════════════════════════════════════════════════════════════

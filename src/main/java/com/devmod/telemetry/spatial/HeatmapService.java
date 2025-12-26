@@ -10,26 +10,11 @@ import java.util.function.BiConsumer;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Centralized service for spatial heatmap management.
- *
- * Manages the following heatmaps:
- * - Stuck: Positions where entities get stuck
- * - Aggro Drop: Positions where mobs lose aggro
- * - Kiting: Positions where mobs get kited/turned
- * - Death: Death positions
- * - Movement: Player movement positions
- * - Camping: Positions where players camp
- * - Choke Points: Positions where players quit
- * - Invisible Collisions: Invisible collisions
- * - Parkour Falls: Parkour falls
- */
 public class HeatmapService {
     public static final HeatmapService INSTANCE = new HeatmapService();
     private static final Logger LOGGER = LogUtils.getLogger();

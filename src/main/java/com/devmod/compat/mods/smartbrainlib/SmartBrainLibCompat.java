@@ -14,24 +14,6 @@ import net.minecraft.world.entity.Mob;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for SmartBrainLib.
- *
- * SmartBrainLib provides:
- * - Advanced mob AI system using Brain API
- * - Sensor and memory management
- * - Behavior tree implementation
- * - Task scheduling and priorities
- *
- * This integration allows DevMod to:
- * - Detect SmartBrainLib-powered mobs for Arena
- * - Track AI states and active behaviors
- * - Monitor mob memory/sensors for telemetry
- * - Debug mob AI in development
- *
- * @see <a href="https://github.com/Tslat/SmartBrainLib">SmartBrainLib GitHub</a>
- */
 public class SmartBrainLibCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartBrainLibCompat.class);
     public static final String MOD_ID = "smartbrainlib";

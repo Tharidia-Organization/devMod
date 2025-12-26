@@ -16,18 +16,10 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-/**
- * Manages Game Design configuration with:
- * - Global defaults (persisted to JSON)
- * - Per-instance overrides (runtime only)
- * - Hot-reload support
- * - Change listeners for live updates
- */
+import com.devmod.util.ConfigPaths;
 public class GameDesignConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameDesignConfigManager.class);

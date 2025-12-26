@@ -2,38 +2,26 @@ package com.devmod.integration;
 
 import java.lang.reflect.Method;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-
-/**
- * Soft dependency wrapper per Pehkui API.
- * Usa reflection per evitare hard dependency a compile time.
- *
- * Pehkui API Reference:
- * - ScaleTypes.BASE.getScaleData(entity).getScale() -> scala visiva
- * - ScaleTypes.HITBOX_WIDTH.getScaleData(entity).getScale() -> scala hitbox
- *
- * Per aggiungere Pehkui come dipendenza opzionale in build.gradle:
- *
- * repositories {
- *     maven { url "https://jitpack.io" }
- * }
- *
- * dependencies {
- *     compileOnly "com.github.Virtuoel:Pehkui:3.8.3+1.21-neoforge"
- * }
- */
 public class PehkuiIntegration {
     private static final Logger LOGGER = LoggerFactory.getLogger(PehkuiIntegration.class);
 
     // Cache of classes and methods for performance
+    @Nullable
     private static Class<?> scaleTypesClass = null;
+    @Nullable
     private static Object baseScaleType = null;
+    @Nullable
     private static Object hitboxWidthScaleType = null;
+    @Nullable
     private static Method getScaleDataMethod = null;
+    @Nullable
     private static Method getScaleMethod = null;
     private static boolean initAttempted = false;
     private static boolean initSuccess = false;
@@ -51,34 +39,46 @@ public class PehkuiIntegration {
             scaleTypesClass = Class.forName("virtuoel.pehkui.api.ScaleTypes");
 
             // Get BASE field (visual scale)
-            baseScaleType = scaleTypesClass.getField("BASE").get(null);
+            Object baseScaleTypeLocal = scaleTypesClass.getField("BASE").get(null);
+            if (baseScaleTypeLocal == null) {
+                throw new IllegalStateException("Pehkui BASE scale type missing");
+            }
 
             // Get HITBOX_WIDTH field (hitbox scale) - may not exist in old versions
+            Object hitboxScaleTypeLocal = null;
             try {
-                hitboxWidthScaleType = scaleTypesClass.getField("HITBOX_WIDTH").get(null);
+                hitboxScaleTypeLocal = scaleTypesClass.getField("HITBOX_WIDTH").get(null);
             } catch (NoSuchFieldException e) {
                 // Fallback a WIDTH se HITBOX_WIDTH non esiste
                 try {
-                    hitboxWidthScaleType = scaleTypesClass.getField("WIDTH").get(null);
+                    hitboxScaleTypeLocal = scaleTypesClass.getField("WIDTH").get(null);
                 } catch (NoSuchFieldException e2) {
-                    hitboxWidthScaleType = baseScaleType; // Use BASE as fallback
+                    hitboxScaleTypeLocal = baseScaleTypeLocal; // Use BASE as fallback
                 }
+            }
+            if (hitboxScaleTypeLocal == null) {
+                hitboxScaleTypeLocal = baseScaleTypeLocal;
             }
 
             // Get getScaleData(Entity) method
-            Class<?> scaleTypeClass = baseScaleType.getClass();
-            getScaleDataMethod = scaleTypeClass.getMethod("getScaleData", Entity.class);
+            Class<?> scaleTypeClass = baseScaleTypeLocal.getClass();
+            Method scaleDataMethod = scaleTypeClass.getMethod("getScaleData", Entity.class);
 
             // Get getScale() method from ScaleData
-            Object sampleScaleData = getScaleDataMethod.invoke(baseScaleType, (Entity) null);
+            Object sampleScaleData = scaleDataMethod.invoke(baseScaleTypeLocal, (Entity) null);
+            Method scaleMethod;
             if (sampleScaleData != null) {
-                getScaleMethod = sampleScaleData.getClass().getMethod("getScale");
+                scaleMethod = sampleScaleData.getClass().getMethod("getScale");
             } else {
                 // Try to get the method from ScaleData class directly
                 Class<?> scaleDataClass = Class.forName("virtuoel.pehkui.api.ScaleData");
-                getScaleMethod = scaleDataClass.getMethod("getScale");
+                scaleMethod = scaleDataClass.getMethod("getScale");
             }
 
+            baseScaleType = baseScaleTypeLocal;
+            hitboxWidthScaleType = hitboxScaleTypeLocal;
+            getScaleDataMethod = scaleDataMethod;
+            getScaleMethod = scaleMethod;
             initSuccess = true;
             LOGGER.debug("[DevMod] Pehkui reflection API initialized successfully");
 
@@ -95,14 +95,15 @@ public class PehkuiIntegration {
      * @param entity The entity to check
      * @return The scale (1.0 = normal), or null if error/Pehkui not present
      */
-    public static Float getScale(LivingEntity entity) {
+    @Nullable
+    public static Float getScale(@Nullable LivingEntity entity) {
         if (entity == null) return null;
 
         if (!initAttempted) {
             initReflection();
         }
 
-        if (!initSuccess || baseScaleType == null) {
+        if (!initSuccess || baseScaleType == null || getScaleDataMethod == null || getScaleMethod == null) {
             return null;
         }
 
@@ -131,14 +132,15 @@ public class PehkuiIntegration {
      * @param entity The entity to check
      * @return The hitbox scale (1.0 = normal), or null if error
      */
-    public static Float getHitboxScale(LivingEntity entity) {
+    @Nullable
+    public static Float getHitboxScale(@Nullable LivingEntity entity) {
         if (entity == null) return null;
 
         if (!initAttempted) {
             initReflection();
         }
 
-        if (!initSuccess || hitboxWidthScaleType == null) {
+        if (!initSuccess || hitboxWidthScaleType == null || getScaleDataMethod == null || getScaleMethod == null) {
             return null;
         }
 

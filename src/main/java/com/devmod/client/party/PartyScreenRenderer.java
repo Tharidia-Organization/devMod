@@ -1,31 +1,28 @@
 package com.devmod.client.party;
 
-import com.devmod.party.PartyData;
-import com.devmod.party.PartySyncPayload;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
-import com.devmod.endurance.EnduranceQuestRegistry;
-import com.devmod.endurance.EnduranceQuestRegistry.MobDifficultyPreset;
-import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
-import com.devmod.endurance.QuestType;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
+import javax.annotation.Nonnull;
+
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-
-/**
- * Handles all rendering operations for PartyScreen.
- * Extracted for single responsibility.
- */
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.EnduranceQuestRegistry;
+import com.devmod.endurance.EnduranceQuestRegistry.MobDifficultyPreset;
+import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
+import com.devmod.endurance.QuestType;
+import com.devmod.party.PartyData;
+import com.devmod.party.PartySyncPayload;
 public class PartyScreenRenderer {
 
     // Colors

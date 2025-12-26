@@ -9,30 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-/**
- * Centralized registry for hazard types with validation rules (DD8).
- *
- * <p>Provides:
- * <ul>
- *   <li>Whitelist of supported hazard types</li>
- *   <li>Per-type instance limits</li>
- *   <li>Per-type parameter constraints</li>
- *   <li>Custom hazard builder registration</li>
- * </ul>
- *
- * <p>Built-in hazard types:
- * <ul>
- *   <li>{@code lava_ring} - Ring of lava around arena (limit: 3)</li>
- *   <li>{@code lava_pool} - Lava pool at position (limit: 5)</li>
- *   <li>{@code void_pit} - Void pit hazard (limit: 3)</li>
- *   <li>{@code spike_trap} - Spike trap at positions (limit: 20)</li>
- *   <li>{@code fire_zone} - Fire damage zone AABB (limit: 5)</li>
- *   <li>{@code magma_floor} - Magma block floor coverage (limit: 1)</li>
- *   <li>{@code falling_blocks} - Falling block hazard (limit: 2)</li>
- *   <li>{@code custom} - Custom builder-based hazard (limit: 2)</li>
- * </ul>
- */
 public final class HazardRegistry {
 
     /** Global instance limit across all hazard types. */

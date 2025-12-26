@@ -9,25 +9,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Ranged Weapon API by ZsoltMolnarrr.
- *
- * Ranged Weapon API provides:
- * - Easy creation of bows and crossbows
- * - Customizable damage, pull time, projectile velocity
- * - Automatic model predicate registration
- * - Correct first/third person rendering
- *
- * This integration allows DevMod to:
- * - Detect custom ranged weapons
- * - Read weapon damage values
- * - Include ranged weapon stats in telemetry
- * - Support ranged weapons in the item editor
- *
- * @see <a href="https://modrinth.com/mod/ranged-weapon-api">Modrinth</a>
- * @see <a href="https://www.curseforge.com/minecraft/mc-mods/ranged-weapon-api">CurseForge</a>
- */
 public class RangedWeaponApiCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(RangedWeaponApiCompat.class);
     public static final String MOD_ID = "ranged_weapon_api";

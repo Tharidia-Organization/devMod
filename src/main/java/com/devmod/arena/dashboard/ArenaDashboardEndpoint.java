@@ -24,17 +24,6 @@ import com.devmod.arena.security.ArenaCommandAudit;
 import com.devmod.telemetry.duckdb.ArenaRecords;
 import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-
-/**
- * DD35: Dashboard Auth - token + cache + background refresh
- * DD36: Analytics Query Limits - 30 giorni max, pagination, timeout 10s
- *
- * HTTP endpoint handler for the arena dashboard.
- * Features:
- * - Token-based authentication
- * - Rate limiting (60 req/min per token)
- * - Metrics cache with 5-minute background refresh
- */
 public class ArenaDashboardEndpoint implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaDashboardEndpoint.class);

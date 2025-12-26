@@ -6,11 +6,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.rendering.shield.EnergyShieldRenderer;
-
-/**
- * Client-side handlers for Shield network packets.
- * This class is only loaded on the client.
- */
 @OnlyIn(Dist.CLIENT)
 public final class ClientShieldHandlers {
 

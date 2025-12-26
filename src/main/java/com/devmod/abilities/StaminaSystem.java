@@ -9,23 +9,12 @@ import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import com.devmod.network.NetworkHandler;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Stamina System - Manages player stamina for abilities like dash and dodge.
- *
- * Features:
- * - Configurable max stamina and regeneration rate
- * - Stamina consumption for abilities (sprint, dash, dodge, jump)
- * - Regeneration pauses briefly after stamina use
- * - Integration with perk system for modifiers
- * - Exhaustion state when stamina is depleted
- */
 public class StaminaSystem {
     private static final Logger LOGGER = LogUtils.getLogger();
 

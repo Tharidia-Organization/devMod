@@ -8,10 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_HEADER_ACCENT;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SEPARATOR_HEIGHT;
 import static com.devmod.client.ui.testing.panel.PanelConstants.TITLE_HEIGHT;
-
-/**
- * Simple header panel with title and optional separator line.
- */
 public record HeaderPanel(
     String id,
     String title,

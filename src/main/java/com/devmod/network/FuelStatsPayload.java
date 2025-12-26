@@ -11,11 +11,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.DevMod;
-
-/**
- * Network payload for fuel stats synchronization.
- * Sent from client to server when applying fuel modifications.
- */
 public record FuelStatsPayload(
     ItemStack item,
     CompoundTag statsTag,

@@ -1,27 +1,10 @@
 package com.devmod.client.ui.radial.model;
 
-import com.devmod.client.ui.radial.config.RadialMenuConstants;
-
-import javax.annotation.Nullable;
 import java.util.Objects;
 
-/**
- * Immutable state container for the Radial Menu.
- *
- * <p>This class encapsulates all mutable state of the radial menu in an immutable record,
- * enabling functional state transitions and preventing state mutation during rendering.</p>
- *
- * <p>Usage pattern:</p>
- * <pre>
- * // In tick():
- * state = state.withHoveredMacro(computeHoveredMacro(mouseX, mouseY));
- *
- * // In render():
- * renderHub(graphics, state.hoveredMacro()); // Read-only
- * </pre>
- *
- * <p>State is calculated once per tick in {@code tick()} and consumed read-only in {@code render()}.</p>
- */
+import javax.annotation.Nullable;
+
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 public record RadialMenuState(
     // === Macro Selection ===
     MacroCategory selectedMacro,

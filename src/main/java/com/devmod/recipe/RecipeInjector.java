@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.jetbrains.annotations.Nullable;
+
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -35,17 +37,6 @@ import net.minecraft.world.item.crafting.SmokingRecipe;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
 
 import com.devmod.DevMod;
-
-/**
- * Handles runtime injection of custom recipes into Minecraft's RecipeManager.
- * Maintains a shadow registry that supplements the vanilla recipe system.
- *
- * <p>In NeoForge 1.21, the RecipeManager is mostly immutable after datapack loading.
- * This injector maintains its own parallel registry and provides lookup methods
- * that can be used via events or mixins to supplement recipe lookups.</p>
- *
- * <p>Thread-safety: All operations are thread-safe using ReadWriteLock.</p>
- */
 public final class RecipeInjector {
 
     private RecipeInjector() {}
@@ -303,6 +294,7 @@ public final class RecipeInjector {
         return false;
     }
 
+    @Nullable
     private static RecipeHolder<?> createRecipeHolder(RecipeData recipeData) {
         return switch (recipeData) {
             case CraftingRecipeData crafting -> createCraftingHolder(crafting);
@@ -316,6 +308,7 @@ public final class RecipeInjector {
     // CRAFTING RECIPES
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private static RecipeHolder<?> createCraftingHolder(CraftingRecipeData data) {
         try {
             Recipe<?> recipe = data.craftingType() == CraftingType.SHAPED
@@ -332,6 +325,7 @@ public final class RecipeInjector {
         return null;
     }
 
+    @Nullable
     private static ShapedRecipe createShapedRecipe(CraftingRecipeData data) {
         try {
             // Build pattern and ingredient map from grid
@@ -384,7 +378,16 @@ public final class RecipeInjector {
 
             // Create shaped pattern
             ShapedRecipePattern shapedPattern = Objects.requireNonNull(ShapedRecipePattern.of(keyMap, pattern), "pattern");
-            ItemStack resultStack = Objects.requireNonNull(data.result().toItemStack(), "result");
+            ResultData resultData = data.result();
+            if (resultData == null || resultData.isEmpty()) {
+                DevMod.LOGGER.warn("[RecipeInjector] Missing result for shaped recipe {}", data.id());
+                return null;
+            }
+            ItemStack resultStack = resultData.toItemStack();
+            if (resultStack.isEmpty()) {
+                DevMod.LOGGER.warn("[RecipeInjector] Empty result for shaped recipe {}", data.id());
+                return null;
+            }
             String group = Objects.requireNonNull(data.group() != null ? data.group() : "", "group");
             CraftingBookCategory category = Objects.requireNonNull(
                 toCraftingBookCategory(Objects.requireNonNull(data.category(), "category")),
@@ -406,6 +409,7 @@ public final class RecipeInjector {
         }
     }
 
+    @Nullable
     private static ShapelessRecipe createShapelessRecipe(CraftingRecipeData data) {
         try {
             NonNullList<Ingredient> ingredients = NonNullList.create();
@@ -424,7 +428,16 @@ public final class RecipeInjector {
                 return null;
             }
 
-            ItemStack resultStack = Objects.requireNonNull(data.result().toItemStack(), "result");
+            ResultData resultData = data.result();
+            if (resultData == null || resultData.isEmpty()) {
+                DevMod.LOGGER.warn("[RecipeInjector] Missing result for shapeless recipe {}", data.id());
+                return null;
+            }
+            ItemStack resultStack = resultData.toItemStack();
+            if (resultStack.isEmpty()) {
+                DevMod.LOGGER.warn("[RecipeInjector] Empty result for shapeless recipe {}", data.id());
+                return null;
+            }
             String group = Objects.requireNonNull(data.group() != null ? data.group() : "", "group");
             CraftingBookCategory category = Objects.requireNonNull(
                 toCraftingBookCategory(Objects.requireNonNull(data.category(), "category")),
@@ -447,12 +460,19 @@ public final class RecipeInjector {
     // SMELTING RECIPES
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private static RecipeHolder<?> createSmeltingHolder(SmeltingRecipeData data) {
         try {
             Ingredient ingredient = convertIngredient(data.ingredient());
             if (ingredient == null || ingredient.isEmpty()) return null;
 
-            ItemStack result = Objects.requireNonNull(data.result().toItemStack(), "result");
+            ResultData resultData = data.result();
+            if (resultData == null || resultData.isEmpty()) {
+                DevMod.LOGGER.warn("[RecipeInjector] Missing result for smelting recipe {}", data.id());
+                return null;
+            }
+            ItemStack result = resultData.toItemStack();
+            if (result.isEmpty()) return null;
             CookingBookCategory cookingCategory = Objects.requireNonNull(
                 toCookingBookCategory(Objects.requireNonNull(data.category(), "category")),
                 "cookingCategory"
@@ -481,6 +501,7 @@ public final class RecipeInjector {
     // SMITHING RECIPES
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private static RecipeHolder<?> createSmithingHolder(SmithingRecipeData data) {
         try {
             Ingredient template = data.template() != null ? convertIngredient(data.template()) : Ingredient.EMPTY;
@@ -490,7 +511,13 @@ public final class RecipeInjector {
             if (base == null || base.isEmpty()) return null;
 
             if (data.smithingType() == SmithingType.TRANSFORM) {
-                ItemStack result = Objects.requireNonNull(data.result().toItemStack(), "result");
+                ResultData resultData = data.result();
+                if (resultData == null || resultData.isEmpty()) {
+                    DevMod.LOGGER.warn("[RecipeInjector] Missing result for smithing recipe {}", data.id());
+                    return null;
+                }
+                ItemStack result = resultData.toItemStack();
+                if (result.isEmpty()) return null;
                 SmithingTransformRecipe recipe = new SmithingTransformRecipe(
                     Objects.requireNonNull(template != null ? template : Ingredient.EMPTY, "template"),
                     Objects.requireNonNull(base, "base"),
@@ -513,12 +540,19 @@ public final class RecipeInjector {
     // STONECUTTING RECIPES
     // ═══════════════════════════════════════════════════════════════
 
+    @Nullable
     private static RecipeHolder<?> createStonecuttingHolder(StonecuttingRecipeData data) {
         try {
             Ingredient ingredient = convertIngredient(data.ingredient());
             if (ingredient == null || ingredient.isEmpty()) return null;
 
-            ItemStack result = Objects.requireNonNull(data.result().toItemStack(), "result");
+            ResultData resultData = data.result();
+            if (resultData == null || resultData.isEmpty()) {
+                DevMod.LOGGER.warn("[RecipeInjector] Missing result for stonecutting recipe {}", data.id());
+                return null;
+            }
+            ItemStack result = resultData.toItemStack();
+            if (result.isEmpty()) return null;
             String group = Objects.requireNonNull(data.group() != null ? data.group() : "", "group");
 
             StonecutterRecipe recipe = new StonecutterRecipe(
@@ -543,19 +577,25 @@ public final class RecipeInjector {
 
         try {
             if (data.isItem()) {
-                var item = BuiltInRegistries.ITEM.get(Objects.requireNonNull(data.item(), "itemId"));
+                ResourceLocation itemId = data.item();
+                var item = itemId != null ? BuiltInRegistries.ITEM.get(itemId) : null;
                 if (item != null && item != Items.AIR) {
                     return Ingredient.of(Objects.requireNonNull(item, "item"));
                 }
             } else if (data.isTag()) {
-                return Ingredient.of(Objects.requireNonNull(data.tag(), "tag"));
+                var tag = data.tag();
+                if (tag != null) {
+                    return Ingredient.of(tag);
+                }
             } else if (data.isAlternatives()) {
                 List<ItemStack> stacks = new ArrayList<>();
-                List<ResourceLocation> alternatives = Objects.requireNonNull(data.alternatives(), "alternatives");
-                for (ResourceLocation alt : alternatives) {
-                    var item = BuiltInRegistries.ITEM.get(alt);
-                    if (item != null && item != Items.AIR) {
-                        stacks.add(new ItemStack(Objects.requireNonNull(item, "item")));
+                List<ResourceLocation> alternatives = data.alternatives();
+                if (alternatives != null) {
+                    for (ResourceLocation alt : alternatives) {
+                        var item = BuiltInRegistries.ITEM.get(alt);
+                        if (item != null && item != Items.AIR) {
+                            stacks.add(new ItemStack(Objects.requireNonNull(item, "item")));
+                        }
                     }
                 }
                 if (!stacks.isEmpty()) {

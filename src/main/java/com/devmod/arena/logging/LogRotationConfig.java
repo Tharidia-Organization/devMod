@@ -3,16 +3,6 @@ package com.devmod.arena.logging;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
-
-/**
- * Configuration for log rotation behavior (DD17).
- *
- * Default configuration:
- * - Max age: 14 days
- * - Max size: 500MB per file
- * - Compression: .gz
- * - Rotation check interval: 1 hour
- */
 public record LogRotationConfig(
     Path logDirectory,
     String logPrefix,

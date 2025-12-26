@@ -14,16 +14,11 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.neoforged.fml.loading.FMLPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-/**
- * Handles persistence of custom kits to/from JSON files.
- * Kits are stored in the config/devmod/kits/ directory.
- */
+import net.neoforged.fml.loading.FMLPaths;
 public final class KitPersistence {
     private static final Logger LOGGER = LoggerFactory.getLogger(KitPersistence.class);
     private static final String KITS_DIR = "devmod/kits";

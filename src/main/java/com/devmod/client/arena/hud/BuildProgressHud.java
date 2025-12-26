@@ -10,21 +10,6 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.arena.BuildPhase;
 import com.devmod.arena.network.BuildProgressPayload;
-
-/**
- * DD39: Client-side HUD for displaying build progress.
- *
- * <p>Features:</p>
- * <ul>
- *   <li>Progress bar with percentage</li>
- *   <li>Phase indicator</li>
- *   <li>Block count display</li>
- *   <li>Smooth animation between updates</li>
- *   <li>Automatic fade-out on completion</li>
- * </ul>
- *
- * <p>Receives updates from {@link BuildProgressPayload} packets at 4Hz max.</p>
- */
 public class BuildProgressHud {
 
     private static final BuildProgressHud INSTANCE = new BuildProgressHud();

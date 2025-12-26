@@ -3,11 +3,6 @@ package com.devmod.client.ui.unified.persistence;
 import java.util.Map;
 
 import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
-
-/**
- * POJO containing all persistent settings for DevMod.
- * This class is serialized to/from JSON for persistence.
- */
 public class SettingsData {
 
     // Schema version for migration support

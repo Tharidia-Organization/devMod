@@ -7,6 +7,8 @@ import java.util.function.Consumer;
 
 import org.joml.Quaternionf;
 
+import com.mojang.blaze3d.platform.Lighting;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -19,16 +21,6 @@ import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-import com.mojang.blaze3d.platform.Lighting;
-
-/**
- * Preview renderer for displaying items or entity models.
- * Supports drag-to-rotate interaction for 3D preview.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.5 (Left Column - Preview)
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.9 (Preview Component)
- */
 public class PreviewRenderer {
 
     // ═══════════════════════════════════════════════════════════════

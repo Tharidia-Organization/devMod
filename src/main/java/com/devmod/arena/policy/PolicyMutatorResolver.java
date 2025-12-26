@@ -14,17 +14,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Resolves mutator bindings for arena policies.
- * DD50: Mutator Binding - SUGGESTED soft, EXCLUDED/REQUIRED hard.
- *
- * <p>This resolver:
- * - Auto-adds REQUIRED mutators
- * - Blocks EXCLUDED mutators
- * - Allows user selection of SUGGESTED mutators
- * - Sorts UI by priority
- */
 public class PolicyMutatorResolver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolicyMutatorResolver.class);

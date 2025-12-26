@@ -9,13 +9,6 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.component.CustomData;
-
-/**
- * Ranged weapon stats data class and reader.
- *
- * <p>This is in the common package so it can be used by both
- * server-side projectile hooks and client-side UI.</p>
- */
 public class RangedWeaponStats {
     public float drawSpeed = 1.0f;
     public float chargeTime = 1.0f;

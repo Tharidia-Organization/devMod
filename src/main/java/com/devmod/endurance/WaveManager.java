@@ -36,11 +36,6 @@ import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.arena.spawn.SpawnOccupancyTracker;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
-/**
- * Manages wave spawning, mob buffs, and wave progression for Endurance Quests.
- */
-
 public class WaveManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaveManager.class);
 

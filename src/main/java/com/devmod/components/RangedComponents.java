@@ -1,6 +1,8 @@
 package com.devmod.components;
 import java.util.Objects;
 
+import com.mojang.serialization.Codec;
+
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -9,13 +11,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
-
-import com.mojang.serialization.Codec;
-
-/**
- * Data components for ranged weapons (doc 16).
- * These mirror the CustomData-based fields we already persist, enabling future migration to native components.
- */
 public final class RangedComponents {
     private RangedComponents() {}
 

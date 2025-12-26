@@ -15,31 +15,6 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Prebuild Pool Manager implementing DD63-65: Pool Sizing.
- *
- * <p>Key features (DD63):
- * <ul>
- *   <li>Pool DEFERRED by default - evaluate after 2 weeks telemetry</li>
- *   <li>Feature flag default OFF until data justifies</li>
- *   <li>Decision criteria: build_time_p95 > 5000ms AND quest_rate > 0.5/min/player</li>
- * </ul>
- *
- * <p>DD64 - Pool Cleanup:
- * <ul>
- *   <li>"Unused" = no assignment for 10 min AND state READY</li>
- *   <li>State machine: BUILDING → READY → RESERVED → IN_USE → CLEANUP</li>
- *   <li>Guard against closing just-assigned arenas</li>
- * </ul>
- *
- * <p>DD65 - Pool Metrics:
- * <ul>
- *   <li>Hit/miss ratio linked to feature flag</li>
- *   <li>Alert on miss_rate > 30%</li>
- *   <li>Auto-disable if miss_rate > 50%</li>
- * </ul>
- */
 public class PrebuildPoolManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PrebuildPoolManager.class);

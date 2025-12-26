@@ -7,19 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * Service for tracking dungeon run sessions and player progression.
- * Extracted from TelemetryService for better separation of concerns.
- *
- * Features:
- * - Dungeon session tracking (start/end with outcome)
- * - Room sequence tracking
- * - Backtracking detection
- * - Session statistics (deaths, kills, damage)
- *
- * Thread-safe for concurrent access from multiple server threads.
- */
 public class DungeonSessionService {
     public static final DungeonSessionService INSTANCE = new DungeonSessionService();
 

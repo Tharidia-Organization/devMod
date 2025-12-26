@@ -5,6 +5,9 @@ import java.util.Objects;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -23,24 +26,6 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * VOXEL-LAB Debug Overlay: Aggro Range Spheres
- *
- * Visualizes the aggro/follow range of mobs as translucent spheres.
- * Helps level designers understand mob awareness and engagement zones.
- *
- * Features:
- * - Follow range sphere (outer, blue)
- * - Attack range sphere (inner, red)
- * - Currently targeting indicator (line to target)
- * - Color coding by mob type (hostile/neutral/passive)
- *
- * Toggle: Part of Debug Overlay system (G key)
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class AggroRangeVisualizer {

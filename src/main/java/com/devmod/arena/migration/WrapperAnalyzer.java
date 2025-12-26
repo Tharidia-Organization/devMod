@@ -11,17 +11,6 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Analyzer for detecting legacy wrapper usage (DD66).
- *
- * <p>Detection methods:
- * <ul>
- *   <li>Grep: Pattern matching for known legacy APIs</li>
- *   <li>AST: Simple pattern-based detection (full AST requires external tools)</li>
- *   <li>Runtime: Telemetry for actual legacy calls</li>
- * </ul>
- */
 public class WrapperAnalyzer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WrapperAnalyzer.class);

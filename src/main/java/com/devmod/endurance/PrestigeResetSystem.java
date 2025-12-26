@@ -16,24 +16,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
-
-/**
- * Prestige Reset System - New Game+ for Endurance Quests.
- *
- * When players reach high prestige levels, they can "ascend" to reset their
- * progression in exchange for permanent bonuses that carry across all future runs.
- *
- * Ascension provides:
- * - Permanent stat bonuses (damage, defense, tokens)
- * - Exclusive perk unlocks
- * - Cosmetic titles
- * - Increased challenge through optional modifiers
- *
- * Design Philosophy:
- * Each ascension represents mastery of the game. Players trade accumulated
- * prestige for permanent power, creating a compelling long-term progression
- * loop beyond the standard milestone system.
- */
 public class PrestigeResetSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrestigeResetSystem.class);
 

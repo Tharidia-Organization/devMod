@@ -1,10 +1,6 @@
 package com.devmod.arena.builder;
 
 import com.devmod.arena.registry.ArenaTemplate;
-
-/**
- * Pure helper to estimate block counts without placing blocks.
- */
 public final class BuildDryRunCalculator {
 
     private BuildDryRunCalculator() {}

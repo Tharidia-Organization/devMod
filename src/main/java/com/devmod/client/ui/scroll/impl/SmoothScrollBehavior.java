@@ -1,14 +1,6 @@
 package com.devmod.client.ui.scroll.impl;
 
 import com.devmod.client.ui.scroll.ScrollBehavior;
-
-/**
- * Smooth scroll behavior with easing animation.
- * Suitable for editor content areas where fluid motion enhances UX.
- *
- * <p>This implementation clamps targetOffset immediately in scroll()
- * to prevent temporary out-of-bounds values.
- */
 public class SmoothScrollBehavior implements ScrollBehavior {
 
     private static final float SMOOTHING = 0.8f;

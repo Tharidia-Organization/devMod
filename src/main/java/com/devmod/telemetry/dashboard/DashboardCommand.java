@@ -2,6 +2,9 @@ package com.devmod.telemetry.dashboard;
 
 import java.util.Objects;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.context.CommandContext;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -15,19 +18,6 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
-
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.context.CommandContext;
-
-/**
- * Command to control the telemetry dashboard.
- *
- * Usage:
- *   /devmod dashboard        - Open dashboard in browser (starts server if needed)
- *   /devmod dashboard start  - Start the dashboard server
- *   /devmod dashboard stop   - Stop the dashboard server
- *   /devmod dashboard status - Show server status
- */
 public class DashboardCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {

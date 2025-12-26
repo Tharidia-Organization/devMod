@@ -13,15 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.devmod.DevMod;
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-/**
- * Lightweight persistence for favorite presets per itemType.
- */
+import com.devmod.DevMod;
+import com.devmod.util.ConfigPaths;
 public final class FavoritePresetStore {
 
     private static final Gson GSON = new Gson();

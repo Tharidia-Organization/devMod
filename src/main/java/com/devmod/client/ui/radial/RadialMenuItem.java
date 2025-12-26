@@ -1,14 +1,10 @@
 package com.devmod.client.ui.radial;
 
-import net.minecraft.world.item.ItemStack;
-
-import javax.annotation.Nullable;
 import java.util.function.BooleanSupplier;
 
-/**
- * Represents a single item in a radial menu category.
- * Wraps a RadialAction with display properties.
- */
+import javax.annotation.Nullable;
+
+import net.minecraft.world.item.ItemStack;
 public class RadialMenuItem {
     private final String name;
     private final RadialAction action;

@@ -8,19 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * Service for tracking minion wave statistics during encounters.
- * Extracted from TelemetryService for better separation of concerns.
- *
- * Tracks:
- * - Active minions per room
- * - Peak concurrent minion count
- * - Total spawned minions
- * - Total damage dealt by minions
- *
- * Thread-safe singleton for concurrent access.
- */
 public class MinionService {
     public static final MinionService INSTANCE = new MinionService();
 

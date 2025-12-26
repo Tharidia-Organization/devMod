@@ -1,41 +1,31 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.ComboSystem;
-import com.devmod.endurance.QuestActionPayload;
-
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.util.I18n;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.sounds.SoundEvents;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import org.lwjgl.glfw.GLFW;
-
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
-/**
- * Premium Checkpoint screen with cinematic animations.
- * Uses standard UIConstants for consistent theming.
- *
- * Features:
- * - Smooth fade-in with scale animation
- * - Animated stat counters that tick up
- * - Particle celebration effects
- * - Pulsing glow on style rank reveal
- * - Sound effects on stat reveals
- * - Gradient backgrounds with depth
- */
+import javax.annotation.Nonnull;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.QuestActionPayload;
+import com.devmod.util.I18n;
 @OnlyIn(Dist.CLIENT)
 
 public class WaveCheckpointScreen extends Screen {

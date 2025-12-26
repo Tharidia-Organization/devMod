@@ -8,11 +8,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Simple countdown helper for timed UI selections.
- * Provides urgency state, color mapping, and low-time audio cues.
- */
 @OnlyIn(Dist.CLIENT)
 public final class CountdownTimer {
 

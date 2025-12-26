@@ -1,13 +1,6 @@
 package com.devmod.client.ui.editor.core;
 
 import net.minecraft.client.gui.GuiGraphics;
-
-/**
- * Base interface for all editor UI components.
- * Provides common API for identification, rendering, state, and input handling.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Component System
- */
 public interface EditorComponent {
 
     // ═══════════════════════════════════════════════════════════════

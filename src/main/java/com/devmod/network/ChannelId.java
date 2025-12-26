@@ -5,26 +5,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
-
-/**
- * Centralized registry of network channel IDs to prevent collisions.
- *
- * <p>Channel ID allocation ranges:
- * <ul>
- *   <li>1-4: MOB/ITEM (core entity editing)</li>
- *   <li>5-25: ENDURANCE (quest system)</li>
- *   <li>26-35: PARTY (party system)</li>
- *   <li>36-45: CONFIG/TELEMETRY (config sync)</li>
- *   <li>46-55: ITEM STATS (weapon, armor, food, fuel)</li>
- *   <li>56-65: SHIELD (visual effects)</li>
- *   <li>66-75: ABILITY (dash, dodge, stamina)</li>
- *   <li>76-85: ARENA (build progress)</li>
- *   <li>90-99: DEBUG (dev tools)</li>
- * </ul>
- *
- * <p>CRITICAL: Each channel ID must be unique within its direction (C→S or S→C).
- * The same channel can be used for different directions ONLY if the payload TYPEs differ.
- */
 public enum ChannelId {
 
     // ============================================================================

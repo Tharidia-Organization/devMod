@@ -8,11 +8,6 @@ import com.devmod.party.OnlinePlayersPayload;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
-
-/**
- * Client-side cache for party state.
- * Updated by PartySyncPayload and PartyNotificationPayload.
- */
 public final class ClientPartyCache {
 
     @Nullable

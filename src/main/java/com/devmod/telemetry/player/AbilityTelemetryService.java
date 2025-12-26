@@ -7,24 +7,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import com.devmod.abilities.DodgeAbilitySystem;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.util.BitPackedFlags;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Telemetry service for tracking ability usage (dash, dodge, stamina).
- *
- * Tracks:
- * - Dash uses (count, success rate, average stamina when used)
- * - Dodge uses (count, success rate, perfect dodges, direction distribution)
- * - Stamina patterns (exhaustion frequency, regeneration patterns)
- *
- * Data written to ability_usage.ndjson via TelemetryService.
- */
 public class AbilityTelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
 

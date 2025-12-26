@@ -18,26 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.alert.AlertRouter;
 import com.devmod.arena.alert.ErrorContext;
-
-/**
- * DD40: Robust Cleanup Manager with zero-residual invariant.
- *
- * <p>Guarantees:
- * <ul>
- *   <li>Zero residual entities after cleanup (excluding preserved players)</li>
- *   <li>Zero residual blocks after cleanup</li>
- *   <li>Retry mechanism for failed cleanups</li>
- *   <li>Alert routing for cleanup failures</li>
- *   <li>Detailed cleanup telemetry</li>
- * </ul>
- *
- * <p>Invariant enforcement:
- * <ul>
- *   <li>Post-cleanup verification is MANDATORY</li>
- *   <li>If residuals detected, retry up to MAX_RETRY_ATTEMPTS</li>
- *   <li>If still dirty after retries, raise CRITICAL alert</li>
- * </ul>
- */
 public class RobustCleanupManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RobustCleanupManager.class);

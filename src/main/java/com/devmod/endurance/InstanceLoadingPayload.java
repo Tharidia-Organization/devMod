@@ -6,11 +6,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-/**
- * Payload sent from server to client to show/hide the instance loading overlay.
- * Provides visual feedback during async instance dimension creation.
- */
 public record InstanceLoadingPayload(
     boolean show,
     String status

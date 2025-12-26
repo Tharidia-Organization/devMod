@@ -1,11 +1,6 @@
 package com.devmod.client.ui.scroll.impl;
 
 import com.devmod.client.ui.scroll.ScrollBehavior;
-
-/**
- * Instant scroll behavior - no animation, immediate response.
- * Suitable for settings pages and simple lists where responsiveness is preferred.
- */
 public class InstantScrollBehavior implements ScrollBehavior {
 
     private float offset = 0;

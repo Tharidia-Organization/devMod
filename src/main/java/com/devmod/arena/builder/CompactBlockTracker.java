@@ -6,22 +6,6 @@ import java.util.List;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-
-/**
- * Memory-efficient block change tracker using packed long positions (DD8).
- *
- * <p>DD8: Uses fastutil LongArrayList for dynamic resizing without
- * pre-allocating max capacity. Memory efficient and cache-friendly.
- *
- * <p>Memory budget:
- * <ul>
- *   <li>50,000 blocks = ~1.2MB</li>
- *   <li>100,000 blocks = ~2.4MB</li>
- *   <li>150,000 blocks = ~3.6MB (hard cap)</li>
- * </ul>
- *
- * <p>Uses BlockPos.asLong() format: (x << 38) | (y << 26) | (z << 0)
- */
 public class CompactBlockTracker {
 
     // DD8: Hard cap at 150k blocks

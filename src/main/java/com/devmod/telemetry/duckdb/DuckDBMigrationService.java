@@ -12,20 +12,6 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
-
-/**
- * Migration service for importing existing NDJSON telemetry data into DuckDB.
- *
- * DuckDB has native support for reading NDJSON files via read_json_auto(),
- * which makes migration straightforward and fast.
- *
- * Usage:
- * <pre>
- *   DuckDBMigrationService.migrateFromNDJSON(telemetryDir, conn);
- * </pre>
- *
- * This should be called once when transitioning from NDJSON-only to DuckDB storage.
- */
 public final class DuckDBMigrationService {
     private static final Logger LOGGER = LogUtils.getLogger();
 

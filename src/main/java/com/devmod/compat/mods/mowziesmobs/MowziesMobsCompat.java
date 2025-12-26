@@ -20,25 +20,6 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Mowzie's Mobs.
- *
- * Mowzie's Mobs provides:
- * - Unique boss mobs with special AI and abilities
- * - Frostmaw (ice boss), Ferrous Wroughtnaut (iron golem boss)
- * - Foliaath (plant monster), Naga (fire serpent)
- * - Barakoa (tribal enemies), Lantern (light creature)
- * - Custom abilities and attack patterns
- *
- * This integration allows DevMod to:
- * - Detect Mowzie's Mobs entities for Arena
- * - Track boss health phases
- * - Monitor ability usage for telemetry
- * - Display boss info in HUD overlays
- *
- * @see <a href="https://github.com/BobMowzie/MowziesMobs">Mowzie's Mobs GitHub</a>
- */
 public class MowziesMobsCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(MowziesMobsCompat.class);
     public static final String MOD_ID = "mowziesmobs";

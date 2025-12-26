@@ -4,12 +4,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.JsonObject;
-
-/**
- * Tracks enchantment-related statistics.
- * Extracted from TesterProgress for single responsibility.
- */
-
 public class EnchantmentStatistics {
     public static final EnchantmentStatistics INSTANCE = new EnchantmentStatistics();
 

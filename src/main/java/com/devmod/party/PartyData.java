@@ -17,11 +17,6 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
-
-/**
- * Represents a party of players preparing for or participating in an Endurance Quest.
- * Thread-safe for concurrent access.
- */
 public class PartyData {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyData.class);
 

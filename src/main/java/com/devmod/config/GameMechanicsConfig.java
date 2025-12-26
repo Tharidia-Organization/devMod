@@ -1,29 +1,6 @@
 package com.devmod.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
-
-/**
- * Configurazione centralizzata per tutte le meccaniche di gioco combat/endurance.
- *
- * Questo file contiene TUTTI i parametri configurabili per:
- * - Execution System (finisher mechanics)
- * - Combo System (hit chains)
- * - Style Rank System (D → SSS ranks)
- * - Momentum/Flow State
- * - Devil's Bargain (curse altars)
- * - Arena Hazards (dynamic environment)
- * - Perk Synergy Web (hidden perks)
- * - Season Pass (battle pass progression)
- * - Guild System (clan mechanics)
- * - Ascension/Prestige (new game+ mechanics)
- * - Tension System (boss spawn mechanics)
- * - Challenge System (daily/weekly objectives)
- *
- * NOTA: Questi sono i valori GLOBALI di default.
- * Per override per-istanza, usa ArenaPolicy.GameplayOverrides.
- *
- * @see com.devmod.arena.policy.ArenaPolicy.GameplayOverrides
- */
 public class GameMechanicsConfig {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 

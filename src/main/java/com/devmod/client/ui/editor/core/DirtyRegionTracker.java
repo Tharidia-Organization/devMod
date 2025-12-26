@@ -2,15 +2,6 @@ package com.devmod.client.ui.editor.core;
 
 import java.util.HashSet;
 import java.util.Set;
-
-/**
- * Tracks dirty regions to enable partial re-rendering.
- *
- * Instead of re-rendering the entire UI every frame, components can mark
- * only the regions that changed as dirty, allowing for optimized rendering.
- *
- * @see docs/editor-design-system/19-performance-considerations.md
- */
 public final class DirtyRegionTracker {
 
     /**

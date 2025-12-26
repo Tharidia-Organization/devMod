@@ -5,29 +5,13 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for C2ME (Concurrent Chunk Management Engine).
- *
- * C2ME provides:
- * - Multithreaded chunk generation
- * - Optimized chunk loading/saving
- * - Configurable thread pool sizes
- * - Improved chunk I/O performance
- *
- * This integration allows DevMod to:
- * - Detect C2ME presence and configuration
- * - Monitor chunk generation thread usage
- * - Track chunk operation performance
- * - Include C2ME metrics in telemetry
- *
- * @see <a href="https://github.com/RelativityMC/C2ME-fabric">C2ME GitHub</a>
- */
 public class C2MECompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(C2MECompat.class);
     public static final String MOD_ID = "c2me";
@@ -37,8 +21,11 @@ public class C2MECompat implements CompatModule {
     private static boolean apiAvailable = false;
 
     // Cached reflection references
+    @Nullable
     private static Class<?> configClass;
+    @Nullable
     private static Class<?> c2meModClass;
+    @Nullable
     private static Object configInstance;
 
     @Override

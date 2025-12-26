@@ -10,33 +10,10 @@ import javax.annotation.Nullable;
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
 
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.world.entity.LivingEntity;
-
 import com.mojang.logging.LogUtils;
 
-/**
- * Captures ModelPart transforms during entity rendering.
- * Used by ModelPartTransformMixin to intercept transforms as they're applied.
- *
- * Thread-safe storage with per-entity transform maps that are populated
- * during the render pass and consumed by the collision system.
- *
- * Usage:
- * <pre>
- * // Before entity renders (in render event)
- * ModelPartTransformCapture.beginCapture(entity);
- *
- * // ... entity renders, mixin captures transforms ...
- *
- * // After entity renders
- * ModelPartTransformCapture.endCapture();
- *
- * // Get captured data
- * Map<String, CapturedTransform> transforms = ModelPartTransformCapture.getTransforms(entity);
- * </pre>
- */
-
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.world.entity.LivingEntity;
 public final class ModelPartTransformCapture {
 
     private static final Logger LOGGER = LogUtils.getLogger();

@@ -11,6 +11,8 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,22 +20,6 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.collision.compat.GeckoLibCompat;
 import com.devmod.collision.transform.AnimationSnapshot;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Extracts transformation data from Minecraft's ModelPart system.
- *
- * This is the key integration point with Minecraft's rendering.
- * It reads the current rotation/position of model parts and converts
- * them to Matrix4f transforms for OBB calculation.
- *
- * Approaches (in order of preference):
- * 1. Direct access to ModelPart.x/y/z/xRot/yRot/zRot fields
- * 2. Calculate from entity pose data (yBodyRot, animation ticks)
- *
- * Must be called on render thread for accurate transforms.
- */
 public final class ModelPartTransformExtractor {
 
     private static final Logger LOGGER = LogUtils.getLogger();

@@ -12,11 +12,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Network payload sent from server to client with wave directive choices.
- * Directives are risk/reward modifiers applied to the next wave, with an expiry timestamp for countdown UI.
- */
 public record WaveDirectiveChoicesPayload(
     int waveNumber,
     long expiresAt,

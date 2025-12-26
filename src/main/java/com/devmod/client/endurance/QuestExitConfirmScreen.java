@@ -1,6 +1,12 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.QuestActionPayload;
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
@@ -8,19 +14,8 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.ConfirmDialog.Style;
+import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
-import javax.annotation.Nonnull;
-
-/**
- * Confirmation screen before exiting an Endurance Quest.
- * Prevents accidental exits by requiring explicit confirmation.
- * Uses standard UIConstants for consistent theming.
- */
 @OnlyIn(Dist.CLIENT)
 public class QuestExitConfirmScreen extends Screen {
 

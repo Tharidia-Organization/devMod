@@ -16,14 +16,6 @@ import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Slot selector for choosing equipment slots to edit.
- * Shows armor slots (4) or weapon slots (main/offhand).
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.7 (Slot Selectors)
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.5 (Left Column)
- */
 public final class SlotSelector {
 
     // ═══════════════════════════════════════════════════════════════

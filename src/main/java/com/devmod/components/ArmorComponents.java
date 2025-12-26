@@ -14,11 +14,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
-
-/**
- * Data components for armor-related persistent data.
- * Mirrors WeaponComponents to provide a typed container for armor stats.
- */
 public final class ArmorComponents {
     private ArmorComponents() {}
 

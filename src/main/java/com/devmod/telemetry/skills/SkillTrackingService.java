@@ -8,13 +8,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-
-/**
- * Service for tracking skill casts and whiffs (misses).
- * Extracted from TelemetryService for better separation of concerns.
- *
- * Thread-safe for concurrent access from multiple server threads.
- */
 public class SkillTrackingService {
     public static final SkillTrackingService INSTANCE = new SkillTrackingService();
 

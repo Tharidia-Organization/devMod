@@ -5,37 +5,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * Registry for arena system feature flags with runtime toggle support.
- *
- * <p>Provides centralized management of feature flags with:
- * <ul>
- *   <li>Static registration of known flags</li>
- *   <li>Runtime override capability</li>
- *   <li>Dependency chain validation (e.g., routing requires arenaTemplate)</li>
- *   <li>Telemetry on flag state changes</li>
- * </ul>
- *
- * <p>Standard arena flags:
- * <ul>
- *   <li>{@code arena.template.enabled} - Master toggle for arena template system</li>
- *   <li>{@code arena.instance.only} - Restrict to instance dimensions</li>
- *   <li>{@code arena.routing.enabled} - Policy-based template routing</li>
- *   <li>{@code arena.gamification.enabled} - Gamification features</li>
- * </ul>
- *
- * <p>Flag dependencies (validated on enable):
- * <ul>
- *   <li>routing.enabled → requires template.enabled</li>
- *   <li>gamification.enabled → requires template.enabled</li>
- * </ul>
- *
- * @see FeatureFlag
- * @see ArenaTemplateConfig
- */
 public class FeatureFlagRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureFlagRegistry.class);
@@ -47,12 +20,13 @@ public class FeatureFlagRegistry {
     public static final String ARENA_GAMIFICATION_ENABLED = "arena.gamification.enabled";
 
     private final Map<String, MutableFeatureFlag> flags;
+    @Nullable
     private final Telemetry telemetry;
 
     /**
      * Creates a registry with optional telemetry.
      */
-    public FeatureFlagRegistry(Telemetry telemetry) {
+    public FeatureFlagRegistry(@Nullable Telemetry telemetry) {
         this.telemetry = telemetry;
         this.flags = createDefaultFlags();
     }
@@ -67,7 +41,7 @@ public class FeatureFlagRegistry {
     /**
      * Creates a registry initialized from ArenaTemplateConfig.
      */
-    public static FeatureFlagRegistry fromConfig(ArenaTemplateConfig config, Telemetry telemetry) {
+    public static FeatureFlagRegistry fromConfig(ArenaTemplateConfig config, @Nullable Telemetry telemetry) {
         FeatureFlagRegistry registry = new FeatureFlagRegistry(telemetry);
         registry.setEnabled(ARENA_TEMPLATE_ENABLED, config.arenaTemplateEnabled());
         registry.setEnabled(ARENA_INSTANCE_ONLY, config.instanceOnly());

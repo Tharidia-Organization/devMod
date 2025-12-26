@@ -2,21 +2,6 @@ package com.devmod.arena.security;
 
 import java.util.EnumSet;
 import java.util.Set;
-
-/**
- * DD14: Template-level permissions for fine-grained access control.
- *
- * <p>Defines permissions specific to template operations:
- * <ul>
- *   <li>VIEW - Can see template in listings</li>
- *   <li>USE - Can create arenas from template</li>
- *   <li>EDIT - Can modify template configuration</li>
- *   <li>DELETE - Can remove template from registry</li>
- *   <li>ADMIN - Full access including hot-reload</li>
- * </ul>
- *
- * <p>Permissions are hierarchical: higher levels include lower levels.
- */
 public enum TemplatePermission {
 
     /**

@@ -20,18 +20,6 @@ import com.devmod.client.party.ClientPartyCache;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartySyncPayload;
-
-/**
- * HUD Overlay showing party members during Endurance Quest.
- *
- * Displays in the left side of the screen:
- * - Compact list of party members
- * - Mini health bar for each member
- * - Status icon (ready/in combat/dead)
- * - Leader indicator
- *
- * Only visible when in a party during an active quest.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class PartyHudOverlay {

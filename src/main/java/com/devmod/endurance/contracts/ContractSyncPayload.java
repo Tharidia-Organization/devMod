@@ -12,10 +12,6 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Payload to sync active contracts to clients for HUD display.
- */
 public record ContractSyncPayload(
     @Nonnull List<ContractData> contracts,
     float totalMultiplier

@@ -11,11 +11,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Typed weapon stats payload (v2) carrying the serialized stats tag.
- * Keeps legacy compatibility by still using a CompoundTag, but with a distinct packet id.
- */
 public record WeaponStatsPayload(
     @Nonnull ItemStack item,
     @Nonnull CompoundTag statsTag,

@@ -1,21 +1,6 @@
 package com.devmod.arena.registry;
 
 import javax.annotation.Nullable;
-
-/**
- * DD1: Sealed interface for template type variants.
- *
- * <p>Permits four distinct template types:
- * <ul>
- *   <li>{@link FlatTemplate} - Procedurally generated flat arena</li>
- *   <li>{@link StructureTemplate} - NBT structure-based arena</li>
- *   <li>{@link SchematicTemplate} - External schematic file arena</li>
- *   <li>{@link CompositeTemplate} - Multi-layer composite arena</li>
- * </ul>
- *
- * <p>Each variant implements common behavior while providing
- * type-safe discrimination at compile time.
- */
 public sealed interface TemplateType
     permits TemplateType.FlatTemplate,
             TemplateType.StructureTemplate,

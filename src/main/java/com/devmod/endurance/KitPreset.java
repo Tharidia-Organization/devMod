@@ -13,11 +13,6 @@ import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
-
-/**
- * Predefined kit configurations for Endurance Quest testing and gameplay.
- * Each kit provides a balanced loadout for different playstyles.
- */
 public enum KitPreset {
     STARTER("Starter Kit", "Basic iron gear for beginners", 0xAAAAAA),
     WARRIOR("Warrior Kit", "Full diamond melee build", 0x55FFFF),

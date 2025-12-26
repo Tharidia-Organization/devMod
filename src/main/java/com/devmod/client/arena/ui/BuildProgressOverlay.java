@@ -10,11 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.BuildPhase;
 import com.devmod.arena.ProgressFlags;
-
-/**
- * Server-side build progress overlay with rate limiting.
- * DD39: Rate limit 4Hz (250ms), delta min 1%.
- */
 public class BuildProgressOverlay {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BuildProgressOverlay.class);

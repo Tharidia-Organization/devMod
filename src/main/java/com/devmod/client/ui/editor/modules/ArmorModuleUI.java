@@ -24,11 +24,6 @@ import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.stats.ArmorStats;
-
-/**
- * UI components and section builders for ArmorModule.
- * Handles all sliders, toggles, and section creation.
- */
 public class ArmorModuleUI {
 
     private static final String NBT_KEY = "ArmorModStats";

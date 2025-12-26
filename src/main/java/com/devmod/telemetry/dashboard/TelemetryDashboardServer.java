@@ -23,9 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 
-import com.devmod.arena.dashboard.ArenaDashboardEndpoint;
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.logging.LogUtils;
@@ -33,16 +30,8 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
-/**
- * Embedded HTTP server for telemetry dashboard.
- *
- * Provides:
- * - REST API endpoints for querying DuckDB telemetry data
- * - Static file serving for the SPA dashboard
- * - CORS support for development
- *
- * Access at: http://localhost:8642/dashboard
- */
+import com.devmod.arena.dashboard.ArenaDashboardEndpoint;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 public class TelemetryDashboardServer {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final TelemetryDashboardServer INSTANCE = new TelemetryDashboardServer();

@@ -15,10 +15,6 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Custom section rendering the debug information panel.
- */
 public final class DebugInfoSection implements EditorSection.CustomSection {
 
     private static final int LINE_HEIGHT = 12;

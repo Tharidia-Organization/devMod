@@ -22,22 +22,6 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
-/**
- * Dynamic Mutator System - Modifies gameplay rules each run.
- *
- * Mutators are randomly selected at the start of each quest and can:
- * - Modify mob behavior and stats
- * - Change player abilities
- * - Add environmental hazards
- * - Create special scoring conditions
- *
- * Categories:
- * - POSITIVE: Benefits the player
- * - NEGATIVE: Makes the quest harder (but gives bonus rewards)
- * - NEUTRAL: Changes gameplay without clear advantage
- * - CHAOTIC: Unpredictable effects
- */
 public class MutatorSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(MutatorSystem.class);
 

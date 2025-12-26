@@ -23,12 +23,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.config.MobConfigManager;
-
-/**
- * Mob configuration page - shows nearby mobs and their custom stats.
- * Click on a mob to open the detailed MobConfigScreen.
- */
-
 public class MobConfigPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;

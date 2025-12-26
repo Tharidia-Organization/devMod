@@ -15,11 +15,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
 
 import com.devmod.client.effects.ShakeManager;
-
-/**
- * Mixin to apply screen shake effects to the camera.
- * Injects at the end of Camera.setup() to modify rotation and position.
- */
 @Mixin(Camera.class)
 public abstract class CameraShakeMixin {
 

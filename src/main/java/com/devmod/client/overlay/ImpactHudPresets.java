@@ -4,20 +4,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
-
-import com.devmod.DevMod;
-import com.devmod.config.Config;
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/**
- * Export/import utility for Impact HUD configuration presets.
- */
+import net.neoforged.neoforge.common.ModConfigSpec;
+
+import com.devmod.DevMod;
+import com.devmod.config.Config;
+import com.devmod.util.ConfigPaths;
 public final class ImpactHudPresets {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 

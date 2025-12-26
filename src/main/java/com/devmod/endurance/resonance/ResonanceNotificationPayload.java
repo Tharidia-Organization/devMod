@@ -10,11 +10,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Server-to-client payload for resonance chain notifications.
- * Triggers HUD animation and sound on client when resonance occurs.
- */
 public record ResonanceNotificationPayload(
     @Nonnull String tierName,
     @Nonnull String announcement,

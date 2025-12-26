@@ -10,6 +10,8 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 
 import com.devmod.telemetry.dungeon.DungeonRunService;
@@ -18,23 +20,6 @@ import com.devmod.telemetry.spatial.BacktrackingService;
 import com.devmod.telemetry.spatial.DesireLinesService;
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * VOXEL-LAB FASE 6: CSV Export
- *
- * Exports telemetry data to CSV format for analysis in spreadsheet tools
- * or data analysis software (Excel, Google Sheets, Python/Pandas, R).
- *
- * Exports include:
- * - Heatmap data (position, count, type)
- * - Room statistics
- * - Dungeon run results
- * - Backtracking statistics
- * - Desire lines data
- * - Entity counts
- */
 public class CsvExporter {
     private static final Logger LOGGER = LogUtils.getLogger();
 

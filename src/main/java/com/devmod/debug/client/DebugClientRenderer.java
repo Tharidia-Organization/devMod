@@ -7,6 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -16,14 +19,6 @@ import com.devmod.debug.EntityGoalsPayload;
 import com.devmod.debug.EntityPathingPayload;
 import com.devmod.debug.POIPayload;
 import com.devmod.debug.RaidsPayload;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-/**
- * Client-side renderer for debug data received from server.
- * Replaces the old PathfindingDebugger with real server-synced data.
- */
 public class DebugClientRenderer {
     public static final DebugClientRenderer INSTANCE = new DebugClientRenderer();
 

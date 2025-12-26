@@ -2,6 +2,8 @@ package com.devmod.abilities;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.bus.api.EventPriority;
@@ -13,17 +15,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.DevMod;
 import com.devmod.telemetry.player.AbilityTelemetryService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Event handler for the ability systems (Stamina, Dash, Dodge).
- *
- * Hooks:
- * - Server tick: Update all ability systems
- * - Damage event: Check for dodge i-frames
- * - Player disconnect: Cleanup data
- */
 @EventBusSubscriber(modid = DevMod.MODID)
 public class AbilityEventHandler {
     private static final Logger LOGGER = LogUtils.getLogger();

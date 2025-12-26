@@ -60,11 +60,6 @@ import com.devmod.stats.FuelStats;
 import com.devmod.stats.UsableStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.I18n;
-
-/**
- * Network handler for mob, weapon, armor, and equipment-related packets.
- * Extracted from NetworkHandler for single responsibility.
- */
 public final class MobItemNetworkHandler extends NetworkHandlerBase {
 
     private MobItemNetworkHandler() {}

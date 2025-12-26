@@ -5,6 +5,8 @@ import java.util.function.BiConsumer;
 
 import org.slf4j.Logger;
 
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LightLayer;
@@ -12,18 +14,6 @@ import net.minecraft.world.level.LightLayer;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
-
-import com.mojang.logging.LogUtils;
-
-/**
- * Service for light level and spawnability analysis in rooms.
- * Extracted from TelemetryService for better separation of concerns.
- *
- * Provides:
- * - Room light level scanning with export
- * - Spawnability reports (hostile mob spawn potential)
- * - Batch scanning of all rooms in a dimension
- */
 public class LightAnalysisService {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final LightAnalysisService INSTANCE = new LightAnalysisService();

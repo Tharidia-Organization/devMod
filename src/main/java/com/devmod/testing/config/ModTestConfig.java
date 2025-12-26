@@ -12,19 +12,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-/**
- * Configuration loader for mod-specific test templates.
- * Loads test definitions from JSON config files instead of hardcoding.
- *
- * Config location priority:
- * 1. External config: config/devmod/test_templates/{modId}.json
- * 2. Built-in: resources/data/devmod/test_templates/{modId}.json
- */
+import com.devmod.util.ConfigPaths;
 public class ModTestConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModTestConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

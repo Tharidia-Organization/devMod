@@ -12,13 +12,6 @@ import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/**
- * DD34: Report Export Context - header con git commit, config hash
- *
- * Captures context information for autosmoke reports.
- * Includes git commit, branch, config hash, and runtime info.
- */
 public class AutosmokeReportHeader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeReportHeader.class);

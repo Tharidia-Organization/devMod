@@ -3,11 +3,6 @@ package com.devmod.endurance.analytics;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-/**
- * Complete result of an Endurance Quest for final analytics.
- * Provided when quest ends (success or failure).
- */
 public record QuestResult(
         // === Quest identification ===
         /** Unique quest attempt ID */

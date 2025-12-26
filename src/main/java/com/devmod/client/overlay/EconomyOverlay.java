@@ -19,23 +19,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.telemetry.economy.EconomyMetricsService;
-
-/**
- * HUD Overlay for displaying economy and loot statistics.
- *
- * Features:
- * - Economy Stats view: session duration, items picked/dropped/used, acquisition rate
- * - Mob Loot Stats view: per-mob kill counts, drop rates, item breakdown
- * - Sorting: by kills, drop rate, or recent activity
- * - Scrolling: navigate through mob list with scroll
- * - Progress bars: visual representation of drop rates
- *
- * Controls:
- * - F3: Toggle overlay
- * - Shift+F3: Cycle view mode (Economy <-> Mob Loot)
- * - Ctrl+F3: Cycle sort mode (when in Mob Loot view)
- * - Scroll wheel: Navigate mob list (when in Mob Loot view)
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class EconomyOverlay {

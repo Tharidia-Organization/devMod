@@ -13,23 +13,6 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
-
-/**
- * Compatibility module for Cloth Config API.
- *
- * Cloth Config provides a powerful config screen API with:
- * - Sliders, toggles, dropdowns, color pickers
- * - Categories and sub-categories
- * - Validation and save callbacks
- * - Auto-config annotation system
- *
- * This integration allows DevMod to:
- * - Detect Cloth Config presence
- * - Provide enhanced config screens when available
- * - Use reflection to avoid hard compile-time dependency
- *
- * @see <a href="https://shedaniel.gitbook.io/cloth-config/">Cloth Config Documentation</a>
- */
 public class ClothConfigCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClothConfigCompat.class);
     public static final String MOD_ID = "cloth_config";

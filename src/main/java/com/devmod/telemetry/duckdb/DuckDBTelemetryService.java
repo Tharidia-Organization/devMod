@@ -10,27 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 
-import net.minecraft.server.MinecraftServer;
-
 import com.mojang.logging.LogUtils;
 
-/**
- * Central DuckDB telemetry service.
- *
- * Coordinates database initialization, batch writing, and query API.
- * This service is the main entry point for DuckDB telemetry operations.
- *
- * Lifecycle:
- * 1. initialize() - Called from TelemetryService.reload() on server start
- * 2. log*() methods - Called during gameplay to record events
- * 3. shutdown() - Called from TelemetryService.shutdown() on server stop
- *
- * Architecture:
- * - Uses singleton pattern (INSTANCE)
- * - Delegates writes to DuckDBBatchWriter (async, non-blocking)
- * - Delegates queries to DuckDBQueryAPI
- * - Manages DuckDBConnectionManager lifecycle
- */
+import net.minecraft.server.MinecraftServer;
 public class DuckDBTelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
 

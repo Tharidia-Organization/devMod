@@ -10,10 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 
 import io.netty.buffer.ByteBuf;
-
-/**
- * Payload for toggling debug features (client to server).
- */
 public record DebugTogglePayload(String featureId) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<DebugTogglePayload> TYPE =

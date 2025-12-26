@@ -6,13 +6,6 @@ import java.util.function.BiPredicate;
 import net.minecraft.network.chat.Component;
 
 import com.devmod.endurance.EnduranceQuest;
-
-/**
- * Represents a daily challenge that players can complete for bonus rewards.
- *
- * Challenges rotate daily and provide engagement hooks for retention.
- * Players can complete each challenge once per day for bonus tokens and prestige.
- */
 public class DailyChallenge {
 
     private final String id;

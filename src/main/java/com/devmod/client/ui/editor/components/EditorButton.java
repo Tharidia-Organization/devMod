@@ -11,13 +11,6 @@ import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
-
-/**
- * Custom button component per l'editor.
- * Ora pensato come bottone principale: supporta varianti, icone, hotkey hint, toggle.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 2.7
- */
 public class EditorButton {
 
     // ═══════════════════════════════════════════════════════════════

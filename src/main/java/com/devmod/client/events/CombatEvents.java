@@ -15,11 +15,6 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import com.devmod.DevMod;
 import com.devmod.client.panels.context.ContextDetector;
-
-/**
- * Client-side combat event handler for ContextDetector notifications.
- * Uses Minecraft.getInstance() which is only available on client.
- */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class CombatEvents {
 

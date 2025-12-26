@@ -8,11 +8,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-/**
- * Payload sent from server to client to update tension HUD display.
- * Used by the dynamic boss spawning system.
- */
 public record TensionUpdatePayload(float tensionPercent, int tensionLevel, boolean bossImminent) implements CustomPacketPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "tension_update"));

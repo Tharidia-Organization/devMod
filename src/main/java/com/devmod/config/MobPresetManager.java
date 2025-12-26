@@ -11,17 +11,12 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 
-import com.devmod.util.ConfigPaths;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
 
-/**
- * Manages user-created presets for mob configuration.
- * Presets store stat multipliers that can be applied to any mob type.
- */
+import com.devmod.util.ConfigPaths;
 public class MobPresetManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

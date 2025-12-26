@@ -38,11 +38,6 @@ import com.devmod.recipe.RecipeConfigManager;
 import com.devmod.recipe.RecipeValidator;
 import com.devmod.recipe.ResultData;
 import com.devmod.util.I18n;
-
-/**
- * Editor module for crafting recipes.
- * Allows creating and editing shaped/shapeless crafting recipes.
- */
 public class RecipeModule extends AbstractEditorModule {
 
     private static final String TAB_GRID = "grid";

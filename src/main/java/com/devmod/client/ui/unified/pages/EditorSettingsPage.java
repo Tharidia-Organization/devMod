@@ -16,11 +16,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.config.EditorClientConfig;
-
-/**
- * Editor settings page for Item Editor UI configuration.
- * Includes UI scale selection, sounds toggle, and default mode.
- */
 public class EditorSettingsPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;

@@ -2,7 +2,11 @@ package com.devmod;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
+
+import com.mojang.logging.LogUtils;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -39,9 +43,6 @@ import com.devmod.config.GameplayOverridesManager;
 import com.devmod.debug.DebugNetworkHandler;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.integration.ModIntegrationManager;
-
-import com.mojang.logging.LogUtils;
-
 @Mod("devmod")
 public class DevMod {
 
@@ -71,7 +72,9 @@ public class DevMod {
     public static final DeferredHolder<Item, Item> VIEWER_ITEM = ITEMS.register("viewer_item", () -> new Item(new Item.Properties()));
 
     // Arena Template registry (bootstrap)
+    @Nullable
     private static ArenaTemplateRegistry ARENA_TEMPLATE_REGISTRY;
+    @Nullable
     private static TemplateRegistryBootstrap ARENA_BOOTSTRAP;
 
     // 4. CREATIVE TAB (FIXED)
@@ -195,7 +198,7 @@ public class DevMod {
      * Exposes the arena template registry for other components.
      */
     public static ArenaTemplateRegistry getArenaTemplateRegistry() {
-        return ARENA_TEMPLATE_REGISTRY;
+        return Objects.requireNonNull(ARENA_TEMPLATE_REGISTRY, "ArenaTemplateRegistry not initialized");
     }
 
     /**
@@ -203,7 +206,7 @@ public class DevMod {
      * that need config-aware reloads or access to the current snapshot.
      */
     public static TemplateRegistryBootstrap getArenaTemplateBootstrap() {
-        return ARENA_BOOTSTRAP;
+        return Objects.requireNonNull(ARENA_BOOTSTRAP, "ArenaTemplateBootstrap not initialized");
     }
 
     // ========== Client-safe initialization helpers ==========

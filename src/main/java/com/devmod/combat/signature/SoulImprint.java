@@ -24,17 +24,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
 import static java.util.Objects.requireNonNull;
-
-/**
- * Soul Imprint - Weapon history and accumulated achievements.
- *
- * Every weapon that deals significant damage in Endurance Quests accumulates
- * a "Soul Imprint" that tracks the player's accomplishments with that weapon.
- * As stats accumulate, the weapon unlocks permanent traits and evolves its name.
- *
- * This creates a sense of attachment and progression with individual weapons,
- * encouraging players to develop mastery rather than constantly switching gear.
- */
 public class SoulImprint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SoulImprint.class);
@@ -182,33 +171,52 @@ public class SoulImprint {
      */
     @Nonnull
     public Component getEvolvedName(ItemStack stack) {
-        String baseName = stack.getHoverName().getString();
+        Component hoverName = requireNonNull(stack.getHoverName(), "stack hover name");
+        String baseName = requireNonNull(hoverName.getString(), "baseName");
+        String ownerDisplayName = requireNonNull(ownerName != null ? ownerName : "Unknown", "ownerDisplayName");
+        Style baseStyle = requireNonNull(Style.EMPTY, "Style.EMPTY");
 
         return switch (evolutionStage) {
-            case 0 -> Component.literal(baseName);
-            case 1 -> Component.literal(ownerName + "'s " + baseName)
-                .withStyle(Style.EMPTY.withColor(0xAAAAAA));
+            case 0 -> requireNonNull(Component.literal(baseName), "stage0 component");
+            case 1 -> {
+                String displayName = ownerDisplayName + "'s " + baseName;
+                Style style = requireNonNull(baseStyle.withColor(0xAAAAAA), "stage1 style");
+                yield requireNonNull(Component.literal(displayName), "stage1 component").withStyle(style);
+            }
             case 2 -> {
                 // Find primary trait for naming
                 WeaponTrait primaryTrait = getPrimaryTrait();
-                String traitName = primaryTrait != null ? primaryTrait.getAdjective() : "Enhanced";
-                yield Component.literal(ownerName + "'s " + traitName + " " + getWeaponType(baseName))
-                    .withStyle(Style.EMPTY.withColor(0x55FF55));
+                String traitName = primaryTrait != null ? primaryTrait.getAdjective() : null;
+                String displayName = ownerDisplayName + "'s "
+                    + (traitName != null ? traitName : "Enhanced")
+                    + " " + getWeaponType(baseName);
+                Style style = requireNonNull(baseStyle.withColor(0x55FF55), "stage2 style");
+                yield requireNonNull(Component.literal(displayName), "stage2 component").withStyle(style);
             }
             case 3 -> {
                 WeaponTrait primaryTrait = getPrimaryTrait();
-                String traitName = primaryTrait != null ? primaryTrait.getAdjective() : "Legendary";
-                yield Component.literal(ownerName + "'s " + traitName + " " + getWeaponType(baseName))
-                    .withStyle(Style.EMPTY.withColor(0x5555FF).withBold(true));
+                String traitName = primaryTrait != null ? primaryTrait.getAdjective() : null;
+                String displayName = ownerDisplayName + "'s "
+                    + (traitName != null ? traitName : "Legendary")
+                    + " " + getWeaponType(baseName);
+                Style style = requireNonNull(
+                    baseStyle.withColor(0x5555FF).withBold(true),
+                    "stage3 style"
+                );
+                yield requireNonNull(Component.literal(displayName), "stage3 component").withStyle(style);
             }
             case 4 -> {
                 // Unique legendary name
                 String uniqueName = customName != null ? customName : generateUniqueName();
                 String title = generateTitle();
-                yield Component.literal(uniqueName + ", the " + title)
-                    .withStyle(Style.EMPTY.withColor(0xFF55FF).withBold(true).withItalic(true));
+                String displayName = requireNonNull(uniqueName, "uniqueName") + ", the " + requireNonNull(title, "title");
+                Style style = requireNonNull(
+                    baseStyle.withColor(0xFF55FF).withBold(true).withItalic(true),
+                    "stage4 style"
+                );
+                yield requireNonNull(Component.literal(displayName), "stage4 component").withStyle(style);
             }
-            default -> Component.literal(baseName);
+            default -> requireNonNull(Component.literal(baseName), "default component");
         };
     }
 
@@ -305,7 +313,8 @@ public class SoulImprint {
         CompoundTag statsTag = new CompoundTag();
         for (var entry : stats.entrySet()) {
             if (entry.getValue() > 0) {
-                statsTag.putInt(entry.getKey().name(), entry.getValue());
+                String statKey = requireNonNull(entry.getKey().name(), "ImprintStat name");
+                statsTag.putInt(statKey, entry.getValue());
             }
         }
         tag.put(NBT_STATS, statsTag);
@@ -313,7 +322,8 @@ public class SoulImprint {
         // Save traits
         ListTag traitsList = new ListTag();
         for (WeaponTrait trait : unlockedTraits) {
-            traitsList.add(StringTag.valueOf(trait.getId().toString()));
+            String traitId = requireNonNull(trait.getId(), "trait id").toString();
+            traitsList.add(StringTag.valueOf(traitId));
         }
         tag.put(NBT_TRAITS, traitsList);
 
@@ -353,8 +363,9 @@ public class SoulImprint {
         // Load stats
         CompoundTag statsTag = tag.getCompound(NBT_STATS);
         for (ImprintStat stat : ImprintStat.values()) {
-            if (statsTag.contains(stat.name())) {
-                imprint.stats.put(stat, statsTag.getInt(stat.name()));
+            String statKey = requireNonNull(stat.name(), "ImprintStat name");
+            if (statsTag.contains(statKey)) {
+                imprint.stats.put(stat, statsTag.getInt(statKey));
             }
         }
 

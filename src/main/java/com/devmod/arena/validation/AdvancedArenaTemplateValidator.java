@@ -8,18 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.registry.ValidationResult;
-
-/**
- * DD40: Advanced Arena Template Validator with static + runtime preflight checks.
- *
- * <p>Features:
- * <ul>
- *   <li>Static validation (schema, bounds, spawn slots)</li>
- *   <li>Security limits enforcement (size ≤ 256, hazards ≤ 50, spawns ≤ 100)</li>
- *   <li>Structured report with categorized issues</li>
- *   <li>Severity levels (ERROR blocks build, WARNING allows with logging)</li>
- * </ul>
- */
 public class AdvancedArenaTemplateValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AdvancedArenaTemplateValidator.class);

@@ -20,13 +20,6 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
-
-/**
- * Registry of all available weapon traits.
- *
- * Traits are unlocked when a weapon accumulates enough of a specific stat.
- * Each ImprintStat maps to exactly one trait.
- */
 public class WeaponTraitRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeaponTraitRegistry.class);
@@ -166,7 +159,10 @@ public class WeaponTraitRegistry {
      * Get trait by ID string (e.g., "devmod:executioner").
      */
     @Nullable
-    public WeaponTrait getTrait(String id) {
+    public WeaponTrait getTrait(@Nullable String id) {
+        if (id == null || id.isBlank()) {
+            return null;
+        }
         ResourceLocation loc = ResourceLocation.tryParse(id);
         return loc != null ? traitById.get(loc) : null;
     }

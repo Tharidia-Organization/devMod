@@ -17,11 +17,6 @@ import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.util.ConfigPaths;
 
 import static com.devmod.DevMod.MODID;
-
-/**
- * Handles recipe synchronization during datapack reload and server lifecycle events.
- * Ensures custom recipes are properly synced to clients and injected into the RecipeManager.
- */
 @EventBusSubscriber(modid = MODID)
 public final class RecipeReloadListener {
 

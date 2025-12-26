@@ -1,11 +1,6 @@
 package com.devmod.arena.fallback;
 
 import java.util.concurrent.atomic.AtomicLong;
-
-/**
- * Metrics for tracking fallback strategy usage.
- * DD45: Dedicated metrics for fallback monitoring.
- */
 public class FallbackMetrics {
 
     public enum MetricType {

@@ -26,21 +26,6 @@ import com.devmod.runtime.InstanceState;
 import com.devmod.runtime.PlayerInstanceSnapshot;
 import com.devmod.runtime.PlayerInstanceState;
 import com.devmod.runtime.RecoverySystem;
-
-/**
- * GameTests for the Instance Dimension System.
- *
- * Run with: ./gradlew runGameTestServer
- *
- * Tests are organized by batch:
- * - "instance_smoke": Basic system initialization (required=true)
- * - "instance_flow": Full quest flow validation
- * - "instance_recovery": Recovery and error handling
- * - "instance_state": State machine validation
- *
- * IMPORTANT: These tests require a properly initialized server with mixins.
- * Some tests may be skipped if the Instance system is not fully initialized.
- */
 @GameTestHolder(DevMod.MODID)
 @PrefixGameTestTemplate(false)
 public class InstanceSystemGameTests {

@@ -8,14 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 
 import com.devmod.DevMod;
-
-/**
- * Performance monitoring for editor UI.
- *
- * Tracks frame times, render times, and individual operation timing.
- *
- * @see docs/editor-design-system/19-performance-considerations.md
- */
 public class PerformanceMonitor {
 
     // ═══════════════════════════════════════════════════════════════

@@ -10,18 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
-
-/**
- * Query API for DuckDB telemetry analytics.
- *
- * Provides methods to query aggregated telemetry data, replacing
- * in-memory aggregation services like DamageTrackingService.getWeaponSummaries().
- *
- * All methods are read-only and optimized for analytics queries.
- */
 public class DuckDBQueryAPI {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -122,6 +115,7 @@ public class DuckDBQueryAPI {
     /**
      * Get endurance quest statistics for a player.
      */
+    @Nullable
     public EnduranceStats getEnduranceStats(UUID playerId) {
         String sql = """
             SELECT
@@ -353,6 +347,7 @@ public class DuckDBQueryAPI {
     /**
      * Get average performance metrics.
      */
+    @Nullable
     public PerformanceAverage getPerformanceAverage(Duration window) {
         String sql = """
             SELECT
@@ -981,7 +976,7 @@ public class DuckDBQueryAPI {
     /**
      * Get recent arena template builds with optional version filter.
      */
-    public List<ArenaRecords.BuildRecord> getArenaRecentBuilds(String templateId, Integer templateVersion, int limit) {
+    public List<ArenaRecords.BuildRecord> getArenaRecentBuilds(String templateId, @Nullable Integer templateVersion, int limit) {
         String sql;
         if (templateVersion != null) {
             sql = """
@@ -1017,6 +1012,8 @@ public class DuckDBQueryAPI {
                     while (rs.next()) {
                         String arenaIdStr = rs.getString("arena_id");
                         UUID arenaId = arenaIdStr != null ? UUID.fromString(arenaIdStr) : UUID.randomUUID();
+                        int templateVersionValue = rs.getInt("template_version");
+                        String templateVersionStr = rs.wasNull() ? null : String.valueOf(templateVersionValue);
                         Instant startedAt = rs.getTimestamp("ts").toInstant();
                         long actualMsValue = rs.getLong("actual_ms");
                         Long actualMs = rs.wasNull() ? null : actualMsValue;
@@ -1030,7 +1027,7 @@ public class DuckDBQueryAPI {
                         results.add(new ArenaRecords.BuildRecord(
                             arenaId,
                             rs.getString("template_id"),
-                            String.valueOf(rs.getInt("template_version")),
+                            templateVersionStr,
                             startedAt,
                             completedAt,
                             actualMs,
@@ -1049,7 +1046,7 @@ public class DuckDBQueryAPI {
     /**
      * Get arena build performance samples.
      */
-    public List<ArenaRecords.BuildPerformanceSample> getArenaBuildPerformance(String templateId, Integer templateVersion, int limit) {
+    public List<ArenaRecords.BuildPerformanceSample> getArenaBuildPerformance(String templateId, @Nullable Integer templateVersion, int limit) {
         String sql;
         if (templateVersion != null) {
             sql = """
@@ -1108,7 +1105,7 @@ public class DuckDBQueryAPI {
     /**
      * Get arena spatial event heatmap with optional version filter.
      */
-    public int[][] getArenaHeatmap(String templateId, Integer templateVersion, String eventType, int gridSize) {
+    public int[][] getArenaHeatmap(String templateId, @Nullable Integer templateVersion, String eventType, int gridSize) {
         String sql;
         if (templateVersion != null) {
             sql = """
@@ -1167,7 +1164,7 @@ public class DuckDBQueryAPI {
     /**
      * Get arena spatial event count with optional version filter.
      */
-    public int getArenaSpatialEventCount(String templateId, Integer templateVersion, String eventType) {
+    public int getArenaSpatialEventCount(String templateId, @Nullable Integer templateVersion, String eventType) {
         String sql;
         if (templateVersion != null) {
             sql = """
@@ -1230,7 +1227,7 @@ public class DuckDBQueryAPI {
             Connection conn = connectionManager.getConnection();
             try (var stmt = conn.prepareStatement(sql)) {
                 stmt.setTimestamp(1, Timestamp.from(since));
-                stmt.setDouble(2, Math.max(0.0, minGap.toSeconds()));
+                stmt.setDouble(2, Math.max(0.0, (double) minGap.toSeconds()));
                 stmt.setInt(3, Math.max(1, limit));
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
@@ -1278,7 +1275,7 @@ public class DuckDBQueryAPI {
     /**
      * Get wave aggregates for arena template.
      */
-    public List<ArenaRecords.WaveAggregate> getArenaWaveAggregates(String templateId, Integer templateVersion,
+    public List<ArenaRecords.WaveAggregate> getArenaWaveAggregates(String templateId, @Nullable Integer templateVersion,
                                                                     Instant from, Instant to) {
         Instant fromTs = from != null ? from : Instant.EPOCH;
         Instant toTs = to != null ? to : Instant.now();
@@ -1341,7 +1338,7 @@ public class DuckDBQueryAPI {
     /**
      * Get average waves completed for arena template.
      */
-    public double getArenaAverageWavesCompleted(String templateId, Integer templateVersion,
+    public double getArenaAverageWavesCompleted(String templateId, @Nullable Integer templateVersion,
                                                  Instant from, Instant to) {
         Instant fromTs = from != null ? from : Instant.EPOCH;
         Instant toTs = to != null ? to : Instant.now();
@@ -1386,6 +1383,7 @@ public class DuckDBQueryAPI {
     }
 
     // Helper method for nullable double
+    @Nullable
     private Double getNullableDouble(ResultSet rs, String column) throws SQLException {
         double value = rs.getDouble(column);
         return rs.wasNull() ? null : value;

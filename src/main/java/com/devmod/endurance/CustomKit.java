@@ -8,11 +8,6 @@ import java.util.UUID;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-
-/**
- * A user-defined kit configuration that can be saved and loaded.
- * Unlike KitPreset, CustomKit allows users to define their own loadouts.
- */
 public class CustomKit {
     private final String id;
     private String name;

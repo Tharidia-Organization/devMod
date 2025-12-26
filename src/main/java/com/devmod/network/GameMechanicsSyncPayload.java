@@ -16,19 +16,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.config.GameMechanicsConfig;
-
-/**
- * Server-to-client payload for synchronizing GameMechanicsConfig values.
- *
- * <p>Supports two sync modes:
- * <ul>
- *   <li><b>Global sync</b>: questId is null, syncs global config defaults on login</li>
- *   <li><b>Quest sync</b>: questId is set, syncs per-quest overrides when entering a quest</li>
- * </ul>
- *
- * @see com.devmod.config.GameMechanicsConfig
- * @see com.devmod.endurance.config.EnduranceConfigManager
- */
 public record GameMechanicsSyncPayload(
     CompoundTag mechanicsConfig,
     @Nullable UUID questId,

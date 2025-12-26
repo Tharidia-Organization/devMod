@@ -11,16 +11,6 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import com.devmod.telemetry.DeferredEntityProcessor;
 
 import static com.devmod.DevMod.MODID;
-
-/**
- * Global mob event handler.
- *
- * PERFORMANCE FIX: Instead of processing mob configs immediately on spawn
- * (which causes TPS drops when structures generate many entities at once),
- * we now queue spawns for deferred processing via DeferredEntityProcessor.
- *
- * This distributes the load across multiple ticks, maintaining stable TPS.
- */
 @EventBusSubscriber(modid = MODID)
 public class GlobalMobEvents {
 

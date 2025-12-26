@@ -7,14 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import net.minecraft.core.BlockPos;
-
-/**
- * Service for room-based analysis including choke points, collision detection,
- * parkour falls, and entity density tracking.
- * Extracted from TelemetryService for better separation of concerns.
- *
- * Thread-safe for concurrent access from multiple server threads.
- */
 public class RoomAnalysisService {
     public static final RoomAnalysisService INSTANCE = new RoomAnalysisService();
 

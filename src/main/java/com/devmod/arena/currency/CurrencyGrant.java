@@ -3,17 +3,6 @@ package com.devmod.arena.currency;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
-
-/**
- * Currency Grant record implementing DD54: Currency Source with sourceId.
- *
- * <p>Key features:
- * <ul>
- *   <li>Source enum for categorization</li>
- *   <li>Separate sourceId for detailed tracking (max 64 chars)</li>
- *   <li>Validation and audit support</li>
- * </ul>
- */
 public record CurrencyGrant(
     UUID id,
     UUID playerId,
