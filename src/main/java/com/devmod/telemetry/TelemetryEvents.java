@@ -1,9 +1,10 @@
 package com.devmod.telemetry;
 
-import com.devmod.config.Config;
-import com.devmod.DevMod;
-import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
-import com.mojang.logging.LogUtils;
+import java.util.Objects;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -12,25 +13,27 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import org.slf4j.Logger;
 
-import java.util.Objects;
-import java.util.UUID;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
-// EntityJoinLevelEvent handling moved to DeferredEntityProcessor for performance
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingHealEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import com.devmod.DevMod;
+import com.devmod.config.Config;
+import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
 
+import com.mojang.logging.LogUtils;
+
+// EntityJoinLevelEvent handling moved to DeferredEntityProcessor for performance.
 @EventBusSubscriber(modid = DevMod.MODID)
 public class TelemetryEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

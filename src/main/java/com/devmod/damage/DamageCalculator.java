@@ -1,12 +1,7 @@
 package com.devmod.damage;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.stats.ArmorStats;
-import com.devmod.config.Config;
-import com.devmod.combat.HitHelper;
-import com.devmod.combat.signature.SoulImprintManager;
-import com.devmod.stats.WeaponStats;
-// DamageBreakdown is now in the same package
+import java.util.Objects;
+
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -15,8 +10,14 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Objects;
+import com.devmod.combat.HitHelper;
+import com.devmod.combat.signature.SoulImprintManager;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.Config;
+import com.devmod.stats.ArmorStats;
+import com.devmod.stats.WeaponStats;
 
+// DamageBreakdown is now in the same package
 /**
  * Centralized damage calculation logic extracted from DamageHandler.
  * Handles armor penetration, true damage, custom armor reduction, and damage type bonuses.

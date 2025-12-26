@@ -1,9 +1,21 @@
 package com.devmod.actions.client;
 
-import com.devmod.config.Config;
+import java.util.function.BooleanSupplier;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+
+import net.neoforged.neoforge.network.PacketDistributor;
+
 import com.devmod.DevMod;
-import com.devmod.client.input.KeyInputHandler;
 import com.devmod.ModConfig;
+import com.devmod.abilities.AbilityActionPayload;
+import com.devmod.abilities.DodgeAbilitySystem;
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;
@@ -11,28 +23,22 @@ import com.devmod.actions.ActionPrecondition;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
-import com.devmod.abilities.AbilityActionPayload;
-import com.devmod.abilities.DodgeAbilitySystem;
+import com.devmod.arena.command.ArenaActionRegistry;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.client.attributes.AttributeMonitoringSystem;
-import com.devmod.debug.DebugFeature;
-import com.devmod.debug.DebugTogglePayload;
-import com.devmod.debug.client.DebugRenderBools;
-import com.devmod.client.overlay.EnduranceQuestOverlay;
 import com.devmod.client.endurance.ClientQuestCache;
-import com.devmod.client.endurance.EnduranceShopScreen;
 import com.devmod.client.endurance.EnduranceQuestScreen;
+import com.devmod.client.endurance.EnduranceShopScreen;
 import com.devmod.client.endurance.EnduranceUiCache;
-import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.client.endurance.PerkSelectionScreen;
-import com.devmod.endurance.QuestCompletionPayload;
 import com.devmod.client.endurance.QuestCompletionScreen;
 import com.devmod.client.endurance.QuestDeathScreen;
-import com.devmod.endurance.QuestActionPayload;
 import com.devmod.client.endurance.QuestExitConfirmScreen;
-import com.devmod.endurance.StartQuestPayload;
 import com.devmod.client.endurance.WaveCheckpointScreen;
+import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.overlay.BossPhaseOverlay;
 import com.devmod.client.overlay.EconomyOverlay;
+import com.devmod.client.overlay.EnduranceQuestOverlay;
 import com.devmod.client.overlay.EntityDensityOverlay;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactData;
@@ -43,14 +49,11 @@ import com.devmod.client.overlay.OnboardingOverlay;
 import com.devmod.client.overlay.QuickHelpOverlay;
 import com.devmod.client.overlay.SkillEfficacyOverlay;
 import com.devmod.client.panels.context.ContextDetector;
-import com.devmod.client.party.PartyScreen;
 import com.devmod.client.party.InvitePopupScreen;
-import com.devmod.party.PartyNotificationPayload;
+import com.devmod.client.party.PartyScreen;
 import com.devmod.client.party.PartyUiCache;
 import com.devmod.client.quest.QuestEditorScreen;
 import com.devmod.client.quest.QuestHudOverlay;
-import com.devmod.quest.QuestManager;
-import com.devmod.quest.QuestTask;
 import com.devmod.client.rendering.AggroRangeVisualizer;
 import com.devmod.client.rendering.ChunkPerformanceVisualizer;
 import com.devmod.client.rendering.DebugRenderer;
@@ -64,9 +67,9 @@ import com.devmod.client.rendering.SpawnabilityOverlay;
 import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.client.telemetry.FpsTracker;
 import com.devmod.client.telemetry.PerformanceProfiler;
-import com.devmod.telemetry.TelemetryService;
-import com.devmod.client.ui.screens.MobConfigScreen;
-import com.devmod.client.ui.screens.MobEquipmentScreen;
+import com.devmod.client.testing.QATestingScreen;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.testing.TutorialManager;
 import com.devmod.client.ui.RoomBoundsEditorScreen;
 import com.devmod.client.ui.WelcomeScreen;
 import com.devmod.client.ui.editor.EditorStartTab;
@@ -74,27 +77,46 @@ import com.devmod.client.ui.editor.ItemEditorScreen;
 import com.devmod.client.ui.editor.StaminaSystemEditor;
 import com.devmod.client.ui.hub.TestingHub;
 import com.devmod.client.ui.hub.TestingHubState;
-import com.devmod.client.testing.QATestingScreen;
-import com.devmod.client.testing.TestingSession;
-import com.devmod.client.testing.TutorialManager;
+import com.devmod.client.ui.screens.MobConfigScreen;
+import com.devmod.client.ui.screens.MobEquipmentScreen;
 import com.devmod.client.ui.testing.VoxelLabScreen;
 import com.devmod.client.ui.testing.VoxelLabUiTestScreen;
 import com.devmod.client.ui.unified.UnifiedSettingsScreen;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.client.ui.wizard.QuickTestWizard;
-import com.devmod.arena.command.ArenaActionRegistry;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.config.Config;
+import com.devmod.debug.DebugFeature;
+import com.devmod.debug.DebugTogglePayload;
+import com.devmod.debug.client.DebugRenderBools;
+import com.devmod.endurance.PerkChoicesPayload;
+import com.devmod.endurance.QuestActionPayload;
+import com.devmod.endurance.QuestCompletionPayload;
+import com.devmod.endurance.StartQuestPayload;
+import com.devmod.party.PartyNotificationPayload;
+import com.devmod.quest.QuestManager;
+import com.devmod.quest.QuestTask;
+import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.network.PacketDistributor;
-import java.util.function.BooleanSupplier;
 
+/**
+ * Client-side action registry for DevMod.
+ *
+ * <p>Registers all radial menu actions organized by category:
+ * <ul>
+ *   <li>UI actions - screen toggles and overlays</li>
+ *   <li>Debug actions - visualization and rendering toggles</li>
+ *   <li>Config actions - armor/weapon editing</li>
+ *   <li>Telemetry actions - data collection toggles</li>
+ *   <li>Quest actions - quest system controls</li>
+ *   <li>Endurance actions - endurance quest management</li>
+ *   <li>Ability actions - player abilities</li>
+ * </ul>
+ *
+ * <p>All actions are registered via {@link #register()} during client mod initialization.
+ *
+ * @see ActionRegistry
+ * @see RadialAction
+ */
 public final class DevModClientActions {
     private static final HeatmapVisualizer.HeatmapType[] HEATMAP_CYCLE = {
         HeatmapVisualizer.HeatmapType.DEATH,
