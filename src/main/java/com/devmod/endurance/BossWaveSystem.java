@@ -873,20 +873,20 @@ public class BossWaveSystem {
 
         switch (ability) {
             case CHARGE -> executeCharge(boss, target, level);
-            case GROUND_SLAM -> executeGroundSlam(fight, boss, target, level);
+            case GROUND_SLAM -> executeGroundSlam(fight, boss, level);
             case ENRAGE -> executeEnrage(fight, boss, level);
             case SUMMON_MINIONS -> executeSummonMinions(fight, boss, level);
             case BARRIER -> executeBarrier(fight, boss, level);
             case LIFE_LINK -> executeLifeLink(fight, boss);
             case REFLECT -> { /* Handled in damage processing */ }
             case UNSTOPPABLE -> executeUnstoppable(boss, level);
-            case EARTHQUAKE -> executeEarthquake(boss, target, level);
-            case SHADOW_STEP -> executeShadowStep(fight, boss, target, level);
+            case EARTHQUAKE -> executeEarthquake(boss, level);
+            case SHADOW_STEP -> executeShadowStep(boss, target, level);
             case MARKED_FOR_DEATH -> executeMarkForDeath(target, level);
             case SMOKE_BOMB -> executeSmokeBomb(boss, level);
             case FIREBALL_BARRAGE -> executeFireballBarrage(boss, target, level);
             case FROST_NOVA -> executeFrostNova(boss, level);
-            case LIGHTNING_STORM -> executeLightningStorm(boss, target, level);
+            case LIGHTNING_STORM -> executeLightningStorm(target, level);
             case ELEMENTAL_SHIFT -> executeElementalShift(fight, boss, level);
         }
     }
@@ -904,7 +904,7 @@ public class BossWaveSystem {
         level.playSound(null, pos, Objects.requireNonNull(SoundEvents.RAVAGER_ATTACK), SoundSource.HOSTILE, 1.0f, 1.0f);
     }
 
-    private void executeGroundSlam(BossFight fight, Mob boss, ServerPlayer target, ServerLevel level) {
+    private void executeGroundSlam(BossFight fight, Mob boss, ServerLevel level) {
         BlockPos pos = Objects.requireNonNull(boss.blockPosition());
         float damage = 8.0f;
 
@@ -1036,7 +1036,7 @@ public class BossWaveSystem {
         level.playSound(null, pos, Objects.requireNonNull(SoundEvents.IRON_GOLEM_REPAIR), SoundSource.HOSTILE, 1.0f, 0.5f);
     }
 
-    private void executeEarthquake(Mob boss, ServerPlayer target, ServerLevel level) {
+    private void executeEarthquake(Mob boss, ServerLevel level) {
         BlockPos pos = Objects.requireNonNull(boss.blockPosition());
         AABB area = Objects.requireNonNull(new AABB(pos).inflate(12));
 
@@ -1057,7 +1057,7 @@ public class BossWaveSystem {
         level.playSound(null, pos, Objects.requireNonNull(SoundEvents.GENERIC_EXPLODE.value()), SoundSource.HOSTILE, 2.0f, 0.3f);
     }
 
-    private void executeShadowStep(BossFight fight, Mob boss, ServerPlayer target, ServerLevel level) {
+    private void executeShadowStep(Mob boss, ServerPlayer target, ServerLevel level) {
         // Particles at old position
         level.sendParticles(Objects.requireNonNull(ParticleTypes.LARGE_SMOKE), boss.getX(), boss.getY(), boss.getZ(), 20, 0.5, 1, 0.5, 0);
 
@@ -1079,11 +1079,11 @@ public class BossWaveSystem {
             double minZ = arena.getCenter().getZ() - halfSize;
             double maxZ = arena.getCenter().getZ() + halfSize;
 
-            behindPlayer = Objects.requireNonNull(new Vec3(
+            behindPlayer = new Vec3(
                 Math.max(minX, Math.min(maxX, behindPlayer.x)),
                 behindPlayer.y,
                 Math.max(minZ, Math.min(maxZ, behindPlayer.z))
-            ));
+            );
         }
 
         boss.teleportTo(behindPlayer.x, behindPlayer.y, behindPlayer.z);
@@ -1166,7 +1166,7 @@ public class BossWaveSystem {
         level.playSound(null, pos, Objects.requireNonNull(SoundEvents.GLASS_BREAK), SoundSource.HOSTILE, 1.0f, 0.5f);
     }
 
-    private void executeLightningStorm(Mob boss, ServerPlayer target, ServerLevel level) {
+    private void executeLightningStorm(ServerPlayer target, ServerLevel level) {
         // Strike at player and random nearby positions
         BlockPos baseStrike = Objects.requireNonNull(target.blockPosition());
         for (int i = 0; i < 3; i++) {

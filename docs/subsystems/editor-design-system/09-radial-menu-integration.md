@@ -1,5 +1,8 @@
 # 2.13 Entry Point: Radial Menu Integration
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 > **Entry point confermato:** Radial Menu con voci separate per tipo.
 
 ## Filosofia

@@ -1,5 +1,8 @@
 # DevMod Editor - TODO & Tracking
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Stato: Completato - Tutte le Fasi (1-6)
 
 ### Fase 1: Refactoring Bottoni Hardcoded - COMPLETATO

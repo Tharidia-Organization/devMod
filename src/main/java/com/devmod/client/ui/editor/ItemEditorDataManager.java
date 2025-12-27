@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -350,7 +351,7 @@ public class ItemEditorDataManager {
         ensureInitialized();
         if (itemId == null) return Optional.empty();
 
-        String lower = itemId.toLowerCase();
+        String lower = itemId.toLowerCase(Locale.ROOT);
         if (lower.contains("sword")) return getTemplateForCategory("sword");
         if (lower.contains("axe") && !lower.contains("pickaxe")) return getTemplateForCategory("axe");
         if (lower.contains("pickaxe")) return getTemplateForCategory("pickaxe");
@@ -516,11 +517,13 @@ public class ItemEditorDataManager {
             Path exportDir = getDataDirectory().resolve("exports");
             if (!Files.exists(exportDir)) return Collections.emptyList();
 
-            return Files.list(exportDir)
-                .filter(p -> p.toString().endsWith(".json"))
-                .map(p -> p.getFileName().toString().replace(".json", ""))
-                .sorted()
-                .toList();
+            try (var stream = Files.list(exportDir)) {
+                return stream
+                    .filter(p -> p.toString().endsWith(".json"))
+                    .map(p -> p.getFileName().toString().replace(".json", ""))
+                    .sorted()
+                    .toList();
+            }
         } catch (IOException e) {
             return Collections.emptyList();
         }
@@ -711,13 +714,15 @@ public class ItemEditorDataManager {
             // Delete exports directory contents
             Path exportsDir = dataDir.resolve("exports");
             if (Files.exists(exportsDir)) {
-                Files.list(exportsDir).forEach(file -> {
-                    try {
-                        Files.deleteIfExists(file);
-                    } catch (IOException e) {
-                        DevMod.LOGGER.warn("[ItemEditor] Could not delete export file: {}", file.getFileName());
-                    }
-                });
+                try (var stream = Files.list(exportsDir)) {
+                    stream.forEach(file -> {
+                        try {
+                            Files.deleteIfExists(file);
+                        } catch (IOException e) {
+                            DevMod.LOGGER.warn("[ItemEditor] Could not delete export file: {}", file.getFileName());
+                        }
+                    });
+                }
             }
 
             DevMod.LOGGER.info("[ItemEditor] All data reset successfully");

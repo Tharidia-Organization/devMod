@@ -1,7 +1,7 @@
 # DevMod - Map of Content (MOC)
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION
+> Status: CURRENT (navigation)
 > Purpose: quick navigation. See [[README]] for the full map and [[DOCUMENTATION_STATUS]] for trust levels.
 
 ---
@@ -21,6 +21,7 @@
 - [[areas/arena/README]]
 - [[areas/endurance/README]]
 - [[areas/instance/README]]
+- [[areas/mailbox/README]]
 - [[areas/telemetry/README]]
 - [[areas/radial/README]]
 - [[areas/client_server/README]]

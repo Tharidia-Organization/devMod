@@ -1,7 +1,7 @@
 # DevMod Rendering System - Complete Audit
 
-> **Last Updated**: 2024-12-23
-> **Status**: ✅ CURRENT - Audit architettura rendering
+> Last updated: 2024-12-23
+> Status: HISTORICAL (design system snapshot)
 
 This document provides a comprehensive audit of all rendering systems in DevMod, analyzing current implementation approaches and identifying candidates for GPU shader conversion.
 

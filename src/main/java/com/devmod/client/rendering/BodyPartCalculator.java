@@ -46,7 +46,7 @@ public class BodyPartCalculator {
         boolean isTallBody = height > 3.0 && aspectRatio < 0.5;
 
         if (isHorizontalBody) {
-            return calculateHorizontalBodyParts(mainBox, center, width, height, depth);
+            return calculateHorizontalBodyParts(mainBox, center, width, depth);
         } else if (isTallBody) {
             return calculateTallBodyParts(mainBox, center, width, height, depth);
         } else {
@@ -131,7 +131,7 @@ public class BodyPartCalculator {
      */
     @Nonnull
     private static BodyPartAABB[] calculateHorizontalBodyParts(AABB mainBox, Vec3 center,
-                                                               double width, double height, double depth) {
+                                                               double width, double depth) {
         List<BodyPartAABB> parts = new ArrayList<>();
 
         boolean primaryAxisIsX = width > depth;

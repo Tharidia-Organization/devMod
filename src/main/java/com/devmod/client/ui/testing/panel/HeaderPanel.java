@@ -1,5 +1,6 @@
 package com.devmod.client.ui.testing.panel;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import net.minecraft.client.Minecraft;
@@ -38,7 +39,7 @@ public record HeaderPanel(
     }
 
     private static String generateId(String title) {
-        return "header-" + title.toLowerCase().replace(" ", "-");
+        return "header-" + title.toLowerCase(Locale.ROOT).replace(" ", "-");
     }
 
     @Override

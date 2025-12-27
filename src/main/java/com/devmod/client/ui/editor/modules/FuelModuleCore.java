@@ -48,7 +48,9 @@ public class FuelModuleCore {
             if (fuelComponent != null) {
                 statsTag = item.get(fuelComponent);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Fuel] Failed to read fuel stats component", e);
+        }
 
         CompoundTag customTag;
         try {
@@ -56,7 +58,8 @@ public class FuelModuleCore {
                 Objects.requireNonNull(DataComponents.CUSTOM_DATA),
                 Objects.requireNonNull(CustomData.EMPTY)
             ).copyTag();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Fuel] Failed to read custom data component", e);
             customTag = new CompoundTag();
         }
         if (customTag == null) {
@@ -73,7 +76,8 @@ public class FuelModuleCore {
                 if (customTag.contains(NBT_KEY)) {
                     statsTag = customTag.getCompound(NBT_KEY);
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                DevMod.LOGGER.debug("[Editor][Fuel] Failed to read fuel stats from custom data", e);
                 statsTag = new CompoundTag();
             }
         }

@@ -9,7 +9,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -52,7 +54,8 @@ public class HeatmapExporter {
      */
     public static int exportAll() {
         int count = 0;
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+        String timestamp = LocalDateTime.now(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
         count += exportHeatmap("death", HeatmapService.INSTANCE.getDeathHeatmap(), timestamp);
         count += exportHeatmap("movement", HeatmapService.INSTANCE.getMovementHeatmap(), timestamp);
@@ -159,7 +162,7 @@ public class HeatmapExporter {
         // Title
         g.setColor(Color.WHITE);
         g.setFont(new Font("SansSerif", Font.BOLD, 16));
-        String title = String.format("Heatmap: %s | Room: %s", name.toUpperCase(), room);
+        String title = String.format("Heatmap: %s | Room: %s", name.toUpperCase(Locale.ROOT), room);
         g.drawString(title, PADDING, 25);
 
         // Subtitle with bounds

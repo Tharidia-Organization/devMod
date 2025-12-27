@@ -26,7 +26,7 @@ public record ScaledCoord(int x, int y) {
         currentScale = scale;
     }
 
-    /** @return the current UI scale. */
+    /** Returns the current UI scale. @return the current UI scale. */
     public static float getScale() {
         return currentScale;
     }
@@ -69,37 +69,37 @@ public record ScaledCoord(int x, int y) {
     // Reference: docs/editor-design-system/07-ui-scaling.md
     // ─────────────────────────────────────────────────────────────────────────────
 
-    /** @return Scaled panel width (base: 550px) */
+    /** Returns the scaled panel width. @return Scaled panel width (base: 550px) */
     public static int panelWidth() {
         return scaleDim(EditorConstants.PANEL_WIDTH);
     }
 
-    /** @return Scaled panel height (base: 420px) */
+    /** Returns the scaled panel height. @return Scaled panel height (base: 420px) */
     public static int panelHeight() {
         return scaleDim(EditorConstants.PANEL_HEIGHT);
     }
 
-    /** @return Scaled header height (base: 28px) */
+    /** Returns the scaled header height. @return Scaled header height (base: 28px) */
     public static int headerHeight() {
         return scaleDim(EditorConstants.HEADER_HEIGHT);
     }
 
-    /** @return Scaled footer height (base: 60px) */
+    /** Returns the scaled footer height. @return Scaled footer height (base: 60px) */
     public static int footerHeight() {
         return scaleDim(EditorConstants.FOOTER_HEIGHT);
     }
 
-    /** @return Scaled left column width (base: 140px) */
+    /** Returns the scaled left column width. @return Scaled left column width (base: 140px) */
     public static int leftColumnWidth() {
         return scaleDim(EditorConstants.LEFT_COLUMN_WIDTH);
     }
 
-    /** @return Scaled content area width (base: 390px) */
+    /** Returns the scaled content width. @return Scaled content area width (base: 390px) */
     public static int contentWidth() {
         return scaleDim(EditorConstants.CONTENT_WIDTH);
     }
 
-    /** @return Scaled preview size (base: 100px) */
+    /** Returns the scaled preview size. @return Scaled preview size (base: 100px) */
     public static int previewSize() {
         return scaleDim(EditorConstants.PREVIEW_SIZE);
     }

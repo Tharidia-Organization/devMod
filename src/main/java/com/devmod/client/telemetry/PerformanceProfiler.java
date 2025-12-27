@@ -226,7 +226,7 @@ public class PerformanceProfiler {
     // === Rendering ===
 
     private void renderOverlay(GuiGraphics graphics, Font font) {
-        font = Objects.requireNonNull(font);
+        Objects.requireNonNull(font, "font");
         int screenWidth = graphics.guiWidth();
 
         // Position: top right corner

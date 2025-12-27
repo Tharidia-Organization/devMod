@@ -1,5 +1,8 @@
 # Assets Credits
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Game-Icons.net (CC BY 3.0)
 All icons from [game-icons.net](https://game-icons.net) are licensed under Creative Commons Attribution 3.0.  
 Author credits per icon:

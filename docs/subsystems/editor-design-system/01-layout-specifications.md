@@ -1,5 +1,8 @@
 # Layout Specifications
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## 1.1 Dimensioni Standard
 
 ```

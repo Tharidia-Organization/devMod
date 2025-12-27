@@ -1,98 +1,40 @@
 # Instance Dimension System - Implementation Reference
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION (last verified 2025-12-26)
+> Status: CURRENT (verified against code)
 
----
+## Responsibilities
 
-## 1. Scope
+- Create, teleport to, and destroy instance dimensions via `DynamicDimensionManager`.
+- Track instance mappings and cleanup via `InstanceRegistry`.
+- Persist player snapshots and perform recovery via `RecoverySystem`.
+- Orchestrate lifecycle and teleport flow via `InstanceManager`.
 
-This document captures the **current behavior** of the Instance Dimension System as implemented in
-`com.devmod.runtime`. It focuses on what the code does today, not future plans.
+## Dimension Creation + Teleport
 
----
+- `createDimensionAsync()` schedules `createDimensionSync()` on the server thread for thread safety.
+- Dimension IDs use `devmod:instance_<uuidWithoutDashes>`.
+- Dimensions are created as void worlds with a flat bedrock platform (see `createVoidDimension`).
+- `InstanceManager` supports immediate teleport or a 10-second countdown (`TELEPORT_COUNTDOWN_TICKS = 200`).
+- Teleport requests are considered stale after 30 seconds (`TeleportRequest.MAX_AGE_MS`).
 
-## 2. Core Flow (Current)
+## State Models
 
-1. **Quest start**
-   - `InstanceManager.startInstanceQuest()` / `startInstanceQuestImmediate()`
-   - Creates `InstanceData`, writes `PlayerInstanceSnapshot`, maps players in `InstanceRegistry`.
+- `InstanceState`: CREATING, READY, ACTIVE, COMPLETING, DESTROYING, DESTROYED (transitions validated by `canTransitionTo`).
+- `PlayerInstanceState`: NORMAL, PREPARING, IN_TRANSIT, IN_INSTANCE, RETURNING (NORMAL is always a recovery target).
 
-2. **Dimension creation**
-   - `DynamicDimensionManager.createDimensionAsync()` schedules creation on server thread.
-   - Dimension name: `devmod:instance_<uuidWithoutDashes>`.
-   - Void world generator uses a flat bedrock layer as platform.
+## Scheduling + Cleanup
 
-3. **Teleport**
-   - Immediate mode: teleport as soon as dimension exists.
-   - Countdown mode: 10 seconds (200 ticks), messages at 5s/3s/1s.
-   - Stale teleports are cleared after 30s with recovery.
+- `InstanceEventHandler` ticks `InstanceManager` every server tick.
+- Pending destructions are processed every 100 ticks (`DESTRUCTION_CHECK_INTERVAL`).
+- `DynamicDimensionManager` handles teardown and dimension registry cleanup.
 
-4. **Quest end**
-   - `InstanceManager.endInstanceQuest()` sets `COMPLETING`, runs recovery for each player.
-   - Instance is marked for destruction and queued.
+## Persistence Paths
 
-5. **Destroy**
-   - `InstanceRegistry.processPendingDestructions()` runs every 100 ticks.
-   - `DynamicDimensionManager.destroyDimensionAsync()` removes dimension and data.
+- Snapshots: `config/devmod/snapshots/<playerUuid>.dat`.
+- Registry: `config/devmod/instances.json`.
+- Dimension data: `world/dimensions/devmod/instance_<uuidWithoutDashes>`.
 
----
+## Automated Validation
 
-## 3. State Machines
-
-### InstanceState
-```
-CREATING -> READY -> ACTIVE -> COMPLETING -> DESTROYING -> DESTROYED
-```
-- Invalid transitions are logged but **allowed** to prevent deadlocks.
-
-### PlayerInstanceState
-```
-NORMAL -> PREPARING -> IN_TRANSIT -> IN_INSTANCE -> RETURNING -> NORMAL
-```
-- Any state can transition to `NORMAL` (recovery path).
-
----
-
-## 4. Recovery Rules (Implemented)
-
-- **PREPARING / IN_TRANSIT**: teleport failed or interrupted -> restore snapshot.
-- **IN_INSTANCE**: quest failed -> restore snapshot.
-- **RETURNING**: return teleport interrupted -> restore snapshot.
-
-Recovery deletes the snapshot and unmaps the player from the registry.
-
----
-
-## 5. Persistence Paths
-
-- Snapshots: `config/devmod/snapshots/<playerUuid>.dat`
-- Registry: `config/devmod/instances.json`
-- Dimension data: `world/dimensions/devmod/instance_<uuidWithoutDashes>`
-
----
-
-## 6. Known Gaps (Code-Verified)
-
-- No timeout/backoff around `createDimensionAsync()`.
-- Forced state transitions are allowed (logged only).
-- Snapshot pruning is per-player only (no periodic cleanup job).
-
----
-
-## 7. Automated Validation
-
-| Behavior | Test |
-|----------|------|
-| Instance lifecycle + scheduling | `InstanceDataDirectTest` |
-| State machines | `InstanceStateDirectTest`, `PlayerInstanceStateDirectTest` |
-| Snapshot NBT + file IO | `PlayerInstanceSnapshotDirectTest` |
-| Registry mappings | `InstanceRegistryDirectTest` |
-
----
-
-## Cross-References
-
-- `docs/areas/instance/README.md`
-- `docs/areas/endurance/README.md`
-- `docs/areas/arena/README.md`
+- See `docs/areas/instance/INSTANCE_SYSTEM_TEST_STRATEGY.md`.

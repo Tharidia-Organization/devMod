@@ -14,6 +14,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.DevMod;
 import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
@@ -244,7 +245,9 @@ public class MultiEditPanel {
                     }
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[MultiEditPanel] Failed to load user presets", e);
+        }
 
         return result;
     }
@@ -828,7 +831,9 @@ public class MultiEditPanel {
                         "chat message cannot be null");
                     mc.gui.getChat().addMessage(msg);
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                DevMod.LOGGER.debug("[MultiEditPanel] Failed to post export message", e);
+            }
         } catch (Exception ignored) {
             // best-effort export only
         }

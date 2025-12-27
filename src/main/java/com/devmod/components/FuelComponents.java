@@ -53,7 +53,9 @@ public final class FuelComponents {
             if (FUEL_STATS.isBound()) {
                 return FUEL_STATS.get();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[FuelComponents] Failed to resolve fuel_stats component", e);
+        }
 
         if (Boolean.getBoolean("devmod.allowFallbackComponents")) {
             DevMod.LOGGER.warn("[FuelComponents] Using fallback fuel_stats component (test-mode only)");
@@ -69,6 +71,7 @@ public final class FuelComponents {
         try {
             return FUEL_STATS.isBound();
         } catch (Exception e) {
+            DevMod.LOGGER.debug("[FuelComponents] Failed to check fuel_stats binding", e);
             return false;
         }
     }

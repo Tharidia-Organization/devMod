@@ -555,7 +555,7 @@ public class AsyncArenaBuilder {
                     for (int dz = -halfZ; dz <= halfZ; dz++) {
                         for (int dy = 0; dy < floor.thickness(); dy++) {
                             placements.add(new BlockPlacement(
-                                originX + dx, floor.y() + dy, originZ + dz, floor.material()
+                                originX + dx, originY + floor.y() + dy, originZ + dz, floor.material()
                             ));
                         }
                     }

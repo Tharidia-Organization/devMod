@@ -4,6 +4,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ public class ArenaIdempotencyCache implements AutoCloseable {
 
     private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
     private final ScheduledExecutorService cleaner;
+    private final ScheduledFuture<?> cleanupTask;
 
     public ArenaIdempotencyCache() {
         this.cleaner = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -28,7 +30,7 @@ public class ArenaIdempotencyCache implements AutoCloseable {
             return t;
         });
 
-        cleaner.scheduleAtFixedRate(this::cleanup, CLEANUP_INTERVAL_MS, CLEANUP_INTERVAL_MS, TimeUnit.MILLISECONDS);
+        cleanupTask = cleaner.scheduleAtFixedRate(this::cleanup, CLEANUP_INTERVAL_MS, CLEANUP_INTERVAL_MS, TimeUnit.MILLISECONDS);
         LOGGER.info("ArenaIdempotencyCache initialized with {}ms TTL, max {} entries", TTL_MS, MAX_ENTRIES);
     }
 
@@ -136,6 +138,7 @@ public class ArenaIdempotencyCache implements AutoCloseable {
 
     @Override
     public void close() {
+        cleanupTask.cancel(false);
         cleaner.shutdownNow();
         cache.clear();
     }

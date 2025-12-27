@@ -1,5 +1,8 @@
 # Shared Components
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 Questo documento descrive i componenti condivisi tra ArmorEditor e WeaponEditor.
 
 > **Nota**: Tutti i componenti devono seguire le convenzioni del [Component System](01-layout-specifications.md#component-system) e usare `UIConstants`, `EditorSpacing`, e `ScaledCoord.scaleDim()` per consistenza.

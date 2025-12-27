@@ -1,5 +1,8 @@
 # Piano di Refactor Eseguibile
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL
+
 > **Versione**: 1.1
 > **Data**: 24 Dicembre 2024
 > **Prerequisito**: REFACTOR_AUDIT.md completato

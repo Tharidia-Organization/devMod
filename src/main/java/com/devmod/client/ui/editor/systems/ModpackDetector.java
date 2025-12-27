@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -169,7 +170,7 @@ public final class ModpackDetector {
         try {
             Set<String> loadedMods = ModList.get().getMods().stream()
                 .map(IModInfo::getModId)
-                .map(String::toLowerCase)
+                .map(modId -> modId.toLowerCase(Locale.ROOT))
                 .collect(Collectors.toSet());
 
             // Check each known modpack signature
@@ -192,7 +193,7 @@ public final class ModpackDetector {
             return null;
         }
 
-        return name.toLowerCase()
+        return name.toLowerCase(Locale.ROOT)
             .replaceAll("[^a-z0-9_]", "_")
             .replaceAll("_+", "_")
             .replaceAll("^_|_$", "");

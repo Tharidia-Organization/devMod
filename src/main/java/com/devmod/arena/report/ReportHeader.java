@@ -1,6 +1,7 @@
 package com.devmod.arena.report;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -163,7 +164,7 @@ public record ReportHeader(
     public static String calculateConfigHash(String configContent) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(configContent.getBytes());
+            byte[] hash = digest.digest(configContent.getBytes(StandardCharsets.UTF_8));
             String fullHash = HexFormat.of().formatHex(hash);
             return fullHash.substring(0, 16);
         } catch (NoSuchAlgorithmException e) {

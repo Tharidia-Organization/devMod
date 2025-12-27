@@ -2,6 +2,7 @@ package com.devmod.endurance.season;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -254,7 +255,7 @@ public class PlayerSeasonProgress {
 
     private int getStyleRankScore(String rank) {
         if (rank == null || rank.isEmpty()) return 0;
-        return switch (rank.toUpperCase()) {
+        return switch (rank.toUpperCase(Locale.ROOT)) {
             case "SSS" -> 7;
             case "SS" -> 6;
             case "S" -> 5;

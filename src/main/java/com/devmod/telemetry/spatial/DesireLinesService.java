@@ -13,11 +13,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Splitter;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
 public class DesireLinesService {
     public static final DesireLinesService INSTANCE = new DesireLinesService();
+    private static final Splitter COMMA_SPLITTER = Splitter.on(',');
 
     // Movement segments: from -> to -> count
     // Key format: "roomId:fromX,fromY,fromZ"
@@ -97,16 +100,18 @@ public class DesireLinesService {
         String prefix = roomId + ":";
         for (Map.Entry<String, Map<BlockPos, Integer>> entry : movementSegments.entrySet()) {
             if (entry.getKey().startsWith(prefix)) {
-                String[] parts = entry.getKey().substring(prefix.length()).split(",");
-                if (parts.length == 3) {
+                List<String> parts = COMMA_SPLITTER.splitToList(entry.getKey().substring(prefix.length()));
+                if (parts.size() == 3) {
                     try {
                         BlockPos from = new BlockPos(
-                            Integer.parseInt(parts[0]),
-                            Integer.parseInt(parts[1]),
-                            Integer.parseInt(parts[2])
+                            Integer.parseInt(parts.get(0)),
+                            Integer.parseInt(parts.get(1)),
+                            Integer.parseInt(parts.get(2))
                         );
                         roomSegments.put(from, new HashMap<>(entry.getValue()));
-                    } catch (NumberFormatException ignored) {}
+                    } catch (NumberFormatException ignored) {
+                        continue;
+                    }
                 }
             }
         }

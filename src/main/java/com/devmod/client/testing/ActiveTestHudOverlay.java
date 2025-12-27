@@ -198,7 +198,7 @@ public class ActiveTestHudOverlay {
 
         // Calculate dynamic height based on instructions
         String instructionText = Objects.requireNonNullElse(activeTest.getInstructions(), "");
-        String[] instructions = instructionText.split("\n");
+        String[] instructions = instructionText.lines().toArray(String[]::new);
         int instructionLines = Math.min(instructions.length, 6); // Max 6 steps visible
         int height = HEADER_HEIGHT + PANEL_PADDING * 3 +
                      LINE_HEIGHT * 2 + // Name + Description
@@ -239,7 +239,6 @@ public class ActiveTestHudOverlay {
 
         // Test name
         String testName = Objects.requireNonNullElse(activeTest.getName(), "Unnamed Test");
-        testName = Objects.requireNonNull(testName, "testName");
         if (font.width(testName) > PANEL_WIDTH - 50) {
             testName = testName.substring(0, 25) + "...";
         }

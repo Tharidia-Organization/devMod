@@ -1,8 +1,11 @@
 package com.devmod.arena.identity;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import com.google.common.base.Splitter;
 
 public record ArenaIdentity(
     UUID arenaId,
@@ -62,6 +65,8 @@ public record ArenaIdentity(
         String worldId,
         String instanceId
     ) {
+        private static final Splitter ROOM_ID_SPLITTER = Splitter.on('-');
+
         public RoomIdentifier {
             Objects.requireNonNull(serverId, "serverId must not be null");
             Objects.requireNonNull(worldId, "worldId must not be null");
@@ -93,15 +98,15 @@ public record ArenaIdentity(
                 throw new IllegalArgumentException("Invalid room identifier format: " + formatted);
             }
 
-            String[] parts = formatted.split("-");
-            if (parts.length < 6) {
+            List<String> parts = ROOM_ID_SPLITTER.splitToList(formatted);
+            if (parts.size() < 6) {
                 throw new IllegalArgumentException("Invalid room identifier format: " + formatted);
             }
 
             // Expected: srv-{server}-wld-{world}-inst-{instance}
-            String serverId = parts[1];
-            String worldId = parts[3];
-            String instanceId = parts[5];
+            String serverId = parts.get(1);
+            String worldId = parts.get(3);
+            String instanceId = parts.get(5);
 
             return new RoomIdentifier(serverId, worldId, instanceId);
         }

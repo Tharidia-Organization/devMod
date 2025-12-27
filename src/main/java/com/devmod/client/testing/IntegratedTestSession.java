@@ -2,6 +2,7 @@ package com.devmod.client.testing;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -343,7 +344,7 @@ public class IntegratedTestSession {
 
     private String generateSessionId() {
         return "test_" + System.currentTimeMillis() + "_" +
-               (currentType != null ? currentType.name().toLowerCase() : "unknown");
+               (currentType != null ? currentType.name().toLowerCase(Locale.ROOT) : "unknown");
     }
 
     private String formatDuration(java.time.Duration duration) {

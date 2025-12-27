@@ -1,5 +1,11 @@
 # DevMod Telemetry System - Complete Documentation
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (snapshot; not guaranteed to match current code)
+
+Nota: per lo stato corrente usare `docs/areas/telemetry/README.md` e il codice in
+`src/main/java/com/devmod/telemetry/`.
+
 ## Overview
 
 The DevMod telemetry system is a comprehensive data collection framework for tracking player behavior, combat mechanics, economy, spatial patterns, and performance metrics. All data is written to `.ndjson` (newline-delimited JSON) files in `run/telemetry/` for analysis.

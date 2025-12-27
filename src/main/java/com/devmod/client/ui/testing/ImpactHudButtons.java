@@ -81,7 +81,9 @@ public final class ImpactHudButtons {
         // Load current position
         try {
             currentPosition = Config.IMPACT_HUD_POSITION.get();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            currentPosition = Config.HudPosition.TOP_RIGHT;
+        }
 
         // === 2D HUD ===
         hud2dToggle = new EditorButton("impact-2d", "2D HUD Overlay")

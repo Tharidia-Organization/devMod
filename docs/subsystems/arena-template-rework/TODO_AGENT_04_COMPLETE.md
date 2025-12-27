@@ -1,7 +1,7 @@
 # Agent 04 - Metriche & API - COMPLETE
 
-> **Last Updated**: 2025-12-26
-> **Status**: ✅ CURRENT
+> Last updated: 2025-12-26
+> Status: HISTORICAL (completion snapshot)
 
 ## Summary
 Implementato il sistema di metriche, context e API unificata (DD13-15). Contenuto allineato alle classi correnti.

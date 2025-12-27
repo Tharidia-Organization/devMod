@@ -1,5 +1,6 @@
 package com.devmod.debug;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -35,7 +36,7 @@ public record DebugSyncPayload(String featureId, boolean enabled) implements Cus
     @Nullable
     public DebugFeature getFeature() {
         try {
-            return DebugFeature.valueOf(featureId.toUpperCase());
+            return DebugFeature.valueOf(featureId.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return null;
         }

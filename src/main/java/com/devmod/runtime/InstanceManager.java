@@ -20,10 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
 
 public class InstanceManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceManager.class);
@@ -266,9 +264,9 @@ public class InstanceManager {
             }
 
                     if (teleportImmediately) {
-                        executeImmediateTeleport(onlinePlayer, instanceId, dimensionKey);
+                        executeImmediateTeleport(onlinePlayer, instanceId);
                     } else {
-                        startTeleportCountdown(onlinePlayer, instanceId, dimensionKey);
+                        startTeleportCountdown(onlinePlayer, instanceId);
                     }
                 }
 
@@ -286,7 +284,7 @@ public class InstanceManager {
      * Execute immediate teleport without countdown.
      * Used when integrating with quest systems that need synchronous completion.
      */
-    private void executeImmediateTeleport(ServerPlayer player, UUID instanceId, ResourceKey<Level> dimensionKey) {
+    private void executeImmediateTeleport(ServerPlayer player, UUID instanceId) {
         UUID playerId = nn(player.getUUID(), "player uuid");
 
         LOGGER.info("[InstanceManager] Executing immediate teleport for {} to instance {}",
@@ -327,7 +325,7 @@ public class InstanceManager {
     /**
      * Start the teleport countdown for a player.
      */
-    private void startTeleportCountdown(ServerPlayer player, UUID instanceId, ResourceKey<Level> dimensionKey) {
+    private void startTeleportCountdown(ServerPlayer player, UUID instanceId) {
         UUID playerId = nn(player.getUUID(), "player uuid");
 
         TeleportRequest request = new TeleportRequest(

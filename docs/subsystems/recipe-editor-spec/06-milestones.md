@@ -1,5 +1,8 @@
 # Milestones - Recipe Editor Implementation
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 > Piano di implementazione incrementale
 
 ## Overview

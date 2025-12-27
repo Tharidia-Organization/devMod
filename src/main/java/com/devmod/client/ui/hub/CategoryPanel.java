@@ -3,6 +3,7 @@ package com.devmod.client.ui.hub;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -105,7 +106,7 @@ public class CategoryPanel implements HubPanel {
         contentY += SEARCH_HEIGHT + 8;
 
         // Filtri
-        contentY = renderFilters(graphics, contentY, mouseX, mouseY);
+        contentY = renderFilters(graphics, contentY);
         contentY += 6;
 
         // Separator
@@ -119,7 +120,7 @@ public class CategoryPanel implements HubPanel {
         renderCategoryList(graphics, listStartY, listHeight, mouseX, mouseY);
     }
 
-    private int renderFilters(GuiGraphics graphics, int startY, int mouseX, int mouseY) {
+    private int renderFilters(GuiGraphics graphics, int startY) {
         @Nonnull Font safeFont = safeFont();
         int filterX = x + PADDING;
         int filterY = startY;
@@ -279,15 +280,15 @@ public class CategoryPanel implements HubPanel {
         Map<String, List<TestCase>> all = TestingSession.INSTANCE.getCategorizedTests();
         Map<String, List<TestCase>> filtered = new LinkedHashMap<>();
 
-        String query = Objects.requireNonNullElse(state.getSearchQuery(), "").toLowerCase();
+        String query = Objects.requireNonNullElse(state.getSearchQuery(), "").toLowerCase(Locale.ROOT);
         Set<TestCase.TestStatus> activeFilters = state.getActiveFilters();
 
         for (Map.Entry<String, List<TestCase>> entry : all.entrySet()) {
             List<TestCase> tests = entry.getValue().stream()
                 .filter(t -> activeFilters.contains(t.getStatus()))
                 .filter(t -> query.isEmpty() ||
-                            Objects.requireNonNullElse(t.getName(), "").toLowerCase().contains(query) ||
-                            Objects.requireNonNullElse(t.getDescription(), "").toLowerCase().contains(query))
+                            Objects.requireNonNullElse(t.getName(), "").toLowerCase(Locale.ROOT).contains(query) ||
+                            Objects.requireNonNullElse(t.getDescription(), "").toLowerCase(Locale.ROOT).contains(query))
                 .toList();
 
             if (!tests.isEmpty()) {
@@ -318,7 +319,7 @@ public class CategoryPanel implements HubPanel {
         }
 
         // Category/Test list click
-        return handleListClick(mx, my);
+        return handleListClick(my);
     }
 
     private boolean handleFilterClick(int mx, int my) {
@@ -348,7 +349,7 @@ public class CategoryPanel implements HubPanel {
         return false;
     }
 
-    private boolean handleListClick(int mx, int my) {
+    private boolean handleListClick(int my) {
         int listStartY = y + PADDING + HEADER_HEIGHT + 4 + SEARCH_HEIGHT + 8 + FILTER_ROW_HEIGHT + 6 + 8;
         int listHeight = y + height - listStartY - PADDING;
 

@@ -91,7 +91,16 @@ class RadialOrphanFeatureTest {
             }
         }
 
-        Set<String> excluded = Set.of(ActionIds.UI_RADIAL_OPEN);
+        Set<String> excluded = Set.of(
+            ActionIds.UI_RADIAL_OPEN, ActionIds.UI_MAILBOX_OPEN, ActionIds.UI_TESTER_TASKS_OPEN,
+            // Admin commands (available via /mailbox and /news commands, not radial menu)
+            ActionIds.MAILBOX_COMMAND_HELP, ActionIds.MAILBOX_COMMAND_STATS,
+            ActionIds.MAILBOX_COMMAND_SEND, ActionIds.MAILBOX_COMMAND_BROADCAST,
+            ActionIds.MAILBOX_COMMAND_INBOX, ActionIds.MAILBOX_COMMAND_PURGE,
+            ActionIds.NEWS_COMMAND_HELP, ActionIds.NEWS_COMMAND_LIST,
+            ActionIds.NEWS_COMMAND_CREATE, ActionIds.NEWS_COMMAND_DELETE,
+            ActionIds.NEWS_COMMAND_PUBLISH
+        );
         for (Field field : ActionIds.class.getDeclaredFields()) {
             if (!Modifier.isStatic(field.getModifiers()) || field.getType() != String.class) {
                 continue;

@@ -139,7 +139,7 @@ public class NativeDebugClientRenderer {
             Path path = mob.getNavigation().getPath();
             if (path == null || path.isDone()) continue;
 
-            renderPath(poseStack, bufferSource, camPos, path, mob);
+            renderPath(poseStack, bufferSource, camPos, path);
         }
     }
 
@@ -147,7 +147,7 @@ public class NativeDebugClientRenderer {
      * Render a single mob's path.
      */
     private static void renderPath(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
-                                    Vec3 camPos, Path path, Mob mob) {
+                                    Vec3 camPos, Path path) {
         RenderType lineType = Objects.requireNonNull(RenderType.lines());
         VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 

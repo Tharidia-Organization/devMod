@@ -1,6 +1,7 @@
 package com.devmod.party;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -329,7 +330,7 @@ public class QuestStartSequence {
                         // Wave countdown finished, start quest!
                         sequence.phase = QuestSequencePayload.Phase.STARTING;
                         broadcastSequenceUpdate(sequence);
-                        startQuestForAll(server, sequence);
+                        startQuestForAll(sequence);
 
                         // Final notification
                         sequence.phase = QuestSequencePayload.Phase.STARTED;
@@ -382,9 +383,7 @@ public class QuestStartSequence {
 
         CompletableFuture<EnduranceQuestManager.PreparedArenaResult> future =
             EnduranceQuestManager.INSTANCE.prepareArenaForPartyAsync(leader, mobId, settings);
-        sequence.pendingArenaFuture = future;
-
-        future.whenComplete((arenaResult, throwable) -> {
+        future = future.whenComplete((arenaResult, throwable) -> {
             server.execute(() -> {
                 ActiveSequence current = activeSequences.get(sequence.partyId);
                 if (current == null) {
@@ -470,13 +469,14 @@ public class QuestStartSequence {
                 broadcastSequenceUpdate(current);
             });
         });
+        sequence.pendingArenaFuture = future;
     }
 
     /**
      * Start the quest for all members using the pre-created arena.
      * Uses startPreparedQuest() which doesn't teleport (players already in arena).
      */
-    private void startQuestForAll(MinecraftServer server, ActiveSequence sequence) {
+    private void startQuestForAll(ActiveSequence sequence) {
         LOGGER.info("[QuestSequence] Starting quest for party {}", sequence.partyId);
 
         // Verify we have a prepared arena
@@ -519,14 +519,15 @@ public class QuestStartSequence {
                 sequence.preparedArenaHandle
             );
 
+        Map<UUID, ServerPlayer> membersById = new HashMap<>();
+        for (ServerPlayer member : membersToStart) {
+            membersById.put(member.getUUID(), member);
+        }
+
         // Count successes and failures
         int successCount = 0;
         for (Map.Entry<UUID, EnduranceQuestManager.StartQuestResult> entry : results.entrySet()) {
-            ServerPlayer member = membersToStart.stream()
-                .filter(p -> p.getUUID().equals(entry.getKey()))
-                .findFirst()
-                .orElse(null);
-
+            ServerPlayer member = membersById.get(entry.getKey());
             if (member == null) continue;
 
             if (entry.getValue().success()) {

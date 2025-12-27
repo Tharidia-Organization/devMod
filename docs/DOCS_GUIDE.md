@@ -1,6 +1,7 @@
 # Documentation Guide
 
 > Last updated: 2025-12-26
+> Status: CURRENT
 > Purpose: keep docs consistent, easy to find, and easy to keep current.
 
 ---

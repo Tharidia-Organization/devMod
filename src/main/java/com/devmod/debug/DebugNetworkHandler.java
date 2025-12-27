@@ -1,6 +1,7 @@
 package com.devmod.debug;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,13 @@ import static com.devmod.network.ChannelId.DEBUG_TOGGLE;
 
 public class DebugNetworkHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugNetworkHandler.class);
+
+    private static void observeFuture(CompletableFuture<?> future, String action) {
+        future.exceptionally(throwable -> {
+            LOGGER.warn("Async operation failed: {}", action, throwable);
+            return null;
+        });
+    }
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         try {
@@ -45,7 +53,7 @@ public class DebugNetworkHandler {
     // ========== Server-side Handlers ==========
 
     private static void handleDebugToggle(DebugTogglePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        observeFuture(context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) {
                 DebugFeature feature = payload.getFeature();
                 if (feature == null) {
@@ -70,7 +78,7 @@ public class DebugNetworkHandler {
                 LOGGER.info("[Debug] Player {} toggled {} to {}",
                     player.getName().getString(), feature.getDisplayName(), nowEnabled);
             }
-        });
+        }), "debug toggle");
     }
 
     // ========== Client-side Handlers ==========
@@ -79,7 +87,7 @@ public class DebugNetworkHandler {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
-        context.enqueueWork(() -> invokeClientDebugSync(payload));
+        observeFuture(context.enqueueWork(() -> invokeClientDebugSync(payload)), "debug sync");
     }
 
     private static void invokeClientDebugSync(DebugSyncPayload payload) {

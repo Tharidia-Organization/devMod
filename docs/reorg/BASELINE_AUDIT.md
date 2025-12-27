@@ -1,9 +1,12 @@
 # Baseline Audit - DevMod Re-Architecture
 
-> **Audit Date**: 2024-12-24
-> **Build Status**: PASS (./gradlew build)
-> **Total Java Classes**: 862
-> **Total Packages**: 154
+> Last updated: 2025-12-26
+> Status: HISTORICAL (reorg baseline snapshot)
+
+> Audit date: 2024-12-24
+> Build status: PASS (./gradlew build)
+> Total Java classes: 862
+> Total packages: 154
 
 ---
 

@@ -1,6 +1,7 @@
 package com.devmod.testing.stats;
 
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Map;
 
 import com.google.gson.JsonObject;
@@ -103,7 +104,7 @@ public class EnvironmentalDamageStats {
         // Save all hazard types dynamically
         JsonObject hazardDamage = new JsonObject();
         for (Map.Entry<HazardType, Double> entry : damageByType.entrySet()) {
-            hazardDamage.addProperty(entry.getKey().name().toLowerCase(), entry.getValue());
+            hazardDamage.addProperty(entry.getKey().name().toLowerCase(Locale.ROOT), entry.getValue());
         }
         json.add("hazardDamage", hazardDamage);
 
@@ -126,7 +127,7 @@ public class EnvironmentalDamageStats {
         if (json.has("hazardDamage") && json.get("hazardDamage").isJsonObject()) {
             JsonObject hazardDamage = json.getAsJsonObject("hazardDamage");
             for (HazardType type : HazardType.values()) {
-                String key = type.name().toLowerCase();
+                String key = type.name().toLowerCase(Locale.ROOT);
                 double value = hazardDamage.has(key) ? hazardDamage.get(key).getAsDouble() : 0.0;
                 damageByType.put(type, value);
             }

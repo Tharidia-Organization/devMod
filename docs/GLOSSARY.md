@@ -1,6 +1,7 @@
 # Glossary
 
-> **Audit Date**: 2024-12-23
+> Last updated: 2025-12-26
+> Status: CURRENT (verified against code)
 
 ---
 
@@ -8,14 +9,12 @@
 
 | Term | Definition | File Reference |
 |------|------------|----------------|
-| **ArenaTemplate** | JSON/YAML definition of an arena including structures, spawns, and hazards | `registry/ArenaTemplate.java:22` |
-| **ArenaPolicy** | Rules for selecting templates based on context (mob type, difficulty, etc.) | `policy/ArenaPolicy.java:12` |
-| **ResolvedArena** | Final combination of template + policy after resolution | `policy/ResolvedArena.java` |
-| **ResolveContext** | Input context for policy resolution (mobType, questType, difficulty, tags, playerCount) | `policy/ResolveContext.java:12` |
-| **PolicyResolver** | Engine that matches context to policies and selects best template | `policy/PolicyResolver.java:31` |
-| **TemplateRegistryBootstrap** | Initialization and hot-reload of template registry | `registry/TemplateRegistryBootstrap.java:26` |
-| **BuildTransaction** | Tracked arena build with rollback capability | `builder/BuildTransaction.java` |
-| **Autosmoke** | Automated smoke testing of arena templates | `autosmoke/AutosmokeScheduler.java` |
+| **ArenaTemplate** | Definizione di template arena | `src/main/java/com/devmod/arena/registry/ArenaTemplate.java` |
+| **ArenaPolicy** | Regole di selezione template | `src/main/java/com/devmod/arena/policy/ArenaPolicy.java` |
+| **ResolveContext** | Contesto di risoluzione policy | `src/main/java/com/devmod/arena/policy/ResolveContext.java` |
+| **ResolvedArena** | Template + policy risolta | `src/main/java/com/devmod/arena/policy/ResolvedArena.java` |
+| **TemplateRegistryBootstrap** | Bootstrap registry + config | `src/main/java/com/devmod/arena/registry/TemplateRegistryBootstrap.java` |
+| **Autosmoke** | Smoke test automatico template | `src/main/java/com/devmod/arena/autosmoke/` |
 
 ---
 
@@ -23,55 +22,47 @@
 
 | Term | Definition | File Reference |
 |------|------------|----------------|
-| **EnduranceQuest** | A wave-based roguelike quest session | `EnduranceQuest.java` |
-| **WaveManager** | Orchestrates mob spawning and wave progression | `WaveManager.java:1-1290` |
-| **WaveDirective** | Preset wave behavior (steady, blitz, brute_force, etc.) | `WaveDirective.java:17` |
-| **SpawnAffix** | Modifier applied to spawned mobs (RUSH, BRUTE, ELITE, etc.) | `SpawnAffix.java:26` |
-| **ComboSystem** | DMC-style scoring from D rank to SSS | `ComboSystem.java` |
-| **StyleRank** | Combo ranking: D, C, B, A, S, SS, SSS | `ComboSystem.java` |
-| **PerkSystem** | Roguelike upgrade system between waves | `PerkSystem.java` |
-| **PerkTier** | Perk rarity: COMMON (60%), UNCOMMON (25%), RARE (10%), EPIC (4%), LEGENDARY (1%) | `PerkSystem.java` |
-| **ActiveQuestSession** | Runtime state of an ongoing quest | `EnduranceQuestManager.java` |
+| **EnduranceQuestManager** | Orchestratore sessioni endurance | `src/main/java/com/devmod/endurance/EnduranceQuestManager.java` |
+| **WaveManager** | Spawn e progressione wave | `src/main/java/com/devmod/endurance/WaveManager.java` |
+| **PerkSystem** | Perk roguelike per wave | `src/main/java/com/devmod/endurance/PerkSystem.java` |
+| **ComboSystem** | Scoring combo/stile | `src/main/java/com/devmod/endurance/ComboSystem.java` |
+| **RewardSystem** | Reward e shop endurance | `src/main/java/com/devmod/endurance/RewardSystem.java` |
 
 ---
 
-## Instance System
+## Instance Runtime
 
 | Term | Definition | File Reference |
 |------|------------|----------------|
-| **InstanceData** | Data model for a dimension instance | `InstanceData.java:19-521` |
-| **InstanceState** | State machine: CREATING→READY→ACTIVE→COMPLETING→DESTROYING→DESTROYED | `InstanceState.java:16-92` |
-| **PlayerInstanceState** | Player flow: NORMAL→PREPARING→IN_TRANSIT→IN_INSTANCE→RETURNING | `PlayerInstanceState.java:19-97` |
-| **PlayerInstanceSnapshot** | NBT serialization of player state for recovery | `PlayerInstanceSnapshot.java:27-607` |
-| **DynamicDimensionManager** | Creates and destroys runtime void dimensions | `DynamicDimensionManager.java:56-758` |
-| **RecoverySystem** | Restores players from snapshots on login/crash | `RecoverySystem.java:35-583` |
+| **InstanceManager** | Lifecycle delle istanze | `src/main/java/com/devmod/runtime/InstanceManager.java` |
+| **InstanceRegistry** | Registry istanze attive | `src/main/java/com/devmod/runtime/InstanceRegistry.java` |
+| **InstanceData** | Modello istanza | `src/main/java/com/devmod/runtime/InstanceData.java` |
+| **PlayerInstanceSnapshot** | Snapshot player (NBT) | `src/main/java/com/devmod/runtime/PlayerInstanceSnapshot.java` |
+| **RecoverySystem** | Recovery post-crash | `src/main/java/com/devmod/runtime/RecoverySystem.java` |
 
 ---
 
-## Telemetry System
+## Telemetry
 
 | Term | Definition | File Reference |
 |------|------------|----------------|
-| **TelemetryService** | Central telemetry orchestrator | `TelemetryService.java:987` |
-| **DuckDBBatchWriter** | Async batch inserter for DuckDB | `duckdb/DuckDBBatchWriter.java:1473` |
-| **DuckDBQueryAPI** | Query interface for analytics | `duckdb/DuckDBQueryAPI.java:1392` |
-| **Circuit Breaker** | Failure protection: after 5 errors, switch to NDJSON fallback | `DuckDBBatchWriter.java:76` |
-| **FightSession** | Room-based grouping of combat events | `FightSessionService.java` |
-| **HeatmapService** | Spatial aggregation for death, movement, stuck locations | `HeatmapService.java:441` |
-| **TTK** | Time-to-kill metric (from first hit or spawn) | Telemetry tables |
+| **TelemetryService** | Orchestratore telemetry | `src/main/java/com/devmod/telemetry/TelemetryService.java` |
+| **TelemetryEvents** | Event hooks + tick | `src/main/java/com/devmod/telemetry/TelemetryEvents.java` |
+| **DuckDBTelemetryService** | Persistenza DuckDB | `src/main/java/com/devmod/telemetry/duckdb/DuckDBTelemetryService.java` |
+| **DuckDBBatchWriter** | Writer batch async | `src/main/java/com/devmod/telemetry/duckdb/DuckDBBatchWriter.java` |
+| **TelemetryDashboardServer** | Dashboard server | `src/main/java/com/devmod/telemetry/dashboard/TelemetryDashboardServer.java` |
 
 ---
 
-## Radial Menu / UX
+## Radial / UI
 
 | Term | Definition | File Reference |
 |------|------------|----------------|
-| **RadialMenuScreenV3** | Main radial menu UI | `ui/radial/RadialMenuScreenV3.java:1-1330` |
-| **RadialAction** | Action definition with handler and metadata | `actions/RadialAction.java:1-309` |
-| **ActionRegistry** | Global registry of all actions | `actions/ActionRegistry.java:1-178` |
-| **MacroCategory** | Top-level grouping: ANALYZE, TELEMETRY, COMBAT, ARENA, PLAY, TOOLS | `model/MacroCategory.java:1-140` |
-| **RadialCategory** | Category container for menu items | `RadialCategory.java:1-231` |
-| **ActionType** | Action execution type: NAVIGATE_SCREEN, RUN_SERVER_COMMAND, TOGGLE_SETTING, etc. | `ActionType.java` |
+| **RadialMenuScreen** | Menu radiale principale | `src/main/java/com/devmod/client/ui/radial/RadialMenuScreen.java` |
+| **ActionRegistry** | Registry globale azioni | `src/main/java/com/devmod/actions/ActionRegistry.java` |
+| **RadialAction** | Definizione azione | `src/main/java/com/devmod/actions/RadialAction.java` |
+| **ItemEditorScreen** | Editor item | `src/main/java/com/devmod/client/ui/editor/ItemEditorScreen.java` |
+| **UnifiedSettingsScreen** | Settings UI | `src/main/java/com/devmod/client/ui/unified/UnifiedSettingsScreen.java` |
 
 ---
 
@@ -79,34 +70,33 @@
 
 | Term | Definition | File Reference |
 |------|------------|----------------|
-| **Payload** | Serializable network packet data | `network/*.java` |
-| **playToServer** | Client→Server packet direction | `NetworkHandler.java` |
-| **playToClient** | Server→Client packet direction | `NetworkHandler.java` |
-| **PacketSecurityService** | Validation layer for network packets | `PacketSecurityService.java` |
-| **StreamCodec** | NeoForge packet serialization | Network handlers |
+| **ChannelId** | Registry ID canali payload | `src/main/java/com/devmod/network/ChannelId.java` |
+| **NetworkHandler** | Registrazione payload | `src/main/java/com/devmod/network/NetworkHandler.java` |
+| **PacketValidator** | Validazione/rate limit | `src/main/java/com/devmod/network/PacketValidator.java` |
+| **StreamCodec** | Serializzazione payload | Payload classes in `src/main/java/com/devmod/` |
 
 ---
 
-## Config System
+## Mailbox System
 
 | Term | Definition | File Reference |
 |------|------------|----------------|
-| **ModConfigSpec** | NeoForge typed config builder | `Config.java` |
-| **ConfigChangeListener** | Callback for hot-reload notifications | `EditorConfig.java:79` |
-| **Feature Flag** | Runtime toggle for features | Various config classes |
-| **Circuit Breaker** | Automatic failure recovery pattern | `DuckDBBatchWriter.java` |
+| **MailboxManager** | Orchestratore mailbox | `src/main/java/com/devmod/mailbox/MailboxManager.java` |
+| **NewsManager** | Gestione news | `src/main/java/com/devmod/mailbox/news/NewsManager.java` |
+| **TestTaskManager** | Task QA | `src/main/java/com/devmod/mailbox/task/TestTaskManager.java` |
+| **DuckDbMailboxRepository** | Persistenza mailbox | `src/main/java/com/devmod/mailbox/persistence/DuckDbMailboxRepository.java` |
+| **MailboxApiServer** | API admin (Javalin) | `src/main/java/com/devmod/mailbox/api/MailboxApiServer.java` |
 
 ---
 
-## Combat System
+## Config
 
 | Term | Definition | File Reference |
 |------|------------|----------------|
-| **OBB** | Oriented Bounding Box (rotation-aware hitbox) | `collision/obb/` |
-| **AABB** | Axis-Aligned Bounding Box (standard Minecraft) | Vanilla |
-| **BodyPart** | Hit detection zones: HEAD, BODY, ARMS, LEGS | `collision/bodypart/` |
-| **ArmorPen** | Armor penetration mechanic | `DamageHandler.java` |
-| **HitContext** | Temporary hit data storage | `HitContext.java` |
+| **Config** | Config comune mod | `src/main/java/com/devmod/config/Config.java` |
+| **GameMechanicsConfig** | Config meccaniche | `src/main/java/com/devmod/config/GameMechanicsConfig.java` |
+| **EditorClientConfig** | Config client editor | `src/main/java/com/devmod/config/EditorClientConfig.java` |
+| **ConfigPaths** | Path config runtime | `src/main/java/com/devmod/util/ConfigPaths.java` |
 
 ---
 
@@ -114,10 +104,9 @@
 
 | Term | Definition | File Reference |
 |------|------------|----------------|
-| **GameTest** | NeoForge in-game test framework | `gametest/` |
-| **L0 Boot** | Critical startup verification tests | `L0BootVerificationTests.java` |
-| **QAEventTracker** | Event-driven test auto-completion | `QAEventTracker.java` |
-| **TesterProfile** | Gamification: XP, badges, streaks | `TesterProfile.java` |
+| **GameTest** | Framework test in-game | `src/main/java/com/devmod/gametest/` |
+| **TestingHub** | UI QA | `src/main/java/com/devmod/client/ui/hub/TestingHub.java` |
+| **QATestingScreen** | UI QA session | `src/main/java/com/devmod/client/testing/QATestingScreen.java` |
 
 ---
 
@@ -125,31 +114,11 @@
 
 | Abbrev | Full Form |
 |--------|-----------|
-| **DD** | Design Decision (numbered) |
-| **P0** | Priority 0 (Critical) |
-| **P1** | Priority 1 (High) |
-| **P2** | Priority 2 (Medium) |
+| **DD** | Design Decision |
+| **P0/P1/P2** | Priorita task |
 | **TTK** | Time-to-Kill |
 | **DPS** | Damage Per Second |
-| **KPS** | Kills Per Second |
-| **DTPS** | Damage Taken Per Second |
-| **OBB** | Oriented Bounding Box |
-| **AABB** | Axis-Aligned Bounding Box |
-| **NBT** | Named Binary Tag (Minecraft serialization) |
+| **NBT** | Named Binary Tag |
 | **NDJSON** | Newline-Delimited JSON |
 | **HUD** | Heads-Up Display |
 | **VFX** | Visual Effects |
-| **CI** | Continuous Integration |
-
----
-
-## Cross-References
-
-- [[MOC]] - Master index
-- [[PROJECT_TOPOLOGY]] - Code structure
-- [[AUDIT_REPORT]] - Findings
-- [[TRACEABILITY_MATRIX]] - Feature mapping
-
----
-
-*Generated from codebase analysis - 2024-12-23*

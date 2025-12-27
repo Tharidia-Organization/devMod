@@ -1,6 +1,7 @@
 package com.devmod.debug.client;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -284,7 +285,7 @@ public class DebugClientRenderer {
             // Color based on POI type
             float r = 0.0f, g = 1.0f, b = 1.0f; // Cyan default
 
-            String type = poi.type().toLowerCase();
+            String type = poi.type().toLowerCase(Locale.ROOT);
             if (type.contains("bed")) {
                 r = 1.0f; g = 0.5f; b = 0.5f; // Pink for beds
             } else if (type.contains("job") || type.contains("work")) {

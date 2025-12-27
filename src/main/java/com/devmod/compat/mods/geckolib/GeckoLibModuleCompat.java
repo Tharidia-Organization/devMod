@@ -75,6 +75,9 @@ public class GeckoLibModuleCompat implements CompatModule {
             animationControllerClass = Class.forName(
                 "software.bernie.geckolib.animation.AnimationController");
 
+            if (animationControllerClass != null) {
+                LOGGER.debug("[Compat:geckolib] AnimationController class: {}", animationControllerClass.getName());
+            }
             LOGGER.debug("[Compat:geckolib] Animation API loaded");
 
         } catch (ClassNotFoundException e) {

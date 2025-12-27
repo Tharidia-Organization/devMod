@@ -1,5 +1,6 @@
 package com.devmod.telemetry.boss;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -80,7 +81,7 @@ public class UnifiedBossDetector {
      * Check entity type name for boss patterns.
      */
     private boolean hasBossTypePattern(LivingEntity entity) {
-        String entityId = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entity.getType()))).toString().toLowerCase();
+        String entityId = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entity.getType()))).toString().toLowerCase(Locale.ROOT);
         return entityId.contains("boss")
             || entityId.contains("ender_guardian")
             || entityId.contains("void_worm")

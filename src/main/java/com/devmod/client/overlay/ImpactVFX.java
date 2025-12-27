@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.DevMod;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.config.Config;
@@ -60,7 +61,7 @@ public class ImpactVFX {
         }
 
         activeEffects.add(new ImpactEffect(Objects.requireNonNull(hitPoint, "hitPoint"),
-            slashDirection, data));
+            slashDirection));
 
         // Also spawn the 3D panel
         Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(data);
@@ -680,7 +681,9 @@ public class ImpactVFX {
             if (uniform != null) {
                 uniform.set(value);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            DevMod.LOGGER.debug("Unable to set shader uniform '{}'", name, ex);
+        }
     }
 
     private static void setShaderUniform(ShaderInstance shader, String name, int value) {
@@ -689,7 +692,9 @@ public class ImpactVFX {
             if (uniform != null) {
                 uniform.set(value);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            DevMod.LOGGER.debug("Unable to set shader uniform '{}'", name, ex);
+        }
     }
 
     private static void setShaderUniformVec3(ShaderInstance shader, String name, float x, float y, float z) {
@@ -698,7 +703,9 @@ public class ImpactVFX {
             if (uniform != null) {
                 uniform.set(x, y, z);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            DevMod.LOGGER.debug("Unable to set shader uniform '{}'", name, ex);
+        }
     }
 
     // ==================== CPU FALLBACK RENDER METHODS ====================
@@ -809,7 +816,7 @@ public class ImpactVFX {
         @Nonnull final Vec3 slashDirection;
         final long startTime;
 
-        ImpactEffect(@Nonnull Vec3 hitPoint, Vec3 slashDirection, ImpactData data) {
+        ImpactEffect(@Nonnull Vec3 hitPoint, Vec3 slashDirection) {
             this.hitPoint = Objects.requireNonNull(hitPoint, "hitPoint");
             this.slashDirection = slashDirection != null ? slashDirection : new Vec3(1, 0, 0);
             this.startTime = System.currentTimeMillis();

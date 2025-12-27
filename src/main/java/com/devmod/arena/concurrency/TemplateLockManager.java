@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -29,6 +30,7 @@ public class TemplateLockManager {
 
     private final Map<String, TemplateLock> locks = new ConcurrentHashMap<>();
     private final ScheduledExecutorService cleanupScheduler;
+    private ScheduledFuture<?> cleanupTask;
     private volatile boolean running = false;
 
     public TemplateLockManager() {
@@ -62,7 +64,7 @@ public class TemplateLockManager {
         if (running) return;
         running = true;
 
-        cleanupScheduler.scheduleAtFixedRate(
+        cleanupTask = cleanupScheduler.scheduleAtFixedRate(
             this::cleanupExpiredLocks,
             CLEANUP_INTERVAL.toMillis(),
             CLEANUP_INTERVAL.toMillis(),
@@ -78,6 +80,9 @@ public class TemplateLockManager {
      */
     public void shutdown() {
         running = false;
+        if (cleanupTask != null) {
+            cleanupTask.cancel(false);
+        }
         cleanupScheduler.shutdown();
         try {
             if (!cleanupScheduler.awaitTermination(10, TimeUnit.SECONDS)) {

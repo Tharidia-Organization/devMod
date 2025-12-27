@@ -35,7 +35,8 @@ public class GameDesignConfigManager {
         .create();
 
     // Global config (defaults)
-    private GameDesignConfig globalConfig = new GameDesignConfig();
+    @Nonnull
+    private volatile GameDesignConfig globalConfig = new GameDesignConfig();
 
     // Per-instance overrides (questId/arenaId -> partial config)
     private final Map<UUID, InstanceOverride> instanceOverrides = new ConcurrentHashMap<>();
@@ -48,10 +49,6 @@ public class GameDesignConfigManager {
 
     private GameDesignConfigManager() {}
 
-    private static <T> @Nonnull T requireNonNull(T value, String name) {
-        return Objects.requireNonNull(value, name);
-    }
-
     // ========== Global Config ==========
 
     /**
@@ -59,7 +56,7 @@ public class GameDesignConfigManager {
      */
     @Nonnull
     public GameDesignConfig getGlobalConfig() {
-        return requireNonNull(globalConfig, "globalConfig");
+        return Objects.requireNonNull(globalConfig, "globalConfig");
     }
 
     /**
@@ -67,7 +64,7 @@ public class GameDesignConfigManager {
      */
     @Nonnull
     public GameDesignConfig getEffectiveConfig(@Nullable UUID instanceId) {
-        GameDesignConfig baseConfig = requireNonNull(globalConfig, "globalConfig");
+        GameDesignConfig baseConfig = Objects.requireNonNull(globalConfig, "globalConfig");
         if (instanceId == null) {
             return baseConfig;
         }
@@ -78,14 +75,14 @@ public class GameDesignConfigManager {
         }
 
         // Apply overrides to a copy of global config
-        return requireNonNull(override.applyTo(baseConfig.copy()), "effectiveConfig");
+        return Objects.requireNonNull(override.applyTo(baseConfig.copy()), "effectiveConfig");
     }
 
     /**
      * Update global configuration.
      */
     public void setGlobalConfig(@Nonnull GameDesignConfig config) {
-        this.globalConfig = requireNonNull(config, "config");
+        this.globalConfig = Objects.requireNonNull(config, "config");
         markDirty();
         notifyListeners();
     }
@@ -96,6 +93,10 @@ public class GameDesignConfigManager {
      * Set overrides for a specific instance.
      */
     public void setInstanceOverride(UUID instanceId, InstanceOverride override) {
+        if (instanceId == null || override == null) {
+            LOGGER.warn("[GameDesignConfig] Ignoring null override for instance {}", instanceId);
+            return;
+        }
         instanceOverrides.put(instanceId, override);
         LOGGER.debug("[GameDesignConfig] Override set for instance {}", instanceId);
     }
@@ -141,6 +142,8 @@ public class GameDesignConfigManager {
             if (loaded != null) {
                 this.globalConfig = loaded;
                 LOGGER.info("[GameDesignConfig] Loaded configuration (version {})", loaded.version);
+            } else {
+                LOGGER.warn("[GameDesignConfig] Config file parsed to null, keeping defaults");
             }
         } catch (IOException e) {
             LOGGER.error("[GameDesignConfig] Failed to load config", e);

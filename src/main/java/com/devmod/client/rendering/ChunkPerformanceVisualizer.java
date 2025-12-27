@@ -1,7 +1,6 @@
 package com.devmod.client.rendering;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -15,11 +14,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -89,7 +85,7 @@ public class ChunkPerformanceVisualizer {
             ChunkPos chunkPos = entry.getKey();
             ChunkPerfData data = entry.getValue();
 
-            renderChunkOverlay(poseStack, bufferSource, chunkPos, data, level, renderY);
+            renderChunkOverlay(poseStack, bufferSource, chunkPos, data, renderY);
         }
 
         poseStack.popPose();
@@ -118,21 +114,16 @@ public class ChunkPerformanceVisualizer {
     }
 
     private ChunkPerfData analyzeChunk(LevelChunk chunk, Level level) {
-        int entityCount = 0;
-        int tileEntityCount = 0;
-
         // Count entities in chunk
         AABB chunkBox = new AABB(
                 chunk.getPos().getMinBlockX(), level.getMinBuildHeight(), chunk.getPos().getMinBlockZ(),
                 chunk.getPos().getMaxBlockX() + 1, level.getMaxBuildHeight(), chunk.getPos().getMaxBlockZ() + 1
         );
 
-        List<Entity> entities = level.getEntities(null, chunkBox);
-        entityCount = entities.size();
+        int entityCount = level.getEntities(null, chunkBox).size();
 
         // Count block entities
-        Map<BlockPos, BlockEntity> blockEntities = chunk.getBlockEntities();
-        tileEntityCount = blockEntities.size();
+        int tileEntityCount = chunk.getBlockEntities().size();
 
         // Calculate performance score (0 = good, 1 = bad)
         // Score is 0 if below LOW threshold, scales up to 1.0 at HIGH threshold
@@ -146,8 +137,7 @@ public class ChunkPerformanceVisualizer {
     }
 
     private void renderChunkOverlay(PoseStack poseStack, MultiBufferSource bufferSource,
-                                     ChunkPos chunkPos, ChunkPerfData data, Level level,
-                                     float renderY) {
+                                     ChunkPos chunkPos, ChunkPerfData data, float renderY) {
         int minX = chunkPos.getMinBlockX();
         int maxX = chunkPos.getMaxBlockX() + 1;
         int minZ = chunkPos.getMinBlockZ();

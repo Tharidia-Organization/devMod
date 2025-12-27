@@ -171,7 +171,7 @@ public class VerticalLevelsVisualizer {
             double dz = centerZ - cameraPos.z;
             if (dx*dx + dy*dy + dz*dz > getMaxRenderDistanceSq()) continue;
 
-            renderZones(Objects.requireNonNull(consumer), Objects.requireNonNull(matrix), Objects.requireNonNull(pose), room, cameraPos);
+            renderZones(Objects.requireNonNull(consumer), Objects.requireNonNull(matrix), Objects.requireNonNull(pose), room);
             renderedCount++;
         }
 
@@ -179,7 +179,7 @@ public class VerticalLevelsVisualizer {
     }
 
     private void renderZones(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
-                            @Nonnull PoseStack.Pose pose, @Nonnull RoomZones room, @Nonnull Vec3 cameraPos) {
+                            @Nonnull PoseStack.Pose pose, @Nonnull RoomZones room) {
         // Floor zone (green)
         renderZonePlane(consumer, matrix, pose, room, room.minY, room.floorMax, 0.0f, 0.8f, 0.0f);
 

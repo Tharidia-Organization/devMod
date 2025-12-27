@@ -302,6 +302,19 @@ public class KeyInputHandler {
             "key.categories.devmod"
     );
 
+    /**
+     * Opens the Tester Tasks screen for viewing assigned QA tasks.
+     *
+     * <p><b>Default key:</b> T</p>
+     */
+    public static final KeyMapping OPEN_TESTER_TASKS_KEY = new KeyMapping(
+            "key.devmod.tester_tasks",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_T,
+            "key.categories.devmod"
+    );
+
     // ═══════════════════════════════════════════════════════════════════════════
     // ECONOMY & MISC
     // ═══════════════════════════════════════════════════════════════════════════
@@ -402,6 +415,7 @@ public class KeyInputHandler {
         event.register(Objects.requireNonNull(QUEST_EXIT_KEY));
         event.register(Objects.requireNonNull(OPEN_PARTY_KEY));
         event.register(Objects.requireNonNull(OPEN_MAILBOX_KEY));
+        event.register(Objects.requireNonNull(OPEN_TESTER_TASKS_KEY));
         event.register(Objects.requireNonNull(TOGGLE_HELP_KEY));
         event.register(Objects.requireNonNull(OPEN_RADIAL_MENU_KEY));
         event.register(Objects.requireNonNull(INSPECT_MOB_KEY));

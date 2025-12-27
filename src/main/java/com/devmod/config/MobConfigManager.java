@@ -8,9 +8,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -184,7 +187,7 @@ public class MobConfigManager {
             Path backupDir = configFile.getParent().resolve("backups");
             Files.createDirectories(backupDir);
 
-            String timestamp = LocalDateTime.now().format(BACKUP_DATE_FORMAT);
+            String timestamp = LocalDateTime.now(ZoneId.systemDefault()).format(BACKUP_DATE_FORMAT);
             String backupName = "mob_configs_" + timestamp + BACKUP_SUFFIX;
             Path backupFile = backupDir.resolve(backupName);
 
@@ -203,17 +206,20 @@ public class MobConfigManager {
      */
     private static void cleanupOldBackups(Path backupDir) {
         try {
-            var backups = Files.list(backupDir)
-                .filter(p -> p.getFileName().toString().startsWith("mob_configs_")
-                          && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .sorted((a, b) -> {
-                    try {
-                        return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a));
-                    } catch (IOException e) {
-                        return 0;
-                    }
-                })
-                .toList();
+            List<Path> backups;
+            try (var backupStream = Files.list(backupDir)) {
+                backups = backupStream
+                    .filter(p -> p.getFileName().toString().startsWith("mob_configs_")
+                              && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .sorted((a, b) -> {
+                        try {
+                            return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a));
+                        } catch (IOException e) {
+                            return 0;
+                        }
+                    })
+                    .toList();
+            }
 
             // Delete old backups beyond MAX_BACKUPS
             for (int i = MAX_BACKUPS; i < backups.size(); i++) {
@@ -239,16 +245,19 @@ public class MobConfigManager {
         }
 
         try {
-            var latestBackup = Files.list(backupDir)
-                .filter(p -> p.getFileName().toString().startsWith("mob_configs_")
-                          && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .max((a, b) -> {
-                    try {
-                        return Files.getLastModifiedTime(a).compareTo(Files.getLastModifiedTime(b));
-                    } catch (IOException e) {
-                        return 0;
-                    }
-                });
+            Optional<Path> latestBackup;
+            try (var backupStream = Files.list(backupDir)) {
+                latestBackup = backupStream
+                    .filter(p -> p.getFileName().toString().startsWith("mob_configs_")
+                              && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .max((a, b) -> {
+                        try {
+                            return Files.getLastModifiedTime(a).compareTo(Files.getLastModifiedTime(b));
+                        } catch (IOException e) {
+                            return 0;
+                        }
+                    });
+            }
 
             if (latestBackup.isEmpty()) {
                 LOGGER.warn("No backup files found");
@@ -282,18 +291,20 @@ public class MobConfigManager {
         }
 
         try {
-            Files.list(backupDir)
-                .filter(p -> p.getFileName().toString().startsWith("mob_configs_")
-                          && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .forEach(p -> {
-                    try {
-                        String name = p.getFileName().toString();
-                        String time = Files.getLastModifiedTime(p).toString();
-                        backups.put(name, time);
-                    } catch (IOException e) {
-                        // Skip this file
-                    }
-                });
+            try (var backupStream = Files.list(backupDir)) {
+                backupStream
+                    .filter(p -> p.getFileName().toString().startsWith("mob_configs_")
+                              && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .forEach(p -> {
+                        try {
+                            String name = p.getFileName().toString();
+                            String time = Files.getLastModifiedTime(p).toString();
+                            backups.put(name, time);
+                        } catch (IOException e) {
+                            // Skip this file
+                        }
+                    });
+            }
         } catch (IOException e) {
             LOGGER.warn("Failed to list backups", e);
         }

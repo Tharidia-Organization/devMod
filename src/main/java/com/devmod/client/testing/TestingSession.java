@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -676,7 +677,8 @@ public class TestingSession {
      * @return Path to saved file
      */
     public String saveReport() throws IOException {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+        String timestamp = LocalDateTime.now(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
         String filename = "devmod_qa_report_" + timestamp + ".md";
         Path reportDir = ConfigPaths.getQAReportsDir();
         Files.createDirectories(reportDir);
@@ -716,7 +718,8 @@ public class TestingSession {
             "Passed: %d | Failed: %d | Skipped: %d\n" +
             "---\n" +
             "Use /devmod qa report to see full details",
-            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+            LocalDateTime.now(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
             testerName,
             modVersion,
             getCompletedTests(),
@@ -772,7 +775,7 @@ public class TestingSession {
         // Ensure executor is available (may have been shut down during logout, recreate if needed)
         ensureExecutor();
 
-        saveExecutor.submit(() -> {
+        saveExecutor.execute(() -> {
             fileLock.writeLock().lock();
             try {
                 Files.createDirectories(getSessionFile().getParent());

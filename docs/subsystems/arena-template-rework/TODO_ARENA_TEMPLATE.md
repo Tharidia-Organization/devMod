@@ -1,5 +1,11 @@
 # TODO - Arena Template Rollout (Instance-First) v2.23
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design spec snapshot)
+
+Nota: documento di design storico. Il riferimento operativo corrente e' in
+`docs/areas/arena/README.md` e negli schema in `src/main/resources/schemas/`.
+
 Storico: derivato da [ARENA_TEMPLATE_ROLLOUT_PLAN.md](../../_deprecated/arena-template-rework/ARENA_TEMPLATE_ROLLOUT_PLAN.md) v2.2 (deprecated).
 
 ## Parallel Agent Files

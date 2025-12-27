@@ -1,7 +1,7 @@
 # DevMod Documentation
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION
+> Status: CURRENT (navigation)
 
 ## Start Here
 - [[MOC]] - Master index (curated)
@@ -23,6 +23,7 @@
 - [[areas/arena/README]] - Arena templates and lifecycle
 - [[areas/endurance/README]] - Endurance quest system
 - [[areas/instance/README]] - Instance dimension system
+- [[areas/mailbox/README]] - Mailbox system
 - [[areas/telemetry/README]] - Telemetry pipelines
 - [[areas/radial/README]] - Radial UX and navigation
 - [[areas/client_server/README]] - Client/server boundaries

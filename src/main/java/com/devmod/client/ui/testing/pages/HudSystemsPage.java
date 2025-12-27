@@ -157,7 +157,9 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
     private void loadCurrentPosition() {
         try {
             currentPosition = Config.IMPACT_HUD_POSITION.get();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            currentPosition = Config.HudPosition.TOP_RIGHT;
+        }
     }
 
     private void createButtons() {

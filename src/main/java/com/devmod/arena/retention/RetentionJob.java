@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ public class RetentionJob implements AutoCloseable {
     private static final int DEFAULT_DUCKDB_RETENTION_DAYS = 30;
 
     private final ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> retentionTask;
     private final NdjsonArchiver ndjsonArchiver;
     private final DuckDBCleaner duckdbCleaner;
     private final RetentionConfig config;
@@ -53,7 +55,7 @@ public class RetentionJob implements AutoCloseable {
     public void start() {
         long initialDelay = computeInitialDelayMs();
 
-        scheduler.scheduleAtFixedRate(
+        retentionTask = scheduler.scheduleAtFixedRate(
             this::runRetention,
             initialDelay,
             TimeUnit.DAYS.toMillis(1),
@@ -86,7 +88,7 @@ public class RetentionJob implements AutoCloseable {
 
         try {
             // 1. Archive old NDJSON files
-            LocalDate ndjsonCutoff = LocalDate.now().minusDays(config.ndjsonRetentionDays());
+            LocalDate ndjsonCutoff = LocalDate.now(ZoneId.systemDefault()).minusDays(config.ndjsonRetentionDays());
             LOGGER.info("Archiving NDJSON files older than {}", ndjsonCutoff);
 
             try {
@@ -98,7 +100,7 @@ public class RetentionJob implements AutoCloseable {
             }
 
             // 2. Prune old DuckDB records
-            LocalDate duckdbCutoff = LocalDate.now().minusDays(config.duckdbRetentionDays());
+            LocalDate duckdbCutoff = LocalDate.now(ZoneId.systemDefault()).minusDays(config.duckdbRetentionDays());
             LOGGER.info("Deleting DuckDB records older than {}", duckdbCutoff);
 
             try {
@@ -152,6 +154,9 @@ public class RetentionJob implements AutoCloseable {
     @Override
     public void close() {
         running = false;
+        if (retentionTask != null) {
+            retentionTask.cancel(false);
+        }
         scheduler.shutdownNow();
         MAIN_LOGGER.info("RetentionJob stopped");
     }

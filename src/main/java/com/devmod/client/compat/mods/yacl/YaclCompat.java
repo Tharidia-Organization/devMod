@@ -28,8 +28,6 @@ public class YaclCompat implements CompatModule {
     @Nullable
     private static Class<?> configCategoryClass;
     @Nullable
-    private static Class<?> optionClass;
-    @Nullable
     private static Class<?> optionDescriptionClass;
     @Nullable
     private static Method createBuilderMethod;
@@ -84,12 +82,13 @@ public class YaclCompat implements CompatModule {
                     LOGGER.debug("[Compat:yacl] Found YACL at {}", pkg);
 
                     configCategoryClass = Class.forName(pkg + ".api.ConfigCategory");
-                    optionClass = Class.forName(pkg + ".api.Option");
                     optionDescriptionClass = Class.forName(pkg + ".api.OptionDescription");
 
                     createBuilderMethod = yaclClass.getMethod("createBuilder");
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.debug("[Compat:yacl] Missing YACL API classes in {}", pkg);
+                }
             }
 
             if (yaclClass != null) {

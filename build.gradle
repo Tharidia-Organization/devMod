@@ -232,6 +232,23 @@ dependencies {
     // API v4.0.1 supports 1.21-1.21.1 on NeoForge
     compileOnly "maven.modrinth:distanthorizons:2.3.0-b-1.21.1"
 
+    // Javalin - Lightweight HTTP server for REST API (admin panel backend)
+    // Exclude slf4j-api - NeoForge provides slf4j:2.0.9, Javalin transitively pulls 2.0.16
+    implementation('io.javalin:javalin:6.3.0') {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+    jarJar("io.javalin:javalin:[6.3.0]") {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+
+    // JWT for API authentication
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-gson:0.12.3'
+    jarJar("io.jsonwebtoken:jjwt-api:[0.12.3]")
+    jarJar("io.jsonwebtoken:jjwt-impl:[0.12.3]")
+    jarJar("io.jsonwebtoken:jjwt-gson:[0.12.3]")
+
     // NOTE: Removed Caffeine dependency (replaced with ConcurrentHashMap-based cache in HitHelper)
     // This avoids ModDevPlugin 2.0 compatibility issues with external dependencies
 

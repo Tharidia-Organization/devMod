@@ -1,5 +1,6 @@
 package com.devmod.client.ui.radial;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -435,10 +436,10 @@ public abstract class RadialAction {
         }
 
         @Override
-        public String getDescription() {
-            String keyName = org.lwjgl.glfw.GLFW.glfwGetKeyName(keyCode, 0);
-            return description + "\n§7Key: §f" + (keyName != null ? keyName.toUpperCase() : "KEY_" + keyCode);
-        }
+    public String getDescription() {
+        String keyName = org.lwjgl.glfw.GLFW.glfwGetKeyName(keyCode, 0);
+        return description + "\n§7Key: §f" + (keyName != null ? keyName.toUpperCase(Locale.ROOT) : "KEY_" + keyCode);
+    }
 
         @Override
         @Nullable

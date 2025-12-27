@@ -12,6 +12,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.errorprone.annotations.InlineMe;
+
 import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.config.gamedesign.GameDesignConfig;
@@ -104,7 +106,8 @@ public class TideManager {
      * @deprecated Use {@link #addTide(int, String, UUID)} instead.
      */
     @Deprecated
-    public void addTide(int amount, String reason) {
+    @InlineMe(replacement = "this.addTide(amount, reason, null)")
+    public final void addTide(int amount, String reason) {
         addTide(amount, reason, null);
     }
 
@@ -121,7 +124,8 @@ public class TideManager {
 
     /** @deprecated Use {@link #onPlayerDeath(UUID, UUID)} instead. */
     @Deprecated
-    public void onPlayerDeath(UUID playerId) {
+    @InlineMe(replacement = "this.onPlayerDeath(playerId, null)")
+    public final void onPlayerDeath(UUID playerId) {
         onPlayerDeath(playerId, null);
     }
 
@@ -154,7 +158,8 @@ public class TideManager {
 
     /** @deprecated Use {@link #onSSSWave(UUID, UUID)} instead. */
     @Deprecated
-    public void onSSSWave(UUID playerId) {
+    @InlineMe(replacement = "this.onSSSWave(playerId, null)")
+    public final void onSSSWave(UUID playerId) {
         onSSSWave(playerId, null);
     }
 
@@ -168,7 +173,8 @@ public class TideManager {
 
     /** @deprecated Use {@link #onBossKilled(UUID, UUID)} instead. */
     @Deprecated
-    public void onBossKilled(UUID bossId) {
+    @InlineMe(replacement = "this.onBossKilled(bossId, null)")
+    public final void onBossKilled(UUID bossId) {
         onBossKilled(bossId, null);
     }
 
@@ -183,7 +189,8 @@ public class TideManager {
 
     /** @deprecated Use {@link #onResonance(UUID, UUID)} instead. */
     @Deprecated
-    public void onResonance(UUID playerId) {
+    @InlineMe(replacement = "this.onResonance(playerId, null)")
+    public final void onResonance(UUID playerId) {
         onResonance(playerId, null);
     }
 
@@ -197,7 +204,8 @@ public class TideManager {
 
     /** @deprecated Use {@link #onNoHitWave(UUID, UUID)} instead. */
     @Deprecated
-    public void onNoHitWave(UUID playerId) {
+    @InlineMe(replacement = "this.onNoHitWave(playerId, null)")
+    public final void onNoHitWave(UUID playerId) {
         onNoHitWave(playerId, null);
     }
 
@@ -237,8 +245,7 @@ public class TideManager {
     private void onTideBossDefeated() {
         LOGGER.info("[Tide] THE HARBINGER HAS BEEN VANQUISHED! Tide reset to 0.");
 
-        tideBossActive = false;
-        tideBossId = null;
+        clearTideBossState();
         currentTide = 0;
         currentLevel = TideLevel.CALM;
 
@@ -254,6 +261,13 @@ public class TideManager {
         // This would need to query EnduranceQuestManager for active player count
         int playerCount = Math.max(1, 4); // Placeholder - would get actual count
         return 1000f * playerCount; // 1000 HP per player
+    }
+
+    private void clearTideBossState() {
+        tideBossActive = false;
+        tideBossId = null;
+        tideBossSharedHealth = 0f;
+        tideBossMaxHealth = 0f;
     }
 
     // ========== Stat Modifiers ==========
@@ -349,6 +363,7 @@ public class TideManager {
      * Load tide state from NBT.
      */
     public void load(CompoundTag tag) {
+        clearTideBossState();
         currentTide = tag.getInt("tide");
         currentLevel = TideLevel.fromTide(currentTide);
         tideBossActive = tag.getBoolean("bossActive");
@@ -368,8 +383,7 @@ public class TideManager {
     public void reset() {
         currentTide = 0;
         currentLevel = TideLevel.CALM;
-        tideBossActive = false;
-        tideBossId = null;
+        clearTideBossState();
         recentDeaths.clear();
         recentResonances.clear();
     }

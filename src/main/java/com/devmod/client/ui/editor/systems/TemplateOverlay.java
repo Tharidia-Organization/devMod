@@ -328,7 +328,7 @@ public class TemplateOverlay extends BaseOverlay {
     }
 
     private List<ItemEditorDataManager.TemplateData> getFiltered() {
-        if (templates.isEmpty()) return Collections.emptyList();
+        if (templates.isEmpty()) return new ArrayList<>();
         String q = searchQuery == null ? "" : searchQuery.trim().toLowerCase(Locale.ROOT);
         List<ItemEditorDataManager.TemplateData> filtered = new ArrayList<>();
         for (ItemEditorDataManager.TemplateData template : templates) {

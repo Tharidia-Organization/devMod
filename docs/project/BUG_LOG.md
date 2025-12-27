@@ -1,6 +1,8 @@
 # DevMod Bug Log
 
-**Last Updated:** 2025-12-21
+> Last updated: 2025-12-26
+> Status: HISTORICAL (resolved)
+
 **Format Version:** 1.1
 
 ---

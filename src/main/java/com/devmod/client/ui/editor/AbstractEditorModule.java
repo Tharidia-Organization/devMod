@@ -307,7 +307,7 @@ public abstract class AbstractEditorModule implements EditorModule {
 
     protected void addHistoryEntry(String description) {
         String safeDesc = description == null ? "Change" : description;
-        String timestamp = java.time.LocalTime.now().withNano(0).toString();
+        String timestamp = java.time.LocalTime.now(java.time.ZoneId.systemDefault()).withNano(0).toString();
         historyEntries.add(timestamp + "  " + safeDesc);
         while (historyEntries.size() > EditorConstants.MAX_HISTORY_ENTRIES) {
             historyEntries.remove(0);

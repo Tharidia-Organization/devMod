@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.QuestType;
+import com.devmod.mailbox.template.MessageTemplateRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 public class PartyManager {
@@ -587,6 +588,39 @@ public class PartyManager {
         default void onQuestFinished(PartyData party) {}
     }
 
+    // === Mailbox Integration ===
+
+    /**
+     * Send a mailbox notification for a party invite.
+     * This provides offline persistence for invites.
+     */
+    private void sendPartyInviteMailbox(UUID targetId, String inviterName, int partySize, long expiresAt) {
+        try {
+            // Calculate expiry time in minutes
+            long expiryMinutes = Math.max(1, (expiresAt - System.currentTimeMillis()) / 60000);
+            String expiryTime = expiryMinutes + " minutes";
+
+            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+                    "social.party_invite",
+                    targetId,
+                    Map.of(
+                        "inviter_name", inviterName,
+                        "party_size", String.valueOf(partySize),
+                        "expiry_time", expiryTime
+                    ),
+                    null // No attachment
+                )
+                .exceptionally(error -> {
+                    LOGGER.error("[PartyManager] Failed to send mailbox party invite notification to {}", targetId, error);
+                    return null;
+                });
+
+            LOGGER.debug("[PartyManager] Sent mailbox party invite notification to {}", targetId);
+        } catch (Exception e) {
+            LOGGER.error("[PartyManager] Failed to send mailbox party invite notification", e);
+        }
+    }
+
     // === Debug/Stats ===
 
     public int getActivePartyCount() {
@@ -706,6 +740,9 @@ public class PartyManager {
         EnduranceTelemetryService.INSTANCE.recordInviteSent(
             party.getPartyId(), senderId, targetId
         );
+
+        // Send mailbox notification for offline persistence
+        sendPartyInviteMailbox(targetId, senderName, party.getMemberCount(), invite.getExpiresAt());
 
         notifyListeners(listener -> listener.onInviteSent(invite));
         return InviteResult.success(invite.getInviteId(), invite.getExpiresAt());

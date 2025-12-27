@@ -1,5 +1,8 @@
 # Persistence Architecture
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 > **Architettura confermata:** Storage primario B (CustomData + serverconfig), Export D (datapack)
 
 ## Filosofia

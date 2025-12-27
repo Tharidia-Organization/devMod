@@ -137,7 +137,6 @@ public class MomentumTracker {
 
             // Apply decay
             float decayAmount = (IDLE_DECAY_PER_SECOND * deltaMs) / 1000f;
-            float oldMomentum = momentum;
             momentum = Math.max(0, momentum - decayAmount);
 
             // Check for stagnant

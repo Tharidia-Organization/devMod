@@ -1,5 +1,8 @@
 # Performance Considerations
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Overview
 
 Linee guida per ottimizzazioni performance nel sistema editor, con focus su rendering fluido e responsività.

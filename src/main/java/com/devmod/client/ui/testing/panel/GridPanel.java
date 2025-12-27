@@ -1,6 +1,7 @@
 package com.devmod.client.ui.testing.panel;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import net.minecraft.client.Minecraft;
@@ -71,6 +72,6 @@ public record GridPanel(
     }
 
     public static GridPanel of(String title, List<EditorButton> buttons, int columns) {
-        return new GridPanel("grid-" + title.toLowerCase().replace(" ", "-"), title, buttons, columns);
+        return new GridPanel("grid-" + title.toLowerCase(Locale.ROOT).replace(" ", "-"), title, buttons, columns);
     }
 }

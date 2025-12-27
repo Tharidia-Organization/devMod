@@ -1,5 +1,8 @@
 # NeoForge 1.21 Recipe API
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 > Riferimento tecnico completo per l'integrazione con il sistema ricette NeoForge
 
 ## RecipeManager & RecipeHolder

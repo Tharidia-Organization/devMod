@@ -125,7 +125,17 @@ public enum ChannelId {
     MAILBOX_CLAIM(104, Direction.CLIENT_TO_SERVER, "MailboxClaimPayload"),
     MAILBOX_NOTIFY(105, Direction.SERVER_TO_CLIENT, "MailboxNotifyPayload"),
     NEWS_SYNC(106, Direction.SERVER_TO_CLIENT, "NewsSyncPayload"),
-    NEWS_READ(107, Direction.CLIENT_TO_SERVER, "NewsReadPayload");
+    NEWS_READ(107, Direction.CLIENT_TO_SERVER, "NewsReadPayload"),
+    TASK_SYNC(108, Direction.SERVER_TO_CLIENT, "TaskSyncPayload"),
+    TASK_ACTION(109, Direction.CLIENT_TO_SERVER, "TaskActionPayload"),
+    MAILBOX_STATUS(110, Direction.SERVER_TO_CLIENT, "MailboxStatusPayload"),
+    MAILBOX_ACCESS(111, Direction.SERVER_TO_CLIENT, "MailboxAccessPayload"),
+
+    // ============================================================================
+    // UNIFIED NOTIFICATION CENTER CHANNELS (120-129)
+    // ============================================================================
+    UNIFIED_NOTIFICATION(120, Direction.SERVER_TO_CLIENT, "UnifiedNotificationPayload"),
+    NOTIFICATION_PREFS_SYNC(121, Direction.SERVER_TO_CLIENT, "NotificationPreferencesSyncPayload");
 
     // ============================================================================
     // ENUM INFRASTRUCTURE

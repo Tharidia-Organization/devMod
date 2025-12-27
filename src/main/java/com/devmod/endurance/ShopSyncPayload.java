@@ -15,7 +15,9 @@ import io.netty.buffer.ByteBuf;
 
 public record ShopSyncPayload(
     int tokens,
+    int coins,
     int prestige,
+    int gems,
     int bloodGems,
     Map<String, Integer> purchases
 ) implements CustomPacketPayload {
@@ -32,7 +34,9 @@ public record ShopSyncPayload(
         @Override
         public ShopSyncPayload decode(@Nonnull ByteBuf buf) {
             int tokens = buf.readInt();
+            int coins = buf.readInt();
             int prestige = buf.readInt();
+            int gems = buf.readInt();
             int bloodGems = buf.readInt();
 
             int purchaseCount = buf.readInt();
@@ -52,13 +56,15 @@ public record ShopSyncPayload(
                 }
             }
 
-            return new ShopSyncPayload(tokens, prestige, bloodGems, purchases);
+            return new ShopSyncPayload(tokens, coins, prestige, gems, bloodGems, purchases);
         }
 
         @Override
         public void encode(@Nonnull ByteBuf buf, @Nonnull ShopSyncPayload payload) {
             buf.writeInt(payload.tokens);
+            buf.writeInt(payload.coins);
             buf.writeInt(payload.prestige);
+            buf.writeInt(payload.gems);
             buf.writeInt(payload.bloodGems);
 
             buf.writeInt(payload.purchases.size());
@@ -80,7 +86,9 @@ public record ShopSyncPayload(
     public static ShopSyncPayload fromWallet(RewardSystem.PlayerWallet wallet) {
         return new ShopSyncPayload(
             wallet.getCurrency(RewardSystem.Currency.TOKENS),
+            wallet.getCurrency(RewardSystem.Currency.COINS),
             wallet.getCurrency(RewardSystem.Currency.PRESTIGE),
+            wallet.getCurrency(RewardSystem.Currency.GEMS),
             wallet.getCurrency(RewardSystem.Currency.BLOOD_GEMS),
             new HashMap<>(wallet.getPurchases())
         );

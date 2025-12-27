@@ -1,5 +1,6 @@
 package com.devmod.network.handlers;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import net.minecraft.server.level.ServerPlayer;
@@ -19,7 +20,7 @@ public final class AbilityNetworkHandler extends NetworkHandlerBase {
     // ABILITY ACTION (server-side)
     // =================================================================================
     public static void handleAbilityAction(AbilityActionPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        observeFuture(context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -31,7 +32,7 @@ public final class AbilityNetworkHandler extends NetworkHandlerBase {
                     validation.getErrorMessage(),
                     "Ability action rejected"
                 );
-                if (errorMessage.toLowerCase().contains("rate limit")) {
+                if (errorMessage.toLowerCase(Locale.ROOT).contains("rate limit")) {
                     security().recordRateLimitHit("ability_action", player.getName().getString());
                 } else {
                     security().recordRejection("ability_action", errorMessage);
@@ -65,7 +66,7 @@ public final class AbilityNetworkHandler extends NetworkHandlerBase {
                     }
                 }
             }
-        });
+        }), "ability action");
     }
 
     /**

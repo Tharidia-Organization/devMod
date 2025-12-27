@@ -1,5 +1,12 @@
 # QA Test Plan – Weapon Properties
 
+> Last updated: 2025-12-26
+> Status: ARCHIVED (manual checklist; replace with automated tests)
+
+Nota: la validazione e' coperta da test automatici (es. `src/test/java/com/devmod/WeaponConfigTest.java`
+e `src/test/java/com/devmod/gametest/WeaponStatsComponentTest.java`). Questo checklist resta solo come
+riferimento storico.
+
 Manual/QA scenarios to validate the weapon properties implementation (component + modifiers + datapack).
 
 ## Setup

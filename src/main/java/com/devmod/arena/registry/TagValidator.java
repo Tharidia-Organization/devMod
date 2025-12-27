@@ -7,7 +7,9 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -56,7 +58,7 @@ public class TagValidator {
      */
     public void registerCustomTag(String tag) {
         if (tag != null && !tag.isBlank()) {
-            customTags.add(tag.toLowerCase());
+            customTags.add(tag.toLowerCase(Locale.ROOT));
         }
     }
 
@@ -87,7 +89,7 @@ public class TagValidator {
                 continue;
             }
 
-            String normalized = tag.toLowerCase().trim();
+            String normalized = tag.toLowerCase(Locale.ROOT).trim();
 
             if (isKnownTag(normalized)) {
                 // Valid tag
@@ -122,7 +124,7 @@ public class TagValidator {
      */
     public boolean isKnownTag(String tag) {
         if (tag == null) return false;
-        String normalized = tag.toLowerCase().trim();
+        String normalized = tag.toLowerCase(Locale.ROOT).trim();
         return PREDEFINED_TAGS.contains(normalized) || customTags.contains(normalized);
     }
 
@@ -143,7 +145,7 @@ public class TagValidator {
             return List.of();
         }
 
-        String normalized = unknownTag.toLowerCase().trim();
+        String normalized = unknownTag.toLowerCase(Locale.ROOT).trim();
         List<ScoredTag> candidates = new ArrayList<>();
 
         for (String knownTag : getAllKnownTags()) {
@@ -170,7 +172,7 @@ public class TagValidator {
      */
     static int levenshteinDistance(String s1, String s2) {
         if (s1 == null || s2 == null) {
-            return s1 == s2 ? 0 : Integer.MAX_VALUE;
+            return Objects.equals(s1, s2) ? 0 : Integer.MAX_VALUE;
         }
 
         int m = s1.length();

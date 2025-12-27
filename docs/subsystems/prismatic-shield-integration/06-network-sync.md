@@ -1,5 +1,8 @@
 # 06 - Network Synchronization
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Obiettivo
 
 Sincronizzare lo stato dello scudo energetico tra server e client in multiplayer:

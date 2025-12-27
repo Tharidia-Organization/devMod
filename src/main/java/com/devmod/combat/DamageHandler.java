@@ -43,7 +43,8 @@ public class DamageHandler {
         EvasionHandler.cleanup();
         HitData.cleanup();
 
-        if (event.getEntity() instanceof LivingEntity victim && event.getSource().getEntity() instanceof LivingEntity attacker) {
+        LivingEntity victim = event.getEntity();
+        if (event.getSource().getEntity() instanceof LivingEntity attacker) {
 
             ItemStack weapon = ItemStack.EMPTY;
             HitHelper.BodyPart part = HitHelper.BodyPart.BODY;

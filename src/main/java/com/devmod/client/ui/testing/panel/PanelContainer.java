@@ -3,6 +3,8 @@ package com.devmod.client.ui.testing.panel;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.errorprone.annotations.InlineMe;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
@@ -98,6 +100,7 @@ public final class PanelContainer {
      * @deprecated Use {@link #bounds(int, int, int, int)} instead
      */
     @Deprecated
+    @InlineMe(replacement = "this.bounds(x, y, width, height)")
     public void setBounds(int x, int y, int width, int height) {
         bounds(x, y, width, height);
     }

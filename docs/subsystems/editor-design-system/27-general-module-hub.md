@@ -1,9 +1,12 @@
 # 27 - GeneralModule: Navigation Hub Specification
 
-## Status: ✅ IMPLEMENTED
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
 
-> **Implemented in:** GeneralModule.java (378 lines), ModuleCardSection.java, ModuleSummarySection.java
-> **Date:** December 2024
+## Implementation Status (Implemented)
+
+> Implemented in: GeneralModule.java (378 lines), ModuleCardSection.java, ModuleSummarySection.java
+> Date: December 2024
 
 ---
 

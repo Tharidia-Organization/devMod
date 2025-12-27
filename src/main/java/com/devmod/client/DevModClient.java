@@ -60,6 +60,9 @@ public class DevModClient {
         event.enqueueWork(() -> {
             SettingsManager.INSTANCE.load();
             DevMod.LOGGER.info("[DevMod] Settings loaded from disk");
+        }).exceptionally(e -> {
+            DevMod.LOGGER.error("[DevMod] Failed to load settings", e);
+            return null;
         });
     }
 }

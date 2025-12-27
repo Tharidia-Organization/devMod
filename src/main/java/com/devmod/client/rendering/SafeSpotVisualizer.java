@@ -185,7 +185,7 @@ public class SafeSpotVisualizer {
             double dz = spot.pos.getZ() + 0.5 - cameraPos.z;
             if (dx*dx + dy*dy + dz*dz > 100*100) continue;
 
-            renderSafeSpot(Objects.requireNonNull(consumer), Objects.requireNonNull(matrix), Objects.requireNonNull(pose), spot, maxHits, now, cameraPos);
+            renderSafeSpot(Objects.requireNonNull(consumer), Objects.requireNonNull(matrix), Objects.requireNonNull(pose), spot, maxHits, now);
         }
 
         poseStack.popPose();
@@ -193,7 +193,7 @@ public class SafeSpotVisualizer {
 
     private void renderSafeSpot(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
                                 @Nonnull PoseStack.Pose pose, @Nonnull SafeSpotData spot,
-                                int maxHits, long now, @Nonnull Vec3 cameraPos) {
+                                int maxHits, long now) {
         // Intensity based on relative count
         float intensity = (float) spot.hitCount / maxHits;
 

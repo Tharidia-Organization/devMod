@@ -1,5 +1,11 @@
 # DevMod UI Inventory
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (inventory snapshot)
+
+Nota: inventory generato automaticamente. Verificare lo stato corrente nel codice
+prima di utilizzarlo per decisioni operative.
+
 > **Generated**: 2024-12-25 (Updated)
 > **Scope**: All visible in-game interfaces for DevMod (NeoForge 1.21.1)
 > **Total UI Elements**: 82 (31 Screens + 30 Overlays + 11 Rendering Overlays + 5 Floating Panels + 5 Editor Overlays)

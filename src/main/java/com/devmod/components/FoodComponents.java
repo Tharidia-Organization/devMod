@@ -53,7 +53,9 @@ public final class FoodComponents {
             if (FOOD_STATS.isBound()) {
                 return FOOD_STATS.get();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[FoodComponents] Failed to resolve food_stats component", e);
+        }
 
         if (Boolean.getBoolean("devmod.allowFallbackComponents")) {
             DevMod.LOGGER.warn("[FoodComponents] Using fallback food_stats component (test-mode only)");
@@ -69,6 +71,7 @@ public final class FoodComponents {
         try {
             return FOOD_STATS.isBound();
         } catch (Exception e) {
+            DevMod.LOGGER.debug("[FoodComponents] Failed to check food_stats binding", e);
             return false;
         }
     }

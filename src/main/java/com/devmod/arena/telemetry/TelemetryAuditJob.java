@@ -3,13 +3,16 @@ package com.devmod.arena.telemetry;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -51,6 +54,7 @@ public class TelemetryAuditJob {
     private final TelemetryEventStore eventStore;
     private final AlertNotifier alertNotifier;
     private final ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> auditTask;
 
     private volatile boolean running = false;
 
@@ -74,7 +78,7 @@ public class TelemetryAuditJob {
         long initialDelay = calculateInitialDelay();
         long period = TimeUnit.DAYS.toMillis(1);
 
-        scheduler.scheduleAtFixedRate(
+        auditTask = scheduler.scheduleAtFixedRate(
             this::runAudit,
             initialDelay,
             period,
@@ -89,6 +93,9 @@ public class TelemetryAuditJob {
      */
     public void stop() {
         running = false;
+        if (auditTask != null) {
+            auditTask.cancel(false);
+        }
         scheduler.shutdown();
         try {
             if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -208,7 +215,7 @@ public class TelemetryAuditJob {
     }
 
     private long calculateInitialDelay() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
         LocalDateTime nextRun = now.toLocalDate().atTime(RUN_TIME);
 
         if (now.isAfter(nextRun)) {
@@ -280,7 +287,7 @@ public class TelemetryAuditJob {
         }
 
         private static boolean isSensitiveField(String fieldName) {
-            String lower = fieldName.toLowerCase();
+            String lower = fieldName.toLowerCase(Locale.ROOT);
             return lower.contains("password") ||
                    lower.contains("token") ||
                    lower.contains("secret") ||

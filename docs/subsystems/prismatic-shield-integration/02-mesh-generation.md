@@ -1,5 +1,8 @@
 # 02 - Mesh Generation (Geodesic Sphere)
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Obiettivo
 
 Creare una mesh sferica esagonale/pentagonale usando la tecnica dell'icosahedron subdivision per lo scudo energetico.

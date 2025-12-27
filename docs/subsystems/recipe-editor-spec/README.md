@@ -1,8 +1,8 @@
 # Recipe Editor - Specifica Tecnica Completa
 
-> **Status**: ⏳ PLANNING - Feature non ancora implementata
-> **Last Updated**: 2024-12-23
-> **Type**: Specifica tecnica per sviluppo futuro
+> Last updated: 2024-12-23
+> Status: PLANNING (feature non implementata)
+> Type: Specifica tecnica per sviluppo futuro
 
 ## ⚠️ Nota Importante
 

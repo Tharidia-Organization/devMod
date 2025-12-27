@@ -1,6 +1,7 @@
 package com.devmod.config.gamedesign;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -191,7 +192,7 @@ public class InstanceOverride {
      * Create an override from a preset name.
      */
     public static InstanceOverride fromPreset(String presetName) {
-        return switch (presetName.toLowerCase()) {
+        return switch (presetName.toLowerCase(Locale.ROOT)) {
             case "easy" -> new InstanceOverride("Easy Mode")
                 .setDuoWindowMs(700)
                 .setTrinityWindowMs(500)

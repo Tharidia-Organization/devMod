@@ -220,7 +220,7 @@ public class MobDebugOverlay {
         }
 
         // Split into multiple labels for better readability
-        String[] lines = stats.toString().split("\n");
+        String[] lines = stats.toString().lines().toArray(String[]::new);
         for (int i = 0; i < lines.length; i++) {
             DebugRenderer.INSTANCE.addLabel(
                 pos.add(0, -i * 0.3, 0),

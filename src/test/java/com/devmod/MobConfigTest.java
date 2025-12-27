@@ -166,7 +166,7 @@ public class MobConfigTest {
 
         public void fromJson(String json) {
             mobStats.clear();
-            String[] lines = json.split("\n");
+            String[] lines = json.lines().toArray(String[]::new);
             String currentMob = null;
             MockMobStats currentStats = null;
 
@@ -182,9 +182,9 @@ public class MobConfigTest {
                         currentStats = null;
                     }
                 } else if (currentStats != null && line.contains(":")) {
-                    String[] parts = line.split(":");
-                    String key = parts[0].trim().replace("\"", "");
-                    String value = parts[1].trim().replace(",", "");
+                    int colonIndex = line.indexOf(':');
+                    String key = line.substring(0, colonIndex).trim().replace("\"", "");
+                    String value = line.substring(colonIndex + 1).trim().replace(",", "");
 
                     switch (key) {
                         case "maxHealth" -> currentStats.maxHealth = Float.parseFloat(value);

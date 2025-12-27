@@ -1,5 +1,8 @@
 # DevMod Shader System
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 This document describes the custom shader system implemented for advanced visual effects in DevMod, specifically the Energy Shield rendering.
 
 ## Overview

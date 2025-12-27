@@ -1,5 +1,8 @@
 # Audit Report
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL
+
 > **Audit Date**: 2024-12-23
 > **Auditor**: Claude Code
 > **Scope**: Full codebase audit of DevMod

@@ -1,4 +1,8 @@
 # Ranged Weapon Properties
+
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Bow/Crossbow Specifics, Value Sources, Component System
 
 > **Sezione 2.22** del Design System - Proprietà per armi a distanza

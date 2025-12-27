@@ -1,7 +1,7 @@
 # Agent 05 - Observability & Persistence - COMPLETE
 
-> **Last Updated**: 2025-12-27
-> **Status**: ✅ CURRENT
+> Last updated: 2025-12-27
+> Status: HISTORICAL (completion snapshot)
 
 ## Summary
 All tasks for Agent 05 (Observability & Persistence) are implemented according to Design Decisions DD16-DD21.

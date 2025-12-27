@@ -83,7 +83,7 @@ public class WrapperAnalyzer {
     private void analyzeFile(Path file, List<LegacyUsage> usages) {
         try {
             String content = Files.readString(file);
-            String[] lines = content.split("\n");
+            String[] lines = content.lines().toArray(String[]::new);
 
             for (LegacyPattern pattern : LEGACY_PATTERNS) {
                 Matcher matcher = pattern.pattern().matcher(content);

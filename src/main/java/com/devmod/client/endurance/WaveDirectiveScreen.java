@@ -7,6 +7,8 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.google.common.base.Splitter;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -29,6 +31,7 @@ public class WaveDirectiveScreen extends Screen {
     private static final int CARD_HEIGHT = 64;
     private static final int CARD_GAP = 10;
     private static final int PANEL_PADDING = 16;
+    private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
 
     private static final int COUNTDOWN_WARN_SECONDS = 10;
     private static final int COUNTDOWN_URGENT_SECONDS = 5;
@@ -187,7 +190,7 @@ public class WaveDirectiveScreen extends Screen {
         }
         List<String> lines = new ArrayList<>();
         StringBuilder current = new StringBuilder();
-        for (String word : text.split(" ")) {
+        for (String word : SPACE_SPLITTER.split(text)) {
             if (current.length() == 0) {
                 current.append(word);
                 continue;

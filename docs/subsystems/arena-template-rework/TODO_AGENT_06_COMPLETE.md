@@ -1,5 +1,8 @@
 # Agent 06 - Identity & Recovery - COMPLETE
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (completion snapshot)
+
 ## Summary
 Implementato il sistema di identità, naming, recovery e tags per le arene (DD22-28).
 

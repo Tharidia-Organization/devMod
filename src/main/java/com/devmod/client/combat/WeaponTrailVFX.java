@@ -799,7 +799,9 @@ public class WeaponTrailVFX {
             if (uniform != null) {
                 uniform.set(value);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[WeaponTrailVFX] Failed to set shader uniform {}", name, e);
+        }
     }
 
     private void setShaderUniformVec3(ShaderInstance shader, String name, float x, float y, float z) {
@@ -809,7 +811,9 @@ public class WeaponTrailVFX {
             if (uniform != null) {
                 uniform.set(x, y, z);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[WeaponTrailVFX] Failed to set shader uniform vec3 {}", name, e);
+        }
     }
 
     /**

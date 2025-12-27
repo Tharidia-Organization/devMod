@@ -1,6 +1,7 @@
 package com.devmod.client.ui.testing;
 
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -87,7 +88,7 @@ public class VoxelLabScreen extends Screen {
         tabButtons.clear();
 
         for (VoxelLabTab tab : VoxelLabTab.values()) {
-            EditorButton button = new EditorButton("tab-" + tab.name().toLowerCase(), tab.getLabel())
+            EditorButton button = new EditorButton("tab-" + tab.name().toLowerCase(Locale.ROOT), tab.getLabel())
                 .style(tab == activeTab ? EditorButton.Style.PRIMARY : EditorButton.Style.GHOST)
                 .size(EditorButton.Size.SMALL)
                 .onClick(() -> setActiveTab(tab));

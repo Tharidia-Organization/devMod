@@ -205,13 +205,10 @@ public class Guild {
         completedObjectives.clear();
 
         // Reset member weekly contributions
-        for (UUID memberId : members.keySet()) {
-            GuildMember member = members.get(memberId);
-            members.put(memberId, new GuildMember(
-                memberId, member.rank(), member.joinedAt(),
-                0, member.totalContribution()
-            ));
-        }
+        members.replaceAll((memberId, member) -> new GuildMember(
+            memberId, member.rank(), member.joinedAt(),
+            0, member.totalContribution()
+        ));
     }
 
     // === Member Contributions ===

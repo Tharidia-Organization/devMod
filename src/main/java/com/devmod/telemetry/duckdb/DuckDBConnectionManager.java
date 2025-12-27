@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DuckDBConnectionManager {
+public class DuckDBConnectionManager implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBConnectionManager.class);
 
     private final Path dbPath;
@@ -135,7 +135,7 @@ public class DuckDBConnectionManager {
             Connection conn = DriverManager.getConnection(jdbcUrl);
 
             // Configure connection for optimal performance
-            configureConnection(conn);
+            configureConnection();
 
             LOGGER.info("[DuckDB] Connection established to: {}", dbPath);
             return conn;
@@ -151,7 +151,7 @@ public class DuckDBConnectionManager {
      * Configure connection settings for optimal telemetry performance.
      * Note: Using DuckDB defaults - custom PRAGMA/SET commands may have compatibility issues across versions.
      */
-    private void configureConnection(Connection conn) throws SQLException {
+    private void configureConnection() throws SQLException {
         // DuckDB defaults are already optimized for most use cases
         LOGGER.debug("[DuckDB] Connection configured with default settings");
     }
@@ -224,6 +224,11 @@ public class DuckDBConnectionManager {
         } finally {
             connectionLock.unlock();
         }
+    }
+
+    @Override
+    public void close() {
+        shutdown();
     }
 
     /**

@@ -1,5 +1,8 @@
 # Agent 08 - Cleanup & Migration - COMPLETE
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (completion snapshot)
+
 ## Summary
 
 Agent 08 has successfully implemented all tasks related to **Cleanup & Migration** (DD 37-43) for the Arena Template Rework.

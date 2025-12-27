@@ -1,5 +1,7 @@
 package com.devmod.endurance;
 
+import java.util.Locale;
+
 /**
  * Defines the different types of Endurance Quests with scaling parameters.
  * Each type supports different player counts and difficulty scaling.
@@ -155,7 +157,7 @@ public enum QuestType {
             return PVE_COOP;
         }
         try {
-            return valueOf(name.toUpperCase());
+            return valueOf(name.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return PVE_COOP;
         }

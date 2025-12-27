@@ -1,5 +1,8 @@
 # 04 - Deflection System
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Obiettivo
 
 Sostituire la logica semplice `velocity.reverse()` con un sistema di deflessione realistico basato su ray-sphere intersection.

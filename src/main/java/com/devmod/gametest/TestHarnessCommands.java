@@ -2,7 +2,11 @@ package com.devmod.gametest;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
@@ -40,6 +44,7 @@ import com.devmod.util.I18n;
 
 @EventBusSubscriber(modid = DevMod.MODID)
 public class TestHarnessCommands {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestHarnessCommands.class);
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -652,7 +657,7 @@ public class TestHarnessCommands {
     }
 
     private static int bodyPartFromContext(CommandContext<CommandSourceStack> ctx) {
-        String partName = StringArgumentType.getString(ctx, "part").toUpperCase();
+        String partName = StringArgumentType.getString(ctx, "part").toUpperCase(Locale.ROOT);
 
         HitHelper.BodyPart bodyPart;
         try {
@@ -837,8 +842,8 @@ public class TestHarnessCommands {
             getDefaultPresetFileMethod = presetsClass.getMethod("getDefaultPresetFile");
             exportToFileMethod = presetsClass.getMethod("exportToFile", Path.class);
             importFromFileMethod = presetsClass.getMethod("importFromFile", Path.class);
-        } catch (Exception ignored) {
-            // Client classes not available
+        } catch (Exception e) {
+            LOGGER.debug("[TestHarness] ImpactHudPresets client hooks unavailable", e);
         }
     }
 
@@ -850,7 +855,8 @@ public class TestHarnessCommands {
             if (getDefaultPresetFileMethod != null) {
                 return (Path) getDefaultPresetFileMethod.invoke(null);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.debug("[TestHarness] Failed to read default HUD preset path", e);
         }
         return null;
     }
@@ -863,7 +869,8 @@ public class TestHarnessCommands {
             if (exportToFileMethod != null) {
                 return (Boolean) exportToFileMethod.invoke(null, path);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.debug("[TestHarness] Failed to export HUD preset", e);
         }
         return false;
     }
@@ -876,7 +883,8 @@ public class TestHarnessCommands {
             if (importFromFileMethod != null) {
                 return (Boolean) importFromFileMethod.invoke(null, path);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.debug("[TestHarness] Failed to import HUD preset", e);
         }
         return false;
     }

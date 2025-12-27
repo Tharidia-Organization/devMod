@@ -192,7 +192,7 @@ public final class BodyPartHierarchy {
 
     private int findPartIndex(BodyPartDefinition def) {
         for (int i = 0; i < partArray.length; i++) {
-            if (partArray[i] == def) return i;
+            if (Objects.equals(partArray[i], def)) return i;
         }
         return -1;
     }

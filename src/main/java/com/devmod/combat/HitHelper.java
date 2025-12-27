@@ -222,12 +222,12 @@ public final class HitHelper {
 
         // For horizontal bodies (dragons), use front/back/middle instead of head/body/legs
         if (isHorizontalBody) {
-            return rayTraceHorizontalBodyWithHitPoint(attacker, target, mainBox, center);
+            return rayTraceHorizontalBodyWithHitPoint(attacker, mainBox, center);
         }
 
         // For very tall bodies (enderman, large bosses), use tighter head detection
         if (isTallBody) {
-            return rayTraceTallBodyWithHitPoint(attacker, target, mainBox, center, height);
+            return rayTraceTallBodyWithHitPoint(attacker, mainBox, center, height);
         }
 
         // Attacker raycast with dynamic reach
@@ -341,7 +341,7 @@ public final class HitHelper {
     /**
      * Version with hit point for horizontal body.
      */
-    private static HitResult rayTraceHorizontalBodyWithHitPoint(LivingEntity attacker, LivingEntity target, AABB mainBox, Vec3 center) {
+    private static HitResult rayTraceHorizontalBodyWithHitPoint(LivingEntity attacker, AABB mainBox, Vec3 center) {
         Vec3 eye = nn(attacker.getEyePosition(), "eye position");
         Vec3 look = nn(attacker.getViewVector(1.0F), "view vector");
         double reach = getDynamicReach(attacker);
@@ -398,7 +398,7 @@ public final class HitHelper {
     /**
      * Version with hit point for tall body.
      */
-    private static HitResult rayTraceTallBodyWithHitPoint(LivingEntity attacker, LivingEntity target, AABB mainBox, Vec3 center, double height) {
+    private static HitResult rayTraceTallBodyWithHitPoint(LivingEntity attacker, AABB mainBox, Vec3 center, double height) {
         Vec3 eye = nn(attacker.getEyePosition(), "eye position");
         Vec3 look = nn(attacker.getViewVector(1.0F), "view vector");
         double reach = getDynamicReach(attacker);

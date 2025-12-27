@@ -2,6 +2,7 @@ package com.devmod.client.ui.testing.pages;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import com.devmod.ModConfig;
 import com.devmod.actions.ActionIds;
@@ -242,7 +243,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
         // Heatmap buttons
         List<EditorButton> heatmapButtons = new ArrayList<>();
         for (HeatmapVisualizer.HeatmapType type : HeatmapVisualizer.HeatmapType.values()) {
-            EditorButton btn = new EditorButton("heatmap-" + type.name().toLowerCase(), heatmapLabel(type))
+            EditorButton btn = new EditorButton("heatmap-" + type.name().toLowerCase(Locale.ROOT), heatmapLabel(type))
                 .toggleable(true)
                 .toggled(HeatmapVisualizer.INSTANCE.isEnabled(type))
                 .style(EditorButton.Style.GHOST)

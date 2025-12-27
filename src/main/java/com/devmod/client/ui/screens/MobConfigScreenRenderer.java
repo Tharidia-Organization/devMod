@@ -162,16 +162,16 @@ public class MobConfigScreenRenderer {
         float maxDim = Math.max(mobHeight, mobWidth);
         int scale = (int) (Math.min(50, 100 / maxDim) * state.previewZoom);
 
-        Quaternionf rotation = Objects.requireNonNull(new Quaternionf()
+        Quaternionf rotation = new Quaternionf()
             .rotateY((float) Math.toRadians(state.rotationY))
             .rotateX((float) Math.toRadians(state.rotationX))
-            .rotateZ((float) Math.PI));
+            .rotateZ((float) Math.PI);
 
         var safeFont = Objects.requireNonNull(font);
         try {
             InventoryScreen.renderEntityInInventory(
                 graphics, centerX, centerY, scale,
-                Objects.requireNonNull(new Vector3f(0, 0, 0)), rotation, null, mob
+                new Vector3f(0, 0, 0), rotation, null, mob
             );
         } catch (Exception e) {
             graphics.drawString(safeFont, "Preview", centerX - 20, centerY - 40, UIConstants.Text.MUTED(), false);
@@ -523,15 +523,14 @@ public class MobConfigScreenRenderer {
         }
 
         if (state.hoveredPreset >= 0 && state.hoveredPreset < MobConfigScreenState.PRESET_DESCRIPTIONS.size()) {
-            String presetTip = Objects.requireNonNull(
-                "§e" + MobConfigScreenState.PRESET_NAMES.get(state.hoveredPreset)
-                    + "§r: " + MobConfigScreenState.PRESET_DESCRIPTIONS.get(state.hoveredPreset));
+            String presetTip = "§e" + MobConfigScreenState.PRESET_NAMES.get(state.hoveredPreset)
+                + "§r: " + MobConfigScreenState.PRESET_DESCRIPTIONS.get(state.hoveredPreset);
             AxiomRenderer.drawTooltip(graphics, safeFont, mouseX + 10, mouseY + 15, presetTip);
         }
 
         String[] userPresetNames = MobPresetManager.getPresetNames();
         if (state.hoveredUserPreset >= 0 && state.hoveredUserPreset < userPresetNames.length) {
-            String userTip = Objects.requireNonNull("§6" + userPresetNames[state.hoveredUserPreset] + "§r: Click to apply, Right-click to delete");
+            String userTip = "§6" + userPresetNames[state.hoveredUserPreset] + "§r: Click to apply, Right-click to delete";
             AxiomRenderer.drawTooltip(graphics, safeFont, mouseX + 10, mouseY + 15, userTip);
         }
     }
@@ -550,7 +549,7 @@ public class MobConfigScreenRenderer {
         AxiomRenderer.drawBorder(graphics, dx, dy, DIALOG_WIDTH, DIALOG_HEIGHT, UIConstants.Accent.ORANGE());
 
         var safeFont = Objects.requireNonNull(font);
-        String title = Objects.requireNonNull("§e\u26A0 Unsaved Changes");
+        String title = "§e\u26A0 Unsaved Changes";
         int titleW = safeFont.width(title);
         graphics.drawString(safeFont, title, dx + (DIALOG_WIDTH - titleW) / 2, dy + 10, UIConstants.Text.PRIMARY(), false);
 
@@ -622,7 +621,7 @@ public class MobConfigScreenRenderer {
         drawStyledButton(graphics, btnsX + btnW + btnGap, btnsY, btnW, btnH, "Cancel", cancelHovered, UIConstants.Accent.RED());
 
         int remaining = 10 - MobPresetManager.getPresetCount();
-        graphics.drawString(safeFont, Objects.requireNonNull("§7" + remaining + " slots left"), dx + dw - 50, dy + dh - 10, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, "§7" + remaining + " slots left", dx + dw - 50, dy + dh - 10, UIConstants.Text.MUTED(), false);
     }
 
     public void drawDeletePresetDialog(GuiGraphics graphics, int screenWidth, int screenHeight, int mouseX, int mouseY) {
@@ -637,10 +636,10 @@ public class MobConfigScreenRenderer {
         AxiomRenderer.drawBorder(graphics, dx, dy, dw, dh, UIConstants.Accent.RED());
 
         var safeFont = Objects.requireNonNull(font);
-        String title = Objects.requireNonNull("§cDelete Preset?");
+        String title = "§cDelete Preset?";
         graphics.drawString(safeFont, title, dx + (dw - safeFont.width(title)) / 2, dy + 8, UIConstants.Accent.RED(), false);
 
-        String msg = Objects.requireNonNull("Delete \"" + state.deleteConfirmPreset + "\"?");
+        String msg = "Delete \"" + state.deleteConfirmPreset + "\"?";
         graphics.drawString(safeFont, msg, dx + (dw - safeFont.width(msg)) / 2, dy + 28, UIConstants.Text.SECONDARY(), false);
 
         int btnW = 60;

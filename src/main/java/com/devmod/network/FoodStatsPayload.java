@@ -47,8 +47,7 @@ public record FoodStatsPayload(
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FoodStatsPayload that = (FoodStatsPayload) o;
+        if (!(o instanceof FoodStatsPayload that)) return false;
         return isGlobal == that.isGlobal &&
                ItemStack.matches(Objects.requireNonNull(item), Objects.requireNonNull(that.item)) &&
                Objects.equals(statsTag, that.statsTag);

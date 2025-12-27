@@ -7,11 +7,13 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -28,6 +30,7 @@ public class BalanceReportJob {
     private final SlackNotifier slackNotifier;
     private final Path reportDirectory;
     private final ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> reportTask;
 
     private volatile boolean running = false;
 
@@ -55,7 +58,7 @@ public class BalanceReportJob {
         long initialDelay = calculateInitialDelay();
         long period = TimeUnit.DAYS.toMillis(7);
 
-        scheduler.scheduleAtFixedRate(
+        reportTask = scheduler.scheduleAtFixedRate(
             this::runReport,
             initialDelay,
             period,
@@ -70,6 +73,9 @@ public class BalanceReportJob {
      */
     public void stop() {
         running = false;
+        if (reportTask != null) {
+            reportTask.cancel(false);
+        }
         scheduler.shutdown();
         try {
             if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -129,7 +135,7 @@ public class BalanceReportJob {
         List<Outlier> outliers = detectOutliers(templateStats, perkStats);
 
         return new BalanceReport(
-            LocalDateTime.now(),
+            LocalDateTime.now(ZoneId.systemDefault()),
             templateStats,
             perkStats,
             outliers,
@@ -257,7 +263,7 @@ public class BalanceReportJob {
     }
 
     private long calculateInitialDelay() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
         LocalDateTime nextRun = now.toLocalDate().atTime(RUN_TIME);
 
         // Find next Sunday
@@ -283,7 +289,7 @@ public class BalanceReportJob {
 
         public static BalanceReport failed(String reason) {
             return new BalanceReport(
-                LocalDateTime.now(),
+                LocalDateTime.now(ZoneId.systemDefault()),
                 List.of(),
                 List.of(),
                 List.of(),

@@ -1,5 +1,8 @@
 # 2.14 Selection Mode: Single + MultiEdit
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 > **Decisione strutturale (stato attuale):** MultiEdit è parte della UI. L'entry point primario rimane l'editing single-item, mentre il pannello `MultiEdit` fornisce selezione, visualizzazione e azioni batch (apply-to-all / presets). La selezione viene popolata automaticamente premendo **M** che scansiona l'inventario per item dello stesso tipo. Questa sezione documenta il comportamento reale del codice.
 
 ## Razionale

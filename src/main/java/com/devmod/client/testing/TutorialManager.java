@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -420,7 +421,7 @@ public class TutorialManager {
 
         if (allComplete) {
             addXP(XP_CATEGORY_COMPLETE);
-            unlockAchievement("CATEGORY_" + category.toUpperCase().replace(" ", "_"));
+            unlockAchievement("CATEGORY_" + category.toUpperCase(Locale.ROOT).replace(" ", "_"));
 
             Minecraft mc = Minecraft.getInstance();
             if (mc.player != null) {
@@ -589,7 +590,7 @@ public class TutorialManager {
         // Ensure executor is available (may have been shut down during logout, recreate if needed)
         ensureExecutor();
 
-        saveExecutor.submit(() -> {
+        saveExecutor.execute(() -> {
             fileLock.writeLock().lock();
             try {
                 Files.createDirectories(getTutorialFile().getParent());

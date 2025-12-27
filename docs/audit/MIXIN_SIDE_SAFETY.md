@@ -1,7 +1,7 @@
 # Mixin Side Safety Audit
 
-> Last updated: 2025-12-24
-> Status: NEEDS_VERIFICATION
+> Last updated: 2025-12-26
+> Status: CURRENT (verified against code)
 
 **Config:** `src/main/resources/devmod.mixins.json`
 

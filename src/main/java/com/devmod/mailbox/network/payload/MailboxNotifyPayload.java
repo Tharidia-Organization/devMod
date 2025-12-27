@@ -37,9 +37,9 @@ public record MailboxNotifyPayload(
     );
 
     private static void encode(RegistryFriendlyByteBuf buf, MailboxNotifyPayload payload) {
-        buf.writeUUID(payload.messageId);
+        buf.writeUUID(Objects.requireNonNull(payload.messageId));
         buf.writeUtf(payload.senderName != null ? payload.senderName : "");
-        buf.writeUtf(payload.subject);
+        buf.writeUtf(Objects.requireNonNull(payload.subject));
         buf.writeVarInt(payload.messageTypeOrdinal);
         buf.writeBoolean(payload.hasAttachment);
         buf.writeVarInt(payload.totalUnread);

@@ -18,8 +18,8 @@ public final class ShieldNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleShieldState(ShieldStatePayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
-                NetworkHandler.withClientHooks(hooks -> hooks.handleShieldState(payload)));
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleShieldState(payload))), "shield state");
         }
     }
 
@@ -28,11 +28,11 @@ public final class ShieldNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleShieldImpact(ShieldImpactPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() -> {
+            observeFuture(context.enqueueWork(() -> {
                 NetworkHandler.withClientHooks(hooks -> hooks.handleShieldImpact(payload));
                 LOGGER.debug("Shield impact at ({}, {}, {}) (deflection={})",
                     payload.impactX(), payload.impactY(), payload.impactZ(), payload.wasDeflection());
-            });
+            }), "shield impact");
         }
     }
 
@@ -41,11 +41,11 @@ public final class ShieldNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleShieldShatter(ShieldShatterPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() -> {
+            observeFuture(context.enqueueWork(() -> {
                 NetworkHandler.withClientHooks(hooks -> hooks.handleShieldShatter(payload));
                 LOGGER.debug("Shield shattered at ({}, {}, {}) (damage={})",
                     payload.centerX(), payload.centerY(), payload.centerZ(), payload.finalDamage());
-            });
+            }), "shield shatter");
         }
     }
 }

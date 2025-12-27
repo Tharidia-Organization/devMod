@@ -3,6 +3,7 @@ package com.devmod.telemetry.duckdb.aggregation;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -18,6 +19,8 @@ import javax.annotation.Nullable;
  * <p>Memory: ~500B (6 ability types x 32B + metadata)
  */
 public class AbilityAggregateWindow {
+
+    private static final Locale NORMALIZE_LOCALE = Locale.ROOT;
 
     /**
      * Supported ability types for aggregation.
@@ -97,7 +100,7 @@ public class AbilityAggregateWindow {
         } else {
             // Custom ability type
             stats = customAbilityStats.computeIfAbsent(
-                abilityType.toLowerCase(),
+                abilityType.toLowerCase(NORMALIZE_LOCALE),
                 k -> new AbilityStats()
             );
         }
@@ -109,7 +112,7 @@ public class AbilityAggregateWindow {
      * Parse ability type string to enum.
      */
     private AbilityType parseAbilityType(String type) {
-        String normalized = type.toUpperCase().replace(" ", "_").replace("-", "_");
+        String normalized = type.toUpperCase(NORMALIZE_LOCALE).replace(" ", "_").replace("-", "_");
         try {
             return AbilityType.valueOf(normalized);
         } catch (IllegalArgumentException e) {
@@ -161,7 +164,7 @@ public class AbilityAggregateWindow {
         Map<String, AbilityStats> allStats = new HashMap<>();
         for (Map.Entry<AbilityType, AbilityStats> e : abilityStats.entrySet()) {
             if (e.getValue().attempts > 0) {
-                allStats.put(e.getKey().name().toLowerCase(), e.getValue().copy());
+                allStats.put(e.getKey().name().toLowerCase(NORMALIZE_LOCALE), e.getValue().copy());
             }
         }
         allStats.putAll(customAbilityStats);

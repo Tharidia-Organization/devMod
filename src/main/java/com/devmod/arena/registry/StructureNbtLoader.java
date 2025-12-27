@@ -61,7 +61,7 @@ public class StructureNbtLoader {
         }
 
         // 2. Namespace whitelist
-        String namespace = path.split(":", 2)[0];
+        String namespace = namespaceFromPath(path);
         if (!manifest.allowedNamespaces().contains(namespace)) {
             return LoadResult.error("UNAUTHORIZED_NAMESPACE", "Namespace not allowed: " + namespace);
         }
@@ -108,7 +108,7 @@ public class StructureNbtLoader {
             return LoadResult.error("INVALID_PATH", "Invalid path: " + path);
         }
         if (limits != null && limits.allowedNamespaces() != null) {
-            String namespace = path.split(":", 2)[0];
+            String namespace = namespaceFromPath(path);
             if (!limits.allowedNamespaces().contains(namespace)) {
                 return LoadResult.error("UNAUTHORIZED_NAMESPACE", "Namespace not allowed: " + namespace);
             }
@@ -145,6 +145,11 @@ public class StructureNbtLoader {
         String pathStr = rl.getPath();
         return !pathStr.contains("..") && !pathStr.contains("./") && !pathStr.contains("\\")
             && !pathStr.startsWith("/") && !pathStr.contains("://");
+    }
+
+    private static String namespaceFromPath(String path) {
+        int colonIndex = path.indexOf(':');
+        return colonIndex < 0 ? path : path.substring(0, colonIndex);
     }
 
     private String sha256(byte[] data) {

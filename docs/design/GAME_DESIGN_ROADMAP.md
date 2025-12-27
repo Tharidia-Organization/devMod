@@ -1,5 +1,8 @@
 # DevMod Game Design Roadmap
 
+> Last updated: 2025-12-26
+> Status: PLANNING (roadmap)
+
 ## Status Legend
 - [ ] Not started
 - [~] In progress

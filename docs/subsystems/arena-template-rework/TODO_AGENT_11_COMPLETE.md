@@ -1,5 +1,8 @@
 # Agent 11 - Telemetry & Concurrency - COMPLETE
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (completion snapshot)
+
 ## Summary
 Implementato il sistema di telemetry audit, session identity, balance report, lock management e rate limiting (DD57-62).
 

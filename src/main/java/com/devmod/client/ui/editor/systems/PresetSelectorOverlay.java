@@ -16,6 +16,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.DevMod;
 import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.VirtualizedList;
@@ -281,7 +282,9 @@ public class PresetSelectorOverlay extends BaseOverlay {
                     ));
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.warn("[PresetSelectorOverlay] Failed to load user presets", e);
+        }
 
         updateFilteredList();
     }
@@ -401,7 +404,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         currentY += FILTER_ROW_HEIGHT;
 
         // Search box
-        renderSearchBox(graphics, font, x + PADDING, currentY, width - PADDING * 2, SEARCH_HEIGHT, mouseX, mouseY);
+        renderSearchBox(graphics, font, x + PADDING, currentY, width - PADDING * 2, SEARCH_HEIGHT);
         currentY += SEARCH_HEIGHT + UIConstants.Spacing.SM;
 
         // Preset list
@@ -489,8 +492,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
             UIConstants.Text.MUTED(), false);
     }
 
-    private void renderSearchBox(GuiGraphics graphics, Font font, int x, int y, int width, int height,
-                                  int mouseX, int mouseY) {
+    private void renderSearchBox(GuiGraphics graphics, Font font, int x, int y, int width, int height) {
         Font safeFont = Objects.requireNonNull(font, "font");
         // Background
         int bg = searchFocused ? SEARCH_BG_FOCUSED : SEARCH_BG_DEFAULT;

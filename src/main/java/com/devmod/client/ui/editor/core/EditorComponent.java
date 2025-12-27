@@ -197,7 +197,7 @@ public interface EditorComponent {
      */
     default boolean containsPoint(double x, double y) {
         ResponsiveLayout.Rect bounds = getBounds();
-        if (bounds == null || bounds == ResponsiveLayout.Rect.EMPTY) return false;
+        if (bounds == null || ResponsiveLayout.Rect.EMPTY.equals(bounds)) return false;
         return x >= bounds.x() && x < bounds.x() + bounds.width() &&
                y >= bounds.y() && y < bounds.y() + bounds.height();
     }

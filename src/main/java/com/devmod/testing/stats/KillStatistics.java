@@ -1,5 +1,6 @@
 package com.devmod.testing.stats;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,7 +48,7 @@ public class KillStatistics {
         killsByMobType.merge(mobKey, 1, KillStatistics::safeIntSum);
         killsByWeapon.merge(weaponKey, 1, KillStatistics::safeIntSum);
         if (bodyPart != null) {
-            killsByBodyPart.merge(bodyPart.toUpperCase(), 1, KillStatistics::safeIntSum);
+            killsByBodyPart.merge(bodyPart.toUpperCase(Locale.ROOT), 1, KillStatistics::safeIntSum);
         }
 
         if (isHeadshot) headshots++;
@@ -92,7 +93,7 @@ public class KillStatistics {
     public int getTotalKills() { return totalKills; }
     public int getKillsOfType(String mobType) { return killsByMobType.getOrDefault(mobType, 0); }
     public int getKillsWithWeapon(String weapon) { return killsByWeapon.getOrDefault(weapon, 0); }
-    public int getKillsOnBodyPart(String part) { return killsByBodyPart.getOrDefault(part.toUpperCase(), 0); }
+    public int getKillsOnBodyPart(String part) { return killsByBodyPart.getOrDefault(part.toUpperCase(Locale.ROOT), 0); }
     public int getHeadshots() { return headshots; }
     public int getCriticalHits() { return criticalHits; }
     public int getMaceSmashKills() { return maceSmashKills; }

@@ -16,6 +16,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.errorprone.annotations.InlineMe;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -232,7 +234,8 @@ public class NemesisEvolutionManager {
      * @deprecated Use {@link #applyAdaptations(Mob, UUID, ResourceLocation, UUID)} instead.
      */
     @Deprecated
-    public void applyAdaptations(Mob boss, UUID playerId, ResourceLocation bossType) {
+    @InlineMe(replacement = "this.applyAdaptations(boss, playerId, bossType, null)")
+    public final void applyAdaptations(Mob boss, UUID playerId, ResourceLocation bossType) {
         applyAdaptations(boss, playerId, bossType, null);
     }
 
@@ -245,6 +248,11 @@ public class NemesisEvolutionManager {
      * @param questId The quest ID for config lookup (nullable)
      */
     public void applyAdaptations(Mob boss, UUID playerId, ResourceLocation bossType, @Nullable UUID questId) {
+        if (boss == null || playerId == null || bossType == null) {
+            LOGGER.warn("[Nemesis] Cannot apply adaptations with null inputs (boss={}, playerId={}, bossType={})",
+                boss, playerId, bossType);
+            return;
+        }
         // Check if nemesis system is enabled
         GameDesignConfig.NemesisConfig config = getConfig(questId);
         if (!config.enabled) {

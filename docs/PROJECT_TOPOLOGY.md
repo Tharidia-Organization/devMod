@@ -1,7 +1,7 @@
 # Project Topology
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION
+> Status: CURRENT (verified against code)
 
 ---
 
@@ -25,18 +25,30 @@ Source: `gradle.properties`.
 
 All code lives under `src/main/java/com/devmod/`.
 
+Root entrypoints:
+- `DevMod.java` - Mod bootstrap
+- `ModConfig.java` - Global config facade
+
 ### Core Systems
 - `arena/` - Arena template system (policies, builders, validation)
+- `abilities/` - Ability actions and payloads
+- `ammo/` - Ranged/ammo rules
+- `attributes/` - Attribute definitions and helpers
+- `combat/`, `damage/`, `effects/` - Combat rules, damage model, status effects
 - `endurance/` - Endurance quest system
+- `mailbox/` - Mailbox/news/tasks system
+- `party/` - Party system and quest sequencing
+- `quest/` - Quest flows and state
 - `telemetry/` - Telemetry capture and analytics pipeline
-- `combat/`, `damage/`, `attributes/` - Combat rules and stats
-- `debug/` - Debug overlays and tooling
 
 ### Infrastructure and Glue
+- `collision/` - Collision/transform utilities
 - `config/` - Config and settings
-- `network/` - Packet registration and handlers
+- `debug/` - Debug overlays and tooling
 - `events/` - Event wiring
+- `migration/` - Migration helpers and data upgrades
 - `mixin/` - Mixin hooks
+- `network/` - Packet registration and handlers
 - `runtime/` - Runtime services and lifecycle
 
 ### UX and Interaction
@@ -74,6 +86,8 @@ src/main/resources/
   schemas/         # JSON schemas
   db/              # DuckDB database artifacts
   dashboard/       # Telemetry dashboard assets
+  build.properties
+  log4j2-arena-audit.xml
   devmod.mixins.json
 ```
 
@@ -81,7 +95,7 @@ src/main/resources/
 
 ## Configuration
 
-Runtime config is written to `run/config/devmod/`.
+Runtime config is written to `config/devmod/` (in dev runs this resolves under `run/config/`).
 
 ---
 

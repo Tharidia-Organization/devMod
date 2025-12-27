@@ -3,6 +3,7 @@ package com.devmod.client.party;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -321,9 +322,9 @@ public class PartyScreen extends Screen {
                     if (selectedNamespace != null && !m.namespace.equals(selectedNamespace)) return false;
                     if (selectedTierFilter != null && m.tier != selectedTierFilter) return false;
                     if (!mobSearchText.isEmpty()) {
-                        String search = mobSearchText.toLowerCase();
-                        return m.displayName.toLowerCase().contains(search) ||
-                                m.mobId.toString().toLowerCase().contains(search);
+                        String search = mobSearchText.toLowerCase(Locale.ROOT);
+                        return m.displayName.toLowerCase(Locale.ROOT).contains(search) ||
+                                m.mobId.toString().toLowerCase(Locale.ROOT).contains(search);
                     }
                     return true;
                 })

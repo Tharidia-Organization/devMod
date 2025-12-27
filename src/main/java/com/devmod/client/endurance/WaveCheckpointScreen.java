@@ -214,7 +214,7 @@ public class WaveCheckpointScreen extends Screen {
         graphics.pose().popPose();
 
         // === Render Particles (outside scale transform) ===
-        renderParticles(graphics, centerX, centerY);
+        renderParticles(graphics);
 
         // Render buttons when visible
         if (elapsed > BUTTONS_REVEAL_DELAY) {
@@ -429,7 +429,7 @@ public class WaveCheckpointScreen extends Screen {
         particles.add(new Particle(x, y, color));
     }
 
-    private void renderParticles(GuiGraphics g, int centerX, int centerY) {
+    private void renderParticles(GuiGraphics g) {
         for (Particle p : particles) {
             p.render(g);
         }

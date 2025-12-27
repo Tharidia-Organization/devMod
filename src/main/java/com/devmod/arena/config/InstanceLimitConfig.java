@@ -1,9 +1,13 @@
 package com.devmod.arena.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.devmod.arena.registry.InstanceSettingsValidator;
 
 public record InstanceLimitConfig(int maxChunkRadius, int maxTickDistance) {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(InstanceLimitConfig.class);
     private static final int DEFAULT_CHUNK_RADIUS = 8;
     private static final int DEFAULT_TICK_DISTANCE = 10;
 
@@ -22,14 +26,16 @@ public record InstanceLimitConfig(int maxChunkRadius, int maxTickDistance) {
         if (sys != null && !sys.isBlank()) {
             try {
                 return Integer.parseInt(sys);
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Invalid value for {}: {}", sysProp, sys, e);
             }
         }
         String env = System.getenv(envVar);
         if (env != null && !env.isBlank()) {
             try {
                 return Integer.parseInt(env);
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Invalid value for {}: {}", envVar, env, e);
             }
         }
         return defaultValue;

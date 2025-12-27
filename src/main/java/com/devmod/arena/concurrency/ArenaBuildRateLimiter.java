@@ -1,5 +1,6 @@
 package com.devmod.arena.concurrency;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
@@ -116,7 +117,7 @@ public class ArenaBuildRateLimiter {
     @Deprecated
     public BuildPermit requestPermit(String requesterId) {
         // Use a deterministic UUID based on requesterId for legacy calls
-        UUID playerId = UUID.nameUUIDFromBytes(requesterId.getBytes());
+        UUID playerId = UUID.nameUUIDFromBytes(requesterId.getBytes(StandardCharsets.UTF_8));
         return requestPermit(playerId, requesterId);
     }
 

@@ -5,6 +5,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.google.common.base.Splitter;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
@@ -15,6 +17,7 @@ import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 
 public final class RadialCategoryRenderer {
+    private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
 
     private RadialCategoryRenderer() {
         // Utility class - no instantiation
@@ -88,7 +91,7 @@ public final class RadialCategoryRenderer {
             RadialCategory cat = categories.get(i);
             boolean selected = allowSelection && (i == config.selectedIndex);
 
-            renderCategorySegment(graphics, safeFont, cat, i, numCategories,
+            renderCategorySegment(graphics, safeFont, cat, i,
                 config, selected, alphaInt, segmentAngle, startOffset);
         }
     }
@@ -97,7 +100,7 @@ public final class RadialCategoryRenderer {
      * Renders a single category segment.
      */
     private static void renderCategorySegment(GuiGraphics graphics, @Nonnull Font font,
-                                               RadialCategory cat, int index, int numCategories,
+                                               RadialCategory cat, int index,
                                                RingConfig config, boolean selected,
                                                int alphaInt, double segmentAngle, double startOffset) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
@@ -435,7 +438,7 @@ public final class RadialCategoryRenderer {
             return java.util.List.of(name);
         }
 
-        String[] words = name.split(" ");
+        String[] words = SPACE_SPLITTER.splitToList(name).toArray(String[]::new);
         if (words.length < 2) {
             return java.util.List.of(truncateToWidth(font, name, maxWidth));
         }
@@ -493,7 +496,7 @@ public final class RadialCategoryRenderer {
                                           boolean isActive, boolean canExecute, RadialMenuConfig.ColorTheme theme) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         if (item.isToggle()) {
-            @Nonnull String status = Objects.requireNonNull(isActive ? "ON" : "OFF", "status");
+            @Nonnull String status = isActive ? "ON" : "OFF";
             int statusColor = isActive ? theme.active : RadialMenuConstants.ITEM_STATUS_INACTIVE_COLOR;
             if (!canExecute) {
                 statusColor = RadialMenuConstants.COLOR_INACTIVE;
@@ -501,7 +504,7 @@ public final class RadialCategoryRenderer {
             graphics.drawCenteredString(safeFont, status, x,
                 y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, statusColor);
         } else if (item.isSubcategoryLink()) {
-            @Nonnull String indicator = Objects.requireNonNull(">", "indicator");
+            @Nonnull String indicator = ">";
             int indicatorColor = canExecute ? theme.textSecondary : RadialMenuConstants.COLOR_INACTIVE;
             graphics.drawCenteredString(safeFont, indicator, x,
                 y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, indicatorColor);

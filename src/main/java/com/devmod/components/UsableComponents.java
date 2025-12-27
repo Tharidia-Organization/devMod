@@ -53,7 +53,9 @@ public final class UsableComponents {
             if (USABLE_STATS.isBound()) {
                 return USABLE_STATS.get();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[UsableComponents] Failed to resolve usable_stats component", e);
+        }
 
         if (Boolean.getBoolean("devmod.allowFallbackComponents")) {
             DevMod.LOGGER.warn("[UsableComponents] Using fallback usable_stats component (test-mode only)");
@@ -69,6 +71,7 @@ public final class UsableComponents {
         try {
             return USABLE_STATS.isBound();
         } catch (Exception e) {
+            DevMod.LOGGER.debug("[UsableComponents] Failed to check usable_stats binding", e);
             return false;
         }
     }

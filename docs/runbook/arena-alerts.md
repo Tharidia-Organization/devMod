@@ -1,154 +1,69 @@
 # Arena Alerts Runbook (DD68)
 
+> Last updated: 2025-12-26
+> Status: CURRENT (verified against code)
+
 ## Overview
-This runbook provides guidance for handling arena system alerts during the 48h monitoring period and beyond.
+This runbook covers the arena alert pipeline built around `AlertRouter` and telemetry events.
+Alerts are emitted by arena subsystems and routed to logs, telemetry, and optional webhooks.
 
-## Alert Ownership
+## Alert Pipeline (Current Behavior)
 
-| Alert Type | Primary Owner | Escalation |
-|------------|---------------|------------|
-| Build Performance | Arena Team | Platform Lead |
-| Rollback Rate | Arena Team | On-Call SRE |
-| Pool Metrics | Arena Team | Platform Lead |
-| Error Rate | On-Call SRE | Engineering Manager |
-| Security | Security Team | CISO |
+`ArenaCommandEvents.ensureAlertRouter()` initializes the router during `/arena` command registration.
+Default channels are:
+- **Console**: `ConsoleAlertChannel`
+- **Log**: `LogAlertChannel` (logger name: `arena.alerts`)
+- **Telemetry**: `TelemetryAlertChannel` (event name: `arena.alert`)
+- **DuckDB**: `DuckDbAlertRecorder` (records delivery history)
 
-## Alert Thresholds
+Optional channels:
+- `DEVMOD_ARENA_ALERT_WEBHOOK_URL` (+ optional `DEVMOD_ARENA_ALERT_WEBHOOK_AUTH`)
+- `DEVMOD_ARENA_ALERT_DISCORD_WEBHOOK_URL`
 
-### Build P95 Latency
-- **Warning**: > 4 seconds
-- **Critical**: > 5 seconds (KPI breach)
+## Where Alerts Appear
 
-### Rollback Rate
-- **Warning**: > 0.5%
-- **Critical**: > 1% (KPI breach)
+- Logs: `arena.alerts` logger and server console output.
+- NDJSON: `run/arena-telemetry_YYYY-MM-DD.ndjson` (event `arena.alert`).
+- DuckDB: alert delivery records persisted by `DuckDbAlertRecorder`.
 
-### Completion Rate
-- **Warning**: < 80%
-- **Critical**: < 75% (KPI breach)
+## Alert Types and Thresholds
 
-### Pool Miss Rate
-- **Warning**: > 30%
-- **Critical**: > 50% (auto-disable triggered)
+### Build outcome rates (24h window)
+Source: `BuildOutcomeMonitor` (invoked by `ArenaBuilder`).
 
-### Error Rate
-- **Warning**: > 1%
-- **Critical**: > 5%
+- **Failure rate** defaults: warn `>= 5%`, error `>= 15%`
+- **Rollback rate** defaults: warn `>= 2%`, error `>= 10%`
+- **Cooldown**: 10 minutes between alerts
 
-## Response Procedures
+Config overrides (env or system properties via `ArenaTemplateConfig`):
+- `DEVMOD_ARENA_WARN_FAILURE_RATE` / `devmod.arena.warnFailureRate`
+- `DEVMOD_ARENA_ERROR_FAILURE_RATE` / `devmod.arena.errorFailureRate`
+- `DEVMOD_ARENA_WARN_ROLLBACK_RATE` / `devmod.arena.warnRollbackRate`
+- `DEVMOD_ARENA_ERROR_ROLLBACK_RATE` / `devmod.arena.errorRollbackRate`
 
-### Alert: Build P95 > 5s
+### Autosmoke failures
+Source: `AutosmokeScheduler` -> `routeFailureAlert()`.
 
-1. **Immediate Actions**:
-   - Check current MSPT (milliseconds per tick)
-   - Check active build count
-   - Verify chunk loading performance
+- Severity: ERROR (or CRITICAL when failed templates > 5)
+- Metadata includes failed template IDs (up to 10), mod version, git commit, duration
 
-2. **Investigation**:
-   ```
-   - Dashboard: Arena Build Performance
-   - Logs: arena.build.*
-   - Metrics: build_duration_p95, blocks_per_second
-   ```
+### Cleanup residuals
+Source: `CleanupResidualChecker` (telemetry only).
 
-3. **Mitigation**:
-   - Enable backpressure if not active
-   - Reduce blocks_per_tick config
-   - Consider pausing non-essential builds
+- Emits `arena.cleanup.residual_alert` when residuals exceed thresholds
+- Defaults in `ArenaTemplateConfig.AlertThresholds`: entities > 0 warn, > 5 error; blocks > 0 warn, > 10 error
 
-4. **Resolution**:
-   - Identify root cause (large templates, slow chunks, server load)
-   - Apply permanent fix
-   - Update thresholds if appropriate
+### Prebuild pool miss rate
+Source: `PrebuildPoolManager` (logs + telemetry).
 
-### Alert: Rollback Rate > 1%
+- Warn: miss rate > 20% (`arena.pool.metrics` + INFO log)
+- Critical: miss rate > 30% (`arena.pool.critical_miss_rate` + WARN log)
+- Auto-disable: miss rate > 50% for 3 consecutive checks (`arena.pool.auto_disabled`)
 
-1. **Immediate Actions**:
-   - Check recent deployment changes
-   - Identify failing templates
+## Response Checklist (General)
 
-2. **Investigation**:
-   ```
-   - Dashboard: Arena Rollback Analysis
-   - Logs: arena.build.failure, arena.build.rollback
-   - Query: SELECT template_id, count(*) FROM rollbacks GROUP BY template_id
-   ```
-
-3. **Mitigation**:
-   - Disable problematic templates
-   - Increase budget limits if appropriate
-   - Enable fallback mode
-
-4. **Resolution**:
-   - Fix template issues
-   - Add validation rules
-   - Update test coverage
-
-### Alert: Completion Rate < 75%
-
-1. **Immediate Actions**:
-   - Check player disconnect rate
-   - Verify arena stability
-
-2. **Investigation**:
-   ```
-   - Dashboard: Arena Session Completion
-   - Logs: arena.session.*, arena.cleanup.*
-   - Metrics: session_duration, disconnect_reason
-   ```
-
-3. **Mitigation**:
-   - Enable graceful degradation
-   - Increase session timeouts
-
-4. **Resolution**:
-   - Identify completion blockers
-   - Fix arena stability issues
-   - Improve error handling
-
-### Alert: Pool Miss Rate > 50%
-
-1. **Immediate Actions**:
-   - Pool has auto-disabled
-   - Verify build system is functioning
-
-2. **Investigation**:
-   ```
-   - Dashboard: Arena Pool Performance
-   - Logs: arena.pool.*
-   - Metrics: pool_hit_rate, pool_size, eviction_count
-   ```
-
-3. **Mitigation**:
-   - Pool auto-disabled, builds now on-demand
-   - Monitor build performance
-
-4. **Resolution**:
-   - Analyze usage patterns
-   - Adjust pool sizing
-   - Re-enable with proper config
-
-## Escalation Matrix
-
-| Severity | Response Time | Escalation Time |
-|----------|---------------|-----------------|
-| P1 Critical | 5 min | 15 min |
-| P2 High | 15 min | 1 hour |
-| P3 Medium | 1 hour | 4 hours |
-| P4 Low | 4 hours | Next business day |
-
-## Contacts
-
-- **Arena Team Slack**: #arena-team
-- **On-Call SRE**: PagerDuty rotation
-- **Platform Lead**: @platform-lead
-- **Engineering Manager**: @eng-manager
-
-## Post-Incident
-
-After resolving any P1/P2 incident:
-
-1. Create incident report within 24 hours
-2. Update this runbook if needed
-3. Add new alerts for gaps discovered
-4. Review in weekly team meeting
+1. Identify alert source from `errorType` and `component` in `arena.alert`.
+2. Use metadata (`templateId`, `arenaId`, `window_hours`) to scope impact.
+3. Correlate with build telemetry (`arena.build.*`) and cleanup events as needed.
+4. Apply mitigations (disable template, adjust limits, pause autosmoke, inspect pool).
+5. Confirm recovery by watching follow-up telemetry or the absence of new alerts.

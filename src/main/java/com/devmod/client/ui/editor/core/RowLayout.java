@@ -55,12 +55,12 @@ public final class RowLayout {
         currentX += ScaledCoord.alignTo4(space);
     }
 
-    /** @return current X position */
+    /** Returns the current X position. @return current X position */
     public int getX() { return currentX; }
 
-    /** @return Y position (constant for row) */
+    /** Returns the row Y position. @return Y position (constant for row) */
     public int getY() { return y; }
 
-    /** @return total width used so far (excluding trailing gap) */
+    /** Returns total width used so far. @return total width used so far (excluding trailing gap) */
     public int getWidth() { return currentX - startX - gap; }
 }

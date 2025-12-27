@@ -1,7 +1,7 @@
 # Piano Infrastruttura - Gestione Completa Server Minecraft OVH
 
-> **Last updated**: 2025-12-26
-> **Status**: PLANNING (roadmap; non validato)
+> Last updated: 2025-12-26
+> Status: PLANNING (roadmap; non validato)
 
 ## Obiettivo e principi
 Permettere a Claude di controllare totalmente il server Minecraft (filesystem, AMP, bot in-game) in modo sicuro, ripetibile e osservabile. Guidato da:

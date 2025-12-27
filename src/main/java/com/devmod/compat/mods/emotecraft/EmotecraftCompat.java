@@ -112,6 +112,9 @@ public class EmotecraftCompat implements CompatModule {
                     LOGGER.trace("[Compat:emotecraft] EmoteData not found in common package", e2);
                 }
             }
+            if (emoteDataClass != null) {
+                LOGGER.debug("[Compat:emotecraft] EmoteData class: {}", emoteDataClass.getName());
+            }
 
             if (emotePlayImplClass != null || clientEmoteAPIClass != null) {
                 apiAvailable = true;

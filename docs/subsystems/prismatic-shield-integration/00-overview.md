@@ -1,5 +1,8 @@
 # Prismatic Shield Integration - Overview
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Obiettivo
 
 Integrare le tecniche visive e di gameplay del [Prismatic Shield Mod](https://github.com/CHA1007/Prismatic-Shield-Mod) in DevMod per creare un sistema scudo energetico completo.

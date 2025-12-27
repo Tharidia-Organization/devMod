@@ -372,20 +372,19 @@ class SerializationRoundTripTest {
             String mobId = "minecraft:zombie";
             assertTrue(mobId.contains(":"));
 
-            String[] parts = mobId.split(":");
-            assertEquals(2, parts.length);
-            assertEquals("minecraft", parts[0]);
-            assertEquals("zombie", parts[1]);
+            int colonIndex = mobId.indexOf(':');
+            assertEquals("minecraft", mobId.substring(0, colonIndex));
+            assertEquals("zombie", mobId.substring(colonIndex + 1));
         }
 
         @Test
         @DisplayName("Custom namespace supported")
         void customNamespaceSupported() {
             String customId = "devmod:custom_mob";
-            String[] parts = customId.split(":");
+            int colonIndex = customId.indexOf(':');
 
-            assertEquals("devmod", parts[0]);
-            assertEquals("custom_mob", parts[1]);
+            assertEquals("devmod", customId.substring(0, colonIndex));
+            assertEquals("custom_mob", customId.substring(colonIndex + 1));
         }
 
         @Test

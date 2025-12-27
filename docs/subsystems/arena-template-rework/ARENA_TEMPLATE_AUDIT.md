@@ -1,7 +1,10 @@
 # Arena Template Documentation Audit (v2.23)
 
-> **Last Updated**: 2025-12-26
-> **Status**: ✅ CURRENT - snapshot allineato con repo
+> Last updated: 2025-12-26
+> Status: HISTORICAL (audit snapshot)
+
+Nota: questo audit e' una fotografia storica. Per lo stato corrente usare
+`docs/areas/arena/README.md` e gli schema in `src/main/resources/schemas/`.
 
 ## Scope
 - Obiettivo: riallineare la documentazione Arena Template allo stato attuale del codice e all'obiettivo finale v2.23.

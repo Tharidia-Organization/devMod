@@ -140,7 +140,7 @@ public class WeaponModuleUI {
         createSpecialComponents(dataSource);
         createDamageTypeComponents(dataSource);
         createDurabilityComponents(dataSource);
-        createToolComponents(dataSource);
+        createToolComponents();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -586,7 +586,7 @@ public class WeaponModuleUI {
     // TOOL RULES TAB
     // ═══════════════════════════════════════════════════════════════
 
-    private void createToolComponents(SourceBadge.Source dataSource) {
+    private void createToolComponents() {
         WeaponStats stats = core.getStats();
         toolRuleSections.clear();
 

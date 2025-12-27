@@ -1,8 +1,9 @@
 # DevMod Testing Guide
 
-> **Audit Date**: 2025-12-26
-> **Status**: CURRENT (code-aligned)
-> **Risk Level**: MEDIUM (MC-dependent tests use GameTest)
+> Last updated: 2025-12-26
+> Status: CURRENT (testing guide)
+> Audit date: 2025-12-26
+> Risk level: MEDIUM (MC-dependent tests use GameTest)
 
 ---
 

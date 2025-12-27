@@ -13,9 +13,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import com.devmod.endurance.BadgeUnlockPayload;
 import com.devmod.endurance.BossAlertPayload;
-import com.devmod.endurance.ComboDecayPayload;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.EnduranceQuestManager;
@@ -30,7 +28,6 @@ import com.devmod.endurance.QuestActionPayload;
 import com.devmod.endurance.QuestCompletionPayload;
 import com.devmod.endurance.QuestDeathPayload;
 import com.devmod.endurance.QuestSyncPayload;
-import com.devmod.endurance.RecordBannerPayload;
 import com.devmod.endurance.RequestPersonalRecordsPayload;
 import com.devmod.endurance.RequestShopSyncPayload;
 import com.devmod.endurance.RewardSystem;
@@ -38,13 +35,13 @@ import com.devmod.endurance.ShopPurchasePayload;
 import com.devmod.endurance.ShopSyncPayload;
 import com.devmod.endurance.StartQuestPayload;
 import com.devmod.endurance.TensionUpdatePayload;
-import com.devmod.endurance.TokenGainPayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.network.NetworkHandler;
 import com.devmod.network.PacketValidator;
 import com.devmod.network.PacketValidator.ValidationResult;
+import com.devmod.notification.NotificationService;
 import com.devmod.util.I18n;
 
 public final class EnduranceNetworkHandler extends NetworkHandlerBase {
@@ -58,7 +55,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // START ENDURANCE QUEST
     // =================================================================================
     public static void handleStartEnduranceQuest(StartQuestPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "endurance_quest", true);
@@ -108,7 +105,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // QUEST ACTIONS (respawn, checkpoint, abandon)
     // =================================================================================
     public static void handleQuestAction(QuestActionPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -189,7 +186,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleQuestSync(QuestSyncPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
+            enqueueWork(context, () ->
                 NetworkHandler.withClientHooks(hooks -> hooks.handleQuestSync(payload)));
         }
     }
@@ -198,7 +195,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // SHOP PURCHASE
     // =================================================================================
     public static void handleShopPurchase(ShopPurchasePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -235,7 +232,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleShopSync(ShopSyncPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
+            enqueueWork(context, () ->
                 NetworkHandler.withClientHooks(hooks -> hooks.handleShopSync(payload)));
         }
     }
@@ -250,7 +247,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // REQUEST SHOP SYNC (server-side)
     // =================================================================================
     public static void handleRequestShopSync(RequestShopSyncPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 sendShopSync(player);
             }
@@ -262,7 +259,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleQuestDeath(QuestDeathPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
+            enqueueWork(context, () ->
                 NetworkHandler.withClientHooks(hooks -> hooks.handleQuestDeath(payload)));
         }
     }
@@ -279,7 +276,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handlePerkChoices(PerkChoicesPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
+            enqueueWork(context, () ->
                 NetworkHandler.withClientHooks(hooks -> hooks.handlePerkChoices(payload)));
         }
     }
@@ -316,13 +313,13 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleWaveDirectiveChoices(WaveDirectiveChoicesPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
+            enqueueWork(context, () ->
                 NetworkHandler.withClientHooks(hooks -> hooks.handleWaveDirectiveChoices(payload)));
         }
     }
 
     public static void handleWaveDirectiveSelection(WaveDirectiveSelectionPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -361,7 +358,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // PERK SELECTION (server-side)
     // =================================================================================
     public static void handlePerkSelection(PerkSelectionPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -428,7 +425,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleQuestCompletion(QuestCompletionPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
+            enqueueWork(context, () ->
                 NetworkHandler.withClientHooks(hooks -> hooks.handleQuestCompletion(payload)));
         }
     }
@@ -498,7 +495,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleInstanceLoading(InstanceLoadingPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
+            enqueueWork(context, () ->
                 NetworkHandler.withClientHooks(hooks -> hooks.handleInstanceLoading(payload)));
         }
     }
@@ -518,13 +515,13 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handlePersonalRecordsSync(PersonalRecordsSyncPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
+            enqueueWork(context, () ->
                 NetworkHandler.withClientHooks(hooks -> hooks.handlePersonalRecordsSync(payload)));
         }
     }
 
     public static void handleRequestPersonalRecords(RequestPersonalRecordsPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 sendPersonalRecordsSync(player);
             }
@@ -566,37 +563,47 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     // BADGE UNLOCK
     // =================================================================================
+    /**
+     * Send a badge unlock notification.
+     * Delegates to NotificationService for unified delivery (overlay + mailbox).
+     */
     public static void sendBadgeUnlock(ServerPlayer player, String badgeName, String rarity) {
-        BadgeUnlockPayload payload = new BadgeUnlockPayload(badgeName, rarity);
-        sendPacket(player, payload);
+        NotificationService.INSTANCE.notifyBadgeUnlock(player.getUUID(), badgeName, rarity);
     }
 
     // =================================================================================
     // TOKEN GAIN ANIMATION
     // =================================================================================
+    /**
+     * Send a token gain notification.
+     * Delegates to NotificationService for unified delivery.
+     */
     public static void sendTokenGain(ServerPlayer player, int amount) {
         if (amount > 0) {
-            TokenGainPayload payload = new TokenGainPayload(amount);
-            sendPacket(player, payload);
+            NotificationService.INSTANCE.notifyTokenGain(player.getUUID(), amount, null);
         }
     }
 
     // =================================================================================
     // RECORD BANNER
     // =================================================================================
+    /**
+     * Send a personal record notification.
+     * Delegates to NotificationService for unified delivery (overlay + mailbox).
+     */
     public static void sendRecordBanner(ServerPlayer player, String recordType, String recordValue) {
-        RecordBannerPayload payload = new RecordBannerPayload(recordType, recordValue);
-        sendPacket(player, payload);
+        NotificationService.INSTANCE.notifyRecord(player.getUUID(), recordType, recordValue);
     }
 
     // =================================================================================
     // COMBO DECAY FEEDBACK
     // =================================================================================
+    /**
+     * Send a combo decay notification.
+     * Delegates to NotificationService for unified delivery.
+     */
     public static void sendComboDecay(ServerPlayer player, int lostCombo, int previousRank, int newRank) {
-        if (lostCombo >= 3 || newRank < previousRank) {
-            ComboDecayPayload payload = new ComboDecayPayload(lostCombo, previousRank, newRank);
-            sendPacket(player, payload);
-        }
+        NotificationService.INSTANCE.notifyComboDecay(player.getUUID(), lostCombo, previousRank, newRank);
     }
 
     // =================================================================================
@@ -605,5 +612,12 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     public static void sendTensionUpdate(ServerPlayer player, float tensionPercent, int tensionLevel, boolean bossImminent) {
         TensionUpdatePayload payload = new TensionUpdatePayload(tensionPercent, tensionLevel, bossImminent);
         sendPacket(player, payload);
+    }
+
+    private static void enqueueWork(IPayloadContext context, Runnable work) {
+        var future = context.enqueueWork(java.util.Objects.requireNonNull(work));
+        if (future.isCancelled()) {
+            LOGGER.debug("[EnduranceNetwork] Enqueued work cancelled");
+        }
     }
 }

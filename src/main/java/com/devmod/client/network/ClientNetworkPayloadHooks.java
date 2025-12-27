@@ -220,4 +220,48 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     public void handleSeasonTierUp(SeasonTierUpPayload payload) {
         com.devmod.client.overlay.SeasonTierUpToastOverlay.show(payload);
     }
+
+    // ==================== Mailbox System ====================
+
+    @Override
+    public void handleMailboxSync(com.devmod.mailbox.network.payload.MailboxSyncPayload payload) {
+        com.devmod.mailbox.client.ClientMailboxCache.update(payload);
+    }
+
+    @Override
+    public void handleMailboxNotify(com.devmod.mailbox.network.payload.MailboxNotifyPayload payload) {
+        com.devmod.mailbox.client.ClientMailboxCache.handleNotification(payload);
+    }
+
+    @Override
+    public void handleMailboxStatus(com.devmod.mailbox.network.payload.MailboxStatusPayload payload) {
+        com.devmod.mailbox.client.ClientMailboxCache.handleStatus(payload);
+    }
+
+    @Override
+    public void handleMailboxAccess(com.devmod.mailbox.network.payload.MailboxAccessPayload payload) {
+        com.devmod.mailbox.client.ClientMailboxAccess.update(payload);
+    }
+
+    @Override
+    public void handleNewsSync(com.devmod.mailbox.network.payload.NewsSyncPayload payload) {
+        com.devmod.mailbox.client.ClientNewsCache.update(payload);
+    }
+
+    @Override
+    public void handleTaskSync(com.devmod.mailbox.network.payload.TaskSyncPayload payload) {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.player != null) {
+            java.util.UUID playerUuid = mc.player.getUUID();
+            java.util.List<com.devmod.mailbox.task.TestTask> tasks = payload.toTasks(playerUuid);
+            com.devmod.mailbox.client.ClientTaskCache.update(tasks);
+        }
+    }
+
+    // ==================== Unified Notification Center ====================
+
+    @Override
+    public void handleUnifiedNotification(com.devmod.notification.network.UnifiedNotificationPayload payload) {
+        com.devmod.client.notification.ClientNotificationManager.INSTANCE.handleNotification(payload);
+    }
 }

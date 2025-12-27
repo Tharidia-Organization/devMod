@@ -1,4 +1,8 @@
 # Armor Properties Architecture
+
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Data Components, Damage Reduction, Shield Mechanics, Source Tracking
 
 > **Sezione 2.22** del Design System - Architettura proprietà armature e scudi

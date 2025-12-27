@@ -1,5 +1,11 @@
 # DevMod Test World Setup
 
+> Last updated: 2025-12-26
+> Status: ARCHIVED (manual setup guide; prefer automated tests)
+
+Nota: la validazione del comportamento deve avvenire via test automatici
+(`docs/testing/TESTING.md`, `docs/testing/TEST_HARNESS.md`).
+
 ## Overview
 
 Questo documento descrive come creare e configurare un mondo di test per la validazione manuale di DevMod.

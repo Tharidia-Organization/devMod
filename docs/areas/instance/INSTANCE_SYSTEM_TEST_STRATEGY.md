@@ -1,46 +1,41 @@
 # Instance System - Test Strategy
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION (last verified 2025-12-26)
+> Status: CURRENT (verified against code)
 
----
+## Automated Coverage
 
-## 1. Automated Coverage (Direct Tests)
+### Direct Tests (State + Persistence)
 
-| Area | Test | Coverage |
-|------|------|----------|
-| Instance state machine | `InstanceStateDirectTest` | Allowed transitions + lifecycle flags |
-| Player recovery state | `PlayerInstanceStateDirectTest` | Transition rules + recovery flags |
-| InstanceData rules | `InstanceDataDirectTest` | Capacity, destruction scheduling, invalid transitions |
-| Snapshot persistence | `PlayerInstanceSnapshotDirectTest` | NBT + file roundtrip |
-| Registry mappings | `InstanceRegistryDirectTest` | Player + dimension lookup |
+- `InstanceStateDirectTest`
+- `PlayerInstanceStateDirectTest`
+- `InstanceDataDirectTest`
+- `InstanceRegistryDirectTest`
+- `PlayerInstanceSnapshotDirectTest`
+- `SnapshotDataValidationTest`
+- `DataSerializationTest`
 
-These tests exercise the **actual runtime classes** in `com.devmod.runtime` (no proxies).
+### Scenario + Validation Tests
 
----
+- `InstanceFlowValidationTest`
+- `RecoverySystemValidationTest`
+- `InstanceValidationTest`
+- `InstanceSystemLogicTest`
+- `QuestLifecycleSimulationTest`
+- `PartyCoordinationTest`
+- `MultiplayerConcurrencyTest`
+- `MultiplayerIsolationValidationTest`
+- `ServerRestartSimulationTest`
+- `ErrorHandlingValidationTest`
+- `ErrorRecoveryScenarioTest`
+- `EdgeCaseStressTest`
+- `RealUserJourneyTest`
 
-## 2. Remaining Validation Gaps
+### Game Tests
 
-The following behaviors require server/integration harnesses and are not covered by unit tests:
-
-- Dynamic dimension creation + teardown on a live server thread.
-- Teleport sequencing with real ServerPlayer objects.
-- Endurance-specific overrides in `InstanceEventHandler`.
-- Full recovery flow with real inventory/effects.
-
----
-
-## 3. Execution
-
-Run direct instance validations:
-
-```
-./gradlew test --tests 'com.devmod.runtime.*DirectTest'
-```
-
----
+- `com.devmod.gametest.InstanceSystemGameTests`
 
 ## Cross-References
 
-- `docs/DOCS_BEHAVIOR_MATRIX.md`
 - `docs/areas/instance/README.md`
+- `docs/areas/instance/INSTANCE_DIMENSION_SYSTEM.md`

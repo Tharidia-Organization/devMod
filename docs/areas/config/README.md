@@ -1,63 +1,55 @@
 # Config System
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION
-> Risk Level: MEDIUM (multiple config sources + file IO)
+> Status: CURRENT (verified against code)
 
----
+This doc covers the active configuration surfaces and their concrete storage locations.
 
-## 1. Scope
+## Scope
 
-This doc covers the config surfaces that are validated by automated tests:
-- NeoForge ModConfigSpec TOML files (common/client).
-- Game design JSON config (global + per-instance overrides).
-- Runtime overlay/debug toggles (non-persisted).
+- ModConfigSpec configs registered in `DevMod` (`Config`, `GameMechanicsConfig`, `EditorClientConfig`).
+- JSON design configs managed by `GameDesignConfigManager` (global + per-instance overrides).
+- Gameplay override profiles in `GameplayOverridesManager`.
+- Per-system config managers for items, mobs, and consumables.
+- Shared config path helpers in `ConfigPaths`.
 
-Out of scope (tracked elsewhere):
-- Item/mob/armor config managers (MC-dependent; validated via GameTests).
-- Arena templates/policies (see `docs/areas/arena/README.md`).
+## Key Components
 
----
-
-## 2. Config Sources
-
-### TOML (ModConfigSpec)
-- `com.devmod.config.Config` -> `config/devmod-common.toml`
-- `com.devmod.config.GameMechanicsConfig` -> `config/devmod-mechanics.toml`
-- `com.devmod.config.EditorClientConfig` -> `config/devmod-client.toml`
-
-### JSON (Game Design)
-- `com.devmod.config.gamedesign.GameDesignConfigManager`
-  - file: `config/devmod/game_design.json`
-  - overrides: `com.devmod.config.gamedesign.InstanceOverride`
-
-### Runtime (non-persisted)
-- `com.devmod.ModConfig` (overlay/debug toggles + color cycling)
-
----
-
-## 3. Key Components
-
-- `com.devmod.config.Config` (telemetry/combat/overlay/perf/FX toggles)
-- `com.devmod.config.GameMechanicsConfig` (gameplay tuning knobs)
-- `com.devmod.config.EditorClientConfig` (editor UX defaults)
+- `com.devmod.config.Config`
+- `com.devmod.config.GameMechanicsConfig`
+- `com.devmod.config.EditorClientConfig`
 - `com.devmod.config.gamedesign.GameDesignConfig`
 - `com.devmod.config.gamedesign.GameDesignConfigManager`
 - `com.devmod.config.gamedesign.InstanceOverride`
-- `com.devmod.ModConfig`
+- `com.devmod.config.GameplayOverridesManager`
+- `com.devmod.config.ArmorConfigManager`
+- `com.devmod.config.WeaponConfigManager`
+- `com.devmod.config.UsableConfigManager`
+- `com.devmod.config.FoodConfigManager`
+- `com.devmod.config.FuelConfigManager`
+- `com.devmod.config.MobConfigManager`
 
----
+## Config Paths (Verified)
 
-## 4. Automated Validation
+- Root: `config/devmod/` (`ConfigPaths.getConfigDir()`).
+- Game design: `config/devmod/game_design.json`.
+- Gameplay overrides: `config/devmod/overrides/*.json`.
+- Item configs: `config/devmod/armor_configs.json`, `config/devmod/weapon_configs.json`, `config/devmod/usable_configs.json`.
+- Item stats TOML: `config/devmod/devmod-items.toml` (Armor/Weapon managers).
+- Consumables: `config/devmod/food_stats.json`, `config/devmod/fuel_stats.json`.
+- Mob configs: `config/devmod/mob_configs.json` (with backups under `config/devmod/mob_configs/`).
+- UI settings: `config/devmod/settings.json`.
+- Telemetry settings: `config/devmod/telemetry_settings.json`, `config/devmod/telemetry_rooms.json`.
 
-| Behavior | Test |
-|---|---|
-| GameDesignConfig copy returns an independent config with the same primitive values | `GameDesignConfigDirectTest` |
-| Instance overrides (including presets) apply expected values | `InstanceOverrideDirectTest` |
-| Effective config uses global defaults or applies overrides without mutating global | `GameDesignConfigManagerDirectTest` |
-| ModConfig color palette cycles deterministically | `ModConfigDirectTest` |
+## Automated Validation
 
----
+- `GameDesignConfigDirectTest`
+- `InstanceOverrideDirectTest`
+- `GameDesignConfigManagerDirectTest`
+- `ModConfigDirectTest`
+- `WeaponConfigTest`
+- `MobConfigTest`
+- `SettingsPersistenceValidationTest`
 
 ## Cross-References
 

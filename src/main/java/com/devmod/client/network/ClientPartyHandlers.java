@@ -1,5 +1,7 @@
 package com.devmod.client.network;
 
+import java.util.Locale;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 
@@ -37,7 +39,7 @@ public final class ClientPartyHandlers {
                     ClientActionContexts.forClient(ActionOrigin.EVENT, payload));
             }
             case YOU_WERE_KICKED, PARTY_DISBANDED -> player.displayClientMessage(
-                I18n.translate("devmod.party." + payload.notificationType().name().toLowerCase()), true);
+                I18n.translate("devmod.party." + payload.notificationType().name().toLowerCase(Locale.ROOT)), true);
             case MEMBER_JOINED, MEMBER_LEFT -> player.displayClientMessage(
                 I18n.translate("devmod.party.member_" +
                     (payload.notificationType() == PartyNotificationPayload.NotificationType.MEMBER_JOINED ? "joined" : "left"),

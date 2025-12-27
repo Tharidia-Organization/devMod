@@ -130,11 +130,11 @@ public class RadialActionDetailScreen extends Screen {
             return List.of();
         }
         List<FormattedCharSequence> lines = new ArrayList<>();
-        for (String rawLine : description.split("\\n")) {
+        description.lines().forEach(rawLine -> {
             String safeLine = Objects.requireNonNull(rawLine, "description line");
             Component lineComponent = Component.literal(safeLine);
             lines.addAll(safeFont.split(Objects.requireNonNull(lineComponent, "lineComponent"), maxWidth));
-        }
+        });
         if (actionId != null) {
             lines.add(FormattedCharSequence.EMPTY);
             lines.add(Component.literal("Id: " + actionId).getVisualOrderText());

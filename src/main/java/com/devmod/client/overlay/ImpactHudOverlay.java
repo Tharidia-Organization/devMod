@@ -147,7 +147,9 @@ public class ImpactHudOverlay {
         try {
             offsetX = Config.IMPACT_HUD_OFFSET_X.get();
             offsetY = Config.IMPACT_HUD_OFFSET_Y.get();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[ImpactHudOverlay] Failed to read HUD offsets, using defaults", e);
+        }
 
         return switch (pos) {
             case TOP_RIGHT -> new int[] { screenWidth - panelWidth - offsetX, offsetY };

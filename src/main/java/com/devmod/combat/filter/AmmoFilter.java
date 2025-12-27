@@ -73,7 +73,8 @@ public final class AmmoFilter {
             if (res instanceof ItemStack stack) {
                 return stack;
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.trace("Failed to resolve arrow pickup item via reflection", e);
         }
         return ItemStack.EMPTY;
     }

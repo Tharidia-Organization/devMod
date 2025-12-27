@@ -49,7 +49,9 @@ public class WeaponModuleCore {
         CompoundTag statsTag = null;
         try {
             statsTag = item.get(Objects.requireNonNull(com.devmod.components.WeaponComponents.WEAPON_STATS.get()));
-        } catch (Exception ignored) { }
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Weapon] Failed to read weapon stats component", e);
+        }
 
         CompoundTag customTag;
         try {
@@ -57,7 +59,8 @@ public class WeaponModuleCore {
                 Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA),
                 Objects.requireNonNull(net.minecraft.world.item.component.CustomData.EMPTY)
             ).copyTag();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Weapon] Failed to read custom data component", e);
             customTag = new CompoundTag();
         }
         if (customTag == null) {
@@ -74,7 +77,8 @@ public class WeaponModuleCore {
                 if (customTag.contains(NBT_KEY)) {
                     statsTag = customTag.getCompound(NBT_KEY);
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                DevMod.LOGGER.debug("[Editor][Weapon] Failed to read weapon stats from custom data", e);
                 statsTag = new CompoundTag();
             }
         }
@@ -199,8 +203,8 @@ public class WeaponModuleCore {
                     "UNBREAKABLE component type cannot be null");
             target.unbreakable = item.get(unbreakableType) != null;
             DevMod.LOGGER.info("[Editor][Weapon] Durability -> max={} damage={} unbreakable={}", target.maxDurability, target.currentDamage, target.unbreakable);
-        } catch (Exception ignored) {
-            // ignore durability if item doesn't expose it
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Weapon] Failed to read durability data", e);
         }
     }
 
@@ -214,12 +218,16 @@ public class WeaponModuleCore {
         net.minecraft.world.item.component.ItemAttributeModifiers itemMods = NONNULL_ATTR_EMPTY;
         try {
             itemMods = item.getAttributeModifiers();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Weapon] Failed to read item attribute modifiers", e);
+        }
 
         net.minecraft.world.item.component.ItemAttributeModifiers defaultMods = NONNULL_ATTR_EMPTY;
         try {
             defaultMods = item.getItem().getDefaultAttributeModifiers(item);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Weapon] Failed to read default attribute modifiers", e);
+        }
 
         // Prefer stack -> item -> default
         net.minecraft.world.item.component.ItemAttributeModifiers chosen =
@@ -261,8 +269,8 @@ public class WeaponModuleCore {
                     stats.toolRules.add(new WeaponStats.ToolRuleData(blockTag, speed, drops));
                 }
             }
-        } catch (Exception ignored) {
-            // best effort
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Weapon] Failed to load tool rules", e);
         }
     }
 

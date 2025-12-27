@@ -123,7 +123,7 @@ public final class EvasionHandler {
     private static void scheduleEvasionCheck(Player player, LivingEntity target, long attackTime) {
         final int targetId = target.getId();
 
-        SCHEDULER.schedule(() -> {
+        var scheduled = SCHEDULER.schedule(() -> {
             synchronized (LOCK) {
                 PendingAttack attackData = pendingAttacks.remove(targetId);
                 if (attackData == null) return;
@@ -137,6 +137,9 @@ public final class EvasionHandler {
                 }
             }
         }, 150, TimeUnit.MILLISECONDS);
+        if (scheduled.isCancelled()) {
+            LOGGER.debug("Evasion check canceled before execution");
+        }
     }
 
     // ========== Client-safe VFX helpers ==========

@@ -338,23 +338,29 @@ public class ShakeEffect {
     // ==================== Easing Functions ====================
 
     public enum EasingFunction {
-        LINEAR(t -> t),
-        EASE_IN_QUAD(t -> t * t),
-        EASE_OUT_QUAD(t -> 1f - (1f - t) * (1f - t)),
-        EASE_IN_OUT_QUAD(t -> t < 0.5f ? 2f * t * t : 1f - (float) Math.pow(-2f * t + 2f, 2) / 2f),
-        EASE_IN_CUBIC(t -> t * t * t),
-        EASE_OUT_CUBIC(t -> 1f - (float) Math.pow(1f - t, 3)),
-        EASE_IN_EXPO(t -> t == 0 ? 0 : (float) Math.pow(2, 10 * t - 10)),
-        EASE_OUT_EXPO(t -> t == 1 ? 1 : 1f - (float) Math.pow(2, -10 * t));
-
-        private final java.util.function.Function<Float, Float> function;
-
-        EasingFunction(java.util.function.Function<Float, Float> function) {
-            this.function = function;
-        }
+        LINEAR,
+        EASE_IN_QUAD,
+        EASE_OUT_QUAD,
+        EASE_IN_OUT_QUAD,
+        EASE_IN_CUBIC,
+        EASE_OUT_CUBIC,
+        EASE_IN_EXPO,
+        EASE_OUT_EXPO;
 
         public float apply(float t) {
-            return function.apply(Math.max(0, Math.min(1, t)));
+            float clamped = Math.max(0f, Math.min(1f, t));
+            return switch (this) {
+                case LINEAR -> clamped;
+                case EASE_IN_QUAD -> clamped * clamped;
+                case EASE_OUT_QUAD -> 1f - (1f - clamped) * (1f - clamped);
+                case EASE_IN_OUT_QUAD -> clamped < 0.5f
+                    ? 2f * clamped * clamped
+                    : 1f - (float) Math.pow(-2f * clamped + 2f, 2) / 2f;
+                case EASE_IN_CUBIC -> clamped * clamped * clamped;
+                case EASE_OUT_CUBIC -> 1f - (float) Math.pow(1f - clamped, 3);
+                case EASE_IN_EXPO -> clamped == 0f ? 0f : (float) Math.pow(2, 10 * clamped - 10);
+                case EASE_OUT_EXPO -> clamped == 1f ? 1f : 1f - (float) Math.pow(2, -10 * clamped);
+            };
         }
     }
 

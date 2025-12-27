@@ -162,7 +162,7 @@ public final class DebugOverlay {
         }
 
         // Layer 4: Overflow warning for content + reporter warnings
-        renderWarnings(safeGraphics, safeFont, contentBounds, contentTotalHeight, scrollOffset);
+        renderWarnings(safeGraphics, safeFont, contentBounds, contentTotalHeight);
 
         // Layer 5: Info panel (now includes warning count and hovered component)
         String hoveredComponent = getHoveredReporterName(mouseX, mouseY);
@@ -180,14 +180,14 @@ public final class DebugOverlay {
     public static String getHoveredReporterName(int mouseX, int mouseY) {
         for (DebugReporter reporter : reporters) {
             Bounds bounds = reporter.getDebugBounds();
-            if (bounds != null && bounds != Bounds.EMPTY && bounds.contains(mouseX, mouseY)) {
+            if (bounds != null && !Bounds.EMPTY.equals(bounds) && bounds.contains(mouseX, mouseY)) {
                 return reporter.getDebugName();
             }
         }
         return "";
     }
 
-    private static void renderWarnings(GuiGraphics graphics, Font font, Bounds contentBounds, int contentTotalHeight, float scrollOffset) {
+    private static void renderWarnings(GuiGraphics graphics, Font font, Bounds contentBounds, int contentTotalHeight) {
         Font safeFont = Objects.requireNonNull(font, "font");
         int viewport = contentBounds.height();
 
@@ -455,7 +455,7 @@ public final class DebugOverlay {
         Font safeFont = Objects.requireNonNull(font, "font");
         for (DebugReporter reporter : reporters) {
             Bounds bounds = reporter.getDebugBounds();
-            if (bounds == null || bounds == Bounds.EMPTY) continue;
+            if (bounds == null || Bounds.EMPTY.equals(bounds)) continue;
 
             boolean hovered = bounds.contains(mouseX, mouseY);
             int color = hovered ? COLOR_BBOX_HOVERED : COLOR_BBOX;

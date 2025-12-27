@@ -51,7 +51,9 @@ public final class ArmorComponents {
             if (ARMOR_STATS.isBound()) {
                 return ARMOR_STATS.get();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[ArmorComponents] Failed to resolve armor_stats component", e);
+        }
 
         if (Boolean.getBoolean("devmod.allowFallbackComponents")) {
             DevMod.LOGGER.warn("[ArmorComponents] Using fallback armor_stats component (test-mode only)");
@@ -64,6 +66,7 @@ public final class ArmorComponents {
         try {
             return ARMOR_STATS.isBound();
         } catch (Exception e) {
+            DevMod.LOGGER.debug("[ArmorComponents] Failed to check armor_stats binding", e);
             return false;
         }
     }

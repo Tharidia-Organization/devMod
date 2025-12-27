@@ -137,7 +137,7 @@ public class WeaponConfigTest {
         public void fromJson(String json) {
             weaponStats.clear();
             // Simple parser for our format
-            String[] lines = json.split("\n");
+            String[] lines = json.lines().toArray(String[]::new);
             String currentWeapon = null;
             MockWeaponStats currentStats = null;
 
@@ -154,9 +154,9 @@ public class WeaponConfigTest {
                         currentStats = null;
                     }
                 } else if (currentStats != null && line.contains(":")) {
-                    String[] parts = line.split(":");
-                    String key = parts[0].trim().replace("\"", "");
-                    String value = parts[1].trim().replace(",", "");
+                    int colonIndex = line.indexOf(':');
+                    String key = line.substring(0, colonIndex).trim().replace("\"", "");
+                    String value = line.substring(colonIndex + 1).trim().replace(",", "");
 
                     switch (key) {
                         case "baseDamageBonus" -> currentStats.baseDamageBonus = Float.parseFloat(value);

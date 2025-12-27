@@ -222,14 +222,14 @@ public class ShieldDeflector {
      * @return New normalized direction with random deviation
      */
     private static @Nonnull Vec3 applySpread(@Nonnull Vec3 direction, float maxSpread) {
-        direction = Objects.requireNonNull(direction, "spread base direction");
+        final @Nonnull Vec3 baseDirection = Objects.requireNonNull(direction, "spread base direction");
         // Generate random angles within the spread cone
         double spreadAngle = RANDOM.nextDouble() * maxSpread;
         double rotationAngle = RANDOM.nextDouble() * Math.PI * 2;
 
         // Create perpendicular vectors for rotation
-        final @Nonnull Vec3 perp1 = getPerpendicularVector(direction);
-        final @Nonnull Vec3 perp2 = Objects.requireNonNull(direction.cross(perp1).normalize(), "perp2");
+        final @Nonnull Vec3 perp1 = getPerpendicularVector(baseDirection);
+        final @Nonnull Vec3 perp2 = Objects.requireNonNull(baseDirection.cross(perp1).normalize(), "perp2");
 
         // Apply rotation using Rodrigues' formula simplified
         double cosSpread = Math.cos(spreadAngle);
@@ -247,8 +247,8 @@ public class ShieldDeflector {
             "rotation axis");
 
         // Rodrigues' rotation formula
-        final @Nonnull Vec3 scaledDir = Objects.requireNonNull(direction.scale(cosSpread), "scaled direction");
-        final @Nonnull Vec3 cross = Objects.requireNonNull(rotAxis.cross(direction), "rotAxis cross");
+        final @Nonnull Vec3 scaledDir = Objects.requireNonNull(baseDirection.scale(cosSpread), "scaled direction");
+        final @Nonnull Vec3 cross = Objects.requireNonNull(rotAxis.cross(baseDirection), "rotAxis cross");
         final @Nonnull Vec3 scaledCross = Objects.requireNonNull(cross.scale(sinSpread), "scaled cross");
         final @Nonnull Vec3 scaledAxis = Objects.requireNonNull(rotAxis.scale(rotAxis.dot(direction) * (1 - cosSpread)), "scaled rotAxis");
 
@@ -319,8 +319,8 @@ public class ShieldDeflector {
             .subtract(Objects.requireNonNull(projectile.position(), "projectile position"));
         toTarget = Objects.requireNonNull(toTarget.normalize(), "direction to target");
         Vec3 velocity = Objects.requireNonNull(
-            projectile.getDeltaMovement(), "projectile velocity").normalize();
-        velocity = Objects.requireNonNull(velocity, "normalized velocity");
+            Objects.requireNonNull(projectile.getDeltaMovement(), "projectile velocity").normalize(),
+            "normalized velocity");
 
         // Projectile is moving toward target if dot product is positive
         return toTarget.dot(velocity) > 0;

@@ -3,11 +3,14 @@ package com.devmod.client.endurance;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import com.google.common.base.Splitter;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -30,6 +33,7 @@ import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
 public class EnduranceShopScreen extends Screen {
+    private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
 
     // Layout constants - using UIConstants for consistency
     private static final int CATEGORY_WIDTH = UIConstants.Size.CATEGORY_WIDTH;
@@ -59,7 +63,9 @@ public class EnduranceShopScreen extends Screen {
     // Currency colors
     private static final Map<RewardSystem.Currency, Integer> CURRENCY_COLORS = Map.of(
         RewardSystem.Currency.TOKENS, UIConstants.Accent.GOLD(),
+        RewardSystem.Currency.COINS, UIConstants.Accent.YELLOW(),
         RewardSystem.Currency.PRESTIGE, UIConstants.Accent.PURPLE(),
+        RewardSystem.Currency.GEMS, UIConstants.Accent.CYAN(),
         RewardSystem.Currency.BLOOD_GEMS, UIConstants.Accent.RED()
     );
 
@@ -73,7 +79,9 @@ public class EnduranceShopScreen extends Screen {
 
     // Player data (cached from client cache or loaded via packet)
     private int playerTokens = 0;
+    private int playerCoins = 0;
     private int playerPrestige = 0;
+    private int playerGems = 0;
     private int playerBloodGems = 0;
     private Map<String, Integer> playerPurchases = new HashMap<>();
 
@@ -97,7 +105,9 @@ public class EnduranceShopScreen extends Screen {
     private void loadPlayerData() {
         // Load from client-side cache (synced from server)
         playerTokens = ClientShopCache.getTokens();
+        playerCoins = ClientShopCache.getCoins();
         playerPrestige = ClientShopCache.getPrestige();
+        playerGems = ClientShopCache.getGems();
         playerBloodGems = ClientShopCache.getBloodGems();
         playerPurchases = ClientShopCache.getPurchases();
 
@@ -125,7 +135,9 @@ public class EnduranceShopScreen extends Screen {
         super.tick();
         // Refresh currency display from cache (in case server sent update)
         playerTokens = ClientShopCache.getTokens();
+        playerCoins = ClientShopCache.getCoins();
         playerPrestige = ClientShopCache.getPrestige();
+        playerGems = ClientShopCache.getGems();
         playerBloodGems = ClientShopCache.getBloodGems();
         playerPurchases = ClientShopCache.getPurchases();
     }
@@ -169,9 +181,19 @@ public class EnduranceShopScreen extends Screen {
             currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.TOKENS));
         currencyY += 12;
 
+        // Coins
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.coins").getString()) + ": " + playerCoins,
+            currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.COINS));
+        currencyY += 12;
+
         // Prestige
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.prestige").getString()) + ": " + playerPrestige,
             currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.PRESTIGE));
+        currencyY += 12;
+
+        // Gems
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.gems").getString()) + ": " + playerGems,
+            currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.GEMS));
         currencyY += 12;
 
         // Blood Gems
@@ -373,7 +395,7 @@ public class EnduranceShopScreen extends Screen {
     }
 
     private String getCategoryLabel(RewardSystem.ShopCategory category) {
-        return Objects.requireNonNull(I18n.translate("devmod.shop.category." + category.name().toLowerCase()).getString());
+        return Objects.requireNonNull(I18n.translate("devmod.shop.category." + category.name().toLowerCase(Locale.ROOT)).getString());
     }
 
     private String getCurrencyLabel(RewardSystem.Currency currency) {
@@ -390,10 +412,9 @@ public class EnduranceShopScreen extends Screen {
 
     private List<String> wrapText(String text, int maxWidth) {
         List<String> lines = new ArrayList<>();
-        String[] words = text.split(" ");
         StringBuilder currentLine = new StringBuilder();
 
-        for (String word : words) {
+        for (String word : SPACE_SPLITTER.split(text)) {
             String testLine = currentLine.isEmpty() ? word : currentLine + " " + word;
             if (Objects.requireNonNull(font).width(Objects.requireNonNull(testLine)) > maxWidth) {
                 if (!currentLine.isEmpty()) {
@@ -430,8 +451,11 @@ public class EnduranceShopScreen extends Screen {
     private boolean canAfford(RewardSystem.ShopItem item) {
         return switch (item.currency) {
             case TOKENS -> playerTokens >= item.price;
+            case COINS -> playerCoins >= item.price;
             case PRESTIGE -> playerPrestige >= item.price;
+            case GEMS -> playerGems >= item.price;
             case BLOOD_GEMS -> playerBloodGems >= item.price;
+            default -> false;
         };
     }
 
@@ -528,7 +552,9 @@ public class EnduranceShopScreen extends Screen {
 
         // Update local display values from cache
         playerTokens = ClientShopCache.getTokens();
+        playerCoins = ClientShopCache.getCoins();
         playerPrestige = ClientShopCache.getPrestige();
+        playerGems = ClientShopCache.getGems();
         playerBloodGems = ClientShopCache.getBloodGems();
         playerPurchases = ClientShopCache.getPurchases();
     }

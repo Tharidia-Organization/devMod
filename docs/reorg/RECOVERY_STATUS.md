@@ -1,5 +1,8 @@
 # Recovery Status
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (reorg recovery snapshot)
+
 ## Snapshot Info
 - **Date**: 2024-12-24 12:20 UTC
 - **Branch**: Banastaff

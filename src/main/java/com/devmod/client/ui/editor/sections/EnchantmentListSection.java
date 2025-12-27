@@ -8,6 +8,8 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Splitter;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -34,6 +36,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
     private static final int TEXT_INSET_X = 8;
     private static final int BOTTOM_PADDING = 8;
     private static final int MAX_ENCHANT_LEVEL = 10; // Allow beyond vanilla max for editing
+    private static final Splitter UNDERSCORE_SPLITTER = Splitter.on('_');
 
     private final String id;
     private final String title;
@@ -119,9 +122,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
     }
 
     private boolean canApplyTo(Holder<Enchantment> enchantment, ItemStack stack) {
-        // Basic check - in real implementation would check enchantment tags
-        // For now, allow all common enchantments to be shown
-        return true;
+        return stack.supportsEnchantment(enchantment);
     }
 
     private void addEnchantmentEntry(Holder<Enchantment> holder, int currentLevel) {
@@ -156,9 +157,8 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
         if (key != null) {
             // Convert to display name (capitalize, replace underscores)
             String path = key.getPath();
-            String[] words = path.split("_");
             StringBuilder sb = new StringBuilder();
-            for (String word : words) {
+            for (String word : UNDERSCORE_SPLITTER.split(path)) {
                 if (!word.isEmpty()) {
                     sb.append(Character.toUpperCase(word.charAt(0)))
                       .append(word.substring(1))

@@ -132,7 +132,7 @@ public class SettingsManager {
         final Path configPath = ConfigPaths.getSettingsFile();
 
         // Submit async save task - does NOT block main thread
-        saveExecutor.submit(() -> {
+        saveExecutor.execute(() -> {
             try {
                 // Create config directory if needed
                 Files.createDirectories(configPath.getParent());

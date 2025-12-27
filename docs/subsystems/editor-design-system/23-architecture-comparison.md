@@ -1,5 +1,8 @@
 # 23 - Architecture Comparison: Editor System vs Panel System
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Overview
 
 DevMod utilizza **due sistemi UI paralleli** per scopi diversi. Questo documento spiega quando usare ciascuno.

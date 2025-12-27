@@ -49,16 +49,16 @@ public final class ShieldBlockHandler {
         }
 
         ArmorStats stats = ArmorConfigManager.getStats(shield);
-        BlockResult result = calculateBlock(player, source, incomingDamage, shield, stats);
+        BlockResult result = calculateBlock(player, source, incomingDamage, stats);
 
-        applyVisualEffects(player, source, result, stats);
+        applyVisualEffects(player, source, result);
         applyCooldown(player, shield, stats);
 
         return result.damageAfterBlock();
     }
 
     private static BlockResult calculateBlock(Player player, DamageSource source,
-                                               float incomingDamage, ItemStack shield, ArmorStats stats) {
+                                               float incomingDamage, ArmorStats stats) {
         float blocked = Math.min(1f, Math.max(0f, stats.shieldBlockStrength));
         float damageAfterBlock = incomingDamage * (1f - blocked);
 
@@ -84,7 +84,7 @@ public final class ShieldBlockHandler {
     }
 
     private static void applyVisualEffects(Player player, DamageSource source,
-                                            BlockResult result, ArmorStats stats) {
+                                            BlockResult result) {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }

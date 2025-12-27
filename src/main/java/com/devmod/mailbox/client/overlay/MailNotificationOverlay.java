@@ -2,6 +2,8 @@ package com.devmod.mailbox.client.overlay;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +64,7 @@ public final class MailNotificationOverlay {
     // State
     private static volatile boolean active = false;
     private static volatile long startTime = 0;
+    @Nullable
     private static volatile MailboxNotifyPayload currentNotification = null;
 
     private MailNotificationOverlay() {}
@@ -80,10 +83,15 @@ public final class MailNotificationOverlay {
         if (!active || currentNotification == null) {
             // Check for pending notifications
             MailboxNotifyPayload pending = ClientMailboxCache.getDisplayableNotification();
-            if (pending != null && currentNotification != pending) {
+            if (pending != null && !Objects.equals(currentNotification, pending)) {
                 showNotification(pending);
             }
             if (!active) return;
+        }
+
+        MailboxNotifyPayload notification = currentNotification;
+        if (notification == null) {
+            return;
         }
 
         Minecraft mc = Minecraft.getInstance();
@@ -117,7 +125,7 @@ public final class MailNotificationOverlay {
         int textAlpha = (int) (alpha * 255);
 
         // Get border color based on message type
-        int baseBorderColor = getBorderColor(currentNotification.messageTypeOrdinal());
+        int baseBorderColor = getBorderColor(notification.messageTypeOrdinal());
 
         // Draw border
         int borderColor = (borderAlpha << 24) | (baseBorderColor & 0x00FFFFFF);
@@ -142,20 +150,20 @@ public final class MailNotificationOverlay {
 
         // Sender
         contentY += 14;
-        String sender = currentNotification.senderName() != null
-            ? currentNotification.senderName()
-            : getTypeName(currentNotification.messageTypeOrdinal());
+        String sender = notification.senderName() != null
+            ? notification.senderName()
+            : getTypeName(notification.messageTypeOrdinal());
         int senderColor = (textAlpha << 24) | (SENDER_COLOR & 0x00FFFFFF);
         graphics.drawString(font, "From: " + truncate(sender, 24), contentX, contentY, senderColor, false);
 
         // Subject
         contentY += 12;
-        String subject = truncate(currentNotification.subject(), 32);
+        String subject = truncate(notification.subject(), 32);
         int subjectColor = (textAlpha << 24) | (SUBJECT_COLOR & 0x00FFFFFF);
         graphics.drawString(font, subject, contentX, contentY, subjectColor, false);
 
         // Attachment indicator
-        if (currentNotification.hasAttachment()) {
+        if (notification.hasAttachment()) {
             int attachX = currentX + BOX_WIDTH - 25;
             int attachY = y + 18;
             int attachColor = (textAlpha << 24) | (0xFFD700 & 0x00FFFFFF);

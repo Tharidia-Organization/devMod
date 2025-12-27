@@ -154,7 +154,9 @@ public class OpenExternalConfirmScreen extends Screen {
                 Minecraft.getInstance().tell(() -> {
                     try {
                         Thread.sleep(500);
-                    } catch (InterruptedException ignored) {}
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                     onClose();
                 });
             } else {

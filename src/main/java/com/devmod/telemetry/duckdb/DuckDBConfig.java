@@ -208,7 +208,9 @@ public final class DuckDBConfig {
         if (value != null) {
             try {
                 return Integer.parseInt(value.trim());
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+                return defaultValue;
+            }
         }
         return defaultValue;
     }
@@ -225,7 +227,9 @@ public final class DuckDBConfig {
         if (value != null) {
             try {
                 return Long.parseLong(value.trim());
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+                return defaultValue;
+            }
         }
         return defaultValue;
     }

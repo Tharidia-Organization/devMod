@@ -32,6 +32,7 @@ public final class ActionIds {
     public static final String UI_PARTY_OPEN = "devmod.ui.party.open";
     public static final String UI_PARTY_INVITE_POPUP_OPEN = "devmod.ui.party_invite_popup.open";
     public static final String UI_MAILBOX_OPEN = "devmod.ui.mailbox.open";
+    public static final String UI_TESTER_TASKS_OPEN = "devmod.ui.tester_tasks.open";
     public static final String UI_QUEST_EDITOR_OPEN = "devmod.ui.quest_editor.open";
     public static final String UI_ENDURANCE_EDITOR_OPEN = "devmod.ui.endurance_editor.open";
     public static final String UI_ENDURANCE_SCREEN_OPEN = "devmod.ui.endurance_screen.open";
@@ -279,4 +280,19 @@ public final class ActionIds {
     public static final String CONFIG_GAMEDESIGN_PRESET_CHAOS = "devmod.gamedesign.preset.chaos";
     public static final String CONFIG_GAMEDESIGN_PRESET_TUTORIAL = "devmod.gamedesign.preset.tutorial";
     public static final String CONFIG_GAMEDESIGN_PRESET_SPEEDRUN = "devmod.gamedesign.preset.speedrun";
+
+    // Mailbox admin
+    public static final String MAILBOX_COMMAND_HELP = "devmod.mailbox.command.help";
+    public static final String MAILBOX_COMMAND_STATS = "devmod.mailbox.command.stats";
+    public static final String MAILBOX_COMMAND_SEND = "devmod.mailbox.command.send";
+    public static final String MAILBOX_COMMAND_BROADCAST = "devmod.mailbox.command.broadcast";
+    public static final String MAILBOX_COMMAND_INBOX = "devmod.mailbox.command.inbox";
+    public static final String MAILBOX_COMMAND_PURGE = "devmod.mailbox.command.purge";
+
+    // News admin
+    public static final String NEWS_COMMAND_HELP = "devmod.news.command.help";
+    public static final String NEWS_COMMAND_LIST = "devmod.news.command.list";
+    public static final String NEWS_COMMAND_CREATE = "devmod.news.command.create";
+    public static final String NEWS_COMMAND_DELETE = "devmod.news.command.delete";
+    public static final String NEWS_COMMAND_PUBLISH = "devmod.news.command.publish";
 }

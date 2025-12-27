@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -26,6 +27,7 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 
+import com.google.common.base.Splitter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.logging.LogUtils;
@@ -38,6 +40,7 @@ import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 
 public class TelemetryDashboardServer {
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final Splitter AMPERSAND_SPLITTER = Splitter.on('&');
     public static final TelemetryDashboardServer INSTANCE = new TelemetryDashboardServer();
 
     private static final int DEFAULT_PORT = 8642;
@@ -55,8 +58,6 @@ public class TelemetryDashboardServer {
 
     // Delegate for analytics handlers
     @Nullable
-    private TelemetryAnalyticsHandlers analyticsHandlers;
-    @Nullable
     private ArenaDashboardEndpoint arenaEndpoint;
 
     private TelemetryDashboardServer() {}
@@ -73,7 +74,6 @@ public class TelemetryDashboardServer {
         try {
             // Initialize delegate for analytics handlers
             TelemetryAnalyticsHandlers handlers = new TelemetryAnalyticsHandlers(this, gson);
-            this.analyticsHandlers = handlers;
             initializeArenaDashboard();
 
             HttpServer httpServer = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
@@ -173,7 +173,11 @@ public class TelemetryDashboardServer {
 
             ArenaDashboardEndpoint endpoint = arenaEndpoint;
             if (endpoint != null) {
-                try { endpoint.close(); } catch (Exception ignored) {}
+                try {
+                    endpoint.close();
+                } catch (Exception e) {
+                    LOGGER.debug("[Dashboard] Failed to close arena endpoint", e);
+                }
             }
             arenaEndpoint = null;
             running.set(false);
@@ -504,7 +508,7 @@ public class TelemetryDashboardServer {
         }
 
         // Security: only allow SELECT queries
-        if (!sql.trim().toUpperCase().startsWith("SELECT")) {
+        if (!sql.trim().toUpperCase(Locale.ROOT).startsWith("SELECT")) {
             return gson.toJson(Map.of("error", "Only SELECT queries are allowed"));
         }
 
@@ -603,7 +607,7 @@ public class TelemetryDashboardServer {
             return ArenaDashboardEndpoint.ExportFormat.JSON;
         }
         try {
-            return ArenaDashboardEndpoint.ExportFormat.valueOf(value.trim().toUpperCase());
+            return ArenaDashboardEndpoint.ExportFormat.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return ArenaDashboardEndpoint.ExportFormat.JSON;
         }
@@ -938,10 +942,13 @@ public class TelemetryDashboardServer {
         Map<String, String> params = new HashMap<>();
         String query = exchange.getRequestURI().getQuery();
         if (query != null) {
-            for (String param : query.split("&")) {
-                String[] pair = param.split("=", 2);
-                if (pair.length == 2) {
-                    params.put(pair[0], pair[1]);
+            for (String param : AMPERSAND_SPLITTER.split(query)) {
+                if (param.isEmpty()) {
+                    continue;
+                }
+                int equalsIndex = param.indexOf('=');
+                if (equalsIndex >= 0) {
+                    params.put(param.substring(0, equalsIndex), param.substring(equalsIndex + 1));
                 }
             }
         }

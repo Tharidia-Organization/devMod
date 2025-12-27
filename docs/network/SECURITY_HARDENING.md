@@ -1,7 +1,7 @@
 # DevMod Network Security Hardening
 
-**Last Updated:** 2025-12-24  
-**Status:** Active
+> Last updated: 2025-12-24
+> Status: CURRENT (verified against code)
 
 ## Policy
 

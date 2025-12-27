@@ -1,6 +1,9 @@
 # Crafting Info Panel
 
-> **STATUS:** ✅ **Implementato** in `ui/editor/systems/CraftingInfoPanel.java`. Estende `BaseOverlay` per comportamento modale consistente.
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
+Implementato in `ui/editor/systems/CraftingInfoPanel.java`. Estende `BaseOverlay` per comportamento modale consistente.
 
 ## Layout
 

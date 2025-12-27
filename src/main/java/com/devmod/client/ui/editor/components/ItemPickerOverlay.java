@@ -275,7 +275,7 @@ public class ItemPickerOverlay extends BaseOverlay {
                            scaledItemSize, itemsPerRow, visibleRows, mouseX, mouseY);
         } else {
             renderTagsGrid(safeGraphics, safeFont, innerX, innerY, innerW, gridH,
-                          scaledItemSize, itemsPerRow, visibleRows, mouseX, mouseY);
+                          mouseX, mouseY);
         }
 
         // === Footer info ===
@@ -342,9 +342,8 @@ public class ItemPickerOverlay extends BaseOverlay {
     }
 
     private void renderTagsGrid(GuiGraphics graphics, Font font,
-                                 int x, int y, int w, int h,
-                                 int itemSize, int perRow, int visibleRows,
-                                 int mouseX, int mouseY) {
+                                int x, int y, int w, int h,
+                                int mouseX, int mouseY) {
         GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
         Font safeFont = Objects.requireNonNull(font, "font");
         // Tags are rendered as a list (one per row) since they need more space for text
@@ -547,7 +546,7 @@ public class ItemPickerOverlay extends BaseOverlay {
 
     @Override
     protected boolean handleCharTyped(char chr, int modifiers) {
-        if (searchFocused && Character.isLetterOrDigit(chr) || chr == '_' || chr == ':' || chr == ' ' || chr == '#') {
+        if (searchFocused && (Character.isLetterOrDigit(chr) || chr == '_' || chr == ':' || chr == ' ' || chr == '#')) {
             searchQuery += chr;
             filterDirty = true;
             return true;

@@ -1,5 +1,8 @@
 # Editor Implementation Log
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 Tracking file per l'implementazione del sistema Editor basato su EDITOR_DESIGN_SYSTEM.md
 
 ---

@@ -7,6 +7,8 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Splitter;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -25,6 +27,7 @@ import com.devmod.telemetry.economy.EconomyMetricsService;
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class EconomyOverlay {
+    private static final Splitter UNDERSCORE_SPLITTER = Splitter.on('_');
 
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "economy_overlay");
@@ -416,8 +419,8 @@ public class EconomyOverlay {
         String name = mobType;
         // Handle "entity.minecraft.zombie" format
         if (name.contains(".")) {
-            String[] parts = name.split("\\.");
-            name = parts[parts.length - 1];
+            int lastDot = name.lastIndexOf('.');
+            name = lastDot >= 0 ? name.substring(lastDot + 1) : name;
         }
         // Handle "minecraft:zombie" format
         if (name.contains(":")) {
@@ -425,9 +428,8 @@ public class EconomyOverlay {
         }
         // Convert snake_case to Title Case
         if (name.contains("_")) {
-            String[] parts = name.split("_");
             StringBuilder sb = new StringBuilder();
-            for (String part : parts) {
+            for (String part : UNDERSCORE_SPLITTER.split(name)) {
                 if (!part.isEmpty()) {
                     if (sb.length() > 0) sb.append(" ");
                     sb.append(Character.toUpperCase(part.charAt(0)));
@@ -447,9 +449,8 @@ public class EconomyOverlay {
             name = name.substring(name.lastIndexOf(':') + 1);
         }
         if (name.contains("_")) {
-            String[] parts = name.split("_");
             StringBuilder sb = new StringBuilder();
-            for (String part : parts) {
+            for (String part : UNDERSCORE_SPLITTER.split(name)) {
                 if (!part.isEmpty()) {
                     if (sb.length() > 0) sb.append(" ");
                     sb.append(Character.toUpperCase(part.charAt(0)));
@@ -470,8 +471,9 @@ public class EconomyOverlay {
             name = name.substring(name.lastIndexOf(':') + 1);
         }
         // Just capitalize first letter, keep short
-        if (name.contains("_")) {
-            name = name.split("_")[0];
+        int underscoreIndex = name.indexOf('_');
+        if (underscoreIndex >= 0) {
+            name = name.substring(0, underscoreIndex);
         }
         if (name.length() > 8) {
             name = name.substring(0, 7) + ".";

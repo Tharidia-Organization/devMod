@@ -2,6 +2,7 @@ package com.devmod.endurance;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -116,7 +117,7 @@ public final class KitManager {
             return false;
         }
         try {
-            KitPreset.valueOf(kitId.toUpperCase());
+            KitPreset.valueOf(kitId.toUpperCase(Locale.ROOT));
             return true;
         } catch (IllegalArgumentException e) {
             return false;
@@ -132,7 +133,7 @@ public final class KitManager {
             return null;
         }
         try {
-            return KitPreset.valueOf(kitId.toUpperCase());
+            return KitPreset.valueOf(kitId.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return null;
         }

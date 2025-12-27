@@ -1,5 +1,6 @@
 package com.devmod.mailbox.attachment;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -92,6 +93,21 @@ public interface MailAttachment {
             MailAttachment single = fromJson(json);
             return single != null ? List.of(single) : List.of();
         }
+    }
+
+    /**
+     * Flatten composite attachments into a single list.
+     */
+    static List<MailAttachment> flattenAttachments(List<MailAttachment> attachments) {
+        List<MailAttachment> flat = new ArrayList<>();
+        for (MailAttachment attachment : attachments) {
+            if (attachment instanceof CompositeAttachment composite) {
+                flat.addAll(flattenAttachments(composite.attachments()));
+            } else if (attachment != null) {
+                flat.add(attachment);
+            }
+        }
+        return flat;
     }
 
     /**

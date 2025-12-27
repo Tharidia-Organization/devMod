@@ -1,5 +1,8 @@
 # Resolution & UI Scaling
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 Base 1080p con UI scale dedicato, indipendente dalla GUI scale di Minecraft.
 
 ## Scale Factors (Discreti)

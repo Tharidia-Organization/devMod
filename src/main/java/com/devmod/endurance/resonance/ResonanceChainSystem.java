@@ -369,7 +369,7 @@ public final class ResonanceChainSystem {
         List<LivingEntity> nearby = level.getEntitiesOfClass(
             LivingEntity.class,
             bounds,
-            e -> e != center && !(e instanceof ServerPlayer) && e.isAlive()
+            e -> !Objects.equals(e, center) && !(e instanceof ServerPlayer) && e.isAlive()
         );
 
         for (LivingEntity entity : nearby) {
@@ -410,8 +410,8 @@ public final class ResonanceChainSystem {
         String announcement = tier.announcement;
         // Create and send payload (use config styleBonus, not tier default)
         ResonanceNotificationPayload payload = new ResonanceNotificationPayload(
-            tierName,
-            announcement,
+            Objects.requireNonNull(tierName),
+            Objects.requireNonNull(announcement),
             tier.getColor(),
             styleBonus
         );

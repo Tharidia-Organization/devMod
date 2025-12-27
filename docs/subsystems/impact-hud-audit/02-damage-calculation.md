@@ -1,5 +1,8 @@
 # Impact HUD - Logiche di Calcolo Danno
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## 1. Overview del Flusso di Calcolo
 
 Il sistema calcola il danno in due momenti distinti:

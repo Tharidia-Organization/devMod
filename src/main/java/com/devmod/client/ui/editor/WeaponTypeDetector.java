@@ -346,7 +346,9 @@ public class WeaponTypeDetector {
                             alreadyPresent = true;
                             break;
                         }
-                    } catch (Exception ignored) { }
+                    } catch (Exception e) {
+                        DevMod.LOGGER.debug("[WeaponTypeDetector] Skipping invalid whitelist entry", e);
+                    }
                 }
                 if (!alreadyPresent) {
                     array.add(id.toString());
@@ -414,7 +416,9 @@ public class WeaponTypeDetector {
                     try {
                         ResourceLocation id = ResourceLocation.tryParse(Objects.requireNonNull(el.getAsString()));
                         if (id != null) out.add(id);
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        DevMod.LOGGER.debug("[WeaponTypeDetector] Skipping invalid entry in {}", path, e);
+                    }
                 });
                 return out;
             } catch (Exception e) {

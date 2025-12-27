@@ -55,8 +55,12 @@ public class ModInteractionTracker {
      * Record effect from a mod.
      */
     public void recordModEffect(String effectType) {
-        if (effectType != null && effectType.contains(":")) {
-            String modId = effectType.split(":")[0];
+        if (effectType != null) {
+            int colonIndex = effectType.indexOf(':');
+            if (colonIndex < 0) {
+                return;
+            }
+            String modId = effectType.substring(0, colonIndex);
             if (!modId.equals("minecraft")) {
                 effectsUsedByMod.merge(modId, 1, ModInteractionTracker::safeIntSum);
                 modsInteractedWith.add(modId);

@@ -577,23 +577,23 @@ public class EnduranceQuestManager {
             : null;
 
         CompletableFuture<PreparedArenaResult> result = new CompletableFuture<>();
-        InstanceManager.INSTANCE
+        var instanceFuture = InstanceManager.INSTANCE
             .startInstanceQuestImmediate(leader, template.id(), mobId.toString(), partyMembers)
-            .orTimeout(INSTANCE_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .whenComplete((instanceId, throwable) -> {
-                var server = leader.getServer();
-                if (server == null) {
-                    if (instanceId != null) {
-                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
-                    }
-                    result.complete(PreparedArenaResult.failure("Server not available"));
-                    return;
+            .orTimeout(INSTANCE_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        instanceFuture = instanceFuture.whenComplete((instanceId, throwable) -> {
+            var server = leader.getServer();
+            if (server == null) {
+                if (instanceId != null) {
+                    InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
                 }
-                server.execute(() -> {
-                    if (throwable != null || instanceId == null) {
-                        String message = throwable != null && throwable.getMessage() != null
-                            ? throwable.getMessage()
-                            : "Failed to create instance for party";
+                result.complete(PreparedArenaResult.failure("Server not available"));
+                return;
+            }
+            server.execute(() -> {
+                if (throwable != null || instanceId == null) {
+                    String message = throwable != null && throwable.getMessage() != null
+                        ? throwable.getMessage()
+                        : "Failed to create instance for party";
                         LOGGER.error("[EnduranceQuest] Failed to create instance for party: {}", message);
                         result.complete(PreparedArenaResult.failure("Failed to create instance: " + message));
                         return;
@@ -625,13 +625,14 @@ public class EnduranceQuestManager {
                     if (shouldBuildAsync(template)) {
                         AsyncArenaBuilder asyncBuilder = asyncBuildCoordinator.getOrCreate(instanceLevel);
                         UUID arenaId = UUID.randomUUID();
-                        asyncBuilder.submitBuildAsync(
+                        var buildFuture = asyncBuilder.submitBuildAsync(
                             arenaId,
                             template,
                             origin.centerX(),
                             origin.originY(),
                             origin.centerZ()
-                        ).whenComplete((asyncResult, buildError) -> {
+                        );
+                        buildFuture = buildFuture.whenComplete((asyncResult, buildError) -> {
                             server.execute(() -> {
                                 if (buildError != null || asyncResult == null || !asyncResult.success()) {
                                     String msg = buildError != null && buildError.getMessage() != null
@@ -692,6 +693,9 @@ public class EnduranceQuestManager {
                                 ));
                             });
                         });
+                        if (buildFuture.isCancelled()) {
+                            LOGGER.debug("[EnduranceQuest] Async arena build cancelled for {}", arenaId);
+                        }
                         return;
                     }
 
@@ -719,18 +723,21 @@ public class EnduranceQuestManager {
                         return;
                     }
 
-                    result.complete(finalizePreparedArena(
-                        attempt.result(),
-                        attempt.resolved(),
-                        instanceId,
-                        attempt.origin(),
-                        instanceLevel,
-                        instance,
-                        mobId,
-                        mobConfig
-                    ));
-                });
+                result.complete(finalizePreparedArena(
+                    attempt.result(),
+                    attempt.resolved(),
+                    instanceId,
+                    attempt.origin(),
+                    instanceLevel,
+                    instance,
+                    mobId,
+                    mobConfig
+                ));
             });
+        });
+        if (instanceFuture.isCancelled()) {
+            LOGGER.debug("[EnduranceQuest] Instance preparation cancelled for {}", mobId);
+        }
 
         return result;
     }
@@ -855,12 +862,12 @@ public class EnduranceQuestManager {
     public Map<UUID, net.minecraft.core.BlockPos> teleportPlayersToArena(List<ServerPlayer> players,
                                                                         ArenaContext arena,
                                                                         @javax.annotation.Nullable ArenaHandle handle) {
+        Map<UUID, net.minecraft.core.BlockPos> spawnPositions = new HashMap<>();
         if (handle == null || handle.playerSpawnPositions() == null || handle.playerSpawnPositions().isEmpty()) {
             LOGGER.error("[EnduranceQuest] Missing player spawn slots; ArenaHandle required");
-            return Collections.emptyMap();
+            return spawnPositions;
         }
 
-        Map<UUID, net.minecraft.core.BlockPos> spawnPositions = new HashMap<>();
         List<ArenaHandle.BlockPos> positions = handle.playerSpawnPositions();
         int playerCount = players.size();
         ServerLevel level = arena.getLevel();
@@ -891,7 +898,8 @@ public class EnduranceQuestManager {
             );
             if (spawnPos == null) {
                 LOGGER.warn("[EnduranceQuest] No valid template player spawn found");
-                return Collections.emptyMap();
+                spawnPositions.clear();
+                return spawnPositions;
             }
             double x = spawnPos.getX() + 0.5;
             double y = spawnPos.getY();
@@ -1045,7 +1053,7 @@ public class EnduranceQuestManager {
     private record OriginResolution(int originX, int originY, int originZ, int centerX, int centerZ) {}
 
     private int resolveTemplateSize(ArenaTemplate template, Integer size) {
-        return Objects.requireNonNullElse(size, Objects.requireNonNull(template.size(), "template.size"));
+        return Objects.requireNonNullElse(size, template.size());
     }
 
     private OriginResolution resolveTemplateOrigin(ArenaTemplate template) {
@@ -1899,12 +1907,47 @@ public class EnduranceQuestManager {
         player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
             .withStyle(ChatFormatting.YELLOW)));
 
-        InstanceManager.INSTANCE
-            .startInstanceQuestImmediate(player, resolved.template().id(), mobId.toString(), null)
-            .thenAccept(instanceId -> {
-                completeTemplateInstanceQuestSetup(player, session.getPlayerId(), mobId, session.getQuest(),
-                    settings, resolved, instanceId);
+        var startFuture = InstanceManager.INSTANCE
+            .startInstanceQuestImmediate(player, resolved.template().id(), mobId.toString(), null);
+        startFuture = startFuture.whenComplete((instanceId, throwable) -> {
+            var server = player.getServer();
+            if (server == null) {
+                failPendingInstanceSetup(player, session, instanceId, "Server not available");
+                return;
+            }
+            server.execute(() -> {
+                ActiveQuestSession currentSession = activeSessions.get(session.getPlayerId());
+                ServerPlayer currentPlayer = server.getPlayerList().getPlayer(Objects.requireNonNull(session.getPlayerId()));
+                if (currentPlayer == null || currentSession == null) {
+                    if (instanceId != null) {
+                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                    }
+                    return;
+                }
+                if (throwable != null) {
+                    String message = throwable.getMessage() != null ? throwable.getMessage() : "Unknown error";
+                    failPendingInstanceSetup(currentPlayer, currentSession, instanceId,
+                        "Failed to create instance: " + message);
+                    return;
+                }
+                if (instanceId == null) {
+                    failPendingInstanceSetup(currentPlayer, currentSession, null, "Failed to create instance");
+                    return;
+                }
+                completeTemplateInstanceQuestSetup(
+                    currentPlayer,
+                    currentSession.getPlayerId(),
+                    mobId,
+                    currentSession.getQuest(),
+                    settings,
+                    resolved,
+                    instanceId
+                );
             });
+        });
+        if (startFuture.isCancelled()) {
+            LOGGER.debug("[EnduranceQuest] Instance start cancelled for {}", mobId);
+        }
     }
 
     void sendSoloSequenceUpdate(ServerPlayer player, ActiveQuestSession session,
@@ -2000,13 +2043,14 @@ public class EnduranceQuestManager {
         if (shouldBuildAsync(template)) {
             AsyncArenaBuilder asyncBuilder = asyncBuildCoordinator.getOrCreate(instanceLevel);
             UUID arenaId = UUID.randomUUID();
-            asyncBuilder.submitBuildAsync(
+            var buildFuture = asyncBuilder.submitBuildAsync(
                 arenaId,
                 template,
                 origin.centerX(),
                 origin.originY(),
                 origin.centerZ()
-            ).whenComplete((asyncResult, buildError) -> {
+            );
+            buildFuture = buildFuture.whenComplete((asyncResult, buildError) -> {
                 server.execute(() -> {
                     ActiveQuestSession currentSession = activeSessions.get(playerId);
                     ServerPlayer currentPlayer = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
@@ -2079,6 +2123,9 @@ public class EnduranceQuestManager {
                     );
                 });
             });
+            if (buildFuture.isCancelled()) {
+                LOGGER.debug("[EnduranceQuest] Async solo arena build cancelled for {}", arenaId);
+            }
             return;
         }
 

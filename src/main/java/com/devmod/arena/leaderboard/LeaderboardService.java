@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -181,6 +182,7 @@ public final class LeaderboardService {
     private final RedisCache cache;
     private final DatabaseQuery database;
     private final ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> scheduledTask;
     private final Map<LeaderboardType, Instant> lastCalculationTimes;
     private final Consumer<String> logger;
     private volatile SeasonConfig seasonConfig;
@@ -258,7 +260,7 @@ public final class LeaderboardService {
 
         logger.accept("Scheduling leaderboard calculation at 03:00 UTC, initial delay: " + initialDelay + "s");
 
-        scheduler.scheduleAtFixedRate(
+        scheduledTask = scheduler.scheduleAtFixedRate(
             this::calculateAllLeaderboards,
             initialDelay,
             TimeUnit.DAYS.toSeconds(1),
@@ -270,6 +272,9 @@ public final class LeaderboardService {
      * Stops the scheduled calculation.
      */
     public void stopScheduledCalculation() {
+        if (scheduledTask != null) {
+            scheduledTask.cancel(false);
+        }
         scheduler.shutdown();
         try {
             if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {

@@ -1,5 +1,6 @@
 package com.devmod.arena.builder;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -338,7 +339,7 @@ public class ArenaBuilder {
                 "waitTimeMs", lockWaitMs
             ));
 
-            UUID rateLimitPlayerId = UUID.nameUUIDFromBytes(lockOwner.getBytes());
+            UUID rateLimitPlayerId = UUID.nameUUIDFromBytes(lockOwner.getBytes(StandardCharsets.UTF_8));
             BuildPermit permit = BUILD_RATE_LIMITER.requestPermit(rateLimitPlayerId, lockOwner);
             if (!permit.isGranted()) {
                 BuildPermit.Rejected rejected = (BuildPermit.Rejected) permit;
@@ -404,30 +405,30 @@ public class ArenaBuilder {
 
             if (buildOrder == ArenaTemplate.BuildSettings.Order.WALLS_FIRST) {
                 if (template.walls() != null && template.walls().enabled()) {
-                    buildWalls(template, originX, originY, originZ, transaction);
+                    buildWalls(template, originX, originZ, transaction);
                 }
                 if (template.floor() != null) {
-                    buildFloor(template, originX, originY, originZ, transaction);
+                    buildFloor(template, originX, originZ, transaction);
                 }
             } else {
                 if (template.floor() != null) {
-                    buildFloor(template, originX, originY, originZ, transaction);
+                    buildFloor(template, originX, originZ, transaction);
                 }
                 if (template.walls() != null && template.walls().enabled()) {
-                    buildWalls(template, originX, originY, originZ, transaction);
+                    buildWalls(template, originX, originZ, transaction);
                 }
             }
 
             if (template.ceiling() != null && template.ceiling().enabled()) {
-                buildCeiling(template, originX, originY, originZ, transaction);
+                buildCeiling(template, originX, originZ, transaction);
             }
 
             if (template.underfloor() != null) {
-                buildUnderfloor(template, originX, originY, originZ, transaction);
+                buildUnderfloor(template, originX, originZ, transaction);
             }
 
             if (template.hazards() != null && !template.hazards().isEmpty()) {
-                placeHazards(template, originX, originY, originZ, transaction);
+                placeHazards(template, originX, originZ, transaction);
             }
 
             if (buildOrder != ArenaTemplate.BuildSettings.Order.STRUCTURE_FIRST && template.structureNbt() != null) {
@@ -630,7 +631,7 @@ public class ArenaBuilder {
         return sz != null ? sz.intValue() : template.size();
     }
 
-    private void buildFloor(ArenaTemplate template, int originX, int originY, int originZ, BuildTransaction tx) {
+    private void buildFloor(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         if (template.floor() == null) return;
 
         var floor = template.floor();
@@ -662,7 +663,7 @@ public class ArenaBuilder {
         }
     }
 
-    private void buildWalls(ArenaTemplate template, int originX, int originY, int originZ, BuildTransaction tx) {
+    private void buildWalls(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         var walls = template.walls();
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
@@ -692,7 +693,7 @@ public class ArenaBuilder {
         }
     }
 
-    private void buildCeiling(ArenaTemplate template, int originX, int originY, int originZ, BuildTransaction tx) {
+    private void buildCeiling(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         var ceiling = template.ceiling();
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
@@ -708,7 +709,7 @@ public class ArenaBuilder {
         }
     }
 
-    private void buildUnderfloor(ArenaTemplate template, int originX, int originY, int originZ, BuildTransaction tx) {
+    private void buildUnderfloor(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         var underfloor = template.underfloor();
         var floor = template.floor();
         if (floor == null) return;
@@ -729,7 +730,7 @@ public class ArenaBuilder {
         }
     }
 
-    private void placeHazards(ArenaTemplate template, int originX, int originY, int originZ, BuildTransaction tx) {
+    private void placeHazards(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         LOGGER.debug("Placing {} hazards for template '{}'", template.hazards().size(), template.id());
         int placedHazards = 0;
         for (ArenaTemplate.Hazard hazard : template.hazards()) {

@@ -1,5 +1,8 @@
 # 05 - Editor Integration
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Obiettivo
 
 Estendere `ArmorModule` nell'editor per esporre i nuovi parametri dello scudo energetico Prismatic.

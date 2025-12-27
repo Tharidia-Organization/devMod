@@ -1,5 +1,8 @@
 # Architettura DevMod - Documentazione Completa
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL
+
 > **Versione**: 2.0 Post-Riorganizzazione
 > **Data**: 24 Dicembre 2024
 > **Stato Build**: PASS (2740 test superati)

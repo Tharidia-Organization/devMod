@@ -1,6 +1,8 @@
 package com.devmod.mailbox.client;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,6 +12,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.mailbox.network.payload.MailboxNotifyPayload;
+import com.devmod.mailbox.network.payload.MailboxStatusPayload;
 import com.devmod.mailbox.network.payload.MailboxSyncPayload;
 import com.devmod.mailbox.network.payload.MailboxSyncPayload.MailboxMessageData;
 
@@ -27,6 +30,12 @@ public final class ClientMailboxCache {
     // Notifications queue for toast display
     private static final List<MailboxNotifyPayload> pendingNotifications = new ArrayList<>();
     private static volatile long lastNotificationTime = 0;
+
+    // Status queue for UI feedback
+    private static final Deque<MailboxStatusPayload> pendingStatuses = new ArrayDeque<>();
+    private static final int MAX_STATUS_QUEUE = 5;
+    private static volatile long suppressClaimStatusUntil = 0;
+    private static volatile long suppressDeleteStatusUntil = 0;
 
     public static final long NOTIFICATION_DISPLAY_MS = 5000;
     public static final long CACHE_STALE_MS = 60000; // 1 minute
@@ -74,6 +83,25 @@ public final class ClientMailboxCache {
                 sync.unreadCount() + 1,
                 sync.maxMessages()
             );
+        }
+    }
+
+    /**
+     * Handle a status feedback payload.
+     */
+    public static void handleStatus(MailboxStatusPayload status) {
+        long now = System.currentTimeMillis();
+        if (status.action() == MailboxStatusPayload.Action.CLAIM && now < suppressClaimStatusUntil) {
+            return;
+        }
+        if (status.action() == MailboxStatusPayload.Action.DELETE && now < suppressDeleteStatusUntil) {
+            return;
+        }
+        synchronized (pendingStatuses) {
+            if (pendingStatuses.size() >= MAX_STATUS_QUEUE) {
+                pendingStatuses.removeFirst();
+            }
+            pendingStatuses.addLast(status);
         }
     }
 
@@ -184,6 +212,11 @@ public final class ClientMailboxCache {
         synchronized (pendingNotifications) {
             pendingNotifications.clear();
         }
+        synchronized (pendingStatuses) {
+            pendingStatuses.clear();
+        }
+        suppressClaimStatusUntil = 0;
+        suppressDeleteStatusUntil = 0;
     }
 
     // ========== GETTERS ==========
@@ -300,6 +333,30 @@ public final class ClientMailboxCache {
         synchronized (pendingNotifications) {
             return !pendingNotifications.isEmpty();
         }
+    }
+
+    /**
+     * Get the next pending status payload (FIFO).
+     */
+    @Nullable
+    public static MailboxStatusPayload pollStatus() {
+        synchronized (pendingStatuses) {
+            return pendingStatuses.pollFirst();
+        }
+    }
+
+    /**
+     * Temporarily suppress claim status messages (bulk actions).
+     */
+    public static void suppressClaimStatus(long durationMs) {
+        suppressClaimStatusUntil = System.currentTimeMillis() + Math.max(0, durationMs);
+    }
+
+    /**
+     * Temporarily suppress delete status messages (bulk actions).
+     */
+    public static void suppressDeleteStatus(long durationMs) {
+        suppressDeleteStatusUntil = System.currentTimeMillis() + Math.max(0, durationMs);
     }
 
     /**

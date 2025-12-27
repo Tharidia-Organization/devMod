@@ -209,7 +209,7 @@ public class PartyInvite {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof PartyInvite)) return false;
         PartyInvite that = (PartyInvite) o;
         return inviteId.equals(that.inviteId);
     }

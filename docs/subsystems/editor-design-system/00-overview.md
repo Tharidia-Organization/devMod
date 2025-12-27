@@ -1,4 +1,8 @@
 # DevMod Editor Design System - Overview
+
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Version 1.5 - Template & Preset Architecture
 
 > **Source-of-truth (IMPORTANT):** questo documento resta allineato al codice. Dove esempi e codice divergono, **vince il comportamento reale**. Stato attuale: **MultiEdit è implementato**, lo storage per-item usa **CustomData** con tag `WeaponModStats` / `ArmorModStats`, il Recipe Editor è **FUTURE / NON ORA**.

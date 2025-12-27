@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -73,6 +74,7 @@ public class ArenaCommands {
     private final ForceTemplateCapability forceTemplateCapability;
     private final TemplateValidator templateValidator;
     private final TemplateRegistryBootstrap bootstrap;
+    private final Collection<CompletableFuture<?>> pendingTasks = new ConcurrentLinkedQueue<>();
 
     public ArenaCommands(
             ArenaTemplateRegistry registry,
@@ -405,10 +407,10 @@ public class ArenaCommands {
                     templateId, template.version(), arenaId)
             ), false);
 
-            CompletableFuture<AsyncArenaBuilder.AsyncBuildResult> future = asyncBuilder.submitBuildAsync(
+            CompletableFuture<AsyncArenaBuilder.AsyncBuildResult> trackedFuture = asyncBuilder.submitBuildAsync(
                 arenaId, template, originX, originY, originZ);
             var server = src.getServer();
-            future.whenComplete((asyncResult, throwable) -> {
+            trackedFuture = trackedFuture.whenComplete((asyncResult, throwable) -> {
                 Runnable notifier = () -> {
                     if (throwable != null) {
                         String message = throwable.getMessage() != null ? throwable.getMessage() : "Unknown error";
@@ -454,6 +456,7 @@ public class ArenaCommands {
                     notifier.run();
                 }
             });
+            trackPendingTask(trackedFuture);
             return 1;
         }
 
@@ -673,7 +676,7 @@ public class ArenaCommands {
         src.sendSuccess(() -> Component.literal("§7Starting autosmoke tests..."), false);
 
         // Run async
-        autosmokeRunner.runAllAsync().thenAccept(report -> {
+        CompletableFuture<Void> reportFuture = autosmokeRunner.runAllAsync().thenAccept(report -> {
             if (report == null) {
                 src.sendFailure(Component.literal("§cAutosmoke blocked by guard"));
                 return;
@@ -697,8 +700,14 @@ public class ArenaCommands {
                 }
             }
         });
+        trackPendingTask(reportFuture);
 
         return 1;
+    }
+
+    private void trackPendingTask(CompletableFuture<?> task) {
+        pendingTasks.removeIf(CompletableFuture::isDone);
+        pendingTasks.add(task);
     }
 
     private int autosmokeStatus(CommandContext<CommandSourceStack> ctx) {

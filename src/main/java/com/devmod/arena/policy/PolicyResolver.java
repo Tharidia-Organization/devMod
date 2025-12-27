@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -59,6 +60,7 @@ public class PolicyResolver implements AutoCloseable {
 
     // Lock cleanup scheduler
     private final ScheduledExecutorService cleanupScheduler;
+    private final ScheduledFuture<?> cleanupTask;
 
     // Stats
     private final AtomicLong resolveCount = new AtomicLong(0);
@@ -102,7 +104,7 @@ public class PolicyResolver implements AutoCloseable {
             return t;
         });
 
-        cleanupScheduler.scheduleAtFixedRate(
+        this.cleanupTask = cleanupScheduler.scheduleAtFixedRate(
             this::cleanupStaleLocks,
             lockCleanupIntervalMs,
             lockCleanupIntervalMs,
@@ -142,7 +144,7 @@ public class PolicyResolver implements AutoCloseable {
             if (loggingEnabled) {
                 LOGGER.warn("Resolve interrupted for player {}, falling back to default", playerId);
             }
-            return getDefaultArena(context);
+            return getDefaultArena();
         }
 
         // DD62: Track lock wait time for contention analysis
@@ -157,7 +159,7 @@ public class PolicyResolver implements AutoCloseable {
                 LOGGER.warn("Lock timeout for player {}, falling back to default", playerId);
             }
             telemetry.emitLockTimeout(playerId, lockTimeoutMs);
-            return getDefaultArena(context);
+            return getDefaultArena();
         }
 
         try {
@@ -184,7 +186,7 @@ public class PolicyResolver implements AutoCloseable {
         if (context.forcePolicyId() != null) {
             ArenaPolicy policy = policies.get(context.forcePolicyId());
             if (policy != null) {
-                return resolveWithPolicy(context, policy, Map.of("forced", 100.0));
+                return resolveWithPolicy(policy, Map.of("forced", 100.0));
             }
             if (loggingEnabled) {
                 LOGGER.warn("Forced policy '{}' not found, continuing with normal resolution", context.forcePolicyId());
@@ -218,7 +220,7 @@ public class PolicyResolver implements AutoCloseable {
                 LOGGER.debug("No matching policies for context, using default");
             }
             fallbackCount.incrementAndGet();
-            return getDefaultArena(context);
+            return getDefaultArena();
         }
 
         // DD3: Deterministic tie-break - score (desc) -> version (desc) -> id (alpha asc)
@@ -234,9 +236,9 @@ public class PolicyResolver implements AutoCloseable {
         List<ScoredPolicy> alternatives = sorted.size() > 1 ? sorted.subList(1, Math.min(5, sorted.size())) : List.of();
 
         // DD4: Emit detailed telemetry for weight taratura
-        emitResolutionTelemetry(winner, alternatives, context);
+        emitResolutionTelemetry(winner, alternatives);
 
-        return resolveWithPolicy(context, winner.policy(), winner.scoreBreakdown());
+        return resolveWithPolicy(winner.policy(), winner.scoreBreakdown());
     }
 
     /**
@@ -266,7 +268,7 @@ public class PolicyResolver implements AutoCloseable {
     /**
      * Resolves using a specific policy.
      */
-    private ResolvedArena resolveWithPolicy(ResolveContext context, ArenaPolicy policy, Map<String, Double> scoreBreakdown) {
+    private ResolvedArena resolveWithPolicy(ArenaPolicy policy, Map<String, Double> scoreBreakdown) {
         ArenaTemplate template = templateRegistry.getOrDefault(policy.templateId());
         return ResolvedArena.create(template, policy, scoreBreakdown);
     }
@@ -277,7 +279,7 @@ public class PolicyResolver implements AutoCloseable {
      */
     private Optional<ScoredPolicy> scorePolicyIfCompatible(ArenaPolicy policy, ResolveContext context) {
         ArenaPolicy effective = clampPolicyWeight(policy);
-        if (effective != policy) {
+        if (!effective.equals(policy)) {
             policies.put(effective.id(), effective);
             policy = effective;
         }
@@ -437,7 +439,7 @@ public class PolicyResolver implements AutoCloseable {
     /**
      * Emits detailed resolution telemetry for weight taratura (DD4).
      */
-    private void emitResolutionTelemetry(ScoredPolicy winner, List<ScoredPolicy> alternatives, ResolveContext context) {
+    private void emitResolutionTelemetry(ScoredPolicy winner, List<ScoredPolicy> alternatives) {
         String topAlternative = alternatives.isEmpty() ? null : alternatives.get(0).policy().id();
         double scoreDelta = alternatives.isEmpty() ? 0 : winner.score() - alternatives.get(0).score();
 
@@ -455,7 +457,7 @@ public class PolicyResolver implements AutoCloseable {
     /**
      * Returns the default arena for fallback scenarios.
      */
-    private ResolvedArena getDefaultArena(ResolveContext context) {
+    private ResolvedArena getDefaultArena() {
         fallbackCount.incrementAndGet();
         ArenaTemplate template = templateRegistry.getOrDefault("default_flat_64");
         return ResolvedArena.create(template, ArenaPolicy.DEFAULT, Map.of("fallback", 1.0));
@@ -501,6 +503,7 @@ public class PolicyResolver implements AutoCloseable {
 
     @Override
     public void close() {
+        cleanupTask.cancel(false);
         cleanupScheduler.shutdownNow();
     }
 
@@ -575,6 +578,7 @@ public class PolicyResolver implements AutoCloseable {
      * Shuts down the resolver cleanly.
      */
     public void shutdown() {
+        cleanupTask.cancel(false);
         cleanupScheduler.shutdown();
         try {
             if (!cleanupScheduler.awaitTermination(5, TimeUnit.SECONDS)) {

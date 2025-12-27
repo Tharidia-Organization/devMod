@@ -1,8 +1,11 @@
 # DuckDB Migration Audit Report
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (audit snapshot)
+
 **Date:** 2025-12-12 (Updated: 2025-12-12)
 **Auditor:** Claude
-**Status:** P0 FIXED, P1 COMPLETE, P2-A COMPLETE - P2-B Pending
+**Audit Status:** P0 FIXED, P1 COMPLETE, P2-A COMPLETE - P2-B Pending
 
 ---
 

@@ -47,12 +47,12 @@ public record EquipMobPayload(
     );
 
     public EquipMobPayload {
-        mainHand = Objects.requireNonNull(mainHand);
-        offHand = Objects.requireNonNull(offHand);
-        head = Objects.requireNonNull(head);
-        chest = Objects.requireNonNull(chest);
-        legs = Objects.requireNonNull(legs);
-        feet = Objects.requireNonNull(feet);
+        Objects.requireNonNull(mainHand, "mainHand");
+        Objects.requireNonNull(offHand, "offHand");
+        Objects.requireNonNull(head, "head");
+        Objects.requireNonNull(chest, "chest");
+        Objects.requireNonNull(legs, "legs");
+        Objects.requireNonNull(feet, "feet");
     }
 
     @Override

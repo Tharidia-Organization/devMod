@@ -279,9 +279,10 @@ public class ClientModEvents {
         // Clear LVC telemetry cache
         com.devmod.client.telemetry.ClientLVCCache.INSTANCE.clear();
 
-        // Clear mailbox and news caches
+        // Clear mailbox, news, and task caches
         com.devmod.mailbox.client.ClientMailboxCache.clear();
         com.devmod.mailbox.client.ClientNewsCache.clear();
+        com.devmod.mailbox.client.ClientTaskCache.clear();
 
         // Clear ImpactData cache (MULTIPLAYER-SAFE: clears all player entries)
         com.devmod.client.overlay.ImpactData.clearAll();

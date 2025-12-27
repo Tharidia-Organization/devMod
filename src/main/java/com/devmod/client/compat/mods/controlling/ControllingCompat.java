@@ -3,9 +3,9 @@ package com.devmod.client.compat.mods.controlling;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -28,12 +28,6 @@ public class ControllingCompat implements CompatModule {
     // Cached reflection references
     @Nullable
     private static Class<?> controllingClass;
-    @Nullable
-    private static Class<?> controllingApiClass;
-    @Nullable
-    private static Method getConflictsMethod;
-    @Nullable
-    private static Method hasConflictMethod;
 
     // Cache of known conflicts (keybind name -> list of conflicting keybind names)
     private static final Map<String, List<String>> conflictCache = new HashMap<>();
@@ -100,7 +94,7 @@ public class ControllingCompat implements CompatModule {
             if (controllingClass != null) {
                 // Try to find conflict detection methods
                 for (Method m : controllingClass.getDeclaredMethods()) {
-                    if (m.getName().toLowerCase().contains("conflict")) {
+                    if (m.getName().toLowerCase(Locale.ROOT).contains("conflict")) {
                         LOGGER.debug("[Compat:controlling] Found method: {}", m.getName());
                     }
                 }
@@ -230,7 +224,7 @@ public class ControllingCompat implements CompatModule {
      */
     public static Map<String, List<String>> getAllConflicts() {
         if (!available) {
-            return Collections.emptyMap();
+            return new HashMap<>();
         }
 
         // Check cache

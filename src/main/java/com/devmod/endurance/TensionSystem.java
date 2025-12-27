@@ -17,8 +17,6 @@ public class TensionSystem {
     public static final TensionSystem INSTANCE = new TensionSystem();
 
     // Fallback tension gain values (used when no quest context available)
-    private static final float DEFAULT_BASE_WAVE_TENSION = 0.12f;
-    private static final float DEFAULT_NO_HIT_BONUS = 0.20f;
     private static final float DEFAULT_HIGH_COMBO_BONUS = 0.08f;
     private static final float DEFAULT_STYLE_RANK_BONUS = 0.10f;
     private static final float DEFAULT_KILL_STREAK_BONUS = 0.05f;
@@ -26,10 +24,6 @@ public class TensionSystem {
     // Fallback boss threshold range
     private static final float DEFAULT_MIN_THRESHOLD = 0.70f;
     private static final float DEFAULT_MAX_THRESHOLD = 1.00f;
-
-    // Fallback wave limits
-    private static final int DEFAULT_MIN_WAVES_BEFORE_BOSS = 3;
-    private static final int DEFAULT_MAX_WAVES_WITHOUT_BOSS = 8;
 
     // Config manager reference
     private final EnduranceConfigManager config = EnduranceConfigManager.INSTANCE;

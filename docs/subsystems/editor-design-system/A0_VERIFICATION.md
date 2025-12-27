@@ -1,5 +1,8 @@
 # Verification Report for A0 Tasks
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 This document verifies the completion of the tasks listed under A0.1, A0.2, and A0.3.
 
 ---

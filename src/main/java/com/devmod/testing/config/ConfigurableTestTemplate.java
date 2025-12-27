@@ -2,6 +2,7 @@ package com.devmod.testing.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -253,7 +254,7 @@ public class ConfigurableTestTemplate implements TestTemplate {
 
     private TestPriority parsePriority(String priority) {
         if (priority == null) return TestPriority.MEDIUM;
-        switch (priority.toUpperCase()) {
+        switch (priority.toUpperCase(Locale.ROOT)) {
             case "HIGH": return TestPriority.HIGH;
             case "LOW": return TestPriority.LOW;
             default: return TestPriority.MEDIUM;

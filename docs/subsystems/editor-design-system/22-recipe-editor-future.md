@@ -1,8 +1,8 @@
 # Recipe Editor - Piano Implementazione Completo
 
-> **STATUS:** PIANIFICATO - Feature complessa che richiede integrazione profonda con Minecraft
->
-> **SCOPE:** Sistema universale per editing di TUTTE le ricette (non solo armi/armature)
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+> Scope: Sistema universale per editing di tutte le ricette (non solo armi/armature)
 
 ## Obiettivo
 

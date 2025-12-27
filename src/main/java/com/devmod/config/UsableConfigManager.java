@@ -9,10 +9,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
@@ -71,7 +74,7 @@ public class UsableConfigManager {
      * Priority: Component > CustomData > Global > Default
      */
     public static UsableStats getStats(ItemStack stack) {
-        stack = Objects.requireNonNull(stack);
+        Objects.requireNonNull(stack, "stack");
 
         // 1a. Check typed data component first (new path)
         var usableComponent = UsableComponents.usableStatsComponent();
@@ -287,7 +290,7 @@ public class UsableConfigManager {
             Path backupDir = dataDirectory.resolve("backups");
             Files.createDirectories(backupDir);
 
-            String timestamp = LocalDateTime.now().format(BACKUP_DATE_FORMAT);
+            String timestamp = LocalDateTime.now(ZoneId.systemDefault()).format(BACKUP_DATE_FORMAT);
             String backupName = "usable_configs_" + timestamp + BACKUP_SUFFIX;
             Path backupFilePath = backupDir.resolve(backupName);
 
@@ -302,17 +305,20 @@ public class UsableConfigManager {
 
     private static void cleanupOldBackups(Path backupDir) {
         try {
-            var backups = Files.list(backupDir)
-                .filter(p -> p.getFileName().toString().startsWith("usable_configs_")
-                          && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .sorted((a, b) -> {
-                    try {
-                        return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a));
-                    } catch (IOException e) {
-                        return 0;
-                    }
-                })
-                .toList();
+            List<Path> backups;
+            try (var backupStream = Files.list(backupDir)) {
+                backups = backupStream
+                    .filter(p -> p.getFileName().toString().startsWith("usable_configs_")
+                              && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .sorted((a, b) -> {
+                        try {
+                            return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a));
+                        } catch (IOException e) {
+                            return 0;
+                        }
+                    })
+                    .toList();
+            }
 
             for (int i = MAX_BACKUPS; i < backups.size(); i++) {
                 Files.deleteIfExists(backups.get(i));
@@ -338,16 +344,19 @@ public class UsableConfigManager {
         }
 
         try {
-            var latestBackup = Files.list(backupDir)
-                .filter(p -> p.getFileName().toString().startsWith("usable_configs_")
-                          && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .max((a, b) -> {
-                    try {
-                        return Files.getLastModifiedTime(a).compareTo(Files.getLastModifiedTime(b));
-                    } catch (IOException e) {
-                        return 0;
-                    }
-                });
+            Optional<Path> latestBackup;
+            try (var backupStream = Files.list(backupDir)) {
+                latestBackup = backupStream
+                    .filter(p -> p.getFileName().toString().startsWith("usable_configs_")
+                              && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .max((a, b) -> {
+                        try {
+                            return Files.getLastModifiedTime(a).compareTo(Files.getLastModifiedTime(b));
+                        } catch (IOException e) {
+                            return 0;
+                        }
+                    });
+            }
 
             if (latestBackup.isEmpty()) {
                 LOGGER.warn("[UsableConfig] No backup files found");
@@ -377,16 +386,18 @@ public class UsableConfigManager {
         if (!Files.exists(backupDir)) return backups;
 
         try {
-            Files.list(backupDir)
-                .filter(p -> p.getFileName().toString().startsWith("usable_configs_")
-                          && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .forEach(p -> {
-                    try {
-                        backups.put(p.getFileName().toString(), Files.getLastModifiedTime(p).toString());
-                    } catch (IOException e) {
-                        // Skip
-                    }
-                });
+            try (var backupStream = Files.list(backupDir)) {
+                backupStream
+                    .filter(p -> p.getFileName().toString().startsWith("usable_configs_")
+                              && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .forEach(p -> {
+                        try {
+                            backups.put(p.getFileName().toString(), Files.getLastModifiedTime(p).toString());
+                        } catch (IOException e) {
+                            // Skip
+                        }
+                    });
+            }
         } catch (IOException e) {
             LOGGER.warn("[UsableConfig] Failed to list backups", e);
         }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 
 import org.slf4j.Logger;
@@ -343,7 +344,7 @@ public class BossDNAMixer {
         return switch (strategy) {
             case 0 -> // First half of primary + second half of secondary
                 pName.substring(0, Math.min(4, pName.length())) +
-                sName.substring(Math.max(0, sName.length() - 4)).toLowerCase();
+                sName.substring(Math.max(0, sName.length() - 4)).toLowerCase(Locale.ROOT);
             case 1 -> // Full primary + "-" + partial secondary
                 pName + "-" + sName.substring(0, Math.min(3, sName.length()));
             default -> // Simple combination

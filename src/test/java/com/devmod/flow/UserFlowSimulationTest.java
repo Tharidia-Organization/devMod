@@ -79,8 +79,8 @@ public class UserFlowSimulationTest {
      */
     record SimResourceLocation(String namespace, String path) {
         static SimResourceLocation of(String full) {
-            String[] parts = full.split(":");
-            return new SimResourceLocation(parts[0], parts[1]);
+            int colonIndex = full.indexOf(':');
+            return new SimResourceLocation(full.substring(0, colonIndex), full.substring(colonIndex + 1));
         }
 
         @Override

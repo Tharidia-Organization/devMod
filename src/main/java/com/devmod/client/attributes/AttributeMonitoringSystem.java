@@ -76,7 +76,7 @@ public class AttributeMonitoringSystem {
         }
 
         // Update tracked entities (full scan only periodically)
-        updateTrackedEntities(level, player, playerPos, shouldScanForNew);
+        updateTrackedEntities(level, playerPos, shouldScanForNew);
 
         // Determine primary target (closest or under crosshair)
         updatePrimaryTarget(mc, player);
@@ -86,7 +86,6 @@ public class AttributeMonitoringSystem {
     }
 
     private void updateTrackedEntities(net.minecraft.client.multiplayer.ClientLevel level,
-                                        net.minecraft.client.player.LocalPlayer player,
                                         @Nonnull Vec3 playerPos, boolean scanForNew) {
         // Remove entities that are no longer valid or too far
         trackedEntities.removeIf(tracked -> {

@@ -118,21 +118,21 @@ public class TelemetryPacketHandler {
         }
 
         switch (type) {
-            case COMBAT_HIT -> processCombatHit(player, eventTimestamp, jsonData);
-            case COMBAT_DEATH -> processCombatDeath(player, eventTimestamp, jsonData);
-            case COMBAT_HEAL -> processCombatHeal(player, eventTimestamp, jsonData);
-            case COMBAT_SPAWN -> processCombatSpawn(player, eventTimestamp, jsonData);
-            case PLAYER_SNAPSHOT -> processPlayerSnapshot(player, eventTimestamp, jsonData);
-            case PLAYER_ABILITY -> processPlayerAbility(player, eventTimestamp, jsonData);
-            case PLAYER_ATTRIBUTE_CHANGE -> processPlayerAttributeChange(player, eventTimestamp, jsonData);
-            case HEATMAP_UPDATE -> processHeatmapUpdate(player, eventTimestamp, jsonData);
-            case ROOM_TRANSITION -> processRoomTransition(player, eventTimestamp, jsonData);
+            case COMBAT_HIT -> processCombatHit(player, jsonData);
+            case COMBAT_DEATH -> processCombatDeath(player, jsonData);
+            case COMBAT_HEAL -> processCombatHeal(player, jsonData);
+            case COMBAT_SPAWN -> processCombatSpawn(player, jsonData);
+            case PLAYER_SNAPSHOT -> processPlayerSnapshot(player, jsonData);
+            case PLAYER_ABILITY -> processPlayerAbility(player, jsonData);
+            case PLAYER_ATTRIBUTE_CHANGE -> processPlayerAttributeChange(player, jsonData);
+            case HEATMAP_UPDATE -> processHeatmapUpdate(player, jsonData);
+            case ROOM_TRANSITION -> processRoomTransition(player, jsonData);
             case ENDURANCE_SESSION -> processEnduranceSession(player, eventTimestamp, jsonData);
-            case ENDURANCE_WAVE -> processEnduranceWave(player, eventTimestamp, jsonData);
-            case ENDURANCE_KILL -> processEnduranceKill(player, eventTimestamp, jsonData);
-            case ENDURANCE_COMBO -> processEnduranceCombo(player, eventTimestamp, jsonData);
-            case ENDURANCE_PERK -> processEndurancePerk(player, eventTimestamp, jsonData);
-            case ENDURANCE_REWARD -> processEnduranceReward(player, eventTimestamp, jsonData);
+            case ENDURANCE_WAVE -> processEnduranceWave(player, jsonData);
+            case ENDURANCE_KILL -> processEnduranceKill(player, jsonData);
+            case ENDURANCE_COMBO -> processEnduranceCombo(player, jsonData);
+            case ENDURANCE_PERK -> processEndurancePerk(player, jsonData);
+            case ENDURANCE_REWARD -> processEnduranceReward(player, jsonData);
             case PERFORMANCE_SAMPLE -> {
                 // Performance samples from clients are logged but not stored
                 // Server has its own authoritative performance metrics
@@ -149,7 +149,7 @@ public class TelemetryPacketHandler {
     // EVENT PROCESSORS
     // ============================================
 
-    private void processCombatHit(ServerPlayer player, long timestamp, String jsonData) {
+    private void processCombatHit(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Combat hit from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
         EnduranceContext ctx = getEnduranceContext(json);
@@ -208,7 +208,7 @@ public class TelemetryPacketHandler {
         );
     }
 
-    private void processCombatDeath(ServerPlayer player, long timestamp, String jsonData) {
+    private void processCombatDeath(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Combat death from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
         EnduranceContext ctx = getEnduranceContext(json);
@@ -243,7 +243,7 @@ public class TelemetryPacketHandler {
         );
     }
 
-    private void processCombatHeal(ServerPlayer player, long timestamp, String jsonData) {
+    private void processCombatHeal(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Combat heal from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
         EnduranceContext ctx = getEnduranceContext(json);
@@ -266,7 +266,7 @@ public class TelemetryPacketHandler {
         );
     }
 
-    private void processCombatSpawn(ServerPlayer player, long timestamp, String jsonData) {
+    private void processCombatSpawn(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Combat spawn from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
         EnduranceContext ctx = getEnduranceContext(json);
@@ -290,7 +290,7 @@ public class TelemetryPacketHandler {
         );
     }
 
-    private void processPlayerSnapshot(ServerPlayer player, long timestamp, String jsonData) {
+    private void processPlayerSnapshot(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Player snapshot from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
         String dimension = getStringOrNull(json, "dimension");
@@ -378,7 +378,7 @@ public class TelemetryPacketHandler {
         );
     }
 
-    private void processPlayerAbility(ServerPlayer player, long timestamp, String jsonData) {
+    private void processPlayerAbility(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Player ability from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
@@ -418,7 +418,7 @@ public class TelemetryPacketHandler {
         );
     }
 
-    private void processPlayerAttributeChange(ServerPlayer player, long timestamp, String jsonData) {
+    private void processPlayerAttributeChange(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Player attribute change from {}", player.getName().getString());
         // Attribute changes are typically server-authoritative, client events are for validation
         // Log as ability event with "attribute_change" type, storing full JSON as context
@@ -438,7 +438,7 @@ public class TelemetryPacketHandler {
         );
     }
 
-    private void processHeatmapUpdate(ServerPlayer player, long timestamp, String jsonData) {
+    private void processHeatmapUpdate(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Heatmap update from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
@@ -467,7 +467,7 @@ public class TelemetryPacketHandler {
         );
     }
 
-    private void processRoomTransition(ServerPlayer player, long timestamp, String jsonData) {
+    private void processRoomTransition(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Room transition from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
@@ -542,7 +542,7 @@ public class TelemetryPacketHandler {
         }
     }
 
-    private void processEnduranceWave(ServerPlayer player, long timestamp, String jsonData) {
+    private void processEnduranceWave(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Endurance wave from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
@@ -604,7 +604,7 @@ public class TelemetryPacketHandler {
         }
     }
 
-    private void processEnduranceKill(ServerPlayer player, long timestamp, String jsonData) {
+    private void processEnduranceKill(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Endurance kill from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
@@ -627,7 +627,7 @@ public class TelemetryPacketHandler {
         );
     }
 
-    private void processEnduranceCombo(ServerPlayer player, long timestamp, String jsonData) {
+    private void processEnduranceCombo(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Endurance combo from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
@@ -684,7 +684,7 @@ public class TelemetryPacketHandler {
         }
     }
 
-    private void processEndurancePerk(ServerPlayer player, long timestamp, String jsonData) {
+    private void processEndurancePerk(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Endurance perk from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 
@@ -727,7 +727,7 @@ public class TelemetryPacketHandler {
         }
     }
 
-    private void processEnduranceReward(ServerPlayer player, long timestamp, String jsonData) {
+    private void processEnduranceReward(ServerPlayer player, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Endurance reward from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
 

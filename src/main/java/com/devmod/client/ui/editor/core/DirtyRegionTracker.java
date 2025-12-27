@@ -66,7 +66,7 @@ public final class DirtyRegionTracker {
      * Mark a region as dirty using Bounds.
      */
     public void markDirty(Bounds bounds) {
-        if (bounds == null || bounds == Bounds.EMPTY) return;
+        if (bounds == null || Bounds.EMPTY.equals(bounds)) return;
         markDirty(bounds.x(), bounds.y(), bounds.width(), bounds.height());
     }
 
@@ -107,7 +107,7 @@ public final class DirtyRegionTracker {
      * Check if a region needs redrawing using Bounds.
      */
     public boolean needsRedraw(Bounds bounds) {
-        if (bounds == null || bounds == Bounds.EMPTY) {
+        if (bounds == null || Bounds.EMPTY.equals(bounds)) {
             return fullRedraw;
         }
         return needsRedraw(bounds.x(), bounds.y(), bounds.width(), bounds.height());

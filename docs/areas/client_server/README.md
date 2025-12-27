@@ -1,54 +1,36 @@
 # Client/Server Boundary
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION
-> Risk Level: MEDIUM (client-only misuse can crash dedicated servers)
+> Status: CURRENT (verified against code)
 
----
+This area documents how DevMod keeps client-only code isolated from server logic.
 
-## 1. Purpose
+## Scope
 
-This area documents how DevMod keeps client-only code isolated from server logic:
+- Client-only packages under `com.devmod.client.*`
+- Dist checks via `FMLEnvironment.dist` and `@OnlyIn(Dist.CLIENT)`
+- Network safety via `NetworkHandler.withClientHooks` and `ChannelId` validation
+- Packet validation via `PacketValidator`
 
-- **Client-only packages** under `com.devmod.client`
-- **Dist checks** via `FMLEnvironment.dist` and `@OnlyIn(Dist.CLIENT)`
-- **Network safety** via `NetworkHandler.withClientHooks` and `ChannelId` validation
-- **Input validation** via `PacketValidator`
+## Key Patterns
 
----
+- Client-side payload handlers are accessed through `NetworkHandler.withClientHooks` and `ClientNetworkPayloadHooks`.
+- Channel IDs are validated for collisions (`ChannelId.validateNoCollisions`).
+- Packet payloads are validated and clamped by `PacketValidator` before handling.
 
-## 2. Key Patterns (Implemented)
+## Structure
 
-### Client Hooks for Payloads
-Client-side handlers are accessed only through `NetworkHandler.withClientHooks`:
-- Server classes avoid direct `Minecraft.getInstance()` calls.
-- Client hooks are registered in client init and invoked only when present.
+- Client UI, input, and rendering are under `com.devmod.client.*`.
+- Network handlers are in `com.devmod.network.handlers` with client hooks in `com.devmod.client.network`.
+- Server-side telemetry packet handling is in `com.devmod.telemetry.duckdb.packets`.
 
-### Channel ID Validation
-`ChannelId.validateNoCollisions()` runs at registration to prevent duplicate IDs within a direction.
+## Automated Validation
 
-### Packet Validation
-`PacketValidator` clamps numeric values and rate-limits sensitive packets.
-
----
-
-## 3. Structure
-
-- Client-only UI, input, and rendering live in `com.devmod.client.*`.
-- Network handlers are in `com.devmod.network.handlers` and split by domain.
-- Telemetry batch payloads are handled server-side via `TelemetryPacketHandler`.
-
----
-
-## 4. Automated Validation
-
-| Behavior | Test |
-|----------|------|
-| Channel ID collision guard | `ChannelIdDirectTest` |
-| Packet value clamping | `PacketValidatorDirectTest` |
-| Client hooks dispatch safety | `NetworkHandlerDirectTest` |
-
----
+- `ClientServerSeparationTest`
+- `ClientScreenAnnotationTest`
+- `ChannelIdDirectTest`
+- `PacketValidatorDirectTest`
+- `NetworkHandlerDirectTest`
 
 ## Cross-References
 

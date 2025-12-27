@@ -765,7 +765,7 @@ public class PerkSystem {
 
         List<Perk> choices = new ArrayList<>();
         List<Perk> availablePerks = getAvailablePerks(session, waveNumber);
-        List<Perk> requiredPerks = getRequiredPerksToOffer(session, waveNumber);
+        List<Perk> requiredPerks = getRequiredPerksToOffer(session);
         if (!requiredPerks.isEmpty()) {
             availablePerks = requiredPerks;
         }
@@ -847,7 +847,7 @@ public class PerkSystem {
         return available;
     }
 
-    private List<Perk> getRequiredPerksToOffer(PerkSession session, int waveNumber) {
+    private List<Perk> getRequiredPerksToOffer(PerkSession session) {
         if (!session.hasRequiredPending()) {
             return List.of();
         }

@@ -1,7 +1,10 @@
 # Editor Design System
 
-> **Last Updated**: 2024-12-23
-> **Status**: ✅ CURRENT - Sistema design implementato e documentato
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
+Nota: per lo stato corrente dell'Item Editor vedere `docs/adr/ADR-003-item-editor-screen.md`
+e il codice in `src/main/java/com/devmod/client/ui/editor/`.
 
 Sistema di design unificato per gli editor di item/armor/weapon di DevMod.
 

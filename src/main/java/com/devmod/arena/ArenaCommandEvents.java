@@ -32,6 +32,7 @@ import com.devmod.arena.alert.ConsoleAlertChannel;
 import com.devmod.arena.alert.DiscordAlertChannel;
 import com.devmod.arena.alert.DuckDbAlertRecorder;
 import com.devmod.arena.alert.LogAlertChannel;
+import com.devmod.arena.alert.MailboxAlertChannel;
 import com.devmod.arena.alert.TelemetryAlertChannel;
 import com.devmod.arena.alert.WebhookAlertChannel;
 import com.devmod.arena.autosmoke.AutosmokeReportWriter;
@@ -212,6 +213,7 @@ public final class ArenaCommandEvents {
         router.registerChannel(new ConsoleAlertChannel());
         router.registerChannel(new LogAlertChannel());
         router.registerChannel(new TelemetryAlertChannel(telemetry));
+        router.registerChannel(new MailboxAlertChannel());
         router.setDeliveryRecorder(new DuckDbAlertRecorder());
 
         String webhookUrl = System.getenv("DEVMOD_ARENA_ALERT_WEBHOOK_URL");

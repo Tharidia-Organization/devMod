@@ -135,7 +135,7 @@ public class ArenaPolicyRegistry {
         ArenaPolicy normalized = clampWeight(policy, warnings);
 
         // Validate bindings/rewards
-        validateBindings(normalized, errors, warnings);
+        validateBindings(normalized, warnings);
         validateRewards(normalized, errors, warnings);
 
         // Validate player count range
@@ -563,7 +563,7 @@ public class ArenaPolicyRegistry {
         checkStringSet(policy.questTypes(), "questTypes", warnings);
         checkStringSet(policy.difficultyTags(), "difficultyTags", warnings);
         checkStringSet(policy.tags(), "tags", warnings);
-        validateBindings(policy, errors, warnings);
+        validateBindings(policy, warnings);
         validateRewards(policy, errors, warnings);
 
         return new ValidationResult(errors.isEmpty(), errors, warnings);
@@ -589,7 +589,7 @@ public class ArenaPolicyRegistry {
         return policy;
     }
 
-    private void validateBindings(ArenaPolicy policy, List<String> errors, List<String> warnings) {
+    private void validateBindings(ArenaPolicy policy, List<String> warnings) {
         // No structural rules beyond presence; ensure sets have no blanks
         var perkBindings = policy.perkBindings();
         checkStringSet(perkBindings != null ? perkBindings.suggested() : null, "perkBindings.suggested", warnings);
@@ -876,7 +876,7 @@ public class ArenaPolicyRegistry {
         }
 
         private static boolean getBoolean(com.google.gson.JsonObject obj, String key, boolean def) {
-            return obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isBoolean()
+            return (obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isBoolean())
                 ? obj.get(key).getAsBoolean()
                 : def;
         }

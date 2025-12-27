@@ -1,5 +1,8 @@
 # UI Components - Recipe Editor
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 > Componenti UI per editing ricette
 
 ## Overview

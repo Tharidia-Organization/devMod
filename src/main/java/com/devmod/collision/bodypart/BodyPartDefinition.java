@@ -21,10 +21,10 @@ public record BodyPartDefinition(
     float damageMultiplier                       // Per-part damage multiplier (1.0 = normal)
 ) {
     public BodyPartDefinition {
-        id = Objects.requireNonNull(id, "id");
-        bodyPartType = Objects.requireNonNull(bodyPartType, "bodyPartType");
-        localOffset = Objects.requireNonNull(localOffset, "localOffset");
-        halfExtents = Objects.requireNonNull(halfExtents, "halfExtents");
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(bodyPartType, "bodyPartType");
+        Objects.requireNonNull(localOffset, "localOffset");
+        Objects.requireNonNull(halfExtents, "halfExtents");
         // parentBoneId/parentPartId may be null by design (root-level parts)
     }
 

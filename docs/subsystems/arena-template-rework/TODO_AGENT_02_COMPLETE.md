@@ -1,5 +1,8 @@
 # Agent 02 - Builder Transazionale - COMPLETE
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (completion snapshot)
+
 ## Summary
 Implementato il sistema di build transazionale con supporto completo per rollback (DD7-10).
 

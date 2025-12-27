@@ -37,7 +37,6 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
 
     // Animation constants
     private static final long NOTIFICATION_DURATION_MS = 2000;
-    private static final long FLASH_DURATION_MS = 300;
     private static final float FLASH_MAX_ALPHA = 0.4f;
 
     private ResonanceHudOverlay() {}

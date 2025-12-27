@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -38,6 +39,8 @@ import com.google.gson.stream.JsonWriter;
 import com.devmod.DevMod;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.mailbox.news.NewsCategory;
+import com.devmod.mailbox.news.NewsManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 public class GamificationManager {
@@ -356,6 +359,11 @@ public class GamificationManager {
                 EnduranceTelemetryService.INSTANCE.recordLeaderboardChange(
                     playerId, name, oldRank, newRank, points
                 );
+
+                // Auto-publish news for top 3 leaderboard entries
+                if (newRank <= 3 && (oldRank < 0 || oldRank > 3)) {
+                    publishLeaderboardNews(playerName, this.name, newRank, points);
+                }
             }
         }
 
@@ -475,7 +483,7 @@ public class GamificationManager {
         }
 
         // Update streak
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
         if (profile.lastPlayDate == null || !profile.lastPlayDate.equals(today.minusDays(1))) {
             if (profile.lastPlayDate == null || !profile.lastPlayDate.equals(today)) {
                 profile.currentStreak = 1;
@@ -734,7 +742,7 @@ public class GamificationManager {
     }
 
     private void checkForResets() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
 
         // Daily reset
         if (lastDailyReset == null || !lastDailyReset.equals(today)) {
@@ -775,7 +783,7 @@ public class GamificationManager {
 
         // Generate 3 daily challenges
         dailyChallenges.add(new Challenge(
-            "daily_quests_" + LocalDate.now(),
+            "daily_quests_" + LocalDate.now(ZoneId.systemDefault()),
             "Quest Master",
             "Complete 3 quests today",
             ChallengeType.COMPLETE_QUESTS,
@@ -783,7 +791,7 @@ public class GamificationManager {
         ));
 
         dailyChallenges.add(new Challenge(
-            "daily_kills_" + LocalDate.now(),
+            "daily_kills_" + LocalDate.now(ZoneId.systemDefault()),
             "Mob Slayer",
             "Kill 50 mobs in one session",
             ChallengeType.KILL_MOBS,
@@ -794,7 +802,7 @@ public class GamificationManager {
             t.tags() != null && t.tags().contains("smoke"));
         if (template != null) {
             Challenge challenge = new Challenge(
-                "daily_template_" + LocalDate.now(),
+                "daily_template_" + LocalDate.now(ZoneId.systemDefault()),
                 "Smoke Trial",
                 "Complete template " + template.id(),
                 ChallengeType.COMPLETE_TEMPLATE,
@@ -805,7 +813,7 @@ public class GamificationManager {
             dailyChallenges.add(challenge);
         } else {
             dailyChallenges.add(new Challenge(
-                "daily_wave_" + LocalDate.now(),
+                "daily_wave_" + LocalDate.now(ZoneId.systemDefault()),
                 "Wave Crusher",
                 "Reach wave 7 in any quest",
                 ChallengeType.REACH_WAVE,
@@ -818,7 +826,7 @@ public class GamificationManager {
         weeklyChallenges.clear();
 
         weeklyChallenges.add(new Challenge(
-            "weekly_quests_" + LocalDate.now(),
+            "weekly_quests_" + LocalDate.now(ZoneId.systemDefault()),
             "Weekly Warrior",
             "Complete 20 quests this week",
             ChallengeType.COMPLETE_QUESTS,
@@ -826,7 +834,7 @@ public class GamificationManager {
         ));
 
         weeklyChallenges.add(new Challenge(
-            "weekly_damage_" + LocalDate.now(),
+            "weekly_damage_" + LocalDate.now(ZoneId.systemDefault()),
             "Damage King",
             "Deal 50,000 damage in one session",
             ChallengeType.DEAL_DAMAGE,
@@ -834,7 +842,7 @@ public class GamificationManager {
         ));
 
         weeklyChallenges.add(new Challenge(
-            "weekly_nodeath_" + LocalDate.now(),
+            "weekly_nodeath_" + LocalDate.now(ZoneId.systemDefault()),
             "Survivor",
             "Complete a quest without dying",
             ChallengeType.NO_DEATH_RUN,
@@ -842,7 +850,7 @@ public class GamificationManager {
         ));
 
         weeklyChallenges.add(new Challenge(
-            "weekly_speed_" + LocalDate.now(),
+            "weekly_speed_" + LocalDate.now(ZoneId.systemDefault()),
             "Speed Runner",
             "Complete a quest in under 10 minutes",
             ChallengeType.SPEED_RUN,
@@ -853,7 +861,7 @@ public class GamificationManager {
             t.tags() != null && t.tags().contains("boss"));
         if (bossTemplate != null) {
             Challenge challenge = new Challenge(
-                "weekly_template_" + LocalDate.now(),
+                "weekly_template_" + LocalDate.now(ZoneId.systemDefault()),
                 "Boss Arena",
                 "Complete template " + bossTemplate.id(),
                 ChallengeType.COMPLETE_TEMPLATE,
@@ -1011,6 +1019,43 @@ public class GamificationManager {
         Leaderboard templateCoverage;
         LocalDate lastDailyReset;
         LocalDate lastWeeklyReset;
+    }
+
+    // ========== News Auto-Publish ==========
+
+    /**
+     * Publish news when a player enters the top 3 of a leaderboard.
+     */
+    private static void publishLeaderboardNews(String playerName, String leaderboardName, int rank, int points) {
+        try {
+            String ordinal = switch (rank) {
+                case 1 -> "1st";
+                case 2 -> "2nd";
+                case 3 -> "3rd";
+                default -> rank + "th";
+            };
+
+            String title = playerName + " reaches " + ordinal + " place!";
+            String content = String.format(
+                "%s has climbed to %s place on the %s leaderboard with %,d points!\n\n" +
+                "Congratulations on this impressive achievement!",
+                playerName, ordinal, leaderboardName, points
+            );
+
+            NewsManager.INSTANCE.publishNews(
+                    title,
+                    content,
+                    NewsCategory.EVENT,
+                    "Leaderboard System"
+            ).exceptionally(ex -> {
+                LOGGER.warn("[Gamification] Failed to publish leaderboard news", ex);
+                return null;
+            });
+
+            LOGGER.info("[Gamification] Published news for {} reaching {} on {}", playerName, ordinal, leaderboardName);
+        } catch (Exception e) {
+            LOGGER.error("[Gamification] Failed to publish leaderboard news", e);
+        }
     }
 
     // ========== Getters ==========

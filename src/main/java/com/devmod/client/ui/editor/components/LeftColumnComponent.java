@@ -355,7 +355,7 @@ public class LeftColumnComponent {
     }
 
     public int getWidth() {
-        if (bounds != ResponsiveLayout.Rect.EMPTY && bounds.width() > 0) {
+        if (!Objects.equals(bounds, ResponsiveLayout.Rect.EMPTY) && bounds.width() > 0) {
             return bounds.width();
         }
         return ScaledCoord.scaleDim(EditorConstants.LEFT_COLUMN_WIDTH);

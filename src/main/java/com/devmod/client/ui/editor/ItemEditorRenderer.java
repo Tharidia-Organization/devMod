@@ -12,6 +12,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
+import com.devmod.DevMod;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.components.FooterComponent;
@@ -285,12 +286,6 @@ public class ItemEditorRenderer {
             helpOverlay.render(graphics, font, width, height, mouseX, mouseY);
         }
 
-        // Low-confidence dialog
-        if (showLowConfidenceDialog && pendingDetection != null) {
-            renderLowConfidenceDialog(graphics, font, width, height, mouseX, mouseY, item, pendingDetection,
-                lowConfidenceStatus, lowConfidenceContinueBounds, lowConfidenceWhitelistBounds, lowConfidenceCancelBounds);
-        }
-
         // Performance overlay
         perfMonitor.endRender();
         var perf = perfMonitor.getMetrics();
@@ -495,7 +490,9 @@ public class ItemEditorRenderer {
                 try {
                     var preview = activeModule.getPreviewItem();
                     if (preview != null) displayItem = preview;
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    DevMod.LOGGER.debug("[ItemEditor] Failed to resolve preview item", e);
+                }
             }
             debugPanel.setStatSources(buildStatSources(displayItem));
             debugPanel.render(graphics, font, devArea.x(), devArea.y(), devArea.width(), devArea.height(),
@@ -521,15 +518,6 @@ public class ItemEditorRenderer {
             devArea.x() + DEV_PANEL_TEXT_OFFSET_X, textY, UIConstants.Text.SECONDARY(), false);
     }
 
-    private void renderLowConfidenceDialog(GuiGraphics graphics, Font font, int width, int height,
-            int mouseX, int mouseY, ItemStack item, WeaponTypeDetector.DetectionResult detection,
-            String lowConfidenceStatus,
-            ResponsiveLayout.Rect continueBounds, ResponsiveLayout.Rect whitelistBounds,
-            ResponsiveLayout.Rect cancelBounds) {
-        // This method is called externally with bounds to update
-        // The actual rendering logic stays in ItemEditorScreen for now as it needs to update bounds
-    }
-
     private List<String> buildStatSources(ItemStack stack) {
         List<String> sources = new ArrayList<>();
         if (stack == null || stack.isEmpty()) {
@@ -544,7 +532,9 @@ public class ItemEditorRenderer {
                 var tag = data.copyTag();
                 hasWeaponSpecific = tag != null && tag.contains(WEAPON_STATS_KEY);
                 hasArmorSpecific = tag != null && tag.contains(ARMOR_STATS_KEY);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                DevMod.LOGGER.debug("[ItemEditor] Failed to read custom data tag", e);
+            }
         }
 
         boolean isArmor = ArmorConfigManager.isArmor(stack);

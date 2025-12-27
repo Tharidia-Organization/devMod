@@ -2,6 +2,7 @@ package com.devmod.client.panels.context;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
@@ -138,7 +139,7 @@ public class ContextDetector {
      * Aggiorna il target corrente.
      */
     public void updateTarget(@Nullable LivingEntity target) {
-        if (target != currentTarget) {
+        if (!Objects.equals(target, currentTarget)) {
             this.currentTarget = target;
             this.targetAcquiredTime = System.currentTimeMillis();
         }

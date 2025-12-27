@@ -1,5 +1,8 @@
 # Production Marker File
 
+> Last updated: 2025-12-26
+> Status: CURRENT (verified against code)
+
 ## DD32: Autosmoke Production Guard
 
 The `.production` marker file is part of the triple-guard system that prevents accidental autosmoke execution in production environments.

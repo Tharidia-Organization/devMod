@@ -1,5 +1,8 @@
 # Target Package Architecture
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL
+
 ## Overview
 
 This document describes the final package structure for DevMod after the December 2024 reorganization to NeoForge standards.

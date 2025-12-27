@@ -19,6 +19,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.errorprone.annotations.InlineMe;
+
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
@@ -140,6 +142,7 @@ public final class BloodContractRegistry {
      * @deprecated Use {@link #getRandomOffers(int, int, Set, UUID)} instead.
      */
     @Deprecated
+    @InlineMe(replacement = "this.getRandomOffers(count, waveNumber, excludeIds, null)")
     @Nonnull
     public List<BloodContract> getRandomOffers(int count, int waveNumber, Set<ResourceLocation> excludeIds) {
         return getRandomOffers(count, waveNumber, excludeIds, null);
@@ -150,13 +153,16 @@ public final class BloodContractRegistry {
      */
     @Nonnull
     public List<BloodContract> getCompatibleOffers(int count, int waveNumber, List<BloodContract> activeContracts) {
+        if (count <= 0) {
+            return List.of();
+        }
         Set<ResourceLocation> excludeIds = new HashSet<>();
         for (BloodContract active : activeContracts) {
             excludeIds.add(active.getId());
         }
 
         List<BloodContract> offers = new ArrayList<>();
-        List<BloodContract> candidates = getRandomOffers(count * 3, waveNumber, excludeIds);
+        List<BloodContract> candidates = getRandomOffers(count * 3, waveNumber, excludeIds, null);
 
         for (BloodContract candidate : candidates) {
             boolean compatible = true;

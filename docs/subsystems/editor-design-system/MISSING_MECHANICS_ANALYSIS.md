@@ -1,5 +1,8 @@
 # 🔍 MISSING MECHANICS ANALYSIS
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## ❌ MECCANICHE NON CONSIDERATE NELL'EDITOR
 
 ### 1. **STAMINA SYSTEM** - Sistema abilità avanzato

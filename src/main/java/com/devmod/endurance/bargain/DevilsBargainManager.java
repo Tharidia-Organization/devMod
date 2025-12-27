@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -324,7 +325,7 @@ public class DevilsBargainManager {
         }
 
         // Apply immediate effects
-        applyCurseEffects(player, curse, session);
+        applyCurseEffects(player, curse);
 
         // Track curse acceptance for hidden perk discoveries
         com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.recordCurseAccepted(player);
@@ -371,12 +372,12 @@ public class DevilsBargainManager {
     /**
      * Apply immediate effects when a curse is accepted.
      */
-    private void applyCurseEffects(ServerPlayer player, Curse curse, CurseSession session) {
+    private void applyCurseEffects(ServerPlayer player, Curse curse) {
         switch (curse) {
             case FRAILTY -> {
                 // Reduce max health immediately
                 float reduction = player.getMaxHealth() * 0.3f;
-                var healthAttr = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+                var healthAttr = player.getAttribute(Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH));
                 if (healthAttr != null) {
                     healthAttr.setBaseValue(Math.max(4, healthAttr.getBaseValue() - reduction));
                     if (player.getHealth() > player.getMaxHealth()) {
@@ -540,7 +541,7 @@ public class DevilsBargainManager {
     }
 
     private static void sendMessage(ServerPlayer player, String message) {
-        player.sendSystemMessage(literalMessage(message));
+        player.sendSystemMessage(Objects.requireNonNull(literalMessage(message)));
     }
 
     private static void playSound(ServerLevel level, BlockPos pos, SoundEvent sound, SoundSource source,

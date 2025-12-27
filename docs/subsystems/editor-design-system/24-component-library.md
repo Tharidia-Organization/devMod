@@ -1,5 +1,8 @@
 # 24 - Component Library
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Overview
 
 Libreria componenti UI condivisi tra Editor System e Panel System.

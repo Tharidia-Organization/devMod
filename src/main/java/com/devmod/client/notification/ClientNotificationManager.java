@@ -1,0 +1,406 @@
+package com.devmod.client.notification;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Queue;
+
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+
+import com.devmod.DevMod;
+import com.devmod.notification.Notification;
+import com.devmod.notification.NotificationCategory;
+import com.devmod.notification.NotificationPriority;
+import com.devmod.notification.network.UnifiedNotificationPayload;
+
+/**
+ * Central manager for all client-side notifications.
+ * Handles queuing, display timing, and rendering of unified notifications.
+ */
+@OnlyIn(Dist.CLIENT)
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
+public class ClientNotificationManager {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientNotificationManager.class);
+
+    public static final ClientNotificationManager INSTANCE = new ClientNotificationManager();
+
+    private static final ResourceLocation LAYER_ID =
+            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "unified_notification");
+
+    // Configuration
+    private static final int MAX_ACTIVE_TOASTS = 5;
+    private static final int MAX_QUEUE_SIZE = 50;
+    private static final int TOAST_WIDTH = 280;
+    private static final int TOAST_HEIGHT = 48;
+    private static final int TOAST_MARGIN = 8;
+    private static final int BANNER_HEIGHT = 56;
+
+    // Animation timing
+    private static final int SLIDE_IN_MS = 250;
+    private static final int FADE_OUT_MS = 300;
+
+    // Toast queue and active toasts
+    private final Queue<QueuedNotification> toastQueue = new ArrayDeque<>();
+    private final List<DisplayedToast> activeToasts = new ArrayList<>();
+
+    // Banner (high-priority, one at a time)
+    @Nullable
+    private DisplayedBanner activeBanner;
+    private final Queue<QueuedNotification> bannerQueue = new ArrayDeque<>();
+
+    // Client preferences (loaded from config/server)
+    private ClientNotificationPreferences preferences = new ClientNotificationPreferences();
+
+    private ClientNotificationManager() {}
+
+    /**
+     * Register the GUI layer for rendering.
+     */
+    @SubscribeEvent
+    public static void registerGuiLayer(RegisterGuiLayersEvent event) {
+        event.registerAbove(Objects.requireNonNull(VanillaGuiLayers.CHAT), Objects.requireNonNull(LAYER_ID), (graphics, deltaTracker) -> {
+            INSTANCE.tick();
+            INSTANCE.render(graphics, deltaTracker);
+        });
+    }
+
+    /**
+     * Handle incoming notification from network.
+     */
+    public void handleNotification(UnifiedNotificationPayload payload) {
+        Notification notification = payload.toNotification();
+        handleNotification(notification);
+    }
+
+    /**
+     * Handle a notification object.
+     */
+    public void handleNotification(Notification notification) {
+        // Check if category is muted
+        if (preferences.isCategoryMuted(notification.category())) {
+            LOGGER.debug("Notification muted by category: {}", notification.category());
+            return;
+        }
+
+        // Check priority threshold
+        if (!notification.priority().isAtLeast(preferences.getMinOverlayPriority())) {
+            LOGGER.debug("Notification below priority threshold: {}", notification.priority());
+            return;
+        }
+
+        // Play sound if not muted
+        if (preferences.isSoundEnabled(notification.category())) {
+            playNotificationSound(notification);
+        }
+
+        // Queue for display
+        QueuedNotification queued = new QueuedNotification(notification, System.currentTimeMillis());
+
+        if (notification.shouldUseBanner()) {
+            queueBanner(queued);
+        } else {
+            queueToast(queued);
+        }
+    }
+
+    private void queueToast(QueuedNotification notification) {
+        if (toastQueue.size() >= MAX_QUEUE_SIZE) {
+            toastQueue.poll(); // Remove oldest
+        }
+        toastQueue.offer(notification);
+    }
+
+    private void queueBanner(QueuedNotification notification) {
+        if (bannerQueue.size() >= 10) {
+            bannerQueue.poll();
+        }
+        bannerQueue.offer(notification);
+    }
+
+    private void playNotificationSound(Notification notification) {
+        // Delegate to NotificationSoundManager (will be created in FASE 5.4)
+        // For now, just log
+        String soundId = notification.soundId();
+        if (soundId != null && !soundId.isEmpty()) {
+            LOGGER.debug("Would play sound: {}", soundId);
+        }
+    }
+
+    /**
+     * Update notification states each frame.
+     */
+    public void tick() {
+        long now = System.currentTimeMillis();
+
+        // Update banner
+        if (activeBanner != null) {
+            activeBanner.tick();
+            if (activeBanner.isExpired()) {
+                activeBanner = null;
+            }
+        }
+
+        // Promote from banner queue
+        if (activeBanner == null && !bannerQueue.isEmpty()) {
+            QueuedNotification next = bannerQueue.poll();
+            if (next != null) {
+                activeBanner = new DisplayedBanner(next.notification(), now);
+            }
+        }
+
+        // Update active toasts
+        activeToasts.removeIf(toast -> {
+            toast.tick();
+            return toast.isExpired();
+        });
+
+        // Promote from toast queue
+        while (activeToasts.size() < MAX_ACTIVE_TOASTS && !toastQueue.isEmpty()) {
+            QueuedNotification next = toastQueue.poll();
+            if (next != null) {
+                activeToasts.add(new DisplayedToast(next.notification(), now, activeToasts.size()));
+            }
+        }
+
+        // Update positions for stacking
+        for (int i = 0; i < activeToasts.size(); i++) {
+            activeToasts.get(i).updateTargetIndex(i);
+        }
+    }
+
+    /**
+     * Render all active notifications.
+     */
+    public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+
+        int screenWidth = graphics.guiWidth();
+        int screenHeight = graphics.guiHeight();
+        Font font = mc.font;
+
+        // Render banner at top-center
+        if (activeBanner != null) {
+            renderBanner(graphics, font, screenWidth, activeBanner);
+        }
+
+        // Render toasts at bottom-right
+        for (DisplayedToast toast : activeToasts) {
+            renderToast(graphics, font, screenWidth, screenHeight, toast);
+        }
+    }
+
+    private void renderBanner(GuiGraphics graphics, Font font, int screenWidth, DisplayedBanner banner) {
+        float alpha = banner.getAlpha();
+        float slideProgress = banner.getSlideProgress();
+
+        int bannerWidth = 320;
+        int x = (screenWidth - bannerWidth) / 2;
+        int baseY = 10;
+        int y = (int) (baseY - (1 - slideProgress) * 40);
+
+        int bgAlpha = (int) (200 * alpha);
+        int bgColor = (bgAlpha << 24) | 0x1A1A2E;
+
+        // Background
+        graphics.fill(x, y, x + bannerWidth, y + BANNER_HEIGHT, bgColor);
+
+        // Border based on priority
+        int borderColor = getBorderColor(banner.notification.priority(), alpha);
+        graphics.fill(x, y, x + bannerWidth, y + 2, borderColor);
+        graphics.fill(x, y + BANNER_HEIGHT - 2, x + bannerWidth, y + BANNER_HEIGHT, borderColor);
+
+        // Title
+        int textAlpha = (int) (255 * alpha);
+        Component title = Component.translatable(Objects.requireNonNull(banner.notification.titleKey()));
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, y + 8, (textAlpha << 24) | 0xFFFFFF, true);
+
+        // Message if present
+        String msgKey = banner.notification.messageKey();
+        if (msgKey != null) {
+            Component message = Component.translatable(Objects.requireNonNull(msgKey));
+            graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(message), x + 10, y + 24, (textAlpha << 24) | 0xAAAAAA, true);
+        }
+    }
+
+    private void renderToast(GuiGraphics graphics, Font font, int screenWidth, int screenHeight,
+                             DisplayedToast toast) {
+        float alpha = toast.getAlpha();
+        float slideProgress = toast.getSlideProgress();
+
+        int x = screenWidth - TOAST_WIDTH - TOAST_MARGIN;
+        int baseY = screenHeight - 60 - (toast.targetIndex * (TOAST_HEIGHT + 4));
+        x = (int) (x + (1 - slideProgress) * (TOAST_WIDTH + 20));
+
+        int bgAlpha = (int) (180 * alpha);
+        int bgColor = (bgAlpha << 24) | 0x1A1A2E;
+
+        // Background
+        graphics.fill(x, baseY, x + TOAST_WIDTH, baseY + TOAST_HEIGHT, bgColor);
+
+        // Left accent bar based on category
+        int accentColor = getCategoryColor(toast.notification.category(), alpha);
+        graphics.fill(x, baseY, x + 3, baseY + TOAST_HEIGHT, accentColor);
+
+        // Title
+        int textAlpha = (int) (255 * alpha);
+        Component title = Component.translatable(Objects.requireNonNull(toast.notification.titleKey()));
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, baseY + 8, (textAlpha << 24) | 0xFFFFFF, true);
+
+        // Message if present
+        String msgKey = toast.notification.messageKey();
+        if (msgKey != null) {
+            Component message = Component.translatable(Objects.requireNonNull(msgKey));
+            int maxWidth = TOAST_WIDTH - 20;
+            String text = message.getString();
+            if (font.width(Objects.requireNonNull(text)) > maxWidth) {
+                text = font.plainSubstrByWidth(Objects.requireNonNull(text), maxWidth - 10) + "...";
+            }
+            graphics.drawString(font, text, x + 10, baseY + 24, (textAlpha << 24) | 0xAAAAAA, true);
+        }
+    }
+
+    private int getBorderColor(NotificationPriority priority, float alpha) {
+        int a = (int) (255 * alpha);
+        return switch (priority) {
+            case LOW -> (a << 24) | 0x666666;
+            case NORMAL -> (a << 24) | 0x4CAF50;
+            case HIGH -> (a << 24) | 0xFFA726;
+            case URGENT -> (a << 24) | 0xF44336;
+            case CRITICAL -> (a << 24) | 0xE91E63;
+        };
+    }
+
+    private int getCategoryColor(NotificationCategory category, float alpha) {
+        int a = (int) (255 * alpha);
+        return switch (category) {
+            case PARTY -> (a << 24) | 0x2196F3;
+            case ACHIEVEMENT -> (a << 24) | 0xFFD700;
+            case RECORD -> (a << 24) | 0xE91E63;
+            case SEASON -> (a << 24) | 0x9C27B0;
+            case TOKEN -> (a << 24) | 0xFFD700;
+            case REWARD -> (a << 24) | 0x4CAF50;
+            case COMBAT -> (a << 24) | 0xF44336;
+            case RESONANCE -> (a << 24) | 0x00BCD4;
+            case QUEST -> (a << 24) | 0xFF5722;
+            case MAILBOX -> (a << 24) | 0x607D8B;
+            case ADMIN -> (a << 24) | 0xF44336;
+            case SYSTEM -> (a << 24) | 0x9E9E9E;
+        };
+    }
+
+    /**
+     * Update client preferences.
+     */
+    public void setPreferences(ClientNotificationPreferences preferences) {
+        this.preferences = preferences;
+    }
+
+    /**
+     * Clear all notifications.
+     */
+    public void clear() {
+        toastQueue.clear();
+        bannerQueue.clear();
+        activeToasts.clear();
+        activeBanner = null;
+    }
+
+    // ===== Internal classes =====
+
+    private record QueuedNotification(Notification notification, long queuedAt) {}
+
+    private static class DisplayedToast {
+        final Notification notification;
+        final long startTime;
+        int targetIndex;
+
+        DisplayedToast(Notification notification, long startTime, int index) {
+            this.notification = notification;
+            this.startTime = startTime;
+            this.targetIndex = index;
+        }
+
+        void tick() {
+            // Smooth position interpolation would go here
+        }
+
+        void updateTargetIndex(int index) {
+            this.targetIndex = index;
+        }
+
+        float getSlideProgress() {
+            long elapsed = System.currentTimeMillis() - startTime;
+            return Math.min(1.0f, elapsed / (float) SLIDE_IN_MS);
+        }
+
+        float getAlpha() {
+            long elapsed = System.currentTimeMillis() - startTime;
+            long duration = notification.displayDurationMs();
+
+            if (elapsed < SLIDE_IN_MS) {
+                return elapsed / (float) SLIDE_IN_MS;
+            } else if (elapsed > duration - FADE_OUT_MS) {
+                return Math.max(0, (duration - elapsed) / (float) FADE_OUT_MS);
+            }
+            return 1.0f;
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() - startTime > notification.displayDurationMs();
+        }
+    }
+
+    private static class DisplayedBanner {
+        final Notification notification;
+        final long startTime;
+
+        DisplayedBanner(Notification notification, long startTime) {
+            this.notification = notification;
+            this.startTime = startTime;
+        }
+
+        void tick() {
+            // Animation updates would go here
+        }
+
+        float getSlideProgress() {
+            long elapsed = System.currentTimeMillis() - startTime;
+            return Math.min(1.0f, elapsed / (float) SLIDE_IN_MS);
+        }
+
+        float getAlpha() {
+            long elapsed = System.currentTimeMillis() - startTime;
+            long duration = notification.displayDurationMs();
+
+            if (elapsed < SLIDE_IN_MS) {
+                return elapsed / (float) SLIDE_IN_MS;
+            } else if (elapsed > duration - FADE_OUT_MS) {
+                return Math.max(0, (duration - elapsed) / (float) FADE_OUT_MS);
+            }
+            return 1.0f;
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() - startTime > notification.displayDurationMs();
+        }
+    }
+}

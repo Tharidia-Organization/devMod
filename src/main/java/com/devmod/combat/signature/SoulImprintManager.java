@@ -300,7 +300,6 @@ public class SoulImprintManager {
     /**
      * Get combined trait effects for damage calculation.
      */
-    @SuppressWarnings("deprecation") // WeaponTraitRegistry.getCombinedEffect - migration pending
     public TraitEffects getTraitEffects(ItemStack weapon) {
         SoulImprint imprint = SoulImprint.loadFromItem(weapon);
         if (imprint == null) {
@@ -313,25 +312,25 @@ public class SoulImprintManager {
         }
 
         float damagePercent = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.DAMAGE_PERCENT);
+            WeaponTrait.TraitEffectType.DAMAGE_PERCENT, null);
         float headshotBonus = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.HEADSHOT_BONUS);
+            WeaponTrait.TraitEffectType.HEADSHOT_BONUS, null);
         float bossDamage = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.BOSS_DAMAGE);
+            WeaponTrait.TraitEffectType.BOSS_DAMAGE, null);
         float styleGain = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.STYLE_GAIN);
+            WeaponTrait.TraitEffectType.STYLE_GAIN, null);
         float lifesteal = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.LIFESTEAL);
+            WeaponTrait.TraitEffectType.LIFESTEAL, null);
         float critChance = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.CRIT_CHANCE);
+            WeaponTrait.TraitEffectType.CRIT_CHANCE, null);
         float comboDecay = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.COMBO_DECAY);
+            WeaponTrait.TraitEffectType.COMBO_DECAY, null);
         float damageReduction = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.DAMAGE_REDUCTION);
+            WeaponTrait.TraitEffectType.DAMAGE_REDUCTION, null);
         float resonanceBonus = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.RESONANCE_BONUS);
+            WeaponTrait.TraitEffectType.RESONANCE_BONUS, null);
         float executeThreshold = WeaponTraitRegistry.getCombinedEffect(traits,
-            WeaponTrait.TraitEffectType.EXECUTE_THRESHOLD);
+            WeaponTrait.TraitEffectType.EXECUTE_THRESHOLD, null);
 
         return new TraitEffects(
             damagePercent, headshotBonus, bossDamage, styleGain,

@@ -1,5 +1,7 @@
 package com.devmod.testing.stats;
 
+import java.util.Locale;
+
 import com.google.gson.JsonObject;
 
 public class OverlayUsageTracker {
@@ -27,7 +29,7 @@ public class OverlayUsageTracker {
      * @return true if all overlays have been used at least once
      */
     public boolean recordOverlayToggle(String overlayName) {
-        switch (overlayName.toLowerCase()) {
+        switch (overlayName.toLowerCase(Locale.ROOT)) {
             case "impact_hud" -> impactHudToggles++;
             case "debug_renderer" -> debugRendererToggles++;
             case "pathfinding" -> pathfindingToggles++;
@@ -43,7 +45,7 @@ public class OverlayUsageTracker {
      * Record screen open.
      */
     public void recordScreenOpen(String screenName) {
-        switch (screenName.toLowerCase()) {
+        switch (screenName.toLowerCase(Locale.ROOT)) {
             case "telemetry" -> telemetryDashboardOpens++;
             case "mob_config" -> mobConfigScreenOpens++;
             case "weapon_editor" -> weaponEditorOpens++;
@@ -61,7 +63,7 @@ public class OverlayUsageTracker {
 
     // === Getters ===
     public int getOverlayToggles(String overlayName) {
-        return switch (overlayName.toLowerCase()) {
+        return switch (overlayName.toLowerCase(Locale.ROOT)) {
             case "impact_hud" -> impactHudToggles;
             case "debug_renderer" -> debugRendererToggles;
             case "pathfinding" -> pathfindingToggles;
@@ -79,7 +81,7 @@ public class OverlayUsageTracker {
     }
 
     public int getScreenOpens(String screenName) {
-        return switch (screenName.toLowerCase()) {
+        return switch (screenName.toLowerCase(Locale.ROOT)) {
             case "telemetry" -> telemetryDashboardOpens;
             case "mob_config" -> mobConfigScreenOpens;
             case "weapon_editor" -> weaponEditorOpens;

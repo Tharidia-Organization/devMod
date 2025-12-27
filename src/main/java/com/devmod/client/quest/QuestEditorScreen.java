@@ -3,6 +3,7 @@ package com.devmod.client.quest;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -155,7 +156,7 @@ public class QuestEditorScreen extends ModScreen {
         int noteFieldX = QUEST_LIST_WIDTH + TASK_LIST_WIDTH + PADDING * 3;
         int noteFieldWidth = width - noteFieldX - PADDING;
 
-        questNoteField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 40, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.quest_note")), "questNoteField");
+        questNoteField = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 40, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.quest_note"));
         questNoteField.setMaxLength(200);
         questNoteField.setHint(I18n.translate("devmod.quest.quest_note_hint"));
         if (selectedQuest != null && selectedQuest.hasQuestNote()) {
@@ -165,7 +166,7 @@ public class QuestEditorScreen extends ModScreen {
         this.addRenderableWidget(questNoteField);
 
         // === Task Note Field ===
-        taskNoteField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 120, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.task_note")), "taskNoteField");
+        taskNoteField = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 120, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.task_note"));
         taskNoteField.setMaxLength(200);
         taskNoteField.setHint(I18n.translate("devmod.quest.task_note_hint"));
         if (selectedTask != null && selectedTask.hasNote()) {
@@ -175,17 +176,17 @@ public class QuestEditorScreen extends ModScreen {
         this.addRenderableWidget(taskNoteField);
 
         // === New Quest Name Field ===
-        newQuestNameField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font), PADDING, height - 55, QUEST_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_quest")));
+        newQuestNameField = new EditBox(Objects.requireNonNull(font), PADDING, height - 55, QUEST_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_quest"));
         newQuestNameField.setMaxLength(50);
         newQuestNameField.setHint(I18n.translate("devmod.quest.new_quest_hint"));
-        this.addRenderableWidget(Objects.requireNonNull(newQuestNameField));
+        this.addRenderableWidget(newQuestNameField);
 
         // === New Task Description Field ===
         int taskFieldX = QUEST_LIST_WIDTH + PADDING * 2;
-        newTaskDescField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font), taskFieldX, height - 55, TASK_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_task")));
+        newTaskDescField = new EditBox(Objects.requireNonNull(font), taskFieldX, height - 55, TASK_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_task"));
         newTaskDescField.setMaxLength(100);
         newTaskDescField.setHint(I18n.translate("devmod.quest.new_task_hint"));
-        this.addRenderableWidget(Objects.requireNonNull(newTaskDescField));
+        this.addRenderableWidget(newTaskDescField);
 
         // === Buttons ===
         // Add Quest Button (+)
@@ -292,11 +293,11 @@ public class QuestEditorScreen extends ModScreen {
         int modalY = (height - modalHeight) / 2;
 
         // Search field
-        mobSearchField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font), modalX + 10, modalY + 35, modalWidth - 20, 18, I18n.ui("search")));
+        mobSearchField = new EditBox(Objects.requireNonNull(font), modalX + 10, modalY + 35, modalWidth - 20, 18, I18n.ui("search"));
         mobSearchField.setHint(I18n.translate("devmod.quest.search_mobs"));
         mobSearchField.setResponder(this::filterMobs);
         mobSearchField.setVisible(false);
-        this.addRenderableWidget(Objects.requireNonNull(mobSearchField));
+        this.addRenderableWidget(mobSearchField);
 
         // Waves control buttons
         wavesMinusBtn = EditorButton.builder("endurance-waves-minus", I18n.ui("minus_symbol").getString())
@@ -797,10 +798,10 @@ public class QuestEditorScreen extends ModScreen {
         if (query == null || query.isEmpty()) {
             filteredMobs = new ArrayList<>(availableMobs);
         } else {
-            String lowerQuery = query.toLowerCase();
+            String lowerQuery = query.toLowerCase(Locale.ROOT);
             filteredMobs = availableMobs.stream()
-                .filter(m -> m.displayName.toLowerCase().contains(lowerQuery) ||
-                             m.mobId.toString().toLowerCase().contains(lowerQuery))
+                .filter(m -> m.displayName.toLowerCase(Locale.ROOT).contains(lowerQuery) ||
+                             m.mobId.toString().toLowerCase(Locale.ROOT).contains(lowerQuery))
                 .collect(Collectors.toList());
         }
         mobListScroll = 0;

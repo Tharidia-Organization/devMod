@@ -1,5 +1,8 @@
 # Testing Strategy
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Overview
 
 Strategia di testing completa per il sistema editor, con focus su affidabilità e prevenzione regressioni.

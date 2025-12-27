@@ -50,7 +50,6 @@ public class RecipeModule extends AbstractEditorModule {
     // STATE
     // ═══════════════════════════════════════════════════════════════
 
-    private @Nullable CraftingRecipeData currentRecipe;
     private CraftingType craftingType = CraftingType.SHAPED;
     private String recipeId = "";
     private String recipeGroup = "";
@@ -136,8 +135,6 @@ public class RecipeModule extends AbstractEditorModule {
 
         // Create empty recipe with current item as result
         CraftingRecipeData recipe = CraftingRecipeData.empty(item);
-        currentRecipe = recipe;
-
         // Initialize state from recipe
         craftingType = recipe.craftingType();
         recipeId = recipe.id().toString();
@@ -520,7 +517,6 @@ public class RecipeModule extends AbstractEditorModule {
             );
 
             // Update state
-            currentRecipe = recipe;
             clearDirty();
 
             String successMsg = I18n.translate("devmod.recipe.saved_with_id", recipe.id().toString()).getString();

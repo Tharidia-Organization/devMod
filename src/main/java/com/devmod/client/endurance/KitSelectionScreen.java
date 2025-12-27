@@ -1,7 +1,6 @@
 package com.devmod.client.endurance;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -18,6 +17,9 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Splitter;
+import com.google.errorprone.annotations.Immutable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -57,6 +59,7 @@ import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
 public class KitSelectionScreen extends Screen {
+    private static final Splitter UNDERSCORE_SPLITTER = Splitter.on('_');
     private static final Logger LOGGER = LoggerFactory.getLogger(KitSelectionScreen.class);
 
     // Layout
@@ -82,6 +85,10 @@ public class KitSelectionScreen extends Screen {
     private static final int COLOR_TEXT = 0xFFE6EDF3;
     private static final int COLOR_TEXT_DIM = 0xFF7D8590;
     private static final int COLOR_BORDER = 0xFF30363D;
+
+    @Immutable
+    @FunctionalInterface
+    private interface ItemStackFilter extends Predicate<ItemStack> {}
 
     // Categories with icons
     private enum Category {
@@ -115,14 +122,18 @@ public class KitSelectionScreen extends Screen {
         final String tabKey;
         final String icon;
         final int color;
-        final Predicate<ItemStack> filter;
+        final ItemStackFilter filter;
 
-        Category(String nameKey, String tabKey, String icon, int color, Predicate<ItemStack> filter) {
+        Category(String nameKey, String tabKey, String icon, int color, ItemStackFilter filter) {
             this.nameKey = nameKey;
             this.tabKey = tabKey;
             this.icon = icon;
             this.color = color;
             this.filter = filter;
+        }
+
+        boolean matches(ItemStack stack) {
+            return filter.test(stack);
         }
 
         String displayName() {
@@ -260,7 +271,7 @@ public class KitSelectionScreen extends Screen {
         String query = searchQuery.toLowerCase(Locale.ROOT).trim();
 
         for (ItemStack stack : allItems) {
-            if (!selectedCategory.filter.test(stack)) continue;
+            if (!selectedCategory.matches(stack)) continue;
             if (!query.isEmpty()) {
                 String name = stack.getHoverName().getString().toLowerCase(Locale.ROOT);
                 String id = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem())))
@@ -1265,7 +1276,7 @@ public class KitSelectionScreen extends Screen {
     }
 
     private String formatEnchantmentName(String path) {
-        return Arrays.stream(path.split("_"))
+        return UNDERSCORE_SPLITTER.splitToList(path).stream()
             .map(word -> word.substring(0, 1).toUpperCase(Locale.ROOT) + word.substring(1))
             .reduce((a, b) -> a + " " + b)
             .orElse(path);

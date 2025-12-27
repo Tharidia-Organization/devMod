@@ -11,6 +11,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,6 +68,8 @@ public class NdjsonWriter implements AutoCloseable {
     private final AtomicLong totalWritten;
     private final AtomicLong totalDropped;
     private final AtomicLong currentFileSize;
+    private ScheduledFuture<?> flushTask;
+    private ScheduledFuture<?> rotationTask;
 
     private volatile Path currentLogFile;
     private volatile BufferedWriter writer;
@@ -201,7 +205,7 @@ public class NdjsonWriter implements AutoCloseable {
      * Starts the periodic flush task (DD20: every 1 second).
      */
     private void startFlushTask() {
-        scheduler.scheduleAtFixedRate(() -> {
+        flushTask = scheduler.scheduleAtFixedRate(() -> {
             if (running.get()) {
                 flushBuffer();
             }
@@ -212,7 +216,7 @@ public class NdjsonWriter implements AutoCloseable {
      * Starts the rotation check task (checks every hour).
      */
     private void startRotationTask() {
-        scheduler.scheduleAtFixedRate(() -> {
+        rotationTask = scheduler.scheduleAtFixedRate(() -> {
             if (running.get()) {
                 try {
                     rotateLogFileIfNeeded();
@@ -264,7 +268,7 @@ public class NdjsonWriter implements AutoCloseable {
      * Rotates the log file if needed (new day or size exceeded).
      */
     private synchronized void rotateLogFileIfNeeded() throws IOException {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
 
         boolean needsRotation = currentLogFile == null
             || !today.equals(currentLogDate)
@@ -341,11 +345,10 @@ public class NdjsonWriter implements AutoCloseable {
      * Cleans up old log files (DD17: 14 days).
      */
     private void cleanupOldLogs() {
-        try {
+        try (java.util.stream.Stream<Path> paths = Files.list(logDirectory)) {
             Instant cutoff = Instant.now().minus(Duration.ofDays(MAX_LOG_AGE_DAYS));
 
-            Files.list(logDirectory)
-                .filter(p -> p.getFileName().toString().startsWith(logPrefix))
+            paths.filter(p -> p.getFileName().toString().startsWith(logPrefix))
                 .filter(p -> {
                     try {
                         return Files.getLastModifiedTime(p).toInstant().isBefore(cutoff);
@@ -482,6 +485,13 @@ public class NdjsonWriter implements AutoCloseable {
 
         // Final flush
         flushBuffer();
+
+        if (flushTask != null) {
+            flushTask.cancel(false);
+        }
+        if (rotationTask != null) {
+            rotationTask.cancel(false);
+        }
 
         // Shutdown scheduler
         scheduler.shutdown();

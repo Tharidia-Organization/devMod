@@ -1,5 +1,8 @@
 # Architecture
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Unified Editor Architecture
 
 > **Architettura confermata:** Un solo `ItemEditorScreen` con moduli per tipo item.

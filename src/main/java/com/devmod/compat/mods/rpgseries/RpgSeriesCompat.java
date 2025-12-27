@@ -93,12 +93,16 @@ public class RpgSeriesCompat implements CompatModule {
             try {
                 spellCasterItemClass = Class.forName(
                     "net.spell_engine.api.item.weapon.SpellCasterItem");
-            } catch (ClassNotFoundException ignored) {}
+            } catch (ClassNotFoundException e) {
+                LOGGER.trace("[Compat:rpgseries] SpellCasterItem not found", e);
+            }
 
             try {
                 rangedWeaponItemClass = Class.forName(
                     "net.ranged_weapon_api.api.RangedWeaponItem");
-            } catch (ClassNotFoundException ignored) {}
+            } catch (ClassNotFoundException e) {
+                LOGGER.trace("[Compat:rpgseries] RangedWeaponItem not found", e);
+            }
 
             LOGGER.debug("[Compat:rpgseries] API classes loaded");
 

@@ -3,6 +3,7 @@ package com.devmod.client.arena.ui;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -143,7 +144,7 @@ public class ArenaTestWizard extends Screen {
 
     private void refreshTemplateList() {
         filteredTemplates.clear();
-        String query = searchBox != null ? searchBox.getValue().toLowerCase() : "";
+        String query = searchBox != null ? searchBox.getValue().toLowerCase(Locale.ROOT) : "";
 
         Collection<ArenaTemplate> all = registry.all();
         for (ArenaTemplate t : all) {
@@ -171,12 +172,12 @@ public class ArenaTestWizard extends Screen {
         if (query.isEmpty()) return true;
 
         // Match ID
-        if (t.id().toLowerCase().contains(query)) return true;
+        if (t.id().toLowerCase(Locale.ROOT).contains(query)) return true;
 
         // Match tags
         if (t.tags() != null) {
             for (String tag : t.tags()) {
-                if (tag.toLowerCase().contains(query)) return true;
+                if (tag.toLowerCase(Locale.ROOT).contains(query)) return true;
             }
         }
 
@@ -361,7 +362,7 @@ public class ArenaTestWizard extends Screen {
      */
     private int getMaterialColor(String material) {
         if (material == null) return 0xFF808080;
-        String m = material.toLowerCase();
+        String m = material.toLowerCase(Locale.ROOT);
 
         // Common material colors
         if (m.contains("stone") || m.contains("cobble")) return 0xFF808080;

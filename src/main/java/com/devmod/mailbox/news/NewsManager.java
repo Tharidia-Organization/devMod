@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.Nullable;
 
@@ -14,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.mailbox.MailboxConfig;
 import com.devmod.mailbox.persistence.MailboxRepository;
+import com.devmod.mailbox.webhook.WebhookManager;
 
 /**
  * Manager for the news/announcements system.
@@ -44,6 +47,32 @@ public class NewsManager {
     private NewNewsCallback newNewsCallback;
 
     // ============================================================================
+    // GLOBAL NEWS CACHE
+    // ============================================================================
+
+    /** Default cache TTL (5 minutes). */
+    private static final Duration DEFAULT_CACHE_TTL = Duration.ofMinutes(5);
+
+    /** Cached active news list. */
+    private final AtomicReference<CachedNews> cachedActiveNews = new AtomicReference<>();
+
+    /** Lock for cache operations. */
+    private final ReentrantReadWriteLock cacheLock = new ReentrantReadWriteLock();
+
+    /** Whether caching is enabled. */
+    private volatile boolean cacheEnabled = true;
+
+    /** Custom cache TTL. */
+    private volatile Duration cacheTtl = DEFAULT_CACHE_TTL;
+
+    /** Cache holder record. */
+    private record CachedNews(List<NewsArticle> articles, Instant cachedAt) {
+        boolean isExpired(Duration ttl) {
+            return Instant.now().isAfter(cachedAt.plus(ttl));
+        }
+    }
+
+    // ============================================================================
     // INITIALIZATION
     // ============================================================================
 
@@ -53,6 +82,7 @@ public class NewsManager {
      */
     public void initialize(MailboxRepository repository) {
         this.repository = repository;
+        invalidateCache();
         LOGGER.info("[News] News manager initialized");
     }
 
@@ -61,6 +91,7 @@ public class NewsManager {
      */
     public void shutdown() {
         this.repository = null;
+        invalidateCache();
         LOGGER.info("[News] News manager shutdown");
     }
 
@@ -107,7 +138,8 @@ public class NewsManager {
             @Nullable Duration expiresIn,
             int priority
     ) {
-        if (repository == null) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("News manager not initialized"));
         }
 
@@ -127,12 +159,22 @@ public class NewsManager {
             .active(true)
             .build();
 
-        return repository.saveNewsArticle(article).thenApply(saved -> {
+        return repo.saveNewsArticle(article).thenApply(saved -> {
             LOGGER.info("[News] Published article: {} (category: {})", title, category.getId());
+
+            // Invalidate cache since news list changed
+            invalidateCache();
 
             // Notify if published immediately
             if (!Instant.now().isBefore(publishTime)) {
                 notifyNewNews(saved);
+
+                // Dispatch webhook
+                WebhookManager.INSTANCE.dispatchNewsPublished(
+                    saved.id(),
+                    title,
+                    authorName != null ? authorName : "System"
+                );
             }
 
             return saved;
@@ -154,7 +196,8 @@ public class NewsManager {
             NewsCategory category,
             @Nullable String authorName
     ) {
-        if (repository == null) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("News manager not initialized"));
         }
 
@@ -169,7 +212,7 @@ public class NewsManager {
             .active(false)
             .build();
 
-        return repository.saveNewsArticle(article).thenApply(saved -> {
+        return repo.saveNewsArticle(article).thenApply(saved -> {
             LOGGER.info("[News] Created draft article: {}", title);
             return saved;
         });
@@ -182,23 +225,123 @@ public class NewsManager {
      * @return future completing with the article if found
      */
     public CompletableFuture<Optional<NewsArticle>> getArticle(UUID articleId) {
-        if (repository == null) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
-        return repository.getNewsArticle(articleId);
+        return repo.getNewsArticle(articleId);
     }
 
     /**
      * Get all active news articles visible to players.
+     * Uses caching to reduce database queries.
      *
      * @return future completing with the list of articles
      */
     public CompletableFuture<List<NewsArticle>> getActiveNews() {
-        if (repository == null) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
             return CompletableFuture.completedFuture(List.of());
         }
-        return repository.getActiveNews(MailboxConfig.INSTANCE.getMaxNewsArticles());
+
+        // Check cache first (if enabled)
+        if (cacheEnabled) {
+            cacheLock.readLock().lock();
+            try {
+                CachedNews cached = cachedActiveNews.get();
+                if (cached != null && !cached.isExpired(cacheTtl)) {
+                    LOGGER.debug("[News] Returning {} cached articles", cached.articles().size());
+                    return CompletableFuture.completedFuture(cached.articles());
+                }
+            } finally {
+                cacheLock.readLock().unlock();
+            }
+        }
+
+        // Fetch from database and update cache
+        return repo.getActiveNews(MailboxConfig.INSTANCE.getMaxNewsArticles())
+            .thenApply(articles -> {
+                if (cacheEnabled) {
+                    cacheLock.writeLock().lock();
+                    try {
+                        cachedActiveNews.set(new CachedNews(List.copyOf(articles), Instant.now()));
+                        LOGGER.debug("[News] Cached {} active articles", articles.size());
+                    } finally {
+                        cacheLock.writeLock().unlock();
+                    }
+                }
+                return articles;
+            });
     }
+
+    /**
+     * Invalidate the news cache.
+     * Called when news are published, updated, or deleted.
+     */
+    public void invalidateCache() {
+        cacheLock.writeLock().lock();
+        try {
+            cachedActiveNews.set(null);
+            LOGGER.debug("[News] Cache invalidated");
+        } finally {
+            cacheLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Enable or disable news caching.
+     */
+    public void setCacheEnabled(boolean enabled) {
+        this.cacheEnabled = enabled;
+        if (!enabled) {
+            invalidateCache();
+        }
+        LOGGER.info("[News] Cache {}", enabled ? "enabled" : "disabled");
+    }
+
+    /**
+     * Check if caching is enabled.
+     */
+    public boolean isCacheEnabled() {
+        return cacheEnabled;
+    }
+
+    /**
+     * Set the cache TTL.
+     */
+    public void setCacheTtl(Duration ttl) {
+        this.cacheTtl = ttl != null ? ttl : DEFAULT_CACHE_TTL;
+        LOGGER.info("[News] Cache TTL set to {} seconds", this.cacheTtl.getSeconds());
+    }
+
+    /**
+     * Get cache statistics.
+     */
+    public CacheStats getCacheStats() {
+        cacheLock.readLock().lock();
+        try {
+            CachedNews cached = cachedActiveNews.get();
+            if (cached == null) {
+                return new CacheStats(false, 0, null, cacheTtl);
+            }
+            if (cached.isExpired(cacheTtl)) {
+                return new CacheStats(false, 0, cached.cachedAt(), cacheTtl);
+            }
+            return new CacheStats(true, cached.articles().size(), cached.cachedAt(), cacheTtl);
+        } finally {
+            cacheLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Cache statistics record.
+     */
+    public record CacheStats(
+        boolean hasCachedData,
+        int articleCount,
+        @Nullable Instant cachedAt,
+        Duration ttl
+    ) {}
 
     /**
      * Get all news articles (including inactive) for admin.
@@ -206,10 +349,96 @@ public class NewsManager {
      * @return future completing with the list of articles
      */
     public CompletableFuture<List<NewsArticle>> getAllNews() {
-        if (repository == null) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
             return CompletableFuture.completedFuture(List.of());
         }
-        return repository.getAllNews(200); // Higher limit for admin view
+        return repo.getAllNews(200); // Higher limit for admin view
+    }
+
+    // ============================================================================
+    // API SUPPORT METHODS
+    // ============================================================================
+
+    /**
+     * Get active articles with pagination (for API).
+     */
+    public CompletableFuture<List<NewsArticle>> getActiveArticles(int limit, int offset) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
+            return CompletableFuture.completedFuture(List.of());
+        }
+        // Get all active and apply pagination in memory
+        return repo.getActiveNews(limit + offset).thenApply(articles ->
+            articles.stream().skip(offset).limit(limit).toList()
+        );
+    }
+
+    /**
+     * Get all articles with pagination (for API).
+     */
+    public CompletableFuture<List<NewsArticle>> getAllArticles(int limit, int offset) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
+            return CompletableFuture.completedFuture(List.of());
+        }
+        // Get all and apply pagination in memory
+        return repo.getAllNews(limit + offset).thenApply(articles ->
+            articles.stream().skip(offset).limit(limit).toList()
+        );
+    }
+
+    /**
+     * Get articles by category with pagination (for API).
+     */
+    public CompletableFuture<List<NewsArticle>> getArticlesByCategory(NewsCategory category, int limit, int offset) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
+            return CompletableFuture.completedFuture(List.of());
+        }
+        return repo.getActiveNews(200).thenApply(articles ->
+            articles.stream()
+                .filter(a -> a.category() == category)
+                .skip(offset)
+                .limit(limit)
+                .toList()
+        );
+    }
+
+    /**
+     * Create an article (alias for saveNewsArticle).
+     */
+    public CompletableFuture<Void> createArticle(NewsArticle article) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
+            return CompletableFuture.failedFuture(new IllegalStateException("News manager not initialized"));
+        }
+        return repo.saveNewsArticle(article).thenAccept(saved -> {
+            invalidateCache();
+            LOGGER.info("[News] Created article: {}", saved.id());
+        });
+    }
+
+    /**
+     * Get total article count.
+     */
+    public CompletableFuture<Integer> getTotalArticleCount() {
+        MailboxRepository repo = repository;
+        if (repo == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        return repo.getAllNews(Integer.MAX_VALUE).thenApply(List::size);
+    }
+
+    /**
+     * Get active article count.
+     */
+    public CompletableFuture<Integer> getActiveArticleCount() {
+        MailboxRepository repo = repository;
+        if (repo == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        return repo.getActiveNews(Integer.MAX_VALUE).thenApply(List::size);
     }
 
     /**
@@ -225,6 +454,7 @@ public class NewsManager {
         }
         return repo.updateNewsArticle(article).thenApply(success -> {
             if (success) {
+                invalidateCache();
                 LOGGER.info("[News] Updated article: {}", article.id());
             }
             return success;
@@ -244,6 +474,7 @@ public class NewsManager {
         }
         return repo.deleteNewsArticle(articleId).thenApply(success -> {
             if (success) {
+                invalidateCache();
                 LOGGER.info("[News] Deleted article: {}", articleId);
             }
             return success;
@@ -282,10 +513,11 @@ public class NewsManager {
      * @return future completing with read status
      */
     public CompletableFuture<Boolean> hasPlayerReadNews(UUID playerUuid, UUID articleId) {
-        if (repository == null) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
             return CompletableFuture.completedFuture(false);
         }
-        return repository.hasReadNews(playerUuid, articleId);
+        return repo.hasReadNews(playerUuid, articleId);
     }
 
     /**
@@ -296,10 +528,11 @@ public class NewsManager {
      * @return future completing with success status
      */
     public CompletableFuture<Boolean> markAsRead(UUID playerUuid, UUID articleId) {
-        if (repository == null) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
             return CompletableFuture.completedFuture(false);
         }
-        return repository.markNewsAsRead(playerUuid, articleId);
+        return repo.markNewsAsRead(playerUuid, articleId);
     }
 
     /**
@@ -309,10 +542,11 @@ public class NewsManager {
      * @return future completing with the unread count
      */
     public CompletableFuture<Integer> getUnreadCount(UUID playerUuid) {
-        if (repository == null) {
+        MailboxRepository repo = repository;
+        if (repo == null) {
             return CompletableFuture.completedFuture(0);
         }
-        return repository.getUnreadNewsCount(playerUuid);
+        return repo.getUnreadNewsCount(playerUuid);
     }
 
     // ============================================================================

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -44,6 +45,7 @@ public class HeatmapCollector {
     private final Map<CellKey, AtomicLong> currentBatch = new ConcurrentHashMap<>();
     private final List<HeatmapBatch> storedBatches = Collections.synchronizedList(new ArrayList<>());
     private final ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> flushTask;
 
     private Instant currentBatchStart;
     private HeatmapDataSink dataSink;
@@ -79,7 +81,7 @@ public class HeatmapCollector {
         }
 
         running = true;
-        scheduler.scheduleAtFixedRate(
+        flushTask = scheduler.scheduleAtFixedRate(
             this::flushBatch,
             FLUSH_INTERVAL_MINUTES,
             FLUSH_INTERVAL_MINUTES,
@@ -94,6 +96,9 @@ public class HeatmapCollector {
      */
     public void stop() {
         running = false;
+        if (flushTask != null) {
+            flushTask.cancel(false);
+        }
         scheduler.shutdown();
 
         try {

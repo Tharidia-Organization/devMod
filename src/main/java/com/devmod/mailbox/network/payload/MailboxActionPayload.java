@@ -66,12 +66,20 @@ public record MailboxActionPayload(
     }
 
     /**
+     * Create a "refresh mailbox" action payload.
+     */
+    public static MailboxActionPayload refresh() {
+        return new MailboxActionPayload(Action.REFRESH, new UUID(0L, 0L));
+    }
+
+    /**
      * Mailbox actions.
      */
     public enum Action {
         READ,
         DELETE,
-        CLAIM;
+        CLAIM,
+        REFRESH;
 
         public static Action fromOrdinal(int ordinal) {
             Action[] values = values();

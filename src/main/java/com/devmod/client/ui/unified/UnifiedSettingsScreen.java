@@ -2,6 +2,7 @@ package com.devmod.client.ui.unified;
 
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -412,10 +413,11 @@ public class UnifiedSettingsScreen extends Screen {
     }
 
     private boolean matchesSearch(SettingsCategory category) {
-        String query = Objects.requireNonNullElse(searchQuery, "").toLowerCase();
+        String query = Objects.requireNonNullElse(searchQuery, "").toLowerCase(Locale.ROOT);
         String label = Objects.requireNonNullElse(category.getLabel(), "");
         String description = Objects.requireNonNullElse(category.getDescription(), "");
-        return label.toLowerCase().contains(query) || description.toLowerCase().contains(query);
+        return label.toLowerCase(Locale.ROOT).contains(query)
+            || description.toLowerCase(Locale.ROOT).contains(query);
     }
 
     private void renderSidebarItem(GuiGraphics graphics, SettingsCategory category, int y,

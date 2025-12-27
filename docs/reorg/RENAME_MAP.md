@@ -1,9 +1,10 @@
 # Rename Map
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL
+
 ## Overview
 This document tracks all naming changes during the project standardization to NeoForge conventions.
-
-**Last Updated:** 2024-12-24
 
 ---
 

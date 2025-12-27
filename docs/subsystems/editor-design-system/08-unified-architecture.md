@@ -1,5 +1,8 @@
 # 2.12 Unified Editor Architecture
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 > **Architettura confermata:** Un solo `ItemEditorScreen` con moduli per tipo item.
 
 ## Filosofia

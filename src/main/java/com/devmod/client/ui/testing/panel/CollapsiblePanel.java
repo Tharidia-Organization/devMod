@@ -1,5 +1,6 @@
 package com.devmod.client.ui.testing.panel;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import net.minecraft.client.Minecraft;
@@ -42,7 +43,7 @@ public final class CollapsiblePanel implements UIPanel {
     }
 
     private static String generateId(String title) {
-        return "collapsible-" + title.toLowerCase().replace(" ", "-");
+        return "collapsible-" + title.toLowerCase(Locale.ROOT).replace(" ", "-");
     }
 
     // ═══════════════════════════════════════════════════════════════

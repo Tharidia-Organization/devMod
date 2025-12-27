@@ -152,6 +152,9 @@ public class LithiumCompat implements CompatModule {
         info.put("version", Compat.getVersion(MOD_ID));
         info.put("apiAvailable", apiAvailable);
         info.put("categories", getOptimizationCategories());
+        if (lithiumConfigClass != null) {
+            info.put("configClass", lithiumConfigClass.getName());
+        }
 
         return info;
     }

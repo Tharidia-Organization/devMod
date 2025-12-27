@@ -1,5 +1,8 @@
 # Impact HUD - Architettura Dettagliata
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## 1. Panoramica dei Componenti
 
 Il sistema Impact HUD è organizzato in tre layer principali con responsabilità separate.

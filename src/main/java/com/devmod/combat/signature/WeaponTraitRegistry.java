@@ -233,7 +233,8 @@ public class WeaponTraitRegistry {
         GameDesignConfig.SignatureWeaponsConfig config = getConfig(questId);
 
         // Map trait ID to config value
-        String traitName = requireNonNull(trait.getId(), "traitId").getPath();
+        ResourceLocation traitId = requireNonNull(trait.getId(), "traitId");
+        String traitName = requireNonNull(traitId.getPath(), "traitPath");
         return switch (traitName) {
             case "executioner" -> config.executionerBonus;
             case "tyrant_slayer" -> config.tyrantSlayerBonus;
@@ -276,7 +277,15 @@ public class WeaponTraitRegistry {
      */
     @Deprecated
     public static float getCombinedEffect(Set<WeaponTrait> traits, WeaponTrait.TraitEffectType type) {
-        return getCombinedEffect(traits, type, null);
+        requireNonNull(traits, "traits");
+        requireNonNull(type, "type");
+        float total = 0f;
+        for (WeaponTrait trait : traits) {
+            if (trait.getEffect().type() == type) {
+                total += getConfiguredEffectValue(trait, null);
+            }
+        }
+        return total;
     }
 
     /**

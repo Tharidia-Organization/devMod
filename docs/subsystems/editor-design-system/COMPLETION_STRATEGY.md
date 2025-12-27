@@ -1,5 +1,8 @@
 # Strategia di Completamento - Editor Design System
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Situazione Attuale
 
 ✅ **Completato**: Riorganizzazione e rimozione duplicati

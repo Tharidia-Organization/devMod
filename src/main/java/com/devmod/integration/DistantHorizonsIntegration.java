@@ -87,7 +87,7 @@ public class DistantHorizonsIntegration {
         try {
             if (apiAvailable) {
                 // Use DH API if available
-                registerWithDhApi(level, dimensionKey);
+                registerWithDhApi(dimensionKey);
             } else {
                 // Basic registration - just track it internally
                 registeredDimensions.add(dimensionKey);
@@ -182,7 +182,7 @@ public class DistantHorizonsIntegration {
      * Register dimension using DH API.
      * This uses reflection to avoid hard dependency on DH classes.
      */
-    private static void registerWithDhApi(ServerLevel level, ResourceKey<Level> dimensionKey) {
+    private static void registerWithDhApi(ResourceKey<Level> dimensionKey) {
         try {
             // DH API v4.0+ uses DhApi.Delayed.worldGenEvent for custom world gen
             // For dynamic dimensions, we primarily need to ensure DH recognizes the dimension

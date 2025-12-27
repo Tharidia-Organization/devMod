@@ -3,6 +3,8 @@ package com.devmod.telemetry.duckdb;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -175,11 +177,19 @@ public class DuckDBTelemetryService {
      */
     private void cleanup() {
         if (batchWriter != null) {
-            try { batchWriter.shutdown(); } catch (Exception ignored) {}
+            try {
+                batchWriter.shutdown();
+            } catch (Exception e) {
+                LOGGER.warn("[DuckDB] Failed to shutdown batch writer during cleanup", e);
+            }
             batchWriter = null;
         }
         if (connectionManager != null) {
-            try { connectionManager.shutdown(); } catch (Exception ignored) {}
+            try {
+                connectionManager.shutdown();
+            } catch (Exception e) {
+                LOGGER.warn("[DuckDB] Failed to shutdown connection manager during cleanup", e);
+            }
             connectionManager = null;
         }
         queryAPI = null;
@@ -840,15 +850,19 @@ public class DuckDBTelemetryService {
         if (sessionLogState.size() < 500) {
             return;
         }
+        List<UUID> keysToRemove = new ArrayList<>();
         for (var entry : sessionLogState.entrySet()) {
             SessionLogState state = entry.getValue();
             if (state == null) {
-                sessionLogState.remove(entry.getKey());
+                keysToRemove.add(entry.getKey());
                 continue;
             }
             if (state.endLogged && nowMs - state.lastUpdatedMs > SESSION_LOG_TTL_MS) {
-                sessionLogState.remove(entry.getKey(), state);
+                keysToRemove.add(entry.getKey());
             }
+        }
+        for (UUID key : keysToRemove) {
+            sessionLogState.remove(key);
         }
     }
 

@@ -1,5 +1,8 @@
 # Debug System
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Debug Panel (PRIORITÀ MASSIMA)
 
 > **NOTA:** Questa è la feature più importante per la fase attuale di sviluppo.

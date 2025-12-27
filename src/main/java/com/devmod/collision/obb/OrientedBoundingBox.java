@@ -55,7 +55,7 @@ public final class OrientedBoundingBox {
             aabb.getYsize() / 2.0,
             aabb.getZsize() / 2.0
         );
-        return Objects.requireNonNull(new OrientedBoundingBox(center, halfExtents));
+        return new OrientedBoundingBox(center, halfExtents);
     }
 
     /**

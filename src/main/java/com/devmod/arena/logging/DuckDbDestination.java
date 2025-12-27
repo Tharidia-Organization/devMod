@@ -11,6 +11,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Splitter;
+
 import com.devmod.arena.logging.LogAggregationPipeline.LogDestination;
 import com.devmod.arena.logging.LogAggregationPipeline.LogEvent;
 import com.devmod.telemetry.duckdb.ArenaRecords;
@@ -20,6 +22,7 @@ import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 public class DuckDbDestination implements LogDestination {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDbDestination.class);
+    private static final Splitter COMMA_SPLITTER = Splitter.on(',');
 
     private final ConcurrentHashMap<UUID, BuildStartInfo> buildStarts = new ConcurrentHashMap<>();
 
@@ -220,11 +223,11 @@ public class DuckDbDestination implements LogDestination {
         }
         String origin = asString(data.get("origin"));
         if (origin != null && origin.contains(",")) {
-            String[] parts = origin.split(",");
-            if (parts.length == 3) {
-                Integer ox = parseInt(parts[0]);
-                Integer oy = parseInt(parts[1]);
-                Integer oz = parseInt(parts[2]);
+            List<String> parts = COMMA_SPLITTER.splitToList(origin);
+            if (parts.size() == 3) {
+                Integer ox = parseInt(parts.get(0));
+                Integer oy = parseInt(parts.get(1));
+                Integer oz = parseInt(parts.get(2));
                 if (ox != null && oy != null && oz != null) {
                     return new Origin(ox, oy, oz);
                 }

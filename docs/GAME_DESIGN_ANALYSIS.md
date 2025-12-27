@@ -1,5 +1,8 @@
 # Endurance Quest System - Game Design Analysis
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Executive Summary
 
 **Stato: SISTEMA INTEGRATO E COESO**

@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -313,15 +314,22 @@ public class InstanceRegistry {
             LOGGER.info("[InstanceRegistry] Processing destruction for instance {}", instanceId);
             // The actual dimension destruction is handled by DynamicDimensionManager
             // Here we just clean up our registry
-            DynamicDimensionManager.INSTANCE.destroyDimensionAsync(instanceId)
+            observeFuture(DynamicDimensionManager.INSTANCE.destroyDimensionAsync(instanceId)
                 .thenAccept(success -> {
                     if (success) {
                         unregister(instanceId);
                     } else {
                         LOGGER.warn("[InstanceRegistry] Failed to destroy dimension for {}", instanceId);
                     }
-                });
+                }), "destroy instance " + instanceId);
         }
+    }
+
+    private static void observeFuture(CompletableFuture<?> future, String action) {
+        future.exceptionally(throwable -> {
+            LOGGER.warn("Async operation failed: {}", action, throwable);
+            return null;
+        });
     }
 
     // === Persistence ===

@@ -6,7 +6,9 @@ import java.util.Map;
 public class ClientShopCache {
 
     private static int tokens = 0;
+    private static int coins = 0;
     private static int prestige = 0;
+    private static int gems = 0;
     private static int bloodGems = 0;
     private static Map<String, Integer> purchases = new HashMap<>();
     private static long lastSyncTime = 0;
@@ -18,7 +20,9 @@ public class ClientShopCache {
      */
     public static void update(ShopSyncPayload payload) {
         tokens = payload.tokens();
+        coins = payload.coins();
         prestige = payload.prestige();
+        gems = payload.gems();
         bloodGems = payload.bloodGems();
         purchases = new HashMap<>(payload.purchases());
         lastSyncTime = System.currentTimeMillis();
@@ -32,10 +36,24 @@ public class ClientShopCache {
     }
 
     /**
+     * Get current coin balance.
+     */
+    public static int getCoins() {
+        return coins;
+    }
+
+    /**
      * Get current prestige points.
      */
     public static int getPrestige() {
         return prestige;
+    }
+
+    /**
+     * Get current gems.
+     */
+    public static int getGems() {
+        return gems;
     }
 
     /**
@@ -78,7 +96,9 @@ public class ClientShopCache {
      */
     public static void clear() {
         tokens = 0;
+        coins = 0;
         prestige = 0;
+        gems = 0;
         bloodGems = 0;
         purchases.clear();
         lastSyncTime = 0;
@@ -90,7 +110,9 @@ public class ClientShopCache {
     public static void optimisticPurchase(String itemId, RewardSystem.Currency currency, int price) {
         switch (currency) {
             case TOKENS -> tokens -= price;
+            case COINS -> coins -= price;
             case PRESTIGE -> prestige -= price;
+            case GEMS -> gems -= price;
             case BLOOD_GEMS -> bloodGems -= price;
         }
         int current = purchases.getOrDefault(itemId, 0);

@@ -1,7 +1,7 @@
 # Impact HUD System - Audit Documentation
 
-> **Last Updated**: 2024-12-23
-> **Status**: PARTIALLY OUTDATED - See notes below
+> Last updated: 2024-12-23
+> Status: NEEDS_VERIFICATION (audit; partially outdated)
 
 ## Introduzione
 

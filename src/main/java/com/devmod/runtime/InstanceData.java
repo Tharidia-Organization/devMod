@@ -500,8 +500,7 @@ public class InstanceData {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        InstanceData that = (InstanceData) o;
+        if (!(o instanceof InstanceData that)) return false;
         return instanceId.equals(that.instanceId);
     }
 

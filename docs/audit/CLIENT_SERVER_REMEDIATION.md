@@ -1,66 +1,42 @@
 # Client/Server Separation Remediation
 
-> Last updated: 2025-12-24
-> Status: NEEDS_VERIFICATION
+> Last updated: 2025-12-26
+> Status: CURRENT (verified against code)
 
 ## Scope
 
-Eliminate dedicated server crashes caused by client-only classes loading on the server.  
-Primary rule: any class importing `net.minecraft.client.*` must live under a `/client/` package.
+Eliminate dedicated server crashes caused by client-only classes loading on the server.
+Primary rule: any class importing `net.minecraft.client.*` must live under a `/client/` package
+or be loaded behind a client-only gate.
 
-## Moves Applied (This Remediation)
+## Verified Guardrails
 
-| File | Old Package/Path | New Package/Path | Reason |
-|------|------------------|------------------|--------|
-| `DevModClient.java` | `com.devmod` | `com.devmod.client` | Client entrypoint must live under client package (uses `Minecraft.getInstance`) |
-| `CameraShakeMixin.java` | `com.devmod.mixin` | `com.devmod.mixin.client` | Client-only mixin (imports `net.minecraft.client.*`) |
-| `GameRendererMixin.java` | `com.devmod.mixin` | `com.devmod.mixin.client` | Client-only mixin (imports `net.minecraft.client.*`) |
-| `ModelPartTransformMixin.java` | `com.devmod.mixin` | `com.devmod.mixin.client` | Client-only mixin (imports `net.minecraft.client.*`) |
-| `LivingEntityRendererMixin.java` | `com.devmod.mixin` | `com.devmod.mixin.client` | Client-only mixin (imports `net.minecraft.client.*`) |
-| `DebugRendererMixin.java` | `com.devmod.mixin` | `com.devmod.mixin.client` | Client-only mixin (imports `net.minecraft.client.*`) |
-| `InteractionEvents.java` | `com.devmod.events` | `com.devmod.client.events` | Client-only event subscriber (Dist.CLIENT) |
-| `ClientTelemetryBuffer.java` | `com.devmod.telemetry.duckdb.packets` | `com.devmod.client.telemetry` | Client-only singleton buffer |
+- **Client entrypoint**: `com.devmod.client.DevModClient` is annotated with `@Mod(dist = Dist.CLIENT)`
+  and `@EventBusSubscriber(..., value = Dist.CLIENT)`.
+- **Client mixins**: listed under `client` in `src/main/resources/devmod.mixins.json` and live in
+  `com.devmod.mixin.client`.
+- **Client-only compat modules**: registered via `ClientCompatRegistrar` only when
+  `FMLEnvironment.dist == Dist.CLIENT` inside `ModIntegrationManager`.
+- **Client providers**: `TransformProviderRegistry` uses `FMLEnvironment.dist.isClient()` plus
+  reflection to load `ClientTransformProvider` without server classloading.
 
-## Residuals Found and Resolved
-
-- `Minecraft.getInstance()`  
-  - **Found in:** `DevModClient.java`  
-  - **Fix:** Moved entrypoint to `com.devmod.client`.
-
-- `Screen` / `GuiGraphics` / other `net.minecraft.client.*` imports  
-  - **Found in:** client-only mixins under `com.devmod.mixin`  
-  - **Fix:** moved to `com.devmod.mixin.client` and updated `devmod.mixins.json`.
-
-- `KeyMapping` imports  
-  - **Found in:** client-only compat/keybind classes (`com.devmod.client.compat.*`, `com.devmod.client.input.*`)  
-  - **Fix:** registration gated behind `DistExecutor.safeRunWhenOn(Dist.CLIENT, ...)` to avoid server classloading.
-
-## Call-Site Hardening
-
-- Client-only compat modules are now registered via:
-  - `com.devmod.client.compat.ClientCompatRegistrar`
-  - `DistExecutor.safeRunWhenOn(Dist.CLIENT, ...)` in `ModIntegrationManager`
-
-This prevents dedicated servers from loading client-only classes at init.
-
-## Guardrails
+## Enforcement Tools
 
 ### Script: Client Imports
 
-`tools/check-client-imports.sh`
-
-- Fails if any `import net.minecraft.client.*` appears outside a `/client/` package.
-- Also checks for `Minecraft.getInstance()` outside `/client/`.
+`tools/check-client-imports.sh` rejects:
+- `import net.minecraft.client.*` outside `/client/` packages
+- `Minecraft.getInstance()` outside `/client/` packages
 
 ### Tests
 
-`src/test/java/com/devmod/analysis/ClientServerSeparationTest.java`
-
-- Flags client-only singleton usage in common packages.
-- Rejects fully-qualified `com.devmod.client.*.INSTANCE` references in server/common code.
+`src/test/java/com/devmod/analysis/ClientServerSeparationTest.java` enforces:
+- No client-only imports in common packages without a proper guard
+- No direct references to client singletons from common packages
+- Accepted guards include `FMLEnvironment.dist.isClient()`, `@OnlyIn(Dist.CLIENT)`, and delegate patterns
 
 ## Current Status
 
-- **Client imports outside `/client/`:** 0  
-- **Client mixins in common package:** 0  
-- **Dedicated server startup:** expected crash-free once builds/tests complete
+- Client-only code resides under `com.devmod.client` or `com.devmod.mixin.client`.
+- `devmod.mixins.json` separates common and client mixins.
+- Client-only registrations are gated behind `FMLEnvironment.dist` checks or client delegates.

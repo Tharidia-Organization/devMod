@@ -1,8 +1,9 @@
 # DevMod Test Harness
 
-> **Audit Date**: 2025-12-26
-> **Status**: CURRENT (code-aligned)
-> **Risk Level**: MEDIUM (GameTest relies on live MC server)
+> Last updated: 2025-12-26
+> Status: CURRENT (testing harness)
+> Audit date: 2025-12-26
+> Risk level: MEDIUM (GameTest relies on live MC server)
 
 ---
 

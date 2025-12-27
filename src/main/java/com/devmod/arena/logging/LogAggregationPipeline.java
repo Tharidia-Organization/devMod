@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
@@ -36,6 +37,7 @@ public class LogAggregationPipeline implements AutoCloseable {
 
     private final ScheduledExecutorService scheduler;
     private final ExecutorService workerPool;
+    private ScheduledFuture<?> flushTask;
 
     private final int batchSize;
     private final Duration flushInterval;
@@ -85,7 +87,7 @@ public class LogAggregationPipeline implements AutoCloseable {
         running = true;
 
         // Schedule periodic flush
-        scheduler.scheduleAtFixedRate(
+        flushTask = scheduler.scheduleAtFixedRate(
             this::flush,
             flushInterval.toMillis(),
             flushInterval.toMillis(),
@@ -93,7 +95,7 @@ public class LogAggregationPipeline implements AutoCloseable {
         );
 
         // Start worker for continuous processing
-        workerPool.submit(this::processLoop);
+        workerPool.execute(this::processLoop);
 
         LOGGER.info("Log aggregation pipeline started with {} destinations", destinations.size());
     }
@@ -222,6 +224,9 @@ public class LogAggregationPipeline implements AutoCloseable {
         // Final flush
         flush();
 
+        if (flushTask != null) {
+            flushTask.cancel(false);
+        }
         scheduler.shutdown();
         workerPool.shutdown();
 

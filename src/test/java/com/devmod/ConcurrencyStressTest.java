@@ -6,8 +6,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,10 +68,11 @@ public class ConcurrencyStressTest {
     void testConcurrentWeaponStatsAccess() throws InterruptedException {
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch endLatch = new CountDownLatch(PLAYER_COUNT);
+        List<Future<?>> futures = new ArrayList<>(PLAYER_COUNT);
 
         for (int i = 0; i < PLAYER_COUNT; i++) {
             final int playerId = i;
-            executor.submit(() -> {
+            futures.add(executor.submit(() -> {
                 try {
                     startLatch.await();
 
@@ -99,12 +102,13 @@ public class ConcurrencyStressTest {
                 } finally {
                     endLatch.countDown();
                 }
-            });
+            }));
         }
 
         startLatch.countDown();
         boolean completed = endLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         executor.shutdown();
+        awaitFutures(futures);
 
         assertTrue(completed, "Test timed out");
         assertFalse(hasRaceCondition.get(), "Race condition detected: " + errors);
@@ -122,10 +126,11 @@ public class ConcurrencyStressTest {
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch endLatch = new CountDownLatch(PLAYER_COUNT);
+        List<Future<?>> futures = new ArrayList<>(PLAYER_COUNT);
 
         for (int i = 0; i < PLAYER_COUNT; i++) {
             final int playerId = i;
-            executor.submit(() -> {
+            futures.add(executor.submit(() -> {
                 try {
                     startLatch.await();
 
@@ -156,12 +161,13 @@ public class ConcurrencyStressTest {
                 } finally {
                     endLatch.countDown();
                 }
-            });
+            }));
         }
 
         startLatch.countDown();
         boolean completed = endLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         executor.shutdown();
+        awaitFutures(futures);
 
         assertTrue(completed, "Test timed out");
         assertEquals(0, errorCount.get(), "Errors occurred: " + errors);
@@ -178,10 +184,11 @@ public class ConcurrencyStressTest {
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch endLatch = new CountDownLatch(PLAYER_COUNT);
+        List<Future<?>> futures = new ArrayList<>(PLAYER_COUNT);
 
         for (int i = 0; i < PLAYER_COUNT; i++) {
             final int playerId = i;
-            executor.submit(() -> {
+            futures.add(executor.submit(() -> {
                 try {
                     startLatch.await();
 
@@ -220,12 +227,13 @@ public class ConcurrencyStressTest {
                 } finally {
                     endLatch.countDown();
                 }
-            });
+            }));
         }
 
         startLatch.countDown();
         boolean completed = endLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         executor.shutdown();
+        awaitFutures(futures);
 
         assertTrue(completed, "Test timed out");
         assertEquals(0, errorCount.get(), "Errors occurred: " + errors);
@@ -242,10 +250,11 @@ public class ConcurrencyStressTest {
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch endLatch = new CountDownLatch(PLAYER_COUNT);
+        List<Future<?>> futures = new ArrayList<>(PLAYER_COUNT);
 
         for (int i = 0; i < PLAYER_COUNT; i++) {
             final int playerId = i;
-            executor.submit(() -> {
+            futures.add(executor.submit(() -> {
                 try {
                     startLatch.await();
 
@@ -279,12 +288,13 @@ public class ConcurrencyStressTest {
                 } finally {
                     endLatch.countDown();
                 }
-            });
+            }));
         }
 
         startLatch.countDown();
         boolean completed = endLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         executor.shutdown();
+        awaitFutures(futures);
 
         assertTrue(completed, "Test timed out");
         assertEquals(0, errorCount.get(), "Errors occurred: " + errors);
@@ -303,10 +313,11 @@ public class ConcurrencyStressTest {
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch endLatch = new CountDownLatch(PLAYER_COUNT);
+        List<Future<?>> futures = new ArrayList<>(PLAYER_COUNT);
 
         for (int i = 0; i < PLAYER_COUNT; i++) {
             final int playerId = i;
-            executor.submit(() -> {
+            futures.add(executor.submit(() -> {
                 try {
                     startLatch.await();
 
@@ -368,16 +379,30 @@ public class ConcurrencyStressTest {
                 } finally {
                     endLatch.countDown();
                 }
-            });
+            }));
         }
 
         startLatch.countDown();
         boolean completed = endLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         executor.shutdown();
+        awaitFutures(futures);
 
         assertTrue(completed, "Test timed out");
         assertEquals(0, errorCount.get(), "Errors occurred: " + errors);
         assertEquals(PLAYER_COUNT * ACTIONS_PER_PLAYER, successCount.get(),
             "All operations should complete successfully");
+    }
+
+    private static void awaitFutures(List<Future<?>> futures) {
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while waiting for worker tasks", e);
+            } catch (ExecutionException e) {
+                fail("Worker task failed", e.getCause());
+            }
+        }
     }
 }

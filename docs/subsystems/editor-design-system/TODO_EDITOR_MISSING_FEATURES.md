@@ -1,5 +1,8 @@
 # TODO - Allineamento Editor vs design docs (08–10)
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## ✅ Recipe Editor Bug Fixes (2025-12-20)
 
 ### Problemi risolti

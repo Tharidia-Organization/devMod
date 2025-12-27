@@ -118,7 +118,9 @@ public class WeaponModule extends AbstractEditorModule {
         CompoundTag statsTag = null;
         try {
             statsTag = item.get(Objects.requireNonNull(com.devmod.components.WeaponComponents.WEAPON_STATS.get()));
-        } catch (Exception ignored) { }
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Weapon] Failed to read weapon stats component", e);
+        }
         variants.loadVariantData(customTag, statsTag);
         variants.snapshotVariantOriginals();
 

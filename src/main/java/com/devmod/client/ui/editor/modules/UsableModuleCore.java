@@ -45,7 +45,9 @@ public class UsableModuleCore {
             if (usableComponent != null) {
                 statsTag = item.get(usableComponent);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Usable] Failed to read usable stats component", e);
+        }
 
         CompoundTag customTag;
         try {
@@ -53,7 +55,8 @@ public class UsableModuleCore {
                 Objects.requireNonNull(DataComponents.CUSTOM_DATA),
                 Objects.requireNonNull(CustomData.EMPTY)
             ).copyTag();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Usable] Failed to read custom data component", e);
             customTag = new CompoundTag();
         }
         if (customTag == null) {
@@ -70,7 +73,8 @@ public class UsableModuleCore {
                 if (customTag.contains(NBT_KEY)) {
                     statsTag = customTag.getCompound(NBT_KEY);
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                DevMod.LOGGER.debug("[Editor][Usable] Failed to read usable stats from custom data", e);
                 statsTag = new CompoundTag();
             }
         }

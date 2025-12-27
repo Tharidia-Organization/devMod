@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -162,6 +163,8 @@ public class PrebuildPoolManager {
     private final AtomicLong consecutiveHighMissChecks = new AtomicLong(0);
     private final PoolConfig config;
     private final ScheduledExecutorService scheduler;
+    private final ScheduledFuture<?> effectivenessTask;
+    private final ScheduledFuture<?> cleanupTask;
 
     public PrebuildPoolManager() {
         this(PoolConfig.defaultConfig());
@@ -177,13 +180,13 @@ public class PrebuildPoolManager {
         });
 
         // Schedule metrics evaluation every 5 minutes (DD65)
-        scheduler.scheduleAtFixedRate(
+        this.effectivenessTask = scheduler.scheduleAtFixedRate(
             this::evaluatePoolEffectiveness,
             5, 5, TimeUnit.MINUTES
         );
 
         // Schedule cleanup every minute (DD64)
-        scheduler.scheduleAtFixedRate(
+        this.cleanupTask = scheduler.scheduleAtFixedRate(
             this::cleanupUnusedArenas,
             1, 1, TimeUnit.MINUTES
         );
@@ -467,6 +470,8 @@ public class PrebuildPoolManager {
      * Shuts down the pool manager.
      */
     public void shutdown() {
+        effectivenessTask.cancel(false);
+        cleanupTask.cancel(false);
         scheduler.shutdown();
         try {
             if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {

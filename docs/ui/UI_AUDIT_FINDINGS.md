@@ -1,5 +1,11 @@
 # DevMod UI Audit Findings
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (audit snapshot)
+
+Nota: report storico generato da analisi automatica. Verificare lo stato corrente
+nel codice prima di applicare queste raccomandazioni.
+
 > **Generated**: 2024-12-25 (Updated)
 > **Auditor**: Automated Code Analysis
 > **Scope**: All UI elements identified in UI_INVENTORY.md

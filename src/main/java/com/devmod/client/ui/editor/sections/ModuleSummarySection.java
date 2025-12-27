@@ -2,6 +2,7 @@ package com.devmod.client.ui.editor.sections;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -76,7 +77,7 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
 
             // Value (right-aligned)
             String valueStr = stat.format != null ? String.format(stat.format, stat.value) : String.valueOf(stat.value);
-            valueStr = Objects.requireNonNull(valueStr, "valueStr");
+            Objects.requireNonNull(valueStr, "valueStr");
             int valueWidth = font.width(valueStr);
             int valueX = x + w - PADDING - valueWidth;
 
@@ -87,8 +88,8 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
                 int badgeY = statY + 2;
                 int badgeColor = getBadgeColor(stat.source);
                 graphics.fill(badgeX, badgeY, badgeX + BADGE_WIDTH, badgeY + BADGE_HEIGHT, badgeColor);
-                String badgeText = stat.source.substring(0, Math.min(3, stat.source.length())).toUpperCase();
-                badgeText = Objects.requireNonNull(badgeText, "badgeText");
+                String badgeText = stat.source.substring(0, Math.min(3, stat.source.length())).toUpperCase(Locale.ROOT);
+                Objects.requireNonNull(badgeText, "badgeText");
                 int badgeTextX = badgeX + (BADGE_WIDTH - font.width(badgeText)) / 2;
                 graphics.drawString(font, badgeText, badgeTextX, badgeY + 2, 0xFFFFFFFF, false);
             }
@@ -101,7 +102,7 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
     }
 
     private int getBadgeColor(String source) {
-        return switch (source.toUpperCase()) {
+        return switch (source.toUpperCase(Locale.ROOT)) {
             case "DEV" -> UIConstants.Accent.BLUE();
             case "NBT" -> UIConstants.Accent.ORANGE();
             case "VAN", "VANILLA" -> 0xFF666666;

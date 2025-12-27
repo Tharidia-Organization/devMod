@@ -1,5 +1,8 @@
 ---
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 excalidraw-plugin: parsed
 tags: [excalidraw]
 

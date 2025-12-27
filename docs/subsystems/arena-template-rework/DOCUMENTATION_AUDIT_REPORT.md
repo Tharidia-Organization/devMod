@@ -1,6 +1,11 @@
 # Arena Template Rework Documentation Audit Report
 
-**Audit Date**: 2025-12-27
+> Last updated: 2025-12-26
+> Status: HISTORICAL (audit snapshot)
+
+Nota: report storico. Per lo stato corrente usare `docs/areas/arena/README.md`.
+
+**Audit Date**: 2025-12-26
 **Auditor**: Codex CLI
 **Target Directory**: `docs/subsystems/arena-template-rework/`
 **Reference**:

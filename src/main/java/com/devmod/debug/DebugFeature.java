@@ -1,5 +1,7 @@
 package com.devmod.debug;
 
+import java.util.Locale;
+
 /**
  * Enum of all available debug features.
  * Mirrors Mojang's internal debug rendering system.
@@ -47,6 +49,6 @@ public enum DebugFeature {
     }
 
     public String getId() {
-        return name().toLowerCase();
+        return name().toLowerCase(Locale.ROOT);
     }
 }

@@ -1,5 +1,8 @@
 # Template & Preset Architecture
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Overview
 
 Il sistema preset di DevMod supporta una **gerarchia a 3 livelli** per la risoluzione dei preset, con supporto per modpack detection automatico e preset bundled.

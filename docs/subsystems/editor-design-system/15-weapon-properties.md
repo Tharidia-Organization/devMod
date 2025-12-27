@@ -1,4 +1,8 @@
 # Weapon Properties Architecture
+
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Data Components, Attributes, Type Detection, Modded Support
 
 > **Sezioni 2.20-2.21** del Design System - Architettura proprietà armi e supporto modded

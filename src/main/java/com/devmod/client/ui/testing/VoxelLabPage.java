@@ -5,6 +5,8 @@ import net.minecraft.client.gui.GuiGraphics;
 public interface VoxelLabPage {
 
     /**
+     * Returns the tab this page belongs to.
+     *
      * @return The tab this page belongs to
      */
     VoxelLabTab getTab();

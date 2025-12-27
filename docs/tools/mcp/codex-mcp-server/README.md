@@ -1,5 +1,8 @@
 # Codex MCP Server
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 Server MCP stdio che espone Codex CLI come tool `codex.run`, così puoi chiamarlo dagli agent MCP.
 
 ## Requisiti

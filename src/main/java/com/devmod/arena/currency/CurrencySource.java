@@ -1,5 +1,7 @@
 package com.devmod.arena.currency;
 
+import java.util.Locale;
+
 /**
  * Currency Source enum implementing DD54: Currency Source Enum.
  *
@@ -141,7 +143,7 @@ public enum CurrencySource {
             return null;
         }
         try {
-            return valueOf(name.toUpperCase());
+            return valueOf(name.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return null;
         }

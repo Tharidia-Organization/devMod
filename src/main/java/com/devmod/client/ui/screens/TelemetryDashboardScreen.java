@@ -2,6 +2,7 @@ package com.devmod.client.ui.screens;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -422,7 +423,7 @@ public class TelemetryDashboardScreen extends Screen {
      */
     private String formatHazardName(HazardType type) {
         String name = type.name();
-        return name.charAt(0) + name.substring(1).toLowerCase();
+        return name.charAt(0) + name.substring(1).toLowerCase(Locale.ROOT);
     }
 
     @Nonnull

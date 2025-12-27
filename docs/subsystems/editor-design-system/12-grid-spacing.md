@@ -1,5 +1,8 @@
 # Grid & Spacing System
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 Tutte le coordinate e dimensioni devono rispettare una **griglia 4px** con **padding tokens fissi**.
 
 ## Base Unit

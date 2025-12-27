@@ -30,6 +30,8 @@ import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
 import com.devmod.endurance.analytics.QuestResult;
 import com.devmod.endurance.analytics.WaveSummary;
+import com.devmod.mailbox.template.MessageTemplateRegistry;
+import com.devmod.notification.NotificationService;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
 import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
@@ -159,6 +161,9 @@ public class EnduranceEventHandler {
             if (rewards.tokensEarned > 0) {
                 com.devmod.network.NetworkHandler.sendTokenGain(player, rewards.tokensEarned);
             }
+
+            // Send mailbox notification with reward summary
+            sendQuestRewardMailbox(player, session, rewards, completed);
         }
 
         // Cleanup combo system
@@ -229,16 +234,21 @@ public class EnduranceEventHandler {
             for (GamificationManager.Badge badge : gamificationResult.newBadges) {
                 com.devmod.network.NetworkHandler.sendBadgeUnlock(
                     player, badge.name, badge.rarity.displayName);
+
+                // Send mailbox notification for badge unlock
+                sendBadgeUnlockMailbox(player, badge);
             }
 
             // Send record banner for new personal records
             if (gamificationResult.isNewWaveRecord) {
-                com.devmod.network.NetworkHandler.sendRecordBanner(
-                    player, "BEST WAVE", "Wave " + session.getQuest().getCurrentWave());
+                String waveValue = "Wave " + session.getQuest().getCurrentWave();
+                com.devmod.network.NetworkHandler.sendRecordBanner(player, "BEST WAVE", waveValue);
+                sendRecordMailbox(player, "Best Wave", waveValue);
             }
             if (gamificationResult.isNewHighScore) {
-                com.devmod.network.NetworkHandler.sendRecordBanner(
-                    player, "HIGH SCORE", String.format("%,d pts", session.getQuest().getPointsEarnedThisSession()));
+                String scoreValue = String.format("%,d pts", session.getQuest().getPointsEarnedThisSession());
+                com.devmod.network.NetworkHandler.sendRecordBanner(player, "HIGH SCORE", scoreValue);
+                sendRecordMailbox(player, "High Score", scoreValue);
             }
         }
 
@@ -341,62 +351,49 @@ public class EnduranceEventHandler {
         // Check if this is a boss wave (using tension system)
         boolean isBossWave = BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId);
 
-        if (isBossWave) {
-            // Special boss wave announcement
-            var bossFight = BossWaveSystem.INSTANCE.getBossFight(session.getArena().getId());
-            String bossType = bossFight.map(bf -> bf.getArchetype().displayName).orElse("Champion");
+        // Gather wave info for notification
+        int mobCount = quest.getCurrentWaveMobCount();
+        String enemyType = quest.getMobConfig().displayName;
+        int totalWaves = quest.isEndlessMode() ? 0 : quest.getTotalWaves();
+        String objective = null;
+        String directive = null;
 
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.boss_wave_divider"))
-                .withStyle(ChatFormatting.DARK_PURPLE)));
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.boss_wave_title", waveNumber))
-                .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)));
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.boss_appeared", bossType, quest.getMobConfig().displayName))
-                .withStyle(ChatFormatting.RED)));
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.defeat_boss"))
-                .withStyle(ChatFormatting.GRAY)));
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.boss_wave_divider"))
-                .withStyle(ChatFormatting.DARK_PURPLE)));
-            player.playSound(Objects.requireNonNull(SoundEvents.WITHER_SPAWN), 1.0f, 0.9f);
-        } else {
-            // Normal wave announcement
-            int mobCount = quest.getCurrentWaveMobCount();
-            ArenaContext arena = session.getArena();
-            if (arena != null) {
-                mobCount = WaveManager.INSTANCE.getWaveState(arena.getId())
-                    .map(WaveManager.WaveState::getTotalToSpawn)
-                    .orElse(mobCount);
-            }
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.normal_divider"))
-                .withStyle(ChatFormatting.DARK_RED)));
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.wave_title", waveNumber, quest.getTotalWaves()))
-                .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)));
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.enemies_count", mobCount, quest.getMobConfig().displayName))
-                .withStyle(ChatFormatting.GRAY)));
-            if (arena != null) {
-                WaveManager.INSTANCE.getWaveState(arena.getId()).ifPresent(waveState -> {
-                    WaveObjectiveState objective = waveState.getObjective();
-                    String objectiveLine = "Objective: " + objective.getTitle();
-                    if (objective.getDescription() != null && !objective.getDescription().isBlank()) {
-                        objectiveLine = objectiveLine + " (" + objective.getDescription() + ")";
-                    }
-                    player.sendSystemMessage(Objects.requireNonNull(Component.literal(objectiveLine)
-                        .withStyle(ChatFormatting.AQUA)));
+        ArenaContext arena = session.getArena();
+        if (arena != null) {
+            mobCount = WaveManager.INSTANCE.getWaveState(arena.getId())
+                .map(WaveManager.WaveState::getTotalToSpawn)
+                .orElse(mobCount);
 
-                    if (waveState.getDirectiveId() != null) {
-                        WaveDirective directive = WaveDirector.INSTANCE.findDirective(waveState.getDirectiveId());
-                        if (directive != null) {
-                            String directiveLine = "Directive: " + directive.name()
-                                + " (Reward x" + String.format("%.2f", waveState.getRewardMultiplier()) + ")";
-                            player.sendSystemMessage(Objects.requireNonNull(Component.literal(directiveLine)
-                                .withStyle(ChatFormatting.LIGHT_PURPLE)));
-                        }
+            // Get objective and directive info
+            var waveStateOpt = WaveManager.INSTANCE.getWaveState(arena.getId());
+            if (waveStateOpt.isPresent()) {
+                WaveManager.WaveState waveState = waveStateOpt.get();
+                WaveObjectiveState objState = waveState.getObjective();
+                objective = objState.getTitle();
+                if (objState.getDescription() != null && !objState.getDescription().isBlank()) {
+                    objective = objective + " (" + objState.getDescription() + ")";
+                }
+
+                if (waveState.getDirectiveId() != null) {
+                    WaveDirective dir = WaveDirector.INSTANCE.findDirective(waveState.getDirectiveId());
+                    if (dir != null) {
+                        directive = dir.name() + " (x" + String.format("%.1f", waveState.getRewardMultiplier()) + ")";
                     }
-                });
+                }
             }
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.normal_divider"))
-                .withStyle(ChatFormatting.DARK_RED)));
-            player.playSound(Objects.requireNonNull(SoundEvents.NOTE_BLOCK_PLING.value()), 0.9f, 1.2f);
         }
+
+        // Boss wave: override enemy type with boss name
+        if (isBossWave) {
+            var bossFight = BossWaveSystem.INSTANCE.getBossFight(session.getArena().getId());
+            enemyType = bossFight.map(bf -> bf.getArchetype().displayName).orElse("Champion");
+        }
+
+        // Send unified notification (replaces 5-10 chat lines with a single toast overlay)
+        NotificationService.INSTANCE.notifyWaveStart(
+            playerId, waveNumber, totalWaves, mobCount, enemyType,
+            isBossWave, objective, directive
+        );
 
         LOGGER.debug("[EnduranceQuest] Wave {} started for {} (boss: {})",
             waveNumber, player.getName().getString(), isBossWave);
@@ -656,10 +653,9 @@ public class EnduranceEventHandler {
         }
 
         // === BLOOD CONTRACTS - Check violations and apply reward multiplier ===
-        float contractMultiplier = 1.0f;
         var contractManager = com.devmod.endurance.contracts.ActiveContractManager.INSTANCE;
         contractManager.checkViolations(questId, player);
-        contractMultiplier = contractManager.getRewardMultiplier(questId, playerId);
+        float contractMultiplier = contractManager.getRewardMultiplier(questId, playerId);
         if (contractMultiplier > 1.0f) {
             LOGGER.info("[EnduranceQuest]   Contract Multiplier: x{}", String.format("%.1f", contractMultiplier));
         }
@@ -834,6 +830,122 @@ public class EnduranceEventHandler {
      */
     public static void enforceArenaConfinement(ServerPlayer player) {
         EnduranceEventTick.enforceArenaConfinement(player);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MAILBOX INTEGRATION
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Send a mailbox notification with quest reward summary.
+     */
+    private static void sendQuestRewardMailbox(
+            ServerPlayer player,
+            EnduranceQuestManager.ActiveQuestSession session,
+            RewardSystem.QuestRewards rewards,
+            boolean completed) {
+
+        try {
+            String playerName = player.getName().getString();
+            String questName = session.getQuest().getDisplayName();
+            int waveReached = session.getQuest().getCurrentWave();
+            int totalWaves = session.getQuest().getTotalWaves();
+
+            // Build reward description
+            StringBuilder rewardDesc = new StringBuilder();
+            if (rewards.tokensEarned > 0) {
+                rewardDesc.append(rewards.tokensEarned).append(" tokens");
+            }
+            if (rewards.prestigeEarned > 0) {
+                if (rewardDesc.length() > 0) rewardDesc.append(", ");
+                rewardDesc.append(rewards.prestigeEarned).append(" prestige");
+            }
+            if (rewardDesc.length() == 0) {
+                rewardDesc.append("No rewards");
+            }
+
+            // Position description (wave reached / total or "Completed!")
+            String position = completed
+                ? "Completed!"
+                : "Wave " + waveReached + "/" + totalWaves;
+
+            // Send via template (fire-and-forget)
+            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+                "reward.event_participation",
+                player.getUUID(),
+                Map.of(
+                    "player_name", playerName,
+                    "event_name", questName,
+                    "position", position,
+                    "points", String.valueOf(waveReached),
+                    "reward_description", rewardDesc.toString()
+                ),
+                null // No attachment - rewards already given
+            ).exceptionally(ex -> {
+                LOGGER.error("[EnduranceQuest] Failed to deliver mailbox reward notification", ex);
+                return null;
+            });
+
+            LOGGER.debug("[EnduranceQuest] Sent mailbox reward notification to {}", playerName);
+        } catch (Exception e) {
+            LOGGER.error("[EnduranceQuest] Failed to send mailbox reward notification", e);
+        }
+    }
+
+    /**
+     * Send a mailbox notification for badge unlock.
+     */
+    private static void sendBadgeUnlockMailbox(ServerPlayer player, GamificationManager.Badge badge) {
+        try {
+            String playerName = player.getName().getString();
+
+            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+                "reward.achievement",
+                player.getUUID(),
+                Map.of(
+                    "player_name", playerName,
+                    "achievement_name", badge.name,
+                    "achievement_description", badge.description,
+                    "reward_description", "+" + badge.bonusPoints + " bonus points (" + badge.rarity.displayName + ")"
+                ),
+                null
+            ).exceptionally(ex -> {
+                LOGGER.error("[EnduranceQuest] Failed to deliver mailbox badge notification", ex);
+                return null;
+            });
+
+            LOGGER.debug("[EnduranceQuest] Sent mailbox badge notification to {} for badge {}", playerName, badge.id);
+        } catch (Exception e) {
+            LOGGER.error("[EnduranceQuest] Failed to send mailbox badge notification", e);
+        }
+    }
+
+    /**
+     * Send a mailbox notification for new personal record.
+     */
+    private static void sendRecordMailbox(ServerPlayer player, String recordType, String recordValue) {
+        try {
+            String playerName = player.getName().getString();
+
+            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+                "reward.achievement",
+                player.getUUID(),
+                Map.of(
+                    "player_name", playerName,
+                    "achievement_name", "New Personal Record: " + recordType,
+                    "achievement_description", "You've set a new personal best!",
+                    "reward_description", recordValue
+                ),
+                null
+            ).exceptionally(ex -> {
+                LOGGER.error("[EnduranceQuest] Failed to deliver mailbox record notification", ex);
+                return null;
+            });
+
+            LOGGER.debug("[EnduranceQuest] Sent mailbox record notification to {} for {}", playerName, recordType);
+        } catch (Exception e) {
+            LOGGER.error("[EnduranceQuest] Failed to send mailbox record notification", e);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════

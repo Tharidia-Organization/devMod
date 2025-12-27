@@ -1,5 +1,8 @@
 ## Warning Cleanup Plan
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 Tracking the remaining compiler warnings reported by the IDE. Tackle in this order:
 
 1) Combat & Damage ✅  

@@ -62,8 +62,10 @@ public class GameplayOverridesManager {
             Files.createDirectories(overridesDir);
 
             // Create example file if directory is empty
-            if (Files.list(overridesDir).findAny().isEmpty()) {
-                createExampleFiles();
+            try (var files = Files.list(overridesDir)) {
+                if (files.findAny().isEmpty()) {
+                    createExampleFiles();
+                }
             }
 
             loadAll();
@@ -85,9 +87,10 @@ public class GameplayOverridesManager {
                 return;
             }
 
-            Files.list(overridesDir)
-                .filter(p -> p.toString().endsWith(".json"))
-                .forEach(this::loadFile);
+            try (var files = Files.list(overridesDir)) {
+                files.filter(p -> p.toString().endsWith(".json"))
+                    .forEach(this::loadFile);
+            }
 
             LOGGER.info("[GameplayOverrides] Loaded {} override profiles", loadedOverrides.size());
         } catch (IOException e) {
@@ -733,17 +736,17 @@ public class GameplayOverridesManager {
 
     @Nullable
     private static Double getDouble(JsonObject obj, String key) {
-        return obj.has(key) && !obj.get(key).isJsonNull() ? obj.get(key).getAsDouble() : null;
+        return (obj.has(key) && !obj.get(key).isJsonNull()) ? obj.get(key).getAsDouble() : null;
     }
 
     @Nullable
     private static Integer getInt(JsonObject obj, String key) {
-        return obj.has(key) && !obj.get(key).isJsonNull() ? obj.get(key).getAsInt() : null;
+        return (obj.has(key) && !obj.get(key).isJsonNull()) ? obj.get(key).getAsInt() : null;
     }
 
     @Nullable
     private static Boolean getBool(JsonObject obj, String key) {
-        return obj.has(key) && !obj.get(key).isJsonNull() ? obj.get(key).getAsBoolean() : null;
+        return (obj.has(key) && !obj.get(key).isJsonNull()) ? obj.get(key).getAsBoolean() : null;
     }
 
     private static void addIfNotNull(JsonObject obj, String key, @Nullable Object value) {

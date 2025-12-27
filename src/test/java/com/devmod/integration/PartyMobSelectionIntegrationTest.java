@@ -50,8 +50,7 @@ public class PartyMobSelectionIntegrationTest {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            SimResourceLocation that = (SimResourceLocation) o;
+            if (!(o instanceof SimResourceLocation that)) return false;
             return namespace.equals(that.namespace) && path.equals(that.path);
         }
 

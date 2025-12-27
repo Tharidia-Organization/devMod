@@ -26,6 +26,7 @@ import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.DevMod;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 
@@ -178,7 +179,7 @@ public class PathfindingDebugger {
         // Check if mob can actually reach target (simple distance check)
         boolean canReach = mob.distanceTo(target) <= 32.0;
 
-        String targetName = target == player ? "Player" : target.getName().getString();
+        String targetName = Objects.equals(target, player) ? "Player" : target.getName().getString();
         cachedPaths.put(mobId, new CachedPath(
                 mob.getName().getString() + " → " + targetName,
                 nodes,
@@ -674,25 +675,22 @@ public class PathfindingDebugger {
         List<Vec3> nodes = pathData.nodes;
         if (nodes.isEmpty()) return;
 
-        float pulse = (float) (0.7f + 0.3f * Math.sin(time * Math.PI * 2 * 3));
-        float rotation = time * 360.0f;
-
         Vec3 startPos = Objects.requireNonNull(nodes.get(0));
         Vec3 endPos = nodes.size() > 1 ? Objects.requireNonNull(nodes.get(nodes.size() - 1)) : startPos;
         Vec3 targetPos = pathData.target != null ? pathData.target : endPos;
 
         // Render START beacon with GPU shader
         setShaderUniform(shader, "BeaconType", 1); // START
-        renderBeaconGPU(consumer, matrix, pose, startPos, alpha, pulse, rotation);
+        renderBeaconGPU(consumer, matrix, pose, startPos, alpha);
 
         // Render DESTINATION beacon with GPU shader
         setShaderUniform(shader, "BeaconType", 2); // DESTINATION
-        renderBeaconGPU(consumer, matrix, pose, targetPos, alpha, pulse, rotation);
+        renderBeaconGPU(consumer, matrix, pose, targetPos, alpha);
 
         // Render PATH with GPU shader (marching ants handled by shader)
         if (nodes.size() >= 2) {
             setShaderUniform(shader, "BeaconType", 0); // PATH
-            renderAnimatedPathGPU(consumer, matrix, pose, nodes, pathData.canReach, alpha);
+            renderAnimatedPathGPU(consumer, matrix, pose, nodes, alpha);
         }
 
         // Labels (still CPU - text rendering)
@@ -713,7 +711,7 @@ public class PathfindingDebugger {
      */
     private void renderBeaconGPU(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
                                   @Nonnull PoseStack.Pose pose, @Nonnull Vec3 pos,
-                                  float alpha, float pulse, float rotation) {
+                                  float alpha) {
         float x = (float) pos.x;
         float y = (float) pos.y;
         float z = (float) pos.z;
@@ -772,7 +770,7 @@ public class PathfindingDebugger {
      */
     private void renderAnimatedPathGPU(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
                                         @Nonnull PoseStack.Pose pose, @Nonnull List<Vec3> nodes,
-                                        boolean canReach, float alpha) {
+                                        float alpha) {
         double totalLength = 0;
         for (int i = 0; i < nodes.size() - 1; i++) {
             totalLength += Objects.requireNonNull(nodes.get(i)).distanceTo(Objects.requireNonNull(nodes.get(i + 1)));
@@ -816,7 +814,9 @@ public class PathfindingDebugger {
             if (uniform != null) {
                 uniform.set(value);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            DevMod.LOGGER.debug("[PathfindingDebugger] Failed to set shader uniform {}", name, ex);
+        }
     }
 
     private void setShaderUniform(ShaderInstance shader, String name, int value) {
@@ -825,7 +825,9 @@ public class PathfindingDebugger {
             if (uniform != null) {
                 uniform.set(value);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            DevMod.LOGGER.debug("[PathfindingDebugger] Failed to set shader uniform {}", name, ex);
+        }
     }
 
     private void setShaderUniformVec3(ShaderInstance shader, String name, float x, float y, float z) {
@@ -834,7 +836,9 @@ public class PathfindingDebugger {
             if (uniform != null) {
                 uniform.set(x, y, z);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            DevMod.LOGGER.debug("[PathfindingDebugger] Failed to set shader uniform {}", name, ex);
+        }
     }
 
     /**

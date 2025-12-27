@@ -4,13 +4,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.errorprone.annotations.InlineMe;
 
 import com.devmod.arena.alert.AlertRouter;
 import com.devmod.arena.alert.ErrorContext;
@@ -28,9 +34,12 @@ public class DashboardValidationJob {
     private static final Duration MAX_TEMPORAL_GAP = MAX_DATA_AGE;
     private static final Duration FUTURE_TIMESTAMP_TOLERANCE = Duration.ofMinutes(5);
     private static final int MAX_GAP_REPORTS = 3;
+    private static final String COMPONENT = "DashboardValidationJob";
 
     private final AlertRouter alertRouter;
     private final Path ndjsonLogPath;
+    private final List<CompletableFuture<AlertRouter.AlertDeliveryResult>> pendingAlertDeliveries = new ArrayList<>();
+    private ScheduledFuture<?> validationTask;
 
     public DashboardValidationJob(AlertRouter alertRouter, Path ndjsonLogPath) {
         this.alertRouter = alertRouter;
@@ -42,6 +51,7 @@ public class DashboardValidationJob {
      * @deprecated Use constructor without repository parameter
      */
     @Deprecated
+    @InlineMe(replacement = "this(alertRouter, ndjsonLogPath)")
     public DashboardValidationJob(Object repository,
                                    AlertRouter alertRouter, Path ndjsonLogPath) {
         this(alertRouter, ndjsonLogPath);
@@ -55,15 +65,21 @@ public class DashboardValidationJob {
      * Schedules daily validation at 02:00.
      */
     public void schedule(ScheduledExecutorService executor) {
+        cancelScheduledValidation();
         // Calculate initial delay to 02:00
         long delayMs = calculateDelayToNextRun();
-        executor.scheduleAtFixedRate(
+        validationTask = executor.scheduleAtFixedRate(
             this::runValidation,
             delayMs,
             TimeUnit.DAYS.toMillis(1),
             TimeUnit.MILLISECONDS
         );
         LOGGER.info("Dashboard validation scheduled, first run in {}ms", delayMs);
+    }
+
+    public void stop() {
+        cancelScheduledValidation();
+        prunePendingAlertDeliveries();
     }
 
     /**
@@ -73,6 +89,7 @@ public class DashboardValidationJob {
         LOGGER.info("Starting dashboard validation job");
         Instant startTime = Instant.now();
         List<ValidationResult> results = new ArrayList<>();
+        prunePendingAlertDeliveries();
 
         try {
             results.add(validateRowCounts());
@@ -94,24 +111,24 @@ public class DashboardValidationJob {
 
                 // Create error context and route through AlertRouter
                 ErrorContext errorContext = ErrorContext.builder()
-                    .component("DashboardValidationJob")
+                    .component(COMPONENT)
                     .errorType("VALIDATION_FAILED")
                     .message("Dashboard validation failed: " + String.join(", ", failures))
                     .severity(ErrorContext.Severity.ERROR)
                     .build();
-                alertRouter.route(errorContext);
+                routeAlert(errorContext);
             }
         } catch (Exception e) {
             LOGGER.error("Dashboard validation error", e);
 
             ErrorContext errorContext = ErrorContext.builder()
-                .component("DashboardValidationJob")
+                .component(COMPONENT)
                 .errorType("VALIDATION_ERROR")
                 .message("Dashboard validation encountered an error: " + e.getMessage())
                 .severity(ErrorContext.Severity.ERROR)
                 .fromThrowable(e)
                 .build();
-            alertRouter.route(errorContext);
+            routeAlert(errorContext);
         }
     }
 
@@ -206,7 +223,9 @@ public class DashboardValidationJob {
         if (!Files.exists(ndjsonLogPath)) {
             return 0;
         }
-        return Files.lines(ndjsonLogPath).count();
+        try (java.util.stream.Stream<String> lines = Files.lines(ndjsonLogPath)) {
+            return lines.count();
+        }
     }
 
     /**
@@ -219,12 +238,47 @@ public class DashboardValidationJob {
 
     private long calculateDelayToNextRun() {
         // Calculate delay to next 02:00
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        java.time.LocalDateTime next = now.toLocalDate().atTime(2, 0);
+        LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
+        LocalDateTime next = now.toLocalDate().atTime(2, 0);
         if (now.isAfter(next)) {
             next = next.plusDays(1);
         }
         return Duration.between(now, next).toMillis();
+    }
+
+    private void cancelScheduledValidation() {
+        if (validationTask != null) {
+            validationTask.cancel(false);
+            validationTask = null;
+        }
+    }
+
+    private void routeAlert(ErrorContext errorContext) {
+        CompletableFuture<AlertRouter.AlertDeliveryResult> delivery = alertRouter.route(errorContext);
+        delivery = delivery.whenComplete((result, error) -> {
+            if (error != null) {
+                LOGGER.error("Alert delivery failed for {}", errorContext.errorType(), error);
+                return;
+            }
+            if (result != null && !result.isFullyDelivered()) {
+                LOGGER.warn("Alert delivery incomplete for {} ({} failures)",
+                    errorContext.errorType(), result.failedCount());
+            }
+        });
+        trackAlertDelivery(delivery);
+    }
+
+    private void trackAlertDelivery(CompletableFuture<AlertRouter.AlertDeliveryResult> delivery) {
+        synchronized (pendingAlertDeliveries) {
+            pendingAlertDeliveries.removeIf(CompletableFuture::isDone);
+            pendingAlertDeliveries.add(delivery);
+        }
+    }
+
+    private void prunePendingAlertDeliveries() {
+        synchronized (pendingAlertDeliveries) {
+            pendingAlertDeliveries.removeIf(CompletableFuture::isDone);
+        }
     }
 
     /**

@@ -1,7 +1,10 @@
 package com.devmod.client.overlay;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+
+import com.google.common.base.Splitter;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -38,6 +41,8 @@ import com.devmod.telemetry.network.LVCSyncPayload;
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class EnduranceQuestOverlay {
+    private static final Splitter COMMA_SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
+    private static final Splitter COLON_SPLITTER = Splitter.on(':').trimResults();
 
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "endurance_quest_hud");
@@ -816,7 +821,7 @@ public class EnduranceQuestOverlay {
      * Returns color for modifier name.
      */
     private static int getModifierColor(String modName) {
-        return switch (modName.toLowerCase()) {
+        return switch (modName.toLowerCase(Locale.ROOT)) {
             case "swift" -> 0xFF64B5F6;       // Light blue
             case "empowered" -> 0xFFFF5252;   // Red
             case "fortified" -> 0xFF4CAF50;   // Green
@@ -833,7 +838,7 @@ public class EnduranceQuestOverlay {
      * Returns icon for modifier name.
      */
     private static String getModifierIcon(String modName) {
-        return switch (modName.toLowerCase()) {
+        return switch (modName.toLowerCase(Locale.ROOT)) {
             case "swift" -> "\u26A1";        // ⚡ Lightning bolt (speed)
             case "empowered" -> "\u2694";    // ⚔ Crossed swords (damage)
             case "fortified" -> "\u2665";    // ♥ Heart (more health)
@@ -867,19 +872,18 @@ public class EnduranceQuestOverlay {
             return "";
         }
 
-        String[] entries = topWeapons.split(",");
         StringBuilder result = new StringBuilder();
         int maxWeapons = 2; // Show at most 2 weapons to fit panel width
         int count = 0;
 
-        for (String entry : entries) {
+        for (String entry : COMMA_SPLITTER.split(topWeapons)) {
             if (count >= maxWeapons) break;
 
-            String[] parts = entry.split(":");
-            if (parts.length != 2) continue;
+            List<String> parts = COLON_SPLITTER.splitToList(Objects.requireNonNull(entry));
+            if (parts.size() != 2) continue;
 
-            String weapon = parts[0].trim();
-            String kills = parts[1].trim();
+            String weapon = parts.get(0);
+            String kills = parts.get(1);
 
             // Shorten weapon name (remove namespace, truncate if long)
             int colonIdx = weapon.indexOf(':');
@@ -1073,7 +1077,7 @@ public class EnduranceQuestOverlay {
         g.drawCenteredString(font, warningText, centerX, boxY + 6, textColor);
 
         // Boss type below
-        g.drawCenteredString(font, Objects.requireNonNull(bossAlertType.toUpperCase()), centerX, boxY + 18, 0xFFAAAAAA);
+        g.drawCenteredString(font, Objects.requireNonNull(bossAlertType.toUpperCase(Locale.ROOT)), centerX, boxY + 18, 0xFFAAAAAA);
 
         // Sound every second (first 100ms of each second)
         Minecraft mc = Minecraft.getInstance();

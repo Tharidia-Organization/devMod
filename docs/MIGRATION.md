@@ -1,5 +1,8 @@
 # DevMod Migration Guide
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL
+
 This document tracks breaking changes and migration paths for the DevMod codebase.
 
 ---

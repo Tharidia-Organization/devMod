@@ -9,10 +9,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -87,7 +90,7 @@ public class ArmorConfigManager {
      * Priority: NBT -> Global -> Default
      */
     public static ArmorStats getStats(ItemStack stack) {
-        stack = Objects.requireNonNull(stack);
+        Objects.requireNonNull(stack, "stack");
 
         var armorComponent = ArmorComponents.armorStatsComponent();
 
@@ -97,7 +100,9 @@ public class ArmorConfigManager {
             if (componentTag != null && !componentTag.isEmpty()) {
                 return ArmorStats.load(componentTag.copy());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.debug("[ArmorConfig] Failed to read armor component stats", e);
+        }
 
         // 1. Check if the armor has SPECIFIC modifications (NBT)
         CustomData customData = stack.get(Objects.requireNonNull(DataComponents.CUSTOM_DATA));
@@ -112,7 +117,9 @@ public class ArmorConfigManager {
                     stack.set(armorComponent, clampedTag.copy());
                 }
                 applyAttributeModifiers(stack, loaded);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                LOGGER.debug("[ArmorConfig] Failed to migrate armor stats into component", e);
+            }
             return loaded;
         }
 
@@ -149,7 +156,9 @@ public class ArmorConfigManager {
         try {
             var armorComponent = ArmorComponents.armorStatsComponent();
             hasComponent = armorComponent != null && stack.get(armorComponent) != null;
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.debug("[ArmorConfig] Failed to read armor stats component presence", e);
+        }
         return hasCustom || hasComponent;
     }
 
@@ -193,7 +202,9 @@ public class ArmorConfigManager {
             if (armorComponent != null) {
                 stack.set(armorComponent, statsTag.copy());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.debug("[ArmorConfig] Failed to update armor component stats", e);
+        }
         applyAttributeModifiers(stack, clamped);
     }
 
@@ -210,7 +221,9 @@ public class ArmorConfigManager {
             if (armorComponent != null) {
                 stack.remove(armorComponent);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.debug("[ArmorConfig] Failed to clear armor component stats", e);
+        }
     }
 
     /**
@@ -442,7 +455,7 @@ public class ArmorConfigManager {
             Path backupDir = dataDirectory.resolve("backups");
             Files.createDirectories(backupDir);
 
-            String timestamp = LocalDateTime.now().format(BACKUP_DATE_FORMAT);
+            String timestamp = LocalDateTime.now(ZoneId.systemDefault()).format(BACKUP_DATE_FORMAT);
             String backupName = "armor_configs_" + timestamp + BACKUP_SUFFIX;
             Path backupFile = backupDir.resolve(backupName);
 
@@ -460,17 +473,20 @@ public class ArmorConfigManager {
      */
     private static void cleanupOldBackups(Path backupDir) {
         try {
-            var backups = Files.list(backupDir)
-                .filter(p -> p.getFileName().toString().startsWith("armor_configs_")
-                          && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .sorted((a, b) -> {
-                    try {
-                        return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a));
-                    } catch (IOException e) {
-                        return 0;
-                    }
-                })
-                .toList();
+            List<Path> backups;
+            try (var backupStream = Files.list(backupDir)) {
+                backups = backupStream
+                    .filter(p -> p.getFileName().toString().startsWith("armor_configs_")
+                              && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .sorted((a, b) -> {
+                        try {
+                            return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a));
+                        } catch (IOException e) {
+                            return 0;
+                        }
+                    })
+                    .toList();
+            }
 
             for (int i = MAX_BACKUPS; i < backups.size(); i++) {
                 Files.deleteIfExists(backups.get(i));
@@ -496,16 +512,19 @@ public class ArmorConfigManager {
         }
 
         try {
-            var latestBackup = Files.list(backupDir)
-                .filter(p -> p.getFileName().toString().startsWith("armor_configs_")
-                          && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .max((a, b) -> {
-                    try {
-                        return Files.getLastModifiedTime(a).compareTo(Files.getLastModifiedTime(b));
-                    } catch (IOException e) {
-                        return 0;
-                    }
-                });
+            Optional<Path> latestBackup;
+            try (var backupStream = Files.list(backupDir)) {
+                latestBackup = backupStream
+                    .filter(p -> p.getFileName().toString().startsWith("armor_configs_")
+                              && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .max((a, b) -> {
+                        try {
+                            return Files.getLastModifiedTime(a).compareTo(Files.getLastModifiedTime(b));
+                        } catch (IOException e) {
+                            return 0;
+                        }
+                    });
+            }
 
             if (latestBackup.isEmpty()) {
                 LOGGER.warn("[ArmorConfig] No backup files found");
@@ -535,16 +554,18 @@ public class ArmorConfigManager {
         if (!Files.exists(backupDir)) return backups;
 
         try {
-            Files.list(backupDir)
-                .filter(p -> p.getFileName().toString().startsWith("armor_configs_")
-                          && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .forEach(p -> {
-                    try {
-                        backups.put(p.getFileName().toString(), Files.getLastModifiedTime(p).toString());
-                    } catch (IOException e) {
-                        // Skip
-                    }
-                });
+            try (var backupStream = Files.list(backupDir)) {
+                backupStream
+                    .filter(p -> p.getFileName().toString().startsWith("armor_configs_")
+                              && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .forEach(p -> {
+                        try {
+                            backups.put(p.getFileName().toString(), Files.getLastModifiedTime(p).toString());
+                        } catch (IOException e) {
+                            // Skip
+                        }
+                    });
+            }
         } catch (IOException e) {
             LOGGER.warn("[ArmorConfig] Failed to list backups", e);
         }

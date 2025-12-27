@@ -2,7 +2,6 @@ package com.devmod.runtime;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +47,7 @@ public class MultiplayerConcurrencyTest {
             for (int i = 0; i < playerCount; i++) {
                 UUID playerId = UUID.randomUUID();
 
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await(); // Wait for signal
 
@@ -74,7 +73,7 @@ public class MultiplayerConcurrencyTest {
 
             startLatch.countDown(); // Start all threads
             completionLatch.await(5, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             assertEquals(playerCount, successCount.get(),
                 "All players should create instances successfully");
@@ -96,7 +95,7 @@ public class MultiplayerConcurrencyTest {
             CountDownLatch completionLatch = new CountDownLatch(attemptCount);
 
             for (int i = 0; i < attemptCount; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
 
@@ -115,7 +114,7 @@ public class MultiplayerConcurrencyTest {
 
             startLatch.countDown();
             completionLatch.await(5, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             assertEquals(1, successCount.get(),
                 "Only one instance should be created for the same player");
@@ -133,7 +132,7 @@ public class MultiplayerConcurrencyTest {
             CountDownLatch latch = new CountDownLatch(operations);
 
             for (int i = 0; i < operations; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         UUID arenaId = UUID.randomUUID();
                         UUID instanceId = UUID.randomUUID();
@@ -149,7 +148,7 @@ public class MultiplayerConcurrencyTest {
             }
 
             latch.await(5, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             // Verify consistency
             assertEquals(arenaToInstance.size(), instanceToArena.size(),
@@ -191,7 +190,7 @@ public class MultiplayerConcurrencyTest {
             CountDownLatch completionLatch = new CountDownLatch(4);
 
             // Leader joins
-            executor.submit(() -> {
+            executor.execute(() -> {
                 try {
                     startLatch.await();
                     if (instancePlayers.size() < maxPlayers) {
@@ -207,7 +206,7 @@ public class MultiplayerConcurrencyTest {
 
             // Members join
             for (UUID member : members) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         if (instancePlayers.size() < maxPlayers) {
@@ -224,7 +223,7 @@ public class MultiplayerConcurrencyTest {
 
             startLatch.countDown();
             completionLatch.await(5, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             assertEquals(4, joinedCount.get(), "All party members should join");
             assertEquals(4, instancePlayers.size());
@@ -249,7 +248,7 @@ public class MultiplayerConcurrencyTest {
 
             for (int i = 0; i < attemptCount; i++) {
                 UUID playerId = UUID.randomUUID();
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
 
@@ -270,7 +269,7 @@ public class MultiplayerConcurrencyTest {
 
             startLatch.countDown();
             completionLatch.await(5, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             assertEquals(maxPlayers, successCount.get(),
                 "Only max players should be allowed");
@@ -298,7 +297,7 @@ public class MultiplayerConcurrencyTest {
                 final int index = i;
 
                 // Remove thread
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         instancePlayers.remove(initialPlayers.get(index));
                     } finally {
@@ -307,7 +306,7 @@ public class MultiplayerConcurrencyTest {
                 });
 
                 // Add thread
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         instancePlayers.add(UUID.randomUUID());
                     } finally {
@@ -317,7 +316,7 @@ public class MultiplayerConcurrencyTest {
             }
 
             latch.await(5, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             // Should have 4 new players (old removed, new added)
             assertEquals(4, instancePlayers.size(),
@@ -349,7 +348,7 @@ public class MultiplayerConcurrencyTest {
             CountDownLatch completionLatch = new CountDownLatch(5);
 
             for (int i = 0; i < 5; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
 
@@ -371,7 +370,7 @@ public class MultiplayerConcurrencyTest {
 
             startLatch.countDown();
             completionLatch.await(5, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             assertEquals(1, transitionCount.get(),
                 "Only one thread should succeed in transition");
@@ -440,7 +439,7 @@ public class MultiplayerConcurrencyTest {
 
             // Readers
             for (int i = 0; i < 500; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         for (UUID key : registry.keySet()) {
                             registry.get(key);
@@ -455,7 +454,7 @@ public class MultiplayerConcurrencyTest {
 
             // Writers
             for (int i = 0; i < 500; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         registry.put(UUID.randomUUID(), "new_value");
                     } catch (ConcurrentModificationException e) {
@@ -467,7 +466,7 @@ public class MultiplayerConcurrencyTest {
             }
 
             latch.await(10, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             assertEquals(0, exceptionCount.get(),
                 "No ConcurrentModificationException should occur");
@@ -489,7 +488,7 @@ public class MultiplayerConcurrencyTest {
 
             // Iterating threads
             for (int i = 0; i < 50; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         for (Map.Entry<UUID, UUID> entry : playerToInstance.entrySet()) {
                             // Access values
@@ -506,7 +505,7 @@ public class MultiplayerConcurrencyTest {
 
             // Modifying threads
             for (int i = 0; i < 50; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         playerToInstance.put(UUID.randomUUID(), UUID.randomUUID());
                         // Remove random entry
@@ -520,7 +519,7 @@ public class MultiplayerConcurrencyTest {
             }
 
             latch.await(10, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             assertEquals(0, iterationErrors.get(),
                 "No errors during concurrent iteration");
@@ -551,7 +550,7 @@ public class MultiplayerConcurrencyTest {
 
             // Cleanup each instance concurrently
             for (UUID instanceId : new ArrayList<>(instanceToPlayers.keySet())) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         Set<UUID> players = instanceToPlayers.remove(instanceId);
                         if (players != null) {
@@ -568,13 +567,20 @@ public class MultiplayerConcurrencyTest {
             }
 
             latch.await(5, TimeUnit.SECONDS);
-            executor.shutdown();
+            shutdownExecutor(executor);
 
             assertEquals(0, cleanupErrors.get());
             assertTrue(instanceToPlayers.isEmpty(),
                 "All instances should be cleaned up");
             assertTrue(playerToInstance.isEmpty(),
                 "All player mappings should be cleaned up");
+        }
+    }
+
+    private static void shutdownExecutor(ExecutorService executor) throws InterruptedException {
+        executor.shutdown();
+        if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+            executor.shutdownNow();
         }
     }
 }

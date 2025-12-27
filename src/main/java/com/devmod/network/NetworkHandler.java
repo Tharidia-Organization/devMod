@@ -15,7 +15,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import com.devmod.DevMod;
 import com.devmod.abilities.AbilityActionPayload;
 import com.devmod.abilities.StaminaSyncPayload;
 import com.devmod.arena.network.BuildProgressPayload;
@@ -86,9 +88,11 @@ import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.INSTANCE_LOADING;
 import static com.devmod.network.ChannelId.INVITE_RESPONSE;
 import static com.devmod.network.ChannelId.LVC_SYNC;
+import static com.devmod.network.ChannelId.MAILBOX_ACCESS;
 import static com.devmod.network.ChannelId.MAILBOX_NOTIFY;
 import static com.devmod.network.ChannelId.MAILBOX_READ;
 import static com.devmod.network.ChannelId.MAILBOX_SEND;
+import static com.devmod.network.ChannelId.MAILBOX_STATUS;
 import static com.devmod.network.ChannelId.MAILBOX_SYNC;
 import static com.devmod.network.ChannelId.MOB_CONFIG_CONFIRM;
 import static com.devmod.network.ChannelId.MOB_STATS;
@@ -122,9 +126,12 @@ import static com.devmod.network.ChannelId.SHOP_PURCHASE;
 import static com.devmod.network.ChannelId.SHOP_SYNC;
 import static com.devmod.network.ChannelId.STAMINA_SYNC;
 import static com.devmod.network.ChannelId.START_QUEST;
+import static com.devmod.network.ChannelId.TASK_ACTION;
+import static com.devmod.network.ChannelId.TASK_SYNC;
 import static com.devmod.network.ChannelId.TELEMETRY_BATCH;
 import static com.devmod.network.ChannelId.TENSION_UPDATE;
 import static com.devmod.network.ChannelId.TOKEN_GAIN;
+import static com.devmod.network.ChannelId.UNIFIED_NOTIFICATION;
 import static com.devmod.network.ChannelId.UPDATE_ARMOR;
 import static com.devmod.network.ChannelId.USABLE_STATS;
 import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_CHOICES;
@@ -205,6 +212,22 @@ public class NetworkHandler {
         void handleLvcSync(LVCSyncPayload payload);
 
         void handleSeasonTierUp(SeasonTierUpPayload payload);
+
+        // Mailbox system handlers
+        void handleMailboxSync(com.devmod.mailbox.network.payload.MailboxSyncPayload payload);
+
+        void handleMailboxNotify(com.devmod.mailbox.network.payload.MailboxNotifyPayload payload);
+
+        void handleMailboxStatus(com.devmod.mailbox.network.payload.MailboxStatusPayload payload);
+
+        void handleMailboxAccess(com.devmod.mailbox.network.payload.MailboxAccessPayload payload);
+
+        void handleNewsSync(com.devmod.mailbox.network.payload.NewsSyncPayload payload);
+
+        void handleTaskSync(com.devmod.mailbox.network.payload.TaskSyncPayload payload);
+
+        // Unified Notification Center handlers
+        void handleUnifiedNotification(com.devmod.notification.network.UnifiedNotificationPayload payload);
     }
 
     @Nullable
@@ -277,7 +300,7 @@ public class NetworkHandler {
                 nn(GlobalConfigSyncPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(payload::applyToClientConfigs);
+                        enqueueWork(context, payload::applyToClientConfigs);
                     }
                 }
         );
@@ -291,7 +314,7 @@ public class NetworkHandler {
                 nn(RecipeClientSyncPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() -> {
+                        enqueueWork(context, () -> {
                             var operation = payload.operation();
                             var recipes = payload.recipes();
                             boolean firstSyncAll = true;
@@ -322,7 +345,7 @@ public class NetworkHandler {
                 nn(EditorApplyConfirmPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleEditorApplyConfirm(payload)));
                     }
                 }
@@ -332,7 +355,7 @@ public class NetworkHandler {
                 nn(com.devmod.endurance.resonance.ResonanceNotificationPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleResonanceTriggered(payload)));
                     }
                 }
@@ -342,7 +365,7 @@ public class NetworkHandler {
                 nn(com.devmod.endurance.contracts.ContractSyncPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleContractSync(payload)));
                     }
                 }
@@ -352,7 +375,7 @@ public class NetworkHandler {
                 nn(GameMechanicsSyncPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(payload::applyToClient);
+                        enqueueWork(context, payload::applyToClient);
                     }
                 }
         );
@@ -421,7 +444,7 @@ public class NetworkHandler {
                 nn(MobConfigConfirmPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleMobConfigConfirm(payload)));
                     }
                 }
@@ -461,7 +484,7 @@ public class NetworkHandler {
                 nn(BossAlertPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleBossAlert(payload)));
                     }
                 }
@@ -471,7 +494,7 @@ public class NetworkHandler {
                 nn(BadgeUnlockPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleBadgeUnlock(payload)));
                     }
                 }
@@ -481,7 +504,7 @@ public class NetworkHandler {
                 nn(TokenGainPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleTokenGain(payload)));
                     }
                 }
@@ -491,7 +514,7 @@ public class NetworkHandler {
                 nn(RecordBannerPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleRecordBanner(payload)));
                     }
                 }
@@ -501,7 +524,7 @@ public class NetworkHandler {
                 nn(ComboDecayPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleComboDecay(payload)));
                     }
                 }
@@ -511,7 +534,7 @@ public class NetworkHandler {
                 nn(TensionUpdatePayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleTensionUpdate(payload)));
                     }
                 }
@@ -606,7 +629,7 @@ public class NetworkHandler {
                 nn(StaminaSyncPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleStaminaSync(payload)));
                     }
                 }
@@ -621,7 +644,7 @@ public class NetworkHandler {
                 nn(LVCSyncPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleLvcSync(payload)));
                     }
                 }
@@ -636,7 +659,7 @@ public class NetworkHandler {
                 nn(BuildProgressPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleBuildProgress(payload)));
                     }
                 }
@@ -651,7 +674,7 @@ public class NetworkHandler {
                 nn(com.devmod.endurance.challenges.ChallengeSyncPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleChallengeSync(payload)));
                     }
                 }
@@ -666,7 +689,7 @@ public class NetworkHandler {
                 nn(SeasonTierUpPayload.STREAM_CODEC),
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
-                        context.enqueueWork(() ->
+                        enqueueWork(context, () ->
                             withClientHooks(hooks -> hooks.handleSeasonTierUp(payload)));
                     }
                 }
@@ -679,7 +702,12 @@ public class NetworkHandler {
         event.registrar(MAILBOX_SYNC.asString()).playToClient(
                 nn(com.devmod.mailbox.network.payload.MailboxSyncPayload.TYPE),
                 nn(com.devmod.mailbox.network.payload.MailboxSyncPayload.STREAM_CODEC),
-                com.devmod.mailbox.network.MailboxNetworkHandler::handleMailboxSyncClient
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleMailboxSync(payload)));
+                    }
+                }
         );
         event.registrar(MAILBOX_SEND.asString()).playToServer(
                 nn(com.devmod.mailbox.network.payload.MailboxSendPayload.TYPE),
@@ -694,17 +722,76 @@ public class NetworkHandler {
         event.registrar(MAILBOX_NOTIFY.asString()).playToClient(
                 nn(com.devmod.mailbox.network.payload.MailboxNotifyPayload.TYPE),
                 nn(com.devmod.mailbox.network.payload.MailboxNotifyPayload.STREAM_CODEC),
-                com.devmod.mailbox.network.MailboxNetworkHandler::handleNotifyClient
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleMailboxNotify(payload)));
+                    }
+                }
+        );
+        event.registrar(MAILBOX_STATUS.asString()).playToClient(
+                nn(com.devmod.mailbox.network.payload.MailboxStatusPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.MailboxStatusPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleMailboxStatus(payload)));
+                    }
+                }
+        );
+        event.registrar(MAILBOX_ACCESS.asString()).playToClient(
+                nn(com.devmod.mailbox.network.payload.MailboxAccessPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.MailboxAccessPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleMailboxAccess(payload)));
+                    }
+                }
         );
         event.registrar(NEWS_SYNC.asString()).playToClient(
                 nn(com.devmod.mailbox.network.payload.NewsSyncPayload.TYPE),
                 nn(com.devmod.mailbox.network.payload.NewsSyncPayload.STREAM_CODEC),
-                com.devmod.mailbox.network.MailboxNetworkHandler::handleNewsSyncClient
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleNewsSync(payload)));
+                    }
+                }
         );
         event.registrar(NEWS_READ.asString()).playToServer(
                 nn(com.devmod.mailbox.network.payload.NewsReadPayload.TYPE),
                 nn(com.devmod.mailbox.network.payload.NewsReadPayload.STREAM_CODEC),
                 com.devmod.mailbox.network.MailboxNetworkHandler::handleNewsRead
+        );
+        event.registrar(TASK_SYNC.asString()).playToClient(
+                nn(com.devmod.mailbox.network.payload.TaskSyncPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.TaskSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleTaskSync(payload)));
+                    }
+                }
+        );
+        event.registrar(TASK_ACTION.asString()).playToServer(
+                nn(com.devmod.mailbox.network.payload.TaskActionPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.TaskActionPayload.STREAM_CODEC),
+                com.devmod.mailbox.network.MailboxNetworkHandler::handleTaskAction
+        );
+
+        // ===================================================================
+        // UNIFIED NOTIFICATION CENTER CHANNELS (120-129)
+        // ===================================================================
+        event.registrar(UNIFIED_NOTIFICATION.asString()).playToClient(
+                nn(com.devmod.notification.network.UnifiedNotificationPayload.TYPE),
+                nn(com.devmod.notification.network.UnifiedNotificationPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleUnifiedNotification(payload)));
+                    }
+                }
         );
     }
 
@@ -865,6 +952,13 @@ public class NetworkHandler {
     public static void sendSeasonTierUp(ServerPlayer player, SeasonTierUpPayload payload) {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
+    }
+
+    private static void enqueueWork(IPayloadContext context, Runnable work) {
+        var future = context.enqueueWork(Objects.requireNonNull(work));
+        if (future.isCancelled()) {
+            DevMod.LOGGER.debug("[NetworkHandler] Enqueued work cancelled");
+        }
     }
 
     // ===================================================================

@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -179,7 +180,7 @@ public final class PathSanitizer {
 
             // Check file extension
             if (fileName != null) {
-                String name = fileName.toString().toLowerCase();
+                String name = fileName.toString().toLowerCase(Locale.ROOT);
                 boolean hasValidExtension = false;
                 for (String ext : allowedExtensions) {
                     if (name.endsWith(ext)) {

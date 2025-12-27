@@ -1,6 +1,7 @@
 package com.devmod.arena.template;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,7 +77,7 @@ public class TemplatePlaceholder {
      * @param resolver the resolver function
      */
     public void register(String key, PlaceholderResolver resolver) {
-        resolvers.put(key.toLowerCase(), resolver);
+        resolvers.put(key.toLowerCase(Locale.ROOT), resolver);
     }
 
     /**
@@ -85,7 +86,7 @@ public class TemplatePlaceholder {
      * @param key the placeholder key
      */
     public void unregister(String key) {
-        resolvers.remove(key.toLowerCase());
+        resolvers.remove(key.toLowerCase(Locale.ROOT));
     }
 
     /**
@@ -95,12 +96,12 @@ public class TemplatePlaceholder {
      * @return true if registered
      */
     public boolean isRegistered(String key) {
-        return resolvers.containsKey(key.toLowerCase());
+        return resolvers.containsKey(key.toLowerCase(Locale.ROOT));
     }
 
     private String resolvePlaceholder(String key, PlaceholderContext context) {
         ensureBuiltins();
-        PlaceholderResolver resolver = resolvers.get(key.toLowerCase());
+        PlaceholderResolver resolver = resolvers.get(key.toLowerCase(Locale.ROOT));
         if (resolver != null) {
             Optional<String> result = resolver.resolve(context);
             if (result.isPresent()) {
@@ -162,7 +163,7 @@ public class TemplatePlaceholder {
 
         @Nullable
         public String getCustomValue(String key) {
-            return customValues.get(key.toLowerCase());
+            return customValues.get(key.toLowerCase(Locale.ROOT));
         }
 
         public static Builder builder() {
@@ -203,7 +204,7 @@ public class TemplatePlaceholder {
             }
 
             public Builder custom(String key, String value) {
-                this.customValues.put(key.toLowerCase(), value);
+                this.customValues.put(key.toLowerCase(Locale.ROOT), value);
                 return this;
             }
 

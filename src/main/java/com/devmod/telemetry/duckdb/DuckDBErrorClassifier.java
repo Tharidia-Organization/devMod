@@ -1,6 +1,7 @@
 package com.devmod.telemetry.duckdb;
 
 import java.sql.SQLException;
+import java.util.Locale;
 
 /**
  * Classifies SQL errors for intelligent error handling.
@@ -53,7 +54,7 @@ public final class DuckDBErrorClassifier {
             return ErrorType.DEGRADATION;
         }
 
-        String msg = message.toLowerCase();
+        String msg = message.toLowerCase(Locale.ROOT);
         String sqlState = e.getSQLState();
 
         // TRANSIENT - retry with exponential backoff
@@ -177,7 +178,7 @@ public final class DuckDBErrorClassifier {
         if (e == null || e.getMessage() == null) {
             return false;
         }
-        String msg = e.getMessage().toLowerCase();
+        String msg = e.getMessage().toLowerCase(Locale.ROOT);
         return msg.contains("lock") || msg.contains("busy") || msg.contains("blocked");
     }
 
@@ -191,7 +192,7 @@ public final class DuckDBErrorClassifier {
         if (e == null || e.getMessage() == null) {
             return false;
         }
-        String msg = e.getMessage().toLowerCase();
+        String msg = e.getMessage().toLowerCase(Locale.ROOT);
         return msg.contains("timeout") || msg.contains("timed out");
     }
 
@@ -205,7 +206,7 @@ public final class DuckDBErrorClassifier {
         if (e == null || e.getMessage() == null) {
             return false;
         }
-        String msg = e.getMessage().toLowerCase();
+        String msg = e.getMessage().toLowerCase(Locale.ROOT);
         return msg.contains("disk full") || msg.contains("no space left") || msg.contains("out of disk");
     }
 

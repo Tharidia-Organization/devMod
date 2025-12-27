@@ -165,20 +165,20 @@ public class ItemInfoPanel {
                 // Not enough space, stop rendering stats
                 break;
             }
-            renderStatLine(graphics, font, contentX, currentY, contentWidth, lineHeight, stat, statScale);
+            renderStatLine(graphics, font, contentX, currentY, contentWidth, stat, statScale);
             currentY += lineHeight;
         }
 
         // Dirty indicator at bottom
         renderDirtyIndicator(graphics, font, x,
             y + panelHeight - lineHeight - ScaledCoord.scaleDim(UIConstants.Spacing.SM),
-            width, lineHeight, dirtyScale);
+            width, dirtyScale);
 
         return panelHeight;
     }
 
     private void renderStatLine(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                int x, int y, int width, int lineHeight, StatLine stat, float scale) {
+                                int x, int y, int width, StatLine stat, float scale) {
         // Label on left
         String label = Objects.requireNonNull(stat.label(), "stat label cannot be null");
         Typography.drawText(graphics, Objects.requireNonNull(font, "font cannot be null"),
@@ -194,7 +194,7 @@ public class ItemInfoPanel {
     }
 
     private void renderDirtyIndicator(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                      int x, int y, int width, int lineHeight, float scale) {
+                                      int x, int y, int width, float scale) {
         String text;
         int color;
 
@@ -228,7 +228,8 @@ public class ItemInfoPanel {
 
         // Use StringBuilderCache to avoid allocations in render loop
         StringBuilder sb = StringBuilderCache.acquire();
-        for (char c : text.toCharArray()) {
+        for (int i = 0; i < safeText.length(); i++) {
+            char c = safeText.charAt(i);
             if (font.width(sb.toString() + c) > availableWidth) {
                 break;
             }

@@ -3,6 +3,7 @@ package com.devmod.testing.stats;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.DoubleAdder;
@@ -58,7 +59,7 @@ public class DamageStatistics {
         }
 
         if (bodyPart != null) {
-            String part = bodyPart.toUpperCase();
+            String part = bodyPart.toUpperCase(Locale.ROOT);
             damageByBodyPart.merge(part, damage, DamageStatistics::safeDoubleSum);
             hitsByBodyPart.merge(part, 1, DamageStatistics::safeIntSum);
         }
@@ -84,8 +85,8 @@ public class DamageStatistics {
     public int getHitsDealt() { return (int) hitsDealt.sum(); }
     public int getHitsTaken() { return (int) hitsTaken.sum(); }
     public double getHighestSingleHit() { return highestSingleHit; }
-    public double getDamageOnBodyPart(String part) { return damageByBodyPart.getOrDefault(part.toUpperCase(), 0.0); }
-    public int getHitsOnBodyPart(String part) { return hitsByBodyPart.getOrDefault(part.toUpperCase(), 0); }
+    public double getDamageOnBodyPart(String part) { return damageByBodyPart.getOrDefault(part.toUpperCase(Locale.ROOT), 0.0); }
+    public int getHitsOnBodyPart(String part) { return hitsByBodyPart.getOrDefault(part.toUpperCase(Locale.ROOT), 0); }
 
     // === Persistence ===
     public JsonObject toJson() {

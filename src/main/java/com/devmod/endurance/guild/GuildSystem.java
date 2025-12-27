@@ -5,7 +5,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -124,14 +126,14 @@ public class GuildSystem {
         }
 
         // Check for duplicate name
-        String normalizedName = name.toLowerCase().trim();
+        String normalizedName = name.toLowerCase(Locale.ROOT).trim();
         if (guilds.values().stream().anyMatch(g ->
-            g.getName().toLowerCase().equals(normalizedName))) {
+            g.getName().toLowerCase(Locale.ROOT).equals(normalizedName))) {
             return GuildCreateResult.NAME_TAKEN;
         }
 
         // Check for duplicate tag
-        String normalizedTag = tag.toUpperCase().trim();
+        String normalizedTag = tag.toUpperCase(Locale.ROOT).trim();
         if (guilds.values().stream().anyMatch(g ->
             g.getTag().equalsIgnoreCase(normalizedTag))) {
             return GuildCreateResult.TAG_TAKEN;
@@ -341,8 +343,8 @@ public class GuildSystem {
             "[Guild] " + guild.getName() + " reached level " + newLevel + "!")
             .withStyle(ChatFormatting.AQUA);
         if (perk != null) {
-            message = message.append(Component.literal(" Perk unlocked: " + perk.name)
-                .withStyle(ChatFormatting.GOLD));
+            message = message.append(Objects.requireNonNull(Component.literal(" Perk unlocked: " + perk.name)
+                .withStyle(ChatFormatting.GOLD)));
         }
         notifyGuildMembers(guild, message);
     }
@@ -357,7 +359,7 @@ public class GuildSystem {
         }
         var playerList = server.getPlayerList();
         for (UUID memberId : guild.getMemberIds()) {
-            ServerPlayer player = playerList.getPlayer(memberId);
+            ServerPlayer player = playerList.getPlayer(Objects.requireNonNull(memberId));
             if (player != null) {
                 player.sendSystemMessage(message);
             }

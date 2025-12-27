@@ -1,5 +1,6 @@
 package com.devmod.debug;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -34,7 +35,7 @@ public record DebugTogglePayload(String featureId) implements CustomPacketPayloa
     @Nullable
     public DebugFeature getFeature() {
         try {
-            return DebugFeature.valueOf(featureId.toUpperCase());
+            return DebugFeature.valueOf(featureId.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return null;
         }

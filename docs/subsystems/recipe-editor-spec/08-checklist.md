@@ -1,5 +1,8 @@
 # Implementation Checklist - Recipe Editor
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 > Checklist dettagliata per ogni milestone
 
 ---

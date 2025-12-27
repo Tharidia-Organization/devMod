@@ -137,7 +137,7 @@ public class QuestCompletionScreen extends Screen {
             graphics.drawCenteredString(Objects.requireNonNull(font), "ESC / Enter: Continue", centerX, panelY + PANEL_HEIGHT + 10, hintColor);
         }
 
-        renderButtons(graphics, mouseX, mouseY, fadeProgress);
+        renderButtons(graphics, mouseX, mouseY);
     }
 
     private void renderPanel(GuiGraphics g, int x, int y, int w, int h, float alpha) {
@@ -354,7 +354,7 @@ public class QuestCompletionScreen extends Screen {
         return (a << 24) | (color & 0x00FFFFFF);
     }
 
-    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY, float fadeProgress) {
+    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
         int centerX = width / 2;
         int panelY = (height - PANEL_HEIGHT) / 2;
         int buttonWidth = UIConstants.Size.BUTTON_WIDTH_MEDIUM;

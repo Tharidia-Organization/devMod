@@ -79,7 +79,8 @@ class ChannelIdCollisionTest {
             assertTrue(id > 0, String.format("Channel %s has invalid ID %d (must be > 0)", name, id));
 
             // Verify IDs are in reasonable range
-            assertTrue(id < 100, String.format("Channel %s has ID %d which exceeds max expected (100)", name, id));
+            // Range 1-99: Core systems, 100-115: Mailbox system
+            assertTrue(id < 120, String.format("Channel %s has ID %d which exceeds max expected (120)", name, id));
 
             // Log any channels outside their expected ranges (soft warning)
             boolean isMobItemCore = (name.equals("MOB_STATS") || name.startsWith("WEAPON_") ||
@@ -139,7 +140,7 @@ class ChannelIdCollisionTest {
 
         // Verify we have a reasonable number of channels
         assertTrue(totalChannels >= 30, "Expected at least 30 registered channels");
-        assertTrue(totalChannels <= 100, "Unexpectedly high channel count: " + totalChannels);
+        assertTrue(totalChannels <= 120, "Unexpectedly high channel count: " + totalChannels);
 
         // Count by direction
         long clientToServer = java.util.Arrays.stream(ChannelId.values())

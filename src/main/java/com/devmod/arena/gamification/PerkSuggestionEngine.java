@@ -1,5 +1,6 @@
 package com.devmod.arena.gamification;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -120,7 +121,7 @@ public final class PerkSuggestionEngine {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             String input = AB_TEST_SALT + playerId.toString();
-            byte[] hash = digest.digest(input.getBytes());
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
 
             // Use first 4 bytes to create a deterministic value
             int hashValue = ((hash[0] & 0xFF) << 24) |

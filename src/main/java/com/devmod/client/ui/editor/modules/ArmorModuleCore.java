@@ -57,7 +57,9 @@ public class ArmorModuleCore {
         try {
             var armorComponent = ArmorComponents.armorStatsComponent();
             componentTag = armorComponent != null ? item.get(armorComponent) : null;
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Armor] Failed to read armor stats component", e);
+        }
 
         var customDataType = Objects.requireNonNull(
             DataComponents.CUSTOM_DATA,
@@ -150,8 +152,8 @@ public class ArmorModuleCore {
                 target.shieldRecoverySpeed = 1.0f;
                 DevMod.LOGGER.info("[Editor][Armor] Shield defaults applied: blockStrength=1, recovery=1");
             }
-        } catch (Exception ignored) {
-            // best-effort fallback
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[Editor][Armor] Failed to apply vanilla defaults", e);
         }
     }
 
@@ -170,7 +172,7 @@ public class ArmorModuleCore {
         @Nonnull net.minecraft.world.item.component.ItemAttributeModifiers base,
         @Nullable net.minecraft.world.item.component.ItemAttributeModifiers extra
     ) {
-        if (extra == null || extra == NONNULL_EMPTY || extra.modifiers().isEmpty()) {
+        if (extra == null || NONNULL_EMPTY.equals(extra) || extra.modifiers().isEmpty()) {
             return base;
         }
         List<net.minecraft.world.item.component.ItemAttributeModifiers.Entry> merged =

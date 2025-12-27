@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -283,7 +284,7 @@ public class ArenaHazardSystem {
             switch (hazard.state) {
                 case WARNING -> tickWarning(level, player, session, hazard);
                 case ACTIVE -> tickActive(level, player, session, hazard);
-                case ENDING -> tickEnding(level, player, session, hazard);
+                case ENDING -> tickEnding(player, hazard);
                 case INACTIVE -> iterator.remove();
             }
         }
@@ -301,7 +302,7 @@ public class ArenaHazardSystem {
 
         if (hazard.warningTicks <= 0) {
             hazard.state = HazardState.ACTIVE;
-            displayClientMessage(player, "§4§l" + hazard.type.displayName.toUpperCase() + "!", true);
+            displayClientMessage(player, "§4§l" + hazard.type.displayName.toUpperCase(Locale.ROOT) + "!", true);
             playSound(level, resolveBlockPos(player), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.AMBIENT, 0.8f, 1.2f);
 
             // Initialize hazard-specific state
@@ -313,8 +314,8 @@ public class ArenaHazardSystem {
         hazard.ticksRemaining--;
 
         switch (hazard.type) {
-            case FLOOR_CRUMBLE -> tickFloorCrumble(level, player, session, hazard);
-            case BLOOD_MOON -> tickBloodMoon(level, player, session, hazard);
+            case FLOOR_CRUMBLE -> tickFloorCrumble(level, player, hazard);
+            case BLOOD_MOON -> tickBloodMoon(level, player, hazard);
             case ARENA_SHRINK -> tickArenaShrink(level, player, session, hazard);
             case LIGHTNING_STORM -> tickLightningStorm(level, player, session, hazard);
             case VOID_RIFTS -> tickVoidRifts(level, player, session, hazard);
@@ -326,12 +327,12 @@ public class ArenaHazardSystem {
         }
     }
 
-    private void tickEnding(ServerLevel level, ServerPlayer player, HazardSession session, ActiveHazard hazard) {
+    private void tickEnding(ServerPlayer player, ActiveHazard hazard) {
         hazard.ticksRemaining--;
 
         // Cleanup effects
         if (hazard.ticksRemaining <= 0) {
-            cleanupHazard(level, session, hazard);
+            cleanupHazard(hazard);
             hazard.state = HazardState.INACTIVE;
             displayClientMessage(player, "§a" + hazard.type.displayName + " subsides...", true);
         }
@@ -347,10 +348,10 @@ public class ArenaHazardSystem {
         }
     }
 
-    private void cleanupHazard(ServerLevel level, HazardSession session, ActiveHazard hazard) {
+    private void cleanupHazard(ActiveHazard hazard) {
         switch (hazard.type) {
-            case FLOOR_CRUMBLE -> cleanupFloorCrumble(level, hazard);
-            case BLOOD_MOON -> cleanupBloodMoon(level, session);
+            case FLOOR_CRUMBLE -> cleanupFloorCrumble(hazard);
+            case BLOOD_MOON -> cleanupBloodMoon();
             case ARENA_SHRINK -> {}  // Shrink doesn't revert
             default -> {}
         }
@@ -383,7 +384,7 @@ public class ArenaHazardSystem {
         }
     }
 
-    private void tickFloorCrumble(ServerLevel level, ServerPlayer player, HazardSession session, ActiveHazard hazard) {
+    private void tickFloorCrumble(ServerLevel level, ServerPlayer player, ActiveHazard hazard) {
         RandomSource random = level.random;
         SimpleParticleType smokeParticles = ParticleTypes.SMOKE;
 
@@ -426,14 +427,14 @@ public class ArenaHazardSystem {
         }
     }
 
-    private void cleanupFloorCrumble(ServerLevel level, ActiveHazard hazard) {
+    private void cleanupFloorCrumble(ActiveHazard hazard) {
         // Restore any remaining affected blocks would be handled by arena reset
         hazard.affectedBlocks.clear();
     }
 
     // --- BLOOD MOON ---
 
-    private void tickBloodMoon(ServerLevel level, ServerPlayer player, HazardSession session, ActiveHazard hazard) {
+    private void tickBloodMoon(ServerLevel level, ServerPlayer player, ActiveHazard hazard) {
         // Apply strength to nearby mobs
         if (hazard.ticksRemaining % 40 == 0) {
             AABB playerBounds = player.getBoundingBox();
@@ -471,7 +472,7 @@ public class ArenaHazardSystem {
         }
     }
 
-    private void cleanupBloodMoon(ServerLevel level, HazardSession session) {
+    private void cleanupBloodMoon() {
         // Effects naturally expire
     }
 

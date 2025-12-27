@@ -53,7 +53,9 @@ public final class WeaponComponents {
             if (WEAPON_STATS.isBound()) {
                 return WEAPON_STATS.get();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[WeaponComponents] Failed to resolve weapon_stats component", e);
+        }
 
         if (Boolean.getBoolean("devmod.allowFallbackComponents")) {
             DevMod.LOGGER.warn("[WeaponComponents] Using fallback weapon_stats component (test-mode only)");
@@ -69,6 +71,7 @@ public final class WeaponComponents {
         try {
             return WEAPON_STATS.isBound();
         } catch (Exception e) {
+            DevMod.LOGGER.debug("[WeaponComponents] Failed to check weapon_stats binding", e);
             return false;
         }
     }

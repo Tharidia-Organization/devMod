@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,6 +50,7 @@ public class AlertRouter implements AutoCloseable {
     private final BlockingQueue<RetryableAlert> retryQueue;
     private final ExecutorService deliveryExecutor;
     private final ScheduledExecutorService retryExecutor;
+    private ScheduledFuture<?> retryTask;
     private final AtomicBoolean running;
     private final AtomicInteger deliveredCount;
     private final AtomicInteger failedCount;
@@ -363,7 +365,7 @@ public class AlertRouter implements AutoCloseable {
      * Starts the background retry processor.
      */
     private void startRetryProcessor() {
-        retryExecutor.scheduleAtFixedRate(() -> {
+        retryTask = retryExecutor.scheduleAtFixedRate(() -> {
             if (!running.get()) {
                 return;
             }
@@ -473,6 +475,9 @@ public class AlertRouter implements AutoCloseable {
     @Override
     public void close() {
         running.set(false);
+        if (retryTask != null) {
+            retryTask.cancel(false);
+        }
         retryExecutor.shutdown();
         deliveryExecutor.shutdown();
 

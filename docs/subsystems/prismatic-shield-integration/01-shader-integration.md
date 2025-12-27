@@ -1,5 +1,8 @@
 # 01 - Shader Integration
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Obiettivo
 
 Implementare gli shader GLSL per l'effetto scudo energetico con:

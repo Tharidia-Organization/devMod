@@ -116,7 +116,7 @@ public final class GeckoLibCompat {
 
         try {
             // Get the GeoModel for this entity
-            Object model = getGeoModel(entity);
+            Object model = getGeoModel();
             if (model == null) return transforms;
 
             // Get all bones from the model
@@ -146,7 +146,7 @@ public final class GeckoLibCompat {
      * Gets the GeoModel for a GeckoLib entity via reflection.
      */
     @Nullable
-    private static Object getGeoModel(LivingEntity entity) {
+    private static Object getGeoModel() {
         try {
             // GeckoLib 4.x: entity.getGeoModel() or through renderer
             // This is complex because GeoModel is retrieved from GeoRenderer

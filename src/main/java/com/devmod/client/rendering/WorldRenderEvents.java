@@ -1,5 +1,6 @@
 package com.devmod.client.rendering;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -427,7 +428,7 @@ public class WorldRenderEvents {
 
         for (EnderDragonPart part : parts) {
             AABB box = Objects.requireNonNull(part.getBoundingBox());
-            String name = part.name != null ? part.name.toLowerCase() : "";
+            String name = part.name != null ? part.name.toLowerCase(Locale.ROOT) : "";
 
             // Color-code based on part name
             float r, g, b;

@@ -224,7 +224,7 @@ public class QATestingScreen extends Screen {
 
         // Render content
         if (!sessionStarted) {
-            renderStartScreen(graphics, mouseX, mouseY);
+            renderStartScreen(graphics);
         } else {
             renderTestingInterface(graphics, mouseX, mouseY);
         }
@@ -238,16 +238,16 @@ public class QATestingScreen extends Screen {
         renderActionButtons(graphics, mouseX, mouseY);
     }
 
-    private void renderStartScreen(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderStartScreen(GuiGraphics graphics) {
         final @Nonnull Font font = safeFont();
         // Title
         AxiomRenderer.drawCenteredTitle(graphics, font, this.width, 30, "DevMod QA Testing Framework");
 
         // Tutorial panel on left side
-        renderTutorialPanel(graphics, mouseX, mouseY);
+        renderTutorialPanel(graphics);
 
         // Gamification stats on right side
-        renderGamificationPanel(graphics, mouseX, mouseY);
+        renderGamificationPanel(graphics);
 
         // Center content
         int centerX = this.width / 2;
@@ -290,7 +290,7 @@ public class QATestingScreen extends Screen {
     /**
      * Render the tutorial guidance panel on the left side of start screen.
      */
-    private void renderTutorialPanel(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderTutorialPanel(GuiGraphics graphics) {
         final @Nonnull Font font = safeFont();
         int panelX = 10;
         int panelY = 60;
@@ -350,7 +350,7 @@ public class QATestingScreen extends Screen {
     /**
      * Render the gamification stats panel on the right side of start screen.
      */
-    private void renderGamificationPanel(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderGamificationPanel(GuiGraphics graphics) {
         final @Nonnull Font font = safeFont();
         int panelWidth = 180;
         int panelX = this.width - panelWidth - 10;
@@ -723,7 +723,7 @@ public class QATestingScreen extends Screen {
         AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Instructions:");
         contentY += 12;
 
-        String[] lines = test.getInstructions().split("\n");
+        String[] lines = test.getInstructions().lines().toArray(String[]::new);
         for (String line : lines) {
             String truncatedLine = truncateText(line, maxTextWidth);
             graphics.drawString(font, truncatedLine, contentX, contentY, UIConstants.Text.PRIMARY(), false);

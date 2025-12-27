@@ -61,15 +61,23 @@ public final class SectionLayout {
         currentY += ScaledSpacing.sectionGap();
     }
 
-    /** @return current Y position */
+    /**
+     * Returns current Y position.
+     */
     public int getY() { return currentY; }
 
-    /** @return total height used so far */
+    /**
+     * Returns total height used so far.
+     */
     public int getHeight() { return currentY - startY; }
 
-    /** @return content X position (with scaled padding) */
+    /**
+     * Returns content X position (with scaled padding).
+     */
     public int getContentX() { return x + ScaledSpacing.contentPadding(); }
 
-    /** @return content width (minus scaled padding on both sides) */
+    /**
+     * Returns content width (minus scaled padding on both sides).
+     */
     public int getContentWidth() { return width - ScaledSpacing.contentPadding() * 2; }
 }

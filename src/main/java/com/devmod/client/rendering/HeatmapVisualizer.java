@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.joml.Matrix4f;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -20,6 +22,7 @@ import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 
 public class HeatmapVisualizer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HeatmapVisualizer.class);
     public static final HeatmapVisualizer INSTANCE = new HeatmapVisualizer();
 
     // Tipi di heatmap supportati
@@ -369,7 +372,9 @@ public class HeatmapVisualizer {
             if (uniform != null) {
                 uniform.set(value);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.debug("Failed to set shader uniform {}", name, e);
+        }
     }
 
     private void setShaderUniform(ShaderInstance shader, String name, int value) {
@@ -378,7 +383,9 @@ public class HeatmapVisualizer {
             if (uniform != null) {
                 uniform.set(value);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.debug("Failed to set shader uniform {}", name, e);
+        }
     }
 
     /**

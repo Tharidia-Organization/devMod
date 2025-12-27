@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Splitter;
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 
@@ -12,6 +13,7 @@ public class TelemetryAnalyticsHandlers {
 
     private final TelemetryDashboardServer server;
     private final Gson gson;
+    private static final Splitter AMPERSAND_SPLITTER = Splitter.on('&');
 
     public TelemetryAnalyticsHandlers(TelemetryDashboardServer server, Gson gson) {
         this.server = server;
@@ -310,8 +312,7 @@ public class TelemetryAnalyticsHandlers {
         if (query == null || query.isBlank()) {
             return params;
         }
-        String[] pairs = query.split("&");
-        for (String pair : pairs) {
+        for (String pair : AMPERSAND_SPLITTER.split(query)) {
             if (pair.isEmpty()) continue;
             int idx = pair.indexOf('=');
             if (idx >= 0) {

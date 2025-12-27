@@ -1,5 +1,10 @@
 # DevMod UI Navigation Map
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (navigation snapshot)
+
+Nota: mappa di navigazione storica. Confrontare con il codice attuale prima di usarla.
+
 > **Generated**: 2024-12-25 (Updated)
 > **Purpose**: Visual flowchart of all UI navigation paths in DevMod
 

@@ -1,5 +1,8 @@
 # Impact HUD - Roadmap di Upgrade
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Overview
 
 Questo documento definisce il piano di upgrade per l'Impact HUD system, organizzato in fasi incrementali con deliverable chiari.

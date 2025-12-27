@@ -1,5 +1,8 @@
 # EditorButton Adoption Audit - COMPLETE
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 Inventario completo dei punti in cui i pulsanti non usano `EditorButton` e richiedono migrazione. Ogni voce indica il tipo di controllo attuale e la strategia di migrazione.
 
 ## TODO (operativi)

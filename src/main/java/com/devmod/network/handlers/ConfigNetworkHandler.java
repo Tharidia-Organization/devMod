@@ -25,7 +25,7 @@ public final class ConfigNetworkHandler extends NetworkHandlerBase {
     // RECIPE SYNC (server-side)
     // =================================================================================
     public static void handleRecipeSync(com.devmod.network.RecipeSyncPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        observeFuture(context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -70,14 +70,14 @@ public final class ConfigNetworkHandler extends NetworkHandlerBase {
             }
 
             player.sendSystemMessage(I18n.translate("devmod.recipe.saved"));
-        });
+        }), "recipe sync");
     }
 
     // =================================================================================
     // TELEMETRY BATCH (server-side)
     // =================================================================================
     public static void handleTelemetryBatch(TelemetryBatchPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        observeFuture(context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -90,7 +90,7 @@ public final class ConfigNetworkHandler extends NetworkHandlerBase {
             }
 
             TelemetryPacketHandler.INSTANCE.handleBatch(player, payload);
-        });
+        }), "telemetry batch");
     }
 
     // =================================================================================
@@ -98,8 +98,8 @@ public final class ConfigNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleGlobalConfigSync(GlobalConfigSyncPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
-                NetworkHandler.withClientHooks(hooks -> hooks.handleGlobalConfigSync(payload)));
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleGlobalConfigSync(payload))), "global config sync");
         }
     }
 
@@ -108,8 +108,8 @@ public final class ConfigNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleRecipeClientSync(RecipeClientSyncPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
-                NetworkHandler.withClientHooks(hooks -> hooks.handleRecipeClientSync(payload)));
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleRecipeClientSync(payload))), "recipe client sync");
         }
     }
 
@@ -118,8 +118,8 @@ public final class ConfigNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleEditorApplyConfirm(EditorApplyConfirmPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
-                NetworkHandler.withClientHooks(hooks -> hooks.handleConfigEditorApplyConfirm(payload)));
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleConfigEditorApplyConfirm(payload))), "editor apply confirm");
         }
     }
 
@@ -128,8 +128,8 @@ public final class ConfigNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleMobConfigConfirm(MobConfigConfirmPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
-                NetworkHandler.withClientHooks(hooks -> hooks.handleConfigMobConfigConfirm(payload)));
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleConfigMobConfigConfirm(payload))), "mob config confirm");
         }
     }
 }

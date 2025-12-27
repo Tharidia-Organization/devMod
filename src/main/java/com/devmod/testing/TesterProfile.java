@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -346,7 +347,7 @@ public class TesterProfile {
      * Update daily streak when a test is completed.
      */
     public void onTestCompleted() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
 
         if (lastTestDate == null) {
             // First test ever
@@ -663,7 +664,7 @@ public class TesterProfile {
                 lastTestDate = LocalDate.parse(root.get("lastTestDate").getAsString());
 
                 // Check if streak is still valid
-                LocalDate today = LocalDate.now();
+                LocalDate today = LocalDate.now(ZoneId.systemDefault());
                 if (lastTestDate.plusDays(1).isBefore(today)) {
                     // Streak expired
                     currentDailyStreak = 0;

@@ -1,5 +1,8 @@
 # DevMod Telemetry Dashboard Upgrade Plan
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 ## Current State Analysis
 
 The current dashboard provides:

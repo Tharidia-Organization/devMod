@@ -83,7 +83,7 @@ public class PanelInteractionHandler {
         List<FloatingPanel> panels = FloatingPanelManager.INSTANCE.getAllPanels();
 
         // Convert mouse position to ray direction
-        Vec3 rayDir = screenToWorldRay(mouseX, mouseY, screenWidth, screenHeight, camera);
+        Vec3 rayDir = screenToWorldRay(mouseX, mouseY, screenWidth, screenHeight);
         if (rayDir == null) return null;
 
         FloatingPanel closest = null;
@@ -98,7 +98,7 @@ public class PanelInteractionHandler {
             if (distance > MAX_INTERACTION_DISTANCE) continue;
 
             // Simplified intersection test (sphere around panel)
-            double hitRadius = estimatePanelRadius(panel, distance) * PANEL_HITBOX_SCALE;
+            double hitRadius = estimatePanelRadius(panel) * PANEL_HITBOX_SCALE;
 
             if (rayIntersectsSphere(cameraPos, rayDir, Objects.requireNonNull(panelPos), hitRadius)) {
                 if (distance < closestDist) {
@@ -117,8 +117,7 @@ public class PanelInteractionHandler {
      */
     @Nullable
     private Vec3 screenToWorldRay(double mouseX, double mouseY,
-                                   int screenWidth, int screenHeight,
-                                   Camera camera) {
+                                   int screenWidth, int screenHeight) {
         Minecraft mc = Minecraft.getInstance();
         var player = mc.player;
         if (player == null) return null;
@@ -151,7 +150,7 @@ public class PanelInteractionHandler {
     /**
      * Estimates the panel radius in world units based on distance.
      */
-    private double estimatePanelRadius(FloatingPanel panel, double distance) {
+    private double estimatePanelRadius(FloatingPanel panel) {
         // The panel scales with distance, so the effective radius
         // depends on dimensions and scale
         float baseScale = 0.015f; // From PanelRenderer

@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Objects;
 
@@ -174,7 +175,7 @@ public final class DatapackIO {
         Files.createDirectories(base);
         JsonObject pack = new JsonObject();
         pack.addProperty("pack_format", 48);
-        pack.addProperty("description", "DevMod overrides exported at " + LocalDateTime.now());
+        pack.addProperty("description", "DevMod overrides exported at " + LocalDateTime.now(ZoneId.systemDefault()));
 
         JsonObject root = new JsonObject();
         root.add("pack", pack);
@@ -256,7 +257,7 @@ public final class DatapackIO {
      */
     private static JsonObject createExportMetadata() {
         JsonObject meta = new JsonObject();
-        meta.addProperty("exported_at", LocalDateTime.now().toString());
+        meta.addProperty("exported_at", LocalDateTime.now(ZoneId.systemDefault()).toString());
         meta.addProperty("devmod_version", getModVersion());
         return meta;
     }

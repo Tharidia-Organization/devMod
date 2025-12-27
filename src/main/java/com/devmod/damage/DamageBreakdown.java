@@ -2,6 +2,7 @@ package com.devmod.damage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -118,7 +119,7 @@ public class DamageBreakdown {
     }
 
     private boolean isArthropod(LivingEntity entity) {
-        String typeName = entity.getType().getDescriptionId().toLowerCase();
+        String typeName = entity.getType().getDescriptionId().toLowerCase(Locale.ROOT);
         return typeName.contains("spider") ||
                typeName.contains("silverfish") ||
                typeName.contains("endermite") ||

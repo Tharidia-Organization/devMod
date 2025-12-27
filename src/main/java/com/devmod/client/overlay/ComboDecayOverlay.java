@@ -141,9 +141,11 @@ public class ComboDecayOverlay {
         }
 
         // Show rank change if applicable
-        if (isRankDown && previousRank != null && newRank != null) {
-            String rankText = previousRank.displayName + " → " + newRank.displayName;
-            int rankColor = ((int)(alphaInt * 0.9f) << 24) | (newRank.color & 0x00FFFFFF);
+        var prevRank = previousRank;
+        var currNewRank = newRank;
+        if (isRankDown && prevRank != null && currNewRank != null) {
+            String rankText = prevRank.displayName + " → " + currNewRank.displayName;
+            int rankColor = ((int)(alphaInt * 0.9f) << 24) | (currNewRank.color & 0x00FFFFFF);
             graphics.drawString(font, rankText, x + shakeX, y + shakeY + 24, rankColor, false);
         }
     }

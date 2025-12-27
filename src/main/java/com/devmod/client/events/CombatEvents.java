@@ -26,11 +26,11 @@ public class CombatEvents {
         LivingEntity target = event.getEntity();
         if (mc.player != null) {
             // If the player dealt damage
-            if (event.getSource().getEntity() == mc.player && target != null) {
+            if (Objects.equals(event.getSource().getEntity(), mc.player) && target != null) {
                 ContextDetector.INSTANCE.onDamageDealt(target, event.getAmount());
             }
             // If the player received damage
-            if (target == mc.player && event.getSource().getEntity() instanceof LivingEntity attacker) {
+            if (Objects.equals(target, mc.player) && event.getSource().getEntity() instanceof LivingEntity attacker) {
                 ContextDetector.INSTANCE.onDamageReceived(attacker, event.getAmount());
             }
         }

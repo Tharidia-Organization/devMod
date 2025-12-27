@@ -1,5 +1,8 @@
 # Architettura Recipe Editor
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 > Data structures, sealed interfaces e design patterns
 
 ## Overview Architettura

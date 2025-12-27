@@ -1,25 +1,22 @@
 # Radial Menu / UX System
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION
-> Risk Level: MEDIUM (client-only UI + input routing)
+> Status: CURRENT (verified against code)
 
----
+The radial menu is the primary in-game UI for DevMod actions and tools.
 
-## 1. Purpose
+## Scope
 
-The radial menu is the primary in-game UI for DevMod actions:
+- Macro categories (Analyze, Telemetry, Combat, Arena, Play, Tools)
+- ActionRegistry-backed menu items and actions
+- Search (prefix/substring/description/fuzzy scoring)
+- Favorites ring (session-only)
+- Input bindings and layout/animation settings
 
-- **Macro categories**: 6 top-level buckets (Analyze, Telemetry, Combat, Arena, Play, Tools)
-- **Action registry**: menu items are backed by `ActionRegistry`
-- **Search**: prefix/substring/fuzzy matching
-- **Favorites ring**: session-only favorites for quick access
-
----
-
-## 2. Components
+## Components
 
 ### UI Core
+
 - `com.devmod.client.ui.radial.RadialMenuScreen`
 - `com.devmod.client.ui.radial.RadialMenuRegistry`
 - `com.devmod.client.ui.radial.RadialCategory`
@@ -27,45 +24,41 @@ The radial menu is the primary in-game UI for DevMod actions:
 - `com.devmod.client.ui.radial.RadialAction`
 
 ### Model + Input
+
 - `com.devmod.client.ui.radial.model.MacroCategory`
 - `com.devmod.client.ui.radial.model.RadialMenuState`
 - `com.devmod.client.ui.radial.input.RadialSearchHandler`
 - `com.devmod.client.ui.radial.RadialMenuConfig`
+- `com.devmod.client.ui.radial.config.RadialMenuConstants`
 
----
+### Rendering + Animation
 
-## 3. Input Defaults
+- `com.devmod.client.ui.radial.animation.RadialAnimator`
+- `com.devmod.client.ui.radial.render.RadialTooltipRenderer`
 
-### Open Radial Menu
-- Default key: `G` (`KeyInputHandler.OPEN_RADIAL_MENU_KEY`)
+## Input Defaults
 
-### In-Menu Shortcuts (RadialMenuConfig)
-- Macro keys: `1-6`
-- Category keys: `7,8,9,0,-,=`
-- Item keys: `Q,W,E,R,Y,U,I,O,P`
-- Search toggle: `/` or `F`
+- Open radial menu: `G` (`KeyInputHandler.OPEN_RADIAL_MENU_KEY`).
+- In-menu shortcuts (from `RadialMenuConfig.InputBindings`):
+  - Macro keys: `1-6`
+  - Category keys: `7,8,9,0,-,=`
+  - Item keys: `Q,W,E,R,Y,U,I,O,P`
+  - Search toggle: `/` or `F`
 
----
+## Behavioral Rules
 
-## 4. Behavioral Rules (Implemented)
+- Menu items can be backed by the central `ActionRegistry` via `RadialMenuItem.registry(...)` and `RadialAction.registry(...)`.
+- Visibility gating uses `RadialMenuItem.isVisible()` and action visibility.
+- Search uses prefix/substring/description matching with a fuzzy fallback (`RadialSearchHandler`).
+- Favorites are stored in-session only (no persistence in config).
 
-- **Subcategories** are created via `RadialCategory.addSubcategory()` and injected as navigation items.
-- **Visibility gating** uses `RadialMenuItem.isVisible()` which combines item visibility and action visibility.
-- **Search** uses `RadialSearchHandler` with prefix/substring/fuzzy scoring.
-- **Favorites** exist in-session; persistence is not implemented.
+## Automated Validation
 
----
-
-## 5. Automated Validation
-
-| Behavior | Test |
-|----------|------|
-| Macro category indexing + adjacency | `MacroCategoryDirectTest` |
-| Subcategory links + visibility gating | `RadialCategoryDirectTest` |
-| Toggle item execution | `RadialCategoryDirectTest` |
-| Search scoring + best match | `RadialSearchHandlerDirectTest` |
-
----
+- `MacroCategoryDirectTest`
+- `RadialCategoryDirectTest`
+- `RadialSearchHandlerDirectTest`
+- `RadialMenuStateTest`
+- `RadialMenuMacroCategoryTest`
 
 ## Cross-References
 

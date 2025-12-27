@@ -16,8 +16,10 @@ public final class TransformProviderRegistry {
     private static volatile TransformProvider clientProvider;
     private static volatile boolean clientProviderChecked = false;
     @Nonnull
-    private static final TransformProvider SERVER_PROVIDER =
-        Objects.requireNonNull(ServerTransformProvider.INSTANCE, "ServerTransformProvider.INSTANCE");
+    private static final TransformProvider SERVER_PROVIDER = Objects.requireNonNull(
+        ServerTransformProvider.INSTANCE,
+        "ServerTransformProvider.INSTANCE"
+    );
 
     /**
      * Gets the transform provider for the current side.
@@ -66,8 +68,11 @@ public final class TransformProviderRegistry {
                 }
             }
         }
-        TransformProvider provider = Objects.requireNonNullElse(clientProvider, SERVER_PROVIDER);
-        return Objects.requireNonNull(provider, "clientProvider");
+        TransformProvider provider = clientProvider;
+        if (provider == null) {
+            provider = SERVER_PROVIDER;
+        }
+        return Objects.requireNonNull(provider, "ClientTransformProvider");
     }
 
     /**
@@ -80,7 +85,7 @@ public final class TransformProviderRegistry {
         if (!(instance instanceof TransformProvider provider)) {
             throw new IllegalStateException("ClientTransformProvider.INSTANCE is not a TransformProvider");
         }
-        return Objects.requireNonNull(provider, "ClientTransformProvider.INSTANCE");
+        return provider;
     }
 
     /**
@@ -105,4 +110,5 @@ public final class TransformProviderRegistry {
             clientProvider.clearCache(entityId);
         }
     }
+
 }

@@ -1,7 +1,7 @@
 # Agent 12 - Pool & Operational Readiness - COMPLETE
 
-> **Last Updated**: 2025-12-26
-> **Status**: ✅ CURRENT
+> Last updated: 2025-12-26
+> Status: HISTORICAL (completion snapshot)
 
 ## Summary
 Implementato il sistema di pool (feature-flagged), migration audit, monitoring, release gate e KPIs (DD63-72).

@@ -1,84 +1,74 @@
 # Telemetry System
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION
-> Risk Level: MEDIUM (DuckDB IO + async batching)
+> Status: CURRENT (verified against code)
 
----
+The Telemetry system captures gameplay analytics, persists them to DuckDB, and exposes exports and dashboards.
 
-## 1. Purpose
+## Scope
 
-The Telemetry System captures gameplay analytics and exports them for analysis:
+- Event capture and async writing (`TelemetryService`, `AsyncTelemetryWriter`, `TelemetryEvents`)
+- Domain trackers (player, combat, damage, progression, spatial, boss, dungeon, economy)
+- DuckDB pipeline (connection, schema, migrations, batch writer, query API, aggregations)
+- Network batching (`TelemetryBatchPayload`, `TelemetryPacketHandler`, `LVCSyncPayload`)
+- Exports (CSV/JSON/heatmaps) and dashboard server
+- Settings and data formats (`TelemetrySettings`, `TelemetryConfig`, `TelemetryJson`, `BitPackedFlags`)
 
-- **Primary storage**: DuckDB (server-side)
-- **Optional fallback**: NDJSON (configurable)
-- **Exports**: CSV, JSON, heatmaps
-- **Dashboard**: HTTP server for analytics queries
-
----
-
-## 2. Key Components
+## Key Components
 
 ### Core
+
 - `com.devmod.telemetry.TelemetryService`
 - `com.devmod.telemetry.TelemetryEvents`
 - `com.devmod.telemetry.TelemetryLogHandlers`
+- `com.devmod.telemetry.TelemetrySettings`
+- `com.devmod.telemetry.TelemetryConfig`
+
+### Domain Trackers
+
+- Player + progression: `player.*`, `progression.*`, `skills.*`
+- Combat + damage: `combat.*`, `damage.*`, `boss.*`, `economy.*`
+- Spatial + rooms: `spatial.*`, `room.*`
+- Dungeons: `dungeon.*`
 
 ### DuckDB
+
 - `com.devmod.telemetry.duckdb.DuckDBTelemetryService`
 - `com.devmod.telemetry.duckdb.DuckDBSchemaManager`
+- `com.devmod.telemetry.duckdb.DuckDBMigrationService`
 - `com.devmod.telemetry.duckdb.DuckDBBatchWriter`
 - `com.devmod.telemetry.duckdb.DuckDBQueryAPI`
-- `com.devmod.telemetry.duckdb.DuckDBConfig`
+- `com.devmod.telemetry.duckdb.aggregation.*`
+- `com.devmod.telemetry.duckdb.lvc.*`
 
-### Network Batch
-- `com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload`
-- `com.devmod.telemetry.duckdb.packets.TelemetryPacketHandler`
+### Export + Dashboard
 
-### Export
 - `com.devmod.telemetry.export.CsvExporter`
 - `com.devmod.telemetry.export.JsonReportExporter`
 - `com.devmod.telemetry.export.HeatmapExporter`
-
-### Dashboard
 - `com.devmod.telemetry.dashboard.TelemetryDashboardServer`
 - `com.devmod.telemetry.dashboard.TelemetryAnalyticsHandlers`
 
----
+## Entry Points
 
-## 3. Entrypoints
+- Commands: `devmod telemetry ...` (`TelemetryReloadCommand`), `devmod dashboard ...` (`DashboardCommand`), `devmod dungeon ...` (`DungeonCommand`).
+- Actions are registered in `ActionRegistry` (telemetry and dungeon action IDs).
+- Network batching is handled by `TelemetryPacketHandler`.
 
-### Commands
-- `devmod telemetry <subcommand>` (reload, dump, export, scan)
-- `devmod dashboard <start|stop|status|open>`
+## Data + Encoding
 
-### Action Registry
-Telemetry commands are also registered as actions via `ActionRegistry` (see `ActionIds.TELEMETRY_*`).
+- DuckDB schema and migrations live in `DuckDBSchemaManager` and `DuckDBMigrationService`.
+- Compact flags: `BitPackedFlags`.
+- JSON encoding helpers: `TelemetryJson`.
+- Room metadata: `RoomDefinition`.
 
----
+## Automated Validation
 
-## 4. Data & Encoding
-
-- DuckDB schema and migrations are defined in `DuckDBSchemaManager`.
-- NDJSON fallback is controlled by `DuckDBConfig`.
-- Compact flags use `BitPackedFlags`.
-- JSON escaping uses `TelemetryJson`.
-
----
-
-## 5. Automated Validation
-
-| Behavior | Test |
-|----------|------|
-| JSON escaping | `TelemetryJsonDirectTest` |
-| Bit-packed flags | `BitPackedFlagsDirectTest` |
-| Room definition defaults | `RoomDefinitionDirectTest` |
-| Telemetry batch limits + decoding | `TelemetryBatchPayloadDirectTest` |
-
----
-
-## Cross-References
-
-- `docs/telemetry/TELEMETRY_DOCUMENTATION.md`
-- `docs/telemetry/MISSING_TELEMETRY_HOOKS.md`
-- `docs/telemetry/dashboard/DASHBOARD_UPGRADE_PLAN.md`
+- `TelemetryJsonDirectTest`
+- `BitPackedFlagsDirectTest`
+- `RoomDefinitionDirectTest`
+- `TelemetryBatchPayloadDirectTest`
+- `DuckDBMigrationValidationTest`
+- `DuckDBTelemetryIntegrationTest`
+- `TelemetryLVCTest`
+- `TelemetryAggregatorTest`

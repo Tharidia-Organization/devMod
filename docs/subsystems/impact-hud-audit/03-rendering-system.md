@@ -1,5 +1,8 @@
 # Impact HUD - Sistema di Rendering
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## 1. Overview
 
 Il sistema di rendering dell'Impact HUD opera su due pipeline parallele:

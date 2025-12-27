@@ -2,6 +2,7 @@ package com.devmod.client.ui.hub;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -186,8 +187,8 @@ public class TestingHubState {
      */
     public static Set<ToolType> inferRequiredTools(TestCase test) {
         Set<ToolType> required = EnumSet.noneOf(ToolType.class);
-        String instructions = test.getInstructions().toLowerCase();
-        String description = test.getDescription().toLowerCase();
+        String instructions = test.getInstructions().toLowerCase(Locale.ROOT);
+        String description = test.getDescription().toLowerCase(Locale.ROOT);
         String combined = instructions + " " + description;
 
         // Search for tool references in instructions

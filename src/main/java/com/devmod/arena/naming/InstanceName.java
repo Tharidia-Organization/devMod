@@ -1,5 +1,6 @@
 package com.devmod.arena.naming;
 
+import java.util.Locale;
 import java.util.Random;
 import java.util.regex.Pattern;
 
@@ -74,7 +75,7 @@ public record InstanceName(String value) {
         }
 
         // Lowercase and replace invalid chars
-        String sanitized = input.toLowerCase()
+        String sanitized = input.toLowerCase(Locale.ROOT)
             .replaceAll("[^a-z0-9_]", "_")
             .replaceAll("_+", "_");
 

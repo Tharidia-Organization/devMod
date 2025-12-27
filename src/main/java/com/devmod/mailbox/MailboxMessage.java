@@ -39,9 +39,9 @@ public record MailboxMessage(
         Objects.requireNonNull(messageType, "messageType must not be null");
         Objects.requireNonNull(createdAt, "createdAt must not be null");
 
-        // Validate subject length
-        if (subject.length() > 128) {
-            subject = subject.substring(0, 128);
+        int maxSubjectLength = MailboxConfig.INSTANCE.getMaxSubjectLength();
+        if (subject.length() > maxSubjectLength) {
+            subject = subject.substring(0, maxSubjectLength);
         }
 
         // Validate sender name length

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -16,12 +17,15 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Splitter;
+
 import com.devmod.arena.alert.AlertRouter;
 import com.devmod.arena.alert.ErrorContext;
 
 public class AutosmokeScheduler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeScheduler.class);
+    private static final Splitter CRON_SPLITTER = Splitter.onPattern("\\s+");
 
     /** Default schedule: daily at 3 AM */
     private static final LocalTime DEFAULT_RUN_TIME = LocalTime.of(3, 0);
@@ -400,11 +404,11 @@ public class AutosmokeScheduler {
             }
 
             // Try cron format: "0 H * * *" (minute hour day month weekday)
-            String[] parts = trimmed.split("\\s+");
-            if (parts.length >= 2) {
+            List<String> parts = CRON_SPLITTER.splitToList(trimmed);
+            if (parts.size() >= 2) {
                 try {
-                    int minute = parseIntOrDefault(parts[0], 0);
-                    int hour = parseIntOrDefault(parts[1], 3);
+                    int minute = parseIntOrDefault(parts.get(0), 0);
+                    int hour = parseIntOrDefault(parts.get(1), 3);
                     return new ScheduleConfig(true, LocalTime.of(hour, minute), false);
                 } catch (Exception e) {
                     LOGGER.warn("Invalid cron expression '{}', using default", trimmed);

@@ -2,9 +2,9 @@ package com.devmod.client.ui.radial.input;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -77,10 +77,10 @@ public final class RadialSearchHandler {
         Objects.requireNonNull(categories, "categories cannot be null");
 
         if (query.isEmpty()) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
 
-        String normalizedQuery = query.toLowerCase();
+        String normalizedQuery = query.toLowerCase(Locale.ROOT);
         List<SearchResult> results = new ArrayList<>();
 
         Set<RadialCategory> visited = new HashSet<>();
@@ -114,8 +114,8 @@ public final class RadialSearchHandler {
         Objects.requireNonNull(query, "query cannot be null");
         Objects.requireNonNull(item, "item cannot be null");
 
-        String name = item.getName().toLowerCase();
-        String desc = item.getDescription().toLowerCase();
+        String name = item.getName().toLowerCase(Locale.ROOT);
+        String desc = item.getDescription().toLowerCase(Locale.ROOT);
 
         int score = 0;
 
@@ -183,7 +183,8 @@ public final class RadialSearchHandler {
         int matchedChars = 0;
         int lastIndex = -1;
 
-        for (char c : query.toCharArray()) {
+        for (int i = 0; i < query.length(); i++) {
+            char c = query.charAt(i);
             int idx = name.indexOf(c, lastIndex + 1);
             if (idx > lastIndex) {
                 matchedChars++;
@@ -215,7 +216,7 @@ public final class RadialSearchHandler {
      * @return true if the item matches the query
      */
     public static boolean matches(String query, RadialMenuItem item) {
-        return calculateScore(query.toLowerCase(), item) > 0;
+        return calculateScore(query.toLowerCase(Locale.ROOT), item) > 0;
     }
 
     /**

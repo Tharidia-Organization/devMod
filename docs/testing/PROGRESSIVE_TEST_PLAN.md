@@ -1,5 +1,8 @@
 # DevMod Progressive Test Plan
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 ## Document Overview
 
 **Version:** 1.0

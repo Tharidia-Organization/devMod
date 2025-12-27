@@ -1,5 +1,8 @@
 Title: Debug Panel + MultiEdit improvements (Banastaff)
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 Summary
 
 Hardening of the Debug tab and MultiEdit flow. Debug now shows original vs config/custom baselines (with `SERVER N/A` note when missing), richer NBT preview and clipboard export, and real server confirmations (accept/reject) in the session log. MultiEdit now filters presets by active item type, persists batch applies (updates slot + sends stats payloads), reports failures when persistence fails, and the preset dropdown is scrollable (max 6 visible), scoped, and shows the full hovered name. Failure UI now includes counts, expandable list with “show more”, and a “Copy fails” button.

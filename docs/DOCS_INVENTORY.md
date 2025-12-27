@@ -1,5 +1,8 @@
 # Docs Inventory
 
+> Last updated: 2025-12-26
+> Status: CURRENT
+
 This inventory is directory-level to stay accurate. For a full file list, run:
 
 ```bash
@@ -25,6 +28,7 @@ rg --files docs
 - `docs/areas/arena/README.md`
 - `docs/areas/endurance/README.md`
 - `docs/areas/instance/README.md`
+- `docs/areas/mailbox/README.md`
 - `docs/areas/telemetry/README.md`
 - `docs/areas/radial/README.md`
 - `docs/areas/client_server/README.md`

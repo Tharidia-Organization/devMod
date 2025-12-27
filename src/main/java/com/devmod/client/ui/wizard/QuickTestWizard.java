@@ -352,16 +352,16 @@ public class QuickTestWizard extends Screen {
 
         // Wave count
         graphics.drawString(getFont(), "Waves: " + waveCount, rightCol, settingY, UIConstants.Text.SECONDARY(), false);
-        drawPlusMinus(graphics, rightCol + 100, settingY - 2, mouseX, mouseY, "waves");
+        drawPlusMinus(graphics, rightCol + 100, settingY - 2, mouseX, mouseY);
         settingY += 25;
 
         // Endless mode
-        drawCheckbox(graphics, rightCol, settingY, "Endless Mode", endlessMode, mouseX, mouseY, "endless");
+        drawCheckbox(graphics, rightCol, settingY, "Endless Mode", endlessMode, mouseX, mouseY);
         settingY += 25;
 
         // Arena size
         graphics.drawString(getFont(), "Arena: " + arenaSize + " blocks", rightCol, settingY, UIConstants.Text.SECONDARY(), false);
-        drawPlusMinus(graphics, rightCol + 120, settingY - 2, mouseX, mouseY, "arena");
+        drawPlusMinus(graphics, rightCol + 120, settingY - 2, mouseX, mouseY);
 
         // Quick presets
         int presetsY = y + 110;
@@ -383,7 +383,7 @@ public class QuickTestWizard extends Screen {
         }
     }
 
-    private void drawPlusMinus(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, String id) {
+    private void drawPlusMinus(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
         boolean minusHover = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, 16, 16);
         boolean plusHover = AxiomRenderer.isMouseOver(mouseX, mouseY, x + 24, y, 16, 16);
 
@@ -425,7 +425,7 @@ public class QuickTestWizard extends Screen {
     }
 
     private void drawCheckbox(GuiGraphics graphics, int x, int y, String label, boolean checked,
-                               int mouseX, int mouseY, String id) {
+                               int mouseX, int mouseY) {
         boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, 150, 16);
 
         // Box

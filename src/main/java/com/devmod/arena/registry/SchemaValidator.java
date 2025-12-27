@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -399,11 +400,11 @@ public final class SchemaValidator {
             JsonObject bs = json.getAsJsonObject("buildSettings");
             checkUnknownFields(bs, allowedForDef("BuildSettings"), "buildSettings", mode, errors, warnings, unknownFields);
             String priority = getString(bs, "buildPriority", null);
-            if (priority != null && !List.of("sync", "async").contains(priority.toLowerCase())) {
+            if (priority != null && !List.of("sync", "async").contains(priority.toLowerCase(Locale.ROOT))) {
                 errors.accept("buildSettings.buildPriority must be sync|async");
             }
             String order = getString(bs, "buildOrder", null);
-            if (order != null && !List.of("floor_first", "walls_first", "structure_first").contains(order.toLowerCase())) {
+            if (order != null && !List.of("floor_first", "walls_first", "structure_first").contains(order.toLowerCase(Locale.ROOT))) {
                 errors.accept("buildSettings.buildOrder must be floor_first|walls_first|structure_first");
             }
         }

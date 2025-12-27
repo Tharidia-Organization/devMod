@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -71,14 +72,14 @@ public enum PredefinedTag {
      */
     public static Optional<PredefinedTag> fromValue(String value) {
         if (value == null) return Optional.empty();
-        return Optional.ofNullable(BY_VALUE.get(value.toLowerCase()));
+        return Optional.ofNullable(BY_VALUE.get(value.toLowerCase(Locale.ROOT)));
     }
 
     /**
      * Checks if a value is a known predefined tag.
      */
     public static boolean isKnown(String value) {
-        return value != null && BY_VALUE.containsKey(value.toLowerCase());
+        return value != null && BY_VALUE.containsKey(value.toLowerCase(Locale.ROOT));
     }
 
     /**
@@ -96,7 +97,7 @@ public enum PredefinedTag {
             return ALL_VALUES;
         }
 
-        String lowerPrefix = prefix.toLowerCase();
+        String lowerPrefix = prefix.toLowerCase(Locale.ROOT);
         return ALL_VALUES.stream()
             .filter(v -> v.startsWith(lowerPrefix))
             .toList();
@@ -110,7 +111,7 @@ public enum PredefinedTag {
             return List.of();
         }
 
-        String lowerInput = input.toLowerCase();
+        String lowerInput = input.toLowerCase(Locale.ROOT);
         return ALL_VALUES.stream()
             .filter(v -> levenshteinDistance(lowerInput, v) <= 2 && !v.equals(lowerInput))
             .toList();
@@ -124,7 +125,7 @@ public enum PredefinedTag {
             return TagValidationResult.invalid("Tag cannot be empty", List.of());
         }
 
-        String lower = tag.toLowerCase();
+        String lower = tag.toLowerCase(Locale.ROOT);
 
         // Check if known
         if (BY_VALUE.containsKey(lower)) {

@@ -1,7 +1,6 @@
 package com.devmod.endurance;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -9,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Splitter;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -29,6 +31,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 public class EnduranceQuestRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestRegistry.class);
+    private static final Splitter UNDERSCORE_SPLITTER = Splitter.on('_');
 
     public static final EnduranceQuestRegistry INSTANCE = new EnduranceQuestRegistry();
 
@@ -160,14 +163,14 @@ public class EnduranceQuestRegistry {
 
             // Generate display name from ID
             String path = mobId.getPath();
-            this.displayName = Arrays.stream(path.split("_"))
-                .map(s -> s.isEmpty() ? s : s.substring(0, 1).toUpperCase() + s.substring(1))
+            this.displayName = UNDERSCORE_SPLITTER.splitToList(path).stream()
+                .map(s -> s.isEmpty() ? s : s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1))
                 .collect(Collectors.joining(" "));
 
             // Estimate base stats from mob type
             this.baseHealth = estimateBaseHealth(mobId, tier);
             this.baseDamage = estimateBaseDamage(mobId, tier);
-            this.baseSpeed = estimateBaseSpeed(mobId, tier);
+            this.baseSpeed = estimateBaseSpeed(mobId);
 
             // Configure based on tier
             switch (tier) {
@@ -248,7 +251,7 @@ public class EnduranceQuestRegistry {
          * Determine difficulty preset based on mob characteristics.
          */
         private static MobDifficultyPreset determineDifficultyPreset(ResourceLocation mobId, MobTier tier) {
-            String path = mobId.getPath().toLowerCase();
+            String path = mobId.getPath().toLowerCase(Locale.ROOT);
 
             // Boss-style mobs
             if (tier == MobTier.BOSS || path.contains("warden") || path.contains("elder_guardian")) {
@@ -282,7 +285,7 @@ public class EnduranceQuestRegistry {
          * Estimate base health from mob type.
          */
         private static float estimateBaseHealth(ResourceLocation mobId, MobTier tier) {
-            String path = mobId.getPath().toLowerCase();
+            String path = mobId.getPath().toLowerCase(Locale.ROOT);
 
             // Known mob base health values
             if (path.equals("wither")) return 300f;
@@ -314,7 +317,7 @@ public class EnduranceQuestRegistry {
          * Estimate base damage from mob type.
          */
         private static float estimateBaseDamage(ResourceLocation mobId, MobTier tier) {
-            String path = mobId.getPath().toLowerCase();
+            String path = mobId.getPath().toLowerCase(Locale.ROOT);
 
             // Known mob base damage values
             if (path.equals("warden")) return 30f;
@@ -339,8 +342,8 @@ public class EnduranceQuestRegistry {
         /**
          * Estimate base speed from mob type.
          */
-        private static float estimateBaseSpeed(ResourceLocation mobId, MobTier tier) {
-            String path = mobId.getPath().toLowerCase();
+        private static float estimateBaseSpeed(ResourceLocation mobId) {
+            String path = mobId.getPath().toLowerCase(Locale.ROOT);
 
             if (path.contains("spider")) return 0.3f;
             if (path.contains("enderman")) return 0.3f;
@@ -562,7 +565,7 @@ public class EnduranceQuestRegistry {
     private MobTier determineTierFromAttributes(ActualMobStats stats, ResourceLocation id) {
         double health = stats.health();
         double damage = stats.damage();
-        String path = id.getPath().toLowerCase();
+        String path = id.getPath().toLowerCase(Locale.ROOT);
 
         // First check for boss indicators in name (these override stats)
         if (path.contains("boss") || path.contains("final") || path.contains("lord") ||
@@ -646,7 +649,7 @@ public class EnduranceQuestRegistry {
      */
     private boolean isQuestEligible(EntityType<?> entityType) {
         ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
-        String path = id.getPath().toLowerCase();
+        String path = id.getPath().toLowerCase(Locale.ROOT);
 
         // === EXCLUSIONS: Filter out non-mob entities ===
         // Spawners, projectiles, effects, and utility entities
@@ -692,8 +695,8 @@ public class EnduranceQuestRegistry {
      * Improved to handle modded mobs better using namespace patterns and common naming conventions.
      */
     private MobTier determineTier(EntityType<?> entityType, ResourceLocation id) {
-        String path = id.getPath().toLowerCase();
-        String namespace = id.getNamespace().toLowerCase();
+        String path = id.getPath().toLowerCase(Locale.ROOT);
+        String namespace = id.getNamespace().toLowerCase(Locale.ROOT);
 
         // ============ BOSS TIER ============
         // Known vanilla bosses
@@ -736,7 +739,7 @@ public class EnduranceQuestRegistry {
             path.contains("revenant") || path.contains("wight") || path.contains("shade") ||
             path.contains("assassin") || path.contains("berserker") || path.contains("brute") ||
             path.contains("drake") || path.contains("wyrm") || path.contains("dragon") ||
-            path.contains("golem") || path.contains("construct") || path.contains("automaton") ||
+            path.contains("construct") || path.contains("automaton") ||
             path.contains("sentinel") || path.contains("keeper") || path.contains("cultist") ||
             path.contains("priest") || path.contains("warlock") || path.contains("pyromancer") ||
             path.contains("cryomancer") || path.contains("electromancer") || path.contains("archillager") ||
@@ -769,7 +772,7 @@ public class EnduranceQuestRegistry {
             path.contains("ghoul") || path.contains("vampire") || path.contains("werewolf") ||
             path.contains("wolf") || path.contains("bear") || path.contains("crawler") ||
             path.contains("lurker") || path.contains("stalker") || path.contains("horror") ||
-            path.contains("mimic") || path.contains("shade") || path.contains("spirit")) {
+            path.contains("mimic") || path.contains("spirit")) {
             return MobTier.MEDIUM;
         }
 
@@ -872,10 +875,10 @@ public class EnduranceQuestRegistry {
      */
     public List<MobQuestConfig> searchMobs(String query) {
         ensureInitialized();
-        String lowerQuery = query.toLowerCase();
+        String lowerQuery = query.toLowerCase(Locale.ROOT);
         return mobConfigs.values().stream()
-            .filter(config -> config.displayName.toLowerCase().contains(lowerQuery) ||
-                             config.mobId.toString().toLowerCase().contains(lowerQuery))
+            .filter(config -> config.displayName.toLowerCase(Locale.ROOT).contains(lowerQuery) ||
+                             config.mobId.toString().toLowerCase(Locale.ROOT).contains(lowerQuery))
             .toList();
     }
 

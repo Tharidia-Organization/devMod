@@ -20,9 +20,7 @@ import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 
 import com.devmod.DevMod;
 
-@SuppressWarnings("removal") // RenderStateShard.ShaderStateShard uses deprecated shader APIs
-
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class VFXShaderRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(VFXShaderRegistry.class);
 

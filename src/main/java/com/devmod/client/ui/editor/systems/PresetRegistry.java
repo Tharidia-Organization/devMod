@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -299,10 +300,10 @@ public final class PresetRegistry {
      */
     public List<RegistryPreset> getPresetsForCategory(String category) {
         return allPresets.stream()
-            .filter(p -> p.category().equalsIgnoreCase(category) ||
-                        p.category().equalsIgnoreCase("general") ||
-                        "weapon".equalsIgnoreCase(p.category()) && isWeaponCategory(category) ||
-                        "armor".equalsIgnoreCase(p.category()) && isArmorCategory(category))
+            .filter(p -> p.category().equalsIgnoreCase(category)
+                || p.category().equalsIgnoreCase("general")
+                || ("weapon".equalsIgnoreCase(p.category()) && isWeaponCategory(category))
+                || ("armor".equalsIgnoreCase(p.category()) && isArmorCategory(category)))
             .sorted(Comparator.comparingInt((RegistryPreset p) -> p.scope().priority()).reversed())
             .collect(Collectors.toList());
     }
@@ -334,8 +335,8 @@ public final class PresetRegistry {
     // ═══════════════════════════════════════════════════════════════
 
     private boolean matchesCategory(RegistryPreset preset, String itemCategory) {
-        String presetCat = preset.category().toLowerCase();
-        String itemCat = itemCategory.toLowerCase();
+        String presetCat = preset.category().toLowerCase(Locale.ROOT);
+        String itemCat = itemCategory.toLowerCase(Locale.ROOT);
 
         // Exact match
         if (presetCat.equals(itemCat)) return true;
@@ -354,12 +355,12 @@ public final class PresetRegistry {
 
     private boolean isWeaponCategory(String category) {
         return Set.of("sword", "axe", "pickaxe", "shovel", "hoe", "bow", "crossbow", "trident")
-            .contains(category.toLowerCase());
+            .contains(category.toLowerCase(Locale.ROOT));
     }
 
     private boolean isArmorCategory(String category) {
         return Set.of("helmet", "chestplate", "leggings", "boots", "shield")
-            .contains(category.toLowerCase());
+            .contains(category.toLowerCase(Locale.ROOT));
     }
 
     /**
@@ -370,7 +371,7 @@ public final class PresetRegistry {
 
         Item item = stack.getItem();
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item, "item"));
-        String path = id.getPath().toLowerCase();
+        String path = id.getPath().toLowerCase(Locale.ROOT);
 
         // Check by item name
         if (path.contains("sword")) return "sword";
@@ -394,7 +395,9 @@ public final class PresetRegistry {
             if (stack.is(Objects.requireNonNull(ItemTags.PICKAXES))) return "pickaxe";
             if (stack.is(Objects.requireNonNull(ItemTags.SHOVELS))) return "shovel";
             if (stack.is(Objects.requireNonNull(ItemTags.HOES))) return "hoe";
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[PresetRegistry] Failed to detect item category via tags", e);
+        }
 
         return "general";
     }

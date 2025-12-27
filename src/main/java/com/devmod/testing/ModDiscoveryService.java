@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -14,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.Item;
 
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -166,15 +166,14 @@ public class ModDiscoveryService {
                 info.items.add(key);
 
                 // Classify item type
-                Item item = entry.getValue();
-                classifyItem(item, key, info);
+                classifyItem(key, info);
             }
         }
     }
 
-    private void classifyItem(Item item, ResourceLocation key, ModInfo info) {
+    private void classifyItem(ResourceLocation key, ModInfo info) {
         // Check if weapon (has attack damage attribute or is a sword/axe type)
-        String path = key.getPath().toLowerCase();
+        String path = key.getPath().toLowerCase(Locale.ROOT);
 
         // Weapons detection
         if (path.contains("sword") || path.contains("blade") || path.contains("katana") ||
@@ -213,7 +212,7 @@ public class ModDiscoveryService {
                 String category = type.getCategory().getName();
                 if (category.equals("monster") || category.equals("creature")) {
                     // Heuristic: if name contains hostile keywords
-                    String path = key.getPath().toLowerCase();
+                    String path = key.getPath().toLowerCase(Locale.ROOT);
                     if (path.contains("zombie") || path.contains("skeleton") || path.contains("demon") ||
                         path.contains("boss") || path.contains("dragon") || path.contains("golem") ||
                         path.contains("spider") || path.contains("creeper") || path.contains("witch") ||
@@ -240,15 +239,18 @@ public class ModDiscoveryService {
         // implementation when datapack scanning is added, or for mods that register
         // enchantments through other means.
         // For now, enchantment discovery requires datapack scanning which is more complex.
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Skipping enchantment scan for mod {} ({})", modId, info.displayName);
+        }
     }
 
     /**
      * Categorize mod based on its content.
      */
     private void categorizeMod(ModInfo info) {
-        String modId = info.modId.toLowerCase();
-        String desc = info.description.toLowerCase();
-        String name = info.displayName.toLowerCase();
+        String modId = info.modId.toLowerCase(Locale.ROOT);
+        String desc = info.description.toLowerCase(Locale.ROOT);
+        String name = info.displayName.toLowerCase(Locale.ROOT);
 
         // Check name/description keywords
         if (containsAny(modId + desc + name, "combat", "weapon", "sword", "armor", "fight", "battle", "knight", "warrior")) {

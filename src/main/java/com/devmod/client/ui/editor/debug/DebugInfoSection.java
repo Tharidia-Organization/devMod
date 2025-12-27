@@ -128,7 +128,7 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
         contentY += UIConstants.Spacing.SM;
         contentY = renderHistoryBlock(graphics, font, indentX, contentY);
         contentY += UIConstants.Spacing.SM;
-        contentY = renderNbtBlock(graphics, font, indentX, contentY);
+        renderNbtBlock(graphics, font, indentX, contentY);
     }
 
     private int renderComparisonBlock(GuiGraphics graphics, Font font, int x, int y) {

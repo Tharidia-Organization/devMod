@@ -1,5 +1,8 @@
 # 2.16 Scroll Policy: Rigid Layout
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 Tutte le tab condividono lo **stesso layout rigido**. Lo scroll è consentito **solo** nel content area.
 
 ## Layout Zones

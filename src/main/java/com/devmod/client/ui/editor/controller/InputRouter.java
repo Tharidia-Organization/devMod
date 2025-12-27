@@ -242,13 +242,23 @@ public final class InputRouter {
             }
         }
 
-        // M key for multi-edit refresh
+        // M key for multi-edit toggle/refresh
         if (keyCode == GLFW.GLFW_KEY_M) {
-            context.refreshMultiEditSelection();
-            if (context.multiEditPanel() != null) {
-                context.multiEditPanel().setExpanded(true);
+            if (context.showMultiEditPanel()) {
+                context.refreshMultiEditSelection();
+                if (context.multiEditPanel() != null) {
+                    context.multiEditPanel().setExpanded(true);
+                }
+                context.showStatus("MultiEdit refreshed", UIConstants.Accent.BLUE());
+            } else {
+                context.toggleMultiEditPanel();
+                if (context.showMultiEditPanel()) {
+                    context.refreshMultiEditSelection();
+                    if (context.multiEditPanel() != null) {
+                        context.multiEditPanel().setExpanded(true);
+                    }
+                }
             }
-            context.showStatus("MultiEdit refreshed", UIConstants.Accent.BLUE());
             return true;
         }
 
@@ -358,18 +368,6 @@ public final class InputRouter {
                 context.showStatus("Debug log cleared", UIConstants.Accent.BLUE());
                 return true;
             }
-        }
-
-        // M toggle multi-edit panel
-        if (keyCode == GLFW.GLFW_KEY_M) {
-            context.toggleMultiEditPanel();
-            if (context.showMultiEditPanel()) {
-                context.refreshMultiEditSelection();
-                if (context.multiEditPanel() != null) {
-                    context.multiEditPanel().setExpanded(true);
-                }
-            }
-            return true;
         }
 
         // F1 for help

@@ -74,8 +74,6 @@ public class QuickHelpOverlay {
 
         int y = panelY + PANEL_PADDING;
         int x = panelX + PANEL_PADDING;
-        int contentWidth = panelWidth - PANEL_PADDING * 2;
-
         // Title
         var safeFont = Objects.requireNonNull(font);
         graphics.drawCenteredString(safeFont, "DevMod Quick Help (F1)", panelX + panelWidth / 2, y, TEXT_TITLE);
@@ -86,51 +84,51 @@ public class QuickHelpOverlay {
         y += 6;
 
         // Core Controls
-        y = renderCategory(graphics, font, x, y, contentWidth, "Core Controls");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.OPEN_SETTINGS_KEY, "Settings Panel");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.OPEN_WEAPON_EDITOR_KEY, "Weapon Editor");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.OPEN_DASHBOARD_KEY, "Telemetry Dashboard");
+        y = renderCategory(graphics, font, x, y, "Core Controls");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_SETTINGS_KEY, "Settings Panel");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_WEAPON_EDITOR_KEY, "Weapon Editor");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_DASHBOARD_KEY, "Telemetry Dashboard");
         y += 4;
 
         // Debug Overlays
-        y = renderCategory(graphics, font, x, y, contentWidth, "Debug Overlays");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY, "Debug Renderer");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY, "Light Levels");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_HEATMAP_KEY, "Heatmaps");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY, "Room Bounds");
+        y = renderCategory(graphics, font, x, y, "Debug Overlays");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY, "Debug Renderer");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY, "Light Levels");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_HEATMAP_KEY, "Heatmaps");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY, "Room Bounds");
         y += 4;
 
         // Spatial Analysis
-        y = renderCategory(graphics, font, x, y, contentWidth, "Spatial & AI");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_PATHFINDING_KEY, "Pathfinding");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_LOS_KEY, "Line of Sight");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_SAFE_SPOT_KEY, "Safe Spots");
+        y = renderCategory(graphics, font, x, y, "Spatial & AI");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_PATHFINDING_KEY, "Pathfinding");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_LOS_KEY, "Line of Sight");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_SAFE_SPOT_KEY, "Safe Spots");
         y += 4;
 
         // Quest System
-        y = renderCategory(graphics, font, x, y, contentWidth, "Quest System");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_QUEST_HUD_KEY, "Quest HUD");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY, "Endurance Quest");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.QUEST_CONTINUE_KEY, "Continue (in quest)");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.QUEST_EXIT_KEY, "Exit Quest");
+        y = renderCategory(graphics, font, x, y, "Quest System");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_QUEST_HUD_KEY, "Quest HUD");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY, "Endurance Quest");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.QUEST_CONTINUE_KEY, "Continue (in quest)");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.QUEST_EXIT_KEY, "Exit Quest");
         y += 4;
 
         // Performance
-        y = renderCategory(graphics, font, x, y, contentWidth, "Performance");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_FPS_TRACKER_KEY, "FPS Tracker");
-        y = renderKeybind(graphics, font, x, y, contentWidth, KeyInputHandler.TOGGLE_PROFILER_KEY, "Profiler");
+        y = renderCategory(graphics, font, x, y, "Performance");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_FPS_TRACKER_KEY, "FPS Tracker");
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_PROFILER_KEY, "Profiler");
 
         // Footer hint
         y += 8;
         graphics.drawCenteredString(safeFont, "Press K for full settings", panelX + panelWidth / 2, y, 0xFF555555);
     }
 
-    private static int renderCategory(GuiGraphics graphics, Font font, int x, int y, int width, String name) {
+    private static int renderCategory(GuiGraphics graphics, Font font, int x, int y, String name) {
         graphics.drawString(Objects.requireNonNull(font), name, x, y, TEXT_CATEGORY, false);
         return y + LINE_HEIGHT + 2;
     }
 
-    private static int renderKeybind(GuiGraphics graphics, Font font, int x, int y, int width,
+    private static int renderKeybind(GuiGraphics graphics, Font font, int x, int y,
                                       KeyMapping key, String description) {
         // Skip unbound keys - they show as "Not bound" or similar
         if (key.isUnbound()) {

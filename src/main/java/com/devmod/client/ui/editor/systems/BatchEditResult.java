@@ -93,7 +93,10 @@ public class BatchEditResult {
             FailureDetail detail = failureDetails.get(i);
             sb.append(String.format("%d. %s\n", i + 1, detail.toString()));
             if (detail.stackTrace != null && !detail.stackTrace.trim().isEmpty()) {
-                sb.append("   Stack trace: ").append(detail.stackTrace.split("\n")[0]).append("\n");
+                String stackTrace = detail.stackTrace;
+                int newlineIndex = stackTrace.indexOf('\n');
+                String firstLine = newlineIndex < 0 ? stackTrace : stackTrace.substring(0, newlineIndex);
+                sb.append("   Stack trace: ").append(firstLine).append("\n");
             }
             sb.append("\n");
         }

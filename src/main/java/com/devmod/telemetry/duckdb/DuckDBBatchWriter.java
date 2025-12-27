@@ -1259,7 +1259,9 @@ public class DuckDBBatchWriter {
             if (conn != null) {
                 try {
                     conn.setAutoCommit(autoCommitOriginal);
-                } catch (SQLException ignored) {}
+                } catch (SQLException e) {
+                    LOGGER.debug("[DuckDB] Failed to restore auto-commit", e);
+                }
             }
         }
     }

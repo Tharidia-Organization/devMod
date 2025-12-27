@@ -1,5 +1,8 @@
 # 17. Implementation Guide
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 This guide provides a recommended implementation order, code templates, and common pitfalls for building components within the Editor Design System.
 
 ## General Philosophy

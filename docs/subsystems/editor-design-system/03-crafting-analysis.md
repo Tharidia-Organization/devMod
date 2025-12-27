@@ -1,5 +1,8 @@
 # 2.6 Crafting Info Panel *(IN SCOPE — IMPLEMENTED)*
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 Overlay modale centrato con visualizzazione ricetta, selezione multi-ricetta, lista ingredienti scrollabile e analisi valore. Trigger tramite bottone "Recipe" nel footer. Estende `BaseOverlay` per comportamento modale consistente.
 
 ## Layout

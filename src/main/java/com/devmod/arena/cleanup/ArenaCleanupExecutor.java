@@ -65,22 +65,22 @@ public class ArenaCleanupExecutor {
 
         try {
             // Phase 1: Remove entities
-            int entities = executePhase1Entities(bounds, result);
+            int entities = executePhase1Entities(bounds);
             result.entitiesRemoved(entities);
             LOGGER.debug("Phase 1 complete: {} entities removed", entities);
 
             // Phase 2: Remove block entities
-            int blockEntities = executePhase2BlockEntities(bounds, result);
+            int blockEntities = executePhase2BlockEntities(bounds);
             result.blockEntitiesRemoved(blockEntities);
             LOGGER.debug("Phase 2 complete: {} block entities removed", blockEntities);
 
             // Phase 3: Cancel scheduled ticks
-            int ticks = executePhase3ScheduledTicks(bounds, result);
+            int ticks = executePhase3ScheduledTicks(bounds);
             result.scheduledTicksCancelled(ticks);
             LOGGER.debug("Phase 3 complete: {} scheduled ticks cancelled", ticks);
 
             // Phase 4: Remove blocks
-            int blocks = executePhase4Blocks(bounds, result);
+            int blocks = executePhase4Blocks(bounds);
             result.blocksRemoved(blocks);
             LOGGER.debug("Phase 4 complete: {} blocks removed", blocks);
 
@@ -119,7 +119,7 @@ public class ArenaCleanupExecutor {
         return finalResult;
     }
 
-    private int executePhase1Entities(ArenaBounds bounds, CleanupResult.Builder result) {
+    private int executePhase1Entities(ArenaBounds bounds) {
         return levelAccess.removeEntitiesInBounds(
             bounds.minX(), bounds.minY(), bounds.minZ(),
             bounds.maxX(), bounds.maxY(), bounds.maxZ(),
@@ -128,7 +128,7 @@ public class ArenaCleanupExecutor {
         );
     }
 
-    private int executePhase2BlockEntities(ArenaBounds bounds, CleanupResult.Builder result) {
+    private int executePhase2BlockEntities(ArenaBounds bounds) {
         return levelAccess.removeBlockEntitiesInBounds(
             bounds.minX(), bounds.minY(), bounds.minZ(),
             bounds.maxX(), bounds.maxY(), bounds.maxZ(),
@@ -136,14 +136,14 @@ public class ArenaCleanupExecutor {
         );
     }
 
-    private int executePhase3ScheduledTicks(ArenaBounds bounds, CleanupResult.Builder result) {
+    private int executePhase3ScheduledTicks(ArenaBounds bounds) {
         return levelAccess.cancelScheduledTicksInBounds(
             bounds.minX(), bounds.minY(), bounds.minZ(),
             bounds.maxX(), bounds.maxY(), bounds.maxZ()
         );
     }
 
-    private int executePhase4Blocks(ArenaBounds bounds, CleanupResult.Builder result) {
+    private int executePhase4Blocks(ArenaBounds bounds) {
         return levelAccess.setBlocksToAirInBounds(
             bounds.minX(), bounds.minY(), bounds.minZ(),
             bounds.maxX(), bounds.maxY(), bounds.maxZ(),

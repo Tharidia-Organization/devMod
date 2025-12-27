@@ -3,6 +3,7 @@ package com.devmod.testing;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -233,7 +234,7 @@ public class DynamicTestGenerator {
             // Headshot test for precision weapons
             List<ResourceLocation> precisionWeapons = mod.getWeapons().stream()
                 .filter(w -> {
-                    String path = w.getPath().toLowerCase();
+                    String path = w.getPath().toLowerCase(Locale.ROOT);
                     return path.contains("bow") || path.contains("crossbow") ||
                            path.contains("gun") || path.contains("rifle");
                 })
@@ -294,7 +295,7 @@ public class DynamicTestGenerator {
 
                 // Boss test if mod likely has bosses
                 List<ResourceLocation> potentialBosses = mod.getHostileMobs().stream()
-                    .filter(m -> m.getPath().toLowerCase().contains("boss"))
+                    .filter(m -> m.getPath().toLowerCase(Locale.ROOT).contains("boss"))
                     .toList();
 
                 if (!potentialBosses.isEmpty()) {
@@ -946,7 +947,7 @@ public class DynamicTestGenerator {
             // Individual structure tests
             for (String structure : STRUCTURES) {
                 String displayName = structure.replace("_", " ");
-                displayName = displayName.substring(0, 1).toUpperCase() + displayName.substring(1);
+                displayName = displayName.substring(0, 1).toUpperCase(Locale.ROOT) + displayName.substring(1);
 
                 tests.add(TestCase.withProgress(
                     "iss_structure_" + structure,
@@ -980,7 +981,7 @@ public class DynamicTestGenerator {
             // Specific imbue types
             String[] imbueTypes = {"fire", "ice", "lightning", "poison"};
             for (String imbue : imbueTypes) {
-                String displayName = imbue.substring(0, 1).toUpperCase() + imbue.substring(1);
+                String displayName = imbue.substring(0, 1).toUpperCase(Locale.ROOT) + imbue.substring(1);
                 tests.add(TestCase.withProgress(
                     "iss_imbue_" + imbue,
                     "Iron's Spellbooks - Imbue",

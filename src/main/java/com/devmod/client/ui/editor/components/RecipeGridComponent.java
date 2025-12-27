@@ -99,7 +99,7 @@ public class RecipeGridComponent {
                 int cellX = x + col * (scaledCellSize + GRID_GAP);
                 int cellY = y + row * (scaledCellSize + GRID_GAP);
 
-                renderSlot(graphics, font, cellX, cellY, index);
+                renderSlot(graphics, cellX, cellY, index);
             }
         }
 
@@ -114,7 +114,7 @@ public class RecipeGridComponent {
         return totalGridSize + bgPad * 2;
     }
 
-    private void renderSlot(GuiGraphics g, Font font, int x, int y, int index) {
+    private void renderSlot(GuiGraphics g, int x, int y, int index) {
         IngredientSlot slot = slots[index];
 
         // === Background ===

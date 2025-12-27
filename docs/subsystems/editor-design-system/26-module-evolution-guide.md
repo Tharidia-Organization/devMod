@@ -1,5 +1,8 @@
 # 26 - Module Evolution Guide
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Overview
 
 Guida per sviluppare e migliorare moduli editor. Definisce maturity levels e checklist per upgrade.

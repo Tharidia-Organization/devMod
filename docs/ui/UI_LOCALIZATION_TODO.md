@@ -1,7 +1,8 @@
 # UI Localization TODO
 
-Last updated: 2025-12-26  
-Scope: Remaining UI string literals in client UI screens/components.
+> Last updated: 2025-12-26
+> Status: PLANNING
+> Scope: Remaining UI string literals in client UI screens/components.
 
 ## Completed
 - [x] `src/main/java/com/devmod/client/endurance/EnduranceQuestScreen.java`

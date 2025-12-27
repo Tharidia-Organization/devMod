@@ -152,7 +152,7 @@ public class OnboardingOverlay {
         pulseAnimation += deltaTracker.getGameTimeDeltaTicks() * 0.1f;
 
         // Calculate panel size
-        int panelHeight = calculatePanelHeight(font, step);
+        int panelHeight = calculatePanelHeight();
 
         // Position: top-center of screen
         int screenWidth = mc.getWindow().getGuiScaledWidth();
@@ -201,10 +201,11 @@ public class OnboardingOverlay {
         String instruction = I18n.translate(step.instruction).getString();
 
         // Replace [KEY] placeholder with actual keybind name
-        if (step.keyHint != null && !step.keyHint.isUnbound()) {
-            String keyName = step.keyHint.getTranslatedKeyMessage().getString();
+        var keyHint = step.keyHint;
+        if (keyHint != null && !keyHint.isUnbound()) {
+            String keyName = keyHint.getTranslatedKeyMessage().getString();
             instruction = instruction.replace("[KEY]", "[" + keyName + "]");
-        } else if (step.keyHint != null) {
+        } else if (keyHint != null) {
             // Key is unbound - show "UNBOUND" to prompt user to set it
             String unboundText = I18n.translate("devmod.tutorial.key_unbound").getString();
             instruction = instruction.replace("[KEY]", "[" + unboundText + "]");
@@ -233,7 +234,7 @@ public class OnboardingOverlay {
         graphics.drawString(font, "§8" + skipHint, contentX, y, MUTED_COLOR, false);
     }
 
-    private static int calculatePanelHeight(Font font, TutorialStep step) {
+    private static int calculatePanelHeight() {
         return PANEL_PADDING * 2
             + 4 + 8      // Progress bar + gap
             + LINE_HEIGHT + 4  // Step counter

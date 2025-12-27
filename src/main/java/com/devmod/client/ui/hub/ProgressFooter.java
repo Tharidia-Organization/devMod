@@ -65,7 +65,7 @@ public class ProgressFooter implements HubPanel {
         // Progress bar
         int barX = x + PADDING;
         int barWidth = width - PADDING * 2 - BUTTON_WIDTH * 2 - 20;
-        renderProgressBar(graphics, barX, contentY, barWidth, passed, failed, pending, total);
+        renderProgressBar(graphics, barX, contentY, barWidth, passed, failed, total);
 
         // Buttons on the right
         int buttonY = contentY - 6;
@@ -77,7 +77,7 @@ public class ProgressFooter implements HubPanel {
     }
 
     private void renderProgressBar(GuiGraphics graphics, int bx, int by, int bw,
-                                   int passed, int failed, int pending, int total) {
+                                   int passed, int failed, int total) {
         if (total == 0) {
             // Empty bar
             graphics.fill(bx, by, bx + bw, by + PROGRESS_BAR_HEIGHT, UIConstants.Background.INPUT());

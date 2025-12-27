@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -150,7 +151,7 @@ public class ArrowEvents {
 
         // Schedule evasion check after 150ms (uses ScheduledExecutor instead of Thread.sleep)
         final int targetId = target.getId();
-        EVASION_SCHEDULER.schedule(() -> {
+        ScheduledFuture<?> scheduled = EVASION_SCHEDULER.schedule(() -> {
             PendingArrowHit pending = pendingArrowHits.remove(targetId);
             if (pending == null) return;
 
@@ -169,6 +170,7 @@ public class ArrowEvents {
                 spawnArrowEvasionPanelClientSafe(pending.shooter, target, pending.hitPos, pending.targetPos);
             }
         }, 150, TimeUnit.MILLISECONDS);
+        scheduled.getDelay(TimeUnit.MILLISECONDS);
     }
 
     // ========== Client-safe VFX helpers ==========

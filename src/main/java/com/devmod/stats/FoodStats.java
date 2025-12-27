@@ -93,8 +93,7 @@ public class FoodStats {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            FoodEffect that = (FoodEffect) o;
+            if (!(o instanceof FoodEffect that)) return false;
             return duration == that.duration &&
                    amplifier == that.amplifier &&
                    Float.compare(that.probability, probability) == 0 &&
@@ -180,8 +179,7 @@ public class FoodStats {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FoodStats that = (FoodStats) o;
+        if (!(o instanceof FoodStats that)) return false;
         return nutrition == that.nutrition &&
                Float.compare(that.saturation, saturation) == 0 &&
                consumptionTime == that.consumptionTime &&

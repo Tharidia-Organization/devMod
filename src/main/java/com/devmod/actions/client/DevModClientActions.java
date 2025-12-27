@@ -154,6 +154,14 @@ public final class DevModClientActions {
             ));
     }
 
+    private static ActionPrecondition testerPrecondition() {
+        return screenPrecondition()
+            .and(ActionPreconditions.withMessage(
+                context -> com.devmod.mailbox.client.ClientMailboxAccess.isTester(),
+                "devmod.action.requires_tester"
+            ));
+    }
+
     private static ActionPrecondition qaSessionExistsPrecondition() {
         return ActionPreconditions.clientOnly()
             .and(ActionPreconditions.withMessage(
@@ -556,6 +564,16 @@ public final class DevModClientActions {
             .icon(Items.WRITABLE_BOOK)
             .precondition(screenPrecondition())
             .handler(context -> com.devmod.mailbox.client.screen.MailboxScreen.open())
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_TESTER_TASKS_OPEN)
+            .labelKey("devmod.action.tester_tasks")
+            .descriptionKey("devmod.action.tester_tasks.desc")
+            .category(ActionCategory.DEBUG)
+            .menuPath("Root/Debug/Tester Tasks")
+            .icon(Items.WRITTEN_BOOK)
+            .precondition(testerPrecondition())
+            .handler(context -> com.devmod.mailbox.client.screen.TesterTaskScreen.open())
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_PARTY_INVITE_POPUP_OPEN)
@@ -2309,6 +2327,7 @@ public final class DevModClientActions {
         ActionKeybindRegistry.register(ActionIds.ABILITY_DODGE, KeyInputHandler.DODGE_KEY);
         ActionKeybindRegistry.register(ActionIds.UI_PARTY_OPEN, KeyInputHandler.OPEN_PARTY_KEY);
         ActionKeybindRegistry.register(ActionIds.UI_MAILBOX_OPEN, KeyInputHandler.OPEN_MAILBOX_KEY);
+        ActionKeybindRegistry.register(ActionIds.UI_TESTER_TASKS_OPEN, KeyInputHandler.OPEN_TESTER_TASKS_KEY);
     }
 
     private static void applyWelcomePreference(boolean dontShowAgain) {
@@ -2566,7 +2585,9 @@ public final class DevModClientActions {
         }
         try {
             Config.IMPACT_HUD_POSITION.set(position);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[DevMod] Failed to set HUD position {}", position, e);
+        }
     }
 
     private static void adjustHudOffset(boolean isX, int delta) {
@@ -2578,13 +2599,17 @@ public final class DevModClientActions {
                 int current = Config.IMPACT_HUD_OFFSET_Y.get();
                 Config.IMPACT_HUD_OFFSET_Y.set(Math.max(0, Math.min(200, current + delta)));
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[DevMod] Failed to adjust HUD offset (isX={}, delta={})", isX, delta, e);
+        }
     }
 
     private static void setVfxIntensity(double value) {
         try {
             Config.IMPACT_VFX_INTENSITY.set(value);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[DevMod] Failed to set VFX intensity {}", value, e);
+        }
     }
 
     private static void resetImpactHudDefaults() {

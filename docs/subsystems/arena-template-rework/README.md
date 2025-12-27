@@ -1,89 +1,37 @@
 # Arena Template Rework
 
-> **Last Updated**: 2025-12-26
-> **Status**: ✅ CURRENT - Sistema Arena Template v2.23 documentato
-> **Design Decisions**: 72 DD completate (DD1-DD72)
-> **Main Reference**: `docs/areas/arena/README.md` ← Documento principale consolidato
+> Last updated: 2025-12-26
+> Status: CURRENT (index; verified against code)
 
-Documentazione dettagliata e track record per il rework del sistema Arena Template.
+Questa cartella e' un indice/archivio del rework Arena Template. La documentazione
+operativa corrente e' in `docs/areas/arena/README.md`.
 
-**Nota**: Per una panoramica consolidata del sistema Arena, vedere `docs/areas/arena/README.md`. Questa cartella contiene le specifiche dettagliate e i record di implementazione.
+## Documenti attivi (CURRENT)
 
-## Struttura
+- `docs/subsystems/arena-template-rework/PRODUCTION_MARKER_README.md` (autosmoke guard)
+- `docs/subsystems/arena-template-rework/MIGRATION_INVENTORY.md` (legacy detection)
+- `docs/subsystems/arena-template-rework/TODO_GAPS.md` (gap aperti)
+- `docs/runbook/arena-alerts.md` (runbook alert)
+- `docs/subsystems/arena-template-rework/arena_template.schema.json` (mirror schema L1)
+- `docs/subsystems/arena-template-rework/arena_policy.schema.json` (mirror schema L2)
 
-```
-docs/subsystems/arena-template-rework/
-├── README.md                      # Questo file
-├── ARENA_TEMPLATE_AUDIT.md        # Audit + mappa doc + gap residui
-├── TODO_ARENA_TEMPLATE.md         # Design Decisions complete (DD1-DD72)
-├── DOCUMENTATION_AUDIT_REPORT.md  # Report audit documentazione
-├── PRODUCTION_MARKER_README.md    # Guard autosmoke (DD32)
-├── arena_template.schema.json     # Schema L1 (ArenaTemplate) - local copy
-├── arena_policy.schema.json       # Schema L2 (ArenaPolicy) - local copy
-├── TODO_AGENT_01_COMPLETE.md      # Agent 01: Registry & Resolver
-├── TODO_AGENT_02_COMPLETE.md      # Agent 02: Builder Transazionale
-├── TODO_AGENT_03_COMPLETE.md      # Agent 03: Budget & Async
-├── TODO_AGENT_04_COMPLETE.md      # Agent 04: Metriche & API
-├── TODO_AGENT_05_COMPLETE.md      # Agent 05: Observability & Persistence
-├── TODO_AGENT_06_COMPLETE.md      # Agent 06: Identity & Recovery
-├── TODO_AGENT_07_COMPLETE.md      # Agent 07: Operations & Security
-├── TODO_AGENT_08_COMPLETE.md      # Agent 08: Cleanup & Migration
-├── TODO_AGENT_09_COMPLETE.md      # Agent 09: Rollback & Spawn
-├── TODO_AGENT_10_COMPLETE.md      # Agent 10: Gamification & Balance
-├── TODO_AGENT_11_COMPLETE.md      # Agent 11: Telemetry & Concurrency
-└── TODO_AGENT_12_COMPLETE.md      # Agent 12: Pool & Readiness
-```
+Nota: gli schema JSON in questa cartella sono copie identiche di
+`src/main/resources/schemas/arena_template.schema.json` e
+`src/main/resources/schemas/arena_policy.schema.json`. Mantenerle in sync.
 
-Archivio storico (task list e script): `docs/_deprecated/arena-template-rework/`.
+## Documenti storici (HISTORICAL)
 
-Schema canonicali: `src/main/resources/schemas/` (le copie in questa cartella sono snapshot).
+- `docs/subsystems/arena-template-rework/TODO_ARENA_TEMPLATE.md` (spec v2.23)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_*_COMPLETE.md` (snapshot implementativi)
+- `docs/subsystems/arena-template-rework/ARENA_TEMPLATE_AUDIT.md` (audit snapshot)
+- `docs/subsystems/arena-template-rework/DOCUMENTATION_AUDIT_REPORT.md` (audit snapshot)
 
-## Flusso consigliato (entrypoint)
+## Entry point canonici
 
-1. `docs/subsystems/arena-template-rework/ARENA_TEMPLATE_AUDIT.md` - stato corrente, gap residui, doc canonicali
-2. `docs/subsystems/arena-template-rework/TODO_ARENA_TEMPLATE.md` - spec completa v2.23
-3. `docs/subsystems/arena-template-rework/TODO_AGENT_*_COMPLETE.md` - implementazione per area
-4. `docs/runbook/arena-alerts.md` - runbook alert (DD68)
+- `docs/areas/arena/README.md`
+- `src/main/resources/schemas/arena_template.schema.json`
+- `src/main/resources/schemas/arena_policy.schema.json`
 
-**Note**: `TODO_GAPS.md` e `MIGRATION_INVENTORY.md` sono ancora presenti in questa cartella; lo stato corrente e' indicato nei rispettivi header.
+## Archivio
 
-### Tracking Completamento
-
-Ogni agent crea un file `TODO_AGENT_XX_COMPLETE.md` quando finisce:
-```bash
-ls docs/subsystems/arena-template-rework/TODO_AGENT_*_COMPLETE.md
-```
-
-## Archivio (deprecated)
-
-Materiale storico non piu' operativo:
-- `docs/_deprecated/arena-template-rework/TODO_AGENT_*.md` - task list originali
-- `docs/_deprecated/arena-template-rework/TODO_AGENT_COORDINATOR.md` - grafo dipendenze storico
-- `docs/_deprecated/arena-template-rework/run_agents*.sh` - script di esecuzione parallela
-- `docs/_deprecated/arena-template-rework/arena-alerts.md` - sostituito dal runbook
-- `docs/_deprecated/arena-template-rework/TODO_ARENA_TEMPLATE.md` - spec legacy (root)
-- `docs/_deprecated/arena-template-rework/ARENA_TEMPLATE_ROLLOUT_PLAN.md` - piano storico v2.2
-
-## Design Decisions Summary
-
-| Range | Categoria | Agent |
-|-------|-----------|-------|
-| DD 1-6 | Registry & Resolver | 01 |
-| DD 7-10 | Builder Transazionale | 02 |
-| DD 11-12 | Budget & Async | 03 |
-| DD 13-15 | Metriche & API | 04 |
-| DD 16-21 | Observability & Persistence | 05 |
-| DD 22-28 | Identity & Recovery | 06 |
-| DD 29-36 | Operations & Security | 07 |
-| DD 37-43 | Cleanup & Migration | 08 |
-| DD 44-50 | Rollback & Spawn | 09 |
-| DD 51-56 | Gamification & Balance | 10 |
-| DD 57-62 | Telemetry & Concurrency | 11 |
-| DD 63-72 | Pool & Operational Readiness | 12 |
-
-**Totale: 72 Design Decisions**
-
-## Versione
-
-- **TODO_ARENA_TEMPLATE.md**: v2.23
-- **Agent Files**: Sincronizzati con v2.23
+Materiale legacy in `docs/_deprecated/arena-template-rework/`.

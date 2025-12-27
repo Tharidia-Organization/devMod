@@ -2,6 +2,7 @@ package com.devmod.client.testing;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -82,7 +83,7 @@ public class BadgeTestScreen extends Screen {
             }
 
             PositionedButton button = createButton(
-                "badge-" + rarity.name().toLowerCase(),
+                "badge-" + rarity.name().toLowerCase(Locale.ROOT),
                 buttonText,
                 () -> BadgePopupOverlay.testBadge(finalRarity),
                 centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT,

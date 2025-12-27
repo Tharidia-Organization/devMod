@@ -29,11 +29,7 @@ public class FancyMenuCompat implements CompatModule {
     @Nullable
     private static Class<?> layoutHandlerClass;
     @Nullable
-    private static Class<?> customizationClass;
-    @Nullable
     private static Method isScreenCustomizedMethod;
-    @Nullable
-    private static Method getLayoutForScreenMethod;
 
     @Override
     public String modId() {
@@ -85,7 +81,10 @@ public class FancyMenuCompat implements CompatModule {
                     layoutHandlerClass = Class.forName(pattern[0] + "." + pattern[1]);
                     LOGGER.debug("[Compat:fancymenu] Found {} at {}", pattern[1], pattern[0]);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.debug("[Compat:fancymenu] Missing class {}.{}",
+                        pattern[0], pattern[1]);
+                }
             }
 
             // Try to find customization detection methods
@@ -98,7 +97,9 @@ public class FancyMenuCompat implements CompatModule {
                     try {
                         isScreenCustomizedMethod = layoutHandlerClass
                             .getMethod("hasCustomLayout", String.class);
-                    } catch (NoSuchMethodException ignored2) {}
+                    } catch (NoSuchMethodException e) {
+                        LOGGER.debug("[Compat:fancymenu] Missing customization methods on {}", layoutHandlerClass.getName());
+                    }
                 }
 
                 apiAvailable = true;

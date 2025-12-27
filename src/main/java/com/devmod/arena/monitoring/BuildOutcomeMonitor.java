@@ -5,6 +5,10 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.alert.AlertRouter;
 import com.devmod.arena.alert.AlertRouterRegistry;
@@ -13,6 +17,8 @@ import com.devmod.arena.config.ArenaTemplateConfig;
 
 public final class BuildOutcomeMonitor {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(BuildOutcomeMonitor.class);
+
     private static final Duration WINDOW = Duration.ofHours(24);
     private static final Duration ALERT_COOLDOWN = Duration.ofMinutes(10);
 
@@ -20,6 +26,8 @@ public final class BuildOutcomeMonitor {
     private static final Deque<Instant> builds = new ArrayDeque<>();
     private static final Deque<Instant> failures = new ArrayDeque<>();
     private static final Deque<Instant> rollbacks = new ArrayDeque<>();
+    private static final Deque<CompletableFuture<AlertRouter.AlertDeliveryResult>> alertDeliveries =
+        new ArrayDeque<>();
     private static Instant lastFailureAlertAt;
     private static Instant lastRollbackAlertAt;
 
@@ -111,7 +119,7 @@ public final class BuildOutcomeMonitor {
                 "templateId", templateId != null ? templateId : ""
             ))
             .build();
-        router.route(context);
+        routeAlert(router, context);
     }
 
     private static void maybeAlertRollbackRate(ArenaTemplateConfig.AlertThresholds t,
@@ -150,7 +158,29 @@ public final class BuildOutcomeMonitor {
                 "templateId", templateId != null ? templateId : ""
             ))
             .build();
-        router.route(context);
+        routeAlert(router, context);
+    }
+
+    private static void routeAlert(AlertRouter router, ErrorContext context) {
+        CompletableFuture<AlertRouter.AlertDeliveryResult> delivery = router.route(context);
+        delivery = delivery.whenComplete((result, error) -> {
+            if (error != null) {
+                LOGGER.warn("Failed to deliver build outcome alert for {}", context.errorType(), error);
+                return;
+            }
+            if (result != null && !result.isFullyDelivered()) {
+                LOGGER.warn("Build outcome alert partially delivered for {} ({} failures)",
+                    context.errorType(), result.failedCount());
+            }
+        });
+        trackDelivery(delivery);
+    }
+
+    private static void trackDelivery(CompletableFuture<AlertRouter.AlertDeliveryResult> delivery) {
+        synchronized (LOCK) {
+            alertDeliveries.removeIf(CompletableFuture::isDone);
+            alertDeliveries.addLast(delivery);
+        }
     }
 
     private static boolean cooldownElapsed(Instant lastAlert, Instant now) {

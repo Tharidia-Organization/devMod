@@ -1,6 +1,7 @@
 # Documentation Behavior Matrix
 
 > Last updated: 2025-12-26
+> Status: CURRENT
 > Scope: active docs only (see filters below).
 > Validation rule: every behavior must map to automated tests; manual checklists are not accepted.
 
@@ -16,12 +17,10 @@
 
 ## Coverage Summary
 Snapshot: 2025-12-26 (refresh counts after status normalization updates)
-- Active docs in scope: 146
-- Excluded by status: 11
+- Active docs in scope: 80
+- Excluded by status: 114
 - Behaviors mapped: 44 (END-01..END-08, ARENA-01..ARENA-09, INST-01..INST-05, TEL-01..TEL-04, CS-01..CS-03, RAD-01..RAD-04, TOOL-01..TOOL-04, CFG-01..CFG-04, TEST-01..TEST-03)
 - Behaviors with automated tests: 44 (44 direct, 0 proxy)
-
----
 
 ## Verification Evidence
 - 2025-12-26: `./gradlew test --tests 'com.devmod.endurance.*DirectTest'` — PASS
@@ -37,169 +36,202 @@ Snapshot: 2025-12-26 (refresh counts after status normalization updates)
 ---
 
 ## Active Docs (In Scope)
-- `docs/ARCHITECTURE.excalidraw.md` — status: NO_STATUS
-- `docs/ARCHITECTURE.md` — status: NO_STATUS
-- `docs/ASSETS_CREDITS.md` — status: NO_STATUS
-- `docs/AUDIT_REPORT.md` — status: NO_STATUS
-- `docs/DOCS_GUIDE.md` — status: NO_STATUS
-- `docs/DOCS_BEHAVIOR_MATRIX.md` — status: NO_STATUS
-- `docs/DOCS_INVENTORY.md` — status: NO_STATUS
-- `docs/DOCS_VERIFICATION_REPORT.md` — status: NO_STATUS
-- `docs/DOCUMENTATION_STATUS.md` — status: NO_STATUS
-- `docs/ENTRYPOINTS.md` — status: NO_STATUS
-- `docs/FEATURES.md` — status: : ✅ CURRENT - Aligned with codebase
-- `docs/GAME_DESIGN_ANALYSIS.md` — status: NO_STATUS
-- `docs/GLOSSARY.md` — status: NO_STATUS
-- `docs/MIGRATION.md` — status: NO_STATUS
-- `docs/MOC.md` — status: NO_STATUS
-- `docs/PROJECT_TOPOLOGY.md` — status: NO_STATUS
-- `docs/README.md` — status: NO_STATUS
-- `docs/TRACEABILITY_MATRIX.md` — status: NO_STATUS
-- `docs/UX_PLAYER_JOURNEY.md` — status: NO_STATUS
-- `docs/adr/ADR-001-endurance-quest-manager.md` — status: : Accepted
-- `docs/adr/ADR-002-devmod-client-actions.md` — status: : Accepted
-- `docs/adr/ADR-003-item-editor-screen.md` — status: : Accepted
-- `docs/areas/arena/README.md` — status: NEEDS_VERIFICATION
-- `docs/areas/client_server/README.md` — status: NEEDS_VERIFICATION
-- `docs/areas/config/README.md` — status: NEEDS_VERIFICATION
-- `docs/areas/endurance/README.md` — status: NEEDS_VERIFICATION
-- `docs/areas/instance/INSTANCE_DIMENSION_SYSTEM.md` — status: NEEDS_VERIFICATION
-- `docs/areas/instance/INSTANCE_SYSTEM_TEST_STRATEGY.md` — status: NEEDS_VERIFICATION
-- `docs/areas/instance/README.md` — status: NEEDS_VERIFICATION
-- `docs/areas/radial/README.md` — status: NEEDS_VERIFICATION
-- `docs/areas/telemetry/README.md` — status: NEEDS_VERIFICATION
-- `docs/areas/tools/README.md` — status: NEEDS_VERIFICATION
-- `docs/compat/MOD_INVENTORY.md` — status: NO_STATUS
-- `docs/compat/README.md` — status: NO_STATUS
-- `docs/compat/clothconfig.md` — status: NO_STATUS
-- `docs/compat/curios.md` — status: NO_STATUS
-- `docs/compat/irons_spellbooks.md` — status: NO_STATUS
-- `docs/compat/ranged_weapon_api.md` — status: NO_STATUS
-- `docs/compat/spark.md` — status: NO_STATUS
-- `docs/compat/spell_engine.md` — status: NO_STATUS
-- `docs/compat/spell_power.md` — status: NO_STATUS
-- `docs/cross_cutting/CLIENT_SERVER.md` — status: NEEDS_VERIFICATION
-- `docs/cross_cutting/CONCURRENCY.md` — status: NEEDS_VERIFICATION
-- `docs/cross_cutting/ERROR_HANDLING.md` — status: NEEDS_VERIFICATION
-- `docs/cross_cutting/TELEMETRY_CONVENTIONS.md` — status: NEEDS_VERIFICATION
-- `docs/design/GAME_DESIGN_EVOLUTION.md` — status: ✅ COMPLETE - All Systems Implemented
-- `docs/design/GAME_DESIGN_ROADMAP.md` — status: NO_STATUS
-- `docs/gamedesign/ENDURANCE_IMPROVEMENTS.md` — status: 12/12 ALL TASKS COMPLETED** (P0 + P1 + P2 + P3 ALL Complete!)
-- `docs/network/PACKET_REGISTRY.md` — status: NO_STATUS
-- `docs/network/SECURITY_HARDENING.md` — status: Active
-- `docs/project/BUG_LOG.md` — status: RESOLVED
-- `docs/project/IMPLEMENTATION_STATUS.md` — status: NO_STATUS
-- `docs/project/NEXT_STEPS.md` — status: NO_STATUS
-- `docs/project/TODO_WARNINGS.md` — status: NO_STATUS
-- `docs/project/pr-drafts/PR_DRAFT_Debug_MultiEdit.md` — status: NO_STATUS
-- `docs/remediation/VERIFY.md` — status: : ✅ CURRENT - server readiness runbook
-- `docs/runbook/arena-alerts.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/ARENA_TEMPLATE_AUDIT.md` — status: : ✅ CURRENT - Audit allineato con codebase
-- `docs/subsystems/arena-template-rework/DOCUMENTATION_AUDIT_REPORT.md` — status: : ✅ CURRENT - audit refreshed 2025-12-26
-- `docs/subsystems/arena-template-rework/MIGRATION_INVENTORY.md` — status: : ✅ CURRENT - inventory tracked
-- `docs/subsystems/arena-template-rework/PRODUCTION_MARKER_README.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/README.md` — status: : ✅ CURRENT - Sistema Arena Template v2.23 documentato
-- `docs/subsystems/arena-template-rework/TODO_AGENT_01_COMPLETE.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/TODO_AGENT_02_COMPLETE.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/TODO_AGENT_03_COMPLETE.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/TODO_AGENT_04_COMPLETE.md` — status: : ✅ CURRENT - API/metrics doc allineato
-- `docs/subsystems/arena-template-rework/TODO_AGENT_05_COMPLETE.md` — status: : ✅ CURRENT - DuckDbRepository implemented
-- `docs/subsystems/arena-template-rework/TODO_AGENT_06_COMPLETE.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/TODO_AGENT_07_COMPLETE.md` — status: : ✅ CURRENT - autosmoke thresholds allineati
-- `docs/subsystems/arena-template-rework/TODO_AGENT_08_COMPLETE.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/TODO_AGENT_09_COMPLETE.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/TODO_AGENT_10_COMPLETE.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/TODO_AGENT_11_COMPLETE.md` — status: NO_STATUS
-- `docs/subsystems/arena-template-rework/TODO_AGENT_12_COMPLETE.md` — status: : ✅ CURRENT - pool/rollout doc allineato
-- `docs/subsystems/arena-template-rework/TODO_ARENA_TEMPLATE.md` — status: : ✅ DEFINITIVE
-- `docs/subsystems/arena-template-rework/TODO_GAPS.md` — status: : ✅ CURRENT - gap tracking
-- `docs/subsystems/editor-design-system/00-overview.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/01-layout-specifications.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/02-shared-components.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/03-architecture.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/03-crafting-analysis.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/04-debug-system.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/05-dual-mode-system.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/06-persistence.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/07-ui-scaling.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/08-unified-architecture.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/09-radial-menu-integration.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/10-weapon-types.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/11-multiedit-system.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/12-grid-spacing.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/13-scroll-system.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/14-debug-overlay.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/15-weapon-properties.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/16-armor-properties.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/16-ranged-weapons.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/17-implementation-guide.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/18-testing-strategy.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/19-performance-considerations.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/20-crafting-info-panel.md` — status: ✅ **Implementato** in `ui/editor/systems/CraftingInfoPanel.java`. Estende `BaseOverlay` per comportamento modale consistente.
-- `docs/subsystems/editor-design-system/21-template-preset-architecture.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/23-architecture-comparison.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/24-component-library.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/25-panel-system.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/26-module-evolution-guide.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/27-general-module-hub.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/A0_VERIFICATION.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/COMPLETION_STRATEGY.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/DEBUG_PANEL_VERIFICATION.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/EDITOR_BUTTON_AUDIT_COMPLETE.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/EDITOR_IMPLEMENTATION_LOG.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/MISSING_MECHANICS_ANALYSIS.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/README.md` — status: : ✅ CURRENT - Sistema design implementato e documentato
-- `docs/subsystems/editor-design-system/RENDERING_AUDIT.md` — status: : ✅ CURRENT - Audit architettura rendering
-- `docs/subsystems/editor-design-system/SHADER_SYSTEM.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/TODO.md` — status: NO_STATUS
-- `docs/subsystems/editor-design-system/TODO_EDITOR_MISSING_FEATURES.md` — status: NO_STATUS
-- `docs/subsystems/impact-hud-audit/00-executive-summary.md` — status: NO_STATUS
-- `docs/subsystems/impact-hud-audit/01-architecture.md` — status: NO_STATUS
-- `docs/subsystems/impact-hud-audit/02-damage-calculation.md` — status: NO_STATUS
-- `docs/subsystems/impact-hud-audit/03-rendering-system.md` — status: NO_STATUS
-- `docs/subsystems/impact-hud-audit/04-issues-and-bugs.md` — status: : AGGIORNATO - Bug risolti marcati come FIXED
-- `docs/subsystems/impact-hud-audit/05-upgrade-roadmap.md` — status: ✅ DONE
-- `docs/subsystems/impact-hud-audit/06-code-snippets.md` — status: NO_STATUS
-- `docs/subsystems/impact-hud-audit/README.md` — status: : PARTIALLY OUTDATED - See notes below
-- `docs/subsystems/prismatic-shield-integration/00-overview.md` — status: NO_STATUS
-- `docs/subsystems/prismatic-shield-integration/01-shader-integration.md` — status: NO_STATUS
-- `docs/subsystems/prismatic-shield-integration/02-mesh-generation.md` — status: NO_STATUS
-- `docs/subsystems/prismatic-shield-integration/03-impact-effects.md` — status: NO_STATUS
-- `docs/subsystems/prismatic-shield-integration/04-deflection-system.md` — status: NO_STATUS
-- `docs/subsystems/prismatic-shield-integration/05-editor-integration.md` — status: NO_STATUS
-- `docs/subsystems/prismatic-shield-integration/06-network-sync.md` — status: NO_STATUS
-- `docs/subsystems/prismatic-shield-integration/07-complete-file-inventory.md` — status: NO_STATUS
-- `docs/telemetry/MISSING_TELEMETRY_HOOKS.md` — status: NO_STATUS
-- `docs/telemetry/TELEMETRY_DOCUMENTATION.md` — status: NO_STATUS
-- `docs/telemetry/dashboard/DASHBOARD_UPGRADE_PLAN.md` — status: NO_STATUS
-- `docs/telemetry/duckdb/DUCKDB_MIGRATION_AUDIT.md` — status: P0 FIXED, P1 COMPLETE, P2-A COMPLETE - P2-B Pending
-- `docs/testing/PROGRESSIVE_TEST_PLAN.md` — status: Initial Analysis Complete
-- `docs/testing/QA_WEAPON_PROPERTIES.md` — status: NO_STATUS
-- `docs/testing/TESTING.md` — status: : ✅ CURRENT - code-aligned
-- `docs/testing/TEST_HARNESS.md` — status: : ✅ CURRENT - code-aligned
-- `docs/testing/TEST_WORLD_SETUP.md` — status: NO_STATUS
-- `docs/tools/mcp/codex-mcp-server/README.md` — status: NO_STATUS
-- `docs/ui/UI_AUDIT_FINDINGS.md` — status: NO_STATUS
-- `docs/ui/UI_INVENTORY.md` — status: NO_STATUS
-- `docs/ui/UI_LOCALIZATION_TODO.md` — status: NO_STATUS
-- `docs/ui/UI_NAVIGATION_MAP.md` — status: NO_STATUS
-
----
+- `docs/ARCHITECTURE.excalidraw.md` — status: NEEDS_VERIFICATION
+- `docs/ARCHITECTURE.md` — status: CURRENT (verified against code)
+- `docs/ASSETS_CREDITS.md` — status: NEEDS_VERIFICATION
+- `docs/DOCS_BEHAVIOR_MATRIX.md` — status: CURRENT
+- `docs/DOCS_GUIDE.md` — status: CURRENT
+- `docs/DOCS_INVENTORY.md` — status: CURRENT
+- `docs/DOCS_VERIFICATION_REPORT.md` — status: CURRENT
+- `docs/DOCUMENTATION_STATUS.md` — status: CURRENT (navigation baseline)
+- `docs/ENTRYPOINTS.md` — status: CURRENT (verified against code)
+- `docs/FEATURES.md` — status: CURRENT (verified against code)
+- `docs/GAME_DESIGN_ANALYSIS.md` — status: NEEDS_VERIFICATION
+- `docs/GLOSSARY.md` — status: CURRENT (verified against code)
+- `docs/MOC.md` — status: CURRENT (navigation)
+- `docs/PROJECT_TOPOLOGY.md` — status: CURRENT (verified against code)
+- `docs/README.md` — status: CURRENT (navigation)
+- `docs/TRACEABILITY_MATRIX.md` — status: CURRENT (verified against code)
+- `docs/UX_PLAYER_JOURNEY.md` — status: NEEDS_VERIFICATION
+- `docs/adr/ADR-001-endurance-quest-manager.md` — status: CURRENT (verified against code)
+- `docs/adr/ADR-002-devmod-client-actions.md` — status: CURRENT (verified against code)
+- `docs/adr/ADR-003-item-editor-screen.md` — status: CURRENT (verified against code)
+- `docs/areas/arena/README.md` — status: CURRENT (verified against code)
+- `docs/areas/client_server/README.md` — status: CURRENT (verified against code)
+- `docs/areas/config/README.md` — status: CURRENT (verified against code)
+- `docs/areas/endurance/README.md` — status: CURRENT (verified against code)
+- `docs/areas/instance/INSTANCE_DIMENSION_SYSTEM.md` — status: CURRENT (verified against code)
+- `docs/areas/instance/INSTANCE_SYSTEM_TEST_STRATEGY.md` — status: CURRENT (verified against code)
+- `docs/areas/instance/README.md` — status: CURRENT (verified against code)
+- `docs/areas/mailbox/DEVELOPMENT_PLAN.md` — status: IN PROGRESS (roadmap operativo; aggiorna i checkbox dopo ogni merge)
+- `docs/areas/mailbox/README.md` — status: CURRENT (verified against code)
+- `docs/areas/radial/README.md` — status: CURRENT (verified against code)
+- `docs/areas/telemetry/README.md` — status: CURRENT (verified against code)
+- `docs/areas/tools/README.md` — status: CURRENT (verified against code)
+- `docs/audit/CLIENT_SERVER_REMEDIATION.md` — status: CURRENT (verified against code)
+- `docs/audit/MIXIN_SIDE_SAFETY.md` — status: CURRENT (verified against code)
+- `docs/audit/STATIC_STATE_AND_LEAKS.md` — status: CURRENT (verified against code)
+- `docs/compat/MOD_INVENTORY.md` — status: CURRENT (verified against code)
+- `docs/compat/README.md` — status: CURRENT (verified against code)
+- `docs/compat/clothconfig.md` — status: CURRENT (verified against code)
+- `docs/compat/curios.md` — status: CURRENT (verified against code)
+- `docs/compat/irons_spellbooks.md` — status: CURRENT (verified against code)
+- `docs/compat/ranged_weapon_api.md` — status: CURRENT (verified against code)
+- `docs/compat/spark.md` — status: CURRENT (verified against code)
+- `docs/compat/spell_engine.md` — status: CURRENT (verified against code)
+- `docs/compat/spell_power.md` — status: CURRENT (verified against code)
+- `docs/cross_cutting/CLIENT_SERVER.md` — status: CURRENT (verified against code)
+- `docs/cross_cutting/CONCURRENCY.md` — status: CURRENT (verified against code)
+- `docs/cross_cutting/ERROR_HANDLING.md` — status: CURRENT (verified against code)
+- `docs/cross_cutting/TELEMETRY_CONVENTIONS.md` — status: CURRENT (verified against code)
+- `docs/design/GAME_DESIGN_EVOLUTION.md` — status: NEEDS_VERIFICATION
+- `docs/gamedesign/ENDURANCE_IMPROVEMENTS.md` — status: **12/12 ALL TASKS COMPLETED** (P0 + P1 + P2 + P3 ALL Complete!)
+- `docs/network/PACKET_REGISTRY.md` — status: CURRENT (verified against code)
+- `docs/network/SECURITY_HARDENING.md` — status: CURRENT (verified against code)
+- `docs/project/pr-drafts/PR_DRAFT_Debug_MultiEdit.md` — status: NEEDS_VERIFICATION
+- `docs/quality/CHANGELOG.md` — status: CURRENT
+- `docs/remediation/DEDICATED_SERVER_READINESS.md` — status: NEEDS_VERIFICATION (P0 fixes applied)
+- `docs/remediation/VERIFY.md` — status: CURRENT (manual runbook; aligned to repo scripts/tests)
+- `docs/runbook/arena-alerts.md` — status: CURRENT (verified against code)
+- `docs/subsystems/arena-template-rework/MIGRATION_INVENTORY.md` — status: CURRENT (verified against code)
+- `docs/subsystems/arena-template-rework/PRODUCTION_MARKER_README.md` — status: CURRENT (verified against code)
+- `docs/subsystems/arena-template-rework/README.md` — status: CURRENT (index; verified against code)
+- `docs/subsystems/arena-template-rework/TODO_GAPS.md` — status: CURRENT (verified against code)
+- `docs/subsystems/impact-hud-audit/00-executive-summary.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/impact-hud-audit/01-architecture.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/impact-hud-audit/02-damage-calculation.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/impact-hud-audit/03-rendering-system.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/impact-hud-audit/04-issues-and-bugs.md` — status: NEEDS_VERIFICATION (audit snapshot; verify fixes)
+- `docs/subsystems/impact-hud-audit/05-upgrade-roadmap.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/impact-hud-audit/06-code-snippets.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/impact-hud-audit/README.md` — status: NEEDS_VERIFICATION (audit; partially outdated)
+- `docs/subsystems/prismatic-shield-integration/00-overview.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/prismatic-shield-integration/01-shader-integration.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/prismatic-shield-integration/02-mesh-generation.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/prismatic-shield-integration/03-impact-effects.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/prismatic-shield-integration/04-deflection-system.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/prismatic-shield-integration/05-editor-integration.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/prismatic-shield-integration/06-network-sync.md` — status: NEEDS_VERIFICATION
+- `docs/subsystems/prismatic-shield-integration/07-complete-file-inventory.md` — status: NEEDS_VERIFICATION
+- `docs/testing/TESTING.md` — status: CURRENT (testing guide)
+- `docs/testing/TEST_HARNESS.md` — status: CURRENT (testing harness)
+- `docs/tools/mcp/codex-mcp-server/README.md` — status: NEEDS_VERIFICATION
 
 ## Excluded by Status
-- `docs/subsystems/editor-design-system/22-recipe-editor-future.md` — status: PIANIFICATO - Feature complessa che richiede integrazione profonda con Minecraft
-- `docs/subsystems/editor-design-system/AUDIT.md` — status: : 📊 HISTORICAL - Audit snapshot pre-refactoring
-- `docs/areas/instance/INSTANCE_SYSTEM_MANUAL_TEST_CHECKLIST.md` — status: ARCHIVED - replaced by automated validations
-- `docs/areas/client_server/CLIENT_BOUNDARY_AUDIT.md` — status: ARCHIVED - superseded by boundary README
-- `docs/areas/radial/RADIAL_AUDIT.md` — status: HISTORICAL - legacy snapshot
-- `docs/areas/radial/RADIAL_BUTTON_CONTRACT.md` — status: HISTORICAL - legacy spec
-- `docs/areas/radial/RADIAL_CENSUS.md` — status: HISTORICAL - legacy inventory
-- `docs/areas/radial/RADIAL_NAV_MAP.md` — status: PLANNING - vision map
-- `docs/areas/radial/RADIAL_QA_SCENARIOS.md` — status: ARCHIVED - manual checklist
-- `docs/areas/tools/null-suppression-audit.md` — status: PLANNING - not active; excluded from validation
-- `docs/infrastructure/INFRASTRUCTURE_PLAN.md` — status: PLANNING - roadmap only
-
----
+- `docs/AUDIT_REPORT.md` — status: HISTORICAL
+- `docs/MIGRATION.md` — status: HISTORICAL
+- `docs/areas/client_server/CLIENT_BOUNDARY_AUDIT.md` — status: ARCHIVED (superseded by `docs/areas/client_server/README.md`)
+- `docs/areas/instance/INSTANCE_SYSTEM_MANUAL_TEST_CHECKLIST.md` — status: ARCHIVED (replaced by automated validations)
+- `docs/areas/radial/RADIAL_AUDIT.md` — status: HISTORICAL (legacy snapshot; superseded by `docs/areas/radial/README.md`)
+- `docs/areas/radial/RADIAL_BUTTON_CONTRACT.md` — status: HISTORICAL (spec snapshot; not enforced by current implementation)
+- `docs/areas/radial/RADIAL_CENSUS.md` — status: HISTORICAL (inventory snapshot; not guaranteed to match implementation)
+- `docs/areas/radial/RADIAL_NAV_MAP.md` — status: PLANNING (vision map; not guaranteed to match implementation)
+- `docs/areas/radial/RADIAL_QA_SCENARIOS.md` — status: ARCHIVED (manual checklist superseded by automated tests)
+- `docs/areas/tools/null-suppression-audit.md` — status: PLANNING (not active; excluded from validation)
+- `docs/arena-template-rework/ARENA_TEMPLATE_AUDIT.md` — status: ARCHIVE
+- `docs/arena-template-rework/DOCUMENTATION_AUDIT_REPORT.md` — status: ARCHIVE
+- `docs/arena-template-rework/PRODUCTION_MARKER_README.md` — status: ARCHIVE
+- `docs/arena-template-rework/README.md` — status: ARCHIVE
+- `docs/arena-template-rework/TODO_ARENA_TEMPLATE.md` — status: ARCHIVE
+- `docs/design/GAME_DESIGN_ROADMAP.md` — status: PLANNING (roadmap)
+- `docs/infrastructure/INFRASTRUCTURE_PLAN.md` — status: PLANNING (roadmap; non validato)
+- `docs/project/BUG_LOG.md` — status: HISTORICAL (resolved)
+- `docs/project/IMPLEMENTATION_STATUS.md` — status: PLANNING (progress snapshot)
+- `docs/project/NEXT_STEPS.md` — status: PLANNING
+- `docs/project/TODO_WARNINGS.md` — status: PLANNING
+- `docs/quality/BASELINE.md` — status: HISTORICAL (snapshot; build failed at capture time)
+- `docs/quality/CORE_REVIEW.md` — status: HISTORICAL (snapshot)
+- `docs/quality/FINAL_REPORT.md` — status: HISTORICAL (snapshot)
+- `docs/quality/INVENTORY.md` — status: HISTORICAL (snapshot; refresh before use)
+- `docs/quality/REFACTOR_PLAN.md` — status: PLANNING
+- `docs/remediation/CHANGELOG_REMEDIATION.md` — status: HISTORICAL (snapshot)
+- `docs/remediation/FINAL_REPORT.md` — status: HISTORICAL (snapshot)
+- `docs/reorg/ARCHITECTURE_DIAGRAM.md` — status: HISTORICAL
+- `docs/reorg/ARCHITECTURE_TARGET_TREE.md` — status: HISTORICAL
+- `docs/reorg/BASELINE_AUDIT.md` — status: HISTORICAL (reorg baseline snapshot)
+- `docs/reorg/GUARDRAILS.md` — status: HISTORICAL
+- `docs/reorg/RECOVERY_STATUS.md` — status: HISTORICAL (reorg recovery snapshot)
+- `docs/reorg/REFACTOR_AUDIT.md` — status: HISTORICAL
+- `docs/reorg/REFACTOR_EXECUTION_PLAN.md` — status: HISTORICAL
+- `docs/reorg/RENAME_MAP.md` — status: HISTORICAL
+- `docs/reorg/REORG_COMPLETE.md` — status: HISTORICAL
+- `docs/subsystems/arena-template-rework/ARENA_TEMPLATE_AUDIT.md` — status: HISTORICAL (audit snapshot)
+- `docs/subsystems/arena-template-rework/DOCUMENTATION_AUDIT_REPORT.md` — status: HISTORICAL (audit snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_01_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_02_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_03_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_04_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_05_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_06_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_07_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_08_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_09_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_10_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_11_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_AGENT_12_COMPLETE.md` — status: HISTORICAL (completion snapshot)
+- `docs/subsystems/arena-template-rework/TODO_ARENA_TEMPLATE.md` — status: HISTORICAL (design spec snapshot)
+- `docs/subsystems/editor-design-system/00-overview.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/01-layout-specifications.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/02-shared-components.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/03-architecture.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/03-crafting-analysis.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/04-debug-system.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/05-dual-mode-system.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/06-persistence.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/07-ui-scaling.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/08-unified-architecture.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/09-radial-menu-integration.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/10-weapon-types.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/11-multiedit-system.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/12-grid-spacing.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/13-scroll-system.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/14-debug-overlay.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/15-weapon-properties.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/16-armor-properties.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/16-ranged-weapons.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/17-implementation-guide.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/18-testing-strategy.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/19-performance-considerations.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/20-crafting-info-panel.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/21-template-preset-architecture.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/22-recipe-editor-future.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/23-architecture-comparison.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/24-component-library.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/25-panel-system.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/26-module-evolution-guide.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/27-general-module-hub.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/A0_VERIFICATION.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/AUDIT.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/COMPLETION_STRATEGY.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/DEBUG_PANEL_VERIFICATION.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/EDITOR_BUTTON_AUDIT_COMPLETE.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/EDITOR_IMPLEMENTATION_LOG.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/MISSING_MECHANICS_ANALYSIS.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/README.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/RENDERING_AUDIT.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/SHADER_SYSTEM.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/TODO.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/editor-design-system/TODO_EDITOR_MISSING_FEATURES.md` — status: HISTORICAL (design system snapshot)
+- `docs/subsystems/recipe-editor-spec/01-neoforge-api.md` — status: PLANNING
+- `docs/subsystems/recipe-editor-spec/02-json-formats.md` — status: PLANNING
+- `docs/subsystems/recipe-editor-spec/03-architecture.md` — status: PLANNING
+- `docs/subsystems/recipe-editor-spec/04-ui-components.md` — status: PLANNING
+- `docs/subsystems/recipe-editor-spec/05-network-persistence.md` — status: PLANNING
+- `docs/subsystems/recipe-editor-spec/06-milestones.md` — status: PLANNING
+- `docs/subsystems/recipe-editor-spec/07-file-reference.md` — status: PLANNING
+- `docs/subsystems/recipe-editor-spec/08-checklist.md` — status: PLANNING
+- `docs/subsystems/recipe-editor-spec/README.md` — status: PLANNING (feature non implementata)
+- `docs/telemetry/MISSING_TELEMETRY_HOOKS.md` — status: HISTORICAL (hooks implemented 2025-12-11)
+- `docs/telemetry/TELEMETRY_DOCUMENTATION.md` — status: HISTORICAL (snapshot; not guaranteed to match current code)
+- `docs/telemetry/dashboard/DASHBOARD_UPGRADE_PLAN.md` — status: PLANNING
+- `docs/telemetry/duckdb/DUCKDB_MIGRATION_AUDIT.md` — status: HISTORICAL (audit snapshot)
+- `docs/testing/PROGRESSIVE_TEST_PLAN.md` — status: PLANNING
+- `docs/testing/QA_WEAPON_PROPERTIES.md` — status: ARCHIVED (manual checklist; replace with automated tests)
+- `docs/testing/TEST_WORLD_SETUP.md` — status: ARCHIVED (manual setup guide; prefer automated tests)
+- `docs/ui/UI_AUDIT_FINDINGS.md` — status: HISTORICAL (audit snapshot)
+- `docs/ui/UI_INVENTORY.md` — status: HISTORICAL (inventory snapshot)
+- `docs/ui/UI_LOCALIZATION_TODO.md` — status: PLANNING
+- `docs/ui/UI_NAVIGATION_MAP.md` — status: HISTORICAL (navigation snapshot)
 
 ## Manual Checklists to Replace
 - None

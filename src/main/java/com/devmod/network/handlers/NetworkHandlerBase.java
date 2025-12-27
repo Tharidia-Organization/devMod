@@ -1,6 +1,7 @@
 package com.devmod.network.handlers;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -55,6 +56,16 @@ public abstract class NetworkHandlerBase {
         if (stack == null || stack.isEmpty()) return "<empty>";
         var key = BuiltInRegistries.ITEM.getKey(nn(stack.getItem()));
         return key == null ? stack.getHoverName().getString() : key.toString();
+    }
+
+    /**
+     * Attach a failure logger to async operations to avoid silent failures.
+     */
+    protected static void observeFuture(CompletableFuture<?> future, String action) {
+        future = future.exceptionally(throwable -> {
+            LOGGER.warn("Async operation failed: {}", action, throwable);
+            return null;
+        });
     }
 
     /**

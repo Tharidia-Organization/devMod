@@ -266,6 +266,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     // Keyboard state for F3+D combo
     private boolean f3Held = false;
+    private boolean previewItemErrorLogged = false;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -528,13 +529,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private void updateLeftColumnStats() {
         leftColumn.clearStats();
         // If preview is active, prefer the module's preview item for display to avoid mutating real item
-        ItemStack displayItem = item;
-        if (isPreviewMode() && activeModule != null) {
-            try {
-                var preview = activeModule.getPreviewItem();
-                if (preview != null) displayItem = preview;
-            } catch (Exception ignored) {}
-        }
+        ItemStack displayItem = resolvePreviewItem(item);
         leftColumn.item(displayItem);
         if (activeModule instanceof WeaponModule weaponModule) {
             var stats = weaponModule.getStats();
@@ -559,6 +554,23 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         if (lastSaveTimestamp > 0) {
             leftColumn.lastSaved(lastSaveTimestamp);
         }
+    }
+
+    private ItemStack resolvePreviewItem(ItemStack fallback) {
+        if (isPreviewMode() && activeModule != null) {
+            try {
+                ItemStack preview = activeModule.getPreviewItem();
+                if (preview != null) {
+                    return preview;
+                }
+            } catch (Exception e) {
+                if (!previewItemErrorLogged) {
+                    DevMod.LOGGER.debug("[ItemEditor] Failed to resolve preview item", e);
+                    previewItemErrorLogged = true;
+                }
+            }
+        }
+        return fallback;
     }
 
     private void handleSlotSwitch(SlotSelector.SlotInfo slot) {
@@ -1151,13 +1163,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         // Delegate to DebugPanel for richer info
         if (debugPanel != null) {
             // Prefer preview item when preview mode is active so debug reflects the preview state
-            ItemStack displayItem = item;
-            if (isPreviewMode() && activeModule != null) {
-                try {
-                    var preview = activeModule.getPreviewItem();
-                    if (preview != null) displayItem = preview;
-                } catch (Exception ignored) {}
-            }
+            ItemStack displayItem = resolvePreviewItem(item);
             debugPanel.setStatSources(buildStatSources(displayItem));
             debugPanel.render(graphics, font, devArea.x(), devArea.y(), devArea.width(), devArea.height(), mouseX, mouseY, displayItem);
             return;
@@ -1477,18 +1483,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 showStatus("Debug log cleared", UIConstants.Accent.BLUE());
                 return true;
             }
-        }
-
-        // Toggle multi-edit panel (M)
-        if (keyCode == GLFW.GLFW_KEY_M) {
-            showMultiEditPanel = !showMultiEditPanel;
-            if (showMultiEditPanel) {
-                refreshMultiEditSelection();
-                if (multiEditPanel != null) {
-                    multiEditPanel.setExpanded(true);
-                }
-            }
-            return true;
         }
 
         // F1 for help

@@ -1,16 +1,15 @@
 package com.devmod.mailbox.client.screen;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -33,8 +32,6 @@ import com.devmod.mailbox.network.payload.NewsSyncPayload.NewsArticleData;
  */
 @OnlyIn(Dist.CLIENT)
 public class NewsScreen extends Screen {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NewsScreen.class);
-
     // Layout constants
     private static final int PANEL_WIDTH = 650;
     private static final int PANEL_HEIGHT = 420;
@@ -42,7 +39,8 @@ public class NewsScreen extends Screen {
     private static final int DETAIL_WIDTH = PANEL_WIDTH - LIST_WIDTH - 30;
 
     // Date formatter
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MMM dd, yyyy");
+    private static final DateTimeFormatter DATE_FORMAT =
+        DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.ROOT).withZone(ZoneId.systemDefault());
 
     // Category colors
     private static final int[] CATEGORY_COLORS = {
@@ -169,7 +167,7 @@ public class NewsScreen extends Screen {
         renderMainPanel(graphics);
 
         // Header
-        renderHeader(graphics, mouseX, mouseY);
+        renderHeader(graphics);
 
         // Category filters
         renderCategoryFilters(graphics, mouseX, mouseY);
@@ -178,7 +176,7 @@ public class NewsScreen extends Screen {
         hoveredArticleIndex = renderArticleList(graphics, mouseX, mouseY);
 
         // Article detail
-        renderArticleDetail(graphics, mouseX, mouseY);
+        renderArticleDetail(graphics);
 
         // Close button
         renderButtons(graphics, mouseX, mouseY);
@@ -202,7 +200,7 @@ public class NewsScreen extends Screen {
         graphics.fill(dividerX, panelY + 70, dividerX + 1, panelY + PANEL_HEIGHT - 45, 0x40FFFFFF);
     }
 
-    private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderHeader(GuiGraphics graphics) {
         int headerY = panelY + 10;
 
         // Title with icon
@@ -309,7 +307,7 @@ public class NewsScreen extends Screen {
             graphics.drawString(getFont(), title, listX + 22, itemY + 6, textColor, false);
 
             // Category + date
-            String meta = article.getCategoryName() + " • " + DATE_FORMAT.format(new Date(article.publishedAtMillis()));
+            String meta = article.getCategoryName() + " • " + DATE_FORMAT.format(Instant.ofEpochMilli(article.publishedAtMillis()));
             graphics.drawString(getFont(), truncate(meta, 26), listX + 22, itemY + 20, UIConstants.Text.SECONDARY(), false);
         }
 
@@ -327,7 +325,7 @@ public class NewsScreen extends Screen {
         return hovered;
     }
 
-    private void renderArticleDetail(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderArticleDetail(GuiGraphics graphics) {
         int detailX = panelX + LIST_WIDTH + 20;
         int detailY = panelY + 65;
         int detailHeight = PANEL_HEIGHT - 110;
@@ -360,7 +358,7 @@ public class NewsScreen extends Screen {
 
         // Author and date
         String author = selected.authorName() != null ? selected.authorName() : "DevMod Team";
-        String dateStr = DATE_FORMAT.format(new Date(selected.publishedAtMillis()));
+        String dateStr = DATE_FORMAT.format(Instant.ofEpochMilli(selected.publishedAtMillis()));
         String meta = "By " + author + " • " + dateStr;
         graphics.drawString(getFont(), meta, detailX, y, UIConstants.Text.SECONDARY(), false);
         y += 20;
@@ -495,7 +493,16 @@ public class NewsScreen extends Screen {
 
     private List<String> wrapText(String text, int maxWidth) {
         List<String> lines = new java.util.ArrayList<>();
-        String[] words = text.split(" ");
+        List<String> words = new java.util.ArrayList<>();
+        int start = 0;
+        for (int i = 0; i <= text.length(); i++) {
+            if (i == text.length() || text.charAt(i) == ' ') {
+                if (i > start) {
+                    words.add(text.substring(start, i));
+                }
+                start = i + 1;
+            }
+        }
         StringBuilder currentLine = new StringBuilder();
 
         for (String word : words) {

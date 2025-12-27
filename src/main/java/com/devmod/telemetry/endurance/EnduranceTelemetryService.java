@@ -100,7 +100,7 @@ public class EnduranceTelemetryService {
         LOGGER.debug("[Endurance] Wave {} started with {} mobs", waveNumber, mobCount);
 
         // Update session stats
-        getOrCreateStats(questId).waveStarted(waveNumber);
+        getOrCreateStats(questId).waveStarted();
     }
 
     /**
@@ -138,7 +138,7 @@ public class EnduranceTelemetryService {
 
         LOGGER.debug("[Endurance] Wave {} complete: {} kills in {}ms", waveNumber, mobsKilled, durationMs);
 
-        getOrCreateStats(questId).waveCompleted(waveNumber, durationMs, noDamage);
+        getOrCreateStats(questId).waveCompleted(noDamage);
     }
 
     /**
@@ -1263,11 +1263,11 @@ public class EnduranceTelemetryService {
             this.playerId = playerId;
         }
 
-        void waveStarted(int waveNumber) {
+        void waveStarted() {
             // Track wave start
         }
 
-        void waveCompleted(int waveNumber, long durationMs, boolean noDamage) {
+        void waveCompleted(boolean noDamage) {
             wavesCompleted++;
             if (noDamage) noDamageWaves++;
         }
@@ -1279,6 +1279,8 @@ public class EnduranceTelemetryService {
         void currencyEarned(RewardSystem.Currency currency, int amount) {
             switch (currency) {
                 case TOKENS -> tokensEarned += amount;
+                case COINS, GEMS -> {
+                }
                 case PRESTIGE -> prestigeEarned += amount;
                 case BLOOD_GEMS -> bloodGemsEarned += amount;
             }

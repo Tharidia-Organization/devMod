@@ -1,6 +1,7 @@
 package com.devmod.events;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 
@@ -31,6 +32,7 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.FuelConfigManager;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.mailbox.MailboxPermissions;
 import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.stats.ArmorStats;
 import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
@@ -169,6 +171,18 @@ public class CommonModEvents {
             LOGGER.error("[DevMod] Failed to initialize WeeklyChallengeManager", e);
         }
 
+        // Initialize MailboxConfig persistence
+        try {
+            var serverConfigDir = event.getServer()
+                .getWorldPath(java.util.Objects.requireNonNull(LevelResource.ROOT))
+                .resolve("serverconfig")
+                .resolve("devmod");
+            com.devmod.mailbox.MailboxConfig.INSTANCE.initialize(serverConfigDir);
+            LOGGER.info("[DevMod] MailboxConfig initialized successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize MailboxConfig", e);
+        }
+
         // Initialize LeaderboardSystem for global rankings
         try {
             var serverDataDir = event.getServer()
@@ -185,18 +199,27 @@ public class CommonModEvents {
 
             // Set up callback to notify clients of new messages
             com.devmod.mailbox.MailboxManager.INSTANCE.setNewMessageCallback((recipientUuid, message) -> {
-                ServerPlayer recipient = event.getServer().getPlayerList().getPlayer(recipientUuid);
+                ServerPlayer recipient = event.getServer().getPlayerList().getPlayer(java.util.Objects.requireNonNull(recipientUuid));
                 if (recipient != null) {
                     // Get unread count and send notification
-                    com.devmod.mailbox.MailboxManager.INSTANCE.getUnreadCount(recipientUuid)
+                    observeFuture(com.devmod.mailbox.MailboxManager.INSTANCE.getUnreadCount(recipientUuid)
                         .thenAccept(unreadCount ->
-                            com.devmod.mailbox.network.MailboxNetworkHandler.sendNotification(recipient, message, unreadCount));
+                            com.devmod.mailbox.network.MailboxNetworkHandler.sendNotification(recipient, message, unreadCount)),
+                        "mailbox unread count");
                 }
             });
 
             LOGGER.info("[DevMod] MailboxManager initialized successfully");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize MailboxManager", e);
+        }
+
+        // Initialize Unified Notification Center
+        try {
+            com.devmod.notification.NotificationService.INSTANCE.initialize();
+            LOGGER.info("[DevMod] NotificationService initialized successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize NotificationService", e);
         }
     }
 
@@ -220,6 +243,22 @@ public class CommonModEvents {
             LOGGER.info("[DevMod] LeaderboardSystem saved successfully");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Error saving LeaderboardSystem", e);
+        }
+
+        // Save MailboxConfig before shutdown
+        try {
+            com.devmod.mailbox.MailboxConfig.INSTANCE.save();
+            LOGGER.info("[DevMod] MailboxConfig saved successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Error saving MailboxConfig", e);
+        }
+
+        // Shutdown NotificationService
+        try {
+            com.devmod.notification.NotificationService.INSTANCE.shutdown();
+            LOGGER.info("[DevMod] NotificationService shutdown complete");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Error during NotificationService shutdown", e);
         }
 
         // Shutdown MailboxManager
@@ -256,9 +295,30 @@ public class CommonModEvents {
             // Sync mailbox to client
             try {
                 com.devmod.mailbox.network.MailboxNetworkHandler.sendMailboxSync(player);
+                com.devmod.mailbox.network.MailboxNetworkHandler.sendAccessSync(player);
                 LOGGER.debug("[DevMod] Synced mailbox to {}", player.getName().getString());
             } catch (Exception e) {
                 LOGGER.warn("[DevMod] Failed to sync mailbox to {}: {}",
+                    player.getName().getString(), e.getMessage());
+            }
+
+            // Sync news to client
+            try {
+                com.devmod.mailbox.network.MailboxNetworkHandler.sendNewsSync(player);
+                LOGGER.debug("[DevMod] Synced news to {}", player.getName().getString());
+            } catch (Exception e) {
+                LOGGER.warn("[DevMod] Failed to sync news to {}: {}",
+                    player.getName().getString(), e.getMessage());
+            }
+
+            // Sync tester tasks to client (if applicable)
+            try {
+                if (MailboxPermissions.INSTANCE.hasPermission(player, MailboxPermissions.Permission.TESTER)) {
+                    com.devmod.mailbox.network.MailboxNetworkHandler.sendTaskSync(player);
+                    LOGGER.debug("[DevMod] Synced tasks to {}", player.getName().getString());
+                }
+            } catch (Exception e) {
+                LOGGER.warn("[DevMod] Failed to sync tasks to {}: {}",
                     player.getName().getString(), e.getMessage());
             }
         }
@@ -280,14 +340,20 @@ public class CommonModEvents {
             try {
                 var comp = stack.get(Objects.requireNonNull(com.devmod.components.WeaponComponents.WEAPON_STATS.get()));
                 hasDevmodData = comp != null && !comp.isEmpty();
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                logComponentAccessFailure("Weapon stats component read", e);
+            }
             try {
                 var custom = stack.get(Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA));
                 hasDevmodData = hasDevmodData || (custom != null && custom.contains("WeaponModStats"));
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                logComponentAccessFailure("Weapon custom data read", e);
+            }
             try {
                 hasDevmodData = hasDevmodData || (com.devmod.config.WeaponConfigManager.loadFromAttributeModifiers(stack) != null);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                logComponentAccessFailure("Weapon attribute modifier load", e);
+            }
 
             if (hasDevmodData) {
                 try {
@@ -308,7 +374,9 @@ public class CommonModEvents {
                                 LOGGER.warn("[DevMod] Non-DevMod modifier {} present on {} for attribute {}", id, stack.getItem(), entry.attribute());
                             }
                         });
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        logComponentAccessFailure("Weapon attribute modifiers scan", e);
+                    }
                 } catch (Exception e) {
                     LOGGER.warn("[DevMod] Failed to sanitize weapon stats on equip: {}", e.getMessage());
                 }
@@ -323,11 +391,15 @@ public class CommonModEvents {
             try {
                 var comp = armorComponent != null ? stack.get(armorComponent) : null;
                 hasDevmodArmor = comp != null && !comp.isEmpty();
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                logComponentAccessFailure("Armor stats component read", e);
+            }
             try {
                 var custom = stack.get(Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA));
                 hasDevmodArmor = hasDevmodArmor || (custom != null && custom.contains("ArmorModStats"));
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                logComponentAccessFailure("Armor custom data read", e);
+            }
 
             ArmorStats stats = null;
             if (hasDevmodArmor) {
@@ -360,7 +432,9 @@ public class CommonModEvents {
                                 LOGGER.warn("[DevMod] External modifier {} present on {} for armor attribute {}", id, stack.getItem(), attrVal);
                             }
                         });
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        logComponentAccessFailure("Armor attribute modifiers scan", e);
+                    }
                 } catch (Exception e) {
                     LOGGER.warn("[DevMod] Failed to sanitize armor stats on equip: {}", e.getMessage());
                 }
@@ -379,11 +453,15 @@ public class CommonModEvents {
         try {
             var comp = stack.get(Objects.requireNonNull(com.devmod.components.WeaponComponents.WEAPON_STATS.get()));
             hasDevmodData = comp != null && !comp.isEmpty();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            logComponentAccessFailure("BreakSpeed weapon component read", e);
+        }
         try {
             var custom = stack.get(Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA));
             hasDevmodData = hasDevmodData || (custom != null && custom.contains("WeaponModStats"));
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            logComponentAccessFailure("BreakSpeed custom data read", e);
+        }
         if (!hasDevmodData) return;
 
         try {
@@ -407,11 +485,15 @@ public class CommonModEvents {
         try {
             var comp = stack.get(Objects.requireNonNull(com.devmod.components.WeaponComponents.WEAPON_STATS.get()));
             hasDevmodData = comp != null && !comp.isEmpty();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            logComponentAccessFailure("BlockDrop weapon component read", e);
+        }
         try {
             var custom = stack.get(Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA));
             hasDevmodData = hasDevmodData || (custom != null && custom.contains("WeaponModStats"));
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            logComponentAccessFailure("BlockDrop custom data read", e);
+        }
         if (!hasDevmodData) return;
         try {
             com.devmod.stats.WeaponStats stats = com.devmod.config.WeaponConfigManager.getStats(stack);
@@ -423,5 +505,19 @@ public class CommonModEvents {
         } catch (Exception e) {
             LOGGER.debug("[DevMod] Drop enforcement failed: {}", e.getMessage());
         }
+    }
+
+    private static void observeFuture(CompletableFuture<?> future, String context) {
+        CompletableFuture<?> observed = future.exceptionally(throwable -> {
+            LOGGER.warn("[DevMod] Async operation failed during {}: {}", context, throwable.getMessage());
+            return null;
+        });
+        if (observed.isCancelled()) {
+            LOGGER.debug("[DevMod] Async operation cancelled during {}", context);
+        }
+    }
+
+    private static void logComponentAccessFailure(String context, Exception e) {
+        LOGGER.debug("[DevMod] {} failed", context, e);
     }
 }

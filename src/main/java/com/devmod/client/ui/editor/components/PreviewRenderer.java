@@ -276,7 +276,6 @@ public class PreviewRenderer {
 
         for (int i = 0; i < slots.length; i++) {
             EquipmentSlot slot = slots[i];
-            slot = Objects.requireNonNull(slot, "slot cannot be null");
             boolean leftSide = i < SLOT_GROUP_SIZE;
             int slotX = leftSide ? leftX : rightX;
             int slotY = startY + (i % SLOT_GROUP_SIZE) * (slotSize + gap);

@@ -24,7 +24,7 @@ public record MailboxSyncPayload(
 
     // Security limits
     private static final int MAX_MESSAGES = 200;
-    private static final int MAX_SUBJECT_LENGTH = 128;
+    private static final int MAX_SUBJECT_LENGTH = 256;
     private static final int MAX_BODY_LENGTH = 2000;
     private static final int MAX_NAME_LENGTH = 64;
     private static final int MAX_ATTACHMENT_LENGTH = 4096;

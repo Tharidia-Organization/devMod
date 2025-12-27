@@ -1,7 +1,7 @@
 # Impact HUD - Problemi e Bug Identificati
 
-> **Last Updated**: 2024-12-23
-> **Status**: AGGIORNATO - Bug risolti marcati come FIXED
+> Last updated: 2024-12-23
+> Status: NEEDS_VERIFICATION (audit snapshot; verify fixes)
 
 ## Classificazione Severità
 

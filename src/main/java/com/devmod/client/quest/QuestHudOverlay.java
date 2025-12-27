@@ -116,7 +116,7 @@ public class QuestHudOverlay {
         int screenHeight = graphics.guiHeight();
 
         // Calculate panel dimensions
-        int panelHeight = calculatePanelHeight(activeQuest, font);
+        int panelHeight = calculatePanelHeight(activeQuest);
         int panelX = screenWidth - PANEL_WIDTH - MARGIN_RIGHT;
         int panelY = screenHeight - panelHeight - MARGIN_BOTTOM - 40; // 40px above hotbar
 
@@ -263,7 +263,7 @@ public class QuestHudOverlay {
     /**
      * Calculates dynamic panel height.
      */
-    private static int calculatePanelHeight(QuestData quest, Font font) {
+    private static int calculatePanelHeight(QuestData quest) {
         if (minimized) {
             return PANEL_PADDING * 2 + LINE_HEIGHT;
         }
@@ -306,7 +306,8 @@ public class QuestHudOverlay {
         int ellipsisWidth = font.width(ellipsis);
 
         StringBuilder sb = new StringBuilder();
-        for (char c : text.toCharArray()) {
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
             if (font.width(sb.toString() + c) + ellipsisWidth > maxWidth) {
                 break;
             }

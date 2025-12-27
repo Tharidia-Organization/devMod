@@ -2,6 +2,7 @@ package com.devmod.client.ui.testing.panel;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -92,6 +93,6 @@ public record CompositePanel(
     }
 
     public static CompositePanel of(String title, UIPanel... panels) {
-        return of("composite-" + title.toLowerCase().replace(" ", "-"), title, panels);
+        return of("composite-" + title.toLowerCase(Locale.ROOT).replace(" ", "-"), title, panels);
     }
 }

@@ -221,7 +221,7 @@ public final class InfoButton {
         if (button != 0) return false;
 
         // Use bounds set during render() - they contain the actual screen position
-        if (bounds == null || bounds == ResponsiveLayout.Rect.EMPTY) {
+        if (bounds == null || ResponsiveLayout.Rect.EMPTY.equals(bounds)) {
             return false;
         }
 

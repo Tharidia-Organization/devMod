@@ -1,5 +1,8 @@
 # 2.9 Dual-Mode System (PREVIEW / APPLY)
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 > **Architettura confermata:** Gli editor supportano due modalità operative.
 
 ## Concetto

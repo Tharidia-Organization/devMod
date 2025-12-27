@@ -147,14 +147,18 @@ public record PartySyncPayload(
         ResourceLocation loc = ResourceLocation.tryParse(localSelectedMobId);
         if (loc == null) return "Zombie";
         String path = loc.getPath();
-        // Convert snake_case to Title Case
-        String[] parts = path.split("_");
         StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (!part.isEmpty()) {
-                if (sb.length() > 0) sb.append(" ");
-                sb.append(Character.toUpperCase(part.charAt(0)));
-                if (part.length() > 1) sb.append(part.substring(1));
+        int start = 0;
+        for (int i = 0; i <= path.length(); i++) {
+            if (i == path.length() || path.charAt(i) == '_') {
+                if (i > start) {
+                    if (sb.length() > 0) sb.append(" ");
+                    sb.append(Character.toUpperCase(path.charAt(start)));
+                    if (i - start > 1) {
+                        sb.append(path, start + 1, i);
+                    }
+                }
+                start = i + 1;
             }
         }
         return sb.toString();

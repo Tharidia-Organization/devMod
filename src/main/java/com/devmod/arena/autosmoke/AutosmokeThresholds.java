@@ -2,6 +2,7 @@ package com.devmod.arena.autosmoke;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public record AutosmokeThresholds(
@@ -110,7 +111,7 @@ public record AutosmokeThresholds(
 
         // Infer from template naming conventions
         if (templateId != null) {
-            String lower = templateId.toLowerCase();
+            String lower = templateId.toLowerCase(Locale.ROOT);
 
             // Large arena templates
             if (lower.contains("large") || lower.contains("mega") ||

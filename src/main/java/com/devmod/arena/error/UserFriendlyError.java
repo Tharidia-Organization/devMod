@@ -1,5 +1,6 @@
 package com.devmod.arena.error;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -224,8 +225,8 @@ public record UserFriendlyError(
      * DD46: Map technical exceptions to user-friendly types.
      */
     private static ErrorType detectErrorType(Throwable cause) {
-        String className = cause.getClass().getSimpleName().toLowerCase();
-        String message = cause.getMessage() != null ? cause.getMessage().toLowerCase() : "";
+        String className = cause.getClass().getSimpleName().toLowerCase(Locale.ROOT);
+        String message = cause.getMessage() != null ? cause.getMessage().toLowerCase(Locale.ROOT) : "";
 
         if (className.contains("timeout") || message.contains("timeout")) {
             return ErrorType.ARENA_TIMEOUT;

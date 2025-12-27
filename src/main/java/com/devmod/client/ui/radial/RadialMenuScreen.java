@@ -2,7 +2,6 @@ package com.devmod.client.ui.radial;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -216,7 +215,7 @@ public final class RadialMenuScreen extends Screen {
 
         // Add to favorites
         if (favorites.size() < RadialMenuConstants.MAX_FAVORITES) {
-            favorites.add(new FavoriteItem(key, item, category));
+            favorites.add(new FavoriteItem(key, item));
             playSound(RadialMenuConstants.SOUND_PITCH_FAVORITE_ADD);
         }
     }
@@ -571,11 +570,11 @@ public final class RadialMenuScreen extends Screen {
 
     private List<RadialCategory> getVisibleCategoriesForMacro(@Nullable MacroCategory macro) {
         if (macro == null) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
-        List<RadialCategory> categories = macroCategoryMap.getOrDefault(macro, Collections.emptyList());
-        if (categories.isEmpty()) {
-            return categories;
+        List<RadialCategory> categories = macroCategoryMap.get(macro);
+        if (categories == null || categories.isEmpty()) {
+            return new ArrayList<>();
         }
         List<RadialCategory> visible = new ArrayList<>();
         for (RadialCategory category : categories) {
@@ -887,7 +886,7 @@ public final class RadialMenuScreen extends Screen {
         primaryMouseDown = false;
 
         if (wasHeld) {
-            return handleLongPress(mouseX, mouseY);
+            return handleLongPress();
         }
 
         // Alcuni trackpad su macOS inviano solo mouseReleased: ripeti la logica del click primario.
@@ -898,7 +897,7 @@ public final class RadialMenuScreen extends Screen {
         // Check favorites first
         if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
             FavoriteItem fav = favorites.get(selectedFavoriteIndex);
-            executeItem(fav.item, fav.category);
+            executeItem(fav.item);
             return true;
         }
 
@@ -923,7 +922,7 @@ public final class RadialMenuScreen extends Screen {
         return true;
     }
 
-    private boolean handleLongPress(double ignoredMouseX, double ignoredMouseY) {
+    private boolean handleLongPress() {
         if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
             FavoriteItem fav = favorites.get(selectedFavoriteIndex);
             openItemDetails(fav.item);
@@ -991,7 +990,7 @@ public final class RadialMenuScreen extends Screen {
             }
             if (keyCode == config.input.keySearchConfirm && selectedSearchResult >= 0) {
                 RadialSearchHandler.SearchResult result = searchResults.get(selectedSearchResult);
-                executeItem(result.getItem(), result.getCategory());
+                executeItem(result.getItem());
                 searchMode = false;
                 return true;
             }
@@ -1084,7 +1083,7 @@ public final class RadialMenuScreen extends Screen {
                     selectedItemIndex = itemNum;
                     openItemEditor();
                 } else {
-                    executeItem(visibleItems.get(itemNum), cat);
+                    executeItem(visibleItems.get(itemNum));
                 }
                 return true;
             }
@@ -1152,7 +1151,7 @@ public final class RadialMenuScreen extends Screen {
         // Check favorites
         if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
             FavoriteItem fav = favorites.get(selectedFavoriteIndex);
-            executeItem(fav.item, fav.category);
+            executeItem(fav.item);
             return;
         }
 
@@ -1173,12 +1172,12 @@ public final class RadialMenuScreen extends Screen {
                     }
                 }
 
-                executeItem(item, cat);
+                executeItem(item);
             }
         }
     }
 
-    private void executeItem(RadialMenuItem item, RadialCategory ignoredCategory) {
+    private void executeItem(RadialMenuItem item) {
         // Track time to first action
         if (!firstActionExecuted) {
             firstActionExecuted = true;
@@ -1332,12 +1331,10 @@ public final class RadialMenuScreen extends Screen {
     private static class FavoriteItem {
         final String key;
         final RadialMenuItem item;
-        final RadialCategory category;
 
-        FavoriteItem(String key, RadialMenuItem item, RadialCategory category) {
+        FavoriteItem(String key, RadialMenuItem item) {
             this.key = key;
             this.item = item;
-            this.category = category;
         }
     }
 }

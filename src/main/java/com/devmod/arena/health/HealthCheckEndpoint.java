@@ -11,6 +11,8 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.errorprone.annotations.InlineMe;
+
 import com.devmod.arena.fallback.CircuitBreaker;
 import com.devmod.arena.pool.PrebuildPoolManager;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
@@ -39,6 +41,9 @@ public class HealthCheckEndpoint {
      * @deprecated Use constructor without repository supplier
      */
     @Deprecated
+    @InlineMe(
+        replacement = "this(poolManagerSupplier, circuitBreakerSupplier)"
+    )
     public HealthCheckEndpoint(
             Supplier<PrebuildPoolManager> poolManagerSupplier,
             Object repositorySupplier,

@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -204,8 +203,8 @@ public class ExecutionSystem {
         public boolean interrupted = false;
 
         public ExecutionState(@Nonnull UUID playerId, @Nonnull UUID targetId, int durationTicks) {
-            this.playerId = Objects.requireNonNull(playerId, "playerId");
-            this.targetId = Objects.requireNonNull(targetId, "targetId");
+            this.playerId = requireNonNull(playerId, "playerId");
+            this.targetId = requireNonNull(targetId, "targetId");
             this.startTime = System.currentTimeMillis();
             this.durationTicks = durationTicks;
             this.ticksRemaining = durationTicks;
@@ -277,10 +276,10 @@ public class ExecutionSystem {
     public Optional<Mob> getExecutableTarget(ServerPlayer player) {
         if (!canExecute(player)) return Optional.empty();
 
-        AABB bounds = Objects.requireNonNull(player.getBoundingBox(), "player.getBoundingBox()");
+        AABB bounds = requireNonNull(player.getBoundingBox(), "player.getBoundingBox()");
         AABB searchBounds = bounds.inflate(getExecutionRange());
 
-        return player.level().getEntitiesOfClass(Mob.class, searchBounds)
+        return player.level().getEntitiesOfClass(Mob.class, requireNonNull(searchBounds, "searchBounds"))
             .stream()
             .filter(this::canBeExecuted)
             .filter(mob -> isQuestMob(mob, player))
@@ -327,14 +326,14 @@ public class ExecutionSystem {
             return ExecutionResult.fail("Target missing identity!");
         }
         ExecutionState state = new ExecutionState(
-            playerId,
-            Objects.requireNonNull(targetId, "targetId"),
+            requireNonNull(playerId, "playerId"),
+            targetId,
             durationTicks
         );
         activeExecutions.put(playerId, state);
 
         // Apply invincibility
-        Holder<MobEffect> resistance = Objects.requireNonNull(
+        Holder<MobEffect> resistance = requireNonNull(
             MobEffects.DAMAGE_RESISTANCE,
             "MobEffects.DAMAGE_RESISTANCE"
         );
@@ -345,7 +344,7 @@ public class ExecutionSystem {
 
         // Visual/audio feedback
         if (player.level() instanceof ServerLevel level) {
-            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
+            BlockPos playerPos = requireNonNull(player.blockPosition(), "player.blockPosition()");
             playSound(level, playerPos, SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 1.0f, 1.5f);
 
             // Initial particles
@@ -464,7 +463,7 @@ public class ExecutionSystem {
 
         // Visual/audio feedback
         if (player.level() instanceof ServerLevel level) {
-            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
+            BlockPos playerPos = requireNonNull(player.blockPosition(), "player.blockPosition()");
             playSound(level, playerPos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1.0f, 1.5f);
 
             // Explosion of particles
@@ -472,9 +471,9 @@ public class ExecutionSystem {
         }
 
         // Send feedback
-        Component executedMessage = Component.literal(
+        Component executedMessage = requireNonNull(Component.literal(
             "§6§lEXECUTED! §r§a+" + styleGain + " Style §r§c+" + String.format("%.1f", hpRegen) + " HP"
-        );
+        ), "executedMessage");
         player.displayClientMessage(executedMessage, true);
 
         LOGGER.info("[Execution] {} completed execution: +{} style, +{} HP",
@@ -494,14 +493,14 @@ public class ExecutionSystem {
         if (state == null) return null;
 
         // Remove invincibility
-        Holder<MobEffect> resistance = Objects.requireNonNull(
+        Holder<MobEffect> resistance = requireNonNull(
             MobEffects.DAMAGE_RESISTANCE,
             "MobEffects.DAMAGE_RESISTANCE"
         );
         player.removeEffect(resistance);
 
         // Apply vulnerability debuff
-        Holder<MobEffect> weakness = Objects.requireNonNull(MobEffects.WEAKNESS, "MobEffects.WEAKNESS");
+        Holder<MobEffect> weakness = requireNonNull(MobEffects.WEAKNESS, "MobEffects.WEAKNESS");
         player.addEffect(new MobEffectInstance(weakness, 60, 0, false, true));
 
         // Mark player as vulnerable for damage calculation
@@ -517,13 +516,15 @@ public class ExecutionSystem {
             }
 
             // Negative feedback
-            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
+            BlockPos playerPos = requireNonNull(player.blockPosition(), "player.blockPosition()");
             playSound(level, playerPos, SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS, 1.0f, 0.5f);
         }
 
         // Send feedback
-        Component interruptedMessage =
-            Component.literal("§c§lINTERRUPTED! §r§7Vulnerability: 2x damage for 3 sec");
+        Component interruptedMessage = requireNonNull(
+            Component.literal("§c§lINTERRUPTED! §r§7Vulnerability: 2x damage for 3 sec"),
+            "interruptedMessage"
+        );
         player.displayClientMessage(interruptedMessage, true);
 
         LOGGER.info("[Execution] {} execution was interrupted!", player.getName().getString());
@@ -620,7 +621,7 @@ public class ExecutionSystem {
         if (sound == null) {
             return;
         }
-        level.playSound(null, pos, sound, source, volume, pitch);
+        level.playSound(null, pos, sound, requireNonNull(source, "source"), volume, pitch);
     }
 
     private static void spawnParticles(@Nonnull ServerLevel level, @Nonnull LivingEntity entity,
@@ -635,6 +636,14 @@ public class ExecutionSystem {
             double z = entity.getZ() + (level.random.nextDouble() - 0.5) * horizontalSpread;
             level.sendParticles(particle, x, y, z, 1, 0, 0, 0, speed);
         }
+    }
+
+    @Nonnull
+    private static <T> T requireNonNull(@Nullable T value, String label) {
+        if (value == null) {
+            throw new IllegalStateException(label + " is null");
+        }
+        return value;
     }
 
     private ExecutionSystem() {}

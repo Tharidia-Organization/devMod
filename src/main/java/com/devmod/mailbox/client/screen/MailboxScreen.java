@@ -1,8 +1,10 @@
 package com.devmod.mailbox.client.screen;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -28,6 +30,7 @@ import com.devmod.mailbox.MessageType;
 import com.devmod.mailbox.attachment.MailAttachment;
 import com.devmod.mailbox.client.ClientMailboxCache;
 import com.devmod.mailbox.network.payload.MailboxActionPayload;
+import com.devmod.mailbox.network.payload.MailboxStatusPayload;
 import com.devmod.mailbox.network.payload.MailboxSyncPayload.MailboxMessageData;
 
 /**
@@ -44,17 +47,23 @@ public class MailboxScreen extends Screen {
     private static final int DETAIL_WIDTH = PANEL_WIDTH - LIST_WIDTH - 30;
 
     // Date formatter
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MMM dd, HH:mm");
+    private static final DateTimeFormatter DATE_FORMAT =
+        DateTimeFormatter.ofPattern("MMM dd, HH:mm", Locale.ROOT).withZone(ZoneId.systemDefault());
 
     // UI state
     private int panelX, panelY;
     private int scrollOffset = 0;
     private static final int VISIBLE_MESSAGES = 10;
     private static final int MESSAGE_HEIGHT = 32;
+    private static final long STATUS_TTL_MS = 5000;
 
     @Nullable
     private UUID selectedMessageId = null;
     private int hoveredMessageIndex = -1;
+    @Nullable
+    private String statusMessage = null;
+    private int statusColor = UIConstants.Text.MUTED();
+    private long statusMessageAt = 0;
 
     // Buttons
     @Nullable private EditorButton closeButton;
@@ -62,9 +71,8 @@ public class MailboxScreen extends Screen {
     @Nullable private EditorButton claimButton;
     @Nullable private EditorButton composeButton;
     @Nullable private EditorButton refreshButton;
-
-    // Animation
-    private float animationTick = 0f;
+    @Nullable private EditorButton claimAllButton;
+    @Nullable private EditorButton deleteReadButton;
 
     public MailboxScreen() {
         super(Objects.requireNonNull(Component.translatable("devmod.mailbox.title")));
@@ -98,8 +106,6 @@ public class MailboxScreen extends Screen {
     }
 
     private void initButtons() {
-        int buttonY = panelY + PANEL_HEIGHT - 35;
-
         // Close button
         closeButton = EditorButton.builder("close", "Close")
             .style(EditorButton.Style.GHOST)
@@ -134,12 +140,18 @@ public class MailboxScreen extends Screen {
             .size(EditorButton.Size.SMALL)
             .onClick(this::onRefreshClicked)
             .build();
-    }
 
-    @Override
-    public void tick() {
-        super.tick();
-        animationTick += 0.1f;
+        claimAllButton = EditorButton.builder("claim_all", "Claim All")
+            .style(EditorButton.Style.SUCCESS)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::onClaimAllClicked)
+            .build();
+
+        deleteReadButton = EditorButton.builder("delete_read", "Delete Read")
+            .style(EditorButton.Style.DANGER)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::onDeleteReadClicked)
+            .build();
     }
 
     @Override
@@ -156,10 +168,11 @@ public class MailboxScreen extends Screen {
         hoveredMessageIndex = renderMessageList(graphics, mouseX, mouseY);
 
         // Message detail
-        renderMessageDetail(graphics, mouseX, mouseY);
+        renderMessageDetail(graphics);
 
         // Buttons
         renderButtons(graphics, mouseX, mouseY);
+        renderStatus(graphics);
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -292,7 +305,7 @@ public class MailboxScreen extends Screen {
         return hovered;
     }
 
-    private void renderMessageDetail(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderMessageDetail(GuiGraphics graphics) {
         int detailX = panelX + LIST_WIDTH + 20;
         int detailY = panelY + 45;
         int detailHeight = PANEL_HEIGHT - 90;
@@ -325,7 +338,7 @@ public class MailboxScreen extends Screen {
         y += 14;
 
         // Date
-        String dateStr = DATE_FORMAT.format(new Date(selected.createdAtMillis()));
+        String dateStr = DATE_FORMAT.format(Instant.ofEpochMilli(selected.createdAtMillis()));
         graphics.drawString(getFont(), "Date: ", detailX, y, UIConstants.Text.MUTED(), false);
         graphics.drawString(getFont(), dateStr, detailX + getFont().width("Date: "), y, UIConstants.Text.SECONDARY(), false);
         y += 20;
@@ -377,6 +390,16 @@ public class MailboxScreen extends Screen {
             closeButton.render(graphics, panelX + 15, buttonY, 70, 22, mouseX, mouseY);
         }
 
+        if (claimAllButton != null) {
+            claimAllButton.enabled(ClientMailboxCache.hasUnclaimedAttachments());
+            claimAllButton.render(graphics, panelX + 95, buttonY, 70, 22, mouseX, mouseY);
+        }
+
+        if (deleteReadButton != null) {
+            deleteReadButton.enabled(hasDeletableReadMessages());
+            deleteReadButton.render(graphics, panelX + 175, buttonY, 70, 22, mouseX, mouseY);
+        }
+
         // Center - Compose
         if (composeButton != null) {
             composeButton.render(graphics, panelX + PANEL_WIDTH / 2 - 40, buttonY, 80, 22, mouseX, mouseY);
@@ -399,10 +422,41 @@ public class MailboxScreen extends Screen {
         }
     }
 
+    private void renderStatus(GuiGraphics graphics) {
+        if (statusMessage == null || isStatusExpired()) {
+            statusMessage = null;
+            statusMessageAt = 0;
+            MailboxStatusPayload statusPayload = ClientMailboxCache.pollStatus();
+            if (statusPayload != null) {
+                setStatusMessage(statusPayload.message(), mapStatusColor(statusPayload.status()));
+            }
+        }
+        if (statusMessage == null) return;
+        long age = System.currentTimeMillis() - statusMessageAt;
+        if (age > STATUS_TTL_MS) {
+            statusMessage = null;
+            return;
+        }
+        int y = panelY + PANEL_HEIGHT - 55;
+        graphics.drawString(getFont(), statusMessage, panelX + 15, y, statusColor, false);
+    }
+
     // ========== EVENT HANDLERS ==========
 
     private void onDeleteClicked() {
         if (selectedMessageId == null) return;
+
+        MailboxMessageData selected = ClientMailboxCache.getMessage(selectedMessageId);
+        if (selected == null) {
+            setStatusMessage("Select a message", UIConstants.Status.WARNING());
+            UIConstants.Sound.warning();
+            return;
+        }
+        if (selected.canClaimAttachment()) {
+            setStatusMessage("Claim attachment before deleting", UIConstants.Status.WARNING());
+            UIConstants.Sound.warning();
+            return;
+        }
 
         LOGGER.info("[MailboxScreen] Deleting message: {}", selectedMessageId);
         PacketDistributor.sendToServer(MailboxActionPayload.delete(selectedMessageId));
@@ -419,7 +473,16 @@ public class MailboxScreen extends Screen {
         if (selectedMessageId == null) return;
 
         MailboxMessageData selected = ClientMailboxCache.getMessage(selectedMessageId);
-        if (selected == null || !selected.canClaimAttachment()) return;
+        if (selected == null) {
+            setStatusMessage("Select a message", UIConstants.Status.WARNING());
+            UIConstants.Sound.warning();
+            return;
+        }
+        if (!selected.canClaimAttachment()) {
+            setStatusMessage("No claimable attachment", UIConstants.Status.WARNING());
+            UIConstants.Sound.warning();
+            return;
+        }
 
         LOGGER.info("[MailboxScreen] Claiming attachment for message: {}", selectedMessageId);
         PacketDistributor.sendToServer(MailboxActionPayload.claim(selectedMessageId));
@@ -428,15 +491,65 @@ public class MailboxScreen extends Screen {
         UIConstants.Sound.success();
     }
 
+    private void onClaimAllClicked() {
+        List<MailboxMessageData> claimable = ClientMailboxCache.getUnclaimedAttachmentMessages();
+        if (claimable.isEmpty()) {
+            setStatusMessage("No attachments to claim", UIConstants.Status.WARNING());
+            UIConstants.Sound.warning();
+            return;
+        }
+
+        LOGGER.info("[MailboxScreen] Claiming all attachments: {}", claimable.size());
+        for (MailboxMessageData msg : claimable) {
+            PacketDistributor.sendToServer(MailboxActionPayload.claim(msg.id()));
+            ClientMailboxCache.markAttachmentClaimed(msg.id());
+        }
+
+        setStatusMessage("Claimed " + claimable.size() + " attachment(s)", UIConstants.Status.SUCCESS());
+        ClientMailboxCache.suppressClaimStatus(STATUS_TTL_MS);
+        UIConstants.Sound.success();
+    }
+
+    private void onDeleteReadClicked() {
+        List<MailboxMessageData> deletable = getDeletableReadMessages();
+        if (deletable.isEmpty()) {
+            setStatusMessage("No read messages to delete", UIConstants.Status.WARNING());
+            UIConstants.Sound.warning();
+            return;
+        }
+
+        boolean removedSelection = false;
+        LOGGER.info("[MailboxScreen] Deleting read messages: {}", deletable.size());
+        for (MailboxMessageData msg : deletable) {
+            PacketDistributor.sendToServer(MailboxActionPayload.delete(msg.id()));
+            ClientMailboxCache.removeMessage(msg.id());
+            if (msg.id().equals(selectedMessageId)) {
+                removedSelection = true;
+            }
+        }
+
+        List<MailboxMessageData> messages = ClientMailboxCache.getMessages();
+        if (removedSelection) {
+            selectedMessageId = messages.isEmpty() ? null : messages.get(0).id();
+        }
+        int maxScroll = Math.max(0, messages.size() - VISIBLE_MESSAGES);
+        scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
+
+        setStatusMessage("Deleted " + deletable.size() + " message(s)", UIConstants.Status.SUCCESS());
+        ClientMailboxCache.suppressDeleteStatus(STATUS_TTL_MS);
+        UIConstants.Sound.delete();
+    }
+
     private void onComposeClicked() {
-        // TODO: Open compose screen
-        LOGGER.info("[MailboxScreen] Compose clicked - not yet implemented");
-        UIConstants.Sound.warning();
+        Minecraft mc = Minecraft.getInstance();
+        mc.setScreen(new MailboxComposeScreen(this));
+        UIConstants.Sound.click();
     }
 
     private void onRefreshClicked() {
         LOGGER.info("[MailboxScreen] Refresh clicked");
-        // TODO: Request sync from server
+        PacketDistributor.sendToServer(MailboxActionPayload.refresh());
+        setStatusMessage("Refreshing mailbox...", UIConstants.Status.PENDING());
         UIConstants.Sound.click();
     }
 
@@ -451,6 +564,11 @@ public class MailboxScreen extends Screen {
                 MailboxMessageData clicked = messages.get(hoveredMessageIndex);
                 selectedMessageId = clicked.id();
 
+                if (clicked.body() == null ||
+                    (clicked.hasAttachment() && clicked.attachmentData() == null)) {
+                    PacketDistributor.sendToServer(MailboxActionPayload.refresh());
+                }
+
                 // Mark as read
                 if (!clicked.isRead()) {
                     PacketDistributor.sendToServer(MailboxActionPayload.read(clicked.id()));
@@ -464,6 +582,8 @@ public class MailboxScreen extends Screen {
 
         // Button clicks
         if (closeButton != null && closeButton.mouseClicked(mouseX, mouseY, button)) return true;
+        if (claimAllButton != null && claimAllButton.mouseClicked(mouseX, mouseY, button)) return true;
+        if (deleteReadButton != null && deleteReadButton.mouseClicked(mouseX, mouseY, button)) return true;
         if (deleteButton != null && deleteButton.mouseClicked(mouseX, mouseY, button)) return true;
         if (claimButton != null && claimButton.mouseClicked(mouseX, mouseY, button)) return true;
         if (composeButton != null && composeButton.mouseClicked(mouseX, mouseY, button)) return true;
@@ -475,6 +595,8 @@ public class MailboxScreen extends Screen {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (closeButton != null) closeButton.mouseReleased(mouseX, mouseY, button);
+        if (claimAllButton != null) claimAllButton.mouseReleased(mouseX, mouseY, button);
+        if (deleteReadButton != null) deleteReadButton.mouseReleased(mouseX, mouseY, button);
         if (deleteButton != null) deleteButton.mouseReleased(mouseX, mouseY, button);
         if (claimButton != null) claimButton.mouseReleased(mouseX, mouseY, button);
         if (composeButton != null) composeButton.mouseReleased(mouseX, mouseY, button);
@@ -534,7 +656,16 @@ public class MailboxScreen extends Screen {
 
     private List<String> wrapText(String text, int maxWidth) {
         List<String> lines = new java.util.ArrayList<>();
-        String[] words = text.split(" ");
+        List<String> words = new java.util.ArrayList<>();
+        int start = 0;
+        for (int i = 0; i <= text.length(); i++) {
+            if (i == text.length() || text.charAt(i) == ' ') {
+                if (i > start) {
+                    words.add(text.substring(start, i));
+                }
+                start = i + 1;
+            }
+        }
         StringBuilder currentLine = new StringBuilder();
 
         for (String word : words) {
@@ -553,6 +684,37 @@ public class MailboxScreen extends Screen {
         }
 
         return lines;
+    }
+
+    private void setStatusMessage(String message, int color) {
+        statusMessage = message;
+        statusColor = color;
+        statusMessageAt = System.currentTimeMillis();
+    }
+
+    private boolean isStatusExpired() {
+        if (statusMessageAt <= 0) return true;
+        return System.currentTimeMillis() - statusMessageAt > STATUS_TTL_MS;
+    }
+
+    private int mapStatusColor(MailboxStatusPayload.Status status) {
+        return switch (status) {
+            case SUCCESS -> UIConstants.Status.SUCCESS();
+            case ERROR -> UIConstants.Status.ERROR();
+            case WARNING -> UIConstants.Status.WARNING();
+            case INFO -> UIConstants.Status.INFO();
+        };
+    }
+
+    private boolean hasDeletableReadMessages() {
+        return ClientMailboxCache.getMessages().stream()
+            .anyMatch(msg -> msg.isRead() && !msg.canClaimAttachment());
+    }
+
+    private List<MailboxMessageData> getDeletableReadMessages() {
+        return ClientMailboxCache.getMessages().stream()
+            .filter(msg -> msg.isRead() && !msg.canClaimAttachment())
+            .toList();
     }
 
     /**

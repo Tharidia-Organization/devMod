@@ -165,7 +165,8 @@ public final class Typography {
 
             // Use StringBuilderCache to avoid allocations in render loop
             StringBuilder truncated = acquire();
-            for (char c : text.toCharArray()) {
+            for (int i = 0; i < text.length(); i++) {
+                char c = text.charAt(i);
                 if (font.width(truncated.toString() + c) > availableWidth) {
                     break;
                 }

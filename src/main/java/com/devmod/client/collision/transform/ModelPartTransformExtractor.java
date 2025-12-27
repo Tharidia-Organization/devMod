@@ -1,6 +1,7 @@
 package com.devmod.client.collision.transform;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -235,7 +236,7 @@ public final class ModelPartTransformExtractor {
      */
     private static boolean isHumanoid(LivingEntity entity) {
         // Check common humanoid entity types
-        String className = entity.getClass().getSimpleName().toLowerCase();
+        String className = entity.getClass().getSimpleName().toLowerCase(Locale.ROOT);
         return className.contains("player") ||
                className.contains("zombie") ||
                className.contains("skeleton") ||

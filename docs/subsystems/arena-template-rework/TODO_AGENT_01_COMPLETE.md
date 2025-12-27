@@ -1,5 +1,8 @@
 # Agent 01 - Registry & Resolver - COMPLETE
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (completion snapshot)
+
 ## Completion Status: DONE
 
 **Agent ID**: 01

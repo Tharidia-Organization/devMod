@@ -1,8 +1,8 @@
 # Verification Runbook
 
-> **Last updated**: 2025-12-26
-> **Status**: CURRENT (manual runbook; aligned to repo scripts/tests)
-> **Purpose**: Dedicated server readiness checks
+> Last updated: 2025-12-26
+> Status: CURRENT (manual runbook; aligned to repo scripts/tests)
+> Purpose: Dedicated server readiness checks
 
 ## Build + Smoke
 

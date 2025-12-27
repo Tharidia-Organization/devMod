@@ -114,7 +114,7 @@ public class AnalyticsService {
 
         activeExports.put(jobId, job);
 
-        exportExecutor.submit(() -> executeExportJob(job));
+        exportExecutor.execute(() -> executeExportJob(job));
 
         LOGGER.info("Submitted export job: {}", jobId);
         return jobId;

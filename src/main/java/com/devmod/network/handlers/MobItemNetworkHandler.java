@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.google.common.base.Splitter;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -63,13 +65,19 @@ import com.devmod.util.I18n;
 
 public final class MobItemNetworkHandler extends NetworkHandlerBase {
 
+    private static final Splitter COLON_SPLITTER = Splitter.on(':');
+
     private MobItemNetworkHandler() {}
+
+    private static void enqueueWork(IPayloadContext context, Runnable work) {
+        observeFuture(context.enqueueWork(work), "mob item update");
+    }
 
     // =================================================================================
     // MOB MODIFICATION LOGIC
     // =================================================================================
     public static void handleMobData(UpdateMobStatsPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "mob_stats", true);
@@ -170,7 +178,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     // WEAPON MODIFICATION LOGIC
     // =================================================================================
     public static void handleWeaponData(UpdateWeaponPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "weapon_stats", true);
@@ -220,7 +228,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     }
 
     public static void handleWeaponStatsData(com.devmod.network.WeaponStatsPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
 
             PacketValidator security = security();
@@ -274,7 +282,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     }
 
     public static void handleWeaponStatsDataV2(com.devmod.network.WeaponStatsPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
 
             PacketValidator security = security();
@@ -339,7 +347,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     // RANGED WEAPON LOGIC
     // =================================================================================
     public static void handleRangedWeaponData(RangedWeaponStatsPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "ranged_weapon", true);
@@ -391,7 +399,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     // ARMOR MODIFICATION LOGIC
     // =================================================================================
     public static void handleArmorData(UpdateArmorPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "armor_stats", true);
@@ -470,7 +478,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     }
 
     public static void handleArmorStatsDataV2(com.devmod.network.ArmorStatsPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
 
             PacketValidator security = security();
@@ -570,7 +578,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     // USABLE ITEMS MODIFICATION LOGIC
     // =================================================================================
     public static void handleUsableStatsData(com.devmod.network.UsableStatsPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
 
             PacketValidator security = security();
@@ -630,7 +638,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     // FOOD ITEMS MODIFICATION LOGIC
     // =================================================================================
     public static void handleFoodStatsData(com.devmod.network.FoodStatsPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
 
             PacketValidator security = security();
@@ -695,7 +703,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     // FUEL ITEMS MODIFICATION LOGIC
     // =================================================================================
     public static void handleFuelStatsData(com.devmod.network.FuelStatsPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
 
             PacketValidator security = security();
@@ -755,7 +763,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     // EQUIPMENT LOGIC
     // =================================================================================
     public static void handleEquipData(EquipMobPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "equip_mob", true);
@@ -788,7 +796,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
     // ITEM MODIFICATION LOGIC
     // =================================================================================
     public static void handleItemModification(ModifyItemPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 PacketValidator security = security();
                 ValidationResult validation = security.validatePacket(player, "modify_item", true);
@@ -975,8 +983,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
         List<String> failedEnchants = new ArrayList<>();
 
         for (String change : changes) {
-            String[] parts = change.split(":");
-            if (parts.length < 2) {
+            List<String> parts = COLON_SPLITTER.splitToList(change);
+            if (parts.size() < 2) {
                 failCount++;
                 failedEnchants.add(change + " (invalid format)");
                 continue;
@@ -984,19 +992,20 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
 
             String enchantId;
             int level;
-            if (parts.length >= 3) {
-                enchantId = parts[0] + ":" + parts[1];
+            if (parts.size() >= 3) {
+                enchantId = parts.get(0) + ":" + parts.get(1);
                 try {
-                    level = Integer.parseInt(parts[2]);
+                    level = Integer.parseInt(parts.get(2));
                 } catch (NumberFormatException e) {
                     failCount++;
                     failedEnchants.add(enchantId + " (invalid level)");
                     continue;
                 }
             } else {
-                enchantId = parts[0].contains(":") ? parts[0] : "minecraft:" + parts[0];
+                String rawId = parts.get(0);
+                enchantId = rawId.contains(":") ? rawId : "minecraft:" + rawId;
                 try {
-                    level = Integer.parseInt(parts[1]);
+                    level = Integer.parseInt(parts.get(1));
                 } catch (NumberFormatException e) {
                     failCount++;
                     failedEnchants.add(enchantId + " (invalid level)");
@@ -1046,8 +1055,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
         List<String> failedAttrs = new ArrayList<>();
 
         for (String change : changes) {
-            String[] parts = change.split(":");
-            if (parts.length < 3) {
+            List<String> parts = COLON_SPLITTER.splitToList(change);
+            if (parts.size() < 3) {
                 failCount++;
                 failedAttrs.add(change + " (invalid format)");
                 continue;
@@ -1058,14 +1067,15 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
             int operation;
 
             try {
-                if (parts.length >= 4) {
-                    attrId = parts[0] + ":" + parts[1];
-                    value = Double.parseDouble(parts[2]);
-                    operation = Integer.parseInt(parts[3]);
+                if (parts.size() >= 4) {
+                    attrId = parts.get(0) + ":" + parts.get(1);
+                    value = Double.parseDouble(parts.get(2));
+                    operation = Integer.parseInt(parts.get(3));
                 } else {
-                    attrId = parts[0].contains(":") ? parts[0] : "minecraft:" + parts[0];
-                    value = Double.parseDouble(parts[1]);
-                    operation = Integer.parseInt(parts[2]);
+                    String rawId = parts.get(0);
+                    attrId = rawId.contains(":") ? rawId : "minecraft:" + rawId;
+                    value = Double.parseDouble(parts.get(1));
+                    operation = Integer.parseInt(parts.get(2));
                 }
             } catch (NumberFormatException e) {
                 failCount++;

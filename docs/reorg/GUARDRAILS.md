@@ -1,5 +1,8 @@
 # Naming Convention Guardrails
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL
+
 ## Overview
 
 This document describes the automated checks that prevent naming convention regressions.

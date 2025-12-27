@@ -1,5 +1,8 @@
 # Agent 03 - Budget & Async - COMPLETE
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (completion snapshot)
+
 ## Summary
 Implementato il sistema di budget e build async con backpressure (DD11-12).
 

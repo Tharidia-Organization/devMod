@@ -1,5 +1,8 @@
 # 25 - Panel System
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## Overview
 
 Il Panel System è progettato per settings screens, dashboard views e config toggles. È più semplice dell'Editor System e non richiede undo/redo o payload building.

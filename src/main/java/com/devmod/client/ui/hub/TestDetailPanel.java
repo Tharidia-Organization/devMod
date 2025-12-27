@@ -1,11 +1,14 @@
 package com.devmod.client.ui.hub;
 
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
 import javax.annotation.Nullable;
+
+import com.google.common.base.Splitter;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,6 +19,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.testing.TestCase;
 
 public class TestDetailPanel implements HubPanel {
+    private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
 
     private final int x, y, width, height;
     private final Font font;
@@ -163,7 +167,7 @@ public class TestDetailPanel implements HubPanel {
 
         // === REQUIRED TOOLS ===
         if (tools != null && !tools.isEmpty()) {
-            contentY = renderRequiredTools(graphics, contentX, contentY, contentWidth, mouseX, mouseY, tools);
+            contentY = renderRequiredTools(graphics, contentX, contentY, contentWidth, tools);
             contentY += 8;
         }
 
@@ -203,7 +207,7 @@ public class TestDetailPanel implements HubPanel {
     }
 
     private int renderWrappedText(GuiGraphics graphics, int cx, int cy, int maxWidth, String text, int color) {
-        String[] words = text.split(" ");
+        Iterable<String> words = SPACE_SPLITTER.split(text);
         StringBuilder line = new StringBuilder();
         int lineY = cy;
 
@@ -227,7 +231,7 @@ public class TestDetailPanel implements HubPanel {
     }
 
     private int renderInstructions(GuiGraphics graphics, int cx, int cy, int cw, int maxHeight, TestCase test) {
-        String[] steps = test.getInstructions().split("\n");
+        String[] steps = test.getInstructions().lines().toArray(String[]::new);
 
         // Scissor for scroll
         graphics.enableScissor(cx, cy, cx + cw, cy + maxHeight);
@@ -282,7 +286,7 @@ public class TestDetailPanel implements HubPanel {
         return cy + Math.min(totalHeight, maxHeight);
     }
 
-    private int renderRequiredTools(GuiGraphics graphics, int cx, int cy, int cw, int mouseX, int mouseY, Set<ToolType> tools) {
+    private int renderRequiredTools(GuiGraphics graphics, int cx, int cy, int cw, Set<ToolType> tools) {
         cy = HubSectionHeader.draw(graphics, Objects.requireNonNull(font, "font"),
             "Required Tools:", cx, cy, LINE_HEIGHT, 0);
         cy += 4;
@@ -386,7 +390,7 @@ public class TestDetailPanel implements HubPanel {
                 case FAIL -> EditorButton.Style.DANGER;
                 case SKIP -> EditorButton.Style.GHOST;
             };
-            EditorButton button = EditorButton.builder("verdict-" + verdict.name().toLowerCase(), verdict.getLabel())
+            EditorButton button = EditorButton.builder("verdict-" + verdict.name().toLowerCase(Locale.ROOT), verdict.getLabel())
                 .style(style)
                 .hotkeyHint("[" + verdict.getHotkey() + "]")
                 .onClick(() -> handleVerdict(verdict))

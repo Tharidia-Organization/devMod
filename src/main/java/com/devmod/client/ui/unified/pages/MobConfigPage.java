@@ -2,6 +2,7 @@ package com.devmod.client.ui.unified.pages;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -74,9 +75,10 @@ public class MobConfigPage implements SettingsPage {
             return;
         }
 
+        UUID localPlayerId = localPlayer.getUUID();
         AABB scanBox = Objects.requireNonNull(localPlayer.getBoundingBox().inflate(MOB_SCAN_RADIUS));
         nearbyMobs = localLevel.getEntitiesOfClass(LivingEntity.class, scanBox,
-            e -> e != localPlayer && e.isAlive());
+            e -> !e.getUUID().equals(localPlayerId) && e.isAlive());
 
         lastScanTime = System.currentTimeMillis();
     }
@@ -99,7 +101,7 @@ public class MobConfigPage implements SettingsPage {
             int displayCount = Math.min(nearbyMobs.size(), 8);
             for (int i = scrollOffset; i < Math.min(scrollOffset + displayCount, nearbyMobs.size()); i++) {
                 LivingEntity mob = nearbyMobs.get(i);
-                currentY = renderMobRow(graphics, safeFont, x, currentY, width, mouseX, mouseY, mob, i);
+                currentY = renderMobRow(graphics, safeFont, x, currentY, width, mouseX, mouseY, mob);
             }
 
             // Scroll hint if more mobs
@@ -163,7 +165,7 @@ public class MobConfigPage implements SettingsPage {
     }
 
     private int renderMobRow(GuiGraphics graphics, Font font, int x, int y, int width,
-                              int mouseX, int mouseY, LivingEntity mob, int index) {
+                              int mouseX, int mouseY, LivingEntity mob) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         int rowWidth = width - 20;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;

@@ -15,7 +15,6 @@ import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.EditorSpacing;
 import com.devmod.client.ui.editor.core.FocusRing;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.SliderDescriptions;
 import com.devmod.client.ui.editor.core.UIConstants;
 
 public class EditorSlider {
@@ -135,10 +134,10 @@ public class EditorSlider {
             inputField = createdField;
             createdField.numeric(true).numericRange(min, max);
             createdField.onChange(text -> {
-                try {
-                    float parsed = createdField.getNumericValue();
-                    setValue(parsed);
-                } catch (Exception ignored) { }
+                if (!createdField.isValid() || text.isEmpty()) {
+                    return;
+                }
+                setValue(createdField.getNumericValue());
             });
         }
         if (inputField != null) {

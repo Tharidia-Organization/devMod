@@ -2,6 +2,7 @@ package com.devmod.client.ui.hub;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -290,7 +291,7 @@ public class QuickToolsPanel implements HubPanel {
     private Map<ToolType, EditorButton> buildToolButtons() {
         Map<ToolType, EditorButton> buttons = new EnumMap<>(ToolType.class);
         for (ToolType tool : ToolType.values()) {
-            EditorButton button = EditorButton.builder("tool-" + tool.name().toLowerCase(), tool.getLabel())
+            EditorButton button = EditorButton.builder("tool-" + tool.name().toLowerCase(Locale.ROOT), tool.getLabel())
                 .hotkeyHint("[" + tool.getHotkey() + "]")
                 .toggleable(true)
                 .toggled(tool.isEnabled())
@@ -308,7 +309,7 @@ public class QuickToolsPanel implements HubPanel {
     private Map<EditorType, EditorButton> buildEditorButtons() {
         Map<EditorType, EditorButton> buttons = new EnumMap<>(EditorType.class);
         for (EditorType editor : EditorType.values()) {
-            EditorButton button = EditorButton.builder("editor-" + editor.name().toLowerCase(), editor.getLabel())
+            EditorButton button = EditorButton.builder("editor-" + editor.name().toLowerCase(Locale.ROOT), editor.getLabel())
                 .hotkeyHint("[" + editor.getHotkey() + "]")
                 .style(EditorButton.Style.PRIMARY)
                 .onClick(() -> onEditorOpened.accept(editor))

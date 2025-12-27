@@ -1,5 +1,8 @@
 # DevMod Re-Architecture - Riepilogo Completamento
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL
+
 > **Data**: 24 Dicembre 2024
 > **Stato**: COMPLETATO (Fasi Core + Dedup Avanzato)
 > **Build**: PASS - 2740 test verdi

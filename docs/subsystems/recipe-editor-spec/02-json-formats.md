@@ -1,5 +1,8 @@
 # Formati JSON Ricette Minecraft 1.21
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 > Specifica completa dei formati JSON per ogni tipo di ricetta
 
 ## Note Importanti 1.21

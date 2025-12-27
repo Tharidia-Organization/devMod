@@ -1,150 +1,42 @@
 # Error Handling
 
 > Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION
+> Status: CURRENT (verified against code)
 
----
+This doc summarizes the error-handling patterns used across DevMod.
 
-## Error Taxonomy
+## Logging First
 
-### Exception Types
+- Most components use `org.slf4j.Logger` for structured logging.
+- Errors are logged with module-specific prefixes to ease tracing.
 
-| Exception | Package | Usage |
-|-----------|---------|-------|
-| `TemplateLoadException` | arena.registry | Template parse failure |
-| `InheritanceCycleException` | arena.registry | Circular template extends |
-| `ParentTemplateNotFoundException` | arena.registry | Missing parent |
-| `InheritanceDepthExceededException` | arena.registry | Too deep inheritance |
-| `ValidationException` | arena.validation | Invalid template |
+## Domain Exceptions (Arena)
 
-### Error Codes (Proposed)
+Arena registry and validation errors are modeled explicitly:
 
-| Code | Category | Example |
-|------|----------|---------|
-| `E1xxx` | Arena | E1001: Template not found |
-| `E2xxx` | Endurance | E2001: Quest already active |
-| `E3xxx` | Network | E3001: Rate limit exceeded |
-| `E4xxx` | Telemetry | E4001: DuckDB write failed |
-| `E5xxx` | Config | E5001: Invalid config value |
+- `TemplateLoadException`
+- `InheritanceCycleException`
+- `ParentTemplateNotFoundException`
+- `InheritanceDepthExceededException`
 
----
+## Fallback and Recovery
 
-## Recovery Patterns
-
-### Circuit Breaker (DuckDB)
-
-```java
-private static final int THRESHOLD = 5;
-private volatile int consecutiveErrors = 0;
-
-public void write(Event event) {
-    if (circuitOpen) {
-        fallbackToNdjson(event);
-        return;
-    }
-
-    try {
-        duckdb.insert(event);
-        consecutiveErrors = 0;
-    } catch (Exception e) {
-        consecutiveErrors++;
-        if (consecutiveErrors >= THRESHOLD) {
-            openCircuit();
-        }
-    }
-}
-```
-
-### Fallback Chain (Arena)
-
-```java
-public ArenaTemplate resolve(String id) {
-    // 1. Try requested template
-    ArenaTemplate template = registry.get(id);
-    if (template != null) return template;
-
-    // 2. Try fallback template
-    template = registry.get("default_flat_64");
-    if (template != null) return template;
-
-    // 3. Generate minimal template
-    return TemplateGenerator.minimal();
-}
-```
-
-### Graceful Degradation (Instance)
-
-```java
-public void onDimensionCreateFailed(UUID instanceId, Exception e) {
-    LOGGER.error("Dimension creation failed", e);
-
-    // Recover all affected players
-    for (UUID playerId : getPlayersForInstance(instanceId)) {
-        recoverySystem.performRecovery(playerId);
-    }
-
-    // Mark instance for cleanup
-    registry.markFailed(instanceId);
-}
-```
-
----
+- Arena failures are routed through `ArenaFailureHandler` and `FallbackBuildStrategy`.
+- Recovery helpers exist for arena templates (`TemplateRecoveryHandler`).
+- Instance recovery is handled by `com.devmod.runtime.RecoverySystem`.
 
 ## Alert Routing
 
-### AlertRouter
+- `AlertRouter` delivers `ErrorContext` to multiple channels.
+- Built-in channels include:
+  - `DiscordAlertChannel`
+  - `WebhookAlertChannel`
+  - `LogAlertChannel`
+  - `TelemetryAlertChannel`
+  - `ConsoleAlertChannel`
+  - `DuckDbAlertRecorder`
 
-```java
-public interface AlertChannel {
-    CompletableFuture<Boolean> send(ErrorContext context);
-}
+## Telemetry Error Classification
 
-// Channels
-- DiscordAlertChannel (webhook)
-- TelemetryAlertChannel (DuckDB)
-- LogAlertChannel (Log4j)
-```
-
-### Error Context
-
-```java
-public record ErrorContext(
-    String errorCode,
-    String message,
-    Severity severity,
-    Map<String, Object> metadata,
-    Throwable cause
-) {}
-```
-
----
-
-## Logging Guidelines
-
-### Log Levels
-
-| Level | Usage |
-|-------|-------|
-| ERROR | Unrecoverable, needs attention |
-| WARN | Recoverable, may need attention |
-| INFO | Important state changes |
-| DEBUG | Detailed flow information |
-| TRACE | Very detailed (disabled in prod) |
-
-### Structured Logging
-
-```java
-LOGGER.error("[{}] Template load failed: {} (source: {})",
-    "E1001",
-    template.id(),
-    source
-);
-```
-
----
-
-## Cross-References
-
-- [[areas/arena/README]] - Arena error handling
-- [[areas/telemetry/README]] - Circuit breaker
-- [[cross_cutting/CONCURRENCY]] - Thread error handling
+- `DuckDBErrorClassifier` classifies DuckDB failures for logging and reporting.
+- `RateLimitedLogger` avoids log spam for repeated errors.

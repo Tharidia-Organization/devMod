@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -59,6 +60,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
                 t.setDaemon(true);
                 return t;
             });
+    private ScheduledFuture<?> refreshTask;
 
     /** DD36: Query executor for timeout-controlled operations */
     private final ExecutorService queryExecutor =
@@ -108,12 +110,19 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
      */
     @Override
     public void close() {
+        if (refreshTask != null) {
+            refreshTask.cancel(false);
+        }
         try {
             refreshExecutor.shutdownNow();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.debug("Failed to shutdown refresh executor", e);
+        }
         try {
             queryExecutor.shutdownNow();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.debug("Failed to shutdown query executor", e);
+        }
         metricsCache.clear();
         rateLimitBuckets.clear();
         validTokens.clear();
@@ -291,7 +300,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
      * Starts the background cache refresh task
      */
     private void startCacheRefresh() {
-        refreshExecutor.scheduleAtFixedRate(
+        refreshTask = refreshExecutor.scheduleAtFixedRate(
                 this::refreshAllCaches,
                 CACHE_REFRESH_INTERVAL.toMinutes(),
                 CACHE_REFRESH_INTERVAL.toMinutes(),

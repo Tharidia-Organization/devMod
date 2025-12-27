@@ -1,4 +1,8 @@
 # Debug Overlay System
+
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 ## F9 Toggle, Grid/Bounds Visualization, Overflow Detection
 
 > **Sezione 2.18** del Design System - Debug overlay per sviluppo e troubleshooting

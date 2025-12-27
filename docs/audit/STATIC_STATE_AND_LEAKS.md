@@ -1,54 +1,50 @@
 # Static State and Memory Leak Remediation
 
-> Last updated: 2025-12-24
-> Status: NEEDS_VERIFICATION
+> Last updated: 2025-12-26
+> Status: CURRENT (verified against code)
 
 **Priority:** P0 (Crash) + P2 (Leak)
 
 ## P0 - Client-Only Singletons (Crash Prevention)
 
-| Singleton | Package | Status | Action |
-|-----------|---------|--------|--------|
-| `ShakeManager.INSTANCE` | `com.devmod.client.effects` | Safe | Already in client package |
-| `TrailManager.INSTANCE` | `com.devmod.client.effects` | Safe | Already in client package |
-| `DebugClientRenderer.INSTANCE` | `com.devmod.debug.client` | Safe | Module client package |
-| `IntegratedTestSession.INSTANCE` | `com.devmod.client.testing` | Safe | Already in client package |
-| `QANotificationSystem.INSTANCE` | `com.devmod.client.testing` | Safe | Already in client package |
-| `ClientTelemetryBuffer.INSTANCE` | `com.devmod.client.telemetry` | Fixed | Moved from common package |
+| Singleton | Package | Status |
+|-----------|---------|--------|
+| `ShakeManager.INSTANCE` | `com.devmod.client.effects` | Client-only |
+| `TrailManager.INSTANCE` | `com.devmod.client.effects` | Client-only |
+| `DebugClientRenderer.INSTANCE` | `com.devmod.debug.client` | Client-only |
+| `IntegratedTestSession.INSTANCE` | `com.devmod.client.testing` | Client-only |
+| `QANotificationSystem.INSTANCE` | `com.devmod.client.testing` | Client-only |
+| `ClientTelemetryBuffer.INSTANCE` | `com.devmod.client.telemetry` | Client-only |
 
-**Additional gating:**
-- Client-only compat modules now registered via `DistExecutor.safeRunWhenOn(Dist.CLIENT, ...)`.
-- Client singleton access in common code removed (no `com.devmod.client.*.INSTANCE` references).
-- `TransformProviderRegistry` now uses reflection to obtain the client provider.
+**Gating patterns in use:**
+- Client-only compat modules are registered only when `FMLEnvironment.dist == Dist.CLIENT`
+  (`ModIntegrationManager` -> `ClientCompatRegistrar`).
+- `TransformProviderRegistry` uses `FMLEnvironment.dist.isClient()` and reflection to load
+  `ClientTransformProvider` without server classloading.
 
 ## P2 - Cache Leak Fixes
 
 ### ModelPartTransformCapture (client)
 
-**Issues:**
-- Unbounded `ConcurrentHashMap` growth on long sessions.
-  
-**Fixes:**
-- TTL and max-size eviction already present.
-- Added `removeEntity(int entityId)` and `clientTick()` cleanup hook.
-- Added per-entity cleanup on `EntityLeaveLevelEvent`.
-
-**Call Sites:**
-- `ClientModEvents.onEntityLeave()` removes per-entity cache.
-- `RenderEvents.onClientTick()` calls `ModelPartTransformCapture.clientTick()`.
+- TTL: 100ms, max 256 entities, periodic cleanup every 5s (evicts stale and oldest entries).
+- Per-entity cleanup: `ClientModEvents.onEntityLeave()` -> `removeEntity(int)`.
+- Periodic cleanup: `RenderEvents.onClientTick()` -> `clientTick()`.
+- World unload: `ClientModEvents.onPlayerLogout()` -> `clearAll()`.
 
 ### ModelPartTransformExtractor (client)
 
-- Already capped + periodic cleanup.
-- Per-entity cleanup called on `EntityLeaveLevelEvent`.
+- Max 256 entries, periodic cleanup every 100 ticks via `cleanupCache`.
+- Per-entity cleanup: `ClientModEvents.onEntityLeave()` -> `clearCache(int)`.
+- World unload: `ClientModEvents.onPlayerLogout()` -> `clearAllCaches()`.
 
-### TransformProviderRegistry (common)
+### TransformProviderRegistry (common + client)
 
-- `clearCache(entityId)` invoked on:
-  - Server: `TelemetryEvents.onEntityLeave()`
-  - Client: `ClientModEvents.onEntityLeave()`
+- Server shutdown: `TelemetryEvents.onServerStopped()` -> `clearAllCaches()`.
+- Per-entity cleanup (server): `TelemetryEvents.onEntityLeave()` -> `clearCache(int)`.
+- Per-entity cleanup (client): `ClientModEvents.onEntityLeave()` -> `clearCache(int)`.
 
-## Before / After
+## Status
 
-- **Before:** Client-only singleton (`ClientTelemetryBuffer`) lived in common package; mixins and entrypoint outside `/client/`.  
-- **After:** All client-only singletons and client-only code are under `/client/` or `*.client.*` packages; common code no longer references client `.INSTANCE` fields.
+- Client-only singletons are confined to client packages.
+- Cache cleanup hooks run on entity removal and world unload.
+- Common code avoids direct client singleton access (enforced by tests/scripts).

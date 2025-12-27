@@ -20,7 +20,7 @@ public final class TrigCache {
     private static final float ANGLE_TO_INDEX = TABLE_SIZE / (float) (Math.PI * 2);
     private static final float INDEX_TO_ANGLE = (float) (Math.PI * 2) / TABLE_SIZE;
 
-    /** Initialize lookup tables */
+    /* Initialize lookup tables */
     static {
         for (int i = 0; i < TABLE_SIZE; i++) {
             double angle = i * INDEX_TO_ANGLE;

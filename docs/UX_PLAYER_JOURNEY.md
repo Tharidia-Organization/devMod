@@ -1,5 +1,8 @@
 # Endurance Quest - Player Journey & UX Analysis
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Player Persona
 
 **Nome:** Alex, Minecraft Veteran

@@ -112,7 +112,7 @@ public class AttributeHudOverlay {
         y += SECTION_GAP;
 
         // === TRACKED ENTITIES ===
-        y = renderTrackedListSection(graphics, font, textX, y, contentWidth);
+        y = renderTrackedListSection(graphics, font, textX, y);
 
         // Separator
         graphics.fill(textX, y, textX + contentWidth, y + 1, PANEL_BORDER & 0x77FFFFFF);
@@ -220,7 +220,7 @@ public class AttributeHudOverlay {
         return y + SECTION_GAP;
     }
 
-    private static int renderTrackedListSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width) {
+    private static int renderTrackedListSection(GuiGraphics graphics, @Nonnull Font font, int x, int y) {
         List<TrackedEntity> tracked = AttributeMonitoringSystem.INSTANCE.getTrackedEntities();
 
         String header = I18n.translate("devmod.attribute_monitor.tracked_entities", tracked.size()).getString();

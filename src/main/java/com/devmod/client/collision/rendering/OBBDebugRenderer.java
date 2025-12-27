@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.DevMod;
 import com.devmod.collision.bodypart.BodyPartInstance;
 import com.devmod.collision.integration.OBBHitHelper;
 import com.devmod.collision.obb.OrientedBoundingBox;
@@ -95,7 +96,9 @@ public final class OBBDebugRenderer {
         boolean showAxes = false;
         try {
             showAxes = Config.OBB_DEBUG_AXES.get();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[OBBDebugRenderer] Failed to resolve debug target OBB", e);
+        }
 
         for (LivingEntity entity : entities) {
             renderEntityOBBs(poseStack, Objects.requireNonNull(entity), cameraPos, bufferSource, false, showAxes);

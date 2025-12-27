@@ -1,5 +1,8 @@
 # Impact HUD - Code Snippets di Riferimento
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 Questo documento contiene i frammenti di codice più rilevanti per comprendere il funzionamento del sistema.
 
 ---

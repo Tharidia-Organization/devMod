@@ -11,12 +11,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -24,6 +23,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Splitter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -32,6 +32,7 @@ import net.minecraft.resources.ResourceLocation;
 
 public class EnduranceAnalytics {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceAnalytics.class);
+    private static final Splitter UNDERSCORE_SPLITTER = Splitter.on('_');
     private static final Gson GSON = new GsonBuilder()
         .setPrettyPrinting()
         .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
@@ -187,7 +188,7 @@ public class EnduranceAnalytics {
             Map<String, Integer> bodyPartTotals = new HashMap<>();
             for (QuestSessionRecord session : sessions) {
                 session.bodyPartHits.forEach((part, count) ->
-                    bodyPartTotals.merge(part, count, (a, b) -> Objects.requireNonNull(Integer.sum(a, b))));
+                    bodyPartTotals.merge(part, count, Integer::sum));
             }
             int totalHits = bodyPartTotals.values().stream().mapToInt(Integer::intValue).sum();
             bodyPartEffectiveness.clear();
@@ -257,7 +258,7 @@ public class EnduranceAnalytics {
 
         // Weapon usage
         float totalWeaponDamage = combatSession.getWeaponStats().values().stream()
-            .map(w -> w.totalDamage).reduce(0f, (a, b) -> Objects.requireNonNull(Float.sum(a, b)));
+            .map(w -> w.totalDamage).reduce(0f, Float::sum);
 
         for (CombatTracker.WeaponStats weaponStats : combatSession.getWeaponStats().values()) {
             WeaponUsageRecord weaponRecord = new WeaponUsageRecord();
@@ -306,9 +307,10 @@ public class EnduranceAnalytics {
 
     private String getWeaponDisplayName(String weaponId) {
         // Simple conversion from ID to display name
-        String path = weaponId.contains(":") ? weaponId.split(":")[1] : weaponId;
-        return Arrays.stream(path.split("_"))
-            .map(s -> s.substring(0, 1).toUpperCase() + s.substring(1))
+        int colonIndex = weaponId.indexOf(':');
+        String path = colonIndex < 0 ? weaponId : weaponId.substring(colonIndex + 1);
+        return UNDERSCORE_SPLITTER.splitToList(path).stream()
+            .map(s -> s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1))
             .collect(Collectors.joining(" "));
     }
 

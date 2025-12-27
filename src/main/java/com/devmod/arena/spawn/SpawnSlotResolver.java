@@ -185,7 +185,7 @@ public class SpawnSlotResolver {
      */
     public List<SpawnSlot> resolveSlots(int count, List<SpawnSlot> occupiedSlots) {
         if (count <= 0) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
 
         // Filter available slots first
@@ -201,7 +201,7 @@ public class SpawnSlotResolver {
 
         if (validSlots.isEmpty()) {
             LOGGER.warn("No valid spawn slots available");
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
 
         List<SpawnSlot> best = new ArrayList<>();

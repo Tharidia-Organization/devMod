@@ -195,13 +195,13 @@ public final class PresetBridge {
     private static boolean isWeaponCategory(String category) {
         if (category == null) return false;
         return Set.of("sword", "axe", "pickaxe", "shovel", "hoe", "bow", "crossbow", "trident", "weapon")
-            .contains(category.toLowerCase());
+            .contains(category.toLowerCase(Locale.ROOT));
     }
 
     private static boolean isArmorCategory(String category) {
         if (category == null) return false;
         return Set.of("helmet", "chestplate", "leggings", "boots", "shield", "armor")
-            .contains(category.toLowerCase());
+            .contains(category.toLowerCase(Locale.ROOT));
     }
 
     // ═══════════════════════════════════════════════════════════════

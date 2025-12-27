@@ -94,7 +94,7 @@ public class EditorSettingsPage implements SettingsPage {
         currentY += BUTTON_HEIGHT + 8;
 
         // Current scale info + preview
-        float effectiveScale = renderScaleInfo(graphics, font, x, currentY, width);
+        float effectiveScale = renderScaleInfo(graphics, font, x, currentY);
         currentY += ROW_HEIGHT + UIConstants.Spacing.GAP_SMALL;
         renderScalePreview(graphics, font, x, currentY, width, effectiveScale);
         currentY += PREVIEW_HEIGHT + UIConstants.Spacing.GAP_LARGE;
@@ -142,7 +142,7 @@ public class EditorSettingsPage implements SettingsPage {
         AxiomRenderer.drawHint(graphics, font, x, currentY, "Changes are applied when you click Apply.");
     }
 
-    private float renderScaleInfo(GuiGraphics graphics, Font font, int x, int y, int width) {
+    private float renderScaleInfo(GuiGraphics graphics, Font font, int x, int y) {
         Minecraft mc = Minecraft.getInstance();
         int screenW = mc.getWindow().getGuiScaledWidth();
         int screenH = mc.getWindow().getGuiScaledHeight();

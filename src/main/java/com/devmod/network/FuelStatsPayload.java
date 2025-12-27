@@ -47,8 +47,7 @@ public record FuelStatsPayload(
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FuelStatsPayload that = (FuelStatsPayload) o;
+        if (!(o instanceof FuelStatsPayload that)) return false;
         return isGlobal == that.isGlobal &&
                ItemStack.matches(Objects.requireNonNull(item), Objects.requireNonNull(that.item)) &&
                Objects.equals(statsTag, that.statsTag);

@@ -109,7 +109,7 @@ public class EnergyShieldRenderer {
 
         // Check if custom shader is available
         if (ShieldShaderRegistry.isUsingCustomShader()) {
-            renderWithCustomShader(poseStack, bufferSource, entity, entityPos, cameraPos, color, opacity, radius);
+            renderWithCustomShader(poseStack, bufferSource, entityPos, cameraPos, color, opacity, radius);
         } else {
             renderFallback(poseStack, bufferSource, entityPos, cameraPos, color, opacity, radius);
         }
@@ -119,7 +119,7 @@ public class EnergyShieldRenderer {
      * Renders using the custom GPU shader.
      */
     private static void renderWithCustomShader(PoseStack poseStack, MultiBufferSource bufferSource,
-                                                LivingEntity entity, Vec3 entityPos, Vec3 cameraPos,
+                                                Vec3 entityPos, Vec3 cameraPos,
                                                 int color, float opacity, float radius) {
         Vec3 safeEntityPos = Objects.requireNonNull(entityPos, "entityPos");
         Vec3 safeCameraPos = Objects.requireNonNull(cameraPos, "cameraPos");
@@ -168,13 +168,11 @@ public class EnergyShieldRenderer {
         poseStack.translate(rel.x, rel.y, rel.z);
 
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
-        Vec3 viewDir = safeCameraPos.subtract(safeEntityPos).normalize();
-
         // Render the sphere with normals for shader
-        renderSphereWithNormals(consumer, poseStack, matrix, r, g, b, opacity, radius, viewDir);
+        renderSphereWithNormals(consumer, poseStack, matrix, r, g, b, opacity, radius);
 
         // Render hexagonal grid lines overlay
-        renderHexGrid(poseStack, bufferSource, matrix, safeEntityPos, safeCameraPos, color, opacity, radius);
+        renderHexGrid(bufferSource, matrix, safeEntityPos, safeCameraPos, color, opacity, radius);
 
         poseStack.popPose();
     }
@@ -183,7 +181,7 @@ public class EnergyShieldRenderer {
      * Renders the hexagonal grid lines on top of the energy field.
      * Grid lines are DARKER than the energy field for contrast.
      */
-    private static void renderHexGrid(PoseStack poseStack, MultiBufferSource bufferSource,
+    private static void renderHexGrid(MultiBufferSource bufferSource,
                                        Matrix4f matrix, Vec3 entityPos, Vec3 cameraPos,
                                        int color, float opacity, float radius) {
         Vec3 safeEntityPos = Objects.requireNonNull(entityPos, "entityPos");
@@ -221,7 +219,7 @@ public class EnergyShieldRenderer {
      */
     private static void renderSphereWithNormals(VertexConsumer consumer, PoseStack poseStack,
                                                  Matrix4f matrix, float r, float g, float b,
-                                                 float alpha, float radius, Vec3 viewDir) {
+                                                 float alpha, float radius) {
         Matrix4f safeMatrix = Objects.requireNonNull(matrix);
         for (int ring = 0; ring < SPHERE_RINGS; ring++) {
             float theta1 = (float) (ring * Math.PI / SPHERE_RINGS);

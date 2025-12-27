@@ -1,5 +1,8 @@
 # Weapon Type Detection & Modded Support
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (design system snapshot)
+
 Supporto per armi non-standard (asce, tridenti, archi, balestre) e rilevamento automatico armi moddate.
 
 ## Weapon Type Support Matrix

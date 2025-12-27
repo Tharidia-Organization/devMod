@@ -1,5 +1,8 @@
 # 07 - Censimento Completo File Prismatic Shield Mod
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Struttura Repository
 
 ```

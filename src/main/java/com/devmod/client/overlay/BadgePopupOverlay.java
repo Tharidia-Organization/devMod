@@ -3,6 +3,7 @@ package com.devmod.client.overlay;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Random;
@@ -238,7 +239,7 @@ public class BadgePopupOverlay {
     private static BadgeRarity parseRarity(String name) {
         if (name == null) return BadgeRarity.COMMON;
         try {
-            return BadgeRarity.valueOf(name.toUpperCase());
+            return BadgeRarity.valueOf(name.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return BadgeRarity.COMMON;
         }
@@ -340,7 +341,7 @@ public class BadgePopupOverlay {
         }
 
         // Render main popup background
-        renderBackground(graphics, x, currentY, BOX_WIDTH, BOX_HEIGHT, alpha, current.rarity(), elapsed);
+        renderBackground(graphics, x, currentY, BOX_WIDTH, BOX_HEIGHT, alpha, current.rarity());
 
         // Render border with shimmer
         renderBorder(graphics, x, currentY, BOX_WIDTH, BOX_HEIGHT, current.rarity(), alpha, elapsed);
@@ -398,7 +399,7 @@ public class BadgePopupOverlay {
         }
     }
 
-    private static void renderBackground(GuiGraphics graphics, int x, int y, int w, int h, float alpha, BadgeRarity rarity, long elapsed) {
+    private static void renderBackground(GuiGraphics graphics, int x, int y, int w, int h, float alpha, BadgeRarity rarity) {
         int bgAlpha = (int) (alpha * 240);
 
         // Base dark background
@@ -495,7 +496,7 @@ public class BadgePopupOverlay {
         graphics.drawString(safeFont, badgeName, textStartX, y + 24, nameColor, false);
 
         // Rarity tag (right side)
-        renderRarityTag(graphics, safeFont, tagStartX, y + (BOX_HEIGHT - 20) / 2, TAG_WIDTH, 20, popup.rarity(), alpha, elapsed);
+        renderRarityTag(graphics, safeFont, tagStartX, y + (BOX_HEIGHT - 20) / 2, TAG_WIDTH, 20, popup.rarity(), alpha);
     }
 
     private static void renderBadgeIcon(GuiGraphics graphics, int centerX, int centerY, BadgeRarity rarity, float alpha, long elapsed) {
@@ -552,7 +553,7 @@ public class BadgePopupOverlay {
         }
     }
 
-    private static void renderRarityTag(GuiGraphics graphics, Font font, int x, int y, int w, int h, BadgeRarity rarity, float alpha, long elapsed) {
+    private static void renderRarityTag(GuiGraphics graphics, Font font, int x, int y, int w, int h, BadgeRarity rarity, float alpha) {
         Font safeFont = Objects.requireNonNull(font, "Font cannot be null");
         // Tag background
         int bgAlpha = (int) (alpha * 200);
@@ -570,7 +571,7 @@ public class BadgePopupOverlay {
 
         // Rarity text
         String rarityText = Objects.requireNonNull(
-            Objects.requireNonNull(rarity.displayName, "Rarity displayName is null").toUpperCase(),
+            Objects.requireNonNull(rarity.displayName, "Rarity displayName is null").toUpperCase(Locale.ROOT),
             "Rarity text is null"
         );
         int textAlpha = (int) (alpha * 255);

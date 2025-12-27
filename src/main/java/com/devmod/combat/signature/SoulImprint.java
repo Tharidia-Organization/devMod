@@ -22,7 +22,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
@@ -188,10 +187,10 @@ public class SoulImprint {
         Component hoverName = stack.getHoverName();
         String baseName = sanitizeName(hoverName != null ? hoverName.getString() : null, FALLBACK_WEAPON_NAME);
         String ownerDisplayName = sanitizeName(ownerName, UNKNOWN_OWNER);
-        Style baseStyle = Style.EMPTY;
+        Style baseStyle = requireNonNull(Style.EMPTY, "Style.EMPTY");
         String weaponType = getWeaponType(baseName);
 
-        return switch (evolutionStage) {
+        return requireNonNull(switch (evolutionStage) {
             case 0 -> Component.literal(baseName);
             case 1 -> {
                 yield styledLiteral(
@@ -223,14 +222,16 @@ public class SoulImprint {
                 );
             }
             default -> Component.literal(baseName);
-        };
+        }, "evolved name");
     }
 
     @Nonnull
     private static MutableComponent styledLiteral(@Nullable String name, @Nullable Style style) {
         String safeName = name == null ? "" : name;
-        Style safeStyle = style == null ? Style.EMPTY : style;
-        return Component.literal(safeName).setStyle(safeStyle);
+        Style safeStyle = style == null ? requireNonNull(Style.EMPTY, "Style.EMPTY") : style;
+        return requireNonNull(
+            Component.literal(safeName).setStyle(safeStyle),
+            "styledLiteral result");
     }
 
     @Nonnull
@@ -253,10 +254,11 @@ public class SoulImprint {
 
     @Nonnull
     private String resolveCustomName() {
-        if (customName == null) {
+        String name = customName; // Local copy for null-safety
+        if (name == null) {
             return generateUniqueName();
         }
-        String trimmed = customName.trim();
+        String trimmed = name.trim();
         return trimmed.isEmpty() ? generateUniqueName() : trimmed;
     }
 
@@ -301,7 +303,7 @@ public class SoulImprint {
         // Use owner name hash for consistent naming
         int hash = ownerName != null ? ownerName.hashCode() : (int) createdTime;
         int index = Math.floorMod(hash, prefixes.size());
-        return prefixes.get(index);
+        return requireNonNull(prefixes.get(index), "prefixes entry");
     }
 
     /**
@@ -357,7 +359,8 @@ public class SoulImprint {
         CompoundTag statsTag = new CompoundTag();
         for (var entry : stats.entrySet()) {
             if (entry.getValue() > 0) {
-                statsTag.putInt(entry.getKey().name(), entry.getValue());
+                ImprintStat stat = entry.getKey();
+                statsTag.putInt(requireNonNull(stat.name(), "stat name"), entry.getValue());
             }
         }
         tag.put(NBT_STATS, statsTag);
@@ -365,9 +368,9 @@ public class SoulImprint {
         // Save traits
         ListTag traitsList = new ListTag();
         for (WeaponTrait trait : unlockedTraits) {
-            ResourceLocation traitId = trait.getId();
+            String traitId = trait.getId() == null ? null : trait.getId().toString();
             if (traitId != null) {
-                traitsList.add(StringTag.valueOf(traitId.toString()));
+                traitsList.add(StringTag.valueOf(traitId));
             }
         }
         tag.put(NBT_TRAITS, traitsList);
@@ -380,7 +383,9 @@ public class SoulImprint {
         }
 
         // Store in item's custom data component (1.21.1 API)
-        CustomData.update(DataComponents.CUSTOM_DATA, stack,
+        CustomData.update(
+            requireNonNull(DataComponents.CUSTOM_DATA, "CUSTOM_DATA"),
+            requireNonNull(stack, "stack"),
             existingTag -> existingTag.put(NBT_KEY, tag));
     }
 
@@ -389,7 +394,7 @@ public class SoulImprint {
      */
     @Nullable
     public static SoulImprint loadFromItem(ItemStack stack) {
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        CustomData customData = stack.get(requireNonNull(DataComponents.CUSTOM_DATA, "CUSTOM_DATA"));
         if (customData == null || !customData.contains(NBT_KEY)) {
             return null;
         }
@@ -407,7 +412,7 @@ public class SoulImprint {
         // Load stats
         CompoundTag statsTag = tag.getCompound(NBT_STATS);
         for (ImprintStat stat : ImprintStat.values()) {
-            String statKey = stat.name();
+            String statKey = requireNonNull(stat.name(), "stat name");
             if (statsTag.contains(statKey)) {
                 imprint.stats.put(stat, statsTag.getInt(statKey));
             }
@@ -437,7 +442,7 @@ public class SoulImprint {
      * Check if an item has a soul imprint.
      */
     public static boolean hasImprint(ItemStack stack) {
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        CustomData customData = stack.get(requireNonNull(DataComponents.CUSTOM_DATA, "CUSTOM_DATA"));
         return customData != null && customData.contains(NBT_KEY);
     }
 
@@ -469,4 +474,11 @@ public class SoulImprint {
     public int getTotalKills() { return getStat(ImprintStat.TOTAL_KILLS); }
     public int getTotalDamage() { return getStat(ImprintStat.TOTAL_DAMAGE); }
 
+    @Nonnull
+    private static <T> T requireNonNull(@Nullable T value, String label) {
+        if (value == null) {
+            throw new IllegalStateException(label + " is null");
+        }
+        return value;
+    }
 }

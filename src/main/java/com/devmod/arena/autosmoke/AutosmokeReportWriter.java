@@ -147,9 +147,8 @@ public class AutosmokeReportWriter {
         }
 
         Instant cutoff = Instant.now().minus(Duration.ofDays(retentionDays));
-        try {
-            Files.list(reportDirectory)
-                .filter(path -> {
+        try (java.util.stream.Stream<Path> paths = Files.list(reportDirectory)) {
+            paths.filter(path -> {
                     try {
                         return Files.getLastModifiedTime(path).toInstant().isBefore(cutoff);
                     } catch (IOException e) {

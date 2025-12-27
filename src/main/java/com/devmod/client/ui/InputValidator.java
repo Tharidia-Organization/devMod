@@ -22,7 +22,9 @@ public class InputValidator {
             if (value >= min && value <= max && Double.isFinite(value)) {
                 return Optional.of(value);
             }
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
         return Optional.empty();
     }
 
@@ -50,7 +52,9 @@ public class InputValidator {
             if (value >= min && value <= max) {
                 return Optional.of(value);
             }
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
         return Optional.empty();
     }
 
@@ -73,7 +77,9 @@ public class InputValidator {
             if (value >= min && value <= max) {
                 return Optional.of(value);
             }
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
         return Optional.empty();
     }
 
@@ -89,7 +95,9 @@ public class InputValidator {
             if (value >= min && value <= max && Float.isFinite(value)) {
                 return Optional.of(value);
             }
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
         return Optional.empty();
     }
 

@@ -2,6 +2,7 @@ package com.devmod.arena.override;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -249,14 +250,15 @@ public class ForceTemplateCapability {
     public int cleanupExpiredSessions() {
         int removed = 0;
 
-        for (Map.Entry<UUID, ForceSession> entry : activeSessions.entrySet()) {
-            if (entry.getValue().isExpired()) {
-                ForceSession session = activeSessions.remove(entry.getKey());
-                if (session != null) {
-                    removed++;
-                    if (telemetry != null) {
-                        telemetry.onSessionExpired(session);
-                    }
+        Iterator<Map.Entry<UUID, ForceSession>> iter = activeSessions.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry<UUID, ForceSession> entry = iter.next();
+            ForceSession session = entry.getValue();
+            if (session.isExpired()) {
+                iter.remove();
+                removed++;
+                if (telemetry != null) {
+                    telemetry.onSessionExpired(session);
                 }
             }
         }

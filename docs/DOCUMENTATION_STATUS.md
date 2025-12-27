@@ -1,7 +1,8 @@
 # Documentation Status
 
 > Last updated: 2025-12-26
-> Status scope: navigation and link/path validation. Code alignment requires per-doc review.
+> Status: CURRENT (navigation baseline)
+> Scope: navigation and link/path validation; code alignment requires per-doc review.
 
 ---
 
@@ -22,7 +23,7 @@
 
 ---
 
-## Canonical Entrypoints (CURRENT)
+## Canonical Entrypoints (navigation; status varies)
 - `docs/README.md`
 - `docs/MOC.md`
 - `docs/DOCS_GUIDE.md`
@@ -46,7 +47,7 @@
 | `docs/areas/` | NEEDS_VERIFICATION | Area dossiers need content review against code. |
 | `docs/cross_cutting/` | NEEDS_VERIFICATION | Conventions need re-check. |
 | `docs/subsystems/arena-template-rework/` | NEEDS_VERIFICATION | Links updated; content not fully code-audited. |
-| `docs/subsystems/editor-design-system/` | NEEDS_VERIFICATION | Links updated; content not fully code-audited. |
+| `docs/subsystems/editor-design-system/` | NEEDS_VERIFICATION | Content not fully code-audited; includes planning doc `22-recipe-editor-future.md`. |
 | `docs/subsystems/impact-hud-audit/` | NEEDS_VERIFICATION | Links updated; content not fully code-audited. |
 | `docs/subsystems/prismatic-shield-integration/` | NEEDS_VERIFICATION | Links updated; content not fully code-audited. |
 | `docs/subsystems/recipe-editor-spec/` | PLANNING | Future spec; not implemented. |

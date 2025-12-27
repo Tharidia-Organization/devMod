@@ -1,5 +1,8 @@
 # 03 - Impact Effects
 
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+
 ## Obiettivo
 
 Implementare effetti visivi per quando lo scudo:

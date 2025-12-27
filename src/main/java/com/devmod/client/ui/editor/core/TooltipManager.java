@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Splitter;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -13,6 +15,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.AxiomRenderer;
 
 public final class TooltipManager {
+    private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
 
     // ═══════════════════════════════════════════════════════════════
     // SINGLETON
@@ -263,7 +266,7 @@ public final class TooltipManager {
         List<String> lines = new ArrayList<>();
         if (text == null || text.isEmpty()) return lines;
 
-        String[] words = text.split(" ");
+        Iterable<String> words = SPACE_SPLITTER.split(text);
         StringBuilder currentLine = new StringBuilder();
 
         for (String word : words) {

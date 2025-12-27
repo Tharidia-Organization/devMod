@@ -2,11 +2,14 @@ package com.devmod.client.endurance;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
+
+import com.google.common.base.Splitter;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -35,6 +38,7 @@ public class PerkSelectionScreen extends Screen {
     private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
     private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
     private static final int COLOR_ACCENT = UIConstants.Accent.BLUE();  // Blue instead of purple
+    private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
 
     // === Dimensions (base values, may be scaled down for small screens) ===
     private static final int BASE_CARD_WIDTH = 200;
@@ -369,7 +373,7 @@ public class PerkSelectionScreen extends Screen {
      * Get a compact stat hint for perk comparison (e.g., "+20% Damage", "+50 HP")
      */
     private String getCompactStatHint(PerkChoicesPayload.PerkChoice perk) {
-        String desc = perk.description().toLowerCase();
+        String desc = perk.description().toLowerCase(Locale.ROOT);
         // Parse common patterns from description
         if (desc.contains("damage")) return I18n.translate("devmod.perk.stat.damage").getString();
         if (desc.contains("health") || desc.contains("hp")) return I18n.translate("devmod.perk.stat.health").getString();
@@ -467,7 +471,7 @@ public class PerkSelectionScreen extends Screen {
      * Get a color based on perk category for stat display
      */
     private int getCategoryStatColor(PerkChoicesPayload.PerkChoice perk) {
-        String cat = perk.categoryName().toLowerCase();
+        String cat = perk.categoryName().toLowerCase(Locale.ROOT);
         if (cat.contains("offense") || cat.contains("damage")) return UIConstants.Accent.RED();
         if (cat.contains("defense") || cat.contains("armor")) return UIConstants.Accent.BLUE();
         if (cat.contains("utility") || cat.contains("speed")) return UIConstants.Accent.GOLD();
@@ -478,7 +482,7 @@ public class PerkSelectionScreen extends Screen {
     private List<String> wrapText(String text, int maxWidth) {
         var safeFont = Objects.requireNonNull(font);
         List<String> lines = new ArrayList<>();
-        String[] words = text.split(" ");
+        Iterable<String> words = SPACE_SPLITTER.split(text);
         StringBuilder current = new StringBuilder();
 
         for (String word : words) {

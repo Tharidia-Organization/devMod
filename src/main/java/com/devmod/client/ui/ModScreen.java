@@ -1,5 +1,6 @@
 package com.devmod.client.ui;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -61,7 +62,7 @@ public abstract class ModScreen extends Screen {
      */
     @Nonnull
     protected String getTelemetryScreen() {
-        return Objects.requireNonNull(getClass().getSimpleName().toLowerCase().replace("screen", ""));
+        return Objects.requireNonNull(getClass().getSimpleName().toLowerCase(Locale.ROOT).replace("screen", ""));
     }
 
     /**

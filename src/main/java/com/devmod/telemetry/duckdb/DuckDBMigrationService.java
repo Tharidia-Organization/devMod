@@ -93,7 +93,7 @@ public final class DuckDBMigrationService {
         Path enduranceFile = telemetryDir.resolve("endurance.ndjson");
         if (Files.exists(enduranceFile)) {
             try {
-                migrateEnduranceData(enduranceFile, conn);
+                migrateEnduranceData(enduranceFile);
                 migratedCount++;
             } catch (Exception e) {
                 LOGGER.error("[DuckDB Migration] Failed to migrate endurance data", e);
@@ -148,7 +148,7 @@ public final class DuckDBMigrationService {
      * Migrate endurance.ndjson which contains multiple event types.
      * Each event type goes to a different table based on the "type" field.
      */
-    private static void migrateEnduranceData(Path file, Connection conn) throws SQLException, IOException {
+    private static void migrateEnduranceData(Path file) throws SQLException, IOException {
         LOGGER.info("[DuckDB Migration] Migrating endurance data (multi-table)...");
 
         // Read file line by line and route to appropriate table
@@ -156,7 +156,7 @@ public final class DuckDBMigrationService {
         try (Stream<String> lines = Files.lines(file)) {
             lines.forEach(line -> {
                 try {
-                    routeEnduranceEvent(line, conn);
+                    routeEnduranceEvent(line);
                 } catch (Exception e) {
                     LOGGER.debug("[DuckDB Migration] Failed to route endurance event", e);
                 }
@@ -169,7 +169,7 @@ public final class DuckDBMigrationService {
     /**
      * Route a single endurance event JSON line to the appropriate table.
      */
-    private static void routeEnduranceEvent(String json, Connection conn) throws SQLException {
+    private static void routeEnduranceEvent(String json) throws SQLException {
         // Extract type from JSON (simple string search for performance)
         String type = extractJsonField(json, "type");
         if (type == null) return;

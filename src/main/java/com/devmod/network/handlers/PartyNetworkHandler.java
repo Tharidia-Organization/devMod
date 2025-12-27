@@ -1,11 +1,15 @@
 package com.devmod.network.handlers;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -15,6 +19,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import com.devmod.mailbox.template.MessageTemplateRegistry;
 import com.devmod.network.NetworkHandler;
 import com.devmod.party.ArrivalConfirmPayload;
 import com.devmod.party.CancelSequencePayload;
@@ -37,7 +42,7 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
     // PARTY ACTION (server-side)
     // =================================================================================
     public static void handlePartyAction(PartyActionPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        observeFuture(context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -103,6 +108,9 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                                 sendPartySyncToPlayer(kickedPlayer);
                             }
 
+                            // Send mailbox notification (persists even if player is offline)
+                            sendKickedMailbox(payload.targetPlayerId(), kickedName, playerName);
+
                             syncPartyToAllMembers(player.server, partyId);
                         }
                     }
@@ -145,11 +153,25 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                     if (party != null && party.isLeader(playerId)) {
                         UUID partyId = party.getPartyId();
                         var members = new ArrayList<>(party.getMembers());
+                        // Capture member names before disbanding
+                        var memberNames = new java.util.HashMap<UUID, String>();
+                        for (UUID memberId : members) {
+                            memberNames.put(memberId, party.getMemberName(memberId));
+                        }
 
                         if (PartyManager.INSTANCE.disbandParty(playerId)) {
                             LOGGER.info("[Party] {} disbanded party {}", playerName, partyId);
 
                             for (UUID memberId : members) {
+                                if (!memberId.equals(playerId)) {
+                                    // Send mailbox notification (persists even if player is offline)
+                                    sendDisbandedMailbox(
+                                        memberId,
+                                        memberNames.getOrDefault(memberId, "Player"),
+                                        playerName
+                                    );
+                                }
+
                                 ServerPlayer member = player.server.getPlayerList().getPlayer(nn(memberId));
                                 if (member != null) {
                                     if (!memberId.equals(playerId)) {
@@ -186,14 +208,14 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                     }
                 }
             }
-        });
+        }), "party action");
     }
 
     // =================================================================================
     // INVITE RESPONSE (server-side)
     // =================================================================================
     public static void handleInviteResponse(InviteResponsePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        observeFuture(context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -228,14 +250,14 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                 String errorMsg = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
                 player.sendSystemMessage(I18n.translate("devmod.party.invite_error", errorMsg));
             }
-        });
+        }), "invite response");
     }
 
     // =================================================================================
     // NAMED INVITE (server-side)
     // =================================================================================
     public static void handleNamedInvite(NamedInvitePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        observeFuture(context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -299,7 +321,7 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
             } else {
                 player.sendSystemMessage(I18n.translate("devmod.party.invite_failed", targetName));
             }
-        });
+        }), "named invite");
     }
 
     // =================================================================================
@@ -307,8 +329,8 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handlePartyNotification(PartyNotificationPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
-                NetworkHandler.withClientHooks(hooks -> hooks.handlePartyNotification(payload)));
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handlePartyNotification(payload))), "party notification");
         }
     }
 
@@ -317,8 +339,8 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handlePartySync(PartySyncPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
-                NetworkHandler.withClientHooks(hooks -> hooks.handlePartySync(payload)));
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handlePartySync(payload))), "party sync");
         }
     }
 
@@ -327,13 +349,13 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleQuestSequence(QuestSequencePayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            context.enqueueWork(() ->
-                NetworkHandler.withClientHooks(hooks -> hooks.handleQuestSequence(payload)));
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleQuestSequence(payload))), "quest sequence");
         }
     }
 
     public static void handleArrivalConfirm(ArrivalConfirmPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        observeFuture(context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -349,11 +371,11 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
             if (server != null) {
                 QuestStartSequence.INSTANCE.confirmArrival(payload.partyId(), player.getUUID(), server);
             }
-        });
+        }), "arrival confirm");
     }
 
     public static void handleCancelSequence(CancelSequencePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        observeFuture(context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return; // Fail closed: invalid context
             }
@@ -370,7 +392,7 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
             if (!cancelled) {
                 player.sendSystemMessage(I18n.translate("devmod.party.cannot_cancel"));
             }
-        });
+        }), "cancel sequence");
     }
 
     // =================================================================================
@@ -423,5 +445,63 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
 
     public static void sendPartyNotification(ServerPlayer player, PartyNotificationPayload notification) {
         sendPacket(player, notification);
+    }
+
+    // =================================================================================
+    // MAILBOX NOTIFICATIONS FOR OFFLINE PERSISTENCE
+    // =================================================================================
+
+    private static final Logger LOGGER_MAILBOX = LoggerFactory.getLogger(PartyNetworkHandler.class.getName() + ".Mailbox");
+
+    /**
+     * Send mailbox notification when a player is kicked from a party.
+     * This persists even if the player is offline.
+     */
+    private static void sendKickedMailbox(UUID kickedPlayerId, String kickedName, String leaderName) {
+        try {
+            var unused = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+                "social.party_update",
+                kickedPlayerId,
+                Map.of(
+                    "player_name", kickedName != null ? kickedName : "Player",
+                    "update_type", "Kicked from Party",
+                    "details", "You were kicked from the party by " + leaderName + ".",
+                    "action_hint", "You can join or create a new party anytime."
+                ),
+                null
+            ).exceptionally(e -> {
+                LOGGER_MAILBOX.error("[Party] Async failure sending kicked mailbox to {}", kickedPlayerId, e);
+                return Optional.empty();
+            });
+            LOGGER_MAILBOX.debug("[Party] Sent kicked mailbox to {}", kickedPlayerId);
+        } catch (Exception e) {
+            LOGGER_MAILBOX.error("[Party] Failed to send kicked mailbox notification", e);
+        }
+    }
+
+    /**
+     * Send mailbox notification when a party is disbanded.
+     * This persists even if the player is offline.
+     */
+    private static void sendDisbandedMailbox(UUID memberId, String memberName, String leaderName) {
+        try {
+            var unused = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+                "social.party_update",
+                memberId,
+                Map.of(
+                    "player_name", memberName != null ? memberName : "Player",
+                    "update_type", "Party Disbanded",
+                    "details", "The party was disbanded by " + leaderName + ".",
+                    "action_hint", "You can join or create a new party anytime."
+                ),
+                null
+            ).exceptionally(e -> {
+                LOGGER_MAILBOX.error("[Party] Async failure sending disbanded mailbox to {}", memberId, e);
+                return Optional.empty();
+            });
+            LOGGER_MAILBOX.debug("[Party] Sent disbanded mailbox to {}", memberId);
+        } catch (Exception e) {
+            LOGGER_MAILBOX.error("[Party] Failed to send disbanded mailbox notification", e);
+        }
     }
 }
