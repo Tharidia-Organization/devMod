@@ -273,8 +273,9 @@ dependencies {
     localRuntime 'org.duckdb:duckdb_jdbc:1.4.3.0'
 
     // Javalin and JWT for API server (needed in localRuntime for NeoForge classloader)
+    // Javalin 5.x uses Jetty 11, Javalin 6.x uses Jetty 12 - using 5.6.5 for Jetty 11 compatibility
     // Exclude slf4j - NeoForge requires exactly 2.0.9
-    localRuntime('io.javalin:javalin:6.3.0') { exclude group: 'org.slf4j' }
+    localRuntime('io.javalin:javalin:5.6.5') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty:jetty-server:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty:jetty-servlet:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') { exclude group: 'org.slf4j' }
@@ -296,8 +297,8 @@ dependencies {
     compileOnly "maven.modrinth:distanthorizons:2.3.0-b-1.21.1"
 
     // Javalin - Lightweight HTTP server for REST API (admin panel backend)
-    // Core javalin + explicit Jetty for NeoForge compatibility
-    implementation('io.javalin:javalin:6.3.0') {
+    // Javalin 5.x uses Jetty 11, Javalin 6.x uses Jetty 12 - using 5.6.5 for compatibility
+    implementation('io.javalin:javalin:5.6.5') {
         exclude group: 'org.slf4j'
     }
     implementation('org.eclipse.jetty:jetty-server:11.0.20') {
@@ -315,7 +316,7 @@ dependencies {
     implementation('org.eclipse.jetty.websocket:websocket-core-common:11.0.20') {
         exclude group: 'org.slf4j'
     }
-    jarJar("io.javalin:javalin:[6.3.0]") {
+    jarJar("io.javalin:javalin:[5.6.5]") {
         exclude group: 'org.slf4j'
     }
 

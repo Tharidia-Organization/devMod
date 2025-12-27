@@ -53,15 +53,15 @@ public final class MailboxApiServer {
             AuthMiddleware.initialize(config);
 
             // Explicitly configure Jackson to work around NeoForge classloader issues
-            JavalinJackson jacksonMapper = new JavalinJackson(new ObjectMapper(), false);
+            JavalinJackson jacksonMapper = new JavalinJackson(new ObjectMapper());
 
             Javalin app = Javalin.create(javalinConfig -> {
                 javalinConfig.jsonMapper(jacksonMapper);
                 javalinConfig.http.defaultContentType = "application/json";
                 java.util.List<String> origins = MailboxConfig.INSTANCE.getApiAllowedOrigins();
                 if (!origins.isEmpty()) {
-                    javalinConfig.bundledPlugins.enableCors(cors -> {
-                        cors.addRule(rule -> {
+                    javalinConfig.plugins.enableCors(cors -> {
+                        cors.add(rule -> {
                             rule.allowCredentials = false;
                             String first = origins.get(0);
                             String[] rest = origins.size() > 1
