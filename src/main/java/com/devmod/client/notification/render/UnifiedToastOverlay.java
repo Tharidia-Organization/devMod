@@ -361,7 +361,7 @@ public class UnifiedToastOverlay {
             // Close button background
             graphics.fill(closeX - 2, closeY - 2, closeX + 14, closeY + 14,
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, closeAlpha));
-            graphics.drawString(font, "\u2715", closeX + 2, closeY + 2,
+            graphics.drawString(font, "x", closeX + 2, closeY + 2,
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, closeAlpha), false);
         }
     }

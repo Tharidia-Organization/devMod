@@ -37,9 +37,9 @@ public final class MessageTemplateRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageTemplateRegistry.class);
 
-    public static final MessageTemplateRegistry INSTANCE = new MessageTemplateRegistry();
-
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([a-zA-Z_][a-zA-Z0-9_]*)\\}");
+
+    public static final MessageTemplateRegistry INSTANCE = new MessageTemplateRegistry();
 
     // All registered templates by ID
     private final Map<String, MessageTemplate> templates = new ConcurrentHashMap<>();
@@ -314,7 +314,7 @@ public final class MessageTemplateRegistry {
     /**
      * Extract placeholder keys from template text.
      */
-    public List<String> extractPlaceholders(@Nullable String text) {
+    public static List<String> extractPlaceholders(@Nullable String text) {
         if (text == null) {
             return new ArrayList<>();
         }

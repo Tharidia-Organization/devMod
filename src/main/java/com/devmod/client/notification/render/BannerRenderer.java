@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.notification.NotificationUiTheme;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationPriority;
 
@@ -85,13 +86,14 @@ public class BannerRenderer {
         int y = targetY - slideOffset;
 
         // Background with gradient effect
-        int bgAlpha = (int) (200 * alpha);
-        int bgColor = (bgAlpha << 24) | 0x0D0D0D;
-        graphics.fill(x, y, x + bannerWidth, y + BANNER_HEIGHT, bgColor);
+        int bgAlpha = (int) (210 * alpha);
+        int bgTop = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_TOP, bgAlpha);
+        int bgBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM, bgAlpha);
+        graphics.fillGradient(x, y, x + bannerWidth, y + BANNER_HEIGHT, bgTop, bgBottom);
 
         // Inner highlight
         int highlightAlpha = (int) (40 * alpha);
-        int highlightColor = (highlightAlpha << 24) | 0xFFFFFF;
+        int highlightColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, highlightAlpha);
         graphics.fill(x + 1, y + 1, x + bannerWidth - 1, y + 3, highlightColor);
 
         // Border based on priority
@@ -117,8 +119,8 @@ public class BannerRenderer {
 
         // Text rendering
         int textAlpha = (int) (255 * alpha);
-        int titleColor = (textAlpha << 24) | 0xFFFFFF;
-        int messageColor = (textAlpha << 24) | 0xBBBBBB;
+        int titleColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, textAlpha);
+        int messageColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, textAlpha);
 
         // Title (centered or top if message present)
         int titleY = message != null ? y + 12 : y + (BANNER_HEIGHT - 9) / 2;
@@ -141,7 +143,7 @@ public class BannerRenderer {
      * Render icon background circle.
      */
     private static void renderIconBackground(GuiGraphics graphics, int x, int y, int size, int alpha) {
-        int color = (alpha << 24) | 0x333333;
+        int color = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, alpha);
         // Simple square for now - could be circle with shader
         graphics.fill(x, y, x + size, y + size, color);
     }
@@ -178,7 +180,7 @@ public class BannerRenderer {
         // Pulsing red glow
         float pulse = (float) (0.5f + 0.5f * Math.sin(System.currentTimeMillis() / 200.0));
         int glowAlpha = (int) (30 * alpha * pulse);
-        int glowColor = (glowAlpha << 24) | 0xFF0000;
+        int glowColor = NotificationUiTheme.withAlpha(NotificationUiTheme.getPriorityColor(NotificationPriority.CRITICAL), glowAlpha);
 
         // Outer glow
         graphics.fill(x - 2, y - 2, x + width + 2, y, glowColor);
@@ -190,14 +192,7 @@ public class BannerRenderer {
      */
     public static int getPriorityBorderColor(NotificationPriority priority, float alpha) {
         int a = (int) (255 * alpha);
-        int rgb = switch (priority) {
-            case LOW -> 0x555555;
-            case NORMAL -> 0x888888;
-            case HIGH -> 0xFFD700;      // Gold
-            case URGENT -> 0xFF6600;    // Orange
-            case CRITICAL -> 0xFF0000;  // Red
-        };
-        return (a << 24) | rgb;
+        return NotificationUiTheme.withAlpha(NotificationUiTheme.getPriorityColor(priority), a);
     }
 
     /**

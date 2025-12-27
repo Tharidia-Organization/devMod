@@ -34,6 +34,9 @@ import com.devmod.config.WeaponConfigManager;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.mailbox.MailboxPermissions;
 import com.devmod.network.GameMechanicsSyncPayload;
+import com.devmod.notification.network.NotificationPreferencesSyncPayload;
+import com.devmod.notification.persistence.NotificationHistoryRepository;
+import com.devmod.notification.persistence.NotificationPreferencesRepository;
 import com.devmod.stats.ArmorStats;
 import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
 import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
@@ -214,6 +217,18 @@ public class CommonModEvents {
             LOGGER.error("[DevMod] Failed to initialize MailboxManager", e);
         }
 
+        // Initialize notification persistence repositories
+        try {
+            java.nio.file.Path dbPath = ConfigPaths.getGameDir()
+                    .resolve("devmod")
+                    .resolve("notifications.duckdb");
+            NotificationHistoryRepository.INSTANCE.initialize(dbPath).join();
+            NotificationPreferencesRepository.INSTANCE.initialize(dbPath).join();
+            LOGGER.info("[DevMod] Notification repositories initialized successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize notification repositories", e);
+        }
+
         // Initialize Unified Notification Center
         try {
             com.devmod.notification.NotificationService.INSTANCE.initialize();
@@ -259,6 +274,15 @@ public class CommonModEvents {
             LOGGER.info("[DevMod] NotificationService shutdown complete");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Error during NotificationService shutdown", e);
+        }
+
+        // Shutdown notification repositories
+        try {
+            NotificationHistoryRepository.INSTANCE.shutdown();
+            NotificationPreferencesRepository.INSTANCE.shutdown();
+            LOGGER.info("[DevMod] Notification repositories shutdown complete");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Error during notification repositories shutdown", e);
         }
 
         // Shutdown MailboxManager
@@ -319,6 +343,24 @@ public class CommonModEvents {
                 }
             } catch (Exception e) {
                 LOGGER.warn("[DevMod] Failed to sync tasks to {}: {}",
+                    player.getName().getString(), e.getMessage());
+            }
+
+            // Sync notification preferences to client
+            try {
+                NotificationPreferencesRepository repo = NotificationPreferencesRepository.INSTANCE;
+                if (repo.isInitialized()) {
+                    java.util.UUID playerUuid = player.getUUID();
+                    repo.loadPreferences(playerUuid).thenAccept(prefs -> {
+                        if (player.isRemoved() || player.server == null) {
+                            return;
+                        }
+                        player.server.execute(() ->
+                                PacketDistributor.sendToPlayer(player, NotificationPreferencesSyncPayload.from(prefs)));
+                    });
+                }
+            } catch (Exception e) {
+                LOGGER.warn("[DevMod] Failed to sync notification preferences to {}: {}",
                     player.getName().getString(), e.getMessage());
             }
         }

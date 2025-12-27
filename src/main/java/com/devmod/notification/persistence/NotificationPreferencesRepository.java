@@ -156,12 +156,24 @@ public class NotificationPreferencesRepository {
      * Load preferences from database asynchronously.
      */
     private void loadPreferencesAsync(UUID playerUuid) {
+        var unused = loadPreferences(playerUuid);
+    }
+
+    /**
+     * Load preferences from database and return a future with the result.
+     */
+    public CompletableFuture<NotificationPreferences> loadPreferences(UUID playerUuid) {
         ExecutorService exec = executor;
         DuckDBConnectionManager cm = connectionManager;
-        if (!initialized || exec == null || cm == null) return;
+        if (!initialized || exec == null || cm == null) {
+            NotificationPreferences defaults = new NotificationPreferences(playerUuid);
+            cache.put(playerUuid, defaults);
+            return CompletableFuture.completedFuture(defaults);
+        }
 
-        var unused = CompletableFuture.runAsync(() -> {
+        return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT * FROM notification_preferences WHERE player_uuid = ?";
+            NotificationPreferences prefs = new NotificationPreferences(playerUuid);
 
             try (Connection conn = cm.getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -169,14 +181,16 @@ public class NotificationPreferencesRepository {
                 stmt.setString(1, playerUuid.toString());
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
-                        NotificationPreferences prefs = mapFromResultSet(rs, playerUuid);
-                        cache.put(playerUuid, prefs);
+                        prefs = mapFromResultSet(rs, playerUuid);
                         LOGGER.debug("[NotificationPrefs] Loaded preferences for {}", playerUuid);
                     }
                 }
             } catch (SQLException e) {
                 LOGGER.warn("[NotificationPrefs] Failed to load preferences: {}", e.getMessage());
             }
+
+            cache.put(playerUuid, prefs);
+            return prefs;
         }, exec);
     }
 

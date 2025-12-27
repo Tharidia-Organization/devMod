@@ -135,7 +135,8 @@ public enum ChannelId {
     // UNIFIED NOTIFICATION CENTER CHANNELS (120-129)
     // ============================================================================
     UNIFIED_NOTIFICATION(120, Direction.SERVER_TO_CLIENT, "UnifiedNotificationPayload"),
-    NOTIFICATION_PREFS_SYNC(121, Direction.SERVER_TO_CLIENT, "NotificationPreferencesSyncPayload");
+    NOTIFICATION_PREFS_SYNC(121, Direction.SERVER_TO_CLIENT, "NotificationPreferencesSyncPayload"),
+    NOTIFICATION_PREFS_UPDATE(122, Direction.CLIENT_TO_SERVER, "NotificationPreferencesUpdatePayload");
 
     // ============================================================================
     // ENUM INFRASTRUCTURE

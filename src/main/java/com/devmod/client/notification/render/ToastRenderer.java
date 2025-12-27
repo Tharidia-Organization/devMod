@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.notification.NotificationUiTheme;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 
@@ -70,9 +71,10 @@ public class ToastRenderer {
         int baseY = screenHeight - TOAST_MARGIN - ((index + 1) * (TOAST_HEIGHT + TOAST_SPACING));
 
         // Background with alpha
-        int bgAlpha = (int) (180 * alpha);
-        int bgColor = (bgAlpha << 24) | 0x1A1A1A;
-        graphics.fill(x, baseY, x + TOAST_WIDTH, baseY + TOAST_HEIGHT, bgColor);
+        int bgAlpha = (int) (200 * alpha);
+        int bgTop = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_TOP, bgAlpha);
+        int bgBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, bgAlpha);
+        graphics.fillGradient(x, baseY, x + TOAST_WIDTH, baseY + TOAST_HEIGHT, bgTop, bgBottom);
 
         // Left accent bar based on category
         int accentColor = getCategoryColor(notification.category(), alpha);
@@ -84,15 +86,15 @@ public class ToastRenderer {
         String iconId = notification.iconId();
         if (iconId != null && !iconId.isEmpty()) {
             // Render icon background circle
-            int iconBgColor = (int) (alpha * 100) << 24 | 0x333333;
+            int iconBgColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, (int) (alpha * 90));
             graphics.fill(iconX, baseY + 4, iconX + iconSize, baseY + 4 + iconSize, iconBgColor);
         }
 
         // Text area
         int textX = iconId != null ? iconX + iconSize + 6 : x + TOAST_PADDING + ACCENT_BAR_WIDTH + 4;
         int textAlpha = (int) (255 * alpha);
-        int textColor = (textAlpha << 24) | 0xFFFFFF;
-        int subTextColor = (textAlpha << 24) | 0xAAAAAA;
+        int textColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, textAlpha);
+        int subTextColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, textAlpha);
 
         // Title
         String titleKey = notification.titleKey();
@@ -112,7 +114,7 @@ public class ToastRenderer {
 
         // Border highlight on top for emphasis
         if (alpha > 0.5f) {
-            int borderColor = (int) (alpha * 60) << 24 | 0xFFFFFF;
+            int borderColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, (int) (alpha * 60));
             graphics.fill(x, baseY, x + TOAST_WIDTH, baseY + 1, borderColor);
         }
     }
@@ -141,21 +143,7 @@ public class ToastRenderer {
      */
     public static int getCategoryColor(NotificationCategory category, float alpha) {
         int a = (int) (255 * alpha);
-        int rgb = switch (category) {
-            case PARTY -> 0x5555FF;         // Blue
-            case ACHIEVEMENT -> 0xFFD700;   // Gold
-            case RECORD -> 0xFF4444;        // Red
-            case SEASON -> 0xAA55FF;        // Purple
-            case TOKEN -> 0xFFAA00;         // Orange
-            case REWARD -> 0x55FF55;        // Green
-            case COMBAT -> 0xFF5555;        // Light red
-            case RESONANCE -> 0x55FFFF;     // Cyan
-            case QUEST -> 0x55FF55;         // Green
-            case MAILBOX -> 0xAAAAAA;       // Gray
-            case ADMIN -> 0xFF0000;         // Bright red
-            case SYSTEM -> 0x888888;        // Dark gray
-        };
-        return (a << 24) | rgb;
+        return NotificationUiTheme.withAlpha(NotificationUiTheme.getCategoryColor(category), a);
     }
 
     /**

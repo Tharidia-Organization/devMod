@@ -199,8 +199,8 @@ public record MessageTemplate(
         public MessageTemplate build() {
             // Auto-extract placeholders from subject and body if not specified
             List<String> allPlaceholders = new ArrayList<>();
-            allPlaceholders.addAll(MessageTemplateRegistry.INSTANCE.extractPlaceholders(subject));
-            allPlaceholders.addAll(MessageTemplateRegistry.INSTANCE.extractPlaceholders(body));
+            allPlaceholders.addAll(MessageTemplateRegistry.extractPlaceholders(subject));
+            allPlaceholders.addAll(MessageTemplateRegistry.extractPlaceholders(body));
 
             // Remove duplicates
             List<String> uniquePlaceholders = allPlaceholders.stream().distinct().toList();

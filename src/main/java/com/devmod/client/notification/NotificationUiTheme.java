@@ -59,18 +59,18 @@ public final class NotificationUiTheme {
 
     public static String getCategoryIcon(NotificationCategory category) {
         return switch (category) {
-            case ACHIEVEMENT -> "\u2605";
-            case RECORD -> "\u2691";
-            case SEASON -> "\u2606";
-            case TOKEN -> "\u25C9";
-            case REWARD -> "\u2726";
-            case PARTY -> "\u263A";
-            case QUEST -> "\u2694";
-            case COMBAT -> "\u26A1";
-            case RESONANCE -> "\u2728";
-            case ADMIN -> "\u26A0";
-            case SYSTEM -> "\u2699";
-            case MAILBOX -> "\u2709";
+            case ACHIEVEMENT -> "*";
+            case RECORD -> "#";
+            case SEASON -> "S";
+            case TOKEN -> "$";
+            case REWARD -> "+";
+            case PARTY -> "P";
+            case QUEST -> "Q";
+            case COMBAT -> "!";
+            case RESONANCE -> "R";
+            case ADMIN -> "!";
+            case SYSTEM -> "i";
+            case MAILBOX -> "M";
         };
     }
 

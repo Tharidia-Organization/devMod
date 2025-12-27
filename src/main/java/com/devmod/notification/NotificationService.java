@@ -21,6 +21,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.mailbox.MailboxManager;
 import com.devmod.notification.network.UnifiedNotificationPayload;
+import com.devmod.notification.persistence.NotificationHistoryRepository;
 
 /**
  * Central server-side entry point for the Unified Notification Center.
@@ -459,6 +460,10 @@ public class NotificationService {
     private void deliverNotification(UUID playerUuid, Notification notification) {
         // Route the notification
         NotificationRouter.RoutingDecision decision = router.route(playerUuid, notification);
+
+        if (decision.hasAnyDelivery()) {
+            NotificationHistoryRepository.INSTANCE.save(playerUuid, notification);
+        }
 
         // Send overlay if player is online and overlay is enabled
         if (decision.sendOverlay()) {

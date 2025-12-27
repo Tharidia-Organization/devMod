@@ -12,6 +12,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
+import com.devmod.notification.persistence.NotificationPreferencesRepository;
+
 /**
  * Routes notifications to appropriate destinations based on:
  * <ul>
@@ -85,6 +87,11 @@ public class NotificationRouter {
      * Get preferences for a player, using defaults if not cached.
      */
     public NotificationPreferences getPreferences(UUID playerUuid) {
+        NotificationPreferencesRepository repo = NotificationPreferencesRepository.INSTANCE;
+        if (repo.isInitialized()) {
+            return repo.getPreferences(playerUuid);
+        }
+
         return preferencesCache.computeIfAbsent(playerUuid,
                 uuid -> new NotificationPreferences(uuid));
     }
@@ -94,6 +101,10 @@ public class NotificationRouter {
      */
     public void updatePreferences(UUID playerUuid, NotificationPreferences preferences) {
         preferencesCache.put(playerUuid, preferences);
+        NotificationPreferencesRepository repo = NotificationPreferencesRepository.INSTANCE;
+        if (repo.isInitialized()) {
+            repo.savePreferences(preferences);
+        }
     }
 
     /**
@@ -101,6 +112,10 @@ public class NotificationRouter {
      */
     public void clearPreferences(UUID playerUuid) {
         preferencesCache.remove(playerUuid);
+        NotificationPreferencesRepository repo = NotificationPreferencesRepository.INSTANCE;
+        if (repo.isInitialized()) {
+            repo.clearCache(playerUuid);
+        }
     }
 
     /**

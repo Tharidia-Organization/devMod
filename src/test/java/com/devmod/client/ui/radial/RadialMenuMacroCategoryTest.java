@@ -286,7 +286,7 @@ class RadialMenuMacroCategoryTest {
             // Verify getActiveCategories delegates to getVisibleCategoriesForMacro which uses macroCategoryMap
             assertTrue(screenSourceCode.contains("getVisibleCategoriesForMacro(selectedMacro)"),
                 "getActiveCategories should delegate to getVisibleCategoriesForMacro");
-            assertTrue(screenSourceCode.contains("macroCategoryMap.getOrDefault(macro"),
+            assertTrue(screenSourceCode.contains("macroCategoryMap.get(macro)"),
                 "getVisibleCategoriesForMacro should use macroCategoryMap");
         }
 

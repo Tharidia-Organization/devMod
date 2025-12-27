@@ -51,6 +51,9 @@ import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 import com.devmod.endurance.resonance.ResonanceNotificationPayload;
 import com.devmod.endurance.season.SeasonTierUpPayload;
+import com.devmod.notification.network.NotificationNetworkHandler;
+import com.devmod.notification.network.NotificationPreferencesSyncPayload;
+import com.devmod.notification.network.NotificationPreferencesUpdatePayload;
 import com.devmod.network.handlers.AbilityNetworkHandler;
 import com.devmod.network.handlers.ConfigNetworkHandler;
 import com.devmod.network.handlers.EnduranceNetworkHandler;
@@ -132,6 +135,8 @@ import static com.devmod.network.ChannelId.TELEMETRY_BATCH;
 import static com.devmod.network.ChannelId.TENSION_UPDATE;
 import static com.devmod.network.ChannelId.TOKEN_GAIN;
 import static com.devmod.network.ChannelId.UNIFIED_NOTIFICATION;
+import static com.devmod.network.ChannelId.NOTIFICATION_PREFS_SYNC;
+import static com.devmod.network.ChannelId.NOTIFICATION_PREFS_UPDATE;
 import static com.devmod.network.ChannelId.UPDATE_ARMOR;
 import static com.devmod.network.ChannelId.USABLE_STATS;
 import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_CHOICES;
@@ -228,6 +233,8 @@ public class NetworkHandler {
 
         // Unified Notification Center handlers
         void handleUnifiedNotification(com.devmod.notification.network.UnifiedNotificationPayload payload);
+
+        void handleNotificationPreferencesSync(NotificationPreferencesSyncPayload payload);
     }
 
     @Nullable
@@ -792,6 +799,21 @@ public class NetworkHandler {
                             withClientHooks(hooks -> hooks.handleUnifiedNotification(payload)));
                     }
                 }
+        );
+        event.registrar(NOTIFICATION_PREFS_SYNC.asString()).playToClient(
+                nn(NotificationPreferencesSyncPayload.TYPE),
+                nn(NotificationPreferencesSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleNotificationPreferencesSync(payload)));
+                    }
+                }
+        );
+        event.registrar(NOTIFICATION_PREFS_UPDATE.asString()).playToServer(
+                nn(NotificationPreferencesUpdatePayload.TYPE),
+                nn(NotificationPreferencesUpdatePayload.STREAM_CODEC),
+                NotificationNetworkHandler::handlePreferencesUpdate
         );
     }
 

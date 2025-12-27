@@ -8,10 +8,13 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
+import org.lwjgl.glfw.GLFW;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
@@ -119,6 +122,7 @@ public class NotificationBadgeOverlay {
 
     // Handle click on the badge.
     public static boolean handleClick(double mouseX, double mouseY) {
+        if (!visible) return false;
         if (isHovered(mouseX, mouseY)) {
             openNotificationCenter();
             return true;
@@ -127,8 +131,28 @@ public class NotificationBadgeOverlay {
     }
 
     private static void openNotificationCenter() {
-        // NotificationCenterScreen not yet implemented
-        // TODO: Implement notification center screen
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null) return;
+        mc.setScreen(new NotificationCenterScreen(mc.screen));
+    }
+
+    @SubscribeEvent
+    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
+        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_1 || event.getAction() != GLFW.GLFW_PRESS) {
+            return;
+        }
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui || mc.screen != null) return;
+
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
+        double mouseX = mc.mouseHandler.xpos() * screenWidth / mc.getWindow().getScreenWidth();
+        double mouseY = mc.mouseHandler.ypos() * screenHeight / mc.getWindow().getScreenHeight();
+
+        if (handleClick(mouseX, mouseY)) {
+            event.setCanceled(true);
+        }
     }
 
     // ============================================================================
@@ -251,9 +275,24 @@ public class NotificationBadgeOverlay {
     }
 
     private static void renderTooltip(GuiGraphics graphics, Font font, int x, int y) {
-        String title = "Notifications";
-        String subtitle = displayedCount == 0 ? "All caught up!" :
-                displayedCount + " unread" + (urgentCount > 0 ? " (" + urgentCount + " urgent)" : "");
+        String title = net.minecraft.network.chat.Component
+                .translatable("devmod.notification.badge.tooltip.title")
+                .getString();
+        String subtitle;
+        if (displayedCount == 0) {
+            subtitle = net.minecraft.network.chat.Component
+                    .translatable("devmod.notification.badge.tooltip.empty")
+                    .getString();
+        } else if (urgentCount > 0) {
+            subtitle = net.minecraft.network.chat.Component
+                    .translatable("devmod.notification.badge.tooltip.unread_urgent",
+                            displayedCount, urgentCount)
+                    .getString();
+        } else {
+            subtitle = net.minecraft.network.chat.Component
+                    .translatable("devmod.notification.badge.tooltip.unread", displayedCount)
+                    .getString();
+        }
 
         int tooltipWidth = Math.max(font.width(title), font.width(subtitle)) + 16;
         int tooltipHeight = 28;

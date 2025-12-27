@@ -95,10 +95,10 @@ class RadialOrphanCheckTest {
         }
 
         @Test
-        @DisplayName("L0-04: ActionKeybindRegistry has initialize method")
-        void actionKeybindRegistryHasInitialize() {
-            assertTrue(actionKeybindRegistrySource.contains("public void initialize()"),
-                "ActionKeybindRegistry should have initialize method");
+        @DisplayName("L0-04: ActionKeybindRegistry has register method")
+        void actionKeybindRegistryHasRegister() {
+            assertTrue(actionKeybindRegistrySource.contains("public static void register("),
+                "ActionKeybindRegistry should have static register method");
         }
     }
 
@@ -199,10 +199,10 @@ class RadialOrphanCheckTest {
         @Test
         @DisplayName("L2-01: All keybinds map to ActionIds")
         void allKeybindsMappedToActionIds() {
-            // Count keybind registrations in ActionKeybindRegistry
+            // Count keybind registrations in DevModClientActions (where they are registered)
             Pattern registerPattern = Pattern.compile(
-                "register\\(KeyInputHandler\\.(\\w+),\\s*Modifier\\.(\\w+),\\s*ActionIds\\.(\\w+)");
-            Matcher matcher = registerPattern.matcher(actionKeybindRegistrySource);
+                "ActionKeybindRegistry\\.register\\(ActionIds\\.(\\w+),\\s*KeyInputHandler\\.(\\w+)");
+            Matcher matcher = registerPattern.matcher(devModClientActionsSource);
 
             int count = 0;
             while (matcher.find()) {

@@ -2,9 +2,12 @@ package com.devmod.client.notification;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -25,6 +28,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.notification.ui.NotificationBadgeOverlay;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
@@ -48,6 +52,7 @@ public class ClientNotificationManager {
     // Configuration
     private static final int MAX_ACTIVE_TOASTS = 5;
     private static final int MAX_QUEUE_SIZE = 50;
+    private static final int MAX_HISTORY_SIZE = 200;
     private static final int TOAST_WIDTH = 280;
     private static final int TOAST_HEIGHT = 48;
     private static final int TOAST_MARGIN = 8;
@@ -67,7 +72,11 @@ public class ClientNotificationManager {
     private final Queue<QueuedNotification> bannerQueue = new ArrayDeque<>();
 
     // Client preferences (loaded from config/server)
-    private ClientNotificationPreferences preferences = new ClientNotificationPreferences();
+    private final ClientNotificationPreferences preferences = ClientNotificationPreferences.INSTANCE;
+
+    // Notification history and read state
+    private final List<Notification> history = new ArrayList<>();
+    private final Set<UUID> readIds = new HashSet<>();
 
     private ClientNotificationManager() {}
 
@@ -94,6 +103,9 @@ public class ClientNotificationManager {
      * Handle a notification object.
      */
     public void handleNotification(Notification notification) {
+        addToHistory(notification);
+        updateBadgeCounts(true);
+
         // Check if category is muted
         if (preferences.isCategoryMuted(notification.category())) {
             LOGGER.debug("Notification muted by category: {}", notification.category());
@@ -107,9 +119,7 @@ public class ClientNotificationManager {
         }
 
         // Play sound if not muted
-        if (preferences.isSoundEnabled(notification.category())) {
-            playNotificationSound(notification);
-        }
+        playNotificationSound(notification);
 
         // Queue for display
         QueuedNotification queued = new QueuedNotification(notification, System.currentTimeMillis());
@@ -136,12 +146,11 @@ public class ClientNotificationManager {
     }
 
     private void playNotificationSound(Notification notification) {
-        // Delegate to NotificationSoundManager (will be created in FASE 5.4)
-        // For now, just log
-        String soundId = notification.soundId();
-        if (soundId != null && !soundId.isEmpty()) {
-            LOGGER.debug("Would play sound: {}", soundId);
-        }
+        NotificationSoundManager.INSTANCE.play(
+                notification.soundId(),
+                notification.category(),
+                notification.priority()
+        );
     }
 
     /**
@@ -217,11 +226,12 @@ public class ClientNotificationManager {
         int baseY = 10;
         int y = (int) (baseY - (1 - slideProgress) * 40);
 
-        int bgAlpha = (int) (200 * alpha);
-        int bgColor = (bgAlpha << 24) | 0x1A1A2E;
+        int bgAlpha = (int) (210 * alpha);
+        int bgTop = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_TOP, bgAlpha);
+        int bgBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM, bgAlpha);
 
         // Background
-        graphics.fill(x, y, x + bannerWidth, y + BANNER_HEIGHT, bgColor);
+        graphics.fillGradient(x, y, x + bannerWidth, y + BANNER_HEIGHT, bgTop, bgBottom);
 
         // Border based on priority
         int borderColor = getBorderColor(banner.notification.priority(), alpha);
@@ -231,13 +241,15 @@ public class ClientNotificationManager {
         // Title
         int textAlpha = (int) (255 * alpha);
         Component title = Component.translatable(Objects.requireNonNull(banner.notification.titleKey()));
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, y + 8, (textAlpha << 24) | 0xFFFFFF, true);
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, y + 8,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, textAlpha), true);
 
         // Message if present
         String msgKey = banner.notification.messageKey();
         if (msgKey != null) {
             Component message = Component.translatable(Objects.requireNonNull(msgKey));
-            graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(message), x + 10, y + 24, (textAlpha << 24) | 0xAAAAAA, true);
+            graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(message), x + 10, y + 24,
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, textAlpha), true);
         }
     }
 
@@ -250,11 +262,12 @@ public class ClientNotificationManager {
         int baseY = screenHeight - 60 - (toast.targetIndex * (TOAST_HEIGHT + 4));
         x = (int) (x + (1 - slideProgress) * (TOAST_WIDTH + 20));
 
-        int bgAlpha = (int) (180 * alpha);
-        int bgColor = (bgAlpha << 24) | 0x1A1A2E;
+        int bgAlpha = (int) (200 * alpha);
+        int bgTop = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_TOP, bgAlpha);
+        int bgBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, bgAlpha);
 
         // Background
-        graphics.fill(x, baseY, x + TOAST_WIDTH, baseY + TOAST_HEIGHT, bgColor);
+        graphics.fillGradient(x, baseY, x + TOAST_WIDTH, baseY + TOAST_HEIGHT, bgTop, bgBottom);
 
         // Left accent bar based on category
         int accentColor = getCategoryColor(toast.notification.category(), alpha);
@@ -263,7 +276,8 @@ public class ClientNotificationManager {
         // Title
         int textAlpha = (int) (255 * alpha);
         Component title = Component.translatable(Objects.requireNonNull(toast.notification.titleKey()));
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, baseY + 8, (textAlpha << 24) | 0xFFFFFF, true);
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, baseY + 8,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, textAlpha), true);
 
         // Message if present
         String msgKey = toast.notification.messageKey();
@@ -274,44 +288,42 @@ public class ClientNotificationManager {
             if (font.width(Objects.requireNonNull(text)) > maxWidth) {
                 text = font.plainSubstrByWidth(Objects.requireNonNull(text), maxWidth - 10) + "...";
             }
-            graphics.drawString(font, text, x + 10, baseY + 24, (textAlpha << 24) | 0xAAAAAA, true);
+            graphics.drawString(font, text, x + 10, baseY + 24,
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, textAlpha), true);
         }
     }
 
     private int getBorderColor(NotificationPriority priority, float alpha) {
         int a = (int) (255 * alpha);
-        return switch (priority) {
-            case LOW -> (a << 24) | 0x666666;
-            case NORMAL -> (a << 24) | 0x4CAF50;
-            case HIGH -> (a << 24) | 0xFFA726;
-            case URGENT -> (a << 24) | 0xF44336;
-            case CRITICAL -> (a << 24) | 0xE91E63;
-        };
+        return NotificationUiTheme.withAlpha(NotificationUiTheme.getPriorityColor(priority), a);
     }
 
     private int getCategoryColor(NotificationCategory category, float alpha) {
         int a = (int) (255 * alpha);
-        return switch (category) {
-            case PARTY -> (a << 24) | 0x2196F3;
-            case ACHIEVEMENT -> (a << 24) | 0xFFD700;
-            case RECORD -> (a << 24) | 0xE91E63;
-            case SEASON -> (a << 24) | 0x9C27B0;
-            case TOKEN -> (a << 24) | 0xFFD700;
-            case REWARD -> (a << 24) | 0x4CAF50;
-            case COMBAT -> (a << 24) | 0xF44336;
-            case RESONANCE -> (a << 24) | 0x00BCD4;
-            case QUEST -> (a << 24) | 0xFF5722;
-            case MAILBOX -> (a << 24) | 0x607D8B;
-            case ADMIN -> (a << 24) | 0xF44336;
-            case SYSTEM -> (a << 24) | 0x9E9E9E;
-        };
+        return NotificationUiTheme.withAlpha(NotificationUiTheme.getCategoryColor(category), a);
     }
 
     /**
      * Update client preferences.
      */
     public void setPreferences(ClientNotificationPreferences preferences) {
-        this.preferences = preferences;
+        if (preferences == null) {
+            return;
+        }
+
+        this.preferences.setGlobalMute(preferences.isGlobalMute());
+        this.preferences.setMinOverlayPriority(preferences.getMinOverlayPriority());
+        this.preferences.setPreferChatOverOverlay(preferences.prefersChatOverOverlay());
+        this.preferences.setMasterVolume(preferences.getMasterVolume());
+
+        for (NotificationCategory category : NotificationCategory.values()) {
+            ClientNotificationPreferences.CategoryPreference pref = preferences.getCategoryPreference(category);
+            if (pref != null) {
+                this.preferences.setCategoryOverlayEnabled(category, pref.overlayEnabled());
+                this.preferences.setCategorySoundEnabled(category, pref.soundEnabled());
+                this.preferences.setCategorySoundVolume(category, pref.soundVolume());
+            }
+        }
     }
 
     /**
@@ -322,6 +334,72 @@ public class ClientNotificationManager {
         bannerQueue.clear();
         activeToasts.clear();
         activeBanner = null;
+        history.clear();
+        readIds.clear();
+        updateBadgeCounts(false);
+    }
+
+    public List<Notification> getHistory() {
+        return List.copyOf(history);
+    }
+
+    public boolean isRead(UUID notificationId) {
+        return readIds.contains(notificationId);
+    }
+
+    public void markRead(UUID notificationId) {
+        if (readIds.add(notificationId)) {
+            updateBadgeCounts(false);
+        }
+    }
+
+    public void markAllRead() {
+        for (Notification notification : history) {
+            readIds.add(notification.id());
+        }
+        updateBadgeCounts(false);
+    }
+
+    public int getUnreadCount() {
+        int unread = 0;
+        for (Notification notification : history) {
+            if (!readIds.contains(notification.id())) {
+                unread++;
+            }
+        }
+        return unread;
+    }
+
+    public int getUrgentUnreadCount() {
+        int urgent = 0;
+        for (Notification notification : history) {
+            if (!readIds.contains(notification.id())
+                    && notification.priority().isAtLeast(NotificationPriority.URGENT)) {
+                urgent++;
+            }
+        }
+        return urgent;
+    }
+
+    private void addToHistory(Notification notification) {
+        history.add(0, notification);
+        trimHistory();
+    }
+
+    private void trimHistory() {
+        while (history.size() > MAX_HISTORY_SIZE) {
+            Notification removed = history.remove(history.size() - 1);
+            readIds.remove(removed.id());
+        }
+    }
+
+    private void updateBadgeCounts(boolean animate) {
+        int unread = getUnreadCount();
+        int urgent = getUrgentUnreadCount();
+        NotificationBadgeOverlay.updateCount(unread, urgent);
+        if (animate) {
+            NotificationBadgeOverlay.notifyNew();
+        }
     }
 
     // ===== Internal classes =====

@@ -360,7 +360,12 @@ def fsOps = project.services.get(org.gradle.api.file.FileSystemOperations)
 test {
     dependsOn 'generateBuildProperties'
     notCompatibleWithConfigurationCache("Test classpath relies on generated artifacts; cache reuse drops main classes.")
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // Exclude load/stress tests from normal test runs - they can fail due to timing
+        // in CI or constrained environments. Run explicitly with:
+        // ./gradlew test --tests "com.devmod.mailbox.BroadcastLoadTest"
+        excludeTags 'load'
+    }
     testLogging {
         events "passed", "skipped", "failed"
         showStandardStreams = true

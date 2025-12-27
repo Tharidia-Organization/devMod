@@ -340,12 +340,12 @@ export default function MessagesPage() {
         : 'border-gray-300 focus:ring-primary-500 focus:border-primary-500'
     }`;
 
-  const helperText = (errors: Record<string, string>, field: string, text: string) =>
+  const helperText = (errors: Record<string, string>, field: string, text?: string) =>
     errors[field] ? (
       <p className="text-xs text-red-600 mt-1">{errors[field]}</p>
-    ) : (
+    ) : text ? (
       <p className="text-sm text-gray-500 mt-1">{text}</p>
-    );
+    ) : null;
 
   const hasCreateErrors = Object.keys(createErrors).length > 0;
   const hasBroadcastErrors = Object.keys(broadcastErrors).length > 0;
@@ -446,7 +446,7 @@ export default function MessagesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {data?.items.map((message) => (
+            {(data?.items ?? []).map((message) => (
               <tr
                 key={message.id}
                 className="hover:bg-gray-50 cursor-pointer"
@@ -486,6 +486,7 @@ export default function MessagesPage() {
                       }
                     }}
                     className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                    aria-label="Delete message"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -628,7 +629,7 @@ export default function MessagesPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-auto">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-900">{selectedMessage.subject}</h2>
-              <button onClick={() => setSelectedMessage(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={() => setSelectedMessage(null)} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close message details">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -678,7 +679,7 @@ export default function MessagesPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-900">New Message</h2>
-              <button onClick={closeNewModal} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={closeNewModal} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close new message form">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -689,8 +690,9 @@ export default function MessagesPage() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Recipient UUID</label>
+                <label htmlFor="create-recipientUuid" className="block text-sm font-medium text-gray-700 mb-1">Recipient UUID</label>
                 <input
+                  id="create-recipientUuid"
                   name="recipientUuid"
                   required
                   onChange={handleCreateFieldChange}
@@ -700,8 +702,9 @@ export default function MessagesPage() {
                 {helperText(createErrors, 'recipientUuid', 'Must be a valid UUID')}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sender Name</label>
+                <label htmlFor="create-senderName" className="block text-sm font-medium text-gray-700 mb-1">Sender Name</label>
                 <input
+                  id="create-senderName"
                   name="senderName"
                   defaultValue="Admin"
                   onChange={handleCreateFieldChange}
@@ -709,8 +712,9 @@ export default function MessagesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <label htmlFor="create-subject" className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
                 <input
+                  id="create-subject"
                   name="subject"
                   required
                   maxLength={maxSubjectLength}
@@ -720,8 +724,9 @@ export default function MessagesPage() {
                 {helperText(createErrors, 'subject', `Max ${maxSubjectLength} characters`)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
+                <label htmlFor="create-body" className="block text-sm font-medium text-gray-700 mb-1">Body</label>
                 <textarea
+                  id="create-body"
                   name="body"
                   rows={4}
                   maxLength={maxBodyLength}
@@ -731,8 +736,9 @@ export default function MessagesPage() {
                 {helperText(createErrors, 'body', `Max ${maxBodyLength} characters`)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Attachment JSON (optional)</label>
+                <label htmlFor="create-attachmentData" className="block text-sm font-medium text-gray-700 mb-1">Attachment JSON (optional)</label>
                 <textarea
+                  id="create-attachmentData"
                   name="attachmentData"
                   rows={3}
                   onChange={handleCreateFieldChange}
@@ -742,8 +748,9 @@ export default function MessagesPage() {
                 {helperText(createErrors, 'attachmentData')}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expires At (optional)</label>
+                <label htmlFor="create-expiresAt" className="block text-sm font-medium text-gray-700 mb-1">Expires At (optional)</label>
                 <input
+                  id="create-expiresAt"
                   type="datetime-local"
                   name="expiresAt"
                   onChange={handleCreateFieldChange}
@@ -752,9 +759,10 @@ export default function MessagesPage() {
                 {helperText(createErrors, 'expiresAt')}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <label htmlFor="create-messageType" className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                 <div className="relative">
                   <select
+                    id="create-messageType"
                     name="messageType"
                     defaultValue="ADMIN"
                     onChange={handleCreateFieldChange}
@@ -794,7 +802,7 @@ export default function MessagesPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-semibold text-gray-900">Broadcast Message</h2>
-              <button onClick={closeBroadcastModal} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={closeBroadcastModal} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close broadcast form">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -835,8 +843,9 @@ export default function MessagesPage() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sender Name</label>
+                <label htmlFor="broadcast-senderName" className="block text-sm font-medium text-gray-700 mb-1">Sender Name</label>
                 <input
+                  id="broadcast-senderName"
                   name="senderName"
                   defaultValue="Admin"
                   onChange={handleBroadcastFieldChange}
@@ -844,8 +853,9 @@ export default function MessagesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <label htmlFor="broadcast-subject" className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
                 <input
+                  id="broadcast-subject"
                   name="subject"
                   required
                   maxLength={maxSubjectLength}
@@ -855,8 +865,9 @@ export default function MessagesPage() {
                 {helperText(broadcastErrors, 'subject', `Max ${maxSubjectLength} characters`)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
+                <label htmlFor="broadcast-body" className="block text-sm font-medium text-gray-700 mb-1">Body</label>
                 <textarea
+                  id="broadcast-body"
                   name="body"
                   rows={4}
                   maxLength={maxBodyLength}
@@ -866,8 +877,9 @@ export default function MessagesPage() {
                 {helperText(broadcastErrors, 'body', `Max ${maxBodyLength} characters`)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Attachment JSON (optional)</label>
+                <label htmlFor="broadcast-attachmentData" className="block text-sm font-medium text-gray-700 mb-1">Attachment JSON (optional)</label>
                 <textarea
+                  id="broadcast-attachmentData"
                   name="attachmentData"
                   rows={3}
                   onChange={handleBroadcastFieldChange}
@@ -877,8 +889,9 @@ export default function MessagesPage() {
                 {helperText(broadcastErrors, 'attachmentData')}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expires At (optional)</label>
+                <label htmlFor="broadcast-expiresAt" className="block text-sm font-medium text-gray-700 mb-1">Expires At (optional)</label>
                 <input
+                  id="broadcast-expiresAt"
                   type="datetime-local"
                   name="expiresAt"
                   onChange={handleBroadcastFieldChange}
@@ -887,9 +900,10 @@ export default function MessagesPage() {
                 {helperText(broadcastErrors, 'expiresAt')}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <label htmlFor="broadcast-messageType" className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                 <div className="relative">
                   <select
+                    id="broadcast-messageType"
                     name="messageType"
                     defaultValue="ADMIN"
                     onChange={handleBroadcastFieldChange}

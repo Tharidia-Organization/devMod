@@ -264,4 +264,9 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     public void handleUnifiedNotification(com.devmod.notification.network.UnifiedNotificationPayload payload) {
         com.devmod.client.notification.ClientNotificationManager.INSTANCE.handleNotification(payload);
     }
+
+    @Override
+    public void handleNotificationPreferencesSync(com.devmod.notification.network.NotificationPreferencesSyncPayload payload) {
+        com.devmod.client.notification.ClientNotificationPreferences.INSTANCE.applySyncPayload(payload);
+    }
 }

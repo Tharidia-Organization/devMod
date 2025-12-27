@@ -2,66 +2,65 @@ package com.devmod.client.notification.ui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
 
-import com.devmod.client.notification.NotificationSoundManager;
+import com.devmod.client.notification.ClientNotificationPreferences;
+import com.devmod.client.notification.NotificationUiTheme;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 
-/**
- * Settings screen for notification preferences.
- *
- * <p>Allows players to configure:
- * <ul>
- *   <li>Global mute toggle</li>
- *   <li>Master volume</li>
- *   <li>Per-category overlay/sound toggles</li>
- *   <li>Minimum priority threshold</li>
- * </ul>
- */
 @OnlyIn(Dist.CLIENT)
 public class NotificationSettingsScreen extends Screen {
 
-    // ============================================================================
-    // CONSTANTS
-    // ============================================================================
-
-    private static final int HEADER_HEIGHT = 40;
-    private static final int PADDING = 16;
+    private static final int PANEL_MAX_WIDTH = 880;
+    private static final int PANEL_MAX_HEIGHT = 560;
+    private static final int PANEL_PADDING = 18;
+    private static final int HEADER_HEIGHT = 64;
+    private static final int COLUMN_GAP = 16;
     private static final int ROW_HEIGHT = 28;
-    private static final int TOGGLE_WIDTH = 40;
-    private static final int SLIDER_WIDTH = 100;
-
-    // ============================================================================
-    // STATE
-    // ============================================================================
+    private static final int CATEGORY_ROW_HEIGHT = 30;
+    private static final int TOGGLE_WIDTH = 34;
+    private static final int SLIDER_HEIGHT = 10;
 
     @Nullable
     private final Screen parent;
-    private final NotificationSoundManager.ClientNotificationPreferences soundPrefs =
-            NotificationSoundManager.ClientNotificationPreferences.INSTANCE;
+    private final ClientNotificationPreferences prefs = ClientNotificationPreferences.INSTANCE;
     private final List<CategoryRow> categoryRows = new ArrayList<>();
 
-    private boolean globalMute = false;
-    private float masterVolume = 1.0f;
-    private NotificationPriority minPriority = NotificationPriority.LOW;
+    private boolean globalMute;
+    private boolean preferChat;
+    private float masterVolume;
+    private NotificationPriority minPriority;
 
-    private int scrollOffset = 0;
-    private int maxScroll = 0;
+    private int scrollOffset;
+    private int maxScroll;
+    private boolean draggingMaster;
+    @Nullable
+    private NotificationCategory draggingCategory;
+    private boolean pendingSync;
 
-    // ============================================================================
-    // CONSTRUCTION
-    // ============================================================================
+    private Rect listRect = new Rect(0, 0, 0, 0);
+    private Rect backRect = new Rect(0, 0, 0, 0);
+    private Rect resetRect = new Rect(0, 0, 0, 0);
+    private Rect globalMuteRect = new Rect(0, 0, 0, 0);
+    private Rect preferChatRect = new Rect(0, 0, 0, 0);
+    private Rect masterSliderRect = new Rect(0, 0, 0, 0);
+    private Rect minPriorityRect = new Rect(0, 0, 0, 0);
+
+    private long openedAt;
 
     public NotificationSettingsScreen(@Nullable Screen parent) {
         super(Component.translatable("devmod.notification.settings.title"));
@@ -71,268 +70,377 @@ public class NotificationSettingsScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-
-        // Back button
-        addRenderableWidget(Button.builder(
-                Component.translatable("gui.back"),
-                btn -> onClose()
-        ).bounds(PADDING, height - 30, 80, 20).build());
-
-        // Reset button
-        addRenderableWidget(Button.builder(
-                Component.translatable("controls.reset"),
-                btn -> resetToDefaults()
-        ).bounds(width - PADDING - 80, height - 30, 80, 20).build());
-
-        // Initialize category rows
-        initCategoryRows();
-        // Load current preferences
+        openedAt = System.currentTimeMillis();
+        scrollOffset = 0;
+        maxScroll = 0;
         loadPreferences();
-        calculateMaxScroll();
+        initCategoryRows();
     }
 
     private void loadPreferences() {
-        // Load from NotificationSoundManager preferences
-        globalMute = soundPrefs.isGlobalMute();
-        masterVolume = soundPrefs.getMasterVolume();
-        minPriority = NotificationPriority.LOW;
-
-        for (CategoryRow row : categoryRows) {
-            row.soundEnabled = soundPrefs.isSoundEnabled(row.category);
-            row.volume = soundPrefs.getCategoryVolume(row.category);
-        }
+        globalMute = prefs.isGlobalMute();
+        masterVolume = prefs.getMasterVolume();
+        minPriority = prefs.getMinOverlayPriority();
+        preferChat = prefs.prefersChatOverOverlay();
     }
 
     private void initCategoryRows() {
         categoryRows.clear();
-
         for (NotificationCategory category : NotificationCategory.values()) {
-            categoryRows.add(new CategoryRow(category));
+            ClientNotificationPreferences.CategoryPreference pref = prefs.getCategoryPreference(category);
+            boolean overlay = pref != null ? pref.overlayEnabled() : category.isDefaultOverlayEnabled();
+            boolean sound = pref == null || pref.soundEnabled();
+            float volume = pref != null ? pref.soundVolume() : 1.0f;
+            categoryRows.add(new CategoryRow(category, overlay, sound, volume));
         }
     }
-
-    private void calculateMaxScroll() {
-        int contentHeight = HEADER_HEIGHT + (categoryRows.size() * ROW_HEIGHT) + 100;
-        int visibleHeight = height - 60;
-        maxScroll = Math.max(0, contentHeight - visibleHeight);
-    }
-
-    // ============================================================================
-    // RENDERING
-    // ============================================================================
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Background
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        // Header
-        renderHeader(graphics);
+        int panelWidth = Math.min(PANEL_MAX_WIDTH, width - 32);
+        int panelHeight = Math.min(PANEL_MAX_HEIGHT, height - 32);
+        int panelX = (width - panelWidth) / 2;
+        int panelY = (height - panelHeight) / 2;
 
-        // Global settings section
-        int y = HEADER_HEIGHT + PADDING - scrollOffset;
-        y = renderGlobalSettings(graphics, mouseX, mouseY, y);
+        int panelAlpha = (int) (240 * easeOutCubic(Math.min(1f, (System.currentTimeMillis() - openedAt) / 240f)));
 
-        // Category settings
-        y += PADDING;
-        renderCategoryHeader(graphics, y);
-        y += ROW_HEIGHT;
-
-        for (CategoryRow row : categoryRows) {
-            if (y + ROW_HEIGHT > HEADER_HEIGHT && y < height - 60) {
-                row.render(graphics, PADDING, y, width - PADDING * 2, mouseX, mouseY);
-            }
-            y += ROW_HEIGHT;
-        }
-
+        renderPanel(graphics, panelX, panelY, panelWidth, panelHeight, panelAlpha, mouseX, mouseY);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
-    private void renderHeader(GuiGraphics graphics) {
-        // Header background
-        graphics.fill(0, 0, width, HEADER_HEIGHT, 0xCC1A1A1A);
+    @Override
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_TOP, 0xFF);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_BOTTOM, 0xFF);
+        graphics.fillGradient(0, 0, width, height, top, bottom);
 
-        // Title
-        Component title = Component.translatable("devmod.notification.settings.title");
-        graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(title), width / 2, 14, 0xFFFFFF);
-
-        // Separator line
-        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, 0xFF333333);
+        int stripeColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, 0x18);
+        for (int x = -height; x < width; x += 36) {
+            graphics.fill(x, 0, x + 2, height, stripeColor);
+        }
     }
 
-    private int renderGlobalSettings(GuiGraphics graphics, int mouseX, int mouseY, int startY) {
-        int y = startY;
-        int labelX = PADDING;
-        int controlX = width - PADDING - TOGGLE_WIDTH;
+    private void renderPanel(GuiGraphics graphics, int panelX, int panelY, int panelWidth, int panelHeight,
+                              int panelAlpha, int mouseX, int mouseY) {
+        int panelTop = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_TOP, panelAlpha);
+        int panelBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_BOTTOM, panelAlpha);
+        graphics.fillGradient(panelX, panelY, panelX + panelWidth, panelY + panelHeight, panelTop, panelBottom);
 
-        // Section header
-        graphics.drawString(font, Component.translatable("devmod.notification.settings.global"),
-                labelX, y, 0xFFD700, true);
-        y += ROW_HEIGHT;
+        int borderAlpha = Math.min(0x66, panelAlpha);
+        int borderColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, borderAlpha);
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 1, borderColor);
+        graphics.fill(panelX, panelY + panelHeight - 1, panelX + panelWidth, panelY + panelHeight, borderColor);
+        graphics.fill(panelX, panelY, panelX + 1, panelY + panelHeight, borderColor);
+        graphics.fill(panelX + panelWidth - 1, panelY, panelX + panelWidth, panelY + panelHeight, borderColor);
 
-        // Global mute toggle
-        graphics.drawString(font, Component.translatable("devmod.notification.settings.global_mute"),
-                labelX + 10, y + 6, 0xAAAAAA, false);
-        renderToggle(graphics, controlX, y, TOGGLE_WIDTH, 20, globalMute, mouseX, mouseY);
-        y += ROW_HEIGHT;
+        renderHeader(graphics, panelX, panelY, panelWidth, mouseX, mouseY);
+
+        int contentX = panelX + PANEL_PADDING;
+        int contentY = panelY + HEADER_HEIGHT;
+        int contentW = panelWidth - PANEL_PADDING * 2;
+        int contentH = panelHeight - HEADER_HEIGHT - PANEL_PADDING;
+
+        int leftW = Math.min(280, (int) (contentW * 0.34f));
+        int rightW = contentW - leftW - COLUMN_GAP;
+        int leftX = contentX;
+        int rightX = leftX + leftW + COLUMN_GAP;
+
+        renderGlobalPanel(graphics, leftX, contentY, leftW, contentH, mouseX, mouseY);
+        renderCategoryPanel(graphics, rightX, contentY, rightW, contentH, mouseX, mouseY);
+    }
+
+    private void renderHeader(GuiGraphics graphics, int panelX, int panelY, int panelWidth,
+                               int mouseX, int mouseY) {
+        Font font = Objects.requireNonNull(this.font);
+        String title = Component.translatable("devmod.notification.settings.title").getString();
+        int titleX = panelX + PANEL_PADDING;
+
+        graphics.pose().pushPose();
+        graphics.pose().translate(titleX, panelY + 16, 0);
+        graphics.pose().scale(1.3f, 1.3f, 1.0f);
+        graphics.drawString(font, title, 0, 0,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), true);
+        graphics.pose().popPose();
+
+        String subtitle = Component.translatable("devmod.notification.settings.subtitle").getString();
+        graphics.drawString(font, subtitle, titleX, panelY + 38,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 0xFF), false);
+
+        String backLabel = Objects.requireNonNull(Component.translatable("gui.back").getString());
+        int backW = font.width(backLabel) + 14;
+        backRect = new Rect(panelX + panelWidth - PANEL_PADDING - backW, panelY + 18, backW, 20);
+        renderActionButton(graphics, backRect, backLabel, mouseX, mouseY, false);
+
+        String resetLabel = Objects.requireNonNull(Component.translatable("controls.reset").getString());
+        int resetW = font.width(resetLabel) + 14;
+        resetRect = new Rect(backRect.x() - resetW - 8, panelY + 18, resetW, 20);
+        renderActionButton(graphics, resetRect, resetLabel, mouseX, mouseY, true);
+    }
+
+    private void renderActionButton(GuiGraphics graphics, Rect rect, String label,
+                                    int mouseX, int mouseY, boolean accent) {
+        Font font = Objects.requireNonNull(this.font);
+        boolean hovered = rect.contains(mouseX, mouseY);
+
+        int base = accent ? NotificationUiTheme.RGB_ACCENT_SOFT : NotificationUiTheme.RGB_SURFACE_TOP;
+        int top = NotificationUiTheme.withAlpha(hovered ? NotificationUiTheme.mix(base, 0xFFFFFF, 0.08f) : base, 0xCC);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, 0xCC);
+
+        graphics.fillGradient(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(), top, bottom);
+        graphics.fill(rect.x(), rect.y() + rect.h() - 1, rect.x() + rect.w(), rect.y() + rect.h(),
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, 0x66));
+
+        int textColor = accent ? NotificationUiTheme.RGB_TEXT_PRIMARY : NotificationUiTheme.RGB_TEXT_SECONDARY;
+        graphics.drawString(font, label, rect.x() + 7, rect.y() + 6,
+                NotificationUiTheme.withAlpha(textColor, 0xFF), false);
+    }
+
+    private void renderGlobalPanel(GuiGraphics graphics, int x, int y, int width, int height,
+                                   int mouseX, int mouseY) {
+        Font font = Objects.requireNonNull(this.font);
+        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_TOP, 0xD0);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM, 0xD0);
+        graphics.fillGradient(x, y, x + width, y + height, top, bottom);
+
+        int headerColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, 0x66);
+        graphics.fill(x, y, x + width, y + 2, headerColor);
+
+        int cursorY = y + 14;
+        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.global")),
+                x + 12, cursorY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), true);
+
+        cursorY += 18;
+
+        // Global mute
+        globalMuteRect = new Rect(x + width - TOGGLE_WIDTH - 12, cursorY + 2, TOGGLE_WIDTH, 16);
+        drawSettingLabel(graphics, x + 12, cursorY, "devmod.notification.settings.global_mute");
+        renderToggle(graphics, globalMuteRect, globalMute, mouseX, mouseY, NotificationUiTheme.RGB_ACCENT);
+        cursorY += ROW_HEIGHT;
 
         // Master volume slider
-        graphics.drawString(font, Component.translatable("devmod.notification.settings.master_volume"),
-                labelX + 10, y + 6, 0xAAAAAA, false);
-        renderSlider(graphics, controlX - SLIDER_WIDTH + TOGGLE_WIDTH, y, SLIDER_WIDTH, 20, masterVolume);
-        y += ROW_HEIGHT;
+        masterSliderRect = new Rect(x + width - 130, cursorY + 4, 110, SLIDER_HEIGHT);
+        drawSettingLabel(graphics, x + 12, cursorY, "devmod.notification.settings.master_volume");
+        renderSlider(graphics, masterSliderRect, masterVolume, mouseX, mouseY,
+                NotificationUiTheme.RGB_ACCENT_ALT);
+        cursorY += ROW_HEIGHT;
 
-        // Min priority dropdown
-        graphics.drawString(font, Component.translatable("devmod.notification.settings.min_priority"),
-                labelX + 10, y + 6, 0xAAAAAA, false);
-        renderPrioritySelector(graphics, controlX - 60, y, 100, 20, minPriority);
-        y += ROW_HEIGHT;
+        // Minimum priority
+        minPriorityRect = new Rect(x + width - 130, cursorY + 2, 110, 18);
+        drawSettingLabel(graphics, x + 12, cursorY, "devmod.notification.settings.min_priority");
+        renderPrioritySelector(graphics, minPriorityRect, minPriority, mouseX, mouseY);
+        cursorY += ROW_HEIGHT;
 
-        return y;
+        // Prefer chat
+        preferChatRect = new Rect(x + width - TOGGLE_WIDTH - 12, cursorY + 2, TOGGLE_WIDTH, 16);
+        drawSettingLabel(graphics, x + 12, cursorY, "devmod.notification.settings.prefer_chat");
+        renderToggle(graphics, preferChatRect, preferChat, mouseX, mouseY, NotificationUiTheme.RGB_ACCENT);
     }
 
-    private void renderCategoryHeader(GuiGraphics graphics, int y) {
-        int labelX = PADDING;
-        graphics.drawString(font, Component.translatable("devmod.notification.settings.categories"),
-                labelX, y + 6, 0xFFD700, true);
-
-        // Column headers
-        int overlayX = width - PADDING - TOGGLE_WIDTH * 2 - 10;
-        int soundX = width - PADDING - TOGGLE_WIDTH;
-
-        graphics.drawString(font, Component.translatable("devmod.notification.settings.overlay"),
-                overlayX, y + 6, 0x888888, false);
-        graphics.drawString(font, Component.translatable("devmod.notification.settings.sound"),
-                soundX, y + 6, 0x888888, false);
+    private void drawSettingLabel(GuiGraphics graphics, int x, int y, String key) {
+        Font font = Objects.requireNonNull(this.font);
+        graphics.drawString(font, Objects.requireNonNull(Component.translatable(Objects.requireNonNull(key))), x, y + 6,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 0xFF), false);
     }
 
-    private void renderToggle(GuiGraphics graphics, int x, int y, int width, int height,
-                               boolean value, int mouseX, int mouseY) {
-        boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+    private void renderCategoryPanel(GuiGraphics graphics, int x, int y, int width, int height,
+                                     int mouseX, int mouseY) {
+        Font font = Objects.requireNonNull(this.font);
+        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_TOP, 0xD0);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM, 0xD0);
+        graphics.fillGradient(x, y, x + width, y + height, top, bottom);
 
-        int bgColor = value ? 0xFF2E7D32 : 0xFF424242;
-        if (hovered) {
-            bgColor = value ? 0xFF388E3C : 0xFF616161;
+        graphics.fill(x, y, x + width, y + 2,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, 0x66));
+
+        int headerY = y + 12;
+        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.categories")),
+                x + 10, headerY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), true);
+
+        int labelY = headerY + 16;
+        int overlayX = x + width - TOGGLE_WIDTH * 2 - 80;
+        int soundX = overlayX + TOGGLE_WIDTH + 10;
+        int volumeX = soundX + TOGGLE_WIDTH + 10;
+
+        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.overlay")),
+                overlayX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, 0xCC), false);
+        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.sound")),
+                soundX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, 0xCC), false);
+        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.volume")),
+                volumeX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, 0xCC), false);
+
+        int listTop = labelY + 12;
+        int listHeight = height - (listTop - y) - 12;
+        listRect = new Rect(x + 8, listTop, width - 16, listHeight);
+
+        int contentHeight = categoryRows.size() * (CATEGORY_ROW_HEIGHT + 6);
+        maxScroll = Math.max(0, contentHeight - listRect.h());
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
+
+        int rowY = listTop - scrollOffset;
+        for (CategoryRow row : categoryRows) {
+            if (rowY + CATEGORY_ROW_HEIGHT < listTop || rowY > listTop + listHeight) {
+                rowY += CATEGORY_ROW_HEIGHT + 6;
+                continue;
+            }
+            row.render(graphics, listRect.x(), rowY, listRect.w(), mouseX, mouseY);
+            rowY += CATEGORY_ROW_HEIGHT + 6;
         }
-        graphics.fill(x, y, x + width, y + height, bgColor);
-
-        // Toggle indicator
-        int indicatorX = value ? x + width - height + 2 : x + 2;
-        graphics.fill(indicatorX, y + 2, indicatorX + height - 4, y + height - 2, 0xFFFFFFFF);
     }
 
-    private void renderSlider(GuiGraphics graphics, int x, int y, int width, int height, float value) {
-        // Track
-        graphics.fill(x, y + height / 2 - 2, x + width, y + height / 2 + 2, 0xFF424242);
+    private void renderToggle(GuiGraphics graphics, Rect rect, boolean enabled,
+                               int mouseX, int mouseY, int accent) {
+        boolean hovered = rect.contains(mouseX, mouseY);
+        int base = enabled ? accent : NotificationUiTheme.RGB_SURFACE_BOTTOM;
+        int trackTop = NotificationUiTheme.withAlpha(hovered ? NotificationUiTheme.mix(base, 0xFFFFFF, 0.1f) : base, 0xCC);
+        int trackBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, 0xCC);
 
-        // Filled portion
-        int filledWidth = (int) (width * value);
-        graphics.fill(x, y + height / 2 - 2, x + filledWidth, y + height / 2 + 2, 0xFF2196F3);
-
-        // Handle
-        int handleX = x + filledWidth - 4;
-        graphics.fill(handleX, y + 2, handleX + 8, y + height - 2, 0xFFFFFFFF);
-
-        // Value label
-        String label = String.format("%.0f%%", value * 100);
-        graphics.drawString(font, label, x + width + 5, y + 6, 0xAAAAAA, false);
+        graphics.fillGradient(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(), trackTop, trackBottom);
+        int knob = enabled ? rect.x() + rect.w() - rect.h() + 2 : rect.x() + 2;
+        graphics.fill(knob, rect.y() + 2, knob + rect.h() - 4, rect.y() + rect.h() - 2,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF));
     }
 
-    private void renderPrioritySelector(GuiGraphics graphics, int x, int y, int width, int height,
-                                         NotificationPriority priority) {
-        // Background
-        graphics.fill(x, y, x + width, y + height, 0xFF424242);
+    private void renderSlider(GuiGraphics graphics, Rect rect, float value,
+                               int mouseX, int mouseY, int accent) {
+        int trackColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, 0xAA);
+        graphics.fill(rect.x(), rect.y() + rect.h() / 2 - 1, rect.x() + rect.w(), rect.y() + rect.h() / 2 + 1, trackColor);
 
-        // Current value
-        String label = priority.name();
-        graphics.drawString(font, label, x + 5, y + 6, 0xFFFFFF, false);
+        int filled = (int) (rect.w() * value);
+        graphics.fill(rect.x(), rect.y() + rect.h() / 2 - 1, rect.x() + filled, rect.y() + rect.h() / 2 + 1,
+                NotificationUiTheme.withAlpha(accent, 0xCC));
+
+        int handleX = rect.x() + Math.max(0, Math.min(rect.w() - 6, filled - 3));
+        graphics.fill(handleX, rect.y(), handleX + 6, rect.y() + rect.h(),
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF));
+
+        if (rect.contains(mouseX, mouseY)) {
+            String label = Math.round(value * 100) + "%";
+            graphics.drawString(Objects.requireNonNull(font), label, rect.x() + rect.w() + 6, rect.y() - 2,
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, 0xFF), false);
+        }
     }
 
-    // ============================================================================
-    // INPUT HANDLING
-    // ============================================================================
+    private void renderPrioritySelector(GuiGraphics graphics, Rect rect, NotificationPriority priority,
+                                        int mouseX, int mouseY) {
+        boolean hovered = rect.contains(mouseX, mouseY);
+        int base = NotificationUiTheme.RGB_SURFACE_TOP;
+        int top = NotificationUiTheme.withAlpha(hovered ? NotificationUiTheme.mix(base, 0xFFFFFF, 0.1f) : base, 0xCC);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, 0xCC);
+        graphics.fillGradient(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(), top, bottom);
+
+        String label = priority.name().toLowerCase(Locale.ROOT);
+        int textColor = NotificationUiTheme.getPriorityColor(priority);
+        graphics.drawString(Objects.requireNonNull(font), label, rect.x() + 6, rect.y() + 5,
+                NotificationUiTheme.withAlpha(textColor, 0xFF), false);
+    }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (super.mouseClicked(mouseX, mouseY, button)) {
+        if (button != 0) {
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
+
+        if (backRect.contains(mouseX, mouseY)) {
+            onClose();
             return true;
         }
 
-        int y = HEADER_HEIGHT + PADDING - scrollOffset;
+        if (resetRect.contains(mouseX, mouseY)) {
+            resetToDefaults();
+            syncPreferences();
+            return true;
+        }
 
-        // Skip global section header
-        y += ROW_HEIGHT;
-
-        // Global mute toggle
-        int controlX = width - PADDING - TOGGLE_WIDTH;
-        if (isInBounds(mouseX, mouseY, controlX, y, TOGGLE_WIDTH, 20)) {
+        if (globalMuteRect.contains(mouseX, mouseY)) {
             globalMute = !globalMute;
-            soundPrefs.setGlobalMute(globalMute);
+            prefs.setGlobalMute(globalMute);
+            syncPreferences();
             return true;
         }
-        y += ROW_HEIGHT;
 
-        // Master volume slider click
-        int sliderX = controlX - SLIDER_WIDTH + TOGGLE_WIDTH;
-        if (isInBounds(mouseX, mouseY, sliderX, y, SLIDER_WIDTH, 20)) {
-            masterVolume = (float) Math.max(0, Math.min(1, (mouseX - sliderX) / SLIDER_WIDTH));
-            soundPrefs.setMasterVolume(masterVolume);
+        if (preferChatRect.contains(mouseX, mouseY)) {
+            preferChat = !preferChat;
+            prefs.setPreferChatOverOverlay(preferChat);
+            syncPreferences();
             return true;
         }
-        y += ROW_HEIGHT;
 
-        // Priority selector (cycle through)
-        if (isInBounds(mouseX, mouseY, controlX - 60, y, 100, 20)) {
-            int nextOrdinal = (minPriority.ordinal() + 1) % NotificationPriority.values().length;
-            minPriority = NotificationPriority.values()[nextOrdinal];
+        if (minPriorityRect.contains(mouseX, mouseY)) {
+            minPriority = NotificationPriority.values()[(minPriority.ordinal() + 1) % NotificationPriority.values().length];
+            prefs.setMinOverlayPriority(minPriority);
+            syncPreferences();
             return true;
         }
-        y += ROW_HEIGHT;
 
-        // Category rows
-        y += PADDING + ROW_HEIGHT; // Skip category header
+        if (masterSliderRect.contains(mouseX, mouseY)) {
+            masterVolume = valueFromSlider(masterSliderRect, mouseX);
+            prefs.setMasterVolume(masterVolume);
+            draggingMaster = true;
+            pendingSync = true;
+            return true;
+        }
 
-        for (CategoryRow row : categoryRows) {
-            if (row.handleClick(mouseX, mouseY, PADDING, y, width - PADDING * 2)) {
-                return true;
+        if (listRect.contains(mouseX, mouseY)) {
+            int rowY = listRect.y() - scrollOffset;
+            for (CategoryRow row : categoryRows) {
+                if (row.handleClick(mouseX, mouseY, listRect.x(), rowY, listRect.w())) {
+                    return true;
+                }
+                rowY += CATEGORY_ROW_HEIGHT + 6;
             }
-            y += ROW_HEIGHT;
         }
 
-        return false;
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button != 0) {
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        }
+
+        if (draggingMaster) {
+            masterVolume = valueFromSlider(masterSliderRect, mouseX);
+            prefs.setMasterVolume(masterVolume);
+            pendingSync = true;
+            return true;
+        }
+
+        if (draggingCategory != null) {
+            for (CategoryRow row : categoryRows) {
+                if (row.category == draggingCategory) {
+                    row.setVolumeFromDrag(mouseX);
+                    pendingSync = true;
+                    return true;
+                }
+            }
+        }
+
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            draggingMaster = false;
+            draggingCategory = null;
+            if (pendingSync) {
+                syncPreferences();
+                pendingSync = false;
+            }
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        scrollOffset = (int) Math.max(0, Math.min(maxScroll, scrollOffset - scrollY * 20));
-        return true;
-    }
-
-    private boolean isInBounds(double mouseX, double mouseY, int x, int y, int width, int height) {
-        return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
-    }
-
-    // ============================================================================
-    // ACTIONS
-    // ============================================================================
-
-    private void resetToDefaults() {
-        globalMute = false;
-        masterVolume = 1.0f;
-        minPriority = NotificationPriority.LOW;
-
-        soundPrefs.setGlobalMute(false);
-        soundPrefs.setMasterVolume(1.0f);
-
-        for (NotificationCategory category : NotificationCategory.values()) {
-            soundPrefs.setCategoryVolume(category, 1.0f);
+        if (listRect.contains(mouseX, mouseY) && maxScroll > 0) {
+            scrollOffset = (int) Math.max(0, Math.min(maxScroll, scrollOffset - scrollY * 20));
+            return true;
         }
-
-        for (CategoryRow row : categoryRows) {
-            row.overlayEnabled = row.category.isDefaultOverlayEnabled();
-            row.soundEnabled = true;
-            row.volume = 1.0f;
-        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -342,54 +450,119 @@ public class NotificationSettingsScreen extends Screen {
         }
     }
 
-    // ============================================================================
-    // CATEGORY ROW
-    // ============================================================================
+    private float valueFromSlider(Rect rect, double mouseX) {
+        double value = (mouseX - rect.x()) / rect.w();
+        return (float) Math.max(0, Math.min(1, value));
+    }
 
-    private class CategoryRow {
-        final NotificationCategory category;
-        boolean overlayEnabled;
-        boolean soundEnabled;
-        float volume;
+    private void resetToDefaults() {
+        prefs.reset();
+        loadPreferences();
+        initCategoryRows();
+    }
 
-        CategoryRow(NotificationCategory category) {
+    private void syncPreferences() {
+        PacketDistributor.sendToServer(Objects.requireNonNull(prefs.toUpdatePayload()));
+    }
+
+    private float easeOutCubic(float t) {
+        return 1f - (float) Math.pow(1f - t, 3);
+    }
+
+    private boolean isMouseOver(double mouseX, double mouseY, int x, int y, int width, int height) {
+        return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+    }
+
+    private record Rect(int x, int y, int w, int h) {
+        boolean contains(double mouseX, double mouseY) {
+            return mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
+        }
+    }
+
+    private final class CategoryRow {
+        private final NotificationCategory category;
+        private boolean overlayEnabled;
+        private boolean soundEnabled;
+        private float volume;
+        private Rect overlayRect = new Rect(0, 0, 0, 0);
+        private Rect soundRect = new Rect(0, 0, 0, 0);
+        private Rect volumeRect = new Rect(0, 0, 0, 0);
+
+        private CategoryRow(NotificationCategory category, boolean overlayEnabled, boolean soundEnabled, float volume) {
             this.category = category;
-            this.overlayEnabled = category.isDefaultOverlayEnabled();
-            this.soundEnabled = true;
-            this.volume = 1.0f;
+            this.overlayEnabled = overlayEnabled;
+            this.soundEnabled = soundEnabled;
+            this.volume = volume;
         }
 
         void render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
-            // Category name
-            Component name = Component.translatable(category.getTranslationKey());
-            graphics.drawString(font, name, x + 10, y + 6, 0xCCCCCC, false);
+            Font font = Objects.requireNonNull(NotificationSettingsScreen.this.font);
+            boolean hovered = isMouseOver(mouseX, mouseY, x, y, width, CATEGORY_ROW_HEIGHT);
 
-            // Overlay toggle
-            int overlayX = x + width - TOGGLE_WIDTH * 2 - 10;
-            renderToggle(graphics, overlayX, y, TOGGLE_WIDTH, 20, overlayEnabled, mouseX, mouseY);
+            int baseTop = hovered ? NotificationUiTheme.RGB_SURFACE_HOVER_TOP : NotificationUiTheme.RGB_SURFACE_TOP;
+            int baseBottom = hovered ? NotificationUiTheme.RGB_SURFACE_HOVER_BOTTOM : NotificationUiTheme.RGB_SURFACE_BOTTOM;
+            graphics.fillGradient(x, y, x + width, y + CATEGORY_ROW_HEIGHT,
+                    NotificationUiTheme.withAlpha(baseTop, 0xD8),
+                    NotificationUiTheme.withAlpha(baseBottom, 0xD8));
 
-            // Sound toggle
-            int soundX = x + width - TOGGLE_WIDTH;
-            renderToggle(graphics, soundX, y, TOGGLE_WIDTH, 20, soundEnabled, mouseX, mouseY);
+            int accent = NotificationUiTheme.getCategoryColor(category);
+            graphics.fill(x, y + 6, x + 4, y + CATEGORY_ROW_HEIGHT - 6,
+                    NotificationUiTheme.withAlpha(accent, 0xCC));
+
+            int labelX = x + 10;
+            String label = Objects.requireNonNull(Component.translatable(Objects.requireNonNull(category.getTranslationKey())).getString());
+            int labelMax = width - 200;
+            if (font.width(label) > labelMax) {
+                label = Objects.requireNonNull(font.plainSubstrByWidth(label, labelMax - 6)) + "...";
+            }
+            graphics.drawString(font, label, labelX, y + 10,
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), false);
+
+            int overlayX = x + width - TOGGLE_WIDTH * 2 - 80;
+            overlayRect = new Rect(overlayX, y + 7, TOGGLE_WIDTH, 16);
+            renderToggle(graphics, overlayRect, overlayEnabled, mouseX, mouseY, accent);
+
+            int soundX = overlayX + TOGGLE_WIDTH + 10;
+            soundRect = new Rect(soundX, y + 7, TOGGLE_WIDTH, 16);
+            renderToggle(graphics, soundRect, soundEnabled, mouseX, mouseY, accent);
+
+            int volumeX = soundX + TOGGLE_WIDTH + 10;
+            volumeRect = new Rect(volumeX, y + 10, 70, SLIDER_HEIGHT);
+            renderSlider(graphics, volumeRect, volume, mouseX, mouseY, accent);
         }
 
         boolean handleClick(double mouseX, double mouseY, int x, int y, int width) {
-            // Check overlay toggle
-            int overlayX = x + width - TOGGLE_WIDTH * 2 - 10;
-            if (isInBounds(mouseX, mouseY, overlayX, y, TOGGLE_WIDTH, 20)) {
+            if (!isMouseOver(mouseX, mouseY, x, y, width, CATEGORY_ROW_HEIGHT)) {
+                return false;
+            }
+
+            if (overlayRect.contains(mouseX, mouseY)) {
                 overlayEnabled = !overlayEnabled;
+                prefs.setCategoryOverlayEnabled(category, overlayEnabled);
+                syncPreferences();
                 return true;
             }
 
-            // Check sound toggle
-            int soundX = x + width - TOGGLE_WIDTH;
-            if (isInBounds(mouseX, mouseY, soundX, y, TOGGLE_WIDTH, 20)) {
+            if (soundRect.contains(mouseX, mouseY)) {
                 soundEnabled = !soundEnabled;
-                soundPrefs.setCategoryVolume(category, soundEnabled ? volume : 0f);
+                prefs.setCategorySoundEnabled(category, soundEnabled);
+                syncPreferences();
+                return true;
+            }
+
+            if (volumeRect.contains(mouseX, mouseY)) {
+                setVolumeFromDrag(mouseX);
+                draggingCategory = category;
+                pendingSync = true;
                 return true;
             }
 
             return false;
+        }
+
+        void setVolumeFromDrag(double mouseX) {
+            volume = valueFromSlider(volumeRect, mouseX);
+            prefs.setCategorySoundVolume(category, volume);
         }
     }
 }
