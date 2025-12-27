@@ -609,15 +609,11 @@ public class EnduranceEventHandler {
                 if (nextWave >= 3 && nextWave % 3 == 0) {
                     List<DirectiveChain> chainChoices = DirectiveChainManager.INSTANCE.rollChainChoices(nextWave, 2);
                     if (!chainChoices.isEmpty()) {
-                        // Send chain offer notification
-                        player.sendSystemMessage(Objects.requireNonNull(Component.literal("--- Directive Chain Available! ---")
-                            .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD)));
-                        for (DirectiveChain chain : chainChoices) {
-                            player.sendSystemMessage(Objects.requireNonNull(Component.literal("  • " + chain.name() + " (" + chain.steps().size() + " waves) - " + chain.description())
-                                .withStyle(ChatFormatting.WHITE)));
-                        }
-                        player.sendSystemMessage(Objects.requireNonNull(Component.literal("Use /endurance chain <name> to start a chain")
-                            .withStyle(ChatFormatting.GRAY)));
+                        // Send chain offer notification (replaces 4 chat lines with toast overlay)
+                        List<String> chainNames = chainChoices.stream()
+                            .map(DirectiveChain::name)
+                            .toList();
+                        NotificationService.INSTANCE.notifyChainOffer(playerId, chainNames, nextWave);
                     }
                 }
             }
