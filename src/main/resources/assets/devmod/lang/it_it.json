@@ -1512,6 +1512,8 @@
   "devmod.notification.party.kicked.message": "Sei stato espulso da %s",
   "devmod.notification.party.disbanded.title": "Party sciolto",
   "devmod.notification.party.disbanded.message": "Party sciolto da %s",
+  "devmod.notification.party.leader_changed.title": "Leader party cambiato",
+  "devmod.notification.party.leader_changed.message": "%s e ora il leader",
   "devmod.notification.party.invite.title": "Invito party",
   "devmod.notification.party.invite.message": "Invito da %s",
 

@@ -114,6 +114,8 @@ public class NotificationSoundManager {
                 SoundEvents.SHIELD_BREAK, 0.7f, 0.5f));
         soundConfigs.put("party.disbanded", new SoundConfig(
                 SoundEvents.ANVIL_LAND, 0.6f, 0.4f));
+        soundConfigs.put("party.leader_changed", new SoundConfig(
+                Objects.requireNonNull(SoundEvents.NOTE_BLOCK_PLING.value()), 1.0f, 0.5f));
 
         // Quest sounds
         soundConfigs.put("quest.start", new SoundConfig(

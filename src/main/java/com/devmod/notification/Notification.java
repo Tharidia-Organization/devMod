@@ -2,7 +2,7 @@ package com.devmod.notification;
 
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -42,7 +42,7 @@ public record Notification(
 
         // Defensive copy of params
         params = params != null
-                ? Collections.unmodifiableMap(new HashMap<>(params))
+                ? Collections.unmodifiableMap(new LinkedHashMap<>(params))
                 : Collections.emptyMap();
 
         // Use default duration from priority if not specified
@@ -157,7 +157,7 @@ public record Notification(
 
         public Builder param(String key, String value) {
             if (this.params == null) {
-                this.params = new HashMap<>();
+                this.params = new LinkedHashMap<>();
             }
             this.params.put(key, value);
             return this;

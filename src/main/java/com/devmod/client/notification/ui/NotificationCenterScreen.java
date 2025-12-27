@@ -20,7 +20,9 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.actions.ActionOrigin;
 import com.devmod.client.notification.ClientNotificationManager;
+import com.devmod.client.notification.NotificationActionResolver;
 import com.devmod.client.notification.NotificationUiTheme;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
@@ -424,6 +426,7 @@ public class NotificationCenterScreen extends Screen {
                 int cardY = y;
                 if (isMouseOver((int) mouseX, (int) mouseY, listRect.x(), cardY, listRect.w(), CARD_HEIGHT)) {
                     ClientNotificationManager.INSTANCE.markRead(notification.id());
+                    NotificationActionResolver.invoke(notification, ActionOrigin.UI);
                     return true;
                 }
                 y += CARD_HEIGHT + CARD_GAP;

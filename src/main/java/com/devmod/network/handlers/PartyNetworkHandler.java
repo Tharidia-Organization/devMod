@@ -1,15 +1,11 @@
 package com.devmod.network.handlers;
 
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -19,7 +15,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import com.devmod.mailbox.template.MessageTemplateRegistry;
 import com.devmod.network.NetworkHandler;
 import com.devmod.party.ArrivalConfirmPayload;
 import com.devmod.party.CancelSequencePayload;
@@ -85,8 +80,6 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                         UUID partyId = party.getPartyId();
                         if (PartyManager.INSTANCE.leaveParty(playerId)) {
                             LOGGER.info("[Party] {} left party {}", playerName, partyId);
-                            notifyPartyMembers(player.server, partyId,
-                                PartyNotificationPayload.memberLeft(playerId, playerName), null);
                             syncPartyToAllMembers(player.server, partyId);
                             sendPartySyncToPlayer(player);
                         }
@@ -103,13 +96,8 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
 
                             ServerPlayer kickedPlayer = player.server.getPlayerList().getPlayer(nn(payload.targetPlayerId()));
                             if (kickedPlayer != null) {
-                                sendPartyNotification(kickedPlayer,
-                                    PartyNotificationPayload.youWereKicked(playerId, playerName));
                                 sendPartySyncToPlayer(kickedPlayer);
                             }
-
-                            // Send mailbox notification (persists even if player is offline)
-                            sendKickedMailbox(payload.targetPlayerId(), kickedName, playerName);
 
                             syncPartyToAllMembers(player.server, partyId);
                         }
@@ -153,32 +141,15 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                     if (party != null && party.isLeader(playerId)) {
                         UUID partyId = party.getPartyId();
                         var members = new ArrayList<>(party.getMembers());
-                        // Capture member names before disbanding
-                        var memberNames = new java.util.HashMap<UUID, String>();
-                        for (UUID memberId : members) {
-                            memberNames.put(memberId, party.getMemberName(memberId));
-                        }
-
                         if (PartyManager.INSTANCE.disbandParty(playerId)) {
                             LOGGER.info("[Party] {} disbanded party {}", playerName, partyId);
 
                             for (UUID memberId : members) {
                                 if (!memberId.equals(playerId)) {
-                                    // Send mailbox notification (persists even if player is offline)
-                                    sendDisbandedMailbox(
-                                        memberId,
-                                        memberNames.getOrDefault(memberId, "Player"),
-                                        playerName
-                                    );
-                                }
-
-                                ServerPlayer member = player.server.getPlayerList().getPlayer(nn(memberId));
-                                if (member != null) {
-                                    if (!memberId.equals(playerId)) {
-                                        sendPartyNotification(member,
-                                            PartyNotificationPayload.partyDisbanded(playerId, playerName));
+                                    ServerPlayer member = player.server.getPlayerList().getPlayer(nn(memberId));
+                                    if (member != null) {
+                                        sendPartySyncToPlayer(member);
                                     }
-                                    sendPartySyncToPlayer(member);
                                 }
                             }
                         }
@@ -235,16 +206,14 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                 playerId, playerName, inviteId, payload.accepted());
 
             if (result.success()) {
-                if (payload.accepted()) {
-                    LOGGER.info("[Party] {} accepted invite {}", playerName, inviteId);
-                    sendPartySyncToPlayer(player);
-                    if (result.partyId() != null) {
-                        notifyPartyMembers(player.server, result.partyId(),
-                            PartyNotificationPayload.memberJoined(playerId, playerName), playerId);
-                        syncPartyToAllMembers(player.server, result.partyId());
-                    }
-                } else {
-                    LOGGER.info("[Party] {} declined invite {}", playerName, inviteId);
+                    if (payload.accepted()) {
+                        LOGGER.info("[Party] {} accepted invite {}", playerName, inviteId);
+                        sendPartySyncToPlayer(player);
+                        if (result.partyId() != null) {
+                            syncPartyToAllMembers(player.server, result.partyId());
+                        }
+                    } else {
+                        LOGGER.info("[Party] {} declined invite {}", playerName, inviteId);
                 }
             } else {
                 String errorMsg = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
@@ -310,13 +279,6 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
             var invite = PartyManager.INSTANCE.sendInvite(playerId, targetPlayer.getUUID(), targetName);
             if (invite != null) {
                 player.sendSystemMessage(I18n.translate("devmod.party.invite_sent", targetName));
-                sendPartyNotification(targetPlayer,
-                    PartyNotificationPayload.inviteReceived(
-                        invite.getInviteId(),
-                        playerName,
-                        party.getQuestType(),
-                        invite.getExpiresAt()
-                    ));
                 sendPartySyncToPlayer(player);
             } else {
                 player.sendSystemMessage(I18n.translate("devmod.party.invite_failed", targetName));
@@ -428,80 +390,4 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
         }
     }
 
-    public static void notifyPartyMembers(MinecraftServer server, UUID partyId,
-            PartyNotificationPayload notification, @Nullable UUID excludePlayer) {
-        Optional<PartyData> partyOpt = PartyManager.INSTANCE.getPartyOpt(partyId);
-        if (partyOpt.isEmpty()) return;
-
-        for (UUID memberId : partyOpt.get().getMembers()) {
-            if (excludePlayer != null && memberId.equals(excludePlayer)) continue;
-
-            ServerPlayer member = server.getPlayerList().getPlayer(nn(memberId));
-            if (member != null) {
-                sendPacket(member, notification);
-            }
-        }
-    }
-
-    public static void sendPartyNotification(ServerPlayer player, PartyNotificationPayload notification) {
-        sendPacket(player, notification);
-    }
-
-    // =================================================================================
-    // MAILBOX NOTIFICATIONS FOR OFFLINE PERSISTENCE
-    // =================================================================================
-
-    private static final Logger LOGGER_MAILBOX = LoggerFactory.getLogger(PartyNetworkHandler.class.getName() + ".Mailbox");
-
-    /**
-     * Send mailbox notification when a player is kicked from a party.
-     * This persists even if the player is offline.
-     */
-    private static void sendKickedMailbox(UUID kickedPlayerId, String kickedName, String leaderName) {
-        try {
-            var unused = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
-                "social.party_update",
-                kickedPlayerId,
-                Map.of(
-                    "player_name", kickedName != null ? kickedName : "Player",
-                    "update_type", "Kicked from Party",
-                    "details", "You were kicked from the party by " + leaderName + ".",
-                    "action_hint", "You can join or create a new party anytime."
-                ),
-                null
-            ).exceptionally(e -> {
-                LOGGER_MAILBOX.error("[Party] Async failure sending kicked mailbox to {}", kickedPlayerId, e);
-                return Optional.empty();
-            });
-            LOGGER_MAILBOX.debug("[Party] Sent kicked mailbox to {}", kickedPlayerId);
-        } catch (Exception e) {
-            LOGGER_MAILBOX.error("[Party] Failed to send kicked mailbox notification", e);
-        }
-    }
-
-    /**
-     * Send mailbox notification when a party is disbanded.
-     * This persists even if the player is offline.
-     */
-    private static void sendDisbandedMailbox(UUID memberId, String memberName, String leaderName) {
-        try {
-            var unused = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
-                "social.party_update",
-                memberId,
-                Map.of(
-                    "player_name", memberName != null ? memberName : "Player",
-                    "update_type", "Party Disbanded",
-                    "details", "The party was disbanded by " + leaderName + ".",
-                    "action_hint", "You can join or create a new party anytime."
-                ),
-                null
-            ).exceptionally(e -> {
-                LOGGER_MAILBOX.error("[Party] Async failure sending disbanded mailbox to {}", memberId, e);
-                return Optional.empty();
-            });
-            LOGGER_MAILBOX.debug("[Party] Sent disbanded mailbox to {}", memberId);
-        } catch (Exception e) {
-            LOGGER_MAILBOX.error("[Party] Failed to send disbanded mailbox notification", e);
-        }
-    }
 }

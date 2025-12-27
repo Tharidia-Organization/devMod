@@ -3,6 +3,7 @@ package com.devmod.notification;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -15,11 +16,15 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.chat.Component;
 
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.mailbox.MailboxManager;
+import com.devmod.mailbox.template.MessageTemplateRegistry;
+import com.devmod.actions.ActionIds;
+import com.devmod.endurance.QuestType;
 import com.devmod.notification.network.UnifiedNotificationPayload;
 import com.devmod.notification.persistence.NotificationHistoryRepository;
 
@@ -305,10 +310,42 @@ public class NotificationService {
                 .params(params)
                 .priority(priority)
                 .soundId("party." + eventType)
-                .persistToMailbox(true)
+                .persistToMailbox(shouldPersistPartyEvent(eventType))
                 .build();
 
         var unused = notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a party invite notification with action metadata.
+     */
+    public void notifyPartyInvite(UUID playerUuid, UUID inviteId, String senderName,
+                                  QuestType questType, long expiresAt) {
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("sender", senderName);
+
+        PartyInviteActionData actionData = new PartyInviteActionData(
+            inviteId, senderName, questType.ordinal(), expiresAt);
+
+        Notification notification = Notification.builder(NotificationCategory.PARTY)
+                .titleKey("devmod.notification.party.invite.title")
+                .messageKey("devmod.notification.party.invite.message")
+                .params(params)
+                .priority(NotificationPriority.NORMAL)
+                .soundId("party.invite")
+                .actionId(ActionIds.UI_PARTY_INVITE_POPUP_OPEN)
+                .actionDataJson(actionData.toJson())
+                .persistToMailbox(false)
+                .build();
+
+        var unused = notifyAsync(playerUuid, notification);
+    }
+
+    private boolean shouldPersistPartyEvent(String eventType) {
+        return switch (eventType) {
+            case "kicked", "disbanded" -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -418,7 +455,7 @@ public class NotificationService {
 
         // Action to trigger WaveCheckpointScreen opening
         if (hasMoreWaves) {
-            builder.actionId("open_wave_checkpoint");
+            builder.actionId(ActionIds.UI_WAVE_CHECKPOINT_OPEN);
         }
 
         var unused = notifyAsync(playerUuid, builder.build());
@@ -475,6 +512,11 @@ public class NotificationService {
             persistToMailbox(playerUuid, notification);
         }
 
+        // Send to chat if configured
+        if (decision.sendChat()) {
+            sendChatMessage(playerUuid, notification);
+        }
+
         // Log the delivery
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("[NotificationService] Delivered {} notification to {}: overlay={}, mailbox={}",
@@ -498,9 +540,26 @@ public class NotificationService {
         }
     }
 
+    private void sendChatMessage(UUID playerUuid, Notification notification) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return;
+
+        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        if (player == null) return;
+
+        Component message = buildChatComponent(notification);
+        if (message != null) {
+            player.sendSystemMessage(message);
+        }
+    }
+
     private void persistToMailbox(UUID playerUuid, Notification notification) {
         // Integration with MailboxManager for offline delivery
         try {
+            if (notification.category() == NotificationCategory.PARTY
+                    && persistPartyMailbox(playerUuid, notification)) {
+                return;
+            }
             // Generate subject from notification data
             String subject = formatMailboxSubject(notification);
             String body = formatMailboxBody(notification);
@@ -527,6 +586,77 @@ public class NotificationService {
             LOGGER.warn("[NotificationService] Failed to persist to mailbox for {}: {}",
                     playerUuid, e.getMessage());
         }
+    }
+
+    @Nullable
+    private Component buildChatComponent(Notification notification) {
+        Object[] args = notification.params().values().toArray();
+        if (notification.messageKey() != null && !notification.messageKey().isBlank()) {
+            return Component.translatable(notification.messageKey(), args);
+        }
+        if (notification.titleKey() != null && !notification.titleKey().isBlank()) {
+            return Component.translatable(notification.titleKey(), args);
+        }
+        return null;
+    }
+
+    private boolean persistPartyMailbox(UUID playerUuid, Notification notification) {
+        String titleKey = notification.titleKey();
+        if (titleKey == null) {
+            return false;
+        }
+
+        String leaderName = notification.params().values().stream().findFirst().orElse("Player");
+        if (titleKey.endsWith(".kicked.title")) {
+            sendPartyMailboxTemplate(playerUuid, "Kicked from Party",
+                "You were kicked from the party by " + leaderName + ".",
+                "You can join or create a new party anytime.");
+            return true;
+        }
+
+        if (titleKey.endsWith(".disbanded.title")) {
+            sendPartyMailboxTemplate(playerUuid, "Party Disbanded",
+                "The party was disbanded by " + leaderName + ".",
+                "You can join or create a new party anytime.");
+            return true;
+        }
+
+        return false;
+    }
+
+    private void sendPartyMailboxTemplate(UUID playerUuid, String updateType, String details, String actionHint) {
+        try {
+            String recipientName = resolvePlayerName(playerUuid);
+            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+                "social.party_update",
+                playerUuid,
+                Map.of(
+                    "player_name", recipientName,
+                    "update_type", updateType,
+                    "details", details,
+                    "action_hint", actionHint
+                ),
+                null
+            ).exceptionally(ex -> {
+                LOGGER.warn("[NotificationService] Party mailbox template failed for {}: {}",
+                    playerUuid, ex.getMessage());
+                return null;
+            });
+        } catch (Exception e) {
+            LOGGER.warn("[NotificationService] Party mailbox template failed for {}: {}",
+                playerUuid, e.getMessage());
+        }
+    }
+
+    private String resolvePlayerName(UUID playerUuid) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+            ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+            if (player != null) {
+                return player.getName().getString();
+            }
+        }
+        return "Player";
     }
 
     /**

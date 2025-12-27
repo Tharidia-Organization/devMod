@@ -2090,6 +2090,8 @@
   "devmod.notification.party.kicked.message": "You were kicked by %s",
   "devmod.notification.party.disbanded.title": "Party Disbanded",
   "devmod.notification.party.disbanded.message": "Party disbanded by %s",
+  "devmod.notification.party.leader_changed.title": "Party Leader Changed",
+  "devmod.notification.party.leader_changed.message": "%s is now the leader",
   "devmod.notification.party.invite.title": "Party Invite",
   "devmod.notification.party.invite.message": "Invite from %s",
 

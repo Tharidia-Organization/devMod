@@ -35,6 +35,7 @@ import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.mailbox.MailboxPermissions;
 import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.notification.network.NotificationPreferencesSyncPayload;
+import com.devmod.notification.PartyNotificationBridge;
 import com.devmod.notification.persistence.NotificationHistoryRepository;
 import com.devmod.notification.persistence.NotificationPreferencesRepository;
 import com.devmod.stats.ArmorStats;
@@ -236,6 +237,13 @@ public class CommonModEvents {
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize NotificationService", e);
         }
+
+        // Register party notification bridge after notification service is ready
+        try {
+            PartyNotificationBridge.register();
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to register PartyNotificationBridge", e);
+        }
     }
 
     /**
@@ -274,6 +282,13 @@ public class CommonModEvents {
             LOGGER.info("[DevMod] NotificationService shutdown complete");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Error during NotificationService shutdown", e);
+        }
+
+        // Unregister party notification bridge
+        try {
+            PartyNotificationBridge.unregister();
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to unregister PartyNotificationBridge", e);
         }
 
         // Shutdown notification repositories

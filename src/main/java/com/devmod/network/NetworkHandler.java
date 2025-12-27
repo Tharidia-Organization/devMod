@@ -951,21 +951,6 @@ public class NetworkHandler {
     }
 
     /**
-     * Send notification to all party members.
-     */
-    public static void notifyPartyMembers(MinecraftServer server, UUID partyId,
-            PartyNotificationPayload notification, UUID excludePlayer) {
-        PartyNetworkHandler.notifyPartyMembers(server, partyId, notification, excludePlayer);
-    }
-
-    /**
-     * Send party notification to a specific player.
-     */
-    public static void sendPartyNotification(ServerPlayer player, PartyNotificationPayload notification) {
-        PartyNetworkHandler.sendPartyNotification(player, notification);
-    }
-
-    /**
      * Send stamina sync to a player.
      */
     public static void sendStaminaSync(ServerPlayer player, float currentStamina, float maxStamina) {

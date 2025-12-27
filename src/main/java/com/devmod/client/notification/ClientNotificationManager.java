@@ -28,6 +28,8 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
 import com.devmod.client.notification.ui.NotificationBadgeOverlay;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
@@ -128,6 +130,10 @@ public class ClientNotificationManager {
             queueBanner(queued);
         } else {
             queueToast(queued);
+        }
+
+        if (shouldAutoInvokeAction(notification)) {
+            NotificationActionResolver.invoke(notification, ActionOrigin.EVENT);
         }
     }
 
@@ -240,14 +246,14 @@ public class ClientNotificationManager {
 
         // Title
         int textAlpha = (int) (255 * alpha);
-        Component title = Component.translatable(Objects.requireNonNull(banner.notification.titleKey()));
+        Component title = buildComponent(banner.notification.titleKey(), banner.notification);
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, y + 8,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, textAlpha), true);
 
         // Message if present
         String msgKey = banner.notification.messageKey();
         if (msgKey != null) {
-            Component message = Component.translatable(Objects.requireNonNull(msgKey));
+            Component message = buildComponent(msgKey, banner.notification);
             graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(message), x + 10, y + 24,
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, textAlpha), true);
         }
@@ -275,14 +281,14 @@ public class ClientNotificationManager {
 
         // Title
         int textAlpha = (int) (255 * alpha);
-        Component title = Component.translatable(Objects.requireNonNull(toast.notification.titleKey()));
+        Component title = buildComponent(toast.notification.titleKey(), toast.notification);
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, baseY + 8,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, textAlpha), true);
 
         // Message if present
         String msgKey = toast.notification.messageKey();
         if (msgKey != null) {
-            Component message = Component.translatable(Objects.requireNonNull(msgKey));
+            Component message = buildComponent(msgKey, toast.notification);
             int maxWidth = TOAST_WIDTH - 20;
             String text = message.getString();
             if (font.width(Objects.requireNonNull(text)) > maxWidth) {
@@ -301,6 +307,15 @@ public class ClientNotificationManager {
     private int getCategoryColor(NotificationCategory category, float alpha) {
         int a = (int) (255 * alpha);
         return NotificationUiTheme.withAlpha(NotificationUiTheme.getCategoryColor(category), a);
+    }
+
+    private Component buildComponent(String key, Notification notification) {
+        Object[] args = notification.params().values().toArray();
+        return Component.translatable(Objects.requireNonNull(key), args);
+    }
+
+    private boolean shouldAutoInvokeAction(Notification notification) {
+        return ActionIds.UI_PARTY_INVITE_POPUP_OPEN.equals(notification.actionId());
     }
 
     /**
