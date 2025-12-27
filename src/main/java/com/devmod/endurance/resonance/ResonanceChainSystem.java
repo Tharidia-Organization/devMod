@@ -406,16 +406,16 @@ public final class ResonanceChainSystem {
         if (player == null) {
             return;
         }
-        String tierName = tier.name();
         String announcement = tier.announcement;
-        // Create and send payload (use config styleBonus, not tier default)
-        ResonanceNotificationPayload payload = new ResonanceNotificationPayload(
-            Objects.requireNonNull(tierName),
+        com.devmod.notification.NotificationService.INSTANCE.notifyResonanceTier(
+            player.getUUID(),
             Objects.requireNonNull(announcement),
+            styleBonus,
+            tier.name(),
             tier.getColor(),
-            styleBonus
+            tier == ResonanceTier.TRINITY,
+            tier == ResonanceTier.APOCALYPSE
         );
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
     }
 
     /**

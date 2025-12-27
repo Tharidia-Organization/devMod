@@ -31,6 +31,7 @@ import com.devmod.DevMod;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.client.notification.ui.NotificationBadgeOverlay;
+import com.devmod.client.overlay.ResonanceHudOverlay;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
@@ -131,6 +132,8 @@ public class ClientNotificationManager {
         } else {
             queueToast(queued);
         }
+
+        maybeTriggerResonanceVfx(notification);
 
         if (shouldAutoInvokeAction(notification)) {
             NotificationActionResolver.invoke(notification, ActionOrigin.EVENT);
@@ -310,8 +313,8 @@ public class ClientNotificationManager {
     }
 
     private Component buildComponent(String key, Notification notification) {
-        Object[] args = notification.params().values().toArray();
-        return Component.translatable(Objects.requireNonNull(key), args);
+        Object[] args = notification.params().values().toArray(new Object[0]);
+        return Component.translatable(Objects.requireNonNull(key), Objects.requireNonNull(args));
     }
 
     private boolean shouldAutoInvokeAction(Notification notification) {
@@ -420,6 +423,41 @@ public class ClientNotificationManager {
     // ===== Internal classes =====
 
     private record QueuedNotification(Notification notification, long queuedAt) {}
+
+    private void maybeTriggerResonanceVfx(Notification notification) {
+        if (notification.category() != NotificationCategory.RESONANCE) {
+            return;
+        }
+
+        String announcement = notification.getParam("announcement", "RESONANCE!");
+        int styleBonus = parseInt(notification.getParam("styleBonus", "0"), 0);
+        int color = parseInt(notification.getParam("color", "16777215"), 0xFFFFFF);
+        boolean isTrinity = parseBoolean(notification.getParam("isTrinity"));
+        boolean isApocalypse = parseBoolean(notification.getParam("isApocalypse"));
+
+        ResonanceHudOverlay.INSTANCE.onResonanceTriggered(
+            announcement,
+            color,
+            styleBonus,
+            isApocalypse,
+            isTrinity
+        );
+    }
+
+    private boolean parseBoolean(String value) {
+        return value != null && value.equalsIgnoreCase("true");
+    }
+
+    private int parseInt(String value, int fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
 
     private static class DisplayedToast {
         final Notification notification;

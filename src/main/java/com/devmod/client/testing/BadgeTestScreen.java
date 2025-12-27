@@ -16,10 +16,13 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.client.overlay.BadgePopupOverlay;
+import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.GamificationManager.BadgeRarity;
+import com.devmod.notification.Notification;
+import com.devmod.notification.NotificationCategory;
+import com.devmod.notification.NotificationPriority;
 
 @OnlyIn(Dist.CLIENT)
 public class BadgeTestScreen extends Screen {
@@ -85,7 +88,7 @@ public class BadgeTestScreen extends Screen {
             PositionedButton button = createButton(
                 "badge-" + rarity.name().toLowerCase(Locale.ROOT),
                 buttonText,
-                () -> BadgePopupOverlay.testBadge(finalRarity),
+                () -> showBadgeNotification(finalRarity),
                 centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT,
                 style, accent
             );
@@ -101,7 +104,7 @@ public class BadgeTestScreen extends Screen {
         PositionedButton testAllButton = createButton(
             "badge-test-all",
             Objects.requireNonNull(Component.literal("Test ALL Badges (Queue)")),
-            BadgePopupOverlay::testAllBadges,
+            this::testAllBadges,
             centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT,
             EditorButton.Style.PRIMARY, null
         );
@@ -113,7 +116,7 @@ public class BadgeTestScreen extends Screen {
         PositionedButton clearButton = createButton(
             "badge-clear-queue",
             Objects.requireNonNull(Component.literal("Clear Queue")),
-            BadgePopupOverlay::clearQueue,
+            ClientNotificationManager.INSTANCE::clear,
             centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT,
             EditorButton.Style.GHOST, null
         );
@@ -149,10 +152,10 @@ public class BadgeTestScreen extends Screen {
             this.width / 2, 40, UIConstants.Text.MUTED());
 
         // Queue status
-        int queueSize = BadgePopupOverlay.getQueueSize();
-        String queueText = "Queue: " + queueSize + " badge" + (queueSize != 1 ? "s" : "");
+        int unreadCount = ClientNotificationManager.INSTANCE.getUnreadCount();
+        String queueText = "Unread: " + unreadCount;
         graphics.drawCenteredString(font, queueText, this.width / 2, this.height - 30,
-            queueSize > 0 ? 0xFF00FF00 : UIConstants.Text.MUTED());
+            unreadCount > 0 ? 0xFF00FF00 : UIConstants.Text.MUTED());
 
         // Render widgets
         for (PositionedButton pb : buttons) {
@@ -198,4 +201,33 @@ public class BadgeTestScreen extends Screen {
     }
 
     private record PositionedButton(EditorButton button, int x, int y, int width, int height) {}
+
+    private void testAllBadges() {
+        for (BadgeRarity rarity : BadgeRarity.values()) {
+            showBadgeNotification(rarity);
+        }
+    }
+
+    private void showBadgeNotification(BadgeRarity rarity) {
+        String rarityId = rarity.name().toLowerCase(Locale.ROOT);
+        NotificationPriority priority = switch (rarity) {
+            case LEGENDARY, MYTHIC -> NotificationPriority.URGENT;
+            case EPIC -> NotificationPriority.HIGH;
+            case RARE -> NotificationPriority.NORMAL;
+            default -> NotificationPriority.NORMAL;
+        };
+
+        Notification notification = Notification.builder(NotificationCategory.ACHIEVEMENT)
+            .titleKey("devmod.notification.badge_unlock.title")
+            .messageKey("devmod.notification.badge_unlock.message")
+            .param("badge", rarity.displayName + " Badge")
+            .param("rarity", rarity.displayName)
+            .priority(priority)
+            .soundId("badge." + rarityId)
+            .iconId("badge." + rarityId)
+            .persistToMailbox(false)
+            .build();
+
+        ClientNotificationManager.INSTANCE.handleNotification(notification);
+    }
 }

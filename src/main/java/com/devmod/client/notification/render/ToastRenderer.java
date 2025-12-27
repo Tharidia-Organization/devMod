@@ -96,10 +96,12 @@ public class ToastRenderer {
         int textColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, textAlpha);
         int subTextColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, textAlpha);
 
+        Object[] args = notification.params().values().toArray(new Object[0]);
+
         // Title
         String titleKey = notification.titleKey();
         if (titleKey != null) {
-            Component title = Component.translatable(Objects.requireNonNull(titleKey));
+            Component title = Component.translatable(Objects.requireNonNull(titleKey), args);
             int maxTitleWidth = TOAST_WIDTH - (textX - x) - TOAST_PADDING;
             renderText(graphics, font, title, textX, baseY + 8, maxTitleWidth, textColor);
         }
@@ -107,7 +109,7 @@ public class ToastRenderer {
         // Message (subtitle)
         String messageKey = notification.messageKey();
         if (messageKey != null) {
-            Component message = Component.translatable(Objects.requireNonNull(messageKey));
+            Component message = Component.translatable(Objects.requireNonNull(messageKey), args);
             int maxMsgWidth = TOAST_WIDTH - (textX - x) - TOAST_PADDING;
             renderText(graphics, font, message, textX, baseY + 22, maxMsgWidth, subTextColor);
         }

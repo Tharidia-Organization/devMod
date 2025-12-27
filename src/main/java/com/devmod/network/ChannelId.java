@@ -131,6 +131,9 @@ public enum ChannelId {
     TASK_ACTION(109, Direction.CLIENT_TO_SERVER, "TaskActionPayload"),
     MAILBOX_STATUS(110, Direction.SERVER_TO_CLIENT, "MailboxStatusPayload"),
     MAILBOX_ACCESS(111, Direction.SERVER_TO_CLIENT, "MailboxAccessPayload"),
+    TICKET_SYNC(112, Direction.SERVER_TO_CLIENT, "TicketSyncPayload"),
+    TICKET_CREATE(113, Direction.CLIENT_TO_SERVER, "TicketCreatePayload"),
+    TICKET_SYNC_REQUEST(114, Direction.CLIENT_TO_SERVER, "TicketSyncRequestPayload"),
 
     // ============================================================================
     // UNIFIED NOTIFICATION CENTER CHANNELS (120-129)

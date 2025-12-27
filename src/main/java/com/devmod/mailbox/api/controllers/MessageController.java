@@ -115,8 +115,9 @@ public final class MessageController {
         MessageType type = msgType != null
             ? MessageType.valueOf(msgType.toUpperCase(Locale.ROOT))
             : MessageType.ADMIN;
-        Instant expiresAt = request.expiresAtMillis() != null
-            ? Instant.ofEpochMilli(request.expiresAtMillis())
+        Long expiresAtMillis = request.expiresAtMillis();
+        Instant expiresAt = expiresAtMillis != null
+            ? Instant.ofEpochMilli(expiresAtMillis)
             : null;
 
         CompletableFuture<UUID> future;
@@ -184,8 +185,9 @@ public final class MessageController {
         MessageType type = msgType != null
             ? MessageType.valueOf(msgType.toUpperCase(Locale.ROOT))
             : MessageType.ADMIN;
-        Instant expiresAt = request.expiresAtMillis() != null
-            ? Instant.ofEpochMilli(request.expiresAtMillis())
+        Long expiresAtMillis = request.expiresAtMillis();
+        Instant expiresAt = expiresAtMillis != null
+            ? Instant.ofEpochMilli(expiresAtMillis)
             : null;
 
         MailboxConfig config = MailboxConfig.INSTANCE;
@@ -241,11 +243,12 @@ public final class MessageController {
                     ));
             })
             .thenAccept(result -> {
+                UUID jobId = result.jobId();
                 ctx.json(new BroadcastResponse(
                     result.recipientCount(),
                     result.message(),
                     result.queued(),
-                    result.jobId() != null ? result.jobId().toString() : null
+                    jobId != null ? jobId.toString() : null
                 ));
                 AdminAuditLog.INSTANCE.log(AdminAuditLog.AuditEntry.builder()
                         .action(AdminAuditLog.Action.BROADCAST)

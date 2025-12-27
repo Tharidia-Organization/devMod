@@ -157,11 +157,6 @@ public class EnduranceEventHandler {
             com.devmod.network.NetworkHandler.sendQuestCompletionScreen(
                 player, session, rewards, comboSession, maxCombo);
 
-            // Send token gain overlay animation
-            if (rewards.tokensEarned > 0) {
-                com.devmod.network.NetworkHandler.sendTokenGain(player, rewards.tokensEarned);
-            }
-
             // Send mailbox notification with reward summary
             sendQuestRewardMailbox(player, session, rewards, completed);
         }
@@ -232,23 +227,19 @@ public class EnduranceEventHandler {
 
             // Send badge unlock notifications for newly earned badges
             for (GamificationManager.Badge badge : gamificationResult.newBadges) {
-                com.devmod.network.NetworkHandler.sendBadgeUnlock(
-                    player, badge.name, badge.rarity.displayName);
-
-                // Send mailbox notification for badge unlock
-                sendBadgeUnlockMailbox(player, badge);
+                String rewardDescription = "+" + badge.bonusPoints + " bonus points (" + badge.rarity.displayName + ")";
+                NotificationService.INSTANCE.notifyBadgeUnlock(
+                    playerId, badge.name, badge.rarity.displayName, badge.description, rewardDescription);
             }
 
             // Send record banner for new personal records
             if (gamificationResult.isNewWaveRecord) {
                 String waveValue = "Wave " + session.getQuest().getCurrentWave();
-                com.devmod.network.NetworkHandler.sendRecordBanner(player, "BEST WAVE", waveValue);
-                sendRecordMailbox(player, "Best Wave", waveValue);
+                NotificationService.INSTANCE.notifyRecord(playerId, "BEST WAVE", waveValue);
             }
             if (gamificationResult.isNewHighScore) {
                 String scoreValue = String.format("%,d pts", session.getQuest().getPointsEarnedThisSession());
-                com.devmod.network.NetworkHandler.sendRecordBanner(player, "HIGH SCORE", scoreValue);
-                sendRecordMailbox(player, "High Score", scoreValue);
+                NotificationService.INSTANCE.notifyRecord(playerId, "HIGH SCORE", scoreValue);
             }
         }
 
@@ -619,26 +610,22 @@ public class EnduranceEventHandler {
             }
         }
 
-        // === NOTIFY PLAYER ===
-        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.complete_divider"))
-            .withStyle(ChatFormatting.GOLD)));
-        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.complete_title", waveNumber))
-            .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)));
-        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.style_rank_combo", styleRank, maxCombo))
-            .withStyle(ChatFormatting.YELLOW)));
-
-        // Show wave combat summary
-        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.combat_divider"))
-            .withStyle(ChatFormatting.GRAY)));
-        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.damage_kills", String.format("%.0f", waveDamage), waveKills))
-            .withStyle(ChatFormatting.WHITE)));
-        if (waveDamageTaken > 0) {
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.damage_taken", String.format("%.0f", waveDamageTaken)))
-                .withStyle(ChatFormatting.RED)));
-        } else {
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.flawless"))
-                .withStyle(ChatFormatting.AQUA)));
-        }
+        // === NOTIFY PLAYER (Unified Notification Center) ===
+        boolean hasMoreWaves = quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode();
+        boolean isFlawless = waveDamageTaken == 0 && waveKills > 0;
+        NotificationService.INSTANCE.notifyWaveComplete(
+            playerId,
+            waveNumber,
+            waveReward.tokensEarned(),
+            styleRank,
+            maxCombo,
+            isFlawless,
+            hasMoreWaves,
+            waveKills,
+            waveDamage,
+            waveDamageTaken,
+            waveReward
+        );
 
         float directiveMultiplier = 1.0f;
         ArenaContext arena = session.getArena();
@@ -674,24 +661,7 @@ public class EnduranceEventHandler {
             waveReward.mutatorMultiplier(),
             waveReward.directiveMultiplier(),
             waveReward.bonusPoints());
-        player.sendSystemMessage(Objects.requireNonNull(Component.literal(
-            Objects.requireNonNull(rewardLine, "rewardLine"))
-            .withStyle(ChatFormatting.GOLD)));
-        player.playSound(Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), 0.8f, 1.0f);
-
-        if (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode()) {
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.checkpoint"))
-                .withStyle(ChatFormatting.AQUA)));
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.continue_option", waveNumber + 1))
-                .withStyle(ChatFormatting.WHITE)));
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.exit_option"))
-                .withStyle(ChatFormatting.WHITE)));
-        } else {
-            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.quest_complete_final"))
-                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)));
-        }
-        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.complete_divider"))
-            .withStyle(ChatFormatting.GOLD)));
+        LOGGER.info("[EnduranceQuest]   {}", rewardLine);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -885,62 +855,6 @@ public class EnduranceEventHandler {
             LOGGER.debug("[EnduranceQuest] Sent mailbox reward notification to {}", playerName);
         } catch (Exception e) {
             LOGGER.error("[EnduranceQuest] Failed to send mailbox reward notification", e);
-        }
-    }
-
-    /**
-     * Send a mailbox notification for badge unlock.
-     */
-    private static void sendBadgeUnlockMailbox(ServerPlayer player, GamificationManager.Badge badge) {
-        try {
-            String playerName = player.getName().getString();
-
-            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
-                "reward.achievement",
-                player.getUUID(),
-                Map.of(
-                    "player_name", playerName,
-                    "achievement_name", badge.name,
-                    "achievement_description", badge.description,
-                    "reward_description", "+" + badge.bonusPoints + " bonus points (" + badge.rarity.displayName + ")"
-                ),
-                null
-            ).exceptionally(ex -> {
-                LOGGER.error("[EnduranceQuest] Failed to deliver mailbox badge notification", ex);
-                return null;
-            });
-
-            LOGGER.debug("[EnduranceQuest] Sent mailbox badge notification to {} for badge {}", playerName, badge.id);
-        } catch (Exception e) {
-            LOGGER.error("[EnduranceQuest] Failed to send mailbox badge notification", e);
-        }
-    }
-
-    /**
-     * Send a mailbox notification for new personal record.
-     */
-    private static void sendRecordMailbox(ServerPlayer player, String recordType, String recordValue) {
-        try {
-            String playerName = player.getName().getString();
-
-            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
-                "reward.achievement",
-                player.getUUID(),
-                Map.of(
-                    "player_name", playerName,
-                    "achievement_name", "New Personal Record: " + recordType,
-                    "achievement_description", "You've set a new personal best!",
-                    "reward_description", recordValue
-                ),
-                null
-            ).exceptionally(ex -> {
-                LOGGER.error("[EnduranceQuest] Failed to deliver mailbox record notification", ex);
-                return null;
-            });
-
-            LOGGER.debug("[EnduranceQuest] Sent mailbox record notification to {} for {}", playerName, recordType);
-        } catch (Exception e) {
-            LOGGER.error("[EnduranceQuest] Failed to send mailbox record notification", e);
         }
     }
 

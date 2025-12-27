@@ -52,13 +52,23 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
         final boolean isApocalypse;
         final boolean isTrinity;
 
-        ResonanceNotification(ResonanceNotificationPayload payload) {
-            this.text = payload.announcement();
-            this.color = payload.color();
-            this.styleBonus = payload.styleBonus();
+        ResonanceNotification(String text, int color, int styleBonus, boolean isApocalypse, boolean isTrinity) {
+            this.text = text;
+            this.color = color;
+            this.styleBonus = styleBonus;
             this.startTime = System.currentTimeMillis();
-            this.isApocalypse = payload.isApocalypse();
-            this.isTrinity = payload.isTrinity();
+            this.isApocalypse = isApocalypse;
+            this.isTrinity = isTrinity;
+        }
+
+        ResonanceNotification(ResonanceNotificationPayload payload) {
+            this(
+                payload.announcement(),
+                payload.color(),
+                payload.styleBonus(),
+                payload.isApocalypse(),
+                payload.isTrinity()
+            );
         }
 
         float getProgress() {
@@ -75,28 +85,45 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
      * Called when a resonance notification is received from the server.
      */
     public void onResonanceTriggered(ResonanceNotificationPayload payload) {
+        if (payload == null) {
+            return;
+        }
         LOGGER.debug("[ResonanceHUD] Received: {} (+{} style)", payload.tierName(), payload.styleBonus());
 
+        onResonanceTriggered(
+            payload.announcement(),
+            payload.color(),
+            payload.styleBonus(),
+            payload.isApocalypse(),
+            payload.isTrinity()
+        );
+    }
+
+    public void onResonanceTriggered(String announcement, int color, int styleBonus,
+                                     boolean isApocalypse, boolean isTrinity) {
+        LOGGER.debug("[ResonanceHUD] Received: {} (+{} style)", announcement, styleBonus);
+
         // Add notification
-        activeNotifications.add(new ResonanceNotification(payload));
+        activeNotifications.add(new ResonanceNotification(
+            announcement, color, styleBonus, isApocalypse, isTrinity));
 
         // Trigger screen flash
-        screenFlashColor = payload.color();
+        screenFlashColor = color;
         screenFlashAlpha = FLASH_MAX_ALPHA;
 
         // Trigger screen shake for TRINITY and APOCALYPSE
-        if (payload.isTrinity()) {
+        if (isTrinity) {
             shakeIntensity = 3.0f;
-        } else if (payload.isApocalypse()) {
+        } else if (isApocalypse) {
             shakeIntensity = 8.0f;
         }
 
         // Play additional client-side sound
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            if (payload.isApocalypse()) {
+            if (isApocalypse) {
                 mc.player.playSound(SoundEvents.WITHER_SPAWN, 0.5f, 1.5f);
-            } else if (payload.isTrinity()) {
+            } else if (isTrinity) {
                 mc.player.playSound(SoundEvents.ENDER_DRAGON_GROWL, 0.3f, 2.0f);
             }
         }

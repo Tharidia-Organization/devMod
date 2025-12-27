@@ -131,9 +131,7 @@ public class NotificationBadgeOverlay {
     }
 
     private static void openNotificationCenter() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) return;
-        mc.setScreen(new NotificationCenterScreen(mc.screen));
+        NotificationCenterScreen.open("NOTIFICATIONS", null);
     }
 
     @SubscribeEvent

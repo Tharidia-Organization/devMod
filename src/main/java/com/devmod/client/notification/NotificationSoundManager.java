@@ -106,6 +106,10 @@ public class NotificationSoundManager {
         // Party sounds
         soundConfigs.put("party.invite", new SoundConfig(
                 Objects.requireNonNull(SoundEvents.NOTE_BLOCK_CHIME.value()), 1.2f, 0.6f));
+        soundConfigs.put("party.invite_declined", new SoundConfig(
+                SoundEvents.ITEM_BREAK, 0.9f, 0.4f));
+        soundConfigs.put("party.invite_expired", new SoundConfig(
+                Objects.requireNonNull(SoundEvents.NOTE_BLOCK_BASS.value()), 0.8f, 0.45f));
         soundConfigs.put("party.join", new SoundConfig(
                 SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f, 0.5f));
         soundConfigs.put("party.leave", new SoundConfig(
@@ -116,6 +120,10 @@ public class NotificationSoundManager {
                 SoundEvents.ANVIL_LAND, 0.6f, 0.4f));
         soundConfigs.put("party.leader_changed", new SoundConfig(
                 Objects.requireNonNull(SoundEvents.NOTE_BLOCK_PLING.value()), 1.0f, 0.5f));
+        soundConfigs.put("party.quest_started", new SoundConfig(
+                SoundEvents.PLAYER_LEVELUP, 1.0f, 0.6f));
+        soundConfigs.put("party.quest_finished", new SoundConfig(
+                SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 0.8f));
 
         // Quest sounds
         soundConfigs.put("quest.start", new SoundConfig(
@@ -126,6 +134,18 @@ public class NotificationSoundManager {
                 Objects.requireNonNull(SoundEvents.NOTE_BLOCK_BELL.value()), 0.8f, 0.6f));
         soundConfigs.put("quest.boss", new SoundConfig(
                 SoundEvents.ENDER_DRAGON_GROWL, 2.0f, 0.4f));
+
+        // Wave-specific sounds (aliases for quest waves)
+        soundConfigs.put("wave.start", new SoundConfig(
+                Objects.requireNonNull(SoundEvents.NOTE_BLOCK_BELL.value()), 0.9f, 0.55f));
+        soundConfigs.put("wave.boss_start", new SoundConfig(
+                SoundEvents.ENDER_DRAGON_GROWL, 1.6f, 0.35f));
+        soundConfigs.put("wave.complete", new SoundConfig(
+                SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 0.9f));
+
+        // Chain offer sounds
+        soundConfigs.put("chain.offer", new SoundConfig(
+                Objects.requireNonNull(SoundEvents.NOTE_BLOCK_CHIME.value()), 1.2f, 0.55f));
 
         // Admin sounds
         soundConfigs.put("admin.alert", new SoundConfig(
@@ -138,6 +158,10 @@ public class NotificationSoundManager {
                 Objects.requireNonNull(SoundEvents.NOTE_BLOCK_CHIME.value()), 1.0f, 0.5f));
         soundConfigs.put("mailbox.claim", new SoundConfig(
                 SoundEvents.EXPERIENCE_ORB_PICKUP, 1.2f, 0.6f));
+
+        // News sounds
+        soundConfigs.put("news.new", new SoundConfig(
+                Objects.requireNonNull(SoundEvents.NOTE_BLOCK_CHIME.value()), 1.1f, 0.45f));
 
         // System sounds
         soundConfigs.put("system.info", new SoundConfig(

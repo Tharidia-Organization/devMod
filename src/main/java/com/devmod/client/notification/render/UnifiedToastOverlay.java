@@ -447,7 +447,8 @@ public class UnifiedToastOverlay {
     private static String getTitleText(Notification notification) {
         String titleKey = notification.titleKey();
         if (titleKey != null && !titleKey.isBlank()) {
-            return Component.translatable(titleKey).getString();
+            Object[] args = notification.params().values().toArray(new Object[0]);
+            return Component.translatable(titleKey, java.util.Objects.requireNonNull(args)).getString();
         }
 
         var params = notification.params();
@@ -474,14 +475,15 @@ public class UnifiedToastOverlay {
             case ADMIN -> "Admin Notice";
             case SYSTEM -> "System Message";
             case MAILBOX -> "New Mail";
+            case NEWS -> "News";
         };
     }
 
     private static String getMessageText(Notification notification) {
         String messageKey = notification.messageKey();
         if (messageKey != null && !messageKey.isBlank()) {
-            Object[] args = notification.params().values().toArray();
-            return Component.translatable(messageKey, args).getString();
+            Object[] args = notification.params().values().toArray(new Object[0]);
+            return Component.translatable(messageKey, java.util.Objects.requireNonNull(args)).getString();
         }
 
         var params = notification.params();

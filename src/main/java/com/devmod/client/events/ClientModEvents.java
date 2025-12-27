@@ -34,13 +34,16 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.overlay.Impact3DPanelManager;
-import com.devmod.client.overlay.WelcomeToastOverlay;
+import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.testing.QAEventTracker;
 import com.devmod.client.testing.QANotificationSystem;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.testing.TutorialManager;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.combat.HitHelper;
+import com.devmod.notification.Notification;
+import com.devmod.notification.NotificationCategory;
+import com.devmod.notification.NotificationPriority;
 import com.devmod.quest.QuestManager;
 import com.devmod.testing.TesterProfile;
 import com.devmod.util.I18n;
@@ -234,8 +237,15 @@ public class ClientModEvents {
      * This ensures first-time users still learn about the mod with a proper UI overlay.
      */
     private static void showWelcomeFallbackNotification() {
-        // Use proper toast overlay instead of chat messages (CRITICAL UI fix)
-        WelcomeToastOverlay.show();
+        Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+            .titleKey("devmod.notification.welcome.title")
+            .messageKey("devmod.notification.welcome.message")
+            .priority(NotificationPriority.NORMAL)
+            .soundId("system.info")
+            .displayDurationMs(5000)
+            .persistToMailbox(false)
+            .build();
+        ClientNotificationManager.INSTANCE.handleNotification(notification);
     }
 
     /**
@@ -283,6 +293,7 @@ public class ClientModEvents {
         com.devmod.mailbox.client.ClientMailboxCache.clear();
         com.devmod.mailbox.client.ClientNewsCache.clear();
         com.devmod.mailbox.client.ClientTaskCache.clear();
+        com.devmod.mailbox.client.ClientTicketCache.clear();
 
         // Clear ImpactData cache (MULTIPLAYER-SAFE: clears all player entries)
         com.devmod.client.overlay.ImpactData.clearAll();

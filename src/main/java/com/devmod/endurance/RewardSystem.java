@@ -39,8 +39,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -52,7 +50,7 @@ import com.devmod.DevMod;
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.mailbox.template.MessageTemplateRegistry;
+import com.devmod.notification.NotificationService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
 
@@ -320,7 +318,7 @@ public class RewardSystem {
         savePlayerWallets();
 
         // Send reward notification
-        notifyPlayer(player, rewards);
+        notifyPlayer(player, quest, rewards);
 
         LOGGER.info("[RewardSystem] Player {} earned {} tokens, {} prestige, {} blood gems",
             player.getName().getString(), finalTokens, rewards.prestigeEarned, rewards.bloodGemsEarned);
@@ -664,16 +662,8 @@ public class RewardSystem {
                     achievement.rewardCurrency, achievement.rewardAmount
                 );
 
-                // Send achievement notification
-                player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.achievement_unlocked", achievement.displayName)
-                    .withStyle(style -> style.withColor(achievement.lootTier.color))));
-
-                // Send mailbox notification for achievement (persists even if player is offline)
-                sendAchievementMailbox(player, achievement);
-
-                // Play achievement sound
-                Objects.requireNonNull(player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),
-                    Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), SoundSource.PLAYERS, 1.0f, 1.0f);
+                // Unified achievement notification
+                NotificationService.INSTANCE.notifyAchievementUnlock(player.getUUID(), achievement);
 
                 LOGGER.info("[RewardSystem] Player {} unlocked achievement: {}",
                     player.getName().getString(), achievement.id);
@@ -816,38 +806,13 @@ public class RewardSystem {
 
     // ========== Notifications ==========
 
-    private void notifyPlayer(ServerPlayer player, QuestRewards rewards) {
-        player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.quest_rewards")
-            .withStyle(style -> style.withColor(0xFFD700))));
+    private void notifyPlayer(ServerPlayer player, EnduranceQuest quest, QuestRewards rewards) {
+        boolean completed = quest != null && quest.getState() == EnduranceQuestState.COMPLETED;
+        String questName = quest != null ? quest.getDisplayName() : null;
 
-        player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.tokens_detail",
-            rewards.tokensEarned, rewards.baseTokens, rewards.styleMultiplier, rewards.mutatorMultiplier)
-            .withStyle(style -> style.withColor(Currency.TOKENS.color))));
-
-        if (rewards.prestigeEarned > 0) {
-            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.prestige_earned", rewards.prestigeEarned)
-                .withStyle(style -> style.withColor(Currency.PRESTIGE.color))));
-        }
-
-        if (rewards.bloodGemsEarned > 0) {
-            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.blood_gems_earned", rewards.bloodGemsEarned)
-                .withStyle(style -> style.withColor(Currency.BLOOD_GEMS.color))));
-        }
-
-        if (rewards.noHitBonus) {
-            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.no_hit_bonus")
-                .withStyle(style -> style.withColor(0x55FFFF))));
-        }
-
-        if (rewards.speedBonus) {
-            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.speed_bonus")
-                .withStyle(style -> style.withColor(0x55FF55))));
-        }
+        NotificationService.INSTANCE.notifyQuestRewards(player.getUUID(), rewards, completed, questName);
 
         if (!rewards.lootDrops.isEmpty()) {
-            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.loot_drops", rewards.lootDrops.size())
-                .withStyle(style -> style.withColor(0xAAAAAA))));
-
             // Drop items near player
             var level = Objects.requireNonNull(player.level());
             for (ItemStack stack : rewards.lootDrops) {
@@ -864,25 +829,7 @@ public class RewardSystem {
      * Notify player of a milestone unlock with special fanfare.
      */
     private void notifyMilestoneUnlock(ServerPlayer player, PrestigeMilestone milestone) {
-        // Header message
-        player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.milestone.unlocked")
-            .withStyle(style -> style.withColor(0xFFD700).withBold(true))));
-
-        // Milestone name and description
-        player.sendSystemMessage(Objects.requireNonNull(I18n.translate(milestone.getNameKey())
-            .withStyle(style -> style.withColor(milestone.getType().color))));
-
-        player.sendSystemMessage(Objects.requireNonNull(I18n.translate(milestone.getDescriptionKey())
-            .withStyle(style -> style.withColor(0xAAAAAA).withItalic(true))));
-
-        // Send mailbox notification for milestone (persists even if player is offline)
-        sendMilestoneMailbox(player, milestone);
-
-        // Play special sound
-        Objects.requireNonNull(player.level()).playSound(null,
-            player.getX(), player.getY(), player.getZ(),
-            Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE),
-            SoundSource.PLAYERS, 1.0f, 1.2f);
+        NotificationService.INSTANCE.notifyPrestigeMilestone(player.getUUID(), milestone);
 
         LOGGER.info("[RewardSystem] Player {} unlocked prestige milestone: {} ({})",
             player.getName().getString(), milestone.getId(), milestone.getType());
@@ -1308,63 +1255,4 @@ public class RewardSystem {
         public List<Achievement> achievementsUnlocked = new ArrayList<>();
     }
 
-    // ========== Mailbox Notifications ==========
-
-    /**
-     * Send mailbox notification when a player unlocks an achievement.
-     * This persists even if the player is offline.
-     */
-    private static void sendAchievementMailbox(ServerPlayer player, Achievement achievement) {
-        try {
-            String rewardDesc = achievement.rewardAmount > 0
-                ? "+" + achievement.rewardAmount + " " + achievement.rewardCurrency.displayName
-                : "Special reward unlocked!";
-
-            var unused = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
-                "reward.achievement",
-                player.getUUID(),
-                Map.of(
-                    "player_name", player.getName().getString(),
-                    "achievement_name", achievement.displayName,
-                    "achievement_description", achievement.description != null ? achievement.description : "",
-                    "reward_description", rewardDesc
-                ),
-                null
-            ).exceptionally(e -> {
-                LOGGER.error("[RewardSystem] Async failure sending achievement mailbox to {}", player.getUUID(), e);
-                return Optional.empty();
-            });
-            LOGGER.debug("[RewardSystem] Sent achievement mailbox to {}: {}",
-                player.getName().getString(), achievement.id);
-        } catch (Exception e) {
-            LOGGER.error("[RewardSystem] Failed to send achievement mailbox notification", e);
-        }
-    }
-
-    /**
-     * Send mailbox notification when a player unlocks a prestige milestone.
-     * This persists even if the player is offline.
-     */
-    private void sendMilestoneMailbox(ServerPlayer player, PrestigeMilestone milestone) {
-        try {
-            var unused = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
-                "reward.achievement",
-                player.getUUID(),
-                Map.of(
-                    "player_name", player.getName().getString(),
-                    "achievement_name", "Prestige Milestone: " + milestone.getId(),
-                    "achievement_description", milestone.getType().name() + " milestone unlocked!",
-                    "reward_description", "You've reached a new level of prestige!"
-                ),
-                null
-            ).exceptionally(e -> {
-                LOGGER.error("[RewardSystem] Async failure sending milestone mailbox to {}", player.getUUID(), e);
-                return Optional.empty();
-            });
-            LOGGER.debug("[RewardSystem] Sent milestone mailbox to {}: {}",
-                player.getName().getString(), milestone.getId());
-        } catch (Exception e) {
-            LOGGER.error("[RewardSystem] Failed to send milestone mailbox notification", e);
-        }
-    }
 }

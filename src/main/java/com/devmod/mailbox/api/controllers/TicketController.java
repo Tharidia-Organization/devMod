@@ -247,18 +247,20 @@ public final class TicketController {
         UUID ticketId = parseUuidOrThrow(ctx.pathParam("id"));
         AddCommentRequest request = ctx.bodyAsClass(AddCommentRequest.class);
 
-        if (request.content() == null || request.content().isBlank()) {
+        String content = request.content();
+        if (content == null || content.isBlank()) {
             ctx.status(400).json(new ErrorResponse("error", "content is required"));
             return;
         }
-        if (request.authorUuid() == null || request.authorUuid().isBlank()) {
+        String authorUuidStr = request.authorUuid();
+        if (authorUuidStr == null || authorUuidStr.isBlank()) {
             ctx.status(400).json(new ErrorResponse("error", "authorUuid is required"));
             return;
         }
 
-        UUID authorUuid = parseUuidOrThrow(request.authorUuid());
+        UUID authorUuid = parseUuidOrThrow(authorUuidStr);
         String authorName = nonBlankOrDefault(request.authorName(), "Admin");
-        boolean isInternal = request.isInternal() != null && request.isInternal();
+        boolean isInternal = Boolean.TRUE.equals(request.isInternal());
 
         TicketComment comment = TicketManager.INSTANCE.addComment(
             ticketId,
@@ -341,11 +343,15 @@ public final class TicketController {
     }
 
     private static TicketDto toTicketDto(Ticket ticket) {
+        UUID reportedUuid = ticket.reportedUuid();
+        UUID assignedTo = ticket.assignedTo();
+        java.time.Instant updatedAt = ticket.updatedAt();
+        java.time.Instant resolvedAt = ticket.resolvedAt();
         return new TicketDto(
             ticket.id().toString(),
             ticket.reporterUuid().toString(),
             ticket.reporterName(),
-            ticket.reportedUuid() != null ? ticket.reportedUuid().toString() : null,
+            reportedUuid != null ? reportedUuid.toString() : null,
             ticket.reportedName(),
             ticket.category().name(),
             ticket.category().getDisplayName(),
@@ -356,21 +362,22 @@ public final class TicketController {
             ticket.status().getDisplayName(),
             ticket.subject(),
             ticket.description(),
-            ticket.assignedTo() != null ? ticket.assignedTo().toString() : null,
+            assignedTo != null ? assignedTo.toString() : null,
             ticket.assignedToName(),
             ticket.createdAt().toEpochMilli(),
-            ticket.updatedAt() != null ? ticket.updatedAt().toEpochMilli() : null,
-            ticket.resolvedAt() != null ? ticket.resolvedAt().toEpochMilli() : null,
+            updatedAt != null ? updatedAt.toEpochMilli() : null,
+            resolvedAt != null ? resolvedAt.toEpochMilli() : null,
             ticket.resolutionNotes(),
             ticket.getAge()
         );
     }
 
     private static CommentDto toCommentDto(TicketComment comment) {
+        UUID authorUuid = comment.authorUuid();
         return new CommentDto(
             comment.id().toString(),
             comment.ticketId().toString(),
-            comment.authorUuid() != null ? comment.authorUuid().toString() : null,
+            authorUuid != null ? authorUuid.toString() : null,
             comment.authorName(),
             comment.content(),
             comment.isInternal(),

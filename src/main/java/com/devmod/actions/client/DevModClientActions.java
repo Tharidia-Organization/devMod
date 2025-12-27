@@ -139,6 +139,11 @@ public final class DevModClientActions {
             ));
     }
 
+    private static ActionPrecondition uiScreenPrecondition() {
+        return ActionPreconditions.clientOnly()
+            .and(ActionPreconditions.screenClosed());
+    }
+
     private static ActionPrecondition qaSessionActivePrecondition() {
         return ActionPreconditions.clientOnly()
             .and(ActionPreconditions.withMessage(
@@ -563,18 +568,18 @@ public final class DevModClientActions {
             .category(ActionCategory.UI)
             .menuPath("Root/Play/Notifications")
             .icon(Items.BELL)
-            .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new NotificationCenterScreen(Minecraft.getInstance().screen)))
+            .precondition(uiScreenPrecondition())
+            .handler(context -> NotificationCenterScreen.open("NOTIFICATIONS", null))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_MAILBOX_OPEN)
             .labelKey("devmod.action.mailbox")
             .descriptionKey("devmod.action.mailbox.desc")
-            .category(ActionCategory.PARTY)
+            .category(ActionCategory.UI)
             .menuPath("Root/Play/Mailbox")
             .icon(Items.WRITABLE_BOOK)
-            .precondition(screenPrecondition())
-            .handler(context -> com.devmod.mailbox.client.screen.MailboxScreen.open())
+            .precondition(uiScreenPrecondition())
+            .handler(context -> NotificationCenterScreen.open("MAILBOX", null))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_TESTER_TASKS_OPEN)

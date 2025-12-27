@@ -5,9 +5,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -16,6 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
+import com.devmod.notification.NotificationParamsCodec;
 import com.devmod.notification.NotificationPriority;
 
 /**
@@ -36,8 +34,6 @@ public record UnifiedNotificationPayload(
         int displayDurationMs,
         long createdAtEpochMs
 ) implements CustomPacketPayload {
-
-    private static final Gson GSON = new Gson();
 
     // Security limits
     private static final int MAX_STRING_LENGTH = 512;
@@ -103,9 +99,7 @@ public record UnifiedNotificationPayload(
      * Create payload from a Notification.
      */
     public static UnifiedNotificationPayload from(Notification notification) {
-        String paramsJson = notification.params().isEmpty()
-                ? ""
-                : GSON.toJson(notification.params());
+        String paramsJson = NotificationParamsCodec.toJson(notification.params());
 
         return new UnifiedNotificationPayload(
                 notification.id(),
@@ -127,9 +121,7 @@ public record UnifiedNotificationPayload(
      * Convert payload back to Notification for client processing.
      */
     public Notification toNotification() {
-        Map<String, String> params = paramsJson.isEmpty()
-                ? Map.of()
-                : GSON.fromJson(paramsJson, new TypeToken<Map<String, String>>() {}.getType());
+        Map<String, String> params = NotificationParamsCodec.fromJson(paramsJson);
 
         return Notification.builder(NotificationCategory.fromOrdinal(categoryOrdinal))
                 .id(notificationId)
@@ -164,13 +156,6 @@ public record UnifiedNotificationPayload(
      * Get params as Map.
      */
     public Map<String, String> getParams() {
-        if (paramsJson == null || paramsJson.isEmpty()) {
-            return Map.of();
-        }
-        try {
-            return GSON.fromJson(paramsJson, new TypeToken<Map<String, String>>() {}.getType());
-        } catch (Exception e) {
-            return Map.of();
-        }
+        return NotificationParamsCodec.fromJson(paramsJson);
     }
 }

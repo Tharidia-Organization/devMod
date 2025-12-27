@@ -29,6 +29,7 @@ public enum NotificationCategory {
     // System
     QUEST("quest", "devmod.notification.category.quest", true, true),
     MAILBOX("mailbox", "devmod.notification.category.mailbox", true, false),
+    NEWS("news", "devmod.notification.category.news", true, false),
     ADMIN("admin", "devmod.notification.category.admin", true, true),
     SYSTEM("system", "devmod.notification.category.system", true, false);
 

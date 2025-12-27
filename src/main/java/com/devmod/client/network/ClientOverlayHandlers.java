@@ -4,15 +4,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.abilities.ClientStaminaCache;
-import com.devmod.client.overlay.BadgePopupOverlay;
-import com.devmod.client.overlay.ComboDecayOverlay;
 import com.devmod.client.overlay.ContractHudOverlay;
 import com.devmod.client.overlay.EnduranceQuestOverlay;
-import com.devmod.client.overlay.RecordBannerOverlay;
-import com.devmod.client.overlay.ResonanceHudOverlay;
-import com.devmod.client.overlay.TokenGainOverlay;
 import com.devmod.endurance.contracts.ContractSyncPayload;
-import com.devmod.endurance.resonance.ResonanceNotificationPayload;
 
 @OnlyIn(Dist.CLIENT)
 public final class ClientOverlayHandlers {
@@ -23,28 +17,8 @@ public final class ClientOverlayHandlers {
         EnduranceQuestOverlay.onBossAlert(alertDurationMs, bossType);
     }
 
-    public static void handleBadgeUnlock(String badgeName, String rarity) {
-        BadgePopupOverlay.showBadge(badgeName, rarity);
-    }
-
-    public static void handleTokenGain(int amount) {
-        TokenGainOverlay.show(amount);
-    }
-
-    public static void handleRecordBanner(String recordType, String recordValue) {
-        RecordBannerOverlay.showRecord(recordType, recordValue);
-    }
-
-    public static void handleComboDecay(int lostCombo, int previousRankOrdinal, int newRankOrdinal) {
-        ComboDecayOverlay.show(lostCombo, previousRankOrdinal, newRankOrdinal);
-    }
-
     public static void handleStaminaSync(float currentStamina, float maxStamina) {
         ClientStaminaCache.update(currentStamina, maxStamina);
-    }
-
-    public static void handleResonanceTriggered(ResonanceNotificationPayload payload) {
-        ResonanceHudOverlay.INSTANCE.onResonanceTriggered(payload);
     }
 
     public static void handleContractSync(ContractSyncPayload payload) {

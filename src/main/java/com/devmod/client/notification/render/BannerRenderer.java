@@ -67,11 +67,12 @@ public class BannerRenderer {
         String titleKey = notification.titleKey();
         String messageKey = notification.messageKey();
 
+        Object[] args = notification.params().values().toArray(new Object[0]);
         Component title = titleKey != null
-                ? Component.translatable(Objects.requireNonNull(titleKey))
+                ? Component.translatable(Objects.requireNonNull(titleKey), args)
                 : Component.empty();
         Component message = messageKey != null
-                ? Component.translatable(Objects.requireNonNull(messageKey))
+                ? Component.translatable(Objects.requireNonNull(messageKey), args)
                 : null;
 
         int titleWidth = font.width(Objects.requireNonNull(title));

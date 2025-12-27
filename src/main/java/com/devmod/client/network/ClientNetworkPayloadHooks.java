@@ -38,6 +38,7 @@ import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.telemetry.network.LVCSyncPayload;
+import com.devmod.mailbox.network.payload.TicketSyncPayload;
 
 @OnlyIn(Dist.CLIENT)
 public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPayloadHooks {
@@ -261,6 +262,24 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
             java.util.List<com.devmod.mailbox.task.TestTask> tasks = payload.toTasks(playerUuid);
             com.devmod.mailbox.client.ClientTaskCache.update(tasks);
         }
+    }
+
+    @Override
+    public void handleTicketSync(TicketSyncPayload payload) {
+        java.util.List<com.devmod.mailbox.client.ClientTicketCache.TicketData> tickets = payload.tickets().stream()
+            .map(ticket -> new com.devmod.mailbox.client.ClientTicketCache.TicketData(
+                ticket.id(),
+                ticket.category(),
+                ticket.priority(),
+                ticket.status(),
+                ticket.subject(),
+                ticket.description(),
+                ticket.createdAt(),
+                ticket.updatedAt(),
+                ticket.commentCount()
+            ))
+            .toList();
+        com.devmod.mailbox.client.ClientTicketCache.sync(tickets);
     }
 
     // ==================== Unified Notification Center ====================

@@ -15,12 +15,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.server.level.ServerPlayer;
-
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
-
 import com.devmod.endurance.config.EnduranceConfigManager;
-import com.devmod.network.NetworkHandler;
 import com.devmod.notification.NotificationService;
 
 public class SeasonPassSystem {
@@ -388,60 +383,13 @@ public class SeasonPassSystem {
     }
 
     private void notifyTierUp(UUID playerId, PlayerSeasonProgress progress, int newTier) {
-        var server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) {
-            // Player offline - use notification service for mailbox persistence
-            persistTierUpToMailbox(playerId, progress, newTier);
-            return;
-        }
-        ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
-        if (player == null) {
-            // Player offline - use notification service for mailbox persistence
-            persistTierUpToMailbox(playerId, progress, newTier);
-            return;
-        }
-
-        boolean hasFreeReward = freeTrackRewards.containsKey(newTier);
-        boolean hasPremiumReward = progress.isPremium() && premiumTrackRewards.containsKey(newTier);
-
         // Get reward names for display
         SeasonReward freeReward = freeTrackRewards.get(newTier);
         SeasonReward premiumReward = premiumTrackRewards.get(newTier);
         String freeRewardName = freeReward != null ? freeReward.getDisplayName() : "";
         String premiumRewardName = premiumReward != null ? premiumReward.getDisplayName() : "";
 
-        // Send network payload for rich client notification (specialized overlay)
-        SeasonTierUpPayload payload = SeasonTierUpPayload.create(
-            newTier,
-            hasFreeReward,
-            hasPremiumReward,
-            freeRewardName,
-            premiumRewardName,
-            progress.isPremium()
-        );
-        NetworkHandler.sendSeasonTierUp(player, payload);
-
-        // Persist to mailbox via NotificationService for history
-        persistTierUpToMailbox(playerId, progress, newTier);
-    }
-
-    /**
-     * Persist season tier-up to mailbox via NotificationService.
-     * This ensures offline players receive the notification and provides history.
-     */
-    private void persistTierUpToMailbox(UUID playerId, PlayerSeasonProgress progress, int newTier) {
-        boolean hasFreeReward = freeTrackRewards.containsKey(newTier);
-        boolean hasPremiumReward = progress.isPremium() && premiumTrackRewards.containsKey(newTier);
-
-        String rewardInfo = hasFreeReward && hasPremiumReward
-            ? "Free + Premium rewards available"
-            : hasFreeReward
-                ? "Free reward available"
-                : hasPremiumReward
-                    ? "Premium reward available"
-                    : "";
-
-        NotificationService.INSTANCE.notifySeasonTierUp(playerId, newTier, rewardInfo, 0);
+        NotificationService.INSTANCE.notifySeasonTierUp(playerId, newTier, freeRewardName, premiumRewardName);
     }
 
     // === Progress Management ===

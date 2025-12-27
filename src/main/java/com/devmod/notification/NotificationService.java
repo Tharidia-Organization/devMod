@@ -22,11 +22,16 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.mailbox.MailboxManager;
+import com.devmod.mailbox.MailboxMessage;
+import com.devmod.mailbox.news.NewsArticle;
 import com.devmod.mailbox.template.MessageTemplateRegistry;
 import com.devmod.actions.ActionIds;
+import com.devmod.endurance.PrestigeMilestone;
 import com.devmod.endurance.QuestType;
+import com.devmod.endurance.RewardSystem;
 import com.devmod.notification.network.UnifiedNotificationPayload;
 import com.devmod.notification.persistence.NotificationHistoryRepository;
+import com.devmod.util.I18n;
 
 /**
  * Central server-side entry point for the Unified Notification Center.
@@ -167,7 +172,74 @@ public class NotificationService {
      * Send a badge unlock notification.
      */
     public void notifyBadgeUnlock(UUID playerUuid, String badgeName, String rarity) {
+        notifyBadgeUnlock(playerUuid, badgeName, rarity, null, null);
+    }
+
+    /**
+     * Send an achievement unlock notification.
+     */
+    public void notifyAchievementUnlock(UUID playerUuid, RewardSystem.Achievement achievement) {
+        if (achievement == null) {
+            return;
+        }
+
+        String rewardDesc = achievement.rewardAmount > 0
+            ? "+" + achievement.rewardAmount + " " + achievement.rewardCurrency.displayName
+            : "Special reward unlocked";
+        String tierId = achievement.lootTier.name().toLowerCase(Locale.ROOT);
+
         Notification notification = Notification.builder(NotificationCategory.ACHIEVEMENT)
+            .titleKey("devmod.notification.achievement.title")
+            .messageKey("devmod.notification.achievement.message")
+            .param("achievement", achievement.displayName)
+            .param("reward", rewardDesc)
+            .param("description", achievement.description != null ? achievement.description : "")
+            .priority(getPriorityForLootTier(achievement.lootTier))
+            .soundId("badge." + tierId)
+            .iconId("badge." + tierId)
+            .persistToMailbox(true)
+            .build();
+
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a prestige milestone notification.
+     */
+    public void notifyPrestigeMilestone(UUID playerUuid, PrestigeMilestone milestone) {
+        if (milestone == null) {
+            return;
+        }
+
+        String name = I18n.translate(milestone.getNameKey()).getString();
+        String description = I18n.translate(milestone.getDescriptionKey()).getString();
+        String rewardDesc = milestone.getType().displayName;
+        if (milestone.getUnlockValue() != null && !milestone.getUnlockValue().isBlank()) {
+            rewardDesc = rewardDesc + " (" + milestone.getUnlockValue() + ")";
+        }
+
+        Notification notification = Notification.builder(NotificationCategory.ACHIEVEMENT)
+            .titleKey(milestone.getNameKey())
+            .messageKey(milestone.getDescriptionKey())
+            .param("achievement", name)
+            .param("description", description)
+            .param("reward", rewardDesc)
+            .param("type", milestone.getType().displayName)
+            .priority(NotificationPriority.HIGH)
+            .soundId("badge.legendary")
+            .iconId("badge.legendary")
+            .persistToMailbox(true)
+            .build();
+
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a badge unlock notification with optional mailbox details.
+     */
+    public void notifyBadgeUnlock(UUID playerUuid, String badgeName, String rarity,
+                                  @Nullable String description, @Nullable String rewardDescription) {
+        Notification.Builder builder = Notification.builder(NotificationCategory.ACHIEVEMENT)
                 .titleKey("devmod.notification.badge_unlock.title")
                 .messageKey("devmod.notification.badge_unlock.message")
                 .param("badge", badgeName)
@@ -175,10 +247,18 @@ public class NotificationService {
                 .priority(getPriorityForBadgeRarity(rarity))
                 .soundId("badge." + rarity.toLowerCase(Locale.ROOT))
                 .iconId("badge." + rarity.toLowerCase(Locale.ROOT))
-                .persistToMailbox(true)
-                .build();
+                .persistToMailbox(true);
 
-        var unused = notifyAsync(playerUuid, notification);
+        if (description != null && !description.isBlank()) {
+            builder.param("description", description);
+        }
+        if (rewardDescription != null && !rewardDescription.isBlank()) {
+            builder.param("reward", rewardDescription);
+        }
+
+        Notification notification = builder.build();
+
+        notifyAsync(playerUuid, notification);
     }
 
     /**
@@ -199,7 +279,7 @@ public class NotificationService {
             builder.param("source", source);
         }
 
-        var unused = notifyAsync(playerUuid, builder.build());
+        notifyAsync(playerUuid, builder.build());
     }
 
     /**
@@ -217,26 +297,68 @@ public class NotificationService {
                 .persistToMailbox(true)
                 .build();
 
-        var unused = notifyAsync(playerUuid, notification);
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a quest reward summary notification.
+     */
+    public void notifyQuestRewards(UUID playerUuid, RewardSystem.QuestRewards rewards,
+                                   boolean questCompleted, @Nullable String questName) {
+        if (rewards == null) {
+            return;
+        }
+
+        Notification.Builder builder = Notification.builder(NotificationCategory.REWARD)
+            .titleKey("devmod.notification.quest_rewards.title")
+            .messageKey("devmod.notification.quest_rewards.message")
+            .param("tokens", String.valueOf(rewards.tokensEarned))
+            .param("prestige", String.valueOf(rewards.prestigeEarned))
+            .param("bloodGems", String.valueOf(rewards.bloodGemsEarned))
+            .param("loot", String.valueOf(rewards.lootDrops.size()))
+            .param("baseTokens", String.valueOf(rewards.baseTokens))
+            .param("styleMultiplier", String.format(Locale.ROOT, "%.2f", rewards.styleMultiplier))
+            .param("mutatorMultiplier", String.format(Locale.ROOT, "%.2f", rewards.mutatorMultiplier))
+            .param("styleRank", rewards.styleRank != null ? rewards.styleRank.name() : "D")
+            .param("activeMutators", String.valueOf(rewards.activeMutators))
+            .priority(questCompleted ? NotificationPriority.HIGH : NotificationPriority.NORMAL)
+            .soundId(questCompleted ? "quest.complete" : "token.gain")
+            .displayDurationMs(4000)
+            .persistToMailbox(false);
+
+        if (questName != null && !questName.isBlank()) {
+            builder.param("quest", questName);
+        }
+        if (rewards.noHitBonus) {
+            builder.param("noHitBonus", "true");
+        }
+        if (rewards.speedBonus) {
+            builder.param("speedBonus", "true");
+        }
+        if (rewards.achievementsUnlocked != null && !rewards.achievementsUnlocked.isEmpty()) {
+            builder.param("achievements", String.valueOf(rewards.achievementsUnlocked.size()));
+        }
+
+        notifyAsync(playerUuid, builder.build());
     }
 
     /**
      * Send a season tier up notification.
      */
-    public void notifySeasonTierUp(UUID playerUuid, int newTier, String tierName, int xpGained) {
+    public void notifySeasonTierUp(UUID playerUuid, int newTier, String freeRewardName, String premiumRewardName) {
         Notification notification = Notification.builder(NotificationCategory.SEASON)
                 .titleKey("devmod.notification.season_tier.title")
                 .messageKey("devmod.notification.season_tier.message")
                 .param("tier", String.valueOf(newTier))
-                .param("tierName", tierName)
-                .param("xp", String.valueOf(xpGained))
+                .param("freeReward", freeRewardName == null ? "" : freeRewardName)
+                .param("premiumReward", premiumRewardName == null ? "" : premiumRewardName)
                 .priority(NotificationPriority.HIGH)
                 .soundId("season.tierup")
                 .iconId("season.tier")
                 .persistToMailbox(true)
                 .build();
 
-        var unused = notifyAsync(playerUuid, notification);
+        notifyAsync(playerUuid, notification);
     }
 
     /**
@@ -257,7 +379,7 @@ public class NotificationService {
                 .showOverlay(true)
                 .build();
 
-        var unused = notifyAsync(playerUuid, notification);
+        notifyAsync(playerUuid, notification);
     }
 
     /**
@@ -275,7 +397,35 @@ public class NotificationService {
                 .persistToMailbox(false)
                 .build();
 
-        var unused = notifyAsync(playerUuid, notification);
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a resonance tier notification.
+     */
+    public void notifyResonanceTier(UUID playerUuid, String announcement, int styleBonus, String tierName,
+                                    int color, boolean isTrinity, boolean isApocalypse) {
+        NotificationPriority priority = "APOCALYPSE".equalsIgnoreCase(tierName)
+                ? NotificationPriority.HIGH
+                : NotificationPriority.NORMAL;
+        String soundId = "APOCALYPSE".equalsIgnoreCase(tierName) ? "resonance.max" : "resonance.chain";
+
+        Notification notification = Notification.builder(NotificationCategory.RESONANCE)
+                .titleKey("devmod.notification.resonance.title")
+                .messageKey("devmod.notification.resonance.message")
+                .param("announcement", announcement)
+                .param("styleBonus", String.valueOf(styleBonus))
+                .param("tier", tierName)
+                .param("color", String.valueOf(color))
+                .param("isTrinity", String.valueOf(isTrinity))
+                .param("isApocalypse", String.valueOf(isApocalypse))
+                .priority(priority)
+                .soundId(soundId)
+                .displayDurationMs(2000)
+                .persistToMailbox(false)
+                .build();
+
+        notifyAsync(playerUuid, notification);
     }
 
     /**
@@ -291,7 +441,7 @@ public class NotificationService {
 
         params.forEach(builder::param);
 
-        var unused = notifyAsync(playerUuid, builder.build());
+        notifyAsync(playerUuid, builder.build());
     }
 
     /**
@@ -304,16 +454,22 @@ public class NotificationService {
             default -> NotificationPriority.NORMAL;
         };
 
-        Notification notification = Notification.builder(NotificationCategory.PARTY)
+        Notification.Builder builder = Notification.builder(NotificationCategory.PARTY)
                 .titleKey("devmod.notification.party." + eventType + ".title")
                 .messageKey("devmod.notification.party." + eventType + ".message")
-                .params(params)
                 .priority(priority)
                 .soundId("party." + eventType)
-                .persistToMailbox(shouldPersistPartyEvent(eventType))
-                .build();
+                .persistToMailbox(shouldPersistPartyEvent(eventType));
 
-        var unused = notifyAsync(playerUuid, notification);
+        if (params != null) {
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                builder.param(entry.getKey(), entry.getValue());
+            }
+        }
+
+        Notification notification = builder.build();
+
+        notifyAsync(playerUuid, notification);
     }
 
     /**
@@ -338,7 +494,7 @@ public class NotificationService {
                 .persistToMailbox(false)
                 .build();
 
-        var unused = notifyAsync(playerUuid, notification);
+        notifyAsync(playerUuid, notification);
     }
 
     private boolean shouldPersistPartyEvent(String eventType) {
@@ -361,7 +517,67 @@ public class NotificationService {
                 .persistToMailbox(true)
                 .build();
 
-        var unused = notifyAsync(playerUuid, notification);
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a mailbox notification when a new message arrives.
+     */
+    public void notifyMailboxMessage(UUID playerUuid, MailboxMessage message, int unreadCount) {
+        if (message == null) {
+            return;
+        }
+
+        String sender = message.senderName() != null ? message.senderName() : "System";
+        NotificationPriority priority = switch (message.messageType()) {
+            case ADMIN -> NotificationPriority.URGENT;
+            case REWARD -> NotificationPriority.HIGH;
+            default -> NotificationPriority.NORMAL;
+        };
+
+        Notification notification = Notification.builder(NotificationCategory.MAILBOX)
+                .titleKey("devmod.notification.mailbox.title")
+                .messageKey("devmod.notification.mailbox.message")
+                .param("sender", sender)
+                .param("subject", message.subject())
+                .param("unread", String.valueOf(unreadCount))
+                .priority(priority)
+                .soundId("mailbox.new")
+                .actionId(ActionIds.UI_NOTIFICATION_CENTER_OPEN)
+                .actionDataJson(NotificationCenterActionData.forTab("MAILBOX", message.id()).toJson())
+                .persistToMailbox(false)
+                .build();
+
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a news notification to a player.
+     */
+    public void notifyNewsArticle(UUID playerUuid, NewsArticle article) {
+        if (article == null) {
+            return;
+        }
+
+        NotificationPriority priority = article.priority() >= 3
+                ? NotificationPriority.URGENT
+                : article.priority() >= 2
+                ? NotificationPriority.HIGH
+                : NotificationPriority.NORMAL;
+
+        Notification notification = Notification.builder(NotificationCategory.NEWS)
+                .titleKey("devmod.notification.news.title")
+                .messageKey("devmod.notification.news.message")
+                .param("title", article.title())
+                .param("category", article.category().getDisplayName())
+                .priority(priority)
+                .soundId("news.new")
+                .actionId(ActionIds.UI_NOTIFICATION_CENTER_OPEN)
+                .actionDataJson(NotificationCenterActionData.forTab("NEWS", article.id()).toJson())
+                .persistToMailbox(false)
+                .build();
+
+        notifyAsync(playerUuid, notification);
     }
 
     // ============================================================================
@@ -417,7 +633,7 @@ public class NotificationService {
             builder.param("directive", directive);
         }
 
-        var unused = notifyAsync(playerUuid, builder.build());
+        notifyAsync(playerUuid, builder.build());
     }
 
     /**
@@ -435,6 +651,20 @@ public class NotificationService {
     public void notifyWaveComplete(UUID playerUuid, int waveNumber, int tokensEarned,
                                     String styleRank, int maxCombo, boolean isFlawless,
                                     boolean hasMoreWaves) {
+        notifyWaveComplete(playerUuid, waveNumber, tokensEarned, styleRank, maxCombo,
+            isFlawless, hasMoreWaves, null, null, null, null);
+    }
+
+    /**
+     * Send a detailed wave complete notification with optional stats.
+     */
+    public void notifyWaveComplete(UUID playerUuid, int waveNumber, int tokensEarned,
+                                    String styleRank, int maxCombo, boolean isFlawless,
+                                    boolean hasMoreWaves,
+                                    @Nullable Integer kills,
+                                    @Nullable Float damageDealt,
+                                    @Nullable Float damageTaken,
+                                    @Nullable RewardSystem.WaveReward rewardBreakdown) {
 
         Notification.Builder builder = Notification.builder(NotificationCategory.QUEST)
                 .titleKey("devmod.notification.wave.complete_title")
@@ -447,10 +677,26 @@ public class NotificationService {
                 .soundId("wave.complete")
                 .displayDurationMs(2500)
                 .showOverlay(true)
-                .persistToMailbox(false);  // Detailed stats available in WaveCheckpointScreen
+                .persistToMailbox(true);
 
         if (isFlawless) {
             builder.param("flawless", "true");
+        }
+        if (kills != null) {
+            builder.param("kills", String.valueOf(kills));
+        }
+        if (damageDealt != null) {
+            builder.param("damage", String.format(Locale.ROOT, "%.0f", damageDealt));
+        }
+        if (damageTaken != null) {
+            builder.param("damageTaken", String.format(Locale.ROOT, "%.0f", damageTaken));
+        }
+        if (rewardBreakdown != null) {
+            builder.param("baseTokens", String.valueOf(rewardBreakdown.baseTokens()));
+            builder.param("styleMultiplier", String.format(Locale.ROOT, "%.2f", rewardBreakdown.styleMultiplier()));
+            builder.param("mutatorMultiplier", String.format(Locale.ROOT, "%.2f", rewardBreakdown.mutatorMultiplier()));
+            builder.param("directiveMultiplier", String.format(Locale.ROOT, "%.2f", rewardBreakdown.directiveMultiplier()));
+            builder.param("bonusTokens", String.valueOf(rewardBreakdown.bonusPoints()));
         }
 
         // Action to trigger WaveCheckpointScreen opening
@@ -458,7 +704,7 @@ public class NotificationService {
             builder.actionId(ActionIds.UI_WAVE_CHECKPOINT_OPEN);
         }
 
-        var unused = notifyAsync(playerUuid, builder.build());
+        notifyAsync(playerUuid, builder.build());
     }
 
     /**
@@ -487,7 +733,7 @@ public class NotificationService {
                 .actionId("open_chain_selection")
                 .build();
 
-        var unused = notifyAsync(playerUuid, notification);
+        notifyAsync(playerUuid, notification);
     }
 
     // ============================================================================
@@ -528,12 +774,12 @@ public class NotificationService {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
 
-        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUuid));
         if (player == null) return;
 
         try {
             UnifiedNotificationPayload payload = UnifiedNotificationPayload.from(notification);
-            PacketDistributor.sendToPlayer(player, payload);
+            PacketDistributor.sendToPlayer(Objects.requireNonNull(player), Objects.requireNonNull(payload));
         } catch (Exception e) {
             LOGGER.warn("[NotificationService] Failed to send overlay packet to {}: {}",
                     playerUuid, e.getMessage());
@@ -544,7 +790,7 @@ public class NotificationService {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
 
-        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUuid));
         if (player == null) return;
 
         Component message = buildChatComponent(notification);
@@ -560,6 +806,11 @@ public class NotificationService {
                     && persistPartyMailbox(playerUuid, notification)) {
                 return;
             }
+            if ((notification.category() == NotificationCategory.ACHIEVEMENT
+                    || notification.category() == NotificationCategory.RECORD)
+                    && persistAchievementMailbox(playerUuid, notification)) {
+                return;
+            }
             // Generate subject from notification data
             String subject = formatMailboxSubject(notification);
             String body = formatMailboxBody(notification);
@@ -568,7 +819,7 @@ public class NotificationService {
             Duration expiresIn = getMailboxExpiration(notification.priority());
 
             // Send to mailbox asynchronously
-            var unused = MailboxManager.INSTANCE.sendSystemMessage(
+            MailboxManager.INSTANCE.sendSystemMessage(
                     playerUuid,
                     subject,
                     body,
@@ -590,12 +841,14 @@ public class NotificationService {
 
     @Nullable
     private Component buildChatComponent(Notification notification) {
-        Object[] args = notification.params().values().toArray();
-        if (notification.messageKey() != null && !notification.messageKey().isBlank()) {
-            return Component.translatable(notification.messageKey(), args);
+        Object[] args = notification.params().values().toArray(new Object[0]);
+        String messageKey = notification.messageKey();
+        if (messageKey != null && !messageKey.isBlank()) {
+            return Component.translatable(Objects.requireNonNull(messageKey), Objects.requireNonNull(args));
         }
-        if (notification.titleKey() != null && !notification.titleKey().isBlank()) {
-            return Component.translatable(notification.titleKey(), args);
+        String titleKey = notification.titleKey();
+        if (titleKey != null && !titleKey.isBlank()) {
+            return Component.translatable(Objects.requireNonNull(titleKey), Objects.requireNonNull(args));
         }
         return null;
     }
@@ -622,6 +875,76 @@ public class NotificationService {
         }
 
         return false;
+    }
+
+    private boolean persistAchievementMailbox(UUID playerUuid, Notification notification) {
+        try {
+            String playerName = resolvePlayerName(playerUuid);
+            String name = firstNonBlank(
+                notification.getParam("achievement"),
+                notification.getParam("badge"),
+                notification.getParam("type")
+            );
+
+            String description = notification.getParam("description");
+            String reward = notification.getParam("reward");
+
+            if (notification.category() == NotificationCategory.RECORD) {
+                String recordType = notification.getParam("type");
+                if (recordType != null && !recordType.isBlank()) {
+                    name = "New Personal Record: " + recordType;
+                }
+                if (description == null || description.isBlank()) {
+                    description = "You've set a new personal best!";
+                }
+                if (reward == null || reward.isBlank()) {
+                    reward = notification.getParam("value");
+                }
+            }
+
+            if (name == null || name.isBlank()) {
+                name = notification.category() == NotificationCategory.RECORD ? "New Record" : "Achievement";
+            }
+            if (description == null || description.isBlank()) {
+                description = "Achievement unlocked.";
+            }
+            if (reward == null || reward.isBlank()) {
+                reward = "-";
+            }
+
+            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+                "reward.achievement",
+                playerUuid,
+                Map.of(
+                    "player_name", playerName,
+                    "achievement_name", name,
+                    "achievement_description", description,
+                    "reward_description", reward
+                ),
+                null
+            ).exceptionally(ex -> {
+                LOGGER.warn("[NotificationService] Achievement mailbox template failed for {}: {}",
+                    playerUuid, ex.getMessage());
+                return null;
+            });
+            return true;
+        } catch (Exception e) {
+            LOGGER.warn("[NotificationService] Achievement mailbox template failed for {}: {}",
+                playerUuid, e.getMessage());
+            return false;
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private void sendPartyMailboxTemplate(UUID playerUuid, String updateType, String details, String actionHint) {
@@ -651,7 +974,7 @@ public class NotificationService {
     private String resolvePlayerName(UUID playerUuid) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
-            ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUuid));
             if (player != null) {
                 return player.getName().getString();
             }
@@ -665,7 +988,7 @@ public class NotificationService {
     private String formatMailboxSubject(Notification notification) {
         // Use a readable prefix based on category
         String prefix = switch (notification.category()) {
-            case ACHIEVEMENT -> "🏆 Badge";
+            case ACHIEVEMENT -> "🏆 Achievement";
             case RECORD -> "🎯 Record";
             case SEASON -> "⭐ Season";
             case TOKEN -> "💰 Tokens";
@@ -675,6 +998,7 @@ public class NotificationService {
             case COMBAT -> "⚔️ Combat";
             case RESONANCE -> "✨ Resonance";
             case MAILBOX -> "📬 Mailbox";
+            case NEWS -> "📰 News";
             case ADMIN -> "⚠️ Admin";
             case SYSTEM -> "ℹ️ System";
         };
@@ -682,7 +1006,9 @@ public class NotificationService {
         // Append key info from params if available
         Map<String, String> params = notification.params();
         if (params != null && !params.isEmpty()) {
-            if (params.containsKey("badge")) {
+            if (params.containsKey("achievement")) {
+                return prefix + ": " + params.get("achievement");
+            } else if (params.containsKey("badge")) {
                 return prefix + ": " + params.get("badge");
             } else if (params.containsKey("tier")) {
                 return prefix + ": Tier " + params.get("tier");
@@ -690,6 +1016,10 @@ public class NotificationService {
                 return prefix + ": " + params.get("type");
             } else if (params.containsKey("amount")) {
                 return prefix + ": +" + params.get("amount");
+            } else if (params.containsKey("wave")) {
+                return prefix + ": Wave " + params.get("wave");
+            } else if (params.containsKey("quest")) {
+                return prefix + ": " + params.get("quest");
             }
         }
 
@@ -754,6 +1084,18 @@ public class NotificationService {
             case "legendary", "mythic" -> NotificationPriority.URGENT;
             case "epic" -> NotificationPriority.HIGH;
             case "rare" -> NotificationPriority.NORMAL;
+            default -> NotificationPriority.NORMAL;
+        };
+    }
+
+    private NotificationPriority getPriorityForLootTier(RewardSystem.LootTier tier) {
+        if (tier == null) {
+            return NotificationPriority.NORMAL;
+        }
+        return switch (tier) {
+            case LEGENDARY, MYTHIC -> NotificationPriority.URGENT;
+            case EPIC -> NotificationPriority.HIGH;
+            case RARE -> NotificationPriority.NORMAL;
             default -> NotificationPriority.NORMAL;
         };
     }

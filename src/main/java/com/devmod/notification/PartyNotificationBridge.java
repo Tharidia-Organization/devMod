@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +56,20 @@ public final class PartyNotificationBridge implements PartyManager.PartyEventLis
     }
 
     @Override
+    public void onInviteDeclined(PartyInvite invite) {
+        PartyData party = PartyManager.INSTANCE.getPartyOpt(invite.getPartyId()).orElse(null);
+        String receiverName = resolvePlayerName(party, invite.getReceiverId());
+        NotificationService.INSTANCE.notifyParty(invite.getSenderId(), "invite_declined", Map.of("player", receiverName));
+    }
+
+    @Override
+    public void onInviteExpired(PartyInvite invite) {
+        PartyData party = PartyManager.INSTANCE.getPartyOpt(invite.getPartyId()).orElse(null);
+        String receiverName = resolvePlayerName(party, invite.getReceiverId());
+        NotificationService.INSTANCE.notifyParty(invite.getSenderId(), "invite_expired", Map.of("player", receiverName));
+    }
+
+    @Override
     public void onMemberJoined(PartyData party, UUID memberId) {
         String joinedName = resolvePlayerName(party, memberId);
         notifyMembersExcluding(party, memberId, "join", Map.of("player", joinedName));
@@ -86,6 +102,20 @@ public final class PartyNotificationBridge implements PartyManager.PartyEventLis
         notifyMembersExcluding(party, null, "leader_changed", Map.of("leader", newLeaderName));
     }
 
+    @Override
+    public void onQuestStarted(PartyData party, UUID instanceId) {
+        QuestType questType = party.getQuestType();
+        String questName = questType != null ? questType.displayName : "Quest";
+        notifyMembersExcluding(party, null, "quest_started", Map.of("quest", questName));
+    }
+
+    @Override
+    public void onQuestFinished(PartyData party) {
+        QuestType questType = party.getQuestType();
+        String questName = questType != null ? questType.displayName : "Quest";
+        notifyMembersExcluding(party, null, "quest_finished", Map.of("quest", questName));
+    }
+
     private void notifyMembersExcluding(PartyData party, UUID excludeMemberId, String eventType,
                                         Map<String, String> params) {
         for (UUID memberId : party.getMembers()) {
@@ -96,10 +126,12 @@ public final class PartyNotificationBridge implements PartyManager.PartyEventLis
         }
     }
 
-    private String resolvePlayerName(PartyData party, UUID playerId) {
-        String name = party.getMemberName(playerId);
-        if (name != null && !name.isBlank()) {
-            return name;
+    private String resolvePlayerName(@Nullable PartyData party, UUID playerId) {
+        if (party != null) {
+            String name = party.getMemberName(playerId);
+            if (name != null && !name.isBlank()) {
+                return name;
+            }
         }
 
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();

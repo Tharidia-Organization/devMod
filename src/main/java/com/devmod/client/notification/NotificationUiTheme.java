@@ -51,6 +51,7 @@ public final class NotificationUiTheme {
             case QUEST -> 0xD86C4D;
             case COMBAT -> 0xE2554F;
             case RESONANCE -> 0x60D1A7;
+            case NEWS -> 0x7B9CFF;
             case ADMIN -> 0xE88B3D;
             case SYSTEM -> 0x8E97A6;
             case MAILBOX -> 0x3AA6D0;
@@ -68,6 +69,7 @@ public final class NotificationUiTheme {
             case QUEST -> "Q";
             case COMBAT -> "!";
             case RESONANCE -> "R";
+            case NEWS -> "N";
             case ADMIN -> "!";
             case SYSTEM -> "i";
             case MAILBOX -> "M";

@@ -207,9 +207,25 @@ public class CommonModEvents {
                 if (recipient != null) {
                     // Get unread count and send notification
                     observeFuture(com.devmod.mailbox.MailboxManager.INSTANCE.getUnreadCount(recipientUuid)
-                        .thenAccept(unreadCount ->
-                            com.devmod.mailbox.network.MailboxNetworkHandler.sendNotification(recipient, message, unreadCount)),
+                        .thenAccept(unreadCount -> {
+                            com.devmod.mailbox.network.MailboxNetworkHandler.sendNotification(recipient, message, unreadCount);
+                            com.devmod.notification.NotificationService.INSTANCE.notifyMailboxMessage(
+                                recipientUuid, message, unreadCount);
+                        }),
                         "mailbox unread count");
+                }
+            });
+
+            com.devmod.mailbox.news.NewsManager.INSTANCE.setNewNewsCallback(article -> {
+                var server = event.getServer();
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    try {
+                        com.devmod.mailbox.network.MailboxNetworkHandler.sendNewsSync(player);
+                        com.devmod.notification.NotificationService.INSTANCE.notifyNewsArticle(player.getUUID(), article);
+                    } catch (Exception e) {
+                        LOGGER.warn("[DevMod] Failed to notify news for {}: {}",
+                            player.getName().getString(), e.getMessage());
+                    }
                 }
             });
 
@@ -361,6 +377,15 @@ public class CommonModEvents {
                     player.getName().getString(), e.getMessage());
             }
 
+            // Sync tickets to client
+            try {
+                com.devmod.mailbox.network.TicketNetworkHandler.sendTicketSync(player);
+                LOGGER.debug("[DevMod] Synced tickets to {}", player.getName().getString());
+            } catch (Exception e) {
+                LOGGER.warn("[DevMod] Failed to sync tickets to {}: {}",
+                    player.getName().getString(), e.getMessage());
+            }
+
             // Sync notification preferences to client
             try {
                 NotificationPreferencesRepository repo = NotificationPreferencesRepository.INSTANCE;
@@ -371,7 +396,7 @@ public class CommonModEvents {
                             return;
                         }
                         player.server.execute(() ->
-                                PacketDistributor.sendToPlayer(player, NotificationPreferencesSyncPayload.from(prefs)));
+                                PacketDistributor.sendToPlayer(player, java.util.Objects.requireNonNull(NotificationPreferencesSyncPayload.from(prefs))));
                     });
                 }
             } catch (Exception e) {

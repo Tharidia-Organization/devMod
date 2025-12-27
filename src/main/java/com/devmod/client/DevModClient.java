@@ -16,8 +16,6 @@ import com.devmod.DevMod;
 import com.devmod.actions.client.DevModClientActions;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.network.ClientNetworkPayloadHooks;
-import com.devmod.client.overlay.ComboDecayOverlay;
-import com.devmod.client.overlay.RecordBannerOverlay;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.network.NetworkHandler;
@@ -37,10 +35,6 @@ public class DevModClient {
         // The config screen is accessed by going to the Mods screen > clicking on your mod > clicking on config.
         // Do not forget to add translations for your config options to the en_us.json file.
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
-
-        // HUD overlays (mod event bus)
-        modEventBus.addListener(ComboDecayOverlay::registerOverlay);
-        modEventBus.addListener(RecordBannerOverlay::registerOverlay);
 
         // Keybinds registration (client-only, in client.input package)
         modEventBus.addListener(KeyInputHandler::registerKeyMappings);

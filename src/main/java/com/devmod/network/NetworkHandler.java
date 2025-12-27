@@ -51,6 +51,9 @@ import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 import com.devmod.endurance.resonance.ResonanceNotificationPayload;
 import com.devmod.endurance.season.SeasonTierUpPayload;
+import com.devmod.mailbox.network.payload.TicketCreatePayload;
+import com.devmod.mailbox.network.payload.TicketSyncPayload;
+import com.devmod.mailbox.network.payload.TicketSyncRequestPayload;
 import com.devmod.notification.network.NotificationNetworkHandler;
 import com.devmod.notification.network.NotificationPreferencesSyncPayload;
 import com.devmod.notification.network.NotificationPreferencesUpdatePayload;
@@ -131,6 +134,9 @@ import static com.devmod.network.ChannelId.STAMINA_SYNC;
 import static com.devmod.network.ChannelId.START_QUEST;
 import static com.devmod.network.ChannelId.TASK_ACTION;
 import static com.devmod.network.ChannelId.TASK_SYNC;
+import static com.devmod.network.ChannelId.TICKET_CREATE;
+import static com.devmod.network.ChannelId.TICKET_SYNC;
+import static com.devmod.network.ChannelId.TICKET_SYNC_REQUEST;
 import static com.devmod.network.ChannelId.TELEMETRY_BATCH;
 import static com.devmod.network.ChannelId.TENSION_UPDATE;
 import static com.devmod.network.ChannelId.TOKEN_GAIN;
@@ -231,6 +237,8 @@ public class NetworkHandler {
         void handleNewsSync(com.devmod.mailbox.network.payload.NewsSyncPayload payload);
 
         void handleTaskSync(com.devmod.mailbox.network.payload.TaskSyncPayload payload);
+
+        void handleTicketSync(TicketSyncPayload payload);
 
         // Unified Notification Center handlers
         void handleUnifiedNotification(com.devmod.notification.network.UnifiedNotificationPayload payload);
@@ -798,6 +806,26 @@ public class NetworkHandler {
                 nn(com.devmod.mailbox.network.payload.TaskActionPayload.TYPE),
                 nn(com.devmod.mailbox.network.payload.TaskActionPayload.STREAM_CODEC),
                 com.devmod.mailbox.network.MailboxNetworkHandler::handleTaskAction
+        );
+        event.registrar(TICKET_SYNC.asString()).playToClient(
+                nn(TicketSyncPayload.TYPE),
+                nn(TicketSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleTicketSync(payload)));
+                    }
+                }
+        );
+        event.registrar(TICKET_CREATE.asString()).playToServer(
+                nn(TicketCreatePayload.TYPE),
+                nn(TicketCreatePayload.STREAM_CODEC),
+                com.devmod.mailbox.network.TicketNetworkHandler::handleTicketCreate
+        );
+        event.registrar(TICKET_SYNC_REQUEST.asString()).playToServer(
+                nn(TicketSyncRequestPayload.TYPE),
+                nn(TicketSyncRequestPayload.STREAM_CODEC),
+                com.devmod.mailbox.network.TicketNetworkHandler::handleTicketSyncRequest
         );
 
         // ===================================================================

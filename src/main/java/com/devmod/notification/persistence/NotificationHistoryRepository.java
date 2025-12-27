@@ -9,7 +9,6 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,11 +21,9 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
+import com.devmod.notification.NotificationParamsCodec;
 import com.devmod.notification.NotificationPriority;
 import com.devmod.telemetry.duckdb.DuckDBConnectionManager;
 /**
@@ -42,7 +39,6 @@ import com.devmod.telemetry.duckdb.DuckDBConnectionManager;
 public class NotificationHistoryRepository {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationHistoryRepository.class);
-    private static final Gson GSON = new Gson();
     /** Schema version for future migrations - reserved for use. */
     @SuppressWarnings("unused")
     public static final NotificationHistoryRepository INSTANCE = new NotificationHistoryRepository();
@@ -182,7 +178,7 @@ public class NotificationHistoryRepository {
                 stmt.setInt(4, notification.priority().getLevel());
                 stmt.setString(5, notification.titleKey());
                 setNullableString(stmt, 6, notification.messageKey());
-                setNullableString(stmt, 7, GSON.toJson(notification.params()));
+                setNullableString(stmt, 7, NotificationParamsCodec.toJson(notification.params()));
                 setNullableString(stmt, 8, notification.iconId());
                 setNullableString(stmt, 9, notification.soundId());
                 setNullableString(stmt, 10, notification.actionId());
@@ -387,10 +383,7 @@ public class NotificationHistoryRepository {
             String titleKey = rs.getString("title_key");
             String messageKey = rs.getString("message_key");
             String paramsJson = rs.getString("params_json");
-            Map<String, String> params = new HashMap<>();
-            if (paramsJson != null && !paramsJson.isEmpty()) {
-                params = GSON.fromJson(paramsJson, new TypeToken<Map<String, String>>(){}.getType());
-            }
+            Map<String, String> params = NotificationParamsCodec.fromJson(paramsJson);
 
             String iconId = rs.getString("icon_id");
             String soundId = rs.getString("sound_id");

@@ -208,7 +208,7 @@ public final class TicketManager {
                     ticketId,
                     "Ticket assigned to " + assigneeName
                 );
-                var unused = TicketRepository.INSTANCE.saveComment(comment);
+                TicketRepository.INSTANCE.saveComment(comment);
 
                 return Optional.of(saved);
             });
@@ -246,7 +246,7 @@ public final class TicketManager {
                     ticketId,
                     "Status changed to " + newStatus.getDisplayName() + " by " + actorName
                 );
-                var unused = TicketRepository.INSTANCE.saveComment(comment);
+                TicketRepository.INSTANCE.saveComment(comment);
 
                 return Optional.of(saved);
             });
@@ -278,7 +278,7 @@ public final class TicketManager {
                     ticketId,
                     "Ticket resolved by " + resolverName + ": " + resolutionNotes
                 );
-                var unused = TicketRepository.INSTANCE.saveComment(comment);
+                TicketRepository.INSTANCE.saveComment(comment);
 
                 // Send resolution mailbox to reporter
                 sendTicketResolution(saved);
@@ -309,7 +309,7 @@ public final class TicketManager {
                     ticketId,
                     "Priority changed to " + newPriority.getDisplayName() + " by " + actorName
                 );
-                var unused = TicketRepository.INSTANCE.saveComment(comment);
+                TicketRepository.INSTANCE.saveComment(comment);
 
                 return Optional.of(saved);
             });
@@ -370,7 +370,7 @@ public final class TicketManager {
 
     private void sendTicketConfirmation(Ticket ticket) {
         try {
-            var unused = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
                 "moderation.report_received",
                 ticket.reporterUuid(),
                 Map.of(
@@ -388,7 +388,7 @@ public final class TicketManager {
 
     private void sendTicketResolution(Ticket ticket) {
         try {
-            var unused = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
                 "moderation.report_resolved",
                 ticket.reporterUuid(),
                 Map.of(
