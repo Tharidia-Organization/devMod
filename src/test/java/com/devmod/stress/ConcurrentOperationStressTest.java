@@ -92,7 +92,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -124,7 +124,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -154,7 +154,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -200,7 +200,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -243,7 +243,7 @@ class ConcurrentOperationStressTest {
                 } finally {
                     endLatch.countDown();
                 }
-            });
+            }).isDone();
 
             // Writer thread
             executor.submit(() -> {
@@ -261,7 +261,7 @@ class ConcurrentOperationStressTest {
                 } finally {
                     endLatch.countDown();
                 }
-            });
+            }).isDone();
 
             startLatch.countDown();
             assertTrue(endLatch.await(30, TimeUnit.SECONDS));
@@ -297,7 +297,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -328,7 +328,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -360,7 +360,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -392,7 +392,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -423,7 +423,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -465,7 +465,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -503,7 +503,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -543,7 +543,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -578,7 +578,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -622,7 +622,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         producerDone.countDown();
                     }
-                });
+                }).isDone();
             }
 
             // Consumers
@@ -643,7 +643,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         consumerDone.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -680,7 +680,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             // Readers
@@ -705,7 +705,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -767,7 +767,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -815,7 +815,7 @@ class ConcurrentOperationStressTest {
                         } finally {
                             allDone.countDown();
                         }
-                    });
+                    }).isDone();
                 }
 
                 assertTrue(allDone.await(60, TimeUnit.SECONDS));
@@ -850,7 +850,7 @@ class ConcurrentOperationStressTest {
                             currentConcurrent.decrementAndGet();
                             allDone.countDown();
                         }
-                    });
+                    }).isDone();
                 }
 
                 assertTrue(allDone.await(30, TimeUnit.SECONDS));
@@ -875,7 +875,7 @@ class ConcurrentOperationStressTest {
                     pool.schedule(() -> {
                         completedCount.incrementAndGet();
                         allDone.countDown();
-                    }, 100, TimeUnit.MILLISECONDS);
+                    }, 100, TimeUnit.MILLISECONDS).isDone();
                 }
 
                 assertTrue(allDone.await(30, TimeUnit.SECONDS));
@@ -934,7 +934,7 @@ class ConcurrentOperationStressTest {
                         } finally {
                             allDone.countDown();
                         }
-                    });
+                    }).isDone();
                 }
 
                 assertTrue(allDone.await(60, TimeUnit.SECONDS));
@@ -981,7 +981,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -1014,7 +1014,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(endLatch.await(60, TimeUnit.SECONDS));
@@ -1042,7 +1042,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         doneSignal.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startSignal.countDown(); // Start all workers
@@ -1073,7 +1073,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         phaser.arriveAndDeregister();
                     }
-                });
+                }).isDone();
             }
 
             // Wait for all phases to complete
@@ -1115,7 +1115,7 @@ class ConcurrentOperationStressTest {
                 } finally {
                     done.countDown();
                 }
-            });
+            }).isDone();
 
             // Consumer
             executor.submit(() -> {
@@ -1130,7 +1130,7 @@ class ConcurrentOperationStressTest {
                 } finally {
                     done.countDown();
                 }
-            });
+            }).isDone();
 
             assertTrue(done.await(30, TimeUnit.SECONDS));
             assertEquals(itemCount, produced.get());
@@ -1163,7 +1163,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         producerLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             // Consumers
@@ -1181,7 +1181,7 @@ class ConcurrentOperationStressTest {
                     } finally {
                         consumerLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(producerLatch.await(30, TimeUnit.SECONDS));
@@ -1219,7 +1219,7 @@ class ConcurrentOperationStressTest {
                 } finally {
                     done.countDown();
                 }
-            });
+            }).isDone();
 
             assertTrue(done.await(10, TimeUnit.SECONDS));
 
@@ -1271,7 +1271,7 @@ class ConcurrentOperationStressTest {
                 } finally {
                     done.countDown();
                 }
-            });
+            }).isDone();
 
             assertTrue(done.await(10, TimeUnit.SECONDS));
             assertEquals(Arrays.asList(0, 1, 2), order, "Items should be consumed in delay order");

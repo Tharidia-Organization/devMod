@@ -94,7 +94,7 @@ class NdjsonWriterTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -136,8 +136,10 @@ class NdjsonWriterTest {
                     .orElse(null);
 
                 assertNotNull(logFile, "Log file should exist after threshold flush");
-                long lineCount = Files.lines(logFile).count();
-                assertTrue(lineCount >= 10, "Should have flushed at least threshold lines");
+                try (Stream<String> lines = Files.lines(logFile)) {
+                    long lineCount = lines.count();
+                    assertTrue(lineCount >= 10, "Should have flushed at least threshold lines");
+                }
             }
         }
 
@@ -163,8 +165,10 @@ class NdjsonWriterTest {
                     .orElse(null);
 
                 assertNotNull(logFile, "Log file should exist after time-based flush");
-                long lineCount = Files.lines(logFile).count();
-                assertEquals(5, lineCount, "Should have flushed all lines");
+                try (Stream<String> lines = Files.lines(logFile)) {
+                    long lineCount = lines.count();
+                    assertEquals(5, lineCount, "Should have flushed all lines");
+                }
             }
         }
     }

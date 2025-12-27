@@ -220,6 +220,16 @@ dependencies {
     // Platform-specific JARs available: windows_amd64, linux_amd64, macos_universal
     implementation 'org.duckdb:duckdb_jdbc:1.4.3.0'
     localRuntime 'org.duckdb:duckdb_jdbc:1.4.3.0'
+
+    // Javalin and JWT for API server (needed in localRuntime for NeoForge classloader)
+    // Exclude slf4j - NeoForge requires exactly 2.0.9
+    localRuntime('io.javalin:javalin:6.3.0') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-server:11.0.20') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-servlet:11.0.20') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') { exclude group: 'org.slf4j' }
+    localRuntime 'io.jsonwebtoken:jjwt-api:0.12.3'
+    localRuntime 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    localRuntime 'io.jsonwebtoken:jjwt-gson:0.12.3'
     jarJar("org.duckdb:duckdb_jdbc:[1.4.3.0]")
     testImplementation 'org.duckdb:duckdb_jdbc:1.4.3.0'
 
@@ -233,18 +243,31 @@ dependencies {
     compileOnly "maven.modrinth:distanthorizons:2.3.0-b-1.21.1"
 
     // Javalin - Lightweight HTTP server for REST API (admin panel backend)
-    // Exclude slf4j-api - NeoForge provides slf4j:2.0.9, Javalin transitively pulls 2.0.16
+    // Core javalin + explicit Jetty for NeoForge compatibility
     implementation('io.javalin:javalin:6.3.0') {
-        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: 'org.slf4j'
+    }
+    implementation('org.eclipse.jetty:jetty-server:11.0.20') {
+        exclude group: 'org.slf4j'
+    }
+    implementation('org.eclipse.jetty:jetty-servlet:11.0.20') {
+        exclude group: 'org.slf4j'
+    }
+    implementation('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') {
+        exclude group: 'org.slf4j'
     }
     jarJar("io.javalin:javalin:[6.3.0]") {
-        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: 'org.slf4j'
     }
+
+    // Jackson - JSON serialization for Javalin REST API
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    localRuntime 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
 
     // JWT for API authentication
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-gson:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-gson:0.12.3'
     jarJar("io.jsonwebtoken:jjwt-api:[0.12.3]")
     jarJar("io.jsonwebtoken:jjwt-impl:[0.12.3]")
     jarJar("io.jsonwebtoken:jjwt-gson:[0.12.3]")
@@ -336,11 +359,14 @@ def testOutputStoreDir = layout.buildDirectory.dir("test-results/test/binary")
 def fsOps = project.services.get(org.gradle.api.file.FileSystemOperations)
 test {
     dependsOn 'generateBuildProperties'
+    notCompatibleWithConfigurationCache("Test classpath relies on generated artifacts; cache reuse drops main classes.")
     useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
         showStandardStreams = true
     }
+    // Avoid executing nested/helper classes as standalone tests.
+    exclude '**/*$*'
     // Clear test output store to avoid EOFException during XML report generation.
     doFirst {
         fsOps.delete {

@@ -214,7 +214,7 @@ class MessageTemplateRegistryTest {
         @Test
         @DisplayName("Extract single placeholder")
         void extractSinglePlaceholder() {
-            List<String> placeholders = MessageTemplateRegistry.INSTANCE.extractPlaceholders("Hello {name}!");
+            List<String> placeholders = MessageTemplateRegistry.extractPlaceholders("Hello {name}!");
             assertEquals(1, placeholders.size());
             assertTrue(placeholders.contains("name"));
         }
@@ -222,7 +222,7 @@ class MessageTemplateRegistryTest {
         @Test
         @DisplayName("Extract multiple placeholders")
         void extractMultiplePlaceholders() {
-            List<String> placeholders = MessageTemplateRegistry.INSTANCE.extractPlaceholders(
+            List<String> placeholders = MessageTemplateRegistry.extractPlaceholders(
                 "{greeting} {name}, welcome to {server_name}!"
             );
             assertEquals(3, placeholders.size());
@@ -234,7 +234,7 @@ class MessageTemplateRegistryTest {
         @Test
         @DisplayName("No duplicates in extracted placeholders")
         void noDuplicatesInExtractedPlaceholders() {
-            List<String> placeholders = MessageTemplateRegistry.INSTANCE.extractPlaceholders(
+            List<String> placeholders = MessageTemplateRegistry.extractPlaceholders(
                 "Hello {name}, your name is {name}"
             );
             assertEquals(1, placeholders.size());
@@ -243,14 +243,14 @@ class MessageTemplateRegistryTest {
         @Test
         @DisplayName("Empty text returns empty list")
         void emptyTextReturnsEmptyList() {
-            List<String> placeholders = MessageTemplateRegistry.INSTANCE.extractPlaceholders("");
+            List<String> placeholders = MessageTemplateRegistry.extractPlaceholders("");
             assertTrue(placeholders.isEmpty());
         }
 
         @Test
         @DisplayName("Null text returns empty list")
         void nullTextReturnsEmptyList() {
-            List<String> placeholders = MessageTemplateRegistry.INSTANCE.extractPlaceholders(null);
+            List<String> placeholders = MessageTemplateRegistry.extractPlaceholders(null);
             assertTrue(placeholders.isEmpty());
         }
     }

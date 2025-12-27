@@ -951,7 +951,7 @@ public class PerkSystemTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await(10, TimeUnit.SECONDS);

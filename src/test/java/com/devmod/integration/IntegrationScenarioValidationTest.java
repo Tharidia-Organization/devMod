@@ -467,6 +467,7 @@ class IntegrationScenarioValidationTest {
         void deathSetsAwaitingRespawnChoiceFlag() {
             boolean awaitingRespawnChoice = false;
 
+            assertFalse(awaitingRespawnChoice, "Flag should start cleared before death");
             // Player dies
             awaitingRespawnChoice = true;
 
@@ -481,6 +482,7 @@ class IntegrationScenarioValidationTest {
             boolean awaitingRespawnChoice = true;
             int currentWave = 5;
 
+            assertTrue(awaitingRespawnChoice, "Flag should be set before continue choice");
             // Player chooses to continue
             awaitingRespawnChoice = false;
             // Wave is restarted (same wave number, mobs respawn)

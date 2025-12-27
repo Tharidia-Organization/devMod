@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,6 +42,12 @@ public class L6CriticalEdgeCaseTest {
     // =========================================================================
     // SIMULATION INFRASTRUCTURE
     // =========================================================================
+
+    private static void awaitFutures(List<Future<?>> futures) throws Exception {
+        for (Future<?> future : futures) {
+            future.get();
+        }
+    }
 
     enum InstanceState {
         CREATING, READY, ACTIVE, COMPLETING, DESTROYING, DESTROYED
@@ -505,11 +512,12 @@ public class L6CriticalEdgeCaseTest {
             int poolSize = 4;
             int taskCount = 100;
             ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+            List<Future<?>> futures = new ArrayList<>(taskCount);
             CountDownLatch latch = new CountDownLatch(taskCount);
             AtomicInteger completedTasks = new AtomicInteger(0);
 
             for (int i = 0; i < taskCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         Thread.sleep(10); // Simulate work
                         completedTasks.incrementAndGet();
@@ -518,11 +526,12 @@ public class L6CriticalEdgeCaseTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(taskCount, completedTasks.get(),
                 "All tasks should complete even with limited thread pool");
@@ -589,11 +598,12 @@ public class L6CriticalEdgeCaseTest {
             AtomicInteger successfulUpdates = new AtomicInteger(0);
 
             ExecutorService executor = Executors.newFixedThreadPool(10);
+            List<Future<?>> futures = new ArrayList<>(modifications);
 
             PlayerState[] states = PlayerState.values();
             for (int i = 0; i < modifications; i++) {
                 final int idx = i;
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         PlayerState newState = states[idx % states.length];
                         if (system.updateSnapshotState(playerId, newState)) {
@@ -604,11 +614,12 @@ public class L6CriticalEdgeCaseTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(0, errors.get(), "No errors during concurrent modifications");
             assertEquals(modifications, successfulUpdates.get(),
@@ -625,6 +636,7 @@ public class L6CriticalEdgeCaseTest {
         void testAtomicStateTransitions() throws Exception {
             AtomicReference<InstanceState> state = new AtomicReference<>(InstanceState.CREATING);
             ExecutorService executor = Executors.newFixedThreadPool(2);
+            List<Future<?>> futures = new ArrayList<>(2);
             CountDownLatch startLatch = new CountDownLatch(1);
             CountDownLatch doneLatch = new CountDownLatch(2);
             AtomicInteger successes = new AtomicInteger(0);
@@ -642,11 +654,12 @@ public class L6CriticalEdgeCaseTest {
                 }
             };
 
-            executor.submit(transitionTask);
-            executor.submit(transitionTask);
+            futures.add(executor.submit(transitionTask));
+            futures.add(executor.submit(transitionTask));
             startLatch.countDown();
             doneLatch.await(2, TimeUnit.SECONDS);
             executor.shutdown();
+            awaitFutures(futures);
 
             // CAS ensures atomicity
             assertEquals(1, successes.get(), "Only one transition should succeed");
@@ -664,18 +677,20 @@ public class L6CriticalEdgeCaseTest {
             ConcurrentHashMap<UUID, AtomicInteger> counters = new ConcurrentHashMap<>();
             UUID key = UUID.randomUUID();
             ExecutorService executor = Executors.newFixedThreadPool(3);
+            List<Future<?>> futures = new ArrayList<>(3);
             CountDownLatch latch = new CountDownLatch(3);
 
             // Atomic initialization and increment
             for (int i = 0; i < 3; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     counters.computeIfAbsent(key, k -> new AtomicInteger(0)).incrementAndGet();
                     latch.countDown();
-                });
+                }));
             }
 
             latch.await(2, TimeUnit.SECONDS);
             executor.shutdown();
+            awaitFutures(futures);
 
             AtomicInteger counter = Objects.requireNonNull(counters.get(key), "Counter should exist");
             assertEquals(3, counter.get(),

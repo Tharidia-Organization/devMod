@@ -49,8 +49,8 @@ class RadialOrphanFeatureTest {
     void everyKeybindMapsToAnAction() throws IllegalAccessException {
         DevModClientActions.register();
 
-        Set<KeyMapping> mappedKeybinds = ActionKeybindRegistry.entries().stream()
-            .map(entry -> entry.getValue().keyMapping())
+        Set<KeyMapping> mappedKeybinds = ActionKeybindRegistry.INSTANCE.getAllEntries().stream()
+            .map(ActionKeybindRegistry.KeybindEntry::keyMapping)
             .collect(Collectors.toSet());
 
         for (Field field : KeyInputHandler.class.getDeclaredFields()) {

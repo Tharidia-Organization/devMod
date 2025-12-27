@@ -462,9 +462,11 @@ public class ServerRestartSimulationTest {
 
             // Simulate graceful shutdown
             // 1. Save registry
+            assertFalse(registrySaved);
             registrySaved = true;
 
             // 2. Save all snapshots
+            assertFalse(snapshotsSaved);
             snapshotsSaved = true;
 
             // 3. Save each instance
@@ -527,7 +529,7 @@ public class ServerRestartSimulationTest {
                 } finally {
                     latch.countDown();
                 }
-            });
+            }).isDone();
 
             // Saver thread (simulates shutdown save)
             executor.submit(() -> {
@@ -547,7 +549,7 @@ public class ServerRestartSimulationTest {
                 } finally {
                     latch.countDown();
                 }
-            });
+            }).isDone();
 
             latch.await(5, TimeUnit.SECONDS);
             executor.shutdown();

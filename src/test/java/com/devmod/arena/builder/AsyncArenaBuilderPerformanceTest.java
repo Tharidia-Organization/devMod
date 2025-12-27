@@ -22,7 +22,7 @@ class AsyncArenaBuilderPerformanceTest {
         );
 
         ArenaTemplate template = ArenaTemplate.defaultTemplate();
-        builder.submitBuildAsync(UUID.randomUUID(), template, 0, 64, 0);
+        builder.submitBuildAsync(UUID.randomUUID(), template, 0, 64, 0).isDone();
 
         builder.onTick();
 

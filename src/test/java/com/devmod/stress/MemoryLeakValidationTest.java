@@ -349,7 +349,7 @@ class MemoryLeakValidationTest {
                 executor.submit(() -> {
                     taskCount.incrementAndGet();
                     try { Thread.sleep(10); } catch (InterruptedException e) { /* ignore */ }
-                });
+                }).isDone();
             }
 
             // Proper shutdown pattern
@@ -580,7 +580,7 @@ class MemoryLeakValidationTest {
                         } finally {
                             latch.countDown();
                         }
-                    });
+                    }).isDone();
                 }
 
                 assertTrue(latch.await(10, TimeUnit.SECONDS));

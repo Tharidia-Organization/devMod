@@ -183,6 +183,7 @@ export interface Config {
   messageRetentionDays: number;
   hardDeleteOnUserDelete: boolean;
   maintenanceMode: boolean;
+  useOpLevelForRoles: boolean;
   broadcastQueueEnabled: boolean;
   broadcastQueueThreshold: number;
   contentFilterEnabled: boolean;

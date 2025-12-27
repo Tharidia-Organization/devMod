@@ -450,7 +450,7 @@ class HardeningEdgeTests {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));
@@ -490,7 +490,7 @@ class HardeningEdgeTests {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));

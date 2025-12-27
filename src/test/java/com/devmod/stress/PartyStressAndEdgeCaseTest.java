@@ -265,7 +265,7 @@ public class PartyStressAndEdgeCaseTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await();
@@ -309,7 +309,7 @@ public class PartyStressAndEdgeCaseTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await();
@@ -351,7 +351,7 @@ public class PartyStressAndEdgeCaseTest {
                 } finally {
                     latch.countDown();
                 }
-            });
+            }).isDone();
 
             // Thread 2: Removes members
             executor.submit(() -> {
@@ -372,7 +372,7 @@ public class PartyStressAndEdgeCaseTest {
                 } finally {
                     latch.countDown();
                 }
-            });
+            }).isDone();
 
             latch.await();
             executor.shutdown();
@@ -730,7 +730,7 @@ public class PartyStressAndEdgeCaseTest {
                     } finally {
                         doneLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown(); // Release all threads
@@ -774,7 +774,7 @@ public class PartyStressAndEdgeCaseTest {
                     } finally {
                         doneLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -844,7 +844,7 @@ public class PartyStressAndEdgeCaseTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await();

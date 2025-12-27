@@ -613,7 +613,7 @@ public class RecipeSystemTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await(30, TimeUnit.SECONDS);
@@ -658,7 +658,7 @@ public class RecipeSystemTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await(30, TimeUnit.SECONDS);
@@ -694,7 +694,7 @@ public class RecipeSystemTest {
                 } finally {
                     latch.countDown();
                 }
-            });
+            }).isDone();
 
             AtomicInteger observedCount = new AtomicInteger(-1);
             executor.submit(() -> {
@@ -706,7 +706,7 @@ public class RecipeSystemTest {
                 } finally {
                     latch.countDown();
                 }
-            });
+            }).isDone();
 
             latch.await(5, TimeUnit.SECONDS);
             executor.shutdown();
@@ -746,7 +746,7 @@ public class RecipeSystemTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await(10, TimeUnit.SECONDS);

@@ -13,6 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
@@ -47,6 +48,12 @@ public class L6AdvancedConcurrencyTest {
     // SECTION 1: DEADLOCK DETECTION AND PREVENTION
     // =========================================================================
 
+    private static void awaitFutures(List<Future<?>> futures) throws Exception {
+        for (Future<?> future : futures) {
+            future.get();
+        }
+    }
+
     @Nested
     @DisplayName("L6-AC-01: Deadlock Detection and Prevention")
     class DeadlockPreventionTests {
@@ -68,9 +75,10 @@ public class L6AdvancedConcurrencyTest {
             CountDownLatch endLatch = new CountDownLatch(threadCount);
 
             ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+            List<Future<?>> futures = new ArrayList<>(threadCount);
 
             for (int i = 0; i < threadCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         startLatch.await();
 
@@ -88,13 +96,14 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }));
             }
 
             startLatch.countDown();
             boolean completed = endLatch.await(5, TimeUnit.SECONDS);
 
             executor.shutdown();
+            awaitFutures(futures);
 
             assertTrue(completed, "All operations should complete (no deadlock)");
             assertFalse(deadlockDetected.get(), "No deadlock should be detected");
@@ -116,10 +125,11 @@ public class L6AdvancedConcurrencyTest {
             CountDownLatch latch = new CountDownLatch(threadCount);
 
             ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+            List<Future<?>> futures = new ArrayList<>(threadCount);
 
             for (int i = 0; i < threadCount; i++) {
                 final int threadId = i;
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         // Alternate lock order to potentially cause contention
                         ReentrantLock first = (threadId % 2 == 0) ? lock1 : lock2;
@@ -148,11 +158,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             // All operations should complete (success or timeout)
             assertEquals(threadCount, successfulOperations.get() + timeoutOperations.get());
@@ -177,9 +188,10 @@ public class L6AdvancedConcurrencyTest {
             CountDownLatch latch = new CountDownLatch(threadCount);
 
             ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+            List<Future<?>> futures = new ArrayList<>(threadCount);
 
             for (int i = 0; i < threadCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         // Always: instance lock first, then player lock
                         ReentrantLock instanceLock = Objects.requireNonNull(instanceLocks.get(instanceId));
@@ -199,11 +211,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await(5, TimeUnit.SECONDS);
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(threadCount, operations.get());
         }
@@ -267,6 +280,7 @@ public class L6AdvancedConcurrencyTest {
             // State changes: ACTIVE -> COMPLETING -> ACTIVE (ABA)
             state = "COMPLETING";
             version++;
+            assertEquals("COMPLETING", state);
             state = "ACTIVE";
             version++;
 
@@ -294,6 +308,7 @@ public class L6AdvancedConcurrencyTest {
 
             // Even if status returns to ACTIVE, the object is different
             state = new ImmutableState("PAUSED", 1, System.nanoTime());
+            assertEquals("PAUSED", state.status());
             state = new ImmutableState("ACTIVE", 1, System.nanoTime());
             ImmutableState current = state;
 
@@ -322,9 +337,10 @@ public class L6AdvancedConcurrencyTest {
 
             CountDownLatch latch = new CountDownLatch(threadsCount);
             ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+            List<Future<?>> futures = new ArrayList<>(threadsCount);
 
             for (int i = 0; i < threadsCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         for (int j = 0; j < incrementsPerThread; j++) {
                             counter.incrementAndGet();
@@ -332,11 +348,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             int expected = threadsCount * incrementsPerThread;
             assertEquals(expected, counter.get(),
@@ -357,10 +374,11 @@ public class L6AdvancedConcurrencyTest {
             AtomicInteger retries = new AtomicInteger(0);
 
             ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+            List<Future<?>> futures = new ArrayList<>(threadsCount);
 
             for (int i = 0; i < threadsCount; i++) {
                 final int threadId = i;
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         for (int j = 0; j < updatesPerThread; j++) {
                             // CAS loop
@@ -378,11 +396,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             int[] finalState = Objects.requireNonNull(state.get());
             int totalUpdates = finalState[0] + finalState[1] + finalState[2];
@@ -403,9 +422,10 @@ public class L6AdvancedConcurrencyTest {
 
             CountDownLatch latch = new CountDownLatch(threadsCount);
             ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+            List<Future<?>> futures = new ArrayList<>(threadsCount);
 
             for (int i = 0; i < threadsCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         for (int j = 0; j < addsPerThread; j++) {
                             adder.increment();
@@ -413,11 +433,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             long expected = (long) threadsCount * addsPerThread;
             assertEquals(expected, adder.sum(),
@@ -446,9 +467,10 @@ public class L6AdvancedConcurrencyTest {
             AtomicInteger creations = new AtomicInteger(0);
 
             ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+            List<Future<?>> futures = new ArrayList<>(threadsCount);
 
             for (int i = 0; i < threadsCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         map.computeIfAbsent(key, k -> {
                             creations.incrementAndGet();
@@ -457,11 +479,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(1, creations.get(),
                 "Value should only be created once");
@@ -483,20 +506,22 @@ public class L6AdvancedConcurrencyTest {
             CountDownLatch latch = new CountDownLatch(threadsCount);
 
             ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+            List<Future<?>> futures = new ArrayList<>(threadsCount);
 
             for (int i = 0; i < threadsCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         balances.merge(playerId, depositAmount,
                             (prev, inc) -> (prev == null ? 0L : prev) + (inc == null ? 0L : inc));
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             long expected = threadsCount * depositAmount;
             assertEquals(expected, Objects.requireNonNull(balances.get(playerId)),
@@ -515,9 +540,10 @@ public class L6AdvancedConcurrencyTest {
             CountDownLatch latch = new CountDownLatch(threadsCount);
 
             ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+            List<Future<?>> futures = new ArrayList<>(threadsCount);
 
             for (int i = 0; i < threadsCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         for (int j = 0; j < updatesPerThread; j++) {
                             styleScore.updateAndGet(score -> {
@@ -530,11 +556,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             int expected = Math.min(threadsCount * updatesPerThread * scorePerUpdate, 100000);
             assertEquals(expected, styleScore.get());
@@ -619,10 +646,11 @@ public class L6AdvancedConcurrencyTest {
             AtomicInteger validReads = new AtomicInteger(0);
 
             ExecutorService executor = Executors.newFixedThreadPool(readerCount + 1);
+            List<Future<?>> futures = new ArrayList<>(readerCount + 1);
 
             // Readers
             for (int i = 0; i < readerCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     readersStarted.countDown();
                     try {
                         writerDone.await(5, TimeUnit.SECONDS);
@@ -636,11 +664,11 @@ public class L6AdvancedConcurrencyTest {
                         data.items().size() == 2) {
                         validReads.incrementAndGet();
                     }
-                });
+                }));
             }
 
             // Writer
-            executor.submit(() -> {
+            futures.add(executor.submit(() -> {
                 try {
                     readersStarted.await();
                 } catch (InterruptedException e) {
@@ -648,10 +676,11 @@ public class L6AdvancedConcurrencyTest {
                 }
                 ref.set(new ImmutableData(42, "test", List.of("a", "b")));
                 writerDone.countDown();
-            });
+            }));
 
             executor.shutdown();
             executor.awaitTermination(10, TimeUnit.SECONDS);
+            awaitFutures(futures);
 
             assertEquals(readerCount, validReads.get(),
                 "All readers should see the complete immutable object");
@@ -743,10 +772,11 @@ public class L6AdvancedConcurrencyTest {
             CountDownLatch endLatch = new CountDownLatch(threadCount);
 
             ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+            List<Future<?>> futures = new ArrayList<>(threadCount);
 
             for (int i = 0; i < threadCount; i++) {
                 final int threadId = i;
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         startLatch.await();
                         for (int j = 0; j < acquisitionsPerThread; j++) {
@@ -763,12 +793,13 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         endLatch.countDown();
                     }
-                });
+                }));
             }
 
             startLatch.countDown();
             endLatch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             // All threads should get roughly equal access
             int min = acquisitionCounts.values().stream().mapToInt(AtomicInteger::get).min().orElse(0);
@@ -793,9 +824,10 @@ public class L6AdvancedConcurrencyTest {
 
             CountDownLatch latch = new CountDownLatch(threadCount);
             ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+            List<Future<?>> futures = new ArrayList<>(threadCount);
 
             for (int i = 0; i < threadCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         semaphore.acquire();
                         try {
@@ -814,11 +846,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertTrue(maxConcurrent.get() <= permits,
                 "Concurrent access should not exceed permits: " + maxConcurrent.get());
@@ -839,9 +872,10 @@ public class L6AdvancedConcurrencyTest {
             CountDownLatch latch = new CountDownLatch(readerCount);
 
             ExecutorService executor = Executors.newFixedThreadPool(readerCount);
+            List<Future<?>> futures = new ArrayList<>(readerCount);
 
             for (int i = 0; i < readerCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         rwLock.readLock().lock();
                         try {
@@ -859,11 +893,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertTrue(maxConcurrentReaders.get() > 1,
                 "Multiple readers should be able to hold lock concurrently: " +
@@ -909,10 +944,11 @@ public class L6AdvancedConcurrencyTest {
 
             CountDownLatch latch = new CountDownLatch(playerCount);
             ExecutorService executor = Executors.newFixedThreadPool(playerCount);
+            List<Future<?>> futures = new ArrayList<>(playerCount);
 
             for (int i = 0; i < playerCount; i++) {
                 final UUID playerId = playerIds.get(i);
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         ThreadLocalRandom random = ThreadLocalRandom.current();
 
@@ -950,11 +986,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(0, errors.get(), "No errors during concurrent operations");
             assertEquals(playerCount, questStates.size());
@@ -981,10 +1018,11 @@ public class L6AdvancedConcurrencyTest {
             CountDownLatch consumerLatch = new CountDownLatch(consumerCount);
 
             ExecutorService executor = Executors.newFixedThreadPool(producerCount + consumerCount);
+            List<Future<?>> futures = new ArrayList<>(producerCount + consumerCount);
 
             // Producers
             for (int i = 0; i < producerCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         for (int j = 0; j < rewardsPerProducer; j++) {
                             long reward = ThreadLocalRandom.current().nextLong(10, 100);
@@ -996,12 +1034,12 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         producerLatch.countDown();
                     }
-                });
+                }));
             }
 
             // Consumers
             for (int i = 0; i < consumerCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         while (!producerDone.get() || !rewardQueue.isEmpty()) {
                             Long reward = rewardQueue.poll(100, TimeUnit.MILLISECONDS);
@@ -1014,13 +1052,14 @@ public class L6AdvancedConcurrencyTest {
                     } finally {
                         consumerLatch.countDown();
                     }
-                });
+                }));
             }
 
             producerLatch.await();
             producerDone.set(true);
             consumerLatch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(totalProduced.get(), totalConsumed.get(),
                 "All produced rewards should be consumed");

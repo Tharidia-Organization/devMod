@@ -7,6 +7,7 @@ import MessagesPage from './pages/MessagesPage';
 import NewsPage from './pages/NewsPage';
 import UsersPage from './pages/UsersPage';
 import TasksPage from './pages/TasksPage';
+import TicketsPage from './pages/TicketsPage';
 import ConfigPage from './pages/ConfigPage';
 import AuditPage from './pages/AuditPage';
 
@@ -43,6 +44,7 @@ export default function App() {
                 <Route path="/news" element={<NewsPage />} />
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/tickets" element={<TicketsPage />} />
                 <Route path="/audit" element={<AuditPage />} />
                 <Route path="/config" element={<ConfigPage />} />
               </Routes>

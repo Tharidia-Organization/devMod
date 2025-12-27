@@ -78,7 +78,8 @@ public final class NewsPurgeJob {
             return;
         }
 
-        long intervalMs = Math.max(interval.toMillis(), MIN_INTERVAL.toMillis());
+        Duration effectiveInterval = interval != null ? interval : DEFAULT_INTERVAL;
+        long intervalMs = Math.max(effectiveInterval.toMillis(), MIN_INTERVAL.toMillis());
 
         scheduledTask = scheduler.scheduleAtFixedRate(
             this::runPurge,
@@ -87,7 +88,7 @@ public final class NewsPurgeJob {
             TimeUnit.MILLISECONDS
         );
 
-        LOGGER.info("[NewsPurgeJob] Started with interval: {} minutes", interval.toMinutes());
+        LOGGER.info("[NewsPurgeJob] Started with interval: {} minutes", effectiveInterval.toMinutes());
     }
 
     /**
@@ -193,6 +194,9 @@ public final class NewsPurgeJob {
      * Set the purge interval.
      */
     public void setInterval(Duration newInterval) {
+        if (newInterval == null) {
+            newInterval = DEFAULT_INTERVAL;
+        }
         if (newInterval.compareTo(MIN_INTERVAL) < 0) {
             LOGGER.warn("[NewsPurgeJob] Interval too short, using minimum: {}", MIN_INTERVAL);
             newInterval = MIN_INTERVAL;

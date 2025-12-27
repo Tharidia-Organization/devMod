@@ -395,7 +395,7 @@ public class DataSerializationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await(10, TimeUnit.SECONDS);

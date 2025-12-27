@@ -1067,11 +1067,10 @@ class ComboSystemTest {
         @Test
         @DisplayName("5 hit combo awards bonus")
         void fiveHitComboAwardsBonus() {
-            int styleBefore = 0;
             for (int i = 0; i < 4; i++) {
                 session.registerAction(SimActionType.LIGHT_ATTACK, 5);
             }
-            styleBefore = session.getTotalStyleEarned();
+            int styleBefore = session.getTotalStyleEarned();
 
             session.registerAction(SimActionType.LIGHT_ATTACK, 5); // 5th hit
 
@@ -1355,7 +1354,7 @@ class ComboSystemTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await(30, TimeUnit.SECONDS);

@@ -163,7 +163,7 @@ class PerformancePatternTest {
                         concurrent.put(threadId * opsPerThread + i, i);
                     }
                     concurrentLatch.countDown();
-                });
+                }).isDone();
             }
             concurrentLatch.await(30, TimeUnit.SECONDS);
             long concurrentElapsed = System.nanoTime() - concurrentStart;
@@ -179,7 +179,7 @@ class PerformancePatternTest {
                         synced.put(threadId * opsPerThread + i, i);
                     }
                     syncedLatch.countDown();
-                });
+                }).isDone();
             }
             syncedLatch.await(30, TimeUnit.SECONDS);
             long syncedElapsed = System.nanoTime() - syncedStart;

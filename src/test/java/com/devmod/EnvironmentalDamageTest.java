@@ -408,8 +408,6 @@ public class EnvironmentalDamageTest {
 
             float armoredDamage = calculator.applyEnvironmentalDamage(armoredEntity, drowning);
 
-            // Reset
-            nakedEntity = new MockEntity(20, 0);
             MockEnvironmentalDamageSource drowning2 = new MockEnvironmentalDamageSource(
                 EnvironmentalDamageType.DROWNING, 2.0f
             );

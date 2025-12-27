@@ -228,7 +228,7 @@ public class MultiplayerDataIsolationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             // Concurrent retrieves
@@ -248,7 +248,7 @@ public class MultiplayerDataIsolationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));
@@ -275,7 +275,7 @@ public class MultiplayerDataIsolationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
 
                 // Retrieve
                 executor.submit(() -> {
@@ -286,7 +286,7 @@ public class MultiplayerDataIsolationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
 
                 // Clear
                 executor.submit(() -> {
@@ -297,7 +297,7 @@ public class MultiplayerDataIsolationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));
@@ -324,7 +324,7 @@ public class MultiplayerDataIsolationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
 
                 executor.submit(() -> {
                     try {
@@ -334,7 +334,7 @@ public class MultiplayerDataIsolationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
 
                 executor.submit(() -> {
                     try {
@@ -344,7 +344,7 @@ public class MultiplayerDataIsolationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
 
                 executor.submit(() -> {
                     try {
@@ -354,7 +354,7 @@ public class MultiplayerDataIsolationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));

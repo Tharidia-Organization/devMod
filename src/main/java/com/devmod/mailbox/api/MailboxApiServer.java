@@ -9,8 +9,11 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.mailbox.MailboxConfig;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
+import io.javalin.json.JavalinJackson;
 
 /**
  * Embedded HTTP server for the mailbox admin panel API.
@@ -49,7 +52,11 @@ public final class MailboxApiServer {
             MailboxConfig config = MailboxConfig.INSTANCE;
             AuthMiddleware.initialize(config);
 
+            // Explicitly configure Jackson to work around NeoForge classloader issues
+            JavalinJackson jacksonMapper = new JavalinJackson(new ObjectMapper(), false);
+
             Javalin app = Javalin.create(javalinConfig -> {
+                javalinConfig.jsonMapper(jacksonMapper);
                 javalinConfig.http.defaultContentType = "application/json";
                 java.util.List<String> origins = MailboxConfig.INSTANCE.getApiAllowedOrigins();
                 if (!origins.isEmpty()) {
@@ -145,8 +152,11 @@ public final class MailboxApiServer {
     }
 
     private static void registerRoutes(Javalin app) {
-        // Health check (no auth required)
-        app.get("/health", ctx -> ctx.json(new HealthResponse(true, "OK")));
+        // Health check (no auth required) - use raw JSON to avoid mapper issues
+        app.get("/health", ctx -> {
+            ctx.contentType("application/json");
+            ctx.result("{\"healthy\":true,\"status\":\"OK\"}");
+        });
 
         // Auth endpoint
         app.post(API_PREFIX + "/auth/login", AuthMiddleware::handleLogin);

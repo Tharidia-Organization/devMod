@@ -351,7 +351,7 @@ public class EdgeCaseStressTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await();
@@ -417,7 +417,7 @@ public class EdgeCaseStressTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await();

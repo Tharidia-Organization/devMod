@@ -98,7 +98,7 @@ class AlertRouterTest {
             });
 
             ErrorContext error = createTestError();
-            router.route(error);
+            router.route(error).isDone();
 
             assertTrue(latch.await(5, TimeUnit.SECONDS), "All channels should receive delivery");
             assertEquals(3, deliveredTo.size());
@@ -177,7 +177,7 @@ class AlertRouterTest {
             });
 
             ErrorContext error = createTestError();
-            router.route(error);
+            router.route(error).isDone();
 
             // Wait for retries
             Thread.sleep(3000);

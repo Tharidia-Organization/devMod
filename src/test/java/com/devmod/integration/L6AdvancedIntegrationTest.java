@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,6 +37,12 @@ public class L6AdvancedIntegrationTest {
     // =========================================================================
     // TEST INFRASTRUCTURE
     // =========================================================================
+
+    private static void awaitFutures(List<Future<?>> futures) throws Exception {
+        for (Future<?> future : futures) {
+            future.get();
+        }
+    }
 
     /**
      * Simulated Style Rank system matching ComboSystem.StyleRank
@@ -473,9 +480,10 @@ public class L6AdvancedIntegrationTest {
             AtomicInteger transitionErrors = new AtomicInteger(0);
 
             ExecutorService executor = Executors.newFixedThreadPool(playerCount);
+            List<Future<?>> futures = new ArrayList<>(playerCount);
 
             for (int i = 0; i < playerCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         UUID playerId = UUID.randomUUID();
 
@@ -513,11 +521,12 @@ public class L6AdvancedIntegrationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(0, transitionErrors.get(), "No transition errors should occur");
             assertEquals(playerCount * transitionsPerPlayer, sim.totalQuestsStarted.get());
@@ -606,9 +615,10 @@ public class L6AdvancedIntegrationTest {
             AtomicInteger successfulPurchases = new AtomicInteger(0);
 
             ExecutorService executor = Executors.newFixedThreadPool(purchaseAttempts);
+            List<Future<?>> futures = new ArrayList<>(purchaseAttempts);
 
             for (int i = 0; i < purchaseAttempts; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         if (sim.spendCurrency(playerId, Currency.TOKENS, itemCost)) {
                             successfulPurchases.incrementAndGet();
@@ -616,11 +626,12 @@ public class L6AdvancedIntegrationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             // EXACTLY ONE purchase should succeed
             assertEquals(1, successfulPurchases.get(),
@@ -676,19 +687,21 @@ public class L6AdvancedIntegrationTest {
             CountDownLatch latch = new CountDownLatch(earnAttempts);
 
             ExecutorService executor = Executors.newFixedThreadPool(10);
+            List<Future<?>> futures = new ArrayList<>(earnAttempts);
 
             for (int i = 0; i < earnAttempts; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         sim.addCurrency(playerId, Currency.TOKENS, rewardPerEarn);
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             // Total should be exact
             long expected = earnAttempts * rewardPerEarn;
@@ -797,9 +810,10 @@ public class L6AdvancedIntegrationTest {
 
             ExecutorService executor = Executors.newFixedThreadPool(10);
             ThreadLocalRandom random = ThreadLocalRandom.current();
+            List<Future<?>> futures = new ArrayList<>(operationCount);
 
             for (int i = 0; i < operationCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         UUID playerId = players.get(random.nextInt(playerCount));
                         int operation = random.nextInt(6);
@@ -842,11 +856,12 @@ public class L6AdvancedIntegrationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(0, errors.get(), "No errors during random operations");
 
@@ -928,9 +943,10 @@ public class L6AdvancedIntegrationTest {
             Object playerLock = new Object();
 
             ExecutorService executor = Executors.newFixedThreadPool(attemptCount);
+            List<Future<?>> futures = new ArrayList<>(attemptCount);
 
             for (int i = 0; i < attemptCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         synchronized (playerLock) {
                             // Check-then-act pattern with synchronization
@@ -942,11 +958,12 @@ public class L6AdvancedIntegrationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             // Exactly one should succeed
             assertEquals(1, successCount.get(),
@@ -970,19 +987,21 @@ public class L6AdvancedIntegrationTest {
             CountDownLatch latch = new CountDownLatch(incrementCount);
 
             ExecutorService executor = Executors.newFixedThreadPool(10);
+            List<Future<?>> futures = new ArrayList<>(incrementCount);
 
             for (int i = 0; i < incrementCount; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         atomicScore.addAndGet(incrementValue);
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             // Should be exact
             int expectedScore = incrementCount * incrementValue;
@@ -1009,10 +1028,11 @@ public class L6AdvancedIntegrationTest {
             AtomicInteger errors = new AtomicInteger(0);
 
             ExecutorService executor = Executors.newFixedThreadPool(4);
+            List<Future<?>> futures = new ArrayList<>(operations * 2);
 
             // Wave transition thread - periodically checks perks
             for (int i = 0; i < operations; i++) {
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         // Read perks (wave effect application)
                         Set<String> currentPerks = sim.requirePerks(playerId);
@@ -1024,13 +1044,13 @@ public class L6AdvancedIntegrationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             // Perk modification thread
             for (int i = 0; i < operations; i++) {
                 final int idx = i;
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         String newPerk = "PERK_" + idx;
                         sim.requirePerks(playerId).add(newPerk);
@@ -1046,11 +1066,12 @@ public class L6AdvancedIntegrationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(0, errors.get(),
                 "No concurrent modification errors during perk operations");

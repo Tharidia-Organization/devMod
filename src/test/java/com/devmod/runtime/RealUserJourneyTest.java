@@ -792,7 +792,7 @@ public class RealUserJourneyTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await();

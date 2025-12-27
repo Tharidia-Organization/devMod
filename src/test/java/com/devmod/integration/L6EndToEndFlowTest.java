@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,6 +31,12 @@ public class L6EndToEndFlowTest {
     // =========================================================================
     // COMPREHENSIVE GAME SIMULATION
     // =========================================================================
+
+    private static void awaitFutures(List<Future<?>> futures) throws Exception {
+        for (Future<?> future : futures) {
+            future.get();
+        }
+    }
 
     /**
      * Complete game state simulation for E2E testing
@@ -894,10 +901,11 @@ public class L6EndToEndFlowTest {
             AtomicInteger errors = new AtomicInteger(0);
 
             ExecutorService executor = Executors.newFixedThreadPool(playerCount);
+            List<Future<?>> futures = new ArrayList<>(playerCount);
 
             for (int i = 0; i < playerCount; i++) {
                 final int playerNum = i;
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         PlayerData player = sim.createPlayer("Player" + playerNum);
 
@@ -915,11 +923,12 @@ public class L6EndToEndFlowTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(0, errors.get(), "No errors during concurrent execution");
             assertEquals(playerCount, sim.totalQuestsCompleted.get());
@@ -967,10 +976,11 @@ public class L6EndToEndFlowTest {
             CountDownLatch latch = new CountDownLatch(playerCount);
             ExecutorService executor = Executors.newFixedThreadPool(playerCount);
             AtomicInteger errors = new AtomicInteger(0);
+            List<Future<?>> futures = new ArrayList<>(playerCount);
 
             for (int i = 0; i < playerCount; i++) {
                 final int playerNum = i;
-                executor.submit(() -> {
+                futures.add(executor.submit(() -> {
                     try {
                         PlayerData player = sim.createPlayer("EconPlayer" + playerNum);
 
@@ -1000,11 +1010,12 @@ public class L6EndToEndFlowTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }));
             }
 
             latch.await();
             executor.shutdown();
+            awaitFutures(futures);
 
             assertEquals(0, errors.get(), "No errors during token economy load");
 

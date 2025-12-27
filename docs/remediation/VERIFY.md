@@ -61,3 +61,17 @@ Expected:
 - Mixin env = SERVER
 - ClassNotFoundException count = 0
 - RuntimeDistCleaner: no missing class errors
+
+## Verification (Local)
+
+```bash
+./gradlew --no-daemon --console=plain test \
+  --tests "com.devmod.client.ui.radial.RadialMenuMacroCategoryTest" \
+  --tests "com.devmod.network.ChannelIdCollisionTest" \
+  --tests "com.devmod.endurance.RewardSystemDirectTest" \
+  --tests "com.devmod.mailbox.template.MessageTemplateRegistryTest" \
+  --tests "com.devmod.mailbox.digest.DigestManagerTest" \
+  --tests "com.devmod.mailbox.BroadcastLoadTest"
+```
+
+Result: PASS

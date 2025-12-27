@@ -146,6 +146,7 @@ export default function ConfigPage() {
     const payload: Partial<Config> = {
       enabled: readBoolean('enabled'),
       maintenanceMode: readBoolean('maintenanceMode'),
+      useOpLevelForRoles: readBoolean('useOpLevelForRoles'),
       playerToPlayerEnabled: readBoolean('playerToPlayerEnabled'),
       itemAttachmentsEnabled: readBoolean('itemAttachmentsEnabled'),
       currencyAttachmentsEnabled: readBoolean('currencyAttachmentsEnabled'),
@@ -943,6 +944,16 @@ export default function ConfigPage() {
                 className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
               />
               <span className="text-sm text-gray-700">Maintenance mode (block player sends)</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="useOpLevelForRoles"
+                defaultChecked={config?.useOpLevelForRoles ?? false}
+                onChange={handleFieldChange}
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-700">Allow op-level to grant admin/tester roles</span>
             </label>
             <label className="flex items-center gap-2">
               <input

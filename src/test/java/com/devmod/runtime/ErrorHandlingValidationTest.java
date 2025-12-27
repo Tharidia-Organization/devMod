@@ -330,6 +330,7 @@ class ErrorHandlingValidationTest {
         @DisplayName("Modifications set dirty flag")
         void modificationsSetDirtyFlag() {
             boolean dirty = false;
+            assertFalse(dirty);
 
             // Simulate modification
             dirty = true;
@@ -341,6 +342,7 @@ class ErrorHandlingValidationTest {
         @DisplayName("Save clears dirty flag")
         void saveClearsDirtyFlag() {
             boolean dirty = true;
+            assertTrue(dirty);
 
             // Simulate save
             dirty = false;
@@ -366,13 +368,15 @@ class ErrorHandlingValidationTest {
         void multipleModificationsStillSingleDirty() {
             boolean dirty = false;
             int dirtySetCount = 0;
+            assertFalse(dirty);
 
             // Multiple modifications
-            dirty = true; dirtySetCount++;
-            dirty = true; dirtySetCount++;
-            dirty = true; dirtySetCount++;
+            for (int i = 0; i < 3; i++) {
+                dirty = true;
+                dirtySetCount++;
+                assertTrue(dirty);
+            }
 
-            assertTrue(dirty);
             assertEquals(3, dirtySetCount); // Set multiple times, but still just dirty
         }
     }
@@ -469,12 +473,10 @@ class ErrorHandlingValidationTest {
             List<String> requiredComponents = Arrays.asList("teleport", "inventory");
             List<String> optionalComponents = Arrays.asList("effects", "enderChest");
 
-            int requiredSuccesses = 0;
+            int requiredSuccesses = requiredComponents.size();
             int optionalFailures = 0;
 
             // All required succeed
-            requiredSuccesses = requiredComponents.size();
-
             // Some optional fail
             for (String comp : optionalComponents) {
                 if (comp.equals("enderChest")) {

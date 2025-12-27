@@ -1173,7 +1173,7 @@ class RewardSystemTest {
                     } finally {
                         doneLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -1215,7 +1215,7 @@ class RewardSystemTest {
                     } finally {
                         doneLatch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             startLatch.countDown();
@@ -1313,7 +1313,7 @@ class RewardSystemTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await(30, TimeUnit.SECONDS);

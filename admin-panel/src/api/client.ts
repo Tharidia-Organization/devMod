@@ -257,6 +257,23 @@ class ApiClient {
     const response = await this.client.get('/stats');
     return response.data;
   }
+
+  // Generic HTTP methods for flexible API calls
+  async get<T = unknown>(url: string, config?: { params?: Record<string, unknown> }) {
+    return this.client.get<T>(url, config);
+  }
+
+  async post<T = unknown>(url: string, data?: unknown, config?: { params?: Record<string, unknown> }) {
+    return this.client.post<T>(url, data, config);
+  }
+
+  async put<T = unknown>(url: string, data?: unknown, config?: { params?: Record<string, unknown> }) {
+    return this.client.put<T>(url, data, config);
+  }
+
+  async delete<T = unknown>(url: string, config?: { params?: Record<string, unknown> }) {
+    return this.client.delete<T>(url, config);
+  }
 }
 
 export const api = new ApiClient();

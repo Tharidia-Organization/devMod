@@ -353,7 +353,7 @@ public class PartyCoordinationTest {
                     partyMembers.remove(member);
                     disconnectCount.incrementAndGet();
                     latch.countDown();
-                });
+                }).isDone();
             }
 
             latch.await(5, TimeUnit.SECONDS);
@@ -548,7 +548,7 @@ public class PartyCoordinationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await(10, TimeUnit.SECONDS);
@@ -581,7 +581,7 @@ public class PartyCoordinationTest {
                         joinCount.incrementAndGet();
                     }
                     latch.countDown();
-                });
+                }).isDone();
             }
 
             // Concurrent leaves
@@ -595,7 +595,7 @@ public class PartyCoordinationTest {
                         }
                     }
                     latch.countDown();
-                });
+                }).isDone();
             }
 
             latch.await(10, TimeUnit.SECONDS);
@@ -634,7 +634,7 @@ public class PartyCoordinationTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             latch.await(10, TimeUnit.SECONDS);

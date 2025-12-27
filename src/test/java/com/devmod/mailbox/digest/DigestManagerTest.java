@@ -83,7 +83,9 @@ class DigestManagerTest {
                 Map.of()
             );
 
-            assertTrue(queued);
+            assertFalse(queued, "High priority notifications should bypass the digest queue");
+            DigestStats stats = DigestManager.INSTANCE.getStats();
+            assertTrue(stats.immediateDeliveries() >= 1, "Immediate deliveries should be tracked");
         }
 
         @Test

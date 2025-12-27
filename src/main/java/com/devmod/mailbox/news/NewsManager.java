@@ -68,6 +68,9 @@ public class NewsManager {
     /** Cache holder record. */
     private record CachedNews(List<NewsArticle> articles, Instant cachedAt) {
         boolean isExpired(Duration ttl) {
+            if (ttl == null) {
+                return true; // Treat as expired if no TTL
+            }
             return Instant.now().isAfter(cachedAt.plus(ttl));
         }
     }

@@ -568,7 +568,7 @@ public class L7CrossSystemIntegrationTest {
                 for (Player p : players) {
                     simulateCombatAction(world, quest, p, 5);
                 }
-                completeWave(world, quest);
+                completeWave(quest);
                 if (wave < 3) {
                     quest.transitionState(QuestState.WAVE_COMPLETE, QuestState.ACTIVE);
                 }
@@ -617,7 +617,7 @@ public class L7CrossSystemIntegrationTest {
             Thread waveCompleter = new Thread(() -> {
                 try {
                     startLatch.await();
-                    completeWave(world, quest);
+                    completeWave(quest);
                 } catch (Exception e) {
                     raceDetected.set(true);
                 } finally {
@@ -1184,7 +1184,7 @@ public class L7CrossSystemIntegrationTest {
             world.failureRate = 1.0; // 100% failure
 
             // Should handle gracefully with retry
-            QuestRewards rewards = completeQuestWithRetry(world, quest, player, 3);
+            QuestRewards rewards = completeQuestWithRetry(world, quest, player);
 
             // Even with failures, should eventually complete
             assertNotNull(rewards);
@@ -1210,7 +1210,7 @@ public class L7CrossSystemIntegrationTest {
             world.injectDatabaseFailures = true;
 
             // Save should queue for retry
-            boolean saved = savePlayerProgress(world, player, quest);
+            boolean saved = savePlayerProgress(world);
             assertFalse(saved);
 
             // May fail but should not crash
@@ -1325,7 +1325,7 @@ public class L7CrossSystemIntegrationTest {
                         } finally {
                             latch.countDown();
                         }
-                    });
+                    }).isDone();
                 }
             }
 
@@ -1434,7 +1434,7 @@ public class L7CrossSystemIntegrationTest {
         }
     }
 
-    private void completeWave(GameWorld world, QuestInstance quest) {
+    private void completeWave(QuestInstance quest) {
         quest.mobsAlive.set(0);
         quest.currentWave.incrementAndGet();
         quest.state = QuestState.WAVE_COMPLETE;
@@ -1642,12 +1642,12 @@ public class L7CrossSystemIntegrationTest {
         player.state = PlayerState.IDLE;
     }
 
-    private QuestRewards completeQuestWithRetry(GameWorld world, QuestInstance quest, Player player, int maxRetries) {
+    private QuestRewards completeQuestWithRetry(GameWorld world, QuestInstance quest, Player player) {
         world.failureRate = 0; // Disable for retry
         return completeQuest(world, quest, player);
     }
 
-    private boolean savePlayerProgress(GameWorld world, Player player, QuestInstance quest) {
+    private boolean savePlayerProgress(GameWorld world) {
         if (world.injectDatabaseFailures) {
             return false; // Simulate failure
         }

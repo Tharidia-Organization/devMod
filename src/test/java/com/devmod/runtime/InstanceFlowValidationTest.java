@@ -98,15 +98,24 @@ public class InstanceFlowValidationTest {
             UUID playerId = UUID.randomUUID();
             MockPlayerSnapshot playerSnapshot = new MockPlayerSnapshot(playerId);
             MockInstanceData instance = new MockInstanceData(playerId);
+            assertEquals(playerId, playerSnapshot.playerId);
+            assertEquals(playerId, instance.ownerId);
+            assertTrue(instance.createdAt > 0);
+            assertEquals("minecraft:overworld", playerSnapshot.originalDimension);
 
             // Step 1: Player initiates quest - snapshot created in PREPARING state
             playerSnapshot.originalX = 100;
             playerSnapshot.originalY = 64;
             playerSnapshot.originalZ = 200;
             playerSnapshot.inventorySaved = true;
+            assertEquals(100.0, playerSnapshot.originalX);
+            assertEquals(64.0, playerSnapshot.originalY);
+            assertEquals(200.0, playerSnapshot.originalZ);
+            assertTrue(playerSnapshot.inventorySaved);
             assertTrue(playerSnapshot.transitionTo(PlayerInstanceState.PREPARING),
                 "Should transition to PREPARING");
             playerSnapshot.instanceId = instance.instanceId;
+            assertEquals(instance.instanceId, playerSnapshot.instanceId);
 
             // Step 2: Instance created - state moves to READY
             instance.players.add(playerId);
@@ -201,6 +210,8 @@ public class InstanceFlowValidationTest {
             instance.markedForDestruction = true;
             instance.destructionScheduledAt = System.currentTimeMillis();
             instance.players.remove(playerId);
+            assertTrue(instance.markedForDestruction);
+            assertTrue(instance.destructionScheduledAt > 0);
 
             // Instance destroyed
             assertTrue(instance.transitionTo(InstanceState.DESTROYED));
@@ -492,12 +503,10 @@ public class InstanceFlowValidationTest {
         @DisplayName("Dimension creation failure triggers recovery")
         void testDimensionCreationFailureRecovery() {
             // playerId would be used in actual impl to restore player
-            boolean snapshotCreated = false;
+            boolean snapshotCreated = true;
             boolean recoveryTriggered = false;
             String recoveryReason = null;
-
             // Simulate: snapshot created, then dimension fails
-            snapshotCreated = true;
 
             // Dimension creation returns null (failure)
             String dimensionKey = null;
@@ -522,8 +531,6 @@ public class InstanceFlowValidationTest {
             boolean recoveryTriggered = false;
 
             // Simulate teleport failure
-            teleportSuccess = false;
-
             if (!teleportSuccess && snapshotExists) {
                 recoveryTriggered = true;
             }
@@ -652,12 +659,10 @@ public class InstanceFlowValidationTest {
         @DisplayName("Countdown mode: teleport happens asynchronously via tick()")
         void testCountdownModeAsyncTeleport() {
             int ticksRemaining = 200;
-            boolean futureReturned = false;
+            boolean futureReturned = true;
             boolean teleportExecuted = false;
 
             // Simulate: future returns instanceId immediately after dimension ready
-            futureReturned = true;
-
             // But teleport doesn't happen until countdown completes
             assertFalse(teleportExecuted,
                 "In countdown mode, teleport should NOT happen immediately");

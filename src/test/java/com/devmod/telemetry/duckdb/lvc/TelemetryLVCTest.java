@@ -432,7 +432,7 @@ class TelemetryLVCTest {
                 } finally {
                     latch.countDown();
                 }
-            });
+            }).isDone();
         }
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));

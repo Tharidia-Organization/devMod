@@ -59,8 +59,7 @@ public class ArenaWaveManagerTest {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            SimBlockPos that = (SimBlockPos) o;
+            if (!(o instanceof SimBlockPos that)) return false;
             return x == that.x && y == that.y && z == that.z;
         }
 

@@ -520,7 +520,7 @@ public class L5MemoryAndSoakTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(latch.await(25, TimeUnit.SECONDS), "All threads should complete");
@@ -770,7 +770,7 @@ public class L5MemoryAndSoakTest {
                     } finally {
                         latch.countDown();
                     }
-                });
+                }).isDone();
             }
 
             assertTrue(latch.await(25, TimeUnit.SECONDS), "All sessions should complete");

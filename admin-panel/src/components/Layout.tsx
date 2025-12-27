@@ -7,6 +7,7 @@ import {
   Newspaper,
   Users,
   ClipboardList,
+  Ticket,
   ScrollText,
   Settings,
   LogOut,
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'News', href: '/news', icon: Newspaper },
   { name: 'Users', href: '/users', icon: Users },
   { name: 'Tasks', href: '/tasks', icon: ClipboardList },
+  { name: 'Tickets', href: '/tickets', icon: Ticket },
   { name: 'Audit', href: '/audit', icon: ScrollText },
   { name: 'Config', href: '/config', icon: Settings },
 ];
@@ -60,6 +62,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <button
             className="lg:hidden p-2 rounded-md text-gray-500 hover:bg-gray-100"
             onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
           </button>
@@ -102,6 +105,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <button
             className="lg:hidden p-2 rounded-md text-gray-500 hover:bg-gray-100"
             onClick={() => setSidebarOpen(true)}
+            aria-label="Open sidebar"
           >
             <Menu className="h-5 w-5" />
           </button>

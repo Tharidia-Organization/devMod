@@ -1,0 +1,332 @@
+package com.devmod.client.notification.ui;
+
+import java.util.Objects;
+
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+
+import com.devmod.DevMod;
+import com.devmod.client.notification.NotificationUiTheme;
+import com.devmod.notification.NotificationPriority;
+/**
+ * HUD overlay showing notification badge with unread count.
+ *
+ * <p>Features:
+ * <ul>
+ *   <li>Animated badge with pulse effect on new notifications</li>
+ *   <li>Smooth count update animations</li>
+ *   <li>Hover tooltip with quick stats</li>
+ *   <li>Click to open Notification Center</li>
+ *   <li>Position: Top-right corner below hotbar icons</li>
+ * </ul>
+ */
+@OnlyIn(Dist.CLIENT)
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
+public class NotificationBadgeOverlay {
+
+    private static final ResourceLocation LAYER_ID =
+            ResourceLocation.fromNamespaceAndPath("devmod", "notification_badge");
+
+    // ============================================================================
+    // DESIGN TOKENS
+    // ============================================================================
+
+    // Layout
+    private static final int BADGE_SIZE = 28;
+    private static final int BADGE_MARGIN = 8;
+
+    // Colors
+    private static final int RGB_BG_NORMAL = NotificationUiTheme.RGB_SURFACE_TOP;
+    private static final int RGB_BG_HOVER = NotificationUiTheme.RGB_SURFACE_HOVER_TOP;
+    private static final int RGB_ACCENT = NotificationUiTheme.RGB_ACCENT;
+    private static final int RGB_BADGE = NotificationUiTheme.RGB_ACCENT_ALT;
+    private static final int RGB_BADGE_URGENT = NotificationUiTheme.getPriorityColor(NotificationPriority.URGENT);
+
+    // Animation
+    private static final long PULSE_DURATION = 600;
+    private static final long BOUNCE_DURATION = 400;
+    private static final float HOVER_SCALE = 1.1f;
+
+    // ============================================================================
+    // STATE
+    // ============================================================================
+
+    private static boolean visible = true;
+    private static int displayedCount = 0;
+    private static int targetCount = 0;
+    private static long lastPulseTime = 0;
+    private static long lastBounceTime = 0;
+    private static float hoverProgress = 0;
+    private static int urgentCount = 0;
+
+    // Position (calculated on render)
+    private static int badgeX, badgeY;
+
+    // ============================================================================
+    // REGISTRATION
+    // ============================================================================
+
+    @SubscribeEvent
+    public static void registerGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAbove(
+                Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+                Objects.requireNonNull(LAYER_ID),
+                NotificationBadgeOverlay::render
+        );
+    }
+
+    // ============================================================================
+    // PUBLIC API
+    // ============================================================================
+
+    // Update the badge count. Triggers animations if count increases.
+    public static void updateCount(int newCount, int newUrgentCount) {
+        if (newCount > targetCount) {
+            // New notifications - trigger animations
+            lastPulseTime = System.currentTimeMillis();
+            lastBounceTime = System.currentTimeMillis();
+        }
+        targetCount = newCount;
+        urgentCount = newUrgentCount;
+    }
+
+    // Notify of a new notification (triggers attention animation).
+    public static void notifyNew() {
+        lastPulseTime = System.currentTimeMillis();
+        lastBounceTime = System.currentTimeMillis();
+    }
+
+    // Set badge visibility.
+    public static void setVisible(boolean isVisible) {
+        visible = isVisible;
+    }
+
+    // Check if a point is within the badge area.
+    public static boolean isHovered(double mouseX, double mouseY) {
+        return mouseX >= badgeX && mouseX < badgeX + BADGE_SIZE &&
+                mouseY >= badgeY && mouseY < badgeY + BADGE_SIZE;
+    }
+
+    // Handle click on the badge.
+    public static boolean handleClick(double mouseX, double mouseY) {
+        if (isHovered(mouseX, mouseY)) {
+            openNotificationCenter();
+            return true;
+        }
+        return false;
+    }
+
+    private static void openNotificationCenter() {
+        // NotificationCenterScreen not yet implemented
+        // TODO: Implement notification center screen
+    }
+
+    // ============================================================================
+    // RENDERING
+    // ============================================================================
+
+    private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        if (!visible) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui) return;
+        if (mc.screen != null) return;
+
+        Font font = mc.font;
+        if (font == null) return;
+
+        long now = System.currentTimeMillis();
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
+
+        // Update display count with smooth animation
+        if (displayedCount < targetCount) {
+            displayedCount = Math.min(displayedCount + 1, targetCount);
+        } else if (displayedCount > targetCount) {
+            displayedCount = Math.max(displayedCount - 1, targetCount);
+        }
+
+        // Calculate position (top-right, below potential other HUD elements)
+        badgeX = screenWidth - BADGE_SIZE - BADGE_MARGIN;
+        badgeY = BADGE_MARGIN + Math.min(60, screenHeight / 6); // Below potential boss bar area
+
+        // Check hover
+        double mouseX = mc.mouseHandler.xpos() * screenWidth / mc.getWindow().getScreenWidth();
+        double mouseY = mc.mouseHandler.ypos() * screenHeight / mc.getWindow().getScreenHeight();
+        boolean isHovered = isHovered(mouseX, mouseY);
+
+        // Update hover animation
+        float targetHover = isHovered ? 1f : 0f;
+        hoverProgress += (targetHover - hoverProgress) * 0.15f;
+
+        // Calculate animations
+        float pulseProgress = getPulseProgress(now);
+        float bounceProgress = getBounceProgress(now);
+
+        // Apply scale from hover and bounce
+        float scale = 1f + (HOVER_SCALE - 1f) * hoverProgress;
+        scale += bounceProgress * 0.15f;
+
+        int scaledSize = (int) (BADGE_SIZE * scale);
+        int offsetX = (scaledSize - BADGE_SIZE) / 2;
+        int offsetY = (scaledSize - BADGE_SIZE) / 2;
+
+        int renderX = badgeX - offsetX;
+        int renderY = badgeY - offsetY;
+
+        // Render badge background
+        int bgAlpha = isHovered ? 0xEE : 0xCC;
+        int bgRgb = isHovered ? RGB_BG_HOVER : RGB_BG_NORMAL;
+        renderRoundedRect(graphics, renderX, renderY, scaledSize, scaledSize, 6,
+                NotificationUiTheme.withAlpha(bgRgb, bgAlpha));
+        graphics.fill(renderX + 4, renderY + 2, renderX + scaledSize - 4, renderY + 3,
+                NotificationUiTheme.withAlpha(0xFFFFFF, (bgAlpha * 0x22) / 255));
+
+        // Pulse glow effect
+        if (pulseProgress > 0) {
+            int glowAlpha = (int) (pulseProgress * 0x66);
+            int glowSize = (int) (pulseProgress * 4);
+            int glowColor = NotificationUiTheme.withAlpha(RGB_ACCENT, glowAlpha);
+            renderRoundedRect(graphics, renderX - glowSize, renderY - glowSize,
+                    scaledSize + glowSize * 2, scaledSize + glowSize * 2, 8, glowColor);
+        }
+
+        // Border
+        int borderAlpha = isHovered ? 0x88 : 0x44;
+        int borderColor = NotificationUiTheme.withAlpha(RGB_ACCENT, borderAlpha);
+        renderRoundedRectBorder(graphics, renderX, renderY, scaledSize, scaledSize, 6, borderColor);
+
+        // Bell icon
+        int iconCenterX = renderX + scaledSize / 2;
+        int iconCenterY = renderY + scaledSize / 2;
+        // Use simple characters for broad font support.
+        String icon = displayedCount > 0 ? "!" : "o";
+        int iconWidth = font.width(icon);
+        int iconColor = displayedCount > 0 ? NotificationUiTheme.RGB_TEXT_PRIMARY : NotificationUiTheme.RGB_TEXT_MUTED;
+        graphics.drawString(font, icon, iconCenterX - iconWidth / 2, iconCenterY - 4,
+                NotificationUiTheme.withAlpha(iconColor, 0xFF), false);
+
+        // Notification count badge (if > 0)
+        if (displayedCount > 0) {
+            int countBadgeX = renderX + scaledSize - 8;
+            int countBadgeY = renderY - 4;
+
+            String countText = Objects.requireNonNull(displayedCount > 99 ? "99+" : String.valueOf(displayedCount));
+            int countWidth = font.width(countText);
+            int badgeWidth = Math.max(16, countWidth + 8);
+            int badgeHeight = 14;
+
+            // Badge background color based on urgency
+            int badgeBgColor = urgentCount > 0 ? RGB_BADGE_URGENT : RGB_BADGE;
+
+            // Pulse the badge if urgent
+            if (urgentCount > 0 && pulseProgress > 0) {
+                badgeBgColor = NotificationUiTheme.mix(badgeBgColor, 0xFFFFFF, pulseProgress * 0.3f);
+            }
+
+            // Badge background
+            renderRoundedRect(graphics, countBadgeX - badgeWidth / 2, countBadgeY,
+                    badgeWidth, badgeHeight, 7, NotificationUiTheme.withAlpha(badgeBgColor, 0xFF));
+
+            // Badge text
+            graphics.drawString(font, countText,
+                    countBadgeX - countWidth / 2, countBadgeY + 3,
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), false);
+        }
+
+        // Hover tooltip
+        if (isHovered && hoverProgress > 0.8f) {
+            renderTooltip(graphics, font, renderX, renderY + scaledSize + 4);
+        }
+    }
+
+    private static void renderTooltip(GuiGraphics graphics, Font font, int x, int y) {
+        String title = "Notifications";
+        String subtitle = displayedCount == 0 ? "All caught up!" :
+                displayedCount + " unread" + (urgentCount > 0 ? " (" + urgentCount + " urgent)" : "");
+
+        int tooltipWidth = Math.max(font.width(title), font.width(subtitle)) + 16;
+        int tooltipHeight = 28;
+
+        // Ensure tooltip stays on screen
+        Minecraft mc = Minecraft.getInstance();
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        if (x + tooltipWidth > screenWidth - 8) {
+            x = screenWidth - tooltipWidth - 8;
+        }
+
+        int tooltipAlpha = 0xE0;
+        graphics.fillGradient(x, y, x + tooltipWidth, y + tooltipHeight,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_TOP, tooltipAlpha),
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, tooltipAlpha));
+
+        graphics.fill(x, y, x + tooltipWidth, y + 1,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, 0x66));
+        graphics.fill(x, y + tooltipHeight - 1, x + tooltipWidth, y + tooltipHeight,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_SOFT, 0x44));
+
+        graphics.drawString(font, title, x + 8, y + 4,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), false);
+        graphics.drawString(font, subtitle, x + 8, y + 16,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 0xFF), false);
+    }
+
+    private static void renderRoundedRect(GuiGraphics graphics, int x, int y, int width, int height,
+                                           int radius, int color) {
+        // Simple approximation of rounded rect with regular fills
+        graphics.fill(x + radius, y, x + width - radius, y + height, color);
+        graphics.fill(x, y + radius, x + width, y + height - radius, color);
+
+        // Corners (rough approximation)
+        graphics.fill(x + 1, y + 1, x + radius, y + radius, color);
+        graphics.fill(x + width - radius, y + 1, x + width - 1, y + radius, color);
+        graphics.fill(x + 1, y + height - radius, x + radius, y + height - 1, color);
+        graphics.fill(x + width - radius, y + height - radius, x + width - 1, y + height - 1, color);
+    }
+
+    private static void renderRoundedRectBorder(GuiGraphics graphics, int x, int y, int width, int height,
+                                                 int radius, int color) {
+        // Top and bottom edges
+        graphics.fill(x + radius, y, x + width - radius, y + 1, color);
+        graphics.fill(x + radius, y + height - 1, x + width - radius, y + height, color);
+
+        // Left and right edges
+        graphics.fill(x, y + radius, x + 1, y + height - radius, color);
+        graphics.fill(x + width - 1, y + radius, x + width, y + height - radius, color);
+    }
+
+    // ============================================================================
+    // ANIMATION HELPERS
+    // ============================================================================
+
+    private static float getPulseProgress(long now) {
+        if (lastPulseTime == 0) return 0;
+        long elapsed = now - lastPulseTime;
+        if (elapsed >= PULSE_DURATION) return 0;
+
+        float t = (float) elapsed / PULSE_DURATION;
+        // Fade out with slight pulse
+        return (float) (Math.sin(t * Math.PI * 2) * 0.5 + 0.5) * (1f - t);
+    }
+
+    private static float getBounceProgress(long now) {
+        if (lastBounceTime == 0) return 0;
+        long elapsed = now - lastBounceTime;
+        if (elapsed >= BOUNCE_DURATION) return 0;
+
+        float t = (float) elapsed / BOUNCE_DURATION;
+        // Elastic bounce
+        return (float) (Math.sin(t * Math.PI * 3) * Math.pow(1 - t, 2));
+    }
+
+}
