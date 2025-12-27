@@ -85,6 +85,7 @@ public enum ChannelId {
     SHIELD_STATE(56, Direction.SERVER_TO_CLIENT, "ShieldStatePayload"),
     SHIELD_IMPACT(57, Direction.SERVER_TO_CLIENT, "ShieldImpactPayload"),
     SHIELD_SHATTER(58, Direction.SERVER_TO_CLIENT, "ShieldShatterPayload"),
+    IMPACT_SYNC(59, Direction.SERVER_TO_CLIENT, "ImpactSyncPayload"),
 
     // ============================================================================
     // ABILITY CHANNELS (66-75)

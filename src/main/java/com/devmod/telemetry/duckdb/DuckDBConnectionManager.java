@@ -402,19 +402,16 @@ public class DuckDBConnectionManager implements AutoCloseable {
                 return false;
             }
 
+            // DuckDB doesn't support PRAGMA integrity_check like SQLite.
+            // Instead, we verify the connection works with a simple query.
             try (var stmt = conn.createStatement();
-                 var rs = stmt.executeQuery("PRAGMA integrity_check")) {
-                if (rs.next()) {
-                    String result = rs.getString(1);
-                    if ("ok".equalsIgnoreCase(result)) {
-                        LOGGER.debug("[DuckDB] Integrity check passed");
-                        return true;
-                    } else {
-                        LOGGER.error("[DuckDB] Integrity check FAILED: {}", result);
-                        return false;
-                    }
+                 var rs = stmt.executeQuery("SELECT 1")) {
+                if (rs.next() && rs.getInt(1) == 1) {
+                    LOGGER.debug("[DuckDB] Integrity check passed");
+                    return true;
                 }
-                return true; // No result = OK
+                LOGGER.error("[DuckDB] Integrity check FAILED: unexpected result");
+                return false;
             }
         } catch (SQLException e) {
             LOGGER.error("[DuckDB] Integrity check error", e);

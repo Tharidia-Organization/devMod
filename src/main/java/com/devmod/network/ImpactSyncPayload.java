@@ -59,7 +59,7 @@ public record ImpactSyncPayload(
             buffer.writeFloat(val.armorPenBonus());
             buffer.writeFloat(val.finalDamage());
             // Attack info
-            buffer.writeUtf(val.attackSource());
+            buffer.writeUtf(Objects.requireNonNull(val.attackSource()));
             buffer.writeBoolean(val.isRanged());
             // Hit point
             buffer.writeBoolean(val.hasHitPoint());
@@ -142,18 +142,24 @@ public record ImpactSyncPayload(
     ) {
         boolean hasHit = hitPoint != null;
         boolean hasSlash = slashDirection != null;
+        double hx = 0, hy = 0, hz = 0;
+        if (hitPoint != null) {
+            hx = hitPoint.x;
+            hy = hitPoint.y;
+            hz = hitPoint.z;
+        }
+        double sx = 0, sy = 0, sz = 0;
+        if (slashDirection != null) {
+            sx = slashDirection.x;
+            sy = slashDirection.y;
+            sz = slashDirection.z;
+        }
         return new ImpactSyncPayload(
             victimEntityId, bodyPartOrdinal, multiplier,
             baseWeaponDamage, enchantBonus, pehkuiBonus, bodyPartMultiplier, armorPenBonus, finalDamage,
             attackSource, isRanged,
-            hasHit,
-            hasHit ? hitPoint.x : 0,
-            hasHit ? hitPoint.y : 0,
-            hasHit ? hitPoint.z : 0,
-            hasSlash,
-            hasSlash ? slashDirection.x : 0,
-            hasSlash ? slashDirection.y : 0,
-            hasSlash ? slashDirection.z : 0,
+            hasHit, hx, hy, hz,
+            hasSlash, sx, sy, sz,
             actualDamage
         );
     }

@@ -290,6 +290,19 @@ public class KeyInputHandler {
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
+     * Opens the Notification Center screen for viewing notifications and history.
+     *
+     * <p><b>Default key:</b> N</p>
+     */
+    public static final KeyMapping OPEN_NOTIFICATION_CENTER_KEY = new KeyMapping(
+            "key.devmod.notification_center",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_N,
+            "key.categories.devmod"
+    );
+
+    /**
      * Opens the Mailbox screen for viewing messages and notifications.
      *
      * <p><b>Default key:</b> M</p>
@@ -414,6 +427,7 @@ public class KeyInputHandler {
         event.register(Objects.requireNonNull(QUEST_CONTINUE_KEY));
         event.register(Objects.requireNonNull(QUEST_EXIT_KEY));
         event.register(Objects.requireNonNull(OPEN_PARTY_KEY));
+        event.register(Objects.requireNonNull(OPEN_NOTIFICATION_CENTER_KEY));
         event.register(Objects.requireNonNull(OPEN_MAILBOX_KEY));
         event.register(Objects.requireNonNull(OPEN_TESTER_TASKS_KEY));
         event.register(Objects.requireNonNull(TOGGLE_HELP_KEY));

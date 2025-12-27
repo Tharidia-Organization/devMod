@@ -92,9 +92,10 @@ public class DamageHandler {
             } else {
                 // MELEE: Use OBB raycast when enabled, fallback to AABB subdivision
                 weapon = attacker.getMainHandItem();
+                LivingEntity target = Objects.requireNonNull(victim);
                 HitHelper.HitResult hitResult = OBBHitHelper.useOBBSystem()
-                    ? OBBHitHelper.rayTraceBodyPart(attacker, victim)
-                    : HitHelper.rayTraceBodyPartWithHitPoint(attacker, victim);
+                    ? OBBHitHelper.rayTraceBodyPart(attacker, target)
+                    : HitHelper.rayTraceBodyPartWithHitPoint(attacker, target);
                 part = hitResult.part();
                 hitPoint = hitResult.hitPoint();
                 slashDirection = attacker.getViewVector(1.0F);
@@ -158,9 +159,14 @@ public class DamageHandler {
 
             String attackSource = getAttackSource(isRanged);
 
-            // Create and store ImpactData for HUD (client-only)
+            // Create and store ImpactData for HUD
             if (FMLEnvironment.dist.isClient()) {
+                // Single-player or integrated server: create locally
                 triggerImpactHudClientSafe(attacker, victim, part, multiplier, breakdown,
+                    attackSource, isRanged, hitPoint, slashDirection, newDamage);
+            } else if (attacker instanceof ServerPlayer serverPlayer) {
+                // Dedicated server: send network packet to client
+                sendImpactSyncToClient(serverPlayer, victim, part, multiplier, breakdown,
                     attackSource, isRanged, hitPoint, slashDirection, newDamage);
             }
 
@@ -505,5 +511,32 @@ public class DamageHandler {
         } catch (Exception e) {
             LOGGER.debug("Could not trigger environmental impact HUD: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Sends impact data to client via network packet (dedicated server only).
+     */
+    private static void sendImpactSyncToClient(ServerPlayer attacker, LivingEntity victim,
+            HitHelper.BodyPart part, float multiplier, DamageBreakdown breakdown,
+            String attackSource, boolean isRanged, Vec3 hitPoint, Vec3 slashDirection, float damage) {
+        com.devmod.network.ImpactSyncPayload payload = com.devmod.network.ImpactSyncPayload.create(
+            victim.getId(),
+            part.ordinal(),
+            multiplier,
+            breakdown.baseWeaponDamage,
+            breakdown.getTotalEnchantBonus(),
+            breakdown.pehkuiSizeBonus,
+            breakdown.bodyPartMultiplier,
+            breakdown.armorPenetrationBonus,
+            breakdown.finalDamage,
+            attackSource,
+            isRanged,
+            hitPoint,
+            slashDirection,
+            damage
+        );
+        com.devmod.network.NetworkHandler.sendImpactSync(attacker, payload);
+        LOGGER.debug("Sent ImpactSyncPayload to {}: victim={}, part={}, damage={}",
+            attacker.getName().getString(), victim.getName().getString(), part, damage);
     }
 }

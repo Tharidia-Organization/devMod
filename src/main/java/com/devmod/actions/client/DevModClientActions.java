@@ -38,6 +38,7 @@ import com.devmod.client.endurance.QuestDeathScreen;
 import com.devmod.client.endurance.QuestExitConfirmScreen;
 import com.devmod.client.endurance.WaveCheckpointScreen;
 import com.devmod.client.input.KeyInputHandler;
+import com.devmod.client.notification.ui.NotificationCenterScreen;
 import com.devmod.client.overlay.BossPhaseOverlay;
 import com.devmod.client.overlay.EconomyOverlay;
 import com.devmod.client.overlay.EnduranceQuestOverlay;
@@ -554,6 +555,16 @@ public final class DevModClientActions {
             .icon(Items.PLAYER_HEAD)
             .precondition(screenPrecondition())
             .handler(context -> Minecraft.getInstance().setScreen(new PartyScreen()))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_NOTIFICATION_CENTER_OPEN)
+            .labelKey("devmod.action.notification_center")
+            .descriptionKey("devmod.action.notification_center.desc")
+            .category(ActionCategory.UI)
+            .menuPath("Root/Play/Notifications")
+            .icon(Items.BELL)
+            .precondition(screenPrecondition())
+            .handler(context -> Minecraft.getInstance().setScreen(new NotificationCenterScreen(Minecraft.getInstance().screen)))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_MAILBOX_OPEN)
@@ -2326,6 +2337,7 @@ public final class DevModClientActions {
         ActionKeybindRegistry.register(ActionIds.ABILITY_DASH, KeyInputHandler.DASH_KEY);
         ActionKeybindRegistry.register(ActionIds.ABILITY_DODGE, KeyInputHandler.DODGE_KEY);
         ActionKeybindRegistry.register(ActionIds.UI_PARTY_OPEN, KeyInputHandler.OPEN_PARTY_KEY);
+        ActionKeybindRegistry.register(ActionIds.UI_NOTIFICATION_CENTER_OPEN, KeyInputHandler.OPEN_NOTIFICATION_CENTER_KEY);
         ActionKeybindRegistry.register(ActionIds.UI_MAILBOX_OPEN, KeyInputHandler.OPEN_MAILBOX_KEY);
         ActionKeybindRegistry.register(ActionIds.UI_TESTER_TASKS_OPEN, KeyInputHandler.OPEN_TESTER_TASKS_KEY);
     }

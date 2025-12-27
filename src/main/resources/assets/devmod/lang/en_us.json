@@ -40,6 +40,7 @@
   "key.devmod.help_overlay": "Toggle Help Overlay",
   "key.devmod.party": "Open Party Screen",
   "key.devmod.mailbox": "Open Mailbox",
+  "key.devmod.notification_center": "Open Notification Center",
 
   "key.categories.devmod.abilities": "DevMod Abilities",
   "key.devmod.dash": "Dash (Quick Burst)",
@@ -1367,6 +1368,10 @@
   "devmod.action.voxellab.desc": "Open the VoxelLab settings and showcase screen",
   "devmod.action.party": "Party",
   "devmod.action.party.desc": "Party and multiplayer quests",
+  "devmod.action.notification_center": "Notification Center",
+  "devmod.action.notification_center.desc": "Open unified notifications and history",
+  "devmod.action.mailbox": "Mailbox",
+  "devmod.action.mailbox.desc": "Open your mailbox messages",
   "devmod.action.endurance_editor": "Endurance Quest Editor",
   "devmod.action.endurance_editor.desc": "Open quest editor with endurance modal",
   "devmod.action.stamina_editor": "Stamina Editor",

@@ -165,6 +165,11 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     }
 
     @Override
+    public void handleImpactSync(com.devmod.network.ImpactSyncPayload payload) {
+        ClientImpactHandlers.handleImpactSync(payload);
+    }
+
+    @Override
     public void handleBossAlert(BossAlertPayload payload) {
         ClientOverlayHandlers.handleBossAlert(payload.alertDurationMs(), payload.bossType());
     }

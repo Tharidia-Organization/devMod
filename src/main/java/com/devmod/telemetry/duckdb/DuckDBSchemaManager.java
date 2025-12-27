@@ -1334,6 +1334,10 @@ public final class DuckDBSchemaManager {
         if (oldVersion < 9) {
             LOGGER.info("[DuckDB] Running migration V8 -> V9: Adding arena error/alert tables");
             try (Statement stmt = conn.createStatement()) {
+                // Fix: If arena_template_errors exists with wrong schema (from duckdb_schema.sql),
+                // drop it first so it can be recreated with correct schema
+                dropTableIfSchemaWrong(conn, "arena_template_errors", "ts");
+
                 createArenaTemplateErrorsTable(stmt);
                 createArenaTemplateAlertsTable(stmt);
             }
@@ -1349,6 +1353,55 @@ public final class DuckDBSchemaManager {
             }
         }
 
+        // Migration V10 -> V11: Fix arena_template_errors schema mismatch
+        // The table may have been created from duckdb_schema.sql with different columns
+        // than what the Java code expects. Drop and recreate with correct schema.
+        if (oldVersion < 11) {
+            LOGGER.info("[DuckDB] Running migration V10 -> V11: Recreate arena_template_errors with correct schema");
+            try (Statement stmt = conn.createStatement()) {
+                // Drop existing table and its sequence/indexes
+                stmt.execute("DROP TABLE IF EXISTS arena_template_errors CASCADE");
+                stmt.execute("DROP SEQUENCE IF EXISTS seq_arena_template_errors");
+
+                // Recreate with correct schema
+                createArenaTemplateErrorsTable(stmt);
+
+                LOGGER.info("[DuckDB] Migration V10 -> V11: arena_template_errors recreated successfully");
+            }
+        }
+
         setSchemaVersion(conn, newVersion);
+    }
+
+    /**
+     * Drop a table if it exists but is missing a required column.
+     * This handles cases where a table was created with wrong schema.
+     */
+    private static void dropTableIfSchemaWrong(Connection conn, String tableName, String requiredColumn) {
+        try {
+            // Check if table exists
+            var meta = conn.getMetaData();
+            try (var tables = meta.getTables(null, null, tableName, null)) {
+                if (!tables.next()) {
+                    return; // Table doesn't exist, nothing to do
+                }
+            }
+
+            // Check if required column exists
+            try (var columns = meta.getColumns(null, null, tableName, requiredColumn)) {
+                if (columns.next()) {
+                    return; // Column exists, schema is OK
+                }
+            }
+
+            // Table exists but column missing - drop it
+            LOGGER.warn("[DuckDB] Table {} exists but missing column {}, dropping to recreate", tableName, requiredColumn);
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("DROP TABLE IF EXISTS " + tableName + " CASCADE");
+                stmt.execute("DROP SEQUENCE IF EXISTS seq_" + tableName);
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Error checking table schema for {}: {}", tableName, e.getMessage());
+        }
     }
 }

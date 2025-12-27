@@ -71,6 +71,8 @@ public class KeybindsPage implements SettingsPage {
         // Core Controls
         List<KeybindEntry> core = new ArrayList<>();
         core.add(entry("Settings Panel", KeyInputHandler.OPEN_SETTINGS_KEY, "Open this settings menu"));
+        core.add(entry("Notification Center", KeyInputHandler.OPEN_NOTIFICATION_CENTER_KEY, "Open notifications and history"));
+        core.add(entry("Mailbox", KeyInputHandler.OPEN_MAILBOX_KEY, "Open your mailbox messages"));
         core.add(entry("Weapon Editor", KeyInputHandler.OPEN_WEAPON_EDITOR_KEY, "Edit held weapon stats"));
         core.add(entry("Telemetry Dashboard", KeyInputHandler.OPEN_DASHBOARD_KEY, "View analytics and stats"));
         core.add(entry("QA Testing", KeyInputHandler.OPEN_QA_TESTING_KEY, "Open QA testing screen"));

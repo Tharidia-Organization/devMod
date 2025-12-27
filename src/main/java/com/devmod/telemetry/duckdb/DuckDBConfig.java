@@ -147,7 +147,7 @@ public final class DuckDBConfig {
     // ============================================
 
     /** Current schema version for migration tracking */
-    public static int SCHEMA_VERSION = 10;  // Bumped for aggregation tables (LVC + per-player)
+    public static int SCHEMA_VERSION = 11;  // V11: Fix arena_template_errors schema mismatch
 
     // ============================================
     // DEBUG

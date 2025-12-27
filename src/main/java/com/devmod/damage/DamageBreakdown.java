@@ -72,6 +72,27 @@ public class DamageBreakdown {
         this.cachedCompactString = buildCompactString();
     }
 
+    /**
+     * Creates a damage breakdown from pre-computed values (for network sync).
+     * Used when receiving ImpactSyncPayload from server.
+     */
+    public DamageBreakdown(float baseDmg, float enchantTotal, float pehkuiBonus,
+                           float bodyPartMult, float armorPenBonus, float finalDmg) {
+        this.baseWeaponDamage = baseDmg;
+        this.bodyPartMultiplier = bodyPartMult;
+        this.armorPenetrationBonus = armorPenBonus;
+        this.enchantBonuses = new ArrayList<>();
+        if (enchantTotal > 0) {
+            // Store as a single combined entry for display
+            this.enchantBonuses.add(new EnchantBonus("Enchants", 0, enchantTotal));
+        }
+        this.pehkuiSizeBonus = pehkuiBonus;
+        this.pehkuiScale = pehkuiBonus > 0 ? 1.0f + (pehkuiBonus / (baseDmg * 0.25f)) : 1.0f;
+        this.finalDamage = finalDmg;
+        this.cachedFormulaString = buildFormulaString();
+        this.cachedCompactString = buildCompactString();
+    }
+
     private void calculateEnchantBonuses(ItemStack weapon, LivingEntity target) {
         if (weapon.isEmpty()) return;
 

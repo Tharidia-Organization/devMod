@@ -373,6 +373,14 @@ public class RenderEvents {
             invokeAction(ActionIds.UI_PARTY_OPEN);
         }
 
+        while (KeyInputHandler.OPEN_NOTIFICATION_CENTER_KEY.consumeClick()) {
+            invokeAction(ActionIds.UI_NOTIFICATION_CENTER_OPEN);
+        }
+
+        while (KeyInputHandler.OPEN_MAILBOX_KEY.consumeClick()) {
+            invokeAction(ActionIds.UI_MAILBOX_OPEN);
+        }
+
         if (com.devmod.client.overlay.OnboardingOverlay.isActive()) {
             long escWindowHandle = mc.getWindow().getWindow();
             boolean escPressed = InputConstants.isKeyDown(escWindowHandle, InputConstants.KEY_ESCAPE);

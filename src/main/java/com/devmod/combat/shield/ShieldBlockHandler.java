@@ -134,7 +134,7 @@ public final class ShieldBlockHandler {
         var level = player.serverLevel();
         for (ServerPlayer nearby : level.players()) {
             if (nearby.distanceToSqr(player) <= BROADCAST_RANGE_SQ) {
-                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(nearby, payload);
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(nearby, Objects.requireNonNull(payload));
             }
         }
     }

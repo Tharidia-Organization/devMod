@@ -143,6 +143,7 @@ import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_CHOICES;
 import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_SELECTION;
 import static com.devmod.network.ChannelId.WEAPON_LEGACY;
 import static com.devmod.network.ChannelId.WEAPON_STATS_V2;
+import static com.devmod.network.ChannelId.IMPACT_SYNC;
 
 @EventBusSubscriber(modid = MODID)
 public class NetworkHandler {
@@ -235,6 +236,8 @@ public class NetworkHandler {
         void handleUnifiedNotification(com.devmod.notification.network.UnifiedNotificationPayload payload);
 
         void handleNotificationPreferencesSync(NotificationPreferencesSyncPayload payload);
+
+        void handleImpactSync(ImpactSyncPayload payload);
     }
 
     @Nullable
@@ -626,6 +629,16 @@ public class NetworkHandler {
                 nn(ShieldShatterPayload.STREAM_CODEC),
                 ShieldNetworkHandler::handleShieldShatter
         );
+        event.registrar(IMPACT_SYNC.asString()).playToClient(
+                nn(ImpactSyncPayload.TYPE),
+                nn(ImpactSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleImpactSync(payload)));
+                    }
+                }
+        );
 
         // ===================================================================
         // ABILITY SYSTEM CHANNELS (66-67) - see ChannelId enum
@@ -972,6 +985,15 @@ public class NetworkHandler {
      * Send season pass tier-up notification to a player.
      */
     public static void sendSeasonTierUp(ServerPlayer player, SeasonTierUpPayload payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+            Objects.requireNonNull(player), Objects.requireNonNull(payload));
+    }
+
+    /**
+     * Send impact sync data to a player for HUD display.
+     * Called from DamageHandler when a player deals damage.
+     */
+    public static void sendImpactSync(ServerPlayer player, ImpactSyncPayload payload) {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }
