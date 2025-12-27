@@ -37,9 +37,9 @@ Agent 08 has successfully implemented all tasks related to **Cleanup & Migration
 
 | File | Description |
 |------|-------------|
-| `src/main/java/com/devmod/client/arena/ui/BuildProgressOverlay.java` | Server-side overlay with 4Hz rate limit and 1% delta threshold |
 | `src/main/java/com/devmod/client/arena/hud/BuildProgressHud.java` | Client-side HUD renderer with animated progress bar |
 | `src/main/java/com/devmod/arena/network/BuildProgressPayload.java` | 28-byte network payload with phase, progress, and flags |
+| (removed) `BuildProgressOverlay` | Orphanage cleanup removed unused overlay; HUD + payload remain |
 
 ### Testing (DD40-41)
 
@@ -48,7 +48,7 @@ Agent 08 has successfully implemented all tasks related to **Cleanup & Migration
 | `src/test/java/com/devmod/arena/validation/HardeningEdgeTests.java` | Edge case tests (malformed template, timeout, rollback, concurrency) |
 | `src/test/java/com/devmod/arena/cleanup/ArenaCleanupExecutorTest.java` | Unit tests for cleanup components |
 | `src/test/java/com/devmod/arena/monitor/MsptMonitorTest.java` | Unit tests for MSPT monitor |
-| `src/test/java/com/devmod/arena/ui/BuildProgressOverlayTest.java` | Unit tests for progress overlay |
+| (removed) `BuildProgressOverlayTest` | Orphanage cleanup removed tests tied to unused overlay |
 | `src/test/java/com/devmod/arena/fallback/RollbackTestScenario.java` | Rollback scenarios pre-deploy |
 | `jacoco-coverage-rules.gradle` | JaCoCo configuration with 80%/60%/50% thresholds |
 
@@ -112,7 +112,7 @@ Agent 08 has successfully implemented all tasks related to **Cleanup & Migration
 |------------|-------|
 | `ArenaCleanupExecutorTest` | Cleanup executor + verification |
 | `MsptMonitorTest` | MsptSample + MsptMonitor |
-| `BuildProgressOverlayTest` | Overlay + payload path |
+| (removed) `BuildProgressOverlayTest` | Orphanage cleanup removed tests tied to unused overlay |
 | `HardeningEdgeTests` | Edge cases (malformed template, timeout, rollback, concurrency) |
 
 ---

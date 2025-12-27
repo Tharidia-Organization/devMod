@@ -102,7 +102,7 @@ Panoramica aggiornata dell'architettura DevMod basata sul codice attuale.
 
 ### Mailbox UI
 - `mailbox/client/screen/MailboxScreen`, `MailboxComposeScreen`, `NewsScreen`, `TesterTaskScreen`
-- `mailbox/client/overlay/MailNotificationOverlay`, `NewsAlertOverlay`
+- Notifications via `notification/NotificationService` + `client/notification/render/UnifiedToastOverlay`
 
 ### Overlays/Rendering
 - `client/overlay/*`, `client/rendering/*`

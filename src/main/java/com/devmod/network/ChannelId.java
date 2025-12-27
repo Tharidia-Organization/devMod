@@ -33,10 +33,6 @@ public enum ChannelId {
     PERSONAL_RECORDS_SYNC(16, Direction.SERVER_TO_CLIENT, "PersonalRecordsSyncPayload"),
     REQUEST_PERSONAL_RECORDS(17, Direction.CLIENT_TO_SERVER, "RequestPersonalRecordsPayload"),
     BOSS_ALERT(18, Direction.SERVER_TO_CLIENT, "BossAlertPayload"),
-    BADGE_UNLOCK(19, Direction.SERVER_TO_CLIENT, "BadgeUnlockPayload"),
-    TOKEN_GAIN(20, Direction.SERVER_TO_CLIENT, "TokenGainPayload"),
-    RECORD_BANNER(21, Direction.SERVER_TO_CLIENT, "RecordBannerPayload"),
-    COMBO_DECAY(22, Direction.SERVER_TO_CLIENT, "ComboDecayPayload"),
     INSTANCE_LOADING(23, Direction.SERVER_TO_CLIENT, "InstanceLoadingPayload"),
     WAVE_DIRECTIVE_CHOICES(24, Direction.SERVER_TO_CLIENT, "WaveDirectiveChoicesPayload"),
     WAVE_DIRECTIVE_SELECTION(25, Direction.CLIENT_TO_SERVER, "WaveDirectiveSelectionPayload"),
@@ -46,7 +42,6 @@ public enum ChannelId {
     // NOTE: Channel 24 was previously used for PartyAction, moved to 26 to avoid confusion
     // ============================================================================
     PARTY_ACTION(26, Direction.CLIENT_TO_SERVER, "PartyActionPayload"),
-    PARTY_NOTIFICATION(27, Direction.SERVER_TO_CLIENT, "PartyNotificationPayload"),
     PARTY_SYNC(28, Direction.SERVER_TO_CLIENT, "PartySyncPayload"),
     QUEST_SEQUENCE(29, Direction.SERVER_TO_CLIENT, "QuestSequencePayload"),
     NAMED_INVITE(30, Direction.CLIENT_TO_SERVER, "NamedInvitePayload"),
@@ -65,7 +60,6 @@ public enum ChannelId {
     RECIPE_CLIENT_SYNC(41, Direction.SERVER_TO_CLIENT, "RecipeClientSyncPayload"),
     TELEMETRY_BATCH(42, Direction.CLIENT_TO_SERVER, "TelemetryBatchPayload"),
     EDITOR_APPLY_CONFIRM(43, Direction.SERVER_TO_CLIENT, "EditorApplyConfirmPayload"),
-    RESONANCE_NOTIFICATION(44, Direction.SERVER_TO_CLIENT, "ResonanceNotificationPayload"),
     CONTRACT_SYNC(45, Direction.SERVER_TO_CLIENT, "ContractSyncPayload"),
 
     // ============================================================================
@@ -112,11 +106,6 @@ public enum ChannelId {
     DEBUG_SYNC(91, Direction.SERVER_TO_CLIENT, "DebugSyncPayload"),
 
     // ============================================================================
-    // SEASON PASS CHANNELS (92-99)
-    // ============================================================================
-    SEASON_TIER_UP(92, Direction.SERVER_TO_CLIENT, "SeasonTierUpPayload"),
-
-    // ============================================================================
     // MAILBOX SYSTEM CHANNELS (100-115)
     // ============================================================================
     MAILBOX_SYNC(100, Direction.SERVER_TO_CLIENT, "MailboxSyncPayload"),
@@ -134,6 +123,7 @@ public enum ChannelId {
     TICKET_SYNC(112, Direction.SERVER_TO_CLIENT, "TicketSyncPayload"),
     TICKET_CREATE(113, Direction.CLIENT_TO_SERVER, "TicketCreatePayload"),
     TICKET_SYNC_REQUEST(114, Direction.CLIENT_TO_SERVER, "TicketSyncRequestPayload"),
+    TICKET_ACTION(115, Direction.CLIENT_TO_SERVER, "TicketActionPayload"),
 
     // ============================================================================
     // UNIFIED NOTIFICATION CENTER CHANNELS (120-129)

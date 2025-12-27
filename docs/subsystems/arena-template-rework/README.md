@@ -1,10 +1,11 @@
 # Arena Template Rework
 
 > Last updated: 2025-12-26
-> Status: CURRENT (index; verified against code)
+> Status: MIXED (index; aggiornato dopo orphanage cleanup)
 
-Questa cartella e' un indice/archivio del rework Arena Template. La documentazione
-operativa corrente e' in `docs/areas/arena/README.md`.
+Questa cartella e' un indice/archivio del rework Arena Template. Dopo l'orphanage cleanup
+molti componenti implementativi sono stati rimossi; usare questa cartella come riferimento
+storico e consultare la documentazione corrente in `docs/areas/arena/README.md`.
 
 ## Documenti attivi (CURRENT)
 

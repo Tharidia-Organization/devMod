@@ -80,9 +80,8 @@ com.devmod.mailbox/
 │   │   ├── MailboxComposeScreen.java    # UI composizione
 │   │   ├── NewsScreen.java              # UI notizie
 │   │   └── TesterTaskScreen.java        # UI task tester
-│   └── overlay/
-│       ├── MailNotificationOverlay.java # Toast nuovi msg
-│       └── NewsAlertOverlay.java        # Toast news importanti
+│   └── notifications/
+│       └── NotificationService + UnifiedToastOverlay # Toast unificati per mail/news
 └── api/
     ├── MailboxApiServer.java            # Server REST Javalin
     ├── AuthMiddleware.java              # Auth JWT middleware

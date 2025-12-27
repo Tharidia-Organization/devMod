@@ -298,7 +298,7 @@ Local schema files in this folder are **snapshots** of the canonical schemas und
 - `CleanupVerification.java` - EXISTS
 - `MsptMonitor.java` - EXISTS
 - `MsptSample.java` - EXISTS
-- `BuildProgressOverlay.java` - EXISTS
+- `BuildProgressOverlay.java` - REMOVED (orphanage cleanup)
 - `BuildProgressHud.java` - EXISTS
 - `BuildProgressPayload.java` - EXISTS (in network package)
 

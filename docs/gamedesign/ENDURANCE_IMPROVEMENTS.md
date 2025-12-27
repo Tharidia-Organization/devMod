@@ -356,7 +356,7 @@ Created comprehensive Season Pass system with dual reward tracks:
 - `src/main/java/com/devmod/endurance/season/SeasonPassSystem.java` - Core system
 - `src/main/java/com/devmod/endurance/season/PlayerSeasonProgress.java` - Player tracking
 - `src/main/java/com/devmod/endurance/season/SeasonPassPayload.java` - Network sync
-- `src/main/java/com/devmod/client/endurance/ClientSeasonCache.java` - Client cache
+- `src/main/java/com/devmod/client/endurance/ClientSeasonCache.java` - Client cache (removed in orphanage cleanup)
 
 **Season Structure**:
 
@@ -439,7 +439,7 @@ Created comprehensive Guild system with cooperative objectives:
 
 Created Ascension/New Game+ system for prestige reset with permanent bonuses:
 
-- `src/main/java/com/devmod/endurance/PrestigeResetSystem.java` - Core ascension mechanics
+- `src/main/java/com/devmod/endurance/PrestigeResetSystem.java` - Core ascension mechanics (removed in orphanage cleanup)
 
 **Ascension Levels** (10 total):
 
@@ -525,7 +525,7 @@ Created Ascension/New Game+ system for prestige reset with permanent bonuses:
 - `src/main/java/com/devmod/endurance/DirectiveChain.java`
 - `src/main/java/com/devmod/endurance/DirectiveChainManager.java`
 - `src/main/java/com/devmod/endurance/PerkSynergySystem.java`
-- `src/main/java/com/devmod/endurance/PrestigeResetSystem.java`
+- `src/main/java/com/devmod/endurance/PrestigeResetSystem.java` (removed in orphanage cleanup)
 
 ### Modified Files
 

@@ -97,7 +97,7 @@ public class NotificationSettingsScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
 
         int panelWidth = Math.min(PANEL_MAX_WIDTH, width - 32);
         int panelHeight = Math.min(PANEL_MAX_HEIGHT, height - 32);
@@ -106,18 +106,21 @@ public class NotificationSettingsScreen extends Screen {
 
         int panelAlpha = (int) (240 * easeOutCubic(Math.min(1f, (System.currentTimeMillis() - openedAt) / 240f)));
 
+        int shadowAlpha = Math.min(0x80, (int) (panelAlpha * 0.6f));
+        int shadowColor = NotificationUiTheme.withAlpha(0x000000, shadowAlpha);
+        graphics.fill(panelX - 8, panelY - 6, panelX + panelWidth + 8, panelY + panelHeight + 8, shadowColor);
+
         renderPanel(graphics, panelX, panelY, panelWidth, panelHeight, panelAlpha, mouseX, mouseY);
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
     public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_TOP, 0xFF);
-        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_BOTTOM, 0xFF);
+        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BACKDROP_TOP, 0xFF);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BACKDROP_BOTTOM, 0xFF);
         graphics.fillGradient(0, 0, width, height, top, bottom);
 
-        int stripeColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, 0x18);
-        for (int x = -height; x < width; x += 36) {
+        int stripeColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, 0x12);
+        for (int x = -height; x < width + height; x += 44) {
             graphics.fill(x, 0, x + 2, height, stripeColor);
         }
     }

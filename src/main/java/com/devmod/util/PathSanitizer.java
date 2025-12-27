@@ -68,7 +68,7 @@ public final class PathSanitizer {
 
     // Allowed file extensions for writing
     private static final Set<String> ALLOWED_WRITE_EXTENSIONS = Set.of(
-        ".json", ".txt", ".md", ".jsonl", ".csv"
+        ".json", ".txt", ".md", ".jsonl", ".csv", ".png"
     );
 
     // Maximum filename length

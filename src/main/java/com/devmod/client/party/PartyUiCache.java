@@ -5,22 +5,22 @@ import javax.annotation.Nullable;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.party.PartyNotificationPayload;
+import com.devmod.notification.PartyInviteActionData;
 
 @OnlyIn(Dist.CLIENT)
 public final class PartyUiCache {
     @Nullable
-    private static volatile PartyNotificationPayload lastInvite;
+    private static volatile PartyInviteActionData lastInvite;
 
     private PartyUiCache() {}
 
-    public static void setLastInvite(@Nullable PartyNotificationPayload payload) {
+    public static void setLastInvite(@Nullable PartyInviteActionData payload) {
         lastInvite = payload;
     }
 
     @Nullable
-    public static PartyNotificationPayload getActiveInvite() {
-        PartyNotificationPayload invite = lastInvite;
+    public static PartyInviteActionData getActiveInvite() {
+        PartyInviteActionData invite = lastInvite;
         if (invite == null) {
             return null;
         }

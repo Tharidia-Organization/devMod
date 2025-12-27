@@ -18,6 +18,8 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.testing.ModDiscoveryService.ModInfo;
 import com.devmod.testing.TestCase.TestPriority;
+import com.devmod.testing.config.ConfigurableTestTemplate;
+import com.devmod.testing.config.ModTestConfig;
 
 public class DynamicTestGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTestGenerator.class);
@@ -27,6 +29,7 @@ public class DynamicTestGenerator {
     // Generated tests organized by mod (thread-safe for 100-1000 concurrent users)
     private final Map<String, List<TestCase>> generatedTests = new ConcurrentHashMap<>();
     private final AtomicBoolean hasGenerated = new AtomicBoolean(false);
+    private final AtomicBoolean configTemplatesLoaded = new AtomicBoolean(false);
 
     // Test templates for different content types (thread-safe)
     private final List<TestTemplate> templates = new CopyOnWriteArrayList<>();
@@ -83,6 +86,25 @@ public class DynamicTestGenerator {
         templates.add(new GenericModTestTemplate());
     }
 
+    private void registerConfigTemplates() {
+        if (!configTemplatesLoaded.compareAndSet(false, true)) {
+            return;
+        }
+
+        ModTestConfig.init();
+        for (ModInfo mod : ModDiscoveryService.INSTANCE.getAllMods()) {
+            ModTestConfig.TestTemplateConfig config = ModTestConfig.loadConfig(mod.getModId());
+            if (config == null) {
+                continue;
+            }
+            if (config.modId == null || config.modId.isBlank()) {
+                config.modId = mod.getModId();
+            }
+            templates.add(new ConfigurableTestTemplate(config));
+            LOGGER.info("[DynamicTestGenerator] Registered config template for {}", config.modId);
+        }
+    }
+
     /**
      * Template for DevMod core functionality tests.
      * Always generates tests regardless of mod content.
@@ -133,6 +155,7 @@ public class DynamicTestGenerator {
 
         // Ensure mods are scanned
         ModDiscoveryService.INSTANCE.scanMods();
+        registerConfigTemplates();
 
         int totalTests = 0;
 

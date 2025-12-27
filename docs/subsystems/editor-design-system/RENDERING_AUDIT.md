@@ -224,13 +224,13 @@ These use `GuiGraphics` for 2D screen-space rendering. Shader conversion is **NO
 | File | Purpose | Shader Candidate? |
 |------|---------|-------------------|
 | `HeadshotFlashEffect.java` | Red screen flash | NO - simple fill() |
-| `BadgePopupOverlay.java` | Badge unlock popup | NO - complex 2D animation, already optimized |
+| (removed) `BadgePopupOverlay.java` | Badge unlock popup (now NotificationService/UnifiedToastOverlay) | NO - replaced by unified toast |
 
 ### 2.3 Quest/Economy HUD
 All use GuiGraphics - NOT shader candidates:
 - `EnduranceQuestOverlay.java`
-- `ComboDecayOverlay.java`
-- `TokenGainOverlay.java`
+- (removed) `ComboDecayOverlay.java` (now NotificationService/UnifiedToastOverlay)
+- (removed) `TokenGainOverlay.java` (now NotificationService/UnifiedToastOverlay)
 - `EconomyOverlay.java`
 - `BossPhaseOverlay.java`
 - `PartyHudOverlay.java`
@@ -238,7 +238,7 @@ All use GuiGraphics - NOT shader candidates:
 - `SkillEfficacyOverlay.java`
 
 ### 2.4 Status/Info HUD
-- `RecordBannerOverlay.java`
+- (removed) `RecordBannerOverlay.java` (now NotificationService/UnifiedToastOverlay)
 - `TelemetryStatusOverlay.java`
 - `OnboardingOverlay.java`
 - `QuickHelpOverlay.java`

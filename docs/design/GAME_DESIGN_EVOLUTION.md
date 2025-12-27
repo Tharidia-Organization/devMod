@@ -24,7 +24,7 @@
 ### P1 - Blood Contracts System ✅ COMPLETE
 
 - [x] Create `BloodContract.java` - contract definition
-- [x] Create `BloodContractRegistry.java` - available contracts (8 contracts)
+- [x] Create `BloodContractRegistry.java` - available contracts (8 contracts) (removed in orphanage cleanup)
 - [x] Create `ActiveContractManager.java` - runtime tracking
 - [x] Add contract effects to wave mechanics
 - [x] Create `ContractSyncPayload.java` - network sync

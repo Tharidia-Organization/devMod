@@ -21,6 +21,7 @@ import com.devmod.telemetry.spatial.BacktrackingService;
 import com.devmod.telemetry.spatial.DesireLinesService;
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
+import com.devmod.util.PathSanitizer;
 
 public class CsvExporter {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -79,7 +80,8 @@ public class CsvExporter {
         if (heatmap.isEmpty()) return 0;
 
         String filename = String.format("heatmap_%s_%s.csv", type, timestamp);
-        Path file = exportDir.resolve(filename);
+        Path file = sanitizeOutput(exportDir.resolve(filename), "heatmap CSV");
+        if (file == null) return 0;
 
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
             // Header
@@ -113,7 +115,8 @@ public class CsvExporter {
         if (roomStats.isEmpty()) return 0;
 
         String filename = String.format("room_stats_%s.csv", timestamp);
-        Path file = exportDir.resolve(filename);
+        Path file = sanitizeOutput(exportDir.resolve(filename), "room stats CSV");
+        if (file == null) return 0;
 
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
             // Header
@@ -151,7 +154,8 @@ public class CsvExporter {
         if (summaries.isEmpty()) return 0;
 
         String filename = String.format("dungeon_runs_%s.csv", timestamp);
-        Path file = exportDir.resolve(filename);
+        Path file = sanitizeOutput(exportDir.resolve(filename), "dungeon runs CSV");
+        if (file == null) return 0;
 
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
             // Header
@@ -180,7 +184,8 @@ public class CsvExporter {
         if (allStats.isEmpty()) return 0;
 
         String filename = String.format("backtracking_%s.csv", timestamp);
-        Path file = exportDir.resolve(filename);
+        Path file = sanitizeOutput(exportDir.resolve(filename), "backtracking CSV");
+        if (file == null) return 0;
 
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
             // Header
@@ -218,7 +223,8 @@ public class CsvExporter {
         if (allSegments.isEmpty()) return 0;
 
         String filename = String.format("desire_lines_%s.csv", timestamp);
-        Path file = exportDir.resolve(filename);
+        Path file = sanitizeOutput(exportDir.resolve(filename), "desire lines CSV");
+        if (file == null) return 0;
 
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
             // Header
@@ -251,7 +257,8 @@ public class CsvExporter {
         var stats = RoomEntityCounter.INSTANCE.getGlobalStats();
 
         String filename = String.format("entity_counts_%s.csv", timestamp);
-        Path file = exportDir.resolve(filename);
+        Path file = sanitizeOutput(exportDir.resolve(filename), "entity counts CSV");
+        if (file == null) return 0;
 
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
             // Header
@@ -293,6 +300,14 @@ public class CsvExporter {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
+    }
+
+    private static Path sanitizeOutput(Path file, String label) {
+        Path safe = PathSanitizer.sanitizeForWrite(file);
+        if (safe == null) {
+            LOGGER.warn("[DevMod] Skipping {} export; unsafe path: {}", label, file);
+        }
+        return safe;
     }
 
     /**

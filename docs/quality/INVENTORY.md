@@ -3,6 +3,8 @@
 > Last updated: 2025-12-26
 > Status: HISTORICAL (snapshot; refresh before use)
 
+Nota 2025-12-27: orphanage cleanup ha rimosso diverse classi (es. DebugClientRenderer, AdvancedArenaTemplateValidator, BloodContractRegistry). Questo inventario e' quindi parzialmente obsoleto.
+
 **Date**: 2025-12-26
 **Total Java Files**: 1159
 **Total LOC**: ~355,000 (estimated)

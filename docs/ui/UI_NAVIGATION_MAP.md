@@ -90,7 +90,7 @@ flowchart TD
 
     subgraph Onboarding["Onboarding"]
         WELCOME["Welcome Screen<br/>WelcomeScreen"]
-        WELCOME_TOAST["Welcome Toast<br/>WelcomeToastOverlay"]
+        WELCOME_TOAST["Welcome Notification<br/>UnifiedToastOverlay"]
         EXTERNAL_CONFIRM["External Link Confirm"]
     end
 
@@ -414,5 +414,5 @@ The following screens are opened by server-to-client network packets:
 | QuestDeathPayload | QuestDeathScreen | Player death in quest |
 | QuestCompletionPayload | QuestCompletionScreen | Quest victory |
 | WaveDirectivePayload | WaveDirectiveScreen | Between waves |
-| PartyNotificationPayload | InvitePopupScreen | Party invite received |
+| UnifiedNotificationPayload (PartyInviteActionData) | InvitePopupScreen | Party invite received |
 | QuestSequencePayload | WaveCheckpointScreen | Checkpoint reached |

@@ -41,7 +41,6 @@ import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.network.NetworkHandler;
 import com.devmod.network.PacketValidator;
 import com.devmod.network.PacketValidator.ValidationResult;
-import com.devmod.notification.NotificationService;
 import com.devmod.util.I18n;
 
 public final class EnduranceNetworkHandler extends NetworkHandlerBase {
@@ -558,52 +557,6 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     public static void sendBossAlert(ServerPlayer player, long durationMs, String bossType) {
         BossAlertPayload payload = new BossAlertPayload(durationMs, bossType);
         sendPacket(player, payload);
-    }
-
-    // =================================================================================
-    // BADGE UNLOCK
-    // =================================================================================
-    /**
-     * Send a badge unlock notification.
-     * Delegates to NotificationService for unified delivery (overlay + mailbox).
-     */
-    public static void sendBadgeUnlock(ServerPlayer player, String badgeName, String rarity) {
-        NotificationService.INSTANCE.notifyBadgeUnlock(player.getUUID(), badgeName, rarity);
-    }
-
-    // =================================================================================
-    // TOKEN GAIN ANIMATION
-    // =================================================================================
-    /**
-     * Send a token gain notification.
-     * Delegates to NotificationService for unified delivery.
-     */
-    public static void sendTokenGain(ServerPlayer player, int amount) {
-        if (amount > 0) {
-            NotificationService.INSTANCE.notifyTokenGain(player.getUUID(), amount, null);
-        }
-    }
-
-    // =================================================================================
-    // RECORD BANNER
-    // =================================================================================
-    /**
-     * Send a personal record notification.
-     * Delegates to NotificationService for unified delivery (overlay + mailbox).
-     */
-    public static void sendRecordBanner(ServerPlayer player, String recordType, String recordValue) {
-        NotificationService.INSTANCE.notifyRecord(player.getUUID(), recordType, recordValue);
-    }
-
-    // =================================================================================
-    // COMBO DECAY FEEDBACK
-    // =================================================================================
-    /**
-     * Send a combo decay notification.
-     * Delegates to NotificationService for unified delivery.
-     */
-    public static void sendComboDecay(ServerPlayer player, int lostCombo, int previousRank, int newRank) {
-        NotificationService.INSTANCE.notifyComboDecay(player.getUUID(), lostCombo, previousRank, newRank);
     }
 
     // =================================================================================

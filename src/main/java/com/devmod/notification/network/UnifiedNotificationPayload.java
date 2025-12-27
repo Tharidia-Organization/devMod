@@ -18,7 +18,6 @@ import com.devmod.notification.NotificationPriority;
 
 /**
  * Unified network payload for all notification types.
- * Replaces BadgeUnlockPayload, TokenGainPayload, RecordBannerPayload, etc.
  */
 public record UnifiedNotificationPayload(
         UUID notificationId,

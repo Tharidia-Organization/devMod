@@ -95,7 +95,7 @@ import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.endurance.QuestCompletionPayload;
 import com.devmod.endurance.StartQuestPayload;
-import com.devmod.party.PartyNotificationPayload;
+import com.devmod.notification.PartyInviteActionData;
 import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
 import com.devmod.telemetry.TelemetryService;
@@ -589,7 +589,7 @@ public final class DevModClientActions {
             .menuPath("Root/Debug/Tester Tasks")
             .icon(Items.WRITTEN_BOOK)
             .precondition(testerPrecondition())
-            .handler(context -> com.devmod.mailbox.client.screen.TesterTaskScreen.open())
+            .handler(context -> NotificationCenterScreen.open("TASKS", null))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_PARTY_INVITE_POPUP_OPEN)
@@ -601,7 +601,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly().and(
                 ActionPreconditions.withMessage(
                     context -> PartyUiCache.getActiveInvite() != null
-                        || context.getPayload(PartyNotificationPayload.class) != null,
+                        || context.getPayload(PartyInviteActionData.class) != null,
                     "devmod.action.party_invite.missing"
                 )))
             .handler(DevModClientActions::openPartyInvite)
@@ -2474,7 +2474,7 @@ public final class DevModClientActions {
     }
 
     private static void openPartyInvite(ActionContext context) {
-        PartyNotificationPayload payload = context.getPayload(PartyNotificationPayload.class);
+        PartyInviteActionData payload = context.getPayload(PartyInviteActionData.class);
         if (payload == null) {
             payload = PartyUiCache.getActiveInvite();
         }
@@ -2482,7 +2482,7 @@ public final class DevModClientActions {
             context.sendFailure(Component.translatable("devmod.action.party_invite.missing"));
             return;
         }
-        Minecraft.getInstance().setScreen(InvitePopupScreen.fromNotification(payload));
+        Minecraft.getInstance().setScreen(InvitePopupScreen.fromActionData(payload));
     }
 
     private static void openArenaQuickTestWizard(ActionContext context) {

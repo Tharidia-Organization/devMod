@@ -11,7 +11,6 @@
 |-----------|---------|--------|
 | `ShakeManager.INSTANCE` | `com.devmod.client.effects` | Client-only |
 | `TrailManager.INSTANCE` | `com.devmod.client.effects` | Client-only |
-| `DebugClientRenderer.INSTANCE` | `com.devmod.debug.client` | Client-only |
 | `IntegratedTestSession.INSTANCE` | `com.devmod.client.testing` | Client-only |
 | `QANotificationSystem.INSTANCE` | `com.devmod.client.testing` | Client-only |
 | `ClientTelemetryBuffer.INSTANCE` | `com.devmod.client.telemetry` | Client-only |

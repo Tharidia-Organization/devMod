@@ -1,7 +1,7 @@
 # Arena System
 
 > Last updated: 2025-12-26
-> Status: CURRENT (verified against code)
+> Status: CURRENT (aggiornato dopo orphanage cleanup)
 
 The Arena system manages template-driven arenas: registry/validation, policy resolution, build execution, and operational tooling.
 
@@ -17,38 +17,38 @@ The Arena system manages template-driven arenas: registry/validation, policy res
 
 ### Registry + Policy
 
-- `com.devmod.arena.registry` (ArenaTemplateRegistry, TemplateRegistryBootstrap, TemplateLoader, TemplateValidator, HotReloadManager, StructureManifest*)
-- `com.devmod.arena.policy` (PolicyResolver, ArenaPolicyRegistry, ResolveContext, ResolvedArena, PolicySchemaValidator, PolicyMutatorResolver, VersionCompatibilityChecker)
+- `com.devmod.arena.registry` (ArenaTemplateRegistry, TemplateRegistryBootstrap, TemplateLoader, TemplateValidator, TemplateDirectoryWatcher, StructureManifest*)
+- `com.devmod.arena.policy` (PolicyResolver, ArenaPolicyRegistry, ResolveContext, ResolvedArena, PolicySchemaValidator, VersionCompatibilityChecker)
 
 ### Build + Runtime
 
 - `com.devmod.arena.builder` (ArenaBuilder, TemplateArenaBuilder, AsyncArenaBuilder, BuildTransaction, BuildDryRun, BuildDryRunCalculator, ChunkLoadingManager)
 - `com.devmod.arena.concurrency` (TemplateLockManager, ArenaBuildRateLimiter, BuildPermit)
-- `com.devmod.arena.validation` (RuntimePreflightCheck, AdvancedArenaTemplateValidator, SecurityLimitsEnforcer)
-- `com.devmod.arena.cleanup` (ArenaCleanupExecutor, CleanupVerification, CleanupResidualChecker)
-- `com.devmod.arena.fallback` (FallbackBuildStrategy, CircuitBreaker, GracefulDegradationManager)
+- `com.devmod.arena.validation` (SecurityLimitsEnforcer)
+- `com.devmod.arena.cleanup` (ArenaCleanupExecutor, CleanupVerification)
+- `com.devmod.arena.fallback` (CircuitBreaker, FallbackMetrics)
 - `com.devmod.arena.pool` (PrebuildPoolManager, PooledArena)
 
 ### Ops + Telemetry
 
 - `com.devmod.arena.autosmoke` (AutosmokeRunner, AutosmokeScheduler, AutosmokeReportWriter, AutosmokeThresholds)
 - `com.devmod.arena.logging` (LogAggregationPipeline, NdjsonWriter, DuckDbDestination)
-- `com.devmod.arena.telemetry` / `com.devmod.arena.metrics` (ArenaTelemetry, ArenaBuildTelemetry, BuildTelemetry)
+- `com.devmod.arena.telemetry` / `com.devmod.arena.metrics` (ArenaTelemetry, ArenaMetricsContext, MetricsCompatibilityLayer)
 - `com.devmod.arena.alert` (AlertRouter + channels)
-- `com.devmod.arena.monitoring` (BuildOutcomeMonitor, DashboardValidationJob, AnomalyThresholds)
+- `com.devmod.arena.monitoring` (BuildOutcomeMonitor)
 
 ### APIs + Integration
 
 - `com.devmod.arena.command` (ArenaCommands, ArenaActionRegistry) registered by `ArenaCommandEvents`
-- `com.devmod.arena.api` (ArenaService, ArenaHandle, ResolveOptions)
-- `com.devmod.arena.integration` (ArenaQuestIntegration, MinecraftBlockPlacer, MinecraftEntitySpawner)
+- `com.devmod.arena.api` (ArenaHandle)
+- `com.devmod.arena.integration` (MinecraftBlockPlacer, MinecraftEntitySpawner)
 - `com.devmod.arena.override` (TemplateOverrideManager, ForceTemplateCapability)
 - `com.devmod.arena.snapshot` / `com.devmod.arena.recovery` / `com.devmod.arena.identity`
 
 ## Entry Points
 
 - `/arena` commands via `ArenaCommandEvents` -> `ArenaCommands`.
-- Programmatic access via `ArenaService` (prepare/resolve/release).
+- Programmatic access via `ArenaActionRegistry`/`ArenaActionBridge` (no `ArenaService`).
 - Client build progress via `BuildProgressPayload`.
 
 ## Data + Config

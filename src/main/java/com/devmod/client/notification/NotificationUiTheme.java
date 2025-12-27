@@ -16,6 +16,8 @@ public final class NotificationUiTheme {
 
     public static final int RGB_PANEL_TOP = 0x2A2319;
     public static final int RGB_PANEL_BOTTOM = 0x162227;
+    public static final int RGB_BACKDROP_TOP = mix(RGB_PANEL_TOP, 0x000000, 0.45f);
+    public static final int RGB_BACKDROP_BOTTOM = mix(RGB_PANEL_BOTTOM, 0x000000, 0.55f);
     public static final int RGB_PANEL_INNER_TOP = 0x30281E;
     public static final int RGB_PANEL_INNER_BOTTOM = 0x1B252A;
 

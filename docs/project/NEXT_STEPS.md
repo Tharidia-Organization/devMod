@@ -55,12 +55,7 @@ private void renderSourceBadge(GuiGraphics g, int x, int y, SourceType source) {
 ## 🔧 INTEGRATION TASKS
 
 ### 4. Update ArmorConfigManager
-```java
-// Replace getStats() to use migration helper
-public static ArmorStats getStats(ItemStack stack) {
-    return ArmorMigrationHelper.getStatsWithMigration(stack);
-}
-```
+`ArmorMigrationHelper` rimosso in orphanage cleanup: definire un nuovo percorso di migrazione o rimuovere la dipendenza nei metodi `getStats()`.
 
 ### 5. Server Handler for V2 Payload
 ```java

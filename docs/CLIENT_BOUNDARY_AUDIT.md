@@ -52,17 +52,10 @@ All files below are in correct client packages but lack `@OnlyIn(Dist.CLIENT)`:
 | ClientVFXHelper.java | Minecraft | Classloading risk |
 | DevModClient.java | Minecraft | Entry point - critical |
 
-### Arena HUD (3 files)
+### Arena HUD (1 file)
 | File | Client API Used |
 |------|-----------------|
-| ArenaDebugHud.java | Minecraft |
-| ArenaHudKeyBinding.java | KeyMapping |
 | BuildProgressHud.java | Minecraft |
-
-### Arena UI (1 file)
-| File | Client API Used |
-|------|-----------------|
-| BuildProgressOverlay.java | Minecraft |
 
 ### Attributes (3 files)
 | File | Client API Used |

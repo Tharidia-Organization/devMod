@@ -134,7 +134,6 @@ This document provides a high-level overview of the DevMod architecture. You can
 
 - **HUD Overlays**: `com.devmod.hud`
   - `ImpactHudOverlay`
-  - `ComboDecayOverlay`
   - `EnduranceQuestOverlay`
 - **Screens (UI)**: `com.devmod.ui`
   - `UnifiedSettingsScreen`
@@ -177,7 +176,7 @@ This document provides a high-level overview of the DevMod architecture. You can
 - `PartySyncPayload` (S2C)
 - `QuestSyncPayload` (S2C)
 - `PerkChoicesPayload` (S2C)
-- `TokenGainPayload` (S2C)
+- `UnifiedNotificationPayload` (S2C)
 
 ---
 

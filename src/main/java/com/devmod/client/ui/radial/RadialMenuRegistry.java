@@ -764,6 +764,7 @@ public final class RadialMenuRegistry {
             .iconStack(stack(Items.PLAYER_HEAD))
             .item(RadialMenuItem.registry(ActionIds.UI_PARTY_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_PARTY_INVITE_POPUP_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_NOTIFICATION_CENTER_OPEN))
             .build());
     }
 }

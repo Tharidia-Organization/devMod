@@ -31,6 +31,7 @@ import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.notification.NotificationService;
 
 public class WeeklyChallengeManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(WeeklyChallengeManager.class);
@@ -559,6 +560,14 @@ public class WeeklyChallengeManager {
         // Award prestige
         RewardSystem.INSTANCE.getWallet(player.getUUID())
                 .addCurrency(RewardSystem.Currency.PRESTIGE, challenge.getPrestigeReward());
+
+        NotificationService.INSTANCE.notifyChallengeReward(
+            player.getUUID(),
+            "weekly",
+            challenge.getName().getString(),
+            challenge.getTokenReward(),
+            challenge.getPrestigeReward()
+        );
 
         LOGGER.info("[WeeklyChallengeManager] Awarded {} tokens and {} prestige to {} for weekly challenge {}",
                 challenge.getTokenReward(), challenge.getPrestigeReward(),

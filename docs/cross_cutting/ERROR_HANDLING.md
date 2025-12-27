@@ -21,8 +21,7 @@ Arena registry and validation errors are modeled explicitly:
 
 ## Fallback and Recovery
 
-- Arena failures are routed through `ArenaFailureHandler` and `FallbackBuildStrategy`.
-- Recovery helpers exist for arena templates (`TemplateRecoveryHandler`).
+- Legacy arena failure helpers (`ArenaFailureHandler`, `FallbackBuildStrategy`, `TemplateRecoveryHandler`) removed in orphanage cleanup.
 - Instance recovery is handled by `com.devmod.runtime.RecoverySystem`.
 
 ## Alert Routing

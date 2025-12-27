@@ -21,9 +21,7 @@ import com.devmod.DevMod;
 import com.devmod.abilities.AbilityActionPayload;
 import com.devmod.abilities.StaminaSyncPayload;
 import com.devmod.arena.network.BuildProgressPayload;
-import com.devmod.endurance.BadgeUnlockPayload;
 import com.devmod.endurance.BossAlertPayload;
-import com.devmod.endurance.ComboDecayPayload;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.InstanceLoadingPayload;
@@ -35,7 +33,6 @@ import com.devmod.endurance.QuestActionPayload;
 import com.devmod.endurance.QuestCompletionPayload;
 import com.devmod.endurance.QuestDeathPayload;
 import com.devmod.endurance.QuestSyncPayload;
-import com.devmod.endurance.RecordBannerPayload;
 import com.devmod.endurance.RequestPersonalRecordsPayload;
 import com.devmod.endurance.RequestShopSyncPayload;
 import com.devmod.endurance.RewardSystem;
@@ -43,14 +40,12 @@ import com.devmod.endurance.ShopPurchasePayload;
 import com.devmod.endurance.ShopSyncPayload;
 import com.devmod.endurance.StartQuestPayload;
 import com.devmod.endurance.TensionUpdatePayload;
-import com.devmod.endurance.TokenGainPayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
-import com.devmod.endurance.resonance.ResonanceNotificationPayload;
-import com.devmod.endurance.season.SeasonTierUpPayload;
+import com.devmod.mailbox.network.payload.TicketActionPayload;
 import com.devmod.mailbox.network.payload.TicketCreatePayload;
 import com.devmod.mailbox.network.payload.TicketSyncPayload;
 import com.devmod.mailbox.network.payload.TicketSyncRequestPayload;
@@ -68,7 +63,6 @@ import com.devmod.party.CancelSequencePayload;
 import com.devmod.party.InviteResponsePayload;
 import com.devmod.party.NamedInvitePayload;
 import com.devmod.party.PartyActionPayload;
-import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
@@ -78,12 +72,10 @@ import static com.devmod.DevMod.MODID;
 import static com.devmod.network.ChannelId.ABILITY_ACTION;
 import static com.devmod.network.ChannelId.ARMOR_STATS;
 import static com.devmod.network.ChannelId.ARRIVAL_CONFIRM;
-import static com.devmod.network.ChannelId.BADGE_UNLOCK;
 import static com.devmod.network.ChannelId.BOSS_ALERT;
 import static com.devmod.network.ChannelId.BUILD_PROGRESS;
 import static com.devmod.network.ChannelId.CANCEL_SEQUENCE;
 import static com.devmod.network.ChannelId.CHALLENGE_SYNC;
-import static com.devmod.network.ChannelId.COMBO_DECAY;
 import static com.devmod.network.ChannelId.CONTRACT_SYNC;
 import static com.devmod.network.ChannelId.EDITOR_APPLY_CONFIRM;
 import static com.devmod.network.ChannelId.EQUIP_MOB;
@@ -107,7 +99,6 @@ import static com.devmod.network.ChannelId.NAMED_INVITE;
 import static com.devmod.network.ChannelId.NEWS_READ;
 import static com.devmod.network.ChannelId.NEWS_SYNC;
 import static com.devmod.network.ChannelId.PARTY_ACTION;
-import static com.devmod.network.ChannelId.PARTY_NOTIFICATION;
 import static com.devmod.network.ChannelId.PARTY_SYNC;
 import static com.devmod.network.ChannelId.PERK_CHOICES;
 import static com.devmod.network.ChannelId.PERK_SELECTION;
@@ -120,11 +111,8 @@ import static com.devmod.network.ChannelId.QUEST_SYNC;
 import static com.devmod.network.ChannelId.RANGED_WEAPON_STATS;
 import static com.devmod.network.ChannelId.RECIPE_CLIENT_SYNC;
 import static com.devmod.network.ChannelId.RECIPE_SYNC;
-import static com.devmod.network.ChannelId.RECORD_BANNER;
 import static com.devmod.network.ChannelId.REQUEST_PERSONAL_RECORDS;
 import static com.devmod.network.ChannelId.REQUEST_SHOP_SYNC;
-import static com.devmod.network.ChannelId.RESONANCE_NOTIFICATION;
-import static com.devmod.network.ChannelId.SEASON_TIER_UP;
 import static com.devmod.network.ChannelId.SHIELD_IMPACT;
 import static com.devmod.network.ChannelId.SHIELD_SHATTER;
 import static com.devmod.network.ChannelId.SHIELD_STATE;
@@ -134,12 +122,12 @@ import static com.devmod.network.ChannelId.STAMINA_SYNC;
 import static com.devmod.network.ChannelId.START_QUEST;
 import static com.devmod.network.ChannelId.TASK_ACTION;
 import static com.devmod.network.ChannelId.TASK_SYNC;
+import static com.devmod.network.ChannelId.TICKET_ACTION;
 import static com.devmod.network.ChannelId.TICKET_CREATE;
 import static com.devmod.network.ChannelId.TICKET_SYNC;
 import static com.devmod.network.ChannelId.TICKET_SYNC_REQUEST;
 import static com.devmod.network.ChannelId.TELEMETRY_BATCH;
 import static com.devmod.network.ChannelId.TENSION_UPDATE;
-import static com.devmod.network.ChannelId.TOKEN_GAIN;
 import static com.devmod.network.ChannelId.UNIFIED_NOTIFICATION;
 import static com.devmod.network.ChannelId.NOTIFICATION_PREFS_SYNC;
 import static com.devmod.network.ChannelId.NOTIFICATION_PREFS_UPDATE;
@@ -167,8 +155,6 @@ public class NetworkHandler {
 
         void handleConfigEditorApplyConfirm(EditorApplyConfirmPayload payload);
 
-        void handleResonanceTriggered(ResonanceNotificationPayload payload);
-
         void handleContractSync(ContractSyncPayload payload);
 
         void handleMobConfigConfirm(MobConfigConfirmPayload payload);
@@ -191,8 +177,6 @@ public class NetworkHandler {
 
         void handlePersonalRecordsSync(PersonalRecordsSyncPayload payload);
 
-        void handlePartyNotification(PartyNotificationPayload payload);
-
         void handlePartySync(PartySyncPayload payload);
 
         void handleQuestSequence(QuestSequencePayload payload);
@@ -205,14 +189,6 @@ public class NetworkHandler {
 
         void handleBossAlert(BossAlertPayload payload);
 
-        void handleBadgeUnlock(BadgeUnlockPayload payload);
-
-        void handleTokenGain(TokenGainPayload payload);
-
-        void handleRecordBanner(RecordBannerPayload payload);
-
-        void handleComboDecay(ComboDecayPayload payload);
-
         void handleTensionUpdate(TensionUpdatePayload payload);
 
         void handleStaminaSync(StaminaSyncPayload payload);
@@ -222,8 +198,6 @@ public class NetworkHandler {
         void handleChallengeSync(ChallengeSyncPayload payload);
 
         void handleLvcSync(LVCSyncPayload payload);
-
-        void handleSeasonTierUp(SeasonTierUpPayload payload);
 
         // Mailbox system handlers
         void handleMailboxSync(com.devmod.mailbox.network.payload.MailboxSyncPayload payload);
@@ -368,16 +342,6 @@ public class NetworkHandler {
                     }
                 }
         );
-        event.registrar(RESONANCE_NOTIFICATION.asString()).playToClient(
-                nn(com.devmod.endurance.resonance.ResonanceNotificationPayload.TYPE),
-                nn(com.devmod.endurance.resonance.ResonanceNotificationPayload.STREAM_CODEC),
-                (payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleResonanceTriggered(payload)));
-                    }
-                }
-        );
         event.registrar(CONTRACT_SYNC.asString()).playToClient(
                 nn(com.devmod.endurance.contracts.ContractSyncPayload.TYPE),
                 nn(com.devmod.endurance.contracts.ContractSyncPayload.STREAM_CODEC),
@@ -507,46 +471,6 @@ public class NetworkHandler {
                     }
                 }
         );
-        event.registrar(BADGE_UNLOCK.asString()).playToClient(
-                nn(BadgeUnlockPayload.TYPE),
-                nn(BadgeUnlockPayload.STREAM_CODEC),
-                (payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleBadgeUnlock(payload)));
-                    }
-                }
-        );
-        event.registrar(TOKEN_GAIN.asString()).playToClient(
-                nn(TokenGainPayload.TYPE),
-                nn(TokenGainPayload.STREAM_CODEC),
-                (payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleTokenGain(payload)));
-                    }
-                }
-        );
-        event.registrar(RECORD_BANNER.asString()).playToClient(
-                nn(RecordBannerPayload.TYPE),
-                nn(RecordBannerPayload.STREAM_CODEC),
-                (payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleRecordBanner(payload)));
-                    }
-                }
-        );
-        event.registrar(COMBO_DECAY.asString()).playToClient(
-                nn(ComboDecayPayload.TYPE),
-                nn(ComboDecayPayload.STREAM_CODEC),
-                (payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleComboDecay(payload)));
-                    }
-                }
-        );
         event.registrar(TENSION_UPDATE.asString()).playToClient(
                 nn(TensionUpdatePayload.TYPE),
                 nn(TensionUpdatePayload.STREAM_CODEC),
@@ -581,11 +505,6 @@ public class NetworkHandler {
                 nn(PartyActionPayload.TYPE),
                 nn(PartyActionPayload.STREAM_CODEC),
                 PartyNetworkHandler::handlePartyAction
-        );
-        event.registrar(PARTY_NOTIFICATION.asString()).playToClient(
-                nn(PartyNotificationPayload.TYPE),
-                nn(PartyNotificationPayload.STREAM_CODEC),
-                PartyNetworkHandler::handlePartyNotification
         );
         event.registrar(PARTY_SYNC.asString()).playToClient(
                 nn(PartySyncPayload.TYPE),
@@ -709,21 +628,6 @@ public class NetworkHandler {
         );
 
         // ===================================================================
-        // SEASON PASS CHANNELS (92-99) - see ChannelId enum
-        // ===================================================================
-
-        event.registrar(SEASON_TIER_UP.asString()).playToClient(
-                nn(SeasonTierUpPayload.TYPE),
-                nn(SeasonTierUpPayload.STREAM_CODEC),
-                (payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleSeasonTierUp(payload)));
-                    }
-                }
-        );
-
-        // ===================================================================
         // MAILBOX SYSTEM CHANNELS (100-115) - see ChannelId enum
         // ===================================================================
 
@@ -822,6 +726,11 @@ public class NetworkHandler {
                 nn(TicketCreatePayload.STREAM_CODEC),
                 com.devmod.mailbox.network.TicketNetworkHandler::handleTicketCreate
         );
+        event.registrar(TICKET_ACTION.asString()).playToServer(
+                nn(TicketActionPayload.TYPE),
+                nn(TicketActionPayload.STREAM_CODEC),
+                com.devmod.mailbox.network.TicketNetworkHandler::handleTicketAction
+        );
         event.registrar(TICKET_SYNC_REQUEST.asString()).playToServer(
                 nn(TicketSyncRequestPayload.TYPE),
                 nn(TicketSyncRequestPayload.STREAM_CODEC),
@@ -916,34 +825,6 @@ public class NetworkHandler {
     }
 
     /**
-     * Send badge unlock notification to a player.
-     */
-    public static void sendBadgeUnlock(ServerPlayer player, String badgeName, String rarity) {
-        EnduranceNetworkHandler.sendBadgeUnlock(player, badgeName, rarity);
-    }
-
-    /**
-     * Send token gain animation to a player.
-     */
-    public static void sendTokenGain(ServerPlayer player, int amount) {
-        EnduranceNetworkHandler.sendTokenGain(player, amount);
-    }
-
-    /**
-     * Send record banner notification to a player.
-     */
-    public static void sendRecordBanner(ServerPlayer player, String recordType, String recordValue) {
-        EnduranceNetworkHandler.sendRecordBanner(player, recordType, recordValue);
-    }
-
-    /**
-     * Send combo decay feedback to a player.
-     */
-    public static void sendComboDecay(ServerPlayer player, int lostCombo, int previousRank, int newRank) {
-        EnduranceNetworkHandler.sendComboDecay(player, lostCombo, previousRank, newRank);
-    }
-
-    /**
      * Send tension system update to a player for HUD display.
      */
     public static void sendTensionUpdate(ServerPlayer player, float tensionPercent, int tensionLevel, boolean bossImminent) {
@@ -990,14 +871,6 @@ public class NetworkHandler {
      * Contains real-time combat stats for HUD display.
      */
     public static void sendLvcSync(ServerPlayer player, LVCSyncPayload payload) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
-            Objects.requireNonNull(player), Objects.requireNonNull(payload));
-    }
-
-    /**
-     * Send season pass tier-up notification to a player.
-     */
-    public static void sendSeasonTierUp(ServerPlayer player, SeasonTierUpPayload payload) {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }

@@ -12,6 +12,11 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.client.testing.TestingSession;
 
+/**
+ * Context detection system for tracking player state (COMBAT/EXPLORE/TEST).
+ * Used by DevModClientActions for preconditions and CombatEvents for damage tracking.
+ * tick() is called from RenderEvents every client tick.
+ */
 public class ContextDetector {
 
     public static final ContextDetector INSTANCE = new ContextDetector();

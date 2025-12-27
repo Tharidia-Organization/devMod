@@ -25,6 +25,7 @@ import net.minecraft.core.BlockPos;
 
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
+import com.devmod.util.PathSanitizer;
 
 public class HeatmapExporter {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -105,7 +106,12 @@ public class HeatmapExporter {
             Path outputPath = exportDir.resolve(filename);
 
             try {
-                ImageIO.write(image, "PNG", outputPath.toFile());
+                Path safePath = PathSanitizer.sanitizeForWrite(outputPath);
+                if (safePath == null) {
+                    LOGGER.warn("[DevMod] Skipping heatmap export; unsafe path: {}", outputPath);
+                    continue;
+                }
+                ImageIO.write(image, "PNG", safePath.toFile());
                 count++;
                 LOGGER.debug("[DevMod] Exported heatmap: {}", filename);
             } catch (IOException e) {

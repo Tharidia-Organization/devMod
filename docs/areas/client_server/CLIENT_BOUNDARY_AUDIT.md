@@ -76,13 +76,11 @@ These use `Minecraft.getInstance()` or `GuiGraphics`:
 | `ui.HelpOverlay` | Font, GuiGraphics |
 | `ui.UIConstants` | Minecraft, SoundInstance |
 | `ui.scroll.ScrollManager` | GuiGraphics |
-| `ui.components.ScrollableArea` | GuiGraphics |
 
 ### UI Unified Pages
 | File | Client Imports |
 |------|---------------|
 | `ui.unified.SettingsPage` | Font, GuiGraphics |
-| `ui.unified.ScrollableSettingsPage` | Font, GuiGraphics |
 | `ui.unified.pages.MobConfigPage` | Minecraft, Font, GuiGraphics |
 | `ui.unified.pages.VisualizersPage` | Font, GuiGraphics |
 | `ui.unified.pages.DebugOverlaysPage` | Font, GuiGraphics |
@@ -103,7 +101,6 @@ These use `Minecraft.getInstance()` or `GuiGraphics`:
 ### UI Editor System (30+ files)
 | File | Client Imports |
 |------|---------------|
-| `ui.editor.ItemEditorInputHandler` | Minecraft |
 | `ui.editor.AbstractEditorModule` | Minecraft, GuiGraphics |
 | `ui.editor.PlaceholderModule` | Minecraft, GuiGraphics |
 | `ui.editor.sections.*` (10+ files) | Minecraft, Font, GuiGraphics |
@@ -146,7 +143,6 @@ All use `Minecraft.getInstance()` and rendering:
 |------|---------------|
 | `hud.EnduranceQuestOverlay` | Minecraft, GuiGraphics |
 | `hud.QuestSequenceOverlay` | Minecraft, GuiGraphics |
-| `hud.TokenGainOverlay` | Minecraft, GuiGraphics |
 | `hud.StaminaHudOverlay` | Minecraft, GuiGraphics |
 | `hud.SkillEfficacyOverlay` | Minecraft, GuiGraphics |
 | `hud.QuickHelpOverlay` | Minecraft, KeyMapping |
@@ -161,12 +157,9 @@ All use `Minecraft.getInstance()` and rendering:
 | `hud.EconomyOverlay` | Minecraft, GuiGraphics |
 | `hud.BossPhaseOverlay` | Minecraft, GuiGraphics |
 | `hud.TelemetryStatusOverlay` | Minecraft |
-| `hud.RecordBannerOverlay` | Minecraft |
 | `hud.ImpactData` | Minecraft |
 | `hud.InstanceLoadingOverlay` | Minecraft |
 | `hud.IntegratedTestHud` | Minecraft |
-| `hud.ComboDecayOverlay` | Minecraft |
-| `hud.BadgePopupOverlay` | Minecraft |
 
 ---
 
@@ -203,8 +196,6 @@ All require client-side rendering APIs:
 | File | Client Imports |
 |------|---------------|
 | `arena.hud.BuildProgressHud` | Minecraft, GuiGraphics |
-| `arena.hud.ArenaHudKeyBinding` | KeyMapping, Minecraft |
-| `arena.hud.ArenaDebugHud` | Minecraft, GuiGraphics |
 
 ---
 
@@ -250,7 +241,6 @@ All require client-side rendering APIs:
 ### In `client/` package (OK)
 - `client.ClientVFXHelper`
 - `client.ClientVFXProxy` (has @OnlyIn)
-- `debug.client.DebugClientRenderer`
 - `debug.client.DebugRenderBools`
 - `debug.client.NativeDebugClientRenderer`
 - `actions.client.ActionKeybindRegistry`

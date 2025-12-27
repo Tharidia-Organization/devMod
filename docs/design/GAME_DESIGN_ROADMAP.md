@@ -30,7 +30,7 @@
 - `src/main/java/com/devmod/endurance/ComboSystem.java` (inner `ComboSession`)
 - `src/main/java/com/devmod/actions/ActionType.java`
 - NEW: `src/main/java/com/devmod/endurance/FlowStateTracker.java`
-- `src/main/java/com/devmod/client/overlay/ComboDecayOverlay.java`
+- (removed) `ComboDecayOverlay` (notifications handled by NotificationService)
 
 ---
 

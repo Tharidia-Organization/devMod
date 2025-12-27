@@ -41,6 +41,9 @@ public class TesterTaskScreen extends Screen {
 
     @Nullable
     private UUID selectedTaskId = null;
+    @Nullable
+    private final UUID initialTaskId;
+    private final boolean openNotesOnInit;
 
     // Filter
     private boolean showCompleted = false;
@@ -56,7 +59,13 @@ public class TesterTaskScreen extends Screen {
     private boolean showNotesEditor = false;
 
     public TesterTaskScreen() {
+        this(null, false);
+    }
+
+    private TesterTaskScreen(@Nullable UUID initialTaskId, boolean openNotesOnInit) {
         super(Objects.requireNonNull(Component.translatable("devmod.tester.title"), "title"));
+        this.initialTaskId = initialTaskId;
+        this.openNotesOnInit = openNotesOnInit;
     }
 
     @Nonnull
@@ -144,8 +153,12 @@ public class TesterTaskScreen extends Screen {
         submitBtn.visible = false;
         submitNotesButton = submitBtn;
 
+        applyInitialSelection();
         updateMaxScroll();
         updateActionButtons();
+        if (openNotesOnInit && selectedTaskId != null) {
+            toggleNotesEditor();
+        }
     }
 
     /**
@@ -417,6 +430,16 @@ public class TesterTaskScreen extends Screen {
         updateActionButtons();
     }
 
+    private void applyInitialSelection() {
+        if (initialTaskId == null) {
+            return;
+        }
+        TestTask task = ClientTaskCache.getTask(initialTaskId);
+        if (task != null) {
+            selectedTaskId = task.id();
+        }
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (super.mouseClicked(mouseX, mouseY, button)) {
@@ -518,6 +541,18 @@ public class TesterTaskScreen extends Screen {
      * Open the tester task screen.
      */
     public static void open() {
+        open(null, false);
+    }
+
+    public static void open(@Nullable UUID taskId) {
+        open(taskId, false);
+    }
+
+    public static void openForNotes(@Nullable UUID taskId) {
+        open(taskId, true);
+    }
+
+    private static void open(@Nullable UUID taskId, boolean openNotes) {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         if (!ClientMailboxAccess.isTester()) {
             if (mc.player != null) {
@@ -526,6 +561,6 @@ public class TesterTaskScreen extends Screen {
             }
             return;
         }
-        mc.setScreen(new TesterTaskScreen());
+        mc.setScreen(new TesterTaskScreen(taskId, openNotes));
     }
 }

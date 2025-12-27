@@ -1,7 +1,7 @@
 # Radial Menu / UX System
 
 > Last updated: 2025-12-26
-> Status: CURRENT (verified against code)
+> Status: CURRENT (aggiornato dopo orphanage cleanup)
 
 The radial menu is the primary in-game UI for DevMod actions and tools.
 
@@ -26,7 +26,6 @@ The radial menu is the primary in-game UI for DevMod actions and tools.
 ### Model + Input
 
 - `com.devmod.client.ui.radial.model.MacroCategory`
-- `com.devmod.client.ui.radial.model.RadialMenuState`
 - `com.devmod.client.ui.radial.input.RadialSearchHandler`
 - `com.devmod.client.ui.radial.RadialMenuConfig`
 - `com.devmod.client.ui.radial.config.RadialMenuConstants`
@@ -57,7 +56,6 @@ The radial menu is the primary in-game UI for DevMod actions and tools.
 - `MacroCategoryDirectTest`
 - `RadialCategoryDirectTest`
 - `RadialSearchHandlerDirectTest`
-- `RadialMenuStateTest`
 - `RadialMenuMacroCategoryTest`
 
 ## Cross-References

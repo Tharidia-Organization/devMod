@@ -589,7 +589,7 @@ To advance from Level N to Level N+1:
 | PerkSelectionPayload | C→S | 14 |
 | QuestCompletionPayload | S→C | 15 |
 | BossAlertPayload | S→C | 18 |
-| ComboDecayPayload | S→C | 22 |
+| UnifiedNotificationPayload | S→C | (see NetworkHandler) |
 
 ### UI Components
 | Component | Type | Test Focus |
@@ -600,7 +600,6 @@ To advance from Level N to Level N+1:
 | QuestDeathScreen | Screen | Action routing |
 | QuestCompletionScreen | Screen | Data display |
 | EnduranceQuestOverlay | HUD | State sync |
-| ComboDecayOverlay | HUD | Animation timing |
 
 ### Event Handlers
 | Handler | Events | Test Focus |

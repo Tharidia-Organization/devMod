@@ -146,6 +146,12 @@ public class NotificationSoundManager {
         // Chain offer sounds
         soundConfigs.put("chain.offer", new SoundConfig(
                 Objects.requireNonNull(SoundEvents.NOTE_BLOCK_CHIME.value()), 1.2f, 0.55f));
+        soundConfigs.put("chain.step", new SoundConfig(
+                Objects.requireNonNull(SoundEvents.NOTE_BLOCK_CHIME.value()), 1.0f, 0.45f));
+        soundConfigs.put("chain.complete", new SoundConfig(
+                SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 0.85f));
+        soundConfigs.put("chain.failed", new SoundConfig(
+                SoundEvents.ANVIL_LAND, 0.8f, 0.5f));
 
         // Admin sounds
         soundConfigs.put("admin.alert", new SoundConfig(

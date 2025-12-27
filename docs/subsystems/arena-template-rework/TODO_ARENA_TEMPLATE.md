@@ -1785,27 +1785,7 @@ public class MsptMonitor {
 
 **Decisione**: Update max 4 Hz (250ms) + skip se delta < 1%.
 
-```java
-public class BuildProgressOverlay {
-    private static final long UPDATE_INTERVAL_MS = 250;  // 4 Hz max
-    private static final double MIN_PROGRESS_DELTA = 0.01;  // 1%
-
-    public void onBuildProgress(UUID arenaId, int blocksPlaced, int totalBlocks) {
-        long now = System.currentTimeMillis();
-        double progress = (double) blocksPlaced / totalBlocks;
-
-        // Rate limit + delta check
-        if (now - lastUpdateTime < UPDATE_INTERVAL_MS) return;
-        if (Math.abs(progress - lastProgress) < MIN_PROGRESS_DELTA && progress < 1.0) return;
-
-        lastUpdateTime = now;
-        lastProgress = progress;
-
-        // Packet: 28 bytes (UUID + float + 2x int)
-        NetworkHandler.sendToAllInArena(arenaId, new BuildProgressPacket(...));
-    }
-}
-```
+Nota: `BuildProgressOverlay` rimosso in orphanage cleanup (non usato). Restano `BuildProgressHud` e `BuildProgressPayload`.
 
 **Overhead**: ~1 packet/250ms, ~28 bytes. Trascurabile.
 
@@ -3596,7 +3576,7 @@ public enum RolloutPhase {
 - [ ] Implementare `MsptMonitor` con baseline capture
 - [ ] Implementare sliding window (100 samples, 5 sec)
 - [ ] Implementare `MsptSample.shouldBackpressure()` con confidence
-- [ ] Implementare `BuildProgressOverlay` con rate limit 4 Hz
+- [x] `BuildProgressOverlay` rimosso in orphanage cleanup (non usato)
 - [ ] Implementare `BuildProgressPacket` (28 bytes)
 - [ ] Implementare client-side `BuildProgressHud`
 - [ ] Creare test suite `ArenaEdgeCaseTests` con seed fisso
@@ -3750,8 +3730,7 @@ public enum RolloutPhase {
 - [ ] Unit test MsptMonitor baseline capture (mediana)
 - [ ] Unit test MsptMonitor confidence score (alta varianza → bassa)
 - [ ] Unit test MsptSample.shouldBackpressure() threshold
-- [ ] Unit test BuildProgressOverlay rate limit (skip < 250ms)
-- [ ] Unit test BuildProgressOverlay delta skip (< 1%)
+- [x] Unit test overlay rimossi con la classe orfana
 - [ ] Unit test edge case failure mid-build rollback
 - [ ] Unit test edge case chunk timeout → instance closed
 - [ ] Unit test edge case malformed template rejection

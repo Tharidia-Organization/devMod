@@ -23,7 +23,6 @@ import com.devmod.party.NamedInvitePayload;
 import com.devmod.party.PartyActionPayload;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartyManager;
-import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
@@ -284,16 +283,6 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                 player.sendSystemMessage(I18n.translate("devmod.party.invite_failed", targetName));
             }
         }), "named invite");
-    }
-
-    // =================================================================================
-    // PARTY NOTIFICATION (client-side)
-    // =================================================================================
-    public static void handlePartyNotification(PartyNotificationPayload payload, IPayloadContext context) {
-        if (FMLEnvironment.dist == Dist.CLIENT) {
-            observeFuture(context.enqueueWork(() ->
-                NetworkHandler.withClientHooks(hooks -> hooks.handlePartyNotification(payload))), "party notification");
-        }
     }
 
     // =================================================================================

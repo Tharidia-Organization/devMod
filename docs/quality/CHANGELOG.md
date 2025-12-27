@@ -70,9 +70,9 @@
 - `KitSelectionScreen.java` - `com.devmod.endurance.*`, `net.minecraft.world.item.*`, `java.util.*` → explicit imports
 
 ### Client Party
-- `InvitePopupScreen.java` - `com.devmod.party.*` → explicit `PartyInvite`, `InviteResponsePayload`, `PartyNotificationPayload`
+- `InvitePopupScreen.java` - `com.devmod.party.*` → explicit `PartyInvite`, `InviteResponsePayload`, `PartyInviteActionData`
 - `ClientPartyCache.java` - `com.devmod.party.*` → explicit party classes
-- `PartyUiCache.java` - `com.devmod.party.*` → explicit `PartyNotificationPayload`
+- `PartyUiCache.java` - `com.devmod.party.*` → explicit `PartyInviteActionData`
 - `PartyScreen.java` - `com.devmod.party.*` → explicit party classes
 - `PartyScreenRenderer.java` - `com.devmod.party.*` → explicit `PartyData`, `PartySyncPayload`
 

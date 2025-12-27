@@ -48,10 +48,9 @@ Source: `AutosmokeScheduler` -> `routeFailureAlert()`.
 - Metadata includes failed template IDs (up to 10), mod version, git commit, duration
 
 ### Cleanup residuals
-Source: `CleanupResidualChecker` (telemetry only).
+Source: **removed** in orphanage cleanup (legacy `CleanupResidualChecker`).
 
-- Emits `arena.cleanup.residual_alert` when residuals exceed thresholds
-- Defaults in `ArenaTemplateConfig.AlertThresholds`: entities > 0 warn, > 5 error; blocks > 0 warn, > 10 error
+- Alert source currently inactive
 
 ### Prebuild pool miss rate
 Source: `PrebuildPoolManager` (logs + telemetry).

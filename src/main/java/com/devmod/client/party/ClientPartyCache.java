@@ -6,20 +6,12 @@ import javax.annotation.Nullable;
 
 import com.devmod.party.OnlinePlayersPayload;
 import com.devmod.party.PartyData;
-import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
 
 public final class ClientPartyCache {
 
     @Nullable
     private static volatile PartySyncPayload currentParty = null;
-    @Nullable
-    private static volatile PartyNotificationPayload lastNotification = null;
-    private static volatile long lastNotificationTime = 0;
-
-    // Notification display duration in ms
-    public static final long NOTIFICATION_DISPLAY_MS = 5000;
-
     private ClientPartyCache() {}
 
     /**
@@ -29,20 +21,6 @@ public final class ClientPartyCache {
         if (payload.hasParty()) {
             currentParty = payload;
         } else {
-            currentParty = null;
-        }
-    }
-
-    /**
-     * Handle a party notification.
-     */
-    public static void handleNotification(PartyNotificationPayload notification) {
-        lastNotification = notification;
-        lastNotificationTime = System.currentTimeMillis();
-
-        // If party disbanded or kicked, clear party state
-        if (notification.notificationType() == PartyNotificationPayload.NotificationType.PARTY_DISBANDED ||
-            notification.notificationType() == PartyNotificationPayload.NotificationType.YOU_WERE_KICKED) {
             currentParty = null;
         }
     }
@@ -126,31 +104,10 @@ public final class ClientPartyCache {
     }
 
     /**
-     * Get the last notification if still displayable.
-     */
-    @Nullable
-    public static PartyNotificationPayload getDisplayableNotification() {
-        PartyNotificationPayload notification = lastNotification;
-        if (notification == null) return null;
-        if (System.currentTimeMillis() - lastNotificationTime > NOTIFICATION_DISPLAY_MS) {
-            return null;
-        }
-        return notification;
-    }
-
-    /**
-     * Clear the notification manually.
-     */
-    public static void clearNotification() {
-        lastNotification = null;
-    }
-
-    /**
      * Clear all cached data.
      */
     public static void clear() {
         currentParty = null;
-        lastNotification = null;
         localPlayerReady = false;
     }
 

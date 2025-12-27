@@ -33,7 +33,7 @@ prima di utilizzarlo per decisioni operative.
 | Mob Config | Screen | [MobConfigScreen.java](../../src/main/java/com/devmod/client/ui/screens/MobConfigScreen.java) | Full screen | Radial > Mob Config | Look at mob | MobConfigScreenRenderer | Configure mob attributes | None | mob.config.open |
 | Mob Equipment | Screen | [MobEquipmentScreen.java](../../src/main/java/com/devmod/client/ui/screens/MobEquipmentScreen.java) | Full screen | From MobConfigScreen | Has mob selected | MobConfigScreen | Equip items on mobs | None | mob.equip.open |
 | Telemetry Dashboard | Screen | [TelemetryDashboardScreen.java](../../src/main/java/com/devmod/client/ui/screens/TelemetryDashboardScreen.java) | Full screen | Radial > Telemetry | None | TelemetryService | View telemetry data and statistics | None | telemetry.dashboard.open |
-| Welcome Screen | Screen | [WelcomeScreen.java](../../src/main/java/com/devmod/client/ui/WelcomeScreen.java) | Full screen | Auto on first join | !hasSeenWelcome | SettingsManager | Onboarding for new users | Uses WelcomeToastOverlay fallback | onboarding.welcome |
+| Welcome Screen | Screen | [WelcomeScreen.java](../../src/main/java/com/devmod/client/ui/WelcomeScreen.java) | Full screen | Auto on first join | !hasSeenWelcome | SettingsManager | Onboarding for new users | Uses NotificationService/UnifiedToastOverlay fallback | onboarding.welcome |
 | Testing Hub | Screen | [TestingHub.java](../../src/main/java/com/devmod/client/ui/hub/TestingHub.java) | Full screen | Radial > Testing | None | TestingSession | Central hub for QA testing tools | None | testing.hub.open |
 | QA Testing | Screen | [QATestingScreen.java](../../src/main/java/com/devmod/client/testing/QATestingScreen.java) | Full screen | Radial > QA | None | TestingSession | Manual QA test execution | None | qa.testing.open |
 | Badge Test | Screen | [BadgeTestScreen.java](../../src/main/java/com/devmod/client/testing/BadgeTestScreen.java) | Full screen | From TestingHub | None | TesterProfile | Test badge display system | None | N/A |
@@ -57,7 +57,7 @@ prima di utilizzarlo per decisioni operative.
 | Quest Exit Confirm | Screen | [QuestExitConfirmScreen.java](../../src/main/java/com/devmod/client/endurance/QuestExitConfirmScreen.java) | Modal dialog | ESC during quest | inQuest | None | Confirm quest exit | None | N/A |
 | **Party Screens** | | | | | | | | | |
 | Party Screen | Screen | [PartyScreen.java](../../src/main/java/com/devmod/client/party/PartyScreen.java) | Full screen | Radial > Party | None | PartyManager | Manage party members | None | party.open |
-| Invite Popup | Screen | [InvitePopupScreen.java](../../src/main/java/com/devmod/client/party/InvitePopupScreen.java) | Modal dialog | On party invite | hasInvite | PartyNotificationPayload | Accept/decline party invite | Timed (needs countdown) | party.invite.show |
+| Invite Popup | Screen | [InvitePopupScreen.java](../../src/main/java/com/devmod/client/party/InvitePopupScreen.java) | Modal dialog | Notification action (party invite) | hasInvite | PartyInviteActionData (NotificationService action data) | Accept/decline party invite | Timed (needs countdown) | party.invite.show |
 | **Arena Screens** | | | | | | | | | |
 | Arena Test Wizard | Screen | [ArenaTestWizard.java](../../src/main/java/com/devmod/client/arena/ui/ArenaTestWizard.java) | Full screen | Radial > Arena > Test | None | ArenaManager | Setup arena test scenarios | None | arena.test.wizard |
 
@@ -69,29 +69,28 @@ prima di utilizzarlo per decisioni operative.
 |---------|------|----------------|----------------|-------------|-------------------|--------------|--------------------|--------------------|-----------|
 | Mob Stats Layer | HUD | [ClientModEvents.MobStatsLayer](../../src/main/java/com/devmod/client/events/ClientModEvents.java#L309) | HUD crosshair area | Look at mob + ModConfig.showOverlay | None | None | Shows mob HP, armor, damage, reach | None | N/A |
 | QA Notifications | HUD | [ClientModEvents.QANotificationsLayer](../../src/main/java/com/devmod/client/events/ClientModEvents.java#L100) | Top-right corner | On achievements/levelups | None | QANotificationSystem | Achievement popups | None | N/A |
-| **Welcome Toast** | HUD | [WelcomeToastOverlay.java](../../src/main/java/com/devmod/client/overlay/WelcomeToastOverlay.java) | Top-center (slide-in) | Fallback for WelcomeScreen | !hasSeenWelcome | SettingsManager | Non-intrusive welcome for new users | None | onboarding.toast |
-| Resonance HUD | HUD | [ResonanceHudOverlay.java](../../src/main/java/com/devmod/client/overlay/ResonanceHudOverlay.java) | Bottom-left | hasResonanceData | None | ResonanceNotificationPayload | Shows resonance status | None | N/A |
+| **Welcome Notification** | HUD | [UnifiedToastOverlay.java](../../src/main/java/com/devmod/client/notification/render/UnifiedToastOverlay.java) | Toast stack | Fallback for WelcomeScreen | !hasSeenWelcome | NotificationService | Non-intrusive welcome for new users | Unified notification pipeline | onboarding.toast |
+| Resonance HUD | HUD | [ResonanceHudOverlay.java](../../src/main/java/com/devmod/client/overlay/ResonanceHudOverlay.java) | Bottom-left | hasResonanceData | None | NotificationService/ClientNotificationManager | Shows resonance status | None | N/A |
 | Contract HUD | HUD | [ContractHudOverlay.java](../../src/main/java/com/devmod/client/overlay/ContractHudOverlay.java) | HUD area | hasContract | None | ContractSyncPayload | Shows active contract progress | None | N/A |
 | Dynamic Radius HUD | HUD | [DynamicRadiusHudOverlay.java](../../src/main/java/com/devmod/client/overlay/DynamicRadiusHudOverlay.java) | HUD area | Toggle enabled | None | None | Shows dynamic effect radii | None | N/A |
 | Endurance Quest Overlay | HUD | [EnduranceQuestOverlay.java](../../src/main/java/com/devmod/client/overlay/EnduranceQuestOverlay.java) | Top area | inQuest | None | ClientQuestCache | Wave, kills, tokens, combo | None | N/A |
-| Token Gain | HUD | [TokenGainOverlay.java](../../src/main/java/com/devmod/client/overlay/TokenGainOverlay.java) | Floating text | On token gain | None | TokenGainPayload | +X tokens animation | None | N/A |
+| Token Gain | HUD | [UnifiedToastOverlay.java](../../src/main/java/com/devmod/client/notification/render/UnifiedToastOverlay.java) | Toast stack | On token gain | None | NotificationService (UnifiedNotificationPayload) | +X tokens toast | None | N/A |
 | Quest Sequence | HUD | [QuestSequenceOverlay.java](../../src/main/java/com/devmod/client/overlay/QuestSequenceOverlay.java) | Center screen | During transitions | None | QuestSequencePayload | Wave start/end animations | None | N/A |
 | Telemetry Status | HUD | [TelemetryStatusOverlay.java](../../src/main/java/com/devmod/client/overlay/TelemetryStatusOverlay.java) | Corner | When enabled | None | TelemetryService | Recording indicator | None | N/A |
 | Impact HUD | HUD | [ImpactHudOverlay.java](../../src/main/java/com/devmod/client/overlay/ImpactHudOverlay.java) | Bottom area | On damage dealt | None | ImpactData | Damage numbers breakdown | None | N/A |
 | Quick Help | HUD | [QuickHelpOverlay.java](../../src/main/java/com/devmod/client/overlay/QuickHelpOverlay.java) | Side panel | F1 or first use | None | None | Keybind hints | None | N/A |
 | Integrated Test | HUD | [IntegratedTestOverlay.java](../../src/main/java/com/devmod/client/overlay/IntegratedTestOverlay.java) | HUD area | During test run | None | TestingSession | Test progress indicator | None | N/A |
 | Boss Phase | HUD | [BossPhaseOverlay.java](../../src/main/java/com/devmod/client/overlay/BossPhaseOverlay.java) | Top area | Boss encounter | None | BossAlertPayload | Boss health and phase | None | N/A |
-| Record Banner | HUD | [RecordBannerOverlay.java](../../src/main/java/com/devmod/client/overlay/RecordBannerOverlay.java) | Center banner | On new record | None | RecordBannerPayload | NEW RECORD! animation | None | N/A |
+| Record Banner | HUD | [UnifiedToastOverlay.java](../../src/main/java/com/devmod/client/notification/render/UnifiedToastOverlay.java) | Toast stack | On new record | None | NotificationService (UnifiedNotificationPayload) | NEW RECORD! toast | None | N/A |
 | Onboarding | HUD | [OnboardingOverlay.java](../../src/main/java/com/devmod/client/overlay/OnboardingOverlay.java) | Bottom area | First actions | !completedOnboarding | SettingsManager | Tutorial hints | None | N/A |
 | Stamina HUD | HUD | [StaminaHudOverlay.java](../../src/main/java/com/devmod/client/overlay/StaminaHudOverlay.java) | Near hotbar | staminaEnabled | None | StaminaSyncPayload | Stamina bar | None | N/A |
-| Badge Popup | HUD | [BadgePopupOverlay.java](../../src/main/java/com/devmod/client/overlay/BadgePopupOverlay.java) | Top-right | On badge unlock | None | BadgeUnlockPayload | Badge earned animation | None | N/A |
+| Badge Popup | HUD | [UnifiedToastOverlay.java](../../src/main/java/com/devmod/client/notification/render/UnifiedToastOverlay.java) | Toast stack | On badge unlock | None | NotificationService (UnifiedNotificationPayload) | Badge earned toast | None | N/A |
 | Instance Loading | HUD | [InstanceLoadingOverlay.java](../../src/main/java/com/devmod/client/overlay/InstanceLoadingOverlay.java) | Full screen dim | During load | None | InstanceLoadingPayload | Loading progress | None | N/A |
 | Entity Density | HUD | [EntityDensityOverlay.java](../../src/main/java/com/devmod/client/overlay/EntityDensityOverlay.java) | Corner stats | Toggle enabled | None | None | Entity count per chunk | None | N/A |
 | Party HUD | HUD | [PartyHudOverlay.java](../../src/main/java/com/devmod/client/overlay/PartyHudOverlay.java) | Side panel | inParty | None | PartySyncPayload | Party member health | None | N/A |
 | Skill Efficacy | HUD | [SkillEfficacyOverlay.java](../../src/main/java/com/devmod/client/overlay/SkillEfficacyOverlay.java) | Corner | Toggle enabled | None | None | DPS/efficiency metrics | None | N/A |
-| Combo Decay | HUD | [ComboDecayOverlay.java](../../src/main/java/com/devmod/client/overlay/ComboDecayOverlay.java) | Near combo | hasCombo | None | ComboDecayPayload | Combo timer ring | None | N/A |
+| Combo Decay | HUD | [UnifiedToastOverlay.java](../../src/main/java/com/devmod/client/notification/render/UnifiedToastOverlay.java) | Toast stack | On combo decay | None | NotificationService (UnifiedNotificationPayload) | Combo decay toast | None | N/A |
 | Economy | HUD | [EconomyOverlay.java](../../src/main/java/com/devmod/client/overlay/EconomyOverlay.java) | Corner | Toggle enabled | None | None | Token balance | None | N/A |
-| Arena Debug | HUD | [ArenaDebugHud.java](../../src/main/java/com/devmod/client/arena/hud/ArenaDebugHud.java) | Debug area | debugEnabled | None | ArenaManager | Arena state debug | None | N/A |
 | Build Progress | HUD | [BuildProgressHud.java](../../src/main/java/com/devmod/client/arena/hud/BuildProgressHud.java) | Progress bar | During build | None | BuildProgressPayload | Structure build % | None | N/A |
 | Quest HUD | HUD | [QuestHudOverlay.java](../../src/main/java/com/devmod/client/quest/QuestHudOverlay.java) | Side panel | hasQuest | None | QuestManager | Quest objectives | None | N/A |
 | Attribute HUD | HUD | [AttributeHudOverlay.java](../../src/main/java/com/devmod/client/attributes/AttributeHudOverlay.java) | Corner | Toggle enabled | None | None | Player attribute monitor | None | N/A |
@@ -108,7 +107,6 @@ prima di utilizzarlo per decisioni operative.
 | Mob Debug | 3D Overlay | [MobDebugOverlay.java](../../src/main/java/com/devmod/client/rendering/MobDebugOverlay.java) | Above mobs | O key toggle | None | None | Shows mob AI state | None | N/A |
 | Entity Info | 3D Overlay | [EntityInfoOverlay.java](../../src/main/java/com/devmod/client/rendering/EntityInfoOverlay.java) | Above entities | Toggle enabled | None | None | Entity debug info | None | N/A |
 | Spawnability | 3D Overlay | [SpawnabilityOverlay.java](../../src/main/java/com/devmod/client/rendering/SpawnabilityOverlay.java) | On blocks | Toggle enabled | None | None | Mob spawn conditions | Performance impact | N/A |
-| Build Progress | 3D Overlay | [BuildProgressOverlay.java](../../src/main/java/com/devmod/client/arena/ui/BuildProgressOverlay.java) | On structures | During build | None | ArenaManager | Structure ghost preview | None | N/A |
 
 ---
 
@@ -131,10 +129,10 @@ prima di utilizzarlo per decisioni operative.
 | UI Name | Type | Class/Resource | Where it Shows | How to Open | Permissions/Gating | Dependencies | User-facing Purpose | Known Issues/Risks | Telemetry |
 |---------|------|----------------|----------------|-------------|-------------------|--------------|--------------------|--------------------|-----------|
 | Floating Panel (Base) | Panel | [FloatingPanel.java](../../src/main/java/com/devmod/client/panels/core/FloatingPanel.java) | 3D world | Various triggers | None | FloatingPanelManager | Base class for all panels | None | N/A |
-| Tool Status Panel | Panel | [ToolStatusPanel.java](../../src/main/java/com/devmod/client/panels/types/ToolStatusPanel.java) | Near player | On tool use | None | FloatingPanelManager | Current tool status | None | N/A |
+| Tool Status Panel | Panel | Removed (orphanage cleanup) | Near player | On tool use | None | FloatingPanelManager (legacy) | Current tool status | Removed | N/A |
 | Combat Panel | Panel | [CombatPanel.java](../../src/main/java/com/devmod/client/panels/types/CombatPanel.java) | Near target | In combat | None | FloatingPanelManager | Combat statistics | None | N/A |
 | Entity Info Panel | Panel | [EntityInfoPanel.java](../../src/main/java/com/devmod/client/panels/types/EntityInfoPanel.java) | Above entity | Look at entity | None | FloatingPanelManager | Detailed entity info | None | N/A |
-| Test Progress Panel | Panel | [TestProgressPanel.java](../../src/main/java/com/devmod/client/panels/types/TestProgressPanel.java) | Near player | During test | None | FloatingPanelManager, TestingSession | Test progress | None | N/A |
+| Test Progress Panel | Panel | Removed (orphanage cleanup) | Near player | During test | None | FloatingPanelManager, TestingSession (legacy) | Test progress | Removed | N/A |
 | Impact 3D Panel | Panel | [Impact3DPanel.java](../../src/main/java/com/devmod/client/overlay/Impact3DPanel.java) | At hit location | On damage | None | Impact3DPanelManager | 3D damage numbers | None | N/A |
 
 ---
@@ -199,12 +197,12 @@ prima di utilizzarlo per decisioni operative.
 ## Recent Changes
 
 ### Added in Latest Update
-- **WelcomeToastOverlay** - Non-intrusive slide-in toast replacing chat fallback (CRITICAL fix)
+- **UnifiedToastOverlay** - Non-intrusive welcome fallback via NotificationService
 - **EnduranceSettingsScreen** - Configure endurance mode settings
 - **DynamicRadiusHudOverlay** - Shows dynamic effect radii
 
 ### Fixed Issues
-- Chat-as-UI fallback replaced with proper WelcomeToastOverlay
+- Chat-as-UI fallback replaced with unified notifications
 - Deprecated RadialAction methods now package-private
 
 ---

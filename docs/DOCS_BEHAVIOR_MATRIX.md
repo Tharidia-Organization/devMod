@@ -261,10 +261,10 @@ Snapshot: 2025-12-26 (refresh counts after status normalization updates)
 | ARENA-02 | Hot reload rejects invalid inheritance depth/diamond | `com/devmod/arena/registry/ArenaTemplateRegistry` | `InheritanceResolutionTest` (direct) | DIRECT |
 | ARENA-03 | Policy resolution picks highest weight and deterministic tie-breaks | `com/devmod/arena/policy/PolicyResolver` | `PolicyResolverWeightTest` (direct) | DIRECT |
 | ARENA-04 | Template validation rejects bounds gaps (walls/ceiling) | `com/devmod/arena/registry/TemplateValidator` | `TemplateValidatorBoundsGapTest` (direct) | DIRECT |
-| ARENA-05 | Spawn slots are validated for runtime constraints | `com/devmod/arena/registry/TemplateSpawnValidator` | `SpawnSlotRuntimeValidationTest`, `SpawnSlotConstraintsTest`, `RuntimeSpawnValidatorTest` (direct) | DIRECT |
+| ARENA-05 | Spawn slots are validated for runtime constraints | `com/devmod/arena/registry/TemplateSpawnValidator` | `SpawnSlotRuntimeValidationTest`, `SpawnSlotConstraintsTest` (RuntimeSpawnValidatorTest removed) | PARTIAL |
 | ARENA-06 | Build dry-run estimates block counts for templates | `com/devmod/arena/builder/BuildDryRunCalculator` | `BuildDryRunCalculatorTest` (direct) | DIRECT |
 | ARENA-07 | Async builder pauses when MSPT is too high | `com/devmod/arena/builder/AsyncArenaBuilder` | `AsyncArenaBuilderPerformanceTest` (direct) | DIRECT |
-| ARENA-08 | Fallback/rollback strategy handles failures with circuit breaker | `com/devmod/arena/fallback/FallbackBuildStrategy` | `RollbackTestScenario`, `FallbackBuildStrategyTest` (direct) | DIRECT |
+| ARENA-08 | Fallback/rollback strategy handles failures with circuit breaker | (removed in orphanage cleanup) | `RollbackTestScenario`, `FallbackBuildStrategyTest` removed | REMOVED |
 | ARENA-09 | Autosmoke guard/runner/scheduler gate and report runs | `com/devmod/arena/autosmoke/*` | `AutosmokeGuardTest`, `AutosmokeRunnerTest`, `AutosmokeSchedulerTest` (direct) | DIRECT |
 
 ### Instance System (docs/areas/instance/README.md)

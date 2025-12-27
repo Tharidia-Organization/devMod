@@ -3,6 +3,8 @@
 > Last updated: 2025-12-26
 > Status: HISTORICAL (design system snapshot)
 
+Nota 2025-12-27: le classi core dell'editor legacy descritte in questa cartella sono state rimosse in orphanage cleanup. Questo materiale resta come riferimento storico, non come stato corrente.
+
 Nota: per lo stato corrente dell'Item Editor vedere `docs/adr/ADR-003-item-editor-screen.md`
 e il codice in `src/main/java/com/devmod/client/ui/editor/`.
 

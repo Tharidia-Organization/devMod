@@ -1777,9 +1777,11 @@ DIRECTIONS = ['LEFT', 'RIGHT', 'BACK', 'FORWARD']
 print(f"Dodge {DIRECTIONS[direction]}: {'SUCCESS' if success else 'FAIL'}")
 ```
 
-### Jump Flags (JumpAnalysisService)
+### Jump Flags (JumpAnalysisService) [REMOVED]
 
-Campo: `"flags"` negli eventi jump
+Legacy: `JumpAnalysisService` rimosso in orphanage cleanup; i flag jump non sono piu` emessi.
+
+Campo: `"flags"` negli eventi jump (legacy)
 
 | Bit | Flag | Significato |
 |-----|------|-------------|

@@ -47,7 +47,7 @@ Fuori scope iniziale (post MVP):
 
 - [x] UI: `MailboxScreen`, `MailboxComposeScreen`, `NewsScreen`, `TesterTaskScreen`
 - [x] Cache: `ClientMailboxCache`, `ClientNewsCache`, `ClientTaskCache`
-- [x] Overlay: `MailNotificationOverlay`, `NewsAlertOverlay`
+- [x] Notifications: `NotificationService` + `UnifiedToastOverlay`
 
 ### Allegati
 

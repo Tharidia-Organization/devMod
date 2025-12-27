@@ -343,6 +343,33 @@ public class NotificationService {
     }
 
     /**
+     * Send a challenge reward notification (daily or weekly).
+     */
+    public void notifyChallengeReward(UUID playerUuid, String cadence, String challengeName,
+                                      int tokenReward, int prestigeReward) {
+        if (challengeName == null || challengeName.isBlank()) {
+            challengeName = "Challenge";
+        }
+
+        String cadenceKey = "weekly".equalsIgnoreCase(cadence) ? "weekly" : "daily";
+        boolean isWeekly = "weekly".equalsIgnoreCase(cadence);
+
+        Notification notification = Notification.builder(NotificationCategory.REWARD)
+            .titleKey("devmod.notification.challenge." + cadenceKey + ".title")
+            .messageKey("devmod.notification.challenge." + cadenceKey + ".message")
+            .param("challenge", challengeName)
+            .param("tokens", String.valueOf(tokenReward))
+            .param("prestige", String.valueOf(prestigeReward))
+            .priority(isWeekly ? NotificationPriority.HIGH : NotificationPriority.NORMAL)
+            .soundId(isWeekly ? "quest.complete" : "token.gain")
+            .displayDurationMs(isWeekly ? 5000 : 3500)
+            .persistToMailbox(false)
+            .build();
+
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
      * Send a season tier up notification.
      */
     public void notifySeasonTierUp(UUID playerUuid, int newTier, String freeRewardName, String premiumRewardName) {
@@ -732,6 +759,61 @@ public class NotificationService {
                 .persistToMailbox(false)
                 .actionId("open_chain_selection")
                 .build();
+
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a directive chain completion notification.
+     */
+    public void notifyChainComplete(UUID playerUuid, String chainName, int bonusTokens, int bonusPrestige) {
+        Notification notification = Notification.builder(NotificationCategory.QUEST)
+            .titleKey("devmod.notification.chain.complete_title")
+            .messageKey("devmod.notification.chain.complete_message")
+            .param("chain", chainName)
+            .param("tokens", String.valueOf(bonusTokens))
+            .param("prestige", String.valueOf(bonusPrestige))
+            .priority(NotificationPriority.HIGH)
+            .soundId("chain.complete")
+            .displayDurationMs(5000)
+            .persistToMailbox(false)
+            .build();
+
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a directive chain failure notification.
+     */
+    public void notifyChainFailed(UUID playerUuid, String chainName) {
+        Notification notification = Notification.builder(NotificationCategory.QUEST)
+            .titleKey("devmod.notification.chain.failed_title")
+            .messageKey("devmod.notification.chain.failed_message")
+            .param("chain", chainName)
+            .priority(NotificationPriority.NORMAL)
+            .soundId("chain.failed")
+            .displayDurationMs(3500)
+            .persistToMailbox(false)
+            .build();
+
+        notifyAsync(playerUuid, notification);
+    }
+
+    /**
+     * Send a directive chain progress notification.
+     */
+    public void notifyChainProgress(UUID playerUuid, String chainName, int step, int totalSteps) {
+        Notification notification = Notification.builder(NotificationCategory.QUEST)
+            .titleKey("devmod.notification.chain.step_title")
+            .messageKey("devmod.notification.chain.step_message")
+            .param("chain", chainName)
+            .param("step", String.valueOf(step))
+            .param("total", String.valueOf(totalSteps))
+            .priority(NotificationPriority.LOW)
+            .soundId("chain.step")
+            .displayDurationMs(2500)
+            .persistToMailbox(false)
+            .build();
 
         notifyAsync(playerUuid, notification);
     }

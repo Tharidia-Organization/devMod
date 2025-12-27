@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class L5MemoryAndSoakTest {
 
     // =========================================================================
-    // SIMULATED MEMORY CLEANUP SERVICE (mirrors MemoryCleanupService behavior)
+    // SIMULATED MEMORY CLEANUP SERVICE (test harness model)
     // =========================================================================
 
     static class SimMemoryCleanupService {

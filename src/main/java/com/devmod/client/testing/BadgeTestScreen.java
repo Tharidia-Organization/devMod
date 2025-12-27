@@ -211,7 +211,7 @@ public class BadgeTestScreen extends Screen {
     private void showBadgeNotification(BadgeRarity rarity) {
         String rarityId = rarity.name().toLowerCase(Locale.ROOT);
         NotificationPriority priority = switch (rarity) {
-            case LEGENDARY, MYTHIC -> NotificationPriority.URGENT;
+            case LEGENDARY -> NotificationPriority.URGENT;
             case EPIC -> NotificationPriority.HIGH;
             case RARE -> NotificationPriority.NORMAL;
             default -> NotificationPriority.NORMAL;

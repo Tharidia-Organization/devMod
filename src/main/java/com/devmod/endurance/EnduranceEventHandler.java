@@ -10,10 +10,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -37,7 +34,6 @@ import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
 import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
-import com.devmod.util.I18n;
 
 @EventBusSubscriber(modid = "devmod")
 public class EnduranceEventHandler {
@@ -550,32 +546,29 @@ public class EnduranceEventHandler {
                 questId, waveKills, maxCombo, waveDeaths > 0, tookDamage, styleOrdinal);
 
             if (chainResult == DirectiveChainManager.ChainAdvanceResult.CHAIN_COMPLETED) {
-                // Chain completed! Show celebration
+                // Chain completed! Notify with reward summary
                 DirectiveChainManager.INSTANCE.getActiveChain(questId).ifPresent(progress -> {
                     DirectiveChainManager.ChainRewards rewards = DirectiveChainManager.INSTANCE.calculateChainRewards(progress);
-                    player.sendSystemMessage(Objects.requireNonNull(Component.literal("=== CHAIN COMPLETE: " + progress.getChain().name() + " ===")
-                        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)));
-                    player.sendSystemMessage(Objects.requireNonNull(Component.literal("Bonus: +" + rewards.bonusTokens() + " tokens, +" + rewards.bonusPrestige() + " prestige!")
-                        .withStyle(ChatFormatting.YELLOW)));
-                    player.playSound(Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), 1.0f, 1.0f);
+                    NotificationService.INSTANCE.notifyChainComplete(
+                        playerId,
+                        progress.getChain().name(),
+                        rewards.bonusTokens(),
+                        rewards.bonusPrestige()
+                    );
                 });
             } else if (chainResult == DirectiveChainManager.ChainAdvanceResult.CONDITION_FAILED) {
                 // Chain failed condition
-                player.sendSystemMessage(Objects.requireNonNull(Component.literal("Chain condition not met. Chain abandoned.")
-                    .withStyle(ChatFormatting.RED)));
+                DirectiveChainManager.INSTANCE.getActiveChain(questId).ifPresent(progress ->
+                    NotificationService.INSTANCE.notifyChainFailed(playerId, progress.getChain().name()));
             } else if (chainResult == DirectiveChainManager.ChainAdvanceResult.STEP_COMPLETED) {
                 // Show chain progress
                 DirectiveChainManager.INSTANCE.getActiveChain(questId).ifPresent(progress -> {
-                    DirectiveChain.ChainStep nextStep = progress.getCurrentChainStep();
-                    if (nextStep != null) {
-                        player.sendSystemMessage(Objects.requireNonNull(Component.literal("--- Chain: " + progress.getChain().name() + " ---")
-                            .withStyle(ChatFormatting.LIGHT_PURPLE)));
-                        player.sendSystemMessage(Objects.requireNonNull(Component.literal("Step " + (progress.getCurrentStep() + 1) + "/" + progress.getTotalSteps() + ": " + nextStep.title())
-                            .withStyle(ChatFormatting.WHITE)));
-                        player.sendSystemMessage(Objects.requireNonNull(Component.literal(
-                            Objects.requireNonNull(nextStep.narrative(), "narrative"))
-                            .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
-                    }
+                    NotificationService.INSTANCE.notifyChainProgress(
+                        playerId,
+                        progress.getChain().name(),
+                        progress.getCurrentStep() + 1,
+                        progress.getTotalSteps()
+                    );
                 });
             }
         }
@@ -609,23 +602,6 @@ public class EnduranceEventHandler {
                 }
             }
         }
-
-        // === NOTIFY PLAYER (Unified Notification Center) ===
-        boolean hasMoreWaves = quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode();
-        boolean isFlawless = waveDamageTaken == 0 && waveKills > 0;
-        NotificationService.INSTANCE.notifyWaveComplete(
-            playerId,
-            waveNumber,
-            waveReward.tokensEarned(),
-            styleRank,
-            maxCombo,
-            isFlawless,
-            hasMoreWaves,
-            waveKills,
-            waveDamage,
-            waveDamageTaken,
-            waveReward
-        );
 
         float directiveMultiplier = 1.0f;
         ArenaContext arena = session.getArena();
@@ -662,6 +638,23 @@ public class EnduranceEventHandler {
             waveReward.directiveMultiplier(),
             waveReward.bonusPoints());
         LOGGER.info("[EnduranceQuest]   {}", rewardLine);
+
+        // === NOTIFY PLAYER (Unified Notification Center) ===
+        boolean hasMoreWaves = quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode();
+        boolean isFlawless = waveDamageTaken == 0 && waveKills > 0;
+        NotificationService.INSTANCE.notifyWaveComplete(
+            playerId,
+            waveNumber,
+            waveReward.tokensEarned(),
+            styleRank,
+            maxCombo,
+            isFlawless,
+            hasMoreWaves,
+            waveKills,
+            waveDamage,
+            waveDamageTaken,
+            waveReward
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════

@@ -8,11 +8,9 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.notification.ui.NotificationCenterScreen;
 import com.devmod.client.party.PartyUiCache;
-import com.devmod.endurance.QuestType;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCenterActionData;
 import com.devmod.notification.PartyInviteActionData;
-import com.devmod.party.PartyNotificationPayload;
 
 /**
  * Resolves and invokes actions attached to unified notifications.
@@ -40,8 +38,8 @@ public final class NotificationActionResolver {
         }
 
         Object payload = buildPayload(actionId, notification);
-        if (payload instanceof PartyNotificationPayload partyPayload) {
-            PartyUiCache.setLastInvite(partyPayload);
+        if (payload instanceof PartyInviteActionData inviteData) {
+            PartyUiCache.setLastInvite(inviteData);
         }
 
         if (payload != null) {
@@ -57,13 +55,7 @@ public final class NotificationActionResolver {
             if (data == null) {
                 return null;
             }
-            QuestType questType = QuestType.fromOrdinal(data.questTypeOrdinal());
-            return PartyNotificationPayload.inviteReceived(
-                data.inviteId(),
-                data.senderName(),
-                questType,
-                data.expiresAt()
-            );
+            return data;
         }
 
         return null;

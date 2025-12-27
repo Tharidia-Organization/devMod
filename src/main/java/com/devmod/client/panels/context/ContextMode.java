@@ -12,13 +12,13 @@ public enum ContextMode {
 
     /**
      * Explore mode: default when not in combat or testing.
-     * Shows: EntityInfoPanel on hover, ToolStatusPanel
+     * Shows: EntityInfoPanel on hover (legacy tool status panel removed)
      */
     EXPLORE("Explore", UIConstants.Status.INFO(), true, true, false),
 
     /**
      * Testing mode: activated during a test session.
-     * Shows: TestProgressPanel, ToolStatusPanel, reduces other panels
+     * Shows: testing indicators (legacy progress/tool panels removed)
      */
     TEST("Test", UIConstants.Status.SUCCESS(), true, true, true),
 

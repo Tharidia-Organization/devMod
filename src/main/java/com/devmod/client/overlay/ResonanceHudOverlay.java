@@ -16,8 +16,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.endurance.resonance.ResonanceNotificationPayload;
-
 @OnlyIn(Dist.CLIENT)
 public class ResonanceHudOverlay implements LayeredDraw.Layer {
 
@@ -61,16 +59,6 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
             this.isTrinity = isTrinity;
         }
 
-        ResonanceNotification(ResonanceNotificationPayload payload) {
-            this(
-                payload.announcement(),
-                payload.color(),
-                payload.styleBonus(),
-                payload.isApocalypse(),
-                payload.isTrinity()
-            );
-        }
-
         float getProgress() {
             long elapsed = System.currentTimeMillis() - startTime;
             return Math.min(1.0f, (float) elapsed / NOTIFICATION_DURATION_MS);
@@ -79,24 +67,6 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
         boolean isExpired() {
             return System.currentTimeMillis() - startTime > NOTIFICATION_DURATION_MS;
         }
-    }
-
-    /**
-     * Called when a resonance notification is received from the server.
-     */
-    public void onResonanceTriggered(ResonanceNotificationPayload payload) {
-        if (payload == null) {
-            return;
-        }
-        LOGGER.debug("[ResonanceHUD] Received: {} (+{} style)", payload.tierName(), payload.styleBonus());
-
-        onResonanceTriggered(
-            payload.announcement(),
-            payload.color(),
-            payload.styleBonus(),
-            payload.isApocalypse(),
-            payload.isTrinity()
-        );
     }
 
     public void onResonanceTriggered(String announcement, int color, int styleBonus,

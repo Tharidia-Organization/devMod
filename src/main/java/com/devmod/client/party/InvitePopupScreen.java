@@ -24,7 +24,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.QuestType;
 import com.devmod.party.InviteResponsePayload;
 import com.devmod.party.PartyInvite;
-import com.devmod.party.PartyNotificationPayload;
+import com.devmod.notification.PartyInviteActionData;
 import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
@@ -75,14 +75,15 @@ public class InvitePopupScreen extends Screen {
     }
 
     /**
-     * Create from a PartyNotificationPayload.
+     * Create from unified invite action data.
      */
-    public static InvitePopupScreen fromNotification(PartyNotificationPayload payload) {
+    public static InvitePopupScreen fromActionData(PartyInviteActionData data) {
+        QuestType questType = QuestType.fromOrdinal(data.questTypeOrdinal());
         return new InvitePopupScreen(
-            payload.relatedId(),
-            payload.playerName(),
-            payload.getQuestType(),
-            payload.expiresAt()
+            data.inviteId(),
+            data.senderName(),
+            questType,
+            data.expiresAt()
         );
     }
 
@@ -288,12 +289,12 @@ public class InvitePopupScreen extends Screen {
 
     /**
      * Show the invite popup to the player.
-     * Call this from the client network handler when receiving INVITE_RECEIVED notification.
+     * Call this from the client notification handler when receiving a party invite.
      */
-    public static void showInvite(PartyNotificationPayload notification) {
+    public static void showInvite(PartyInviteActionData notification) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            InvitePopupScreen popup = fromNotification(notification);
+            InvitePopupScreen popup = fromActionData(notification);
             mc.setScreen(popup);
         }
     }

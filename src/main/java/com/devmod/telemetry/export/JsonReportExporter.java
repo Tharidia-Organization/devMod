@@ -23,6 +23,7 @@ import com.devmod.telemetry.spatial.BacktrackingService;
 import com.devmod.telemetry.spatial.DesireLinesService;
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
+import com.devmod.util.PathSanitizer;
 
 public class JsonReportExporter {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -45,7 +46,11 @@ public class JsonReportExporter {
         }
 
         String filename = String.format("telemetry_report_%s.json", timestamp);
-        Path file = exportDir.resolve(filename);
+        Path file = PathSanitizer.sanitizeForWrite(exportDir.resolve(filename));
+        if (file == null) {
+            LOGGER.warn("[DevMod] Skipping JSON export; unsafe path: {}", exportDir.resolve(filename));
+            return null;
+        }
 
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
             writer.write("{\n");

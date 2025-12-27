@@ -12,6 +12,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -24,6 +25,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.actions.ActionOrigin;
+import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.notification.NotificationActionResolver;
 import com.devmod.client.notification.NotificationUiTheme;
@@ -37,15 +39,19 @@ import com.devmod.mailbox.client.ClientTicketCache.TicketData;
 import com.devmod.mailbox.client.screen.MailboxScreen;
 import com.devmod.mailbox.client.screen.NewsScreen;
 import com.devmod.mailbox.client.screen.TesterTaskScreen;
+import com.devmod.mailbox.client.screen.TicketCommentScreen;
 import com.devmod.mailbox.client.screen.TicketCreateScreen;
 import com.devmod.mailbox.network.payload.MailboxActionPayload;
 import com.devmod.mailbox.network.payload.MailboxSyncPayload.MailboxMessageData;
 import com.devmod.mailbox.network.payload.NewsReadPayload;
 import com.devmod.mailbox.network.payload.NewsSyncPayload.NewsArticleData;
+import com.devmod.mailbox.network.payload.TaskActionPayload;
+import com.devmod.mailbox.network.payload.TicketActionPayload;
 import com.devmod.mailbox.network.payload.TicketSyncRequestPayload;
 import com.devmod.mailbox.news.NewsCategory;
 import com.devmod.mailbox.task.TestTask;
 import com.devmod.mailbox.ticket.TicketPriority;
+import com.devmod.mailbox.ticket.TicketStatus;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 
@@ -65,6 +71,7 @@ public class NotificationCenterScreen extends Screen {
     private static final int LIST_GAP = 8;
     private static final int ACTION_HEIGHT = 20;
     private static final int DETAIL_ACTION_HEIGHT = 20;
+    private static final int DETAIL_ACTION_GAP = 6;
     private static final int MIN_SPLIT_WIDTH = 560;
 
     private static final int NOTIFICATION_ROW_HEIGHT = 68;
@@ -96,11 +103,6 @@ public class NotificationCenterScreen extends Screen {
     private Rect listRect = new Rect(0, 0, 0, 0);
     private Rect detailRect = new Rect(0, 0, 0, 0);
     private Rect backRect = new Rect(0, 0, 0, 0);
-    private Rect detailActionRect = new Rect(0, 0, 0, 0);
-    @Nullable
-    private Runnable detailActionHandler;
-    private boolean detailActionEnabled;
-    private String detailActionLabel = "";
 
     @Nullable
     private UUID selectedNotificationId;
@@ -340,7 +342,7 @@ public class NotificationCenterScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
 
         long now = System.currentTimeMillis();
         float openProgress = easeOutCubic(Math.min(1f, (now - openedAt) / 280f));
@@ -355,26 +357,29 @@ public class NotificationCenterScreen extends Screen {
         graphics.pose().pushPose();
         graphics.pose().translate(0, (1f - openProgress) * 12f, 0);
 
+        int shadowAlpha = (int) (140 * openProgress);
+        int shadowColor = NotificationUiTheme.withAlpha(0x000000, shadowAlpha);
+        graphics.fill(panelX - 8, panelY - 6, panelX + panelWidth + 8, panelY + panelHeight + 8, shadowColor);
+
         renderPanel(graphics, panelX, panelY, panelWidth, panelHeight, panelAlpha, mouseX, mouseY, now);
 
         graphics.pose().popPose();
 
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
     public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_TOP, 0xFF);
-        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_BOTTOM, 0xFF);
+        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BACKDROP_TOP, 0xFF);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BACKDROP_BOTTOM, 0xFF);
         graphics.fillGradient(0, 0, width, height, top, bottom);
 
-        int stripeColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, 0x1A);
-        for (int x = -height; x < width; x += 40) {
+        int stripeColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, 0x12);
+        for (int x = -height; x < width + height; x += 48) {
             graphics.fill(x, 0, x + 2, height, stripeColor);
         }
 
-        int dotColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, 0x22);
-        for (int i = 0; i < width; i += 64) {
+        int dotColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, 0x14);
+        for (int i = 0; i < width; i += 72) {
             int dotX = i + 12;
             int dotY = (i * 13) % Math.max(1, height - 6);
             graphics.fill(dotX, dotY, dotX + 2, dotY + 2, dotColor);
@@ -565,10 +570,6 @@ public class NotificationCenterScreen extends Screen {
             : new Rect(0, 0, 0, 0);
 
         detailRect = detailPanel;
-        detailActionRect = new Rect(0, 0, 0, 0);
-        detailActionHandler = null;
-        detailActionEnabled = false;
-        detailActionLabel = "";
         detailScrollMax = 0;
 
         switch (activeTab) {
@@ -651,7 +652,7 @@ public class NotificationCenterScreen extends Screen {
 
         if (detailPanel.w() > 0) {
             renderInsetPanel(graphics, detailPanel, panelAlpha);
-            renderMailboxDetail(graphics, detailPanel, panelAlpha);
+            renderMailboxDetail(graphics, detailPanel, panelAlpha, mouseX, mouseY);
         }
     }
 
@@ -684,7 +685,7 @@ public class NotificationCenterScreen extends Screen {
 
         if (detailPanel.w() > 0) {
             renderInsetPanel(graphics, detailPanel, panelAlpha);
-            renderNewsDetail(graphics, detailPanel, panelAlpha);
+            renderNewsDetail(graphics, detailPanel, panelAlpha, mouseX, mouseY);
         }
     }
 
@@ -717,7 +718,7 @@ public class NotificationCenterScreen extends Screen {
 
         if (detailPanel.w() > 0) {
             renderInsetPanel(graphics, detailPanel, panelAlpha);
-            renderTicketDetail(graphics, detailPanel, panelAlpha);
+            renderTicketDetail(graphics, detailPanel, panelAlpha, mouseX, mouseY);
         }
     }
 
@@ -757,7 +758,7 @@ public class NotificationCenterScreen extends Screen {
 
         if (detailPanel.w() > 0) {
             renderInsetPanel(graphics, detailPanel, panelAlpha);
-            renderTaskDetail(graphics, detailPanel, panelAlpha);
+            renderTaskDetail(graphics, detailPanel, panelAlpha, mouseX, mouseY);
         }
     }
 
@@ -907,6 +908,12 @@ public class NotificationCenterScreen extends Screen {
         String priorityLabel = notification.priority().name().toLowerCase(Locale.ROOT);
         String timeLabel = formatAge(notification.createdAt());
 
+        List<DetailAction> actions = new ArrayList<>();
+        if (notification.actionId() != null && !notification.actionId().isBlank()) {
+            String label = Component.translatable("devmod.notification.center.action.open_notification").getString();
+            actions.add(new DetailAction(label, true, true, () -> invokeNotificationAction(notification)));
+        }
+
         int contentX = rect.x() + 12;
         int contentWidth = rect.w() - 24;
         int cursorY = rect.y() + 12;
@@ -932,7 +939,8 @@ public class NotificationCenterScreen extends Screen {
         }
 
         int contentTop = cursorY + 6;
-        int contentHeight = rect.h() - (contentTop - rect.y()) - 36;
+        int actionAreaHeight = getDetailActionAreaHeight(actions, rect.w());
+        int contentHeight = rect.h() - (contentTop - rect.y()) - actionAreaHeight;
         detailScrollMax = Math.max(0, lines.size() * 12 - contentHeight);
         detailScrollOffset = Mth.clamp(detailScrollOffset, 0, detailScrollMax);
 
@@ -948,18 +956,10 @@ public class NotificationCenterScreen extends Screen {
             lineY += 12;
         }
 
-        if (notification.actionId() != null && !notification.actionId().isBlank()) {
-            detailActionLabel = Component.translatable("devmod.notification.center.action.open_notification").getString();
-            int buttonW = font.width(detailActionLabel) + 14;
-            detailActionRect = new Rect(rect.x() + rect.w() - buttonW - 12,
-                rect.y() + rect.h() - DETAIL_ACTION_HEIGHT - 12, buttonW, DETAIL_ACTION_HEIGHT);
-            detailActionHandler = () -> invokeNotificationAction(notification);
-            detailActionEnabled = true;
-            renderActionButton(graphics, detailActionRect, detailActionLabel, mouseX, mouseY, true, true);
-        }
+        renderDetailActions(graphics, rect, mouseX, mouseY, actions);
     }
 
-    private void renderMailboxDetail(GuiGraphics graphics, Rect rect, int panelAlpha) {
+    private void renderMailboxDetail(GuiGraphics graphics, Rect rect, int panelAlpha, int mouseX, int mouseY) {
         MailboxMessageData message = getSelectedMailboxMessage();
         if (message == null) {
             renderEmptyState(graphics, rect, "devmod.notification.center.detail.empty.title",
@@ -968,6 +968,20 @@ public class NotificationCenterScreen extends Screen {
         }
 
         Font font = Objects.requireNonNull(this.font);
+        List<DetailAction> actions = new ArrayList<>();
+        if (message.hasAttachment()) {
+            boolean canClaim = message.canClaimAttachment();
+            String label = Component.translatable("devmod.mailbox.claim_attachment").getString();
+            actions.add(new DetailAction(label, true, canClaim, () -> claimMailboxMessage(message)));
+        }
+        boolean canDelete = !message.canClaimAttachment();
+        String deleteLabel = Component.translatable("devmod.mailbox.delete").getString();
+        actions.add(new DetailAction(deleteLabel, false, canDelete, () -> deleteMailboxMessage(message)));
+        if (!message.isRead()) {
+            String readLabel = Component.translatable("devmod.mailbox.mark_read").getString();
+            actions.add(new DetailAction(readLabel, false, true, () -> markMailboxRead(message)));
+        }
+
         int contentX = rect.x() + 12;
         int contentWidth = rect.w() - 24;
         int cursorY = rect.y() + 12;
@@ -987,7 +1001,8 @@ public class NotificationCenterScreen extends Screen {
         List<String> lines = wrapText(font, body, contentWidth);
 
         int contentTop = cursorY + 6;
-        int contentHeight = rect.h() - (contentTop - rect.y()) - 18;
+        int actionAreaHeight = getDetailActionAreaHeight(actions, rect.w());
+        int contentHeight = rect.h() - (contentTop - rect.y()) - actionAreaHeight;
         detailScrollMax = Math.max(0, lines.size() * 12 - contentHeight);
         detailScrollOffset = Mth.clamp(detailScrollOffset, 0, detailScrollMax);
 
@@ -999,9 +1014,11 @@ public class NotificationCenterScreen extends Screen {
             }
             lineY += 12;
         }
+
+        renderDetailActions(graphics, rect, mouseX, mouseY, actions);
     }
 
-    private void renderNewsDetail(GuiGraphics graphics, Rect rect, int panelAlpha) {
+    private void renderNewsDetail(GuiGraphics graphics, Rect rect, int panelAlpha, int mouseX, int mouseY) {
         NewsArticleData article = getSelectedNewsArticle();
         if (article == null) {
             renderEmptyState(graphics, rect, "devmod.notification.center.detail.empty.title",
@@ -1010,6 +1027,7 @@ public class NotificationCenterScreen extends Screen {
         }
 
         Font font = Objects.requireNonNull(this.font);
+        List<DetailAction> actions = List.of();
         int contentX = rect.x() + 12;
         int contentWidth = rect.w() - 24;
         int cursorY = rect.y() + 12;
@@ -1025,7 +1043,8 @@ public class NotificationCenterScreen extends Screen {
 
         List<String> lines = wrapText(font, article.content(), contentWidth);
         int contentTop = cursorY + 6;
-        int contentHeight = rect.h() - (contentTop - rect.y()) - 18;
+        int actionAreaHeight = getDetailActionAreaHeight(actions, rect.w());
+        int contentHeight = rect.h() - (contentTop - rect.y()) - actionAreaHeight;
         detailScrollMax = Math.max(0, lines.size() * 12 - contentHeight);
         detailScrollOffset = Mth.clamp(detailScrollOffset, 0, detailScrollMax);
 
@@ -1037,9 +1056,11 @@ public class NotificationCenterScreen extends Screen {
             }
             lineY += 12;
         }
+
+        renderDetailActions(graphics, rect, mouseX, mouseY, actions);
     }
 
-    private void renderTicketDetail(GuiGraphics graphics, Rect rect, int panelAlpha) {
+    private void renderTicketDetail(GuiGraphics graphics, Rect rect, int panelAlpha, int mouseX, int mouseY) {
         TicketData ticket = getSelectedTicket();
         if (ticket == null) {
             renderEmptyState(graphics, rect, "devmod.notification.center.detail.empty.title",
@@ -1048,6 +1069,18 @@ public class NotificationCenterScreen extends Screen {
         }
 
         Font font = Objects.requireNonNull(this.font);
+        List<DetailAction> actions = new ArrayList<>();
+        String commentLabel = Component.translatable("devmod.ticket.action.add_comment").getString();
+        actions.add(new DetailAction(commentLabel, false, true, () -> openTicketComment(ticket)));
+        if (ticket.status() == TicketStatus.CLOSED || ticket.status() == TicketStatus.RESOLVED) {
+            String reopenLabel = Component.translatable("devmod.ticket.action.reopen").getString();
+            actions.add(new DetailAction(reopenLabel, true, true,
+                () -> updateTicketStatus(ticket, TicketStatus.OPEN)));
+        } else {
+            String closeLabel = Component.translatable("devmod.ticket.action.close").getString();
+            actions.add(new DetailAction(closeLabel, true, true,
+                () -> updateTicketStatus(ticket, TicketStatus.CLOSED)));
+        }
         int contentX = rect.x() + 12;
         int contentWidth = rect.w() - 24;
         int cursorY = rect.y() + 12;
@@ -1071,7 +1104,8 @@ public class NotificationCenterScreen extends Screen {
             : Component.translatable("devmod.notification.center.ticket.no_description").getString();
         List<String> lines = wrapText(font, description, contentWidth);
         int contentTop = cursorY + 6;
-        int contentHeight = rect.h() - (contentTop - rect.y()) - 18;
+        int actionAreaHeight = getDetailActionAreaHeight(actions, rect.w());
+        int contentHeight = rect.h() - (contentTop - rect.y()) - actionAreaHeight;
         detailScrollMax = Math.max(0, lines.size() * 12 - contentHeight);
         detailScrollOffset = Mth.clamp(detailScrollOffset, 0, detailScrollMax);
 
@@ -1083,9 +1117,11 @@ public class NotificationCenterScreen extends Screen {
             }
             lineY += 12;
         }
+
+        renderDetailActions(graphics, rect, mouseX, mouseY, actions);
     }
 
-    private void renderTaskDetail(GuiGraphics graphics, Rect rect, int panelAlpha) {
+    private void renderTaskDetail(GuiGraphics graphics, Rect rect, int panelAlpha, int mouseX, int mouseY) {
         TestTask task = getSelectedTask();
         if (task == null) {
             renderEmptyState(graphics, rect, "devmod.notification.center.detail.empty.title",
@@ -1094,6 +1130,19 @@ public class NotificationCenterScreen extends Screen {
         }
 
         Font font = Objects.requireNonNull(this.font);
+        List<DetailAction> actions = new ArrayList<>();
+        if (task.status() == TestTask.TaskStatus.PENDING) {
+            String label = Component.translatable("devmod.tester.start").getString();
+            actions.add(new DetailAction(label, true, true,
+                () -> updateTaskStatus(task, TestTask.TaskStatus.IN_PROGRESS)));
+        } else if (task.status() == TestTask.TaskStatus.IN_PROGRESS) {
+            String label = Component.translatable("devmod.tester.complete").getString();
+            actions.add(new DetailAction(label, true, true,
+                () -> updateTaskStatus(task, TestTask.TaskStatus.COMPLETED)));
+        }
+        String notesLabel = Component.translatable("devmod.tester.add_notes").getString();
+        actions.add(new DetailAction(notesLabel, false, true, () -> openTaskNotes(task)));
+
         int contentX = rect.x() + 12;
         int contentWidth = rect.w() - 24;
         int cursorY = rect.y() + 12;
@@ -1111,7 +1160,8 @@ public class NotificationCenterScreen extends Screen {
             : Component.translatable("devmod.notification.center.task.no_description").getString();
         List<String> lines = wrapText(font, description, contentWidth);
         int contentTop = cursorY + 6;
-        int contentHeight = rect.h() - (contentTop - rect.y()) - 18;
+        int actionAreaHeight = getDetailActionAreaHeight(actions, rect.w());
+        int contentHeight = rect.h() - (contentTop - rect.y()) - actionAreaHeight;
         detailScrollMax = Math.max(0, lines.size() * 12 - contentHeight);
         detailScrollOffset = Mth.clamp(detailScrollOffset, 0, detailScrollMax);
 
@@ -1123,6 +1173,8 @@ public class NotificationCenterScreen extends Screen {
             }
             lineY += 12;
         }
+
+        renderDetailActions(graphics, rect, mouseX, mouseY, actions);
     }
 
     private void renderListRowBackground(GuiGraphics graphics, Rect rect, boolean selected, boolean hovered,
@@ -1168,6 +1220,55 @@ public class NotificationCenterScreen extends Screen {
         }
         graphics.drawString(font, label, rect.x() + 7, rect.y() + 6,
                 NotificationUiTheme.withAlpha(textColor, 0xFF), false);
+    }
+
+    private int getDetailActionAreaHeight(List<DetailAction> actions, int rectWidth) {
+        int rows = countDetailActionRows(actions, rectWidth - 24);
+        if (rows <= 0) {
+            return 18;
+        }
+        return rows * DETAIL_ACTION_HEIGHT + (rows - 1) * DETAIL_ACTION_GAP + 16;
+    }
+
+    private int countDetailActionRows(List<DetailAction> actions, int maxWidth) {
+        if (actions.isEmpty()) {
+            return 0;
+        }
+        Font font = Objects.requireNonNull(this.font);
+        int rows = 1;
+        int rightX = maxWidth;
+        for (DetailAction action : actions) {
+            int width = Math.min(maxWidth, font.width(action.label()) + 14);
+            if (rightX - width < 0) {
+                rows++;
+                rightX = maxWidth;
+            }
+            rightX -= width + 8;
+        }
+        return rows;
+    }
+
+    private void renderDetailActions(GuiGraphics graphics, Rect rect, int mouseX, int mouseY,
+                                     List<DetailAction> actions) {
+        if (actions.isEmpty()) {
+            return;
+        }
+        Font font = Objects.requireNonNull(this.font);
+        int rightX = rect.x() + rect.w() - 12;
+        int leftBound = rect.x() + 12;
+        int y = rect.y() + rect.h() - DETAIL_ACTION_HEIGHT - 12;
+
+        for (DetailAction action : actions) {
+            int width = font.width(action.label()) + 14;
+            if (rightX - width < leftBound) {
+                y -= DETAIL_ACTION_HEIGHT + DETAIL_ACTION_GAP;
+                rightX = rect.x() + rect.w() - 12;
+            }
+            Rect buttonRect = new Rect(rightX - width, y, width, DETAIL_ACTION_HEIGHT);
+            renderActionButton(graphics, buttonRect, action.label(), mouseX, mouseY, action.accent(), action.enabled());
+            actionButtons.add(new ActionButton(buttonRect, action.onClick(), action.enabled()));
+            rightX = buttonRect.x() - 8;
+        }
     }
 
     private int renderFilters(GuiGraphics graphics, int startX, int startY, int width,
@@ -1291,11 +1392,6 @@ public class NotificationCenterScreen extends Screen {
             }
         }
 
-        if (detailActionEnabled && detailActionHandler != null && detailActionRect.contains(mouseX, mouseY)) {
-            detailActionHandler.run();
-            return true;
-        }
-
         if (activeTab == Tab.NOTIFICATIONS) {
             for (FilterChip chip : filterChips) {
                 if (chip.rect() != null && chip.rect().contains(mouseX, mouseY)) {
@@ -1348,10 +1444,7 @@ public class NotificationCenterScreen extends Screen {
             if (rowRect.contains(mouseX, mouseY)) {
                 selectedMailboxId = message.id();
                 detailScrollOffset = 0;
-                if (!message.isRead()) {
-                    PacketDistributor.sendToServer(MailboxActionPayload.read(message.id()));
-                    ClientMailboxCache.markAsRead(message.id());
-                }
+                markMailboxRead(message);
                 if (message.body() == null || (message.hasAttachment() && message.attachmentData() == null)) {
                     PacketDistributor.sendToServer(MailboxActionPayload.refresh());
                 }
@@ -1411,12 +1504,86 @@ public class NotificationCenterScreen extends Screen {
                 selectedTaskId = task.id();
                 detailScrollOffset = 0;
                 if (detailRect.w() == 0) {
-                    TesterTaskScreen.open();
+                    TesterTaskScreen.open(task.id());
                 }
                 return;
             }
             y += TASK_ROW_HEIGHT + LIST_GAP;
         }
+    }
+
+    private void markMailboxRead(MailboxMessageData message) {
+        if (message.isRead()) {
+            return;
+        }
+        PacketDistributor.sendToServer(MailboxActionPayload.read(message.id()));
+        ClientMailboxCache.markAsRead(message.id());
+    }
+
+    private void claimMailboxMessage(MailboxMessageData message) {
+        if (!message.canClaimAttachment()) {
+            return;
+        }
+        PacketDistributor.sendToServer(MailboxActionPayload.claim(message.id()));
+        ClientMailboxCache.markAttachmentClaimed(message.id());
+    }
+
+    private void deleteMailboxMessage(MailboxMessageData message) {
+        if (message.canClaimAttachment()) {
+            return;
+        }
+        PacketDistributor.sendToServer(MailboxActionPayload.delete(message.id()));
+        ClientMailboxCache.removeMessage(message.id());
+        if (message.id().equals(selectedMailboxId)) {
+            List<MailboxMessageData> messages = ClientMailboxCache.getMessages();
+            selectedMailboxId = messages.isEmpty() ? null : messages.get(0).id();
+            detailScrollOffset = 0;
+        }
+    }
+
+    private void updateTaskStatus(TestTask task, TestTask.TaskStatus status) {
+        ClientTaskCache.updateTaskStatus(task.id(), status);
+        PacketDistributor.sendToServer(TaskActionPayload.updateStatus(task.id(), status));
+    }
+
+    private void updateTicketStatus(TicketData ticket, TicketStatus status) {
+        ClientTicketCache.updateStatus(ticket.id(), status);
+        PacketDistributor.sendToServer(TicketActionPayload.updateStatus(ticket.id(), status));
+    }
+
+    private void openTaskNotes(TestTask task) {
+        TesterTaskScreen.openForNotes(task.id());
+    }
+
+    private void openTicketComment(TicketData ticket) {
+        TicketCommentScreen.open(this, ticket);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (matchesKeybind(KeyInputHandler.OPEN_NOTIFICATION_CENTER_KEY, keyCode, scanCode)) {
+            if (activeTab != Tab.NOTIFICATIONS) {
+                selectTab(Tab.NOTIFICATIONS, null);
+            }
+            return true;
+        }
+        if (matchesKeybind(KeyInputHandler.OPEN_MAILBOX_KEY, keyCode, scanCode)) {
+            if (activeTab != Tab.MAILBOX) {
+                selectTab(Tab.MAILBOX, null);
+            }
+            return true;
+        }
+        if (matchesKeybind(KeyInputHandler.OPEN_TESTER_TASKS_KEY, keyCode, scanCode)) {
+            if (activeTab != Tab.TASKS) {
+                selectTab(Tab.TASKS, null);
+            }
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    private boolean matchesKeybind(KeyMapping mapping, int keyCode, int scanCode) {
+        return mapping.matches(keyCode, scanCode);
     }
 
     @Override
@@ -1719,6 +1886,8 @@ public class NotificationCenterScreen extends Screen {
     private record TabEntry(Tab tab, Rect rect, boolean enabled) {}
 
     private record ActionButton(Rect rect, Runnable onClick, boolean enabled) {}
+
+    private record DetailAction(String label, boolean accent, boolean enabled, Runnable onClick) {}
 
     private enum Tab {
         NOTIFICATIONS("NOTIFICATIONS", "devmod.notification.center.tab.notifications"),

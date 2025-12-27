@@ -29,15 +29,15 @@ Endurance is the wave-based quest mode. It manages quest lifecycle, wave orchest
 
 ### Progression
 
-- Combos: `ComboSystem`, `ComboDecayPayload`
+- Combos: `ComboSystem` (notifications via `NotificationService`)
 - Perks: `PerkSystem`, `PerkSynergySystem`, `PerkSynergyWeb`
-- Rewards + rankings: `RewardSystem`, `GamificationManager`, `PrestigeResetSystem`, `LeaderboardSystem`
+- Rewards + rankings: `RewardSystem`, `GamificationManager`, `LeaderboardSystem` (PrestigeResetSystem removed)
 - Momentum/tension: `MomentumTracker`, `TensionSystem`, `FlowStateTracker`
 
 ### Modules
 
 - `com.devmod.endurance.challenges` (Daily/Weekly challenges + managers)
-- `com.devmod.endurance.contracts` (ActiveContractManager, BloodContractRegistry)
+- `com.devmod.endurance.contracts` (ActiveContractManager; BloodContractRegistry removed)
 - `com.devmod.endurance.season` (SeasonPassSystem, PlayerSeasonProgress)
 - `com.devmod.endurance.guild` (GuildSystem)
 - `com.devmod.endurance.nemesis` (NemesisEvolutionManager)
@@ -56,11 +56,10 @@ Endurance is the wave-based quest mode. It manages quest lifecycle, wave orchest
   WaveDirectiveChoicesPayload, WaveDirectiveSelectionPayload,
   PerkChoicesPayload, PerkSelectionPayload,
   ShopSyncPayload, RequestShopSyncPayload, ShopPurchasePayload,
-  TokenGainPayload, BadgeUnlockPayload, BossAlertPayload, RecordBannerPayload,
-  ComboDecayPayload, TensionUpdatePayload, InstanceLoadingPayload,
+  BossAlertPayload, TensionUpdatePayload, InstanceLoadingPayload,
   ContractSyncPayload, ChallengeSyncPayload,
-  SeasonPassPayload, SeasonTierUpPayload,
-  ResonanceNotificationPayload,
+  SeasonPassPayload,
+  UnifiedNotificationPayload (token/badge/record/combo/season/resonance),
   PersonalRecordsSyncPayload, RequestPersonalRecordsPayload.
 
 ## Integration
