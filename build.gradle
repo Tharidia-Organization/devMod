@@ -278,6 +278,8 @@ dependencies {
     localRuntime('org.eclipse.jetty:jetty-server:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty:jetty-servlet:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-core-server:11.0.20') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-core-common:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime 'io.jsonwebtoken:jjwt-api:0.12.3'
     localRuntime 'io.jsonwebtoken:jjwt-impl:0.12.3'
     localRuntime 'io.jsonwebtoken:jjwt-gson:0.12.3'
@@ -305,6 +307,12 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') {
+        exclude group: 'org.slf4j'
+    }
+    implementation('org.eclipse.jetty.websocket:websocket-core-server:11.0.20') {
+        exclude group: 'org.slf4j'
+    }
+    implementation('org.eclipse.jetty.websocket:websocket-core-common:11.0.20') {
         exclude group: 'org.slf4j'
     }
     jarJar("io.javalin:javalin:[6.3.0]") {
