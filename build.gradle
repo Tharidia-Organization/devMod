@@ -283,6 +283,7 @@ dependencies {
     localRuntime('org.eclipse.jetty:jetty-util:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty:jetty-security:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-jetty-common:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty.websocket:websocket-core-server:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty.websocket:websocket-core-common:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty.websocket:websocket-servlet:11.0.20') { exclude group: 'org.slf4j' }
@@ -327,6 +328,9 @@ dependencies {
     implementation('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') {
         exclude group: 'org.slf4j'
     }
+    implementation('org.eclipse.jetty.websocket:websocket-jetty-common:11.0.20') {
+        exclude group: 'org.slf4j'
+    }
     implementation('org.eclipse.jetty.websocket:websocket-core-server:11.0.20') {
         exclude group: 'org.slf4j'
     }
@@ -359,6 +363,9 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     jarJar("org.eclipse.jetty.websocket:websocket-jetty-server:[11.0.20]") {
+        exclude group: 'org.slf4j'
+    }
+    jarJar("org.eclipse.jetty.websocket:websocket-jetty-common:[11.0.20]") {
         exclude group: 'org.slf4j'
     }
     jarJar("org.eclipse.jetty.websocket:websocket-core-server:[11.0.20]") {
