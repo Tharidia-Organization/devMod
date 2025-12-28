@@ -276,8 +276,11 @@ dependencies {
     // Javalin 5.x uses Jetty 11, Javalin 6.x uses Jetty 12 - using 5.6.5 for Jetty 11 compatibility
     // Exclude slf4j - NeoForge requires exactly 2.0.9
     localRuntime('io.javalin:javalin:5.6.5') { exclude group: 'org.slf4j' }
+    localRuntime 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2'
     localRuntime('org.eclipse.jetty:jetty-server:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty:jetty-servlet:11.0.20') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-webapp:11.0.20') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-xml:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty:jetty-http:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty:jetty-io:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty:jetty-util:11.0.20') { exclude group: 'org.slf4j' }
@@ -308,10 +311,17 @@ dependencies {
     implementation('io.javalin:javalin:5.6.5') {
         exclude group: 'org.slf4j'
     }
+    implementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2'
     implementation('org.eclipse.jetty:jetty-server:11.0.20') {
         exclude group: 'org.slf4j'
     }
     implementation('org.eclipse.jetty:jetty-servlet:11.0.20') {
+        exclude group: 'org.slf4j'
+    }
+    implementation('org.eclipse.jetty:jetty-webapp:11.0.20') {
+        exclude group: 'org.slf4j'
+    }
+    implementation('org.eclipse.jetty:jetty-xml:11.0.20') {
         exclude group: 'org.slf4j'
     }
     implementation('org.eclipse.jetty:jetty-http:11.0.20') {
@@ -348,10 +358,17 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     // Jetty dependencies for Javalin (required for NeoForge module system)
+    jarJar("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:[5.0.2]")
     jarJar("org.eclipse.jetty:jetty-server:[11.0.20]") {
         exclude group: 'org.slf4j'
     }
     jarJar("org.eclipse.jetty:jetty-servlet:[11.0.20]") {
+        exclude group: 'org.slf4j'
+    }
+    jarJar("org.eclipse.jetty:jetty-webapp:[11.0.20]") {
+        exclude group: 'org.slf4j'
+    }
+    jarJar("org.eclipse.jetty:jetty-xml:[11.0.20]") {
         exclude group: 'org.slf4j'
     }
     jarJar("org.eclipse.jetty:jetty-http:[11.0.20]") {
