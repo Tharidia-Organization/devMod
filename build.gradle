@@ -295,7 +295,7 @@ dependencies {
     localRuntime 'io.jsonwebtoken:jjwt-api:0.12.3'
     localRuntime 'io.jsonwebtoken:jjwt-impl:0.12.3'
     localRuntime 'io.jsonwebtoken:jjwt-gson:0.12.3'
-    jarJar("org.duckdb:duckdb_jdbc:[1.4.3.0]")
+    // NeoForge will resolve DuckDB at runtime via the standard dependency classpath
     testImplementation 'org.duckdb:duckdb_jdbc:1.4.3.0'
 
     // Gson - JSON serialization for REST API responses (used by dashboard server)
