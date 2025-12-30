@@ -13,6 +13,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatRegistry;
+import com.devmod.util.MixinLogFilter;
 
 public class ModIntegrationManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModIntegrationManager.class);
@@ -28,6 +29,11 @@ public class ModIntegrationManager {
      */
     public static void init() {
         if (initialized) return;
+
+        // Install log filter early to suppress client-side mixin warnings on dedicated servers
+        if (!FMLEnvironment.dist.isClient()) {
+            MixinLogFilter.install();
+        }
 
         // Use new Compat utility for detection
         pehkuiLoaded = Compat.isLoaded(Compat.Mods.PEHKUI);
@@ -80,6 +86,7 @@ public class ModIntegrationManager {
         CompatRegistry.register(new com.devmod.compat.mods.spellpower.SpellPowerCompat());
         CompatRegistry.register(new com.devmod.compat.mods.rangedweaponapi.RangedWeaponApiCompat());
         CompatRegistry.register(new com.devmod.compat.mods.apothicattributes.ApothicAttributesCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.elixirum.ElixirumCompat());
 
         // P3 - Combat/Attributes (Mobs)
         CompatRegistry.register(new com.devmod.compat.mods.mowziesmobs.MowziesMobsCompat());

@@ -23,7 +23,6 @@ public class IronsSpellbooksCompat implements CompatModule {
     // Cached reflection references
     private static Class<?> magicDataClass;
     private static Class<?> abstractSpellClass;
-    private static Class<?> magicHelperClass;
 
     private static Method getPlayerMagicDataMethod;
     private static Method getManaMethod;
@@ -67,15 +66,20 @@ public class IronsSpellbooksCompat implements CompatModule {
             // Try to load Iron's Spellbooks API classes via reflection
             magicDataClass = Class.forName("io.redspace.ironsspellbooks.api.magic.MagicData");
             abstractSpellClass = Class.forName("io.redspace.ironsspellbooks.api.spells.AbstractSpell");
-            magicHelperClass = Class.forName("io.redspace.ironsspellbooks.api.magic.MagicHelper");
 
-            // Get MagicHelper.getPlayerMagicData(Player)
-            getPlayerMagicDataMethod = magicHelperClass.getMethod("getPlayerMagicData", Player.class);
+            // Get MagicData.getPlayerMagicData(LivingEntity) - static method on MagicData class
+            getPlayerMagicDataMethod = magicDataClass.getMethod("getPlayerMagicData", LivingEntity.class);
 
             // Get MagicData methods
             getManaMethod = magicDataClass.getMethod("getMana");
-            getMaxManaMethod = magicDataClass.getMethod("getMaxMana");
             isCastingMethod = magicDataClass.getMethod("isCasting");
+
+            // getMaxMana may not exist in newer versions - max mana is via player attributes
+            try {
+                getMaxManaMethod = magicDataClass.getMethod("getMaxMana");
+            } catch (NoSuchMethodException e) {
+                LOGGER.debug("[Compat:irons_spellbooks] getMaxMana not on MagicData - will use player attributes");
+            }
 
             // Try to get getCastingSpell method
             try {
@@ -164,23 +168,48 @@ public class IronsSpellbooksCompat implements CompatModule {
 
     /**
      * Get the maximum mana of a player.
+     * In newer versions, max mana comes from player attributes instead of MagicData.
      *
      * @param player The player
      * @return Max mana, or -1 if not available
      */
     public static float getMaxMana(Player player) {
-        Object magicData = getMagicData(player);
-        if (magicData == null || getMaxManaMethod == null) {
+        if (!available || player == null) {
             return -1f;
         }
 
+        // Try MagicData.getMaxMana() first (older versions)
+        if (getMaxManaMethod != null) {
+            Object magicData = getMagicData(player);
+            if (magicData != null) {
+                try {
+                    Object result = getMaxManaMethod.invoke(magicData);
+                    if (result instanceof Number) {
+                        return ((Number) result).floatValue();
+                    }
+                } catch (Exception e) {
+                    LOGGER.debug("[Compat:irons_spellbooks] Failed to get max mana from MagicData: {}", e.getMessage());
+                }
+            }
+        }
+
+        // Fallback: get max mana from player attribute (newer versions)
         try {
-            Object result = getMaxManaMethod.invoke(magicData);
-            if (result instanceof Number) {
-                return ((Number) result).floatValue();
+            Class<?> attributeRegistry = Class.forName("io.redspace.ironsspellbooks.api.registry.AttributeRegistry");
+            java.lang.reflect.Field maxManaField = attributeRegistry.getField("MAX_MANA");
+            Object maxManaHolder = maxManaField.get(null);
+
+            if (maxManaHolder != null) {
+                // Use reflection to call player.getAttributeValue(holder)
+                java.lang.reflect.Method getAttrValue = Player.class.getMethod("getAttributeValue",
+                    net.minecraft.core.Holder.class);
+                Object result = getAttrValue.invoke(player, maxManaHolder);
+                if (result instanceof Number) {
+                    return ((Number) result).floatValue();
+                }
             }
         } catch (Exception e) {
-            LOGGER.debug("[Compat:irons_spellbooks] Failed to get max mana: {}", e.getMessage());
+            LOGGER.debug("[Compat:irons_spellbooks] Failed to get max mana from attributes: {}", e.getMessage());
         }
 
         return -1f;

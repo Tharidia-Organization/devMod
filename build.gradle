@@ -32,6 +32,12 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
+
+    // DevAuth for Microsoft authentication in dev environment
+    maven {
+        name = "DevAuth"
+        url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1"
+    }
 }
 
 base {
@@ -258,6 +264,9 @@ dependencies {
     // JSR-305 null-safety annotations (@Nonnull, @Nullable) for main sources
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
+    // DevAuth - Microsoft authentication for dev environment
+    // Added as JAR in run/mods folder (not gradle dependency to avoid module conflicts)
+
     // Error Prone compiler + NullAway plugin for compile-time null-safety verification
     errorprone 'com.google.errorprone:error_prone_core:2.24.1'
     errorprone 'com.uber.nullaway:nullaway:0.11.3'
@@ -274,7 +283,6 @@ dependencies {
 
     // Javalin and JWT for API server (needed in localRuntime for NeoForge classloader)
     // Javalin 5.x uses Jetty 11, Javalin 6.x uses Jetty 12 - using 5.6.5 for Jetty 11 compatibility
-    // Exclude slf4j - NeoForge requires exactly 2.0.9
     localRuntime('io.javalin:javalin:5.6.5') { exclude group: 'org.slf4j' }
     localRuntime 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2'
     localRuntime('org.eclipse.jetty:jetty-server:11.0.20') { exclude group: 'org.slf4j' }
@@ -307,8 +315,13 @@ dependencies {
     // API v4.0.1 supports 1.21-1.21.1 on NeoForge
     compileOnly "maven.modrinth:distanthorizons:2.3.0-b-1.21.1"
 
+    // GUI Scaler - Auto-scales GUI based on screen resolution (dev testing)
+    // https://github.com/zendiik/gui-scaler
+    localRuntime "maven.modrinth:auto-gui-scaler:1.21.1-1.0.1"
+
     // Javalin - Lightweight HTTP server for REST API (admin panel backend)
     // Javalin 5.x uses Jetty 11, Javalin 6.x uses Jetty 12 - using 5.6.5 for compatibility
+    // NOTE: Kotlin included - required by Javalin module-info at bootstrap
     implementation('io.javalin:javalin:5.6.5') {
         exclude group: 'org.slf4j'
     }
@@ -356,54 +369,11 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation 'org.jetbrains:annotations:24.1.0'
-    jarJar("io.javalin:javalin:[5.6.5]") {
-        exclude group: 'org.slf4j'
-    }
-    // Jetty dependencies for Javalin (required for NeoForge module system)
-    jarJar("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:[5.0.2]")
-    jarJar("org.eclipse.jetty:jetty-server:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty:jetty-servlet:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty:jetty-webapp:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty:jetty-xml:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty:jetty-http:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty:jetty-io:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty:jetty-util:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty:jetty-security:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty.websocket:websocket-jetty-server:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty.websocket:websocket-jetty-common:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty.websocket:websocket-jetty-api:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty.websocket:websocket-core-server:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty.websocket:websocket-core-common:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.eclipse.jetty.websocket:websocket-servlet:[11.0.20]") {
-        exclude group: 'org.slf4j'
-    }
-    jarJar("org.jetbrains:annotations:[24.1.0]")
+
+    // NOTE: All jarJar dependencies removed - they cause module conflicts in dev environment
+    // with other mods (Kotlin For Forge, Plasmo Voice, etc.) that include the same libraries.
+    // The implementation/localRuntime dependencies above provide these at compile and dev runtime.
+    // For production JAR, these would need to be re-enabled or dependencies bundled differently.
 
     // Jackson - JSON serialization for Javalin REST API
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
@@ -413,9 +383,8 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
     implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
     implementation 'io.jsonwebtoken:jjwt-gson:0.12.3'
-    jarJar("io.jsonwebtoken:jjwt-api:[0.12.3]")
-    jarJar("io.jsonwebtoken:jjwt-impl:[0.12.3]")
-    jarJar("io.jsonwebtoken:jjwt-gson:[0.12.3]")
+    // NOTE: Removed jarJar for jjwt - causes module conflict with Plasmo Voice
+    // which also includes JWT libraries (error: "reads more than one module named jjwt.gson")
 
     // NOTE: Removed Caffeine dependency (replaced with ConcurrentHashMap-based cache in HitHelper)
     // This avoids ModDevPlugin 2.0 compatibility issues with external dependencies

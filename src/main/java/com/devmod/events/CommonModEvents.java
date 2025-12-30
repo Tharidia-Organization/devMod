@@ -39,11 +39,13 @@ import com.devmod.notification.PartyNotificationBridge;
 import com.devmod.notification.persistence.NotificationHistoryRepository;
 import com.devmod.notification.persistence.NotificationPreferencesRepository;
 import com.devmod.stats.ArmorStats;
+import com.devmod.telemetry.duckdb.DuckDBBootstrap;
 import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
 import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
 import com.devmod.testing.stats.HazardTypeRegistry;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.DamageTypeConfig;
+import com.devmod.util.MixinLogFilter;
 
 import static com.devmod.DevMod.MODID;
 
@@ -197,68 +199,76 @@ public class CommonModEvents {
             LOGGER.error("[DevMod] Failed to initialize LeaderboardSystem", e);
         }
 
-        // Initialize MailboxManager for in-game messaging system
-        try {
-            com.devmod.mailbox.MailboxManager.INSTANCE.initialize().join();
+        // Check DuckDB availability and download if needed
+        boolean duckDbAvailable = DuckDBBootstrap.ensureAvailable(ConfigPaths.getGameDir());
 
-            // Set up callback to notify clients of new messages
-            com.devmod.mailbox.MailboxManager.INSTANCE.setNewMessageCallback((recipientUuid, message) -> {
-                ServerPlayer recipient = event.getServer().getPlayerList().getPlayer(java.util.Objects.requireNonNull(recipientUuid));
-                if (recipient != null) {
-                    // Get unread count and send notification
-                    observeFuture(com.devmod.mailbox.MailboxManager.INSTANCE.getUnreadCount(recipientUuid)
-                        .thenAccept(unreadCount -> {
-                            com.devmod.mailbox.network.MailboxNetworkHandler.sendNotification(recipient, message, unreadCount);
-                            com.devmod.notification.NotificationService.INSTANCE.notifyMailboxMessage(
-                                recipientUuid, message, unreadCount);
-                        }),
-                        "mailbox unread count");
-                }
-            });
+        if (duckDbAvailable) {
+            // Initialize MailboxManager for in-game messaging system
+            try {
+                com.devmod.mailbox.MailboxManager.INSTANCE.initialize().join();
 
-            com.devmod.mailbox.news.NewsManager.INSTANCE.setNewNewsCallback(article -> {
-                var server = event.getServer();
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    try {
-                        com.devmod.mailbox.network.MailboxNetworkHandler.sendNewsSync(player);
-                        com.devmod.notification.NotificationService.INSTANCE.notifyNewsArticle(player.getUUID(), article);
-                    } catch (Exception e) {
-                        LOGGER.warn("[DevMod] Failed to notify news for {}: {}",
-                            player.getName().getString(), e.getMessage());
+                // Set up callback to notify clients of new messages
+                com.devmod.mailbox.MailboxManager.INSTANCE.setNewMessageCallback((recipientUuid, message) -> {
+                    ServerPlayer recipient = event.getServer().getPlayerList().getPlayer(java.util.Objects.requireNonNull(recipientUuid));
+                    if (recipient != null) {
+                        // Get unread count and send notification
+                        observeFuture(com.devmod.mailbox.MailboxManager.INSTANCE.getUnreadCount(recipientUuid)
+                            .thenAccept(unreadCount -> {
+                                com.devmod.mailbox.network.MailboxNetworkHandler.sendNotification(recipient, message, unreadCount);
+                                com.devmod.notification.NotificationService.INSTANCE.notifyMailboxMessage(
+                                    recipientUuid, message, unreadCount);
+                            }),
+                            "mailbox unread count");
                     }
-                }
-            });
+                });
 
-            LOGGER.info("[DevMod] MailboxManager initialized successfully");
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Failed to initialize MailboxManager", e);
-        }
+                com.devmod.mailbox.news.NewsManager.INSTANCE.setNewNewsCallback(article -> {
+                    var server = event.getServer();
+                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                        try {
+                            com.devmod.mailbox.network.MailboxNetworkHandler.sendNewsSync(player);
+                            com.devmod.notification.NotificationService.INSTANCE.notifyNewsArticle(player.getUUID(), article);
+                        } catch (Exception e) {
+                            LOGGER.warn("[DevMod] Failed to notify news for {}: {}",
+                                player.getName().getString(), e.getMessage());
+                        }
+                    }
+                });
 
-        // Initialize notification persistence repositories
-        try {
-            java.nio.file.Path dbPath = ConfigPaths.getGameDir()
-                    .resolve("devmod")
-                    .resolve("notifications.duckdb");
-            NotificationHistoryRepository.INSTANCE.initialize(dbPath).join();
-            NotificationPreferencesRepository.INSTANCE.initialize(dbPath).join();
-            LOGGER.info("[DevMod] Notification repositories initialized successfully");
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Failed to initialize notification repositories", e);
-        }
+                LOGGER.info("[DevMod] MailboxManager initialized successfully");
+            } catch (Exception e) {
+                LOGGER.error("[DevMod] Failed to initialize MailboxManager", e);
+            }
 
-        // Initialize Unified Notification Center
-        try {
-            com.devmod.notification.NotificationService.INSTANCE.initialize();
-            LOGGER.info("[DevMod] NotificationService initialized successfully");
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Failed to initialize NotificationService", e);
-        }
+            // Initialize notification persistence repositories
+            try {
+                java.nio.file.Path dbPath = ConfigPaths.getGameDir()
+                        .resolve("devmod")
+                        .resolve("notifications.duckdb");
+                NotificationHistoryRepository.INSTANCE.initialize(dbPath).join();
+                NotificationPreferencesRepository.INSTANCE.initialize(dbPath).join();
+                LOGGER.info("[DevMod] Notification repositories initialized successfully");
+            } catch (Exception e) {
+                LOGGER.error("[DevMod] Failed to initialize notification repositories", e);
+            }
 
-        // Register party notification bridge after notification service is ready
-        try {
-            PartyNotificationBridge.register();
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Failed to register PartyNotificationBridge", e);
+            // Initialize Unified Notification Center
+            try {
+                com.devmod.notification.NotificationService.INSTANCE.initialize();
+                LOGGER.info("[DevMod] NotificationService initialized successfully");
+            } catch (Exception e) {
+                LOGGER.error("[DevMod] Failed to initialize NotificationService", e);
+            }
+
+            // Register party notification bridge after notification service is ready
+            try {
+                PartyNotificationBridge.register();
+            } catch (Exception e) {
+                LOGGER.error("[DevMod] Failed to register PartyNotificationBridge", e);
+            }
+        } else {
+            LOGGER.warn("[DevMod] DuckDB not available - Mailbox and Notification features disabled");
+            LOGGER.warn("[DevMod] Restart the server after DuckDB download completes");
         }
     }
 
@@ -268,7 +278,11 @@ public class CommonModEvents {
      */
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
-        LOGGER.info("[DevMod] Server stopping, cleaning up EnduranceQuestManager...");
+        LOGGER.info("[DevMod] Server stopping, cleaning up...");
+
+        // Log mixin filter summary
+        MixinLogFilter.logSummary();
+
         try {
             EnduranceQuestManager.INSTANCE.shutdown();
             LOGGER.info("[DevMod] EnduranceQuestManager shutdown complete");
@@ -292,36 +306,39 @@ public class CommonModEvents {
             LOGGER.error("[DevMod] Error saving MailboxConfig", e);
         }
 
-        // Shutdown NotificationService
-        try {
-            com.devmod.notification.NotificationService.INSTANCE.shutdown();
-            LOGGER.info("[DevMod] NotificationService shutdown complete");
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Error during NotificationService shutdown", e);
-        }
+        // Only shutdown DuckDB-dependent services if they were initialized
+        if (DuckDBBootstrap.isAvailable()) {
+            // Shutdown NotificationService
+            try {
+                com.devmod.notification.NotificationService.INSTANCE.shutdown();
+                LOGGER.info("[DevMod] NotificationService shutdown complete");
+            } catch (Exception e) {
+                LOGGER.error("[DevMod] Error during NotificationService shutdown", e);
+            }
 
-        // Unregister party notification bridge
-        try {
-            PartyNotificationBridge.unregister();
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Failed to unregister PartyNotificationBridge", e);
-        }
+            // Unregister party notification bridge
+            try {
+                PartyNotificationBridge.unregister();
+            } catch (Exception e) {
+                LOGGER.error("[DevMod] Failed to unregister PartyNotificationBridge", e);
+            }
 
-        // Shutdown notification repositories
-        try {
-            NotificationHistoryRepository.INSTANCE.shutdown();
-            NotificationPreferencesRepository.INSTANCE.shutdown();
-            LOGGER.info("[DevMod] Notification repositories shutdown complete");
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Error during notification repositories shutdown", e);
-        }
+            // Shutdown notification repositories
+            try {
+                NotificationHistoryRepository.INSTANCE.shutdown();
+                NotificationPreferencesRepository.INSTANCE.shutdown();
+                LOGGER.info("[DevMod] Notification repositories shutdown complete");
+            } catch (Exception e) {
+                LOGGER.error("[DevMod] Error during notification repositories shutdown", e);
+            }
 
-        // Shutdown MailboxManager
-        try {
-            com.devmod.mailbox.MailboxManager.INSTANCE.shutdown().join();
-            LOGGER.info("[DevMod] MailboxManager shutdown complete");
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Error during MailboxManager shutdown", e);
+            // Shutdown MailboxManager
+            try {
+                com.devmod.mailbox.MailboxManager.INSTANCE.shutdown().join();
+                LOGGER.info("[DevMod] MailboxManager shutdown complete");
+            } catch (Exception e) {
+                LOGGER.error("[DevMod] Error during MailboxManager shutdown", e);
+            }
         }
     }
 
@@ -347,61 +364,64 @@ public class CommonModEvents {
                 TelemetryAggregatorRegistry.INSTANCE.onPlayerJoin(player.getUUID());
             }
 
-            // Sync mailbox to client
-            try {
-                com.devmod.mailbox.network.MailboxNetworkHandler.sendMailboxSync(player);
-                com.devmod.mailbox.network.MailboxNetworkHandler.sendAccessSync(player);
-                LOGGER.debug("[DevMod] Synced mailbox to {}", player.getName().getString());
-            } catch (Exception e) {
-                LOGGER.warn("[DevMod] Failed to sync mailbox to {}: {}",
-                    player.getName().getString(), e.getMessage());
-            }
-
-            // Sync news to client
-            try {
-                com.devmod.mailbox.network.MailboxNetworkHandler.sendNewsSync(player);
-                LOGGER.debug("[DevMod] Synced news to {}", player.getName().getString());
-            } catch (Exception e) {
-                LOGGER.warn("[DevMod] Failed to sync news to {}: {}",
-                    player.getName().getString(), e.getMessage());
-            }
-
-            // Sync tester tasks to client (if applicable)
-            try {
-                if (MailboxPermissions.INSTANCE.hasPermission(player, MailboxPermissions.Permission.TESTER)) {
-                    com.devmod.mailbox.network.MailboxNetworkHandler.sendTaskSync(player);
-                    LOGGER.debug("[DevMod] Synced tasks to {}", player.getName().getString());
+            // Sync DuckDB-dependent features only if available
+            if (DuckDBBootstrap.isAvailable()) {
+                // Sync mailbox to client
+                try {
+                    com.devmod.mailbox.network.MailboxNetworkHandler.sendMailboxSync(player);
+                    com.devmod.mailbox.network.MailboxNetworkHandler.sendAccessSync(player);
+                    LOGGER.debug("[DevMod] Synced mailbox to {}", player.getName().getString());
+                } catch (Exception e) {
+                    LOGGER.warn("[DevMod] Failed to sync mailbox to {}: {}",
+                        player.getName().getString(), e.getMessage());
                 }
-            } catch (Exception e) {
-                LOGGER.warn("[DevMod] Failed to sync tasks to {}: {}",
-                    player.getName().getString(), e.getMessage());
-            }
 
-            // Sync tickets to client
-            try {
-                com.devmod.mailbox.network.TicketNetworkHandler.sendTicketSync(player);
-                LOGGER.debug("[DevMod] Synced tickets to {}", player.getName().getString());
-            } catch (Exception e) {
-                LOGGER.warn("[DevMod] Failed to sync tickets to {}: {}",
-                    player.getName().getString(), e.getMessage());
-            }
-
-            // Sync notification preferences to client
-            try {
-                NotificationPreferencesRepository repo = NotificationPreferencesRepository.INSTANCE;
-                if (repo.isInitialized()) {
-                    java.util.UUID playerUuid = player.getUUID();
-                    repo.loadPreferences(playerUuid).thenAccept(prefs -> {
-                        if (player.isRemoved() || player.server == null) {
-                            return;
-                        }
-                        player.server.execute(() ->
-                                PacketDistributor.sendToPlayer(player, java.util.Objects.requireNonNull(NotificationPreferencesSyncPayload.from(prefs))));
-                    });
+                // Sync news to client
+                try {
+                    com.devmod.mailbox.network.MailboxNetworkHandler.sendNewsSync(player);
+                    LOGGER.debug("[DevMod] Synced news to {}", player.getName().getString());
+                } catch (Exception e) {
+                    LOGGER.warn("[DevMod] Failed to sync news to {}: {}",
+                        player.getName().getString(), e.getMessage());
                 }
-            } catch (Exception e) {
-                LOGGER.warn("[DevMod] Failed to sync notification preferences to {}: {}",
-                    player.getName().getString(), e.getMessage());
+
+                // Sync tester tasks to client (if applicable)
+                try {
+                    if (MailboxPermissions.INSTANCE.hasPermission(player, MailboxPermissions.Permission.TESTER)) {
+                        com.devmod.mailbox.network.MailboxNetworkHandler.sendTaskSync(player);
+                        LOGGER.debug("[DevMod] Synced tasks to {}", player.getName().getString());
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("[DevMod] Failed to sync tasks to {}: {}",
+                        player.getName().getString(), e.getMessage());
+                }
+
+                // Sync tickets to client
+                try {
+                    com.devmod.mailbox.network.TicketNetworkHandler.sendTicketSync(player);
+                    LOGGER.debug("[DevMod] Synced tickets to {}", player.getName().getString());
+                } catch (Exception e) {
+                    LOGGER.warn("[DevMod] Failed to sync tickets to {}: {}",
+                        player.getName().getString(), e.getMessage());
+                }
+
+                // Sync notification preferences to client
+                try {
+                    NotificationPreferencesRepository repo = NotificationPreferencesRepository.INSTANCE;
+                    if (repo.isInitialized()) {
+                        java.util.UUID playerUuid = player.getUUID();
+                        repo.loadPreferences(playerUuid).thenAccept(prefs -> {
+                            if (player.isRemoved() || player.server == null) {
+                                return;
+                            }
+                            player.server.execute(() ->
+                                    PacketDistributor.sendToPlayer(player, java.util.Objects.requireNonNull(NotificationPreferencesSyncPayload.from(prefs))));
+                        });
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("[DevMod] Failed to sync notification preferences to {}: {}",
+                        player.getName().getString(), e.getMessage());
+                }
             }
         }
     }

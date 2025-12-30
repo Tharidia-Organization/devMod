@@ -1,0 +1,15 @@
+{
+  "name": "amp-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for CubeCoders AMP - Control Minecraft servers via Claude",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "author": "DevMod Team",
+  "license": "MIT"
+}
