@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 
 public class VerticalLevelsVisualizer {
@@ -195,15 +196,15 @@ public class VerticalLevelsVisualizer {
 
         DebugRenderer.INSTANCE.addLabel(
                 new Vec3(centerX, (room.minY + room.floorMax) / 2.0, centerZ),
-                "FLOOR", 0xFF00CC00, LABEL_TIMEOUT_MS
+                "FLOOR", OverlayTheme.Debug.ZONE_FLOOR, LABEL_TIMEOUT_MS
         );
         DebugRenderer.INSTANCE.addLabel(
                 new Vec3(centerX, (room.floorMax + room.midMax) / 2.0, centerZ),
-                "MID", 0xFFCCCC00, LABEL_TIMEOUT_MS
+                "MID", OverlayTheme.Debug.ZONE_MID, LABEL_TIMEOUT_MS
         );
         DebugRenderer.INSTANCE.addLabel(
                 new Vec3(centerX, (room.midMax + room.maxY) / 2.0, centerZ),
-                "HIGH", 0xFFCC0000, LABEL_TIMEOUT_MS
+                "HIGH", OverlayTheme.Debug.ZONE_HIGH, LABEL_TIMEOUT_MS
         );
     }
 

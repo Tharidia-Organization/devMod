@@ -426,6 +426,24 @@ public final class OverlayTheme {
         /** Neutral entity name (pastel yellow) - same as HEALTH_MED */
         public static final int ENTITY_NEUTRAL = ENTITY_HEALTH_MED;
 
+        // --- Vertical zones overlay ---
+        /** Floor zone label (green) */
+        public static final int ZONE_FLOOR = 0xFF00CC00;
+        /** Mid zone label (yellow) */
+        public static final int ZONE_MID = 0xFFCCCC00;
+        /** High zone label (red) */
+        public static final int ZONE_HIGH = 0xFFCC0000;
+
+        // --- Pathfinding debugger ---
+        /** Start beacon/label (cyan) */
+        public static final int PATH_START = 0xFF00FFFF;
+        /** Destination reachable (gold) */
+        public static final int PATH_DEST_OK = 0xFFFFD700;
+        /** Destination unreachable (red) */
+        public static final int PATH_DEST_FAIL = 0xFFFF4444;
+        /** Distance info label (gray) */
+        public static final int PATH_INFO = 0xFFAAAAAA;
+
         private Debug() {}
     }
 

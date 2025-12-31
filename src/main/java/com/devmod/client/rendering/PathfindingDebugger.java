@@ -28,6 +28,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.DevMod;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 
 public class PathfindingDebugger {
@@ -343,16 +344,16 @@ public class PathfindingDebugger {
         // 📝 LABELS
         // ═══════════════════════════════════════════════════════════════
         DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(startPos.add(0, 2.5, 0)),
-                "▶ START: " + pathData.mobName, 0xFF00FFFF, 50);
+                "▶ START: " + pathData.mobName, OverlayTheme.Debug.PATH_START, 50);
 
         String destLabel = pathData.canReach ? "◆ DESTINATION" : "✗ UNREACHABLE";
-        int destColor = pathData.canReach ? 0xFFFFD700 : 0xFFFF4444;
+        int destColor = pathData.canReach ? OverlayTheme.Debug.PATH_DEST_OK : OverlayTheme.Debug.PATH_DEST_FAIL;
         DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(targetPos.add(0, 2.5, 0)), destLabel, destColor, 50);
 
         // Distance info
         double distance = startPos.distanceTo(targetPos);
         DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(Objects.requireNonNull(Objects.requireNonNull(startPos.add(targetPos)).scale(0.5)).add(0, 1.0, 0)),
-                String.format("%.1f blocks", distance), 0xFFAAAAAA, 50);
+                String.format("%.1f blocks", distance), OverlayTheme.Debug.PATH_INFO, 50);
     }
 
     /**
@@ -672,6 +673,8 @@ public class PathfindingDebugger {
     private void renderSpectacularPathGPU(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
                                            @Nonnull PoseStack.Pose pose, @Nonnull CachedPath pathData,
                                            float alpha, float time, ShaderInstance shader) {
+        // time reserved for future animation effects
+        if (time < 0) throw new IllegalArgumentException("time must be non-negative");
         List<Vec3> nodes = pathData.nodes;
         if (nodes.isEmpty()) return;
 
@@ -695,15 +698,15 @@ public class PathfindingDebugger {
 
         // Labels (still CPU - text rendering)
         DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(startPos.add(0, 2.5, 0)),
-                Objects.requireNonNull("▶ START: " + pathData.mobName), 0xFF00FFFF, 50);
+                Objects.requireNonNull("▶ START: " + pathData.mobName), OverlayTheme.Debug.PATH_START, 50);
 
         String destLabel = Objects.requireNonNull(pathData.canReach ? "◆ DESTINATION" : "✗ UNREACHABLE");
-        int destColor = pathData.canReach ? 0xFFFFD700 : 0xFFFF4444;
+        int destColor = pathData.canReach ? OverlayTheme.Debug.PATH_DEST_OK : OverlayTheme.Debug.PATH_DEST_FAIL;
         DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(targetPos.add(0, 2.5, 0)), destLabel, destColor, 50);
 
         double distance = startPos.distanceTo(targetPos);
         DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(Objects.requireNonNull(Objects.requireNonNull(startPos.add(targetPos)).scale(0.5)).add(0, 1.0, 0)),
-                Objects.requireNonNull(String.format("%.1f blocks", distance)), 0xFFAAAAAA, 50);
+                Objects.requireNonNull(String.format("%.1f blocks", distance)), OverlayTheme.Debug.PATH_INFO, 50);
     }
 
     /**
