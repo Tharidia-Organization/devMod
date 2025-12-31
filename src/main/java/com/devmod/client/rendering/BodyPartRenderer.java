@@ -16,17 +16,18 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.ModConfig;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.combat.HitHelper;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
 
 public class BodyPartRenderer {
 
-    // Color definitions (ARGB format)
-    private static final int COLOR_HEAD = 0xFF00FFFF;  // Cyan
-    private static final int COLOR_ARMS = 0xFFFFFF00;  // Yellow
-    private static final int COLOR_BODY = 0xFF00FF00;  // Green
-    private static final int COLOR_LEGS = 0xFFFF0000;  // Red
+    // Color definitions - delegating to OverlayTheme.BodyPart (single source of truth)
+    private static final int COLOR_HEAD = OverlayTheme.BodyPart.HEAD;
+    private static final int COLOR_ARMS = OverlayTheme.BodyPart.ARMS;
+    private static final int COLOR_BODY = OverlayTheme.BodyPart.BODY;
+    private static final int COLOR_LEGS = OverlayTheme.BodyPart.LEGS;
 
     // Opacity levels
     private static final float EDGE_OPACITY = 0.9f;

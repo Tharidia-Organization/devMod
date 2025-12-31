@@ -29,6 +29,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -45,14 +46,14 @@ public class EntityInfoOverlay {
         return SettingsManager.INSTANCE.getSettings().visualizers.getRenderDistance();
     }
 
-    // Colors
-    private static final int COLOR_HEALTH_GOOD = 0x55FF55;
-    private static final int COLOR_HEALTH_MED = 0xFFFF55;
-    private static final int COLOR_HEALTH_LOW = 0xFF5555;
-    private static final int COLOR_STAT = 0xAAAAAA;
-    private static final int COLOR_HOSTILE = 0xFF5555;
-    private static final int COLOR_PASSIVE = 0x55FF55;
-    private static final int COLOR_NEUTRAL = 0xFFFF55;
+    // Colors - delegating to OverlayTheme.Debug (single source of truth)
+    private static final int COLOR_HEALTH_GOOD = OverlayTheme.Debug.ENTITY_HEALTH_GOOD;
+    private static final int COLOR_HEALTH_MED = OverlayTheme.Debug.ENTITY_HEALTH_MED;
+    private static final int COLOR_HEALTH_LOW = OverlayTheme.Debug.ENTITY_HEALTH_LOW;
+    private static final int COLOR_STAT = OverlayTheme.Debug.ENTITY_STAT;
+    private static final int COLOR_HOSTILE = OverlayTheme.Debug.ENTITY_HOSTILE;
+    private static final int COLOR_PASSIVE = OverlayTheme.Debug.ENTITY_PASSIVE;
+    private static final int COLOR_NEUTRAL = OverlayTheme.Debug.ENTITY_NEUTRAL;
 
     private EntityInfoOverlay() {}
 

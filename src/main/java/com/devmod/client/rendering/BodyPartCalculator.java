@@ -10,6 +10,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.combat.HitHelper;
 
 public class BodyPartCalculator {
@@ -19,11 +20,11 @@ public class BodyPartCalculator {
      */
     public record BodyPartAABB(HitHelper.BodyPart part, AABB box, int color) {}
 
-    // Color definitions (ARGB format) - synchronized with BodyPartRenderer
-    private static final int COLOR_HEAD = 0xFF00FFFF;  // Cyan
-    private static final int COLOR_ARMS = 0xFFFFFF00;  // Yellow
-    private static final int COLOR_BODY = 0xFF00FF00;  // Green
-    private static final int COLOR_LEGS = 0xFFFF0000;  // Red
+    // Color definitions - delegating to OverlayTheme.BodyPart (single source of truth)
+    private static final int COLOR_HEAD = OverlayTheme.BodyPart.HEAD;
+    private static final int COLOR_ARMS = OverlayTheme.BodyPart.ARMS;
+    private static final int COLOR_BODY = OverlayTheme.BodyPart.BODY;
+    private static final int COLOR_LEGS = OverlayTheme.BodyPart.LEGS;
 
     /**
      * Calculates all body part AABBs for an entity.
