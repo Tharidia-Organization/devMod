@@ -482,6 +482,34 @@ public final class OverlayTheme {
         /** Attack reach circle (yellow) */
         public static final int ATTACK_REACH = 0xFFFFFF00;
 
+        // --- Zone environment colors (ZoneDebugRenderer) ---
+        /** Default zone (white) */
+        public static final int ZONE_ENV_DEFAULT = 0xFFFFFF;
+        /** Nether biome zone (red) */
+        public static final int ZONE_ENV_NETHER = 0xFF4444;
+        /** End biome zone (purple) */
+        public static final int ZONE_ENV_END = 0xAA44FF;
+        /** Ice/snow biome zone (cyan) */
+        public static final int ZONE_ENV_ICE = 0x44FFFF;
+        /** Desert biome zone (yellow) */
+        public static final int ZONE_ENV_DESERT = 0xFFFF44;
+        /** Ocean biome zone (blue) */
+        public static final int ZONE_ENV_OCEAN = 0x4444FF;
+        /** Forest biome zone (green) */
+        public static final int ZONE_ENV_FOREST = 0x44FF44;
+        /** Cave biome zone (brown) */
+        public static final int ZONE_ENV_CAVE = 0x884422;
+        /** Night time zone (dark purple) */
+        public static final int ZONE_ENV_NIGHT = 0x6644AA;
+        /** Day time zone (bright yellow) */
+        public static final int ZONE_ENV_DAY = 0xFFDD44;
+        /** Dark lighting zone (dark gray) */
+        public static final int ZONE_ENV_DARK = 0x444444;
+        /** Bright lighting zone (light yellow) */
+        public static final int ZONE_ENV_BRIGHT = 0xFFFFAA;
+        /** Fallback zone (light gray) */
+        public static final int ZONE_ENV_FALLBACK = 0xCCCCCC;
+
         private Debug() {}
     }
 
