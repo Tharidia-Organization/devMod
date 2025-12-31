@@ -30,6 +30,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.rendering.TrigCache;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 @OnlyIn(Dist.CLIENT)
 
@@ -41,7 +42,8 @@ public class EnergyShieldRenderer {
     private static final int SPHERE_RINGS = 24;
 
     // === Default Values ===
-    private static final int DEFAULT_COLOR = 0x3D5AFE; // Electric blue
+    // Shield color from OverlayTheme.Combat (single source of truth)
+    private static final int DEFAULT_COLOR = OverlayTheme.stripAlpha(OverlayTheme.Combat.IMPACT);
     private static final float DEFAULT_OPACITY = 0.6f;
     private static final float DEFAULT_RADIUS = 1.2f;
 

@@ -478,6 +478,10 @@ public final class OverlayTheme {
         /** Line of sight blocked (red) */
         public static final int LOS_BLOCKED = 0xFFFF4444;
 
+        // --- Attack reach circle ---
+        /** Attack reach circle (yellow) */
+        public static final int ATTACK_REACH = 0xFFFFFF00;
+
         private Debug() {}
     }
 

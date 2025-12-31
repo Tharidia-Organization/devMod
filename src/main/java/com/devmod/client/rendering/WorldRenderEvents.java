@@ -29,6 +29,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.ModConfig;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.config.Config;
 
 import static com.devmod.DevMod.MODID;
@@ -98,6 +99,18 @@ public class WorldRenderEvents {
             com.devmod.client.rendering.SpawnabilityOverlay.INSTANCE.render(poseStack, bufferSource, cameraPos);
         }
 
+        // Zone Debug Visualizer (synced from server when in arena)
+        if (com.devmod.client.debug.ZoneDebugRenderer.isEnabled()) {
+            com.devmod.client.debug.ZoneDebugRenderer.render(poseStack, bufferSource, cameraPos);
+        }
+
+        // Zone Transition Effects (fog, particles, glow) - Full Effects mode
+        if (com.devmod.client.debug.ZoneTransitionRenderer.isEnabled()) {
+            com.devmod.client.debug.ZoneTransitionRenderer.render(
+                poseStack, bufferSource, cameraPos, event.getPartialTick().getGameTimeDeltaPartialTick(true)
+            );
+        }
+
         for (Entity entity : level.entitiesForRendering()) {
             if (entity instanceof Mob mob) {
                 if (mob.distanceToSqr(Objects.requireNonNull(mc.player)) > 1600) continue;
@@ -134,8 +147,8 @@ public class WorldRenderEvents {
                 }
 
                 if (attackReach > 0) {
-                    // Use fixed yellow or another color if desired
-                    renderCircle(Objects.requireNonNull(event.getPoseStack()), mob, attackReach, cameraPos, 0xFFFFFF00);
+                    // Attack reach circle color from OverlayTheme
+                    renderCircle(Objects.requireNonNull(event.getPoseStack()), mob, attackReach, cameraPos, OverlayTheme.Debug.ATTACK_REACH);
                 }
 
                 // 3. BODY PART HITBOXES DEBUG (HEAD, ARMS, BODY, LEGS)
