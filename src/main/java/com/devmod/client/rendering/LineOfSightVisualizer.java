@@ -23,6 +23,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 
 public class LineOfSightVisualizer {
@@ -193,7 +194,7 @@ public class LineOfSightVisualizer {
 
             // Add label
             Vec3 midPoint = Objects.requireNonNull(Objects.requireNonNull(mobEye.add(playerEye)).scale(0.5));
-            DebugRenderer.INSTANCE.addLabel(midPoint, "VISIBLE", 0xFF00FF00, 50);
+            DebugRenderer.INSTANCE.addLabel(midPoint, "VISIBLE", OverlayTheme.Debug.LOS_VISIBLE, 50);
 
         } else if (hasLoS && !inFOV) {
             // Has LoS but outside FOV - yellow (could see if turned)
@@ -202,7 +203,7 @@ public class LineOfSightVisualizer {
                     (float) playerEye.x, (float) playerEye.y, (float) playerEye.z,
                     1.0f, 1.0f, 0.0f, 0.5f);
 
-            DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(mobEye.add(Objects.requireNonNull(toPlayer.scale(3)))), "OUT OF FOV", 0xFFFFFF00, 50);
+            DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(mobEye.add(Objects.requireNonNull(toPlayer.scale(3)))), "OUT OF FOV", OverlayTheme.Debug.LOS_OUT_OF_FOV, 50);
 
         } else if (hit.getType() == HitResult.Type.BLOCK) {
             // Blocked
@@ -224,7 +225,7 @@ public class LineOfSightVisualizer {
             // Highlight blocking block
             renderBlockHighlight(consumer, matrix, pose, blockHit);
 
-            DebugRenderer.INSTANCE.addLabel(hitPos, "BLOCKED", 0xFFFF4444, 50);
+            DebugRenderer.INSTANCE.addLabel(hitPos, "BLOCKED", OverlayTheme.Debug.LOS_BLOCKED, 50);
         }
     }
 

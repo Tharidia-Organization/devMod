@@ -21,6 +21,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
 
@@ -39,17 +40,8 @@ public class RoomBoundsVisualizer {
     @Nullable
     private BlockPos pendingPointB = null;
 
-    // Colori per le room (cicla)
-    private static final int[] ROOM_COLORS = {
-            0xFFFF0000, // Rosso
-            0xFF00FF00, // Verde
-            0xFF0000FF, // Blu
-            0xFFFFFF00, // Giallo
-            0xFFFF00FF, // Magenta
-            0xFF00FFFF, // Ciano
-            0xFFFF8000, // Arancione
-            0xFF8000FF, // Viola
-    };
+    // Colori per le room - delegating to OverlayTheme.Debug (single source of truth)
+    private static final int[] ROOM_COLORS = OverlayTheme.Debug.ROOM_PALETTE;
 
     private RoomBoundsVisualizer() {}
 
@@ -350,7 +342,7 @@ public class RoomBoundsVisualizer {
                 if (dx*dx + dy*dy + dz*dz > 50*50) continue;
 
                 Vec3 labelPos = new Vec3(gap.getX() + 0.5, gap.getY() + 1.2, gap.getZ() + 0.5);
-                DebugRenderer.INSTANCE.addLabel(labelPos, "GAP", 0xFFFF0000, 50);
+                DebugRenderer.INSTANCE.addLabel(labelPos, "GAP", OverlayTheme.Debug.ROOM_GAP, 50);
                 labelCount++;
             }
         }

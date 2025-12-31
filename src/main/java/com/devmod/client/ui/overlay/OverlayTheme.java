@@ -444,6 +444,40 @@ public final class OverlayTheme {
         /** Distance info label (gray) */
         public static final int PATH_INFO = 0xFFAAAAAA;
 
+        // --- Room bounds visualizer palette ---
+        /** Room color 0: red */
+        public static final int ROOM_RED = 0xFFFF0000;
+        /** Room color 1: green */
+        public static final int ROOM_GREEN = 0xFF00FF00;
+        /** Room color 2: blue */
+        public static final int ROOM_BLUE = 0xFF0000FF;
+        /** Room color 3: yellow */
+        public static final int ROOM_YELLOW = 0xFFFFFF00;
+        /** Room color 4: magenta */
+        public static final int ROOM_MAGENTA = 0xFFFF00FF;
+        /** Room color 5: cyan */
+        public static final int ROOM_CYAN = 0xFF00FFFF;
+        /** Room color 6: orange */
+        public static final int ROOM_ORANGE = 0xFFFF8000;
+        /** Room color 7: purple */
+        public static final int ROOM_PURPLE = 0xFF8000FF;
+        /** Room gap warning label (red) */
+        public static final int ROOM_GAP = 0xFFFF0000;
+
+        /** Room palette array for indexed access */
+        public static final int[] ROOM_PALETTE = {
+            ROOM_RED, ROOM_GREEN, ROOM_BLUE, ROOM_YELLOW,
+            ROOM_MAGENTA, ROOM_CYAN, ROOM_ORANGE, ROOM_PURPLE
+        };
+
+        // --- Line of sight visualizer ---
+        /** Target visible (green) */
+        public static final int LOS_VISIBLE = 0xFF00FF00;
+        /** Target out of FOV (yellow) */
+        public static final int LOS_OUT_OF_FOV = 0xFFFFFF00;
+        /** Line of sight blocked (red) */
+        public static final int LOS_BLOCKED = 0xFFFF4444;
+
         private Debug() {}
     }
 
