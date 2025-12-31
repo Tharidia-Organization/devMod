@@ -33,10 +33,10 @@ Deadline: 24:00 local
 - [ ] Add mailbox abuse audit log export
 
 ## P1 - Network Safety
-- [ ] Add payload size estimation for editor payloads (NBT-heavy)
+- [x] Add payload size estimation for editor payloads (NBT-heavy)
 - [ ] Add dedicated limits for telemetry batches per player/session
-- [ ] Add disconnect policy for repeated invalid payloads
-- [ ] Add whitelist for client action IDs in ActionRegistry
+- [x] Add disconnect policy for repeated invalid payloads
+- [x] Add whitelist for client action IDs in ActionRegistry
 
 ## P2 - Performance
 - [ ] Batch block placement in ArenaBuilder (chunk section writes)
