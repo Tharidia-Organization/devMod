@@ -19,7 +19,7 @@ public record UpdateMobStatsPayload(
         double attackRange,
         double speed,
         double knockbackResist
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<UpdateMobStatsPayload> TYPE = new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "update_stats")));
 
@@ -51,5 +51,11 @@ public record UpdateMobStatsPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        // 1 bool + 1 VarInt + 7 doubles = ~60 bytes
+        return 60;
     }
 }

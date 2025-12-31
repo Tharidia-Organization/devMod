@@ -16,7 +16,7 @@ public record RangedWeaponStatsPayload(
     @Nonnull ItemStack item,
     @Nonnull CompoundTag statsTag,
     boolean isGlobal
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<RangedWeaponStatsPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "ranged_weapon_stats"))
@@ -38,5 +38,12 @@ public record RangedWeaponStatsPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        // ItemStack (~100-500 bytes) + CompoundTag (~50-200 bytes) + bool
+        // Conservative estimate for NBT-heavy payloads
+        return 256 + (statsTag != null ? statsTag.sizeInBytes() : 0);
     }
 }

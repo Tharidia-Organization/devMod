@@ -28,7 +28,7 @@ public record UpdateArmorPayload(
     float shieldBlockStrength,  // Shield block strength (0.0 - 1.0)
     float shieldRecovery,       // Shield recovery speed multiplier
     String itemName             // Item registry name (for global config key)
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<UpdateArmorPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "update_armor"))
@@ -132,5 +132,12 @@ public record UpdateArmorPayload(
             stats.shieldRecoverySpeed,
             itemName
         );
+    }
+
+    @Override
+    public int estimatedSize() {
+        // 3 bools + 1 VarInt + 11 floats + string (max 256 chars)
+        // = 3 + 5 + 44 + itemName length = ~52 + itemName
+        return 52 + (itemName != null ? itemName.length() : 0);
     }
 }

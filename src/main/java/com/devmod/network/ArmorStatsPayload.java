@@ -17,7 +17,7 @@ public record ArmorStatsPayload(
     @Nonnull CompoundTag statsTag,
     boolean isGlobal,
     int slot // -1 when global or unspecified; 0-3 for HEAD/CHEST/LEGS/FEET
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<ArmorStatsPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "armor_stats_v2"))
@@ -41,5 +41,11 @@ public record ArmorStatsPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        // ItemStack (~100-500 bytes) + CompoundTag (~50-200 bytes) + bool + VarInt
+        return 256 + (statsTag != null ? statsTag.sizeInBytes() : 0);
     }
 }

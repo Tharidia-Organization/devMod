@@ -17,7 +17,7 @@ public record EquipMobPayload(
         String chest,       // Chest
         String legs,        // Legs
         String feet         // Feet
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     // Unique network identifier
     public static final Type<EquipMobPayload> TYPE = new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "equip_mob")));
@@ -58,5 +58,11 @@ public record EquipMobPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        // 1 VarInt + 6 strings (~50 chars each avg) = ~310 bytes
+        return 10 + mainHand.length() + offHand.length() + head.length() + chest.length() + legs.length() + feet.length();
     }
 }

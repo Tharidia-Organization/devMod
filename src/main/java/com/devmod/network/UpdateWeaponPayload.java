@@ -17,7 +17,7 @@ public record UpdateWeaponPayload(
         float pen,
         float bonus,
         String name
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<UpdateWeaponPayload> TYPE = new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "update_weapon")));
 
@@ -53,5 +53,11 @@ public record UpdateWeaponPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        // 1 bool + 5 floats + string (~50 chars avg) = ~75 bytes
+        return 75 + (name != null ? name.length() : 0);
     }
 }

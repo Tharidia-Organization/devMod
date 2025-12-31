@@ -16,7 +16,7 @@ public record UsableStatsPayload(
     @Nonnull ItemStack item,
     @Nonnull CompoundTag statsTag,
     boolean isGlobal
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<UsableStatsPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "usable_stats"))
@@ -38,5 +38,10 @@ public record UsableStatsPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 256 + (statsTag != null ? statsTag.sizeInBytes() : 0);
     }
 }

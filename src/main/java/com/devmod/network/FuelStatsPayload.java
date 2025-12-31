@@ -16,7 +16,7 @@ public record FuelStatsPayload(
     ItemStack item,
     CompoundTag statsTag,
     boolean isGlobal
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<FuelStatsPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "fuel_stats")));
@@ -56,5 +56,10 @@ public record FuelStatsPayload(
     @Override
     public int hashCode() {
         return Objects.hash(ItemStack.hashItemAndComponents(item), statsTag, isGlobal);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 256 + (statsTag != null ? statsTag.sizeInBytes() : 0);
     }
 }

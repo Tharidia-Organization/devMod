@@ -17,7 +17,7 @@ public record ModifyItemPayload(
     int repairCost,
     List<String> enchantmentChanges,
     List<String> attributeChanges
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     // Max limits for security
     private static final int MAX_ENCHANTMENTS = 64;
@@ -65,5 +65,14 @@ public record ModifyItemPayload(
      */
     public static String attributeChange(String attributeId, double value, int operation) {
         return attributeId + ":" + value + ":" + operation;
+    }
+
+    @Override
+    public int estimatedSize() {
+        // 2 VarInts + 1 bool + 2 lists of strings
+        int base = 10;
+        for (String s : enchantmentChanges) base += s.length() + 2;
+        for (String s : attributeChanges) base += s.length() + 2;
+        return base;
     }
 }

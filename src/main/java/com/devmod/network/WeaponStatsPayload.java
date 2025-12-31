@@ -16,7 +16,7 @@ public record WeaponStatsPayload(
     @Nonnull ItemStack item,
     @Nonnull CompoundTag statsTag,
     boolean isGlobal
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<WeaponStatsPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "weapon_stats_v2"))
@@ -38,5 +38,10 @@ public record WeaponStatsPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 256 + (statsTag != null ? statsTag.sizeInBytes() : 0);
     }
 }
