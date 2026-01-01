@@ -15,13 +15,13 @@ Deadline: 24:00 local
 - [x] Add safe shutdown for DuckDB writers (flush + drain queues)
 
 ## P1 - Arena/Template Hardening
-- [ ] Wire structure checksum validation using manifest + computed hash
-- [ ] Add block whitelist validation (floor/walls/ceiling/underfloor)
-- [ ] Add entity whitelist validation for spawn slots
-- [ ] Enforce per-template entity and block budgets at runtime
-- [ ] Add post-build residual entity audit and rollback option
-- [ ] Add block integrity verification after build (air gaps, wrong material)
-- [ ] Add MSPT guard during arena build (throttle or abort)
+- [x] Wire structure checksum validation using manifest + computed hash
+- [x] Add block whitelist validation (floor/walls/ceiling/underfloor)
+- [x] Add entity whitelist validation for spawn slots
+- [x] Enforce per-template entity and block budgets at runtime
+- [x] Add post-build residual entity audit and rollback option
+- [x] Add block integrity verification after build (air gaps, wrong material)
+- [x] Add MSPT guard during arena build (throttle or abort)
 
 ## P1 - Mailbox MMO Quality
 - [ ] Add per-IP and per-account rate limit layer
@@ -34,7 +34,7 @@ Deadline: 24:00 local
 
 ## P1 - Network Safety
 - [x] Add payload size estimation for editor payloads (NBT-heavy)
-- [ ] Add dedicated limits for telemetry batches per player/session
+- [x] Add dedicated limits for telemetry batches per player/session
 - [x] Add disconnect policy for repeated invalid payloads
 - [x] Add whitelist for client action IDs in ActionRegistry
 
