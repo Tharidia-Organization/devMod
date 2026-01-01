@@ -12,6 +12,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.mailbox.moderation.PlayerReputation;
 import com.devmod.mailbox.template.MessageTemplateRegistry;
 import com.devmod.mailbox.webhook.WebhookManager;
 
@@ -40,8 +41,10 @@ public final class TicketManager {
         }
 
         return TicketRepository.INSTANCE.initialize().thenRun(() -> {
+            // P1: Start auto-transition service for workflow automation
+            AutoTransitionService.INSTANCE.start();
             initialized = true;
-            LOGGER.info("[TicketManager] Initialized");
+            LOGGER.info("[TicketManager] Initialized with auto-transitions enabled");
         });
     }
 
@@ -49,6 +52,9 @@ public final class TicketManager {
         if (!initialized) {
             return CompletableFuture.completedFuture(null);
         }
+
+        // P1: Stop auto-transition service
+        AutoTransitionService.INSTANCE.stop();
 
         initialized = false;
         return TicketRepository.INSTANCE.shutdown().thenRun(() -> {
@@ -76,6 +82,15 @@ public final class TicketManager {
             TicketCategory category,
             String subject,
             @Nullable String description) {
+
+        // P1: Reputation gate for ticket creation
+        PlayerReputation.GateResult reputationCheck = PlayerReputation.INSTANCE.canCreateTicket(reporterUuid);
+        if (!reputationCheck.allowed()) {
+            String reason = reputationCheck.reason() != null
+                ? reputationCheck.reason()
+                : "You cannot create tickets at this time";
+            return CompletableFuture.failedFuture(new IllegalStateException(reason));
+        }
 
         String safeReporterName = reporterName != null ? reporterName : "Unknown";
         Ticket ticket = Ticket.builder(reporterUuid, category, subject)
@@ -122,6 +137,15 @@ public final class TicketManager {
             String reason,
             @Nullable String description) {
 
+        // P1: Reputation gate for ticket creation
+        PlayerReputation.GateResult reputationCheck = PlayerReputation.INSTANCE.canCreateTicket(reporterUuid);
+        if (!reputationCheck.allowed()) {
+            String errorReason = reputationCheck.reason() != null
+                ? reputationCheck.reason()
+                : "You cannot create reports at this time";
+            return CompletableFuture.failedFuture(new IllegalStateException(errorReason));
+        }
+
         String safeReporterName = reporterName != null ? reporterName : "Unknown";
         String safeReportedName = reportedName != null ? reportedName : "Unknown";
         String subject = "Player Report: " + safeReportedName + " - " + reason;
@@ -136,6 +160,9 @@ public final class TicketManager {
         return TicketRepository.INSTANCE.saveTicket(ticket).thenApply(saved -> {
             LOGGER.info("[TicketManager] Player report created: {} reported {} by {}",
                 saved.id(), safeReportedName, safeReporterName);
+
+            // P1: Record abuse report in reputation system
+            PlayerReputation.INSTANCE.recordAbuseReport(reportedUuid);
 
             // Send confirmation mailbox to reporter
             sendTicketConfirmation(saved);
@@ -208,7 +235,7 @@ public final class TicketManager {
                     ticketId,
                     "Ticket assigned to " + assigneeName
                 );
-                TicketRepository.INSTANCE.saveComment(comment);
+                saveCommentAsync(comment);
 
                 return Optional.of(saved);
             });
@@ -246,7 +273,7 @@ public final class TicketManager {
                     ticketId,
                     "Status changed to " + newStatus.getDisplayName() + " by " + actorName
                 );
-                TicketRepository.INSTANCE.saveComment(comment);
+                saveCommentAsync(comment);
 
                 return Optional.of(saved);
             });
@@ -278,7 +305,7 @@ public final class TicketManager {
                     ticketId,
                     "Ticket resolved by " + resolverName + ": " + resolutionNotes
                 );
-                TicketRepository.INSTANCE.saveComment(comment);
+                saveCommentAsync(comment);
 
                 // Send resolution mailbox to reporter
                 sendTicketResolution(saved);
@@ -309,7 +336,7 @@ public final class TicketManager {
                     ticketId,
                     "Priority changed to " + newPriority.getDisplayName() + " by " + actorName
                 );
-                TicketRepository.INSTANCE.saveComment(comment);
+                saveCommentAsync(comment);
 
                 return Optional.of(saved);
             });
@@ -370,7 +397,7 @@ public final class TicketManager {
 
     private void sendTicketConfirmation(Ticket ticket) {
         try {
-            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+            CompletableFuture<?> future = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
                 "moderation.report_received",
                 ticket.reporterUuid(),
                 Map.of(
@@ -380,7 +407,16 @@ public final class TicketManager {
                     "subject", ticket.subject()
                 ),
                 null
-            );
+            ).handle((result, ex) -> {
+                if (ex != null) {
+                    LOGGER.warn("[TicketManager] Async confirmation failed for ticket {}: {}",
+                            ticket.id(), ex.getMessage());
+                }
+                return null;
+            });
+            if (future.isDone() && LOGGER.isTraceEnabled()) {
+                LOGGER.trace("[TicketManager] Confirmation sent immediately for {}", ticket.id());
+            }
         } catch (Exception e) {
             LOGGER.error("[TicketManager] Failed to send ticket confirmation mailbox", e);
         }
@@ -388,7 +424,7 @@ public final class TicketManager {
 
     private void sendTicketResolution(Ticket ticket) {
         try {
-            MessageTemplateRegistry.INSTANCE.sendFromTemplate(
+            CompletableFuture<?> future = MessageTemplateRegistry.INSTANCE.sendFromTemplate(
                 "moderation.report_resolved",
                 ticket.reporterUuid(),
                 Map.of(
@@ -397,9 +433,36 @@ public final class TicketManager {
                     "resolution", ticket.resolutionNotes() != null ? ticket.resolutionNotes() : "Resolved"
                 ),
                 null
-            );
+            ).handle((result, ex) -> {
+                if (ex != null) {
+                    LOGGER.warn("[TicketManager] Async resolution failed for ticket {}: {}",
+                            ticket.id(), ex.getMessage());
+                }
+                return null;
+            });
+            if (future.isDone() && LOGGER.isTraceEnabled()) {
+                LOGGER.trace("[TicketManager] Resolution sent immediately for {}", ticket.id());
+            }
         } catch (Exception e) {
             LOGGER.error("[TicketManager] Failed to send ticket resolution mailbox", e);
+        }
+    }
+
+    /**
+     * Fire-and-forget helper for async operations.
+     * Logs errors but doesn't block on completion.
+     */
+    private void saveCommentAsync(TicketComment comment) {
+        CompletableFuture<?> future = TicketRepository.INSTANCE.saveComment(comment).handle((result, ex) -> {
+            if (ex != null) {
+                LOGGER.warn("[TicketManager] Failed to save comment for ticket {}: {}",
+                        comment.ticketId(), ex.getMessage());
+            }
+            return null;
+        });
+        // Fire-and-forget with error logging
+        if (future.isDone() && LOGGER.isTraceEnabled()) {
+            LOGGER.trace("[TicketManager] Comment saved immediately for {}", comment.ticketId());
         }
     }
 }

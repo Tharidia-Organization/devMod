@@ -24,13 +24,13 @@ Deadline: 24:00 local
 - [x] Add MSPT guard during arena build (throttle or abort)
 
 ## P1 - Mailbox MMO Quality
-- [ ] Add per-IP and per-account rate limit layer
-- [ ] Add spam detection scoring (rules first, ML later)
-- [ ] Add reputation system gate for high-risk actions
-- [ ] Add field-level redaction for ticket views
-- [ ] Add ticket workflow state machine with auto-transitions
-- [ ] Add attachment content validation and size caps in storage
-- [ ] Add mailbox abuse audit log export
+- [x] Add per-IP and per-account rate limit layer
+- [x] Add spam detection scoring (rules first, ML later)
+- [x] Add reputation system gate for high-risk actions
+- [x] Add field-level redaction for ticket views
+- [x] Add ticket workflow state machine with auto-transitions
+- [x] Add attachment content validation and size caps in storage
+- [x] Add mailbox abuse audit log export
 
 ## P1 - Network Safety
 - [x] Add payload size estimation for editor payloads (NBT-heavy)

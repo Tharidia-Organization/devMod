@@ -37,6 +37,7 @@ import com.devmod.endurance.RewardSystem;
 import com.devmod.mailbox.analytics.MailboxAnalyticsEngine;
 import com.devmod.mailbox.api.MailboxApiServer;
 import com.devmod.mailbox.attachment.AttachmentTransactionLog;
+import com.devmod.mailbox.attachment.AttachmentValidator;
 import com.devmod.mailbox.attachment.CurrencyAttachment;
 import com.devmod.mailbox.attachment.ItemAttachment;
 import com.devmod.mailbox.attachment.MailAttachment;
@@ -44,6 +45,7 @@ import com.devmod.mailbox.broadcast.BroadcastQueueWorker;
 import com.devmod.mailbox.digest.DigestManager;
 import com.devmod.mailbox.moderation.AdminAuditLog;
 import com.devmod.mailbox.moderation.ContentFilter;
+import com.devmod.mailbox.moderation.PlayerReputation;
 import com.devmod.mailbox.news.NewsManager;
 import com.devmod.mailbox.news.NewsPurgeJob;
 import com.devmod.mailbox.persistence.DuckDbMailboxRepository;
@@ -176,6 +178,13 @@ public class MailboxManager {
             rateLimitResetTask = sched.scheduleAtFixedRate(
                 () -> sendsThisMinute.clear(),
                 1, 1, TimeUnit.MINUTES
+            );
+
+            // P1: Clean up spam detector tracking data every 5 minutes
+            @SuppressWarnings("unused")
+            var spamCleanupTask = sched.scheduleAtFixedRate(
+                () -> com.devmod.mailbox.moderation.SpamDetector.INSTANCE.cleanup(),
+                5, 5, TimeUnit.MINUTES
             );
 
             MailboxConfig config = MailboxConfig.INSTANCE;
@@ -337,6 +346,16 @@ public class MailboxManager {
             return AttachmentValidation.success();
         }
 
+        // P1: Use AttachmentValidator for payload-level validation (size, count limits)
+        AttachmentValidator.ValidationResult validatorResult =
+            AttachmentValidator.INSTANCE.validatePayload(attachmentData);
+        if (!validatorResult.isValid()) {
+            String message = validatorResult.message() != null
+                ? validatorResult.message()
+                : "Invalid attachment data";
+            return AttachmentValidation.blocked(message);
+        }
+
         MailboxConfig config = MailboxConfig.INSTANCE;
         List<MailAttachment> parsed = MailAttachment.parseAttachments(attachmentData);
         if (parsed.isEmpty()) {
@@ -452,10 +471,30 @@ public class MailboxManager {
 
         FilterDecision filterDecision = applyContentFilter(subject, body);
         if (!filterDecision.allowed()) {
+            // P1: Record filter block in reputation system
+            PlayerReputation.INSTANCE.recordFilterBlocked(senderUuid);
             String reason = filterDecision.reason() != null
                 ? filterDecision.reason()
                 : "Message blocked by filter";
             return CompletableFuture.completedFuture(SendResult.error(reason));
+        }
+
+        // P1: Spam detection scoring
+        var spamScore = com.devmod.mailbox.moderation.SpamDetector.INSTANCE.score(
+            senderUuid, recipientUuid, subject, body);
+        if (spamScore.isSpam(com.devmod.mailbox.moderation.SpamDetector.INSTANCE.getSpamThreshold())) {
+            LOGGER.warn("[Mailbox] Spam blocked: sender={}, score={}, signals={}",
+                sender.getName().getString(), spamScore.totalScore(), spamScore.getSignalSummary());
+            // P1: Record spam block in reputation system
+            PlayerReputation.INSTANCE.recordSpamBlocked(senderUuid);
+            return CompletableFuture.completedFuture(SendResult.error("Message blocked: suspected spam"));
+        }
+        // Flag suspicious messages for moderation (but still allow)
+        boolean flaggedForModeration = spamScore.isSuspicious(
+            com.devmod.mailbox.moderation.SpamDetector.INSTANCE.getSuspiciousThreshold());
+        if (flaggedForModeration) {
+            LOGGER.info("[Mailbox] Flagged for moderation: sender={}, score={}, signals={}",
+                sender.getName().getString(), spamScore.totalScore(), spamScore.getSignalSummary());
         }
 
         List<MailAttachment> flatAttachments = List.of();
@@ -523,6 +562,9 @@ public class MailboxManager {
                     updateRateLimit(senderUuid, recipientUuid);
                     notifyNewMessage(recipientUuid, saved);
                     LOGGER.debug("[Mailbox] Player {} sent message to {}", senderUuid, recipientUuid);
+
+                    // P1: Record successful message in reputation system
+                    PlayerReputation.INSTANCE.recordSuccessfulMessage(senderUuid);
 
                     if (filterDecision.flagged()) {
                         logFlaggedMessage(
@@ -1132,6 +1174,9 @@ public class MailboxManager {
             return repo.markAttachmentClaimed(message.id()).thenApply(success -> {
                 if (success) {
                     if (attempt.outcome().success()) {
+                        // P1: Record successful attachment in reputation system
+                        PlayerReputation.INSTANCE.recordSuccessfulAttachment(player.getUUID());
+
                         String attachmentType = determineAttachmentType(attachments);
                         WebhookManager.INSTANCE.dispatchAttachmentClaimed(
                             message.id(),
