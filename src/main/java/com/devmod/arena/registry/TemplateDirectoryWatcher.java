@@ -75,9 +75,10 @@ public final class TemplateDirectoryWatcher implements AutoCloseable {
         }
 
         running.set(true);
-        watcherThread = new Thread(this::runLoop, "ArenaTemplateWatcher");
-        watcherThread.setDaemon(true);
-        watcherThread.start();
+        final Thread thread = new Thread(this::runLoop, "ArenaTemplateWatcher");
+        thread.setDaemon(true);
+        watcherThread = thread;
+        thread.start();
         LOGGER.info("Template watcher started for {}", directory);
     }
 
@@ -86,10 +87,14 @@ public final class TemplateDirectoryWatcher implements AutoCloseable {
     }
 
     private void runLoop() {
+        final WatchService service = watchService;
+        if (service == null) {
+            return;
+        }
         while (running.get()) {
             WatchKey key;
             try {
-                key = watchService.take();
+                key = service.take();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -139,6 +144,11 @@ public final class TemplateDirectoryWatcher implements AutoCloseable {
         if (pendingReload != null) {
             pendingReload.cancel(false);
             pendingReload = null;
+        }
+        // Interrupt the watcher thread to unblock from take()
+        final Thread thread = watcherThread;
+        if (thread != null) {
+            thread.interrupt();
         }
         try {
             if (watchService != null) {

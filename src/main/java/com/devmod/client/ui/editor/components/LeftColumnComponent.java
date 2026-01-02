@@ -10,10 +10,10 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class LeftColumnComponent {
 
@@ -28,7 +28,7 @@ public class LeftColumnComponent {
     private static final int ARMOR_CARD_TEXT_PADDING = 6;
     private static final int ARMOR_CARD_LABEL_Y = 18;
     private static final int ARMOR_CARD_ICON_PADDING = 6;
-    private static final int ARMOR_CARD_ICON_SIZE = UIConstants.Size.ICON;
+    private static final int ARMOR_CARD_ICON_SIZE = DesignTokens.Size.ICON;
     private static final int ARMOR_CARD_ICON_GLYPH_OFFSET = 3;
     private static final int ARMOR_CARD_HOVER_FILL = 0x2000D4FF;
 
@@ -183,10 +183,10 @@ public class LeftColumnComponent {
         this.bounds = new ResponsiveLayout.Rect(x, y, columnWidth, height);
 
         // Background
-        graphics.fill(x, y, x + columnWidth, y + height, UIConstants.Background.CONTENT());
+        graphics.fill(x, y, x + columnWidth, y + height, DesignTokens.Background.CONTENT());
 
         // Right border (separator from content area)
-        graphics.fill(x + columnWidth - 1, y, x + columnWidth, y + height, UIConstants.Border.SEPARATOR());
+        graphics.fill(x + columnWidth - 1, y, x + columnWidth, y + height, DesignTokens.Border.SEPARATOR());
 
         // Calculate layout based on available height (proportional positioning)
         int padding = ScaledCoord.scaleDim(COLUMN_PADDING);
@@ -224,18 +224,18 @@ public class LeftColumnComponent {
     private void renderSelectedPieceCard(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         int cardHeight = ScaledCoord.scaleDim(ARMOR_CARD_HEIGHT);
         armorCardBounds = new ResponsiveLayout.Rect(x, y, width, cardHeight);
-        graphics.fill(x, y, x + width, y + cardHeight, UIConstants.Background.INPUT());
-        AxiomRenderer.drawBorder(graphics, x, y, width, cardHeight, UIConstants.Border.DEFAULT());
+        graphics.fill(x, y, x + width, y + cardHeight, DesignTokens.Background.INPUT());
+        AxiomRenderer.drawBorder(graphics, x, y, width, cardHeight, DesignTokens.Border.DEFAULT());
 
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font, "font cannot be null");
         String title = "Selected piece";
         graphics.drawString(font, title, x + ScaledCoord.scaleDim(ARMOR_CARD_TEXT_PADDING),
-            y + ScaledCoord.scaleDim(UIConstants.Spacing.SM), UIConstants.Text.SECONDARY(), false);
+            y + ScaledCoord.scaleDim(DesignTokens.Spacing.SM), DesignTokens.Text.SECONDARY(), false);
 
         SlotSelector.SlotInfo info = slotSelector.getSelectedSlot();
         String label = info != null && info.label() != null ? info.label() : "Slot";
         graphics.drawString(font, label, x + ScaledCoord.scaleDim(ARMOR_CARD_TEXT_PADDING),
-            y + ScaledCoord.scaleDim(ARMOR_CARD_LABEL_Y), UIConstants.Text.PRIMARY(), false);
+            y + ScaledCoord.scaleDim(ARMOR_CARD_LABEL_Y), DesignTokens.Text.PRIMARY(), false);
 
         // Render item icon on the right
         int iconSize = ScaledCoord.scaleDim(ARMOR_CARD_ICON_SIZE);
@@ -246,7 +246,7 @@ public class LeftColumnComponent {
             graphics.renderItem(item, iconX, iconY);
         } else {
             graphics.drawString(font, "⟳", iconX + ARMOR_CARD_ICON_GLYPH_OFFSET,
-                iconY + ARMOR_CARD_ICON_GLYPH_OFFSET, UIConstants.Text.MUTED(), false);
+                iconY + ARMOR_CARD_ICON_GLYPH_OFFSET, DesignTokens.Text.MUTED(), false);
         }
 
         // Hover cue

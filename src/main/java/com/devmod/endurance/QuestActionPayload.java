@@ -8,9 +8,11 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 public record QuestActionPayload(
     Action action
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<QuestActionPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "quest_action"))
@@ -52,5 +54,10 @@ public record QuestActionPayload(
             }
             return ABANDON_QUEST;
         }
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 1; // VarInt for action ID
     }
 }

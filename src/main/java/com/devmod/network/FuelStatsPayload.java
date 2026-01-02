@@ -12,6 +12,15 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.DevMod;
 
+/**
+ * Network payload for syncing fuel stats via CompoundTag.
+ * Uses NBT serialization for burn time and fuel efficiency.
+ *
+ * <p><b>CRITICAL:</b> The record field order MUST match the codec field order.
+ * Uses StreamCodec.composite() - field order defined by method reference order.</p>
+ *
+ * <p>Field order: item, statsTag, isGlobal</p>
+ */
 public record FuelStatsPayload(
     ItemStack item,
     CompoundTag statsTag,

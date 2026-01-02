@@ -22,7 +22,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.mailbox.client.ClientNewsCache;
 import com.devmod.mailbox.network.payload.NewsReadPayload;
 import com.devmod.mailbox.network.payload.NewsSyncPayload.NewsArticleData;
@@ -149,7 +149,7 @@ public class NewsScreen extends Screen {
             selectedArticleId = articles.get(0).id();
         }
 
-        UIConstants.Sound.click();
+        DesignTokens.Sound.click();
     }
 
     private List<NewsArticleData> getFilteredArticles() {
@@ -189,7 +189,7 @@ public class NewsScreen extends Screen {
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xE8101820);
 
         // Border
-        int borderColor = UIConstants.Border.DEFAULT();
+        int borderColor = DesignTokens.Border.DEFAULT();
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 1, borderColor);
         graphics.fill(panelX, panelY + PANEL_HEIGHT - 1, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
         graphics.fill(panelX, panelY, panelX + 1, panelY + PANEL_HEIGHT, borderColor);
@@ -204,17 +204,17 @@ public class NewsScreen extends Screen {
         int headerY = panelY + 10;
 
         // Title with icon
-        graphics.drawString(getFont(), "📰 News Center", panelX + 15, headerY, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(getFont(), "📰 News Center", panelX + 15, headerY, DesignTokens.Text.PRIMARY(), false);
 
         // Unread count
         int unread = ClientNewsCache.getUnreadCount();
         if (unread > 0) {
             String badge = "(" + unread + " new)";
-            graphics.drawString(getFont(), badge, panelX + 120, headerY, UIConstants.Accent.GOLD(), false);
+            graphics.drawString(getFont(), badge, panelX + 120, headerY, DesignTokens.Accent.GOLD(), false);
         }
 
         // Separator
-        graphics.fill(panelX + 10, panelY + 30, panelX + PANEL_WIDTH - 10, panelY + 31, UIConstants.Border.DEFAULT());
+        graphics.fill(panelX + 10, panelY + 30, panelX + PANEL_WIDTH - 10, panelY + 31, DesignTokens.Border.DEFAULT());
     }
 
     private void renderCategoryFilters(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -261,7 +261,7 @@ public class NewsScreen extends Screen {
             String emptyText = "No articles";
             int textX = listX + (LIST_WIDTH - getFont().width(emptyText)) / 2;
             int textY = listY + listHeight / 2;
-            graphics.drawString(getFont(), emptyText, textX, textY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(getFont(), emptyText, textX, textY, DesignTokens.Text.MUTED(), false);
             return -1;
         }
 
@@ -294,7 +294,7 @@ public class NewsScreen extends Screen {
             if (!article.isRead()) {
                 int dotX = listX + 5;
                 int dotY = itemY + ARTICLE_HEIGHT / 2 - 3;
-                graphics.fill(dotX, dotY, dotX + 6, dotY + 6, UIConstants.Accent.GOLD());
+                graphics.fill(dotX, dotY, dotX + 6, dotY + 6, DesignTokens.Accent.GOLD());
             }
 
             // Category color bar
@@ -303,12 +303,12 @@ public class NewsScreen extends Screen {
 
             // Title
             String title = truncate(article.title(), 22);
-            int textColor = article.isRead() ? UIConstants.Text.MUTED() : UIConstants.Text.PRIMARY();
+            int textColor = article.isRead() ? DesignTokens.Text.MUTED() : DesignTokens.Text.PRIMARY();
             graphics.drawString(getFont(), title, listX + 22, itemY + 6, textColor, false);
 
             // Category + date
             String meta = article.getCategoryName() + " • " + DATE_FORMAT.format(Instant.ofEpochMilli(article.publishedAtMillis()));
-            graphics.drawString(getFont(), truncate(meta, 26), listX + 22, itemY + 20, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(getFont(), truncate(meta, 26), listX + 22, itemY + 20, DesignTokens.Text.SECONDARY(), false);
         }
 
         // Scrollbar
@@ -338,7 +338,7 @@ public class NewsScreen extends Screen {
             String noSelection = "Select an article";
             int textX = detailX + (DETAIL_WIDTH - getFont().width(noSelection)) / 2;
             int textY = detailY + detailHeight / 2;
-            graphics.drawString(getFont(), noSelection, textX, textY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(getFont(), noSelection, textX, textY, DesignTokens.Text.MUTED(), false);
             return;
         }
 
@@ -353,18 +353,18 @@ public class NewsScreen extends Screen {
         y += 20;
 
         // Title
-        graphics.drawString(getFont(), selected.title(), detailX, y, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(getFont(), selected.title(), detailX, y, DesignTokens.Text.PRIMARY(), false);
         y += 14;
 
         // Author and date
         String author = selected.authorName() != null ? selected.authorName() : "DevMod Team";
         String dateStr = DATE_FORMAT.format(Instant.ofEpochMilli(selected.publishedAtMillis()));
         String meta = "By " + author + " • " + dateStr;
-        graphics.drawString(getFont(), meta, detailX, y, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(getFont(), meta, detailX, y, DesignTokens.Text.SECONDARY(), false);
         y += 20;
 
         // Separator
-        graphics.fill(detailX, y, detailX + DETAIL_WIDTH, y + 1, UIConstants.Border.DEFAULT());
+        graphics.fill(detailX, y, detailX + DETAIL_WIDTH, y + 1, DesignTokens.Border.DEFAULT());
         y += 10;
 
         // Content
@@ -372,17 +372,17 @@ public class NewsScreen extends Screen {
         int maxY = detailY + detailHeight - 20;
 
         for (int i = detailScrollOffset; i < lines.size() && y < maxY; i++) {
-            graphics.drawString(getFont(), lines.get(i), detailX, y, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(getFont(), lines.get(i), detailX, y, DesignTokens.Text.PRIMARY(), false);
             y += 12;
         }
 
         // Scroll indicator
         if (lines.size() > (maxY - detailY - 60) / 12) {
             if (detailScrollOffset > 0) {
-                graphics.drawString(getFont(), "▲", detailX + DETAIL_WIDTH - 15, detailY, UIConstants.Text.MUTED(), false);
+                graphics.drawString(getFont(), "▲", detailX + DETAIL_WIDTH - 15, detailY, DesignTokens.Text.MUTED(), false);
             }
             if (detailScrollOffset < lines.size() - (maxY - detailY - 60) / 12) {
-                graphics.drawString(getFont(), "▼", detailX + DETAIL_WIDTH - 15, maxY - 10, UIConstants.Text.MUTED(), false);
+                graphics.drawString(getFont(), "▼", detailX + DETAIL_WIDTH - 15, maxY - 10, DesignTokens.Text.MUTED(), false);
             }
         }
     }
@@ -413,7 +413,7 @@ public class NewsScreen extends Screen {
                     ClientNewsCache.markAsRead(clicked.id());
                 }
 
-                UIConstants.Sound.click();
+                DesignTokens.Sound.click();
                 return true;
             }
         }
@@ -483,7 +483,7 @@ public class NewsScreen extends Screen {
         if (categoryOrdinal >= 0 && categoryOrdinal < CATEGORY_COLORS.length) {
             return CATEGORY_COLORS[categoryOrdinal];
         }
-        return UIConstants.Text.SECONDARY();
+        return DesignTokens.Text.SECONDARY();
     }
 
     private String truncate(String text, int maxLength) {

@@ -1,5 +1,6 @@
 package com.devmod.network;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -16,7 +17,7 @@ public record EditorApplyConfirmPayload(
     @Nonnull String scope,   // "weapon" | "armor" | other
     @Nonnull String itemId,  // registry id or display name
     @Nonnull String message
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<EditorApplyConfirmPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "editor_apply_confirm")));
@@ -41,5 +42,34 @@ public record EditorApplyConfirmPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += 1; // success
+        size += 1; // global
+        size += estimatedUtfSize(scope);
+        size += estimatedUtfSize(itemId);
+        size += estimatedUtfSize(message);
+        return size;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

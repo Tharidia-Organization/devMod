@@ -8,9 +8,9 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class InfoListSection implements EditorSection.CustomSection {
     private static final int LINE_HEIGHT = 12;
@@ -45,13 +45,13 @@ public final class InfoListSection implements EditorSection.CustomSection {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
         int y = bounds.y();
         graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + EditorDimensions.SECTION_HEADER_HEIGHT,
-            UIConstants.Background.HEADER());
+            DesignTokens.Background.HEADER());
         graphics.drawString(font, Objects.requireNonNull(title, "title"), bounds.x() + TEXT_INSET_X,
-            y + HEADER_TEXT_OFFSET_Y, UIConstants.Text.TITLE(), false);
+            y + HEADER_TEXT_OFFSET_Y, DesignTokens.Text.TITLE(), false);
         y += EditorDimensions.SECTION_HEADER_HEIGHT;
         for (String line : lines) {
             graphics.drawString(font, Objects.requireNonNull(line, "line"), bounds.x() + TEXT_INSET_X,
-                y, UIConstants.Text.SECONDARY(), false);
+                y, DesignTokens.Text.SECONDARY(), false);
             y += LINE_HEIGHT;
         }
     }

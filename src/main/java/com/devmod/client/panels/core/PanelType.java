@@ -1,22 +1,22 @@
 package com.devmod.client.panels.core;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public enum PanelType {
     /** Entity info panel - shows target mob/player stats */
-    ENTITY_INFO("Entity Info", 180, 120, 8000, true, UIConstants.Status.INFO()),
+    ENTITY_INFO("Entity Info", 180, 120, 8000, true, DesignTokens.Semantic.INFO),
 
     /** Combat panel - shows damage dealt/received */
-    COMBAT("Combat", 160, 100, 4000, false, UIConstants.Status.ERROR()),
+    COMBAT("Combat", 160, 100, 4000, false, DesignTokens.Semantic.ERROR),
 
     /** Tool status panel - shows active overlays */
-    TOOL_STATUS("Tools", 140, 80, 0, true, UIConstants.Text.ACCENT()),
+    TOOL_STATUS("Tools", 140, 80, 0, true, DesignTokens.Accent.PRIMARY),
 
     /** Test progress panel - shows current test */
-    TEST_PROGRESS("Test", 200, 90, 0, true, UIConstants.Status.SUCCESS()),
+    TEST_PROGRESS("Test", 200, 90, 0, true, DesignTokens.Semantic.SUCCESS),
 
     /** Generic custom panel */
-    CUSTOM("Custom", 150, 100, 5000, true, UIConstants.Text.PRIMARY());
+    CUSTOM("Custom", 150, 100, 5000, true, DesignTokens.Text.PRIMARY);
 
     private final String displayName;
     private final int defaultWidth;

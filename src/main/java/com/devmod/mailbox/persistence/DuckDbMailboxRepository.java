@@ -79,8 +79,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 """;
 
             DbPerformanceMonitor.QueryTimer timer = DbPerformanceMonitor.INSTANCE.startQuery("saveMessage");
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, message.id().toString());
                 setNullableUuid(stmt, 2, message.senderUuid());
@@ -115,8 +115,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
             String sql = "SELECT * FROM mailbox_messages WHERE id = ?";
 
             DbPerformanceMonitor.QueryTimer timer = DbPerformanceMonitor.INSTANCE.startQuery("getMessage");
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, messageId.toString());
 
@@ -144,8 +144,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 : "SELECT * FROM mailbox_messages WHERE recipient_uuid = ? AND deleted = FALSE ORDER BY created_at DESC";
 
             DbPerformanceMonitor.QueryTimer timer = DbPerformanceMonitor.INSTANCE.startQuery("getMessagesForPlayer");
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, playerUuid.toString());
 
@@ -174,8 +174,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 """;
 
             DbPerformanceMonitor.QueryTimer timer = DbPerformanceMonitor.INSTANCE.startQuery("getUnreadCount");
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, playerUuid.toString());
 
@@ -198,8 +198,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "UPDATE mailbox_messages SET read_at = ? WHERE id = ? AND read_at IS NULL";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setTimestamp(1, Timestamp.from(readAt));
                 stmt.setString(2, messageId.toString());
@@ -224,8 +224,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 WHERE id = ? AND attachment_claimed = FALSE
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, messageId.toString());
 
@@ -250,8 +250,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                   AND attachment_claiming = FALSE
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, messageId.toString());
 
@@ -270,8 +270,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "UPDATE mailbox_messages SET attachment_claiming = FALSE WHERE id = ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, messageId.toString());
 
@@ -301,8 +301,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                     """
                 : "UPDATE mailbox_messages SET deleted = TRUE WHERE id = ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 if (withRetention) {
                     Timestamp retention = Timestamp.from(retainUntil);
@@ -328,8 +328,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "DELETE FROM mailbox_messages WHERE id = ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, messageId.toString());
 
@@ -348,8 +348,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "DELETE FROM mailbox_messages WHERE expires_at IS NOT NULL AND expires_at < ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setTimestamp(1, Timestamp.from(before));
 
@@ -371,8 +371,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT COUNT(*) FROM mailbox_messages WHERE recipient_uuid = ? AND deleted = FALSE";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, playerUuid.toString());
 
@@ -401,8 +401,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 """;
 
             DbPerformanceMonitor.QueryTimer timer = DbPerformanceMonitor.INSTANCE.startQuery("getAllMessages");
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setInt(1, limit);
                 stmt.setInt(2, offset);
@@ -428,8 +428,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT DISTINCT recipient_uuid FROM mailbox_messages";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql);
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql);
                  ResultSet rs = stmt.executeQuery()) {
 
                 List<UUID> users = new ArrayList<>();
@@ -450,8 +450,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT COUNT(*) FROM mailbox_messages WHERE deleted = FALSE";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql);
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql);
                  ResultSet rs = stmt.executeQuery()) {
 
                 if (rs.next()) {
@@ -471,8 +471,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT COUNT(*) FROM mailbox_messages WHERE deleted = FALSE AND read_at IS NULL";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql);
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql);
                  ResultSet rs = stmt.executeQuery()) {
 
                 if (rs.next()) {
@@ -501,8 +501,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, article.id().toString());
                 stmt.setString(2, article.title());
@@ -531,8 +531,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT * FROM news_articles WHERE id = ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, articleId.toString());
 
@@ -563,8 +563,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 """;
 
             DbPerformanceMonitor.QueryTimer timer = DbPerformanceMonitor.INSTANCE.startQuery("getActiveNews");
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setInt(1, limit);
 
@@ -589,8 +589,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT * FROM news_articles ORDER BY created_at DESC LIMIT ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setInt(1, limit);
 
@@ -619,8 +619,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 WHERE id = ?
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, article.title());
                 stmt.setString(2, article.content());
@@ -647,8 +647,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "DELETE FROM news_articles WHERE id = ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, articleId.toString());
 
@@ -667,8 +667,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT 1 FROM news_read_status WHERE player_uuid = ? AND news_id = ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, playerUuid.toString());
                 stmt.setString(2, articleId.toString());
@@ -693,8 +693,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 ON CONFLICT (player_uuid, news_id) DO NOTHING
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, playerUuid.toString());
                 stmt.setString(2, articleId.toString());
@@ -723,8 +723,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                   )
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, playerUuid.toString());
 
@@ -756,8 +756,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, task.id().toString());
                 stmt.setString(2, task.title());
@@ -787,8 +787,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT * FROM test_tasks WHERE id = ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, taskId.toString());
 
@@ -811,8 +811,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT * FROM test_tasks WHERE assigned_to = ? ORDER BY created_at DESC";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, userId.toString());
 
@@ -836,8 +836,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT * FROM test_tasks ORDER BY created_at DESC LIMIT ? OFFSET ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setInt(1, limit);
                 stmt.setInt(2, offset);
@@ -867,8 +867,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 WHERE id = ?
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, task.title());
                 setNullableString(stmt, 2, task.description());
@@ -897,8 +897,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "DELETE FROM test_tasks WHERE id = ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, taskId.toString());
 
@@ -924,8 +924,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 UUID actorUuid = entry.actorUuid();
                 stmt.setString(1, entry.id().toString());
@@ -952,8 +952,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT * FROM task_audit WHERE task_id = ? ORDER BY timestamp DESC";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, taskId.toString());
 
@@ -977,8 +977,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT * FROM task_audit ORDER BY timestamp DESC LIMIT ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setInt(1, limit);
 
@@ -1023,8 +1023,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 UUID actorUuid = entry.actorUuid();
                 stmt.setString(1, entry.id().toString());
@@ -1050,8 +1050,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT * FROM admin_audit_log ORDER BY timestamp DESC LIMIT ?";
 
-            try (Connection conn = connectionManager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setInt(1, limit);
 
@@ -1476,8 +1476,8 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 }
 
                 // Checkpoint WAL to ensure all data is in main file
-                try (Connection conn = connectionManager.getConnection();
-                     var stmt = conn.createStatement()) {
+                Connection conn = connectionManager.getConnectionUnchecked();
+                try (var stmt = conn.createStatement()) {
                     stmt.execute("CHECKPOINT");
                     LOGGER.debug("[Mailbox] WAL checkpoint completed before backup");
                 }

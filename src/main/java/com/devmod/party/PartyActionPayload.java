@@ -10,12 +10,14 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 public record PartyActionPayload(
     Action action,
     @Nullable UUID targetPlayerId,  // For KICK action
     int questTypeOrdinal,           // For SET_QUEST_TYPE action
     @Nullable String mobId          // For SET_MOB_TYPE action (ResourceLocation as string)
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<PartyActionPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "party_action"))
@@ -147,5 +149,29 @@ public record PartyActionPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 1; // action ordinal (varint, typically 1 byte)
+        size += 1; // boolean for targetPlayerId presence
+        if (targetPlayerId != null) {
+            size += 16; // UUID
+        }
+        size += 1; // questTypeOrdinal (varint, typically 1 byte)
+        size += 1; // boolean for mobId presence
+        if (mobId != null) {
+            size += varIntSize(mobId.length()) + mobId.length();
+        }
+        return size;
+    }
+
+    private static int varIntSize(int value) {
+        int size = 1;
+        while ((value & ~0x7F) != 0) {
+            value >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

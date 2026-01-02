@@ -9,6 +9,9 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nullable;
 
+import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
+
 import com.devmod.DevMod;
 import com.devmod.mailbox.MailboxConfig;
 import com.devmod.mailbox.MailboxManager;
@@ -16,9 +19,6 @@ import com.devmod.mailbox.MailboxMessage;
 import com.devmod.mailbox.MessageType;
 import com.devmod.mailbox.api.AuthMiddleware;
 import com.devmod.mailbox.moderation.AdminAuditLog;
-
-import io.javalin.http.Context;
-import io.javalin.http.HttpStatus;
 
 /**
  * REST API controller for mailbox messages.

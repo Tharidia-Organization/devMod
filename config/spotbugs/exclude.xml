@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+        SpotBugs Exclusion Filter for DevMod
+
+        Excludes false positives and patterns that don't apply to this codebase.
+        See: https://spotbugs.readthedocs.io/en/stable/filter.html
+    -->
+
+    <!-- Exclude all generated/mixin code -->
+    <Match>
+        <Package name="~com\.devmod\.mixin\..*"/>
+    </Match>
+
+    <!-- Exclude test utilities and test infrastructure -->
+    <Match>
+        <Package name="~com\.devmod\.testing\..*"/>
+    </Match>
+    <Match>
+        <Package name="~com\.devmod\.gametest\..*"/>
+    </Match>
+
+    <!-- Exclude client-side code (heavily Minecraft-dependent) -->
+    <Match>
+        <Package name="~com\.devmod\.client\..*"/>
+    </Match>
+
+    <!-- Exclude compatibility modules (reflection-heavy) -->
+    <Match>
+        <Package name="~com\.devmod\.compat\..*"/>
+    </Match>
+
+    <!-- Exclude integration code (external mod dependencies) -->
+    <Match>
+        <Package name="~com\.devmod\.integration\..*"/>
+    </Match>
+
+    <!-- Suppress serialization warnings for network payloads -->
+    <!-- Minecraft network serialization uses custom CODEC, not Java serialization -->
+    <Match>
+        <Package name="~com\.devmod\.network\..*"/>
+        <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    </Match>
+    <Match>
+        <Package name="~com\.devmod\.mailbox\.network\..*"/>
+        <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    </Match>
+
+    <!-- Suppress synchronization warnings for atomic field patterns -->
+    <!-- We use AtomicLong/AtomicInteger with volatile fields intentionally -->
+    <Match>
+        <Bug pattern="VO_VOLATILE_INCREMENT"/>
+    </Match>
+
+    <!-- Suppress null pointer warnings that NullAway handles better -->
+    <Match>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    <Match>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+    </Match>
+
+    <!-- Suppress warnings about exposing internal representation -->
+    <!-- Minecraft's pattern is to return mutable lists/arrays for performance -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Suppress warnings about method naming conventions -->
+    <!-- Minecraft uses non-standard naming (getXXX for fields, etc) -->
+    <Match>
+        <Bug pattern="NM_METHOD_NAMING_CONVENTION"/>
+    </Match>
+
+    <!-- Suppress warnings about unused public methods -->
+    <!-- Many methods are called via Minecraft event system or reflection -->
+    <Match>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+    </Match>
+
+    <!-- Suppress resource leak warnings for Minecraft-managed resources -->
+    <!-- ServerLevel, MinecraftServer, etc. are managed by game lifecycle -->
+    <Match>
+        <Bug pattern="OBL_UNSATISFIED_OBLIGATION"/>
+    </Match>
+    <Match>
+        <Bug pattern="OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE"/>
+    </Match>
+
+    <!-- Allow intentional switch fall-through with comments -->
+    <Match>
+        <Bug pattern="SF_SWITCH_FALLTHROUGH"/>
+    </Match>
+
+    <!-- Suppress comparison warnings for enums -->
+    <!-- Minecraft uses == for enum comparison which is correct -->
+    <Match>
+        <Bug pattern="ES_COMPARING_STRINGS_WITH_EQ"/>
+    </Match>
+
+    <!-- Exclude records from serialization checks -->
+    <!-- Java records are not serializable in the traditional sense -->
+    <Match>
+        <Bug pattern="SE_BAD_FIELD"/>
+        <Class name="~.*\$.*"/>
+    </Match>
+
+    <!-- Suppress warnings about magic numbers in constants -->
+    <!-- Many values come from Minecraft or game design requirements -->
+    <Match>
+        <Bug pattern="MF_CLASS_MASKS_FIELD"/>
+    </Match>
+
+</FindBugsFilter>

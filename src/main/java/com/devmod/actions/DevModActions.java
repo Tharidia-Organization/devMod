@@ -6,6 +6,7 @@ import net.minecraft.world.item.Items;
 
 import com.devmod.arena.command.ArenaActionRegistry;
 import com.devmod.debug.DebugCommand;
+import com.devmod.endurance.LeaderboardCommandEvents;
 import com.devmod.gametest.TestHarnessCommands;
 import com.devmod.mailbox.admin.MailboxCommands;
 import com.devmod.telemetry.TelemetryReloadCommand;
@@ -140,5 +141,6 @@ public final class DevModActions {
         DungeonCommand.registerActions();
         TestHarnessCommands.registerActions();
         MailboxCommands.registerActions();
+        LeaderboardCommandEvents.registerActions();
     }
 }

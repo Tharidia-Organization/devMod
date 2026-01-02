@@ -545,6 +545,13 @@ public class QuestStartSequence {
             PartyData party = PartyManager.INSTANCE.getParty(sequence.partyId);
             if (party != null) {
                 party.startQuest(sequence.partyId);
+                // Sync party state to all members so clients see IN_QUEST state
+                if (!membersToStart.isEmpty()) {
+                    MinecraftServer server = membersToStart.get(0).getServer();
+                    if (server != null) {
+                        com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, sequence.partyId);
+                    }
+                }
             }
             LOGGER.info("[QuestSequence] Quest started for {}/{} members", successCount, membersToStart.size());
         }

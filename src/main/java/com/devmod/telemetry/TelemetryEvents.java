@@ -127,6 +127,10 @@ public class TelemetryEvents {
         TelemetryReloadCommand.register(event.getDispatcher());
         com.devmod.telemetry.dungeon.DungeonCommand.register(event.getDispatcher());
         com.devmod.telemetry.dashboard.DashboardCommand.register(event.getDispatcher());
+        // MobRequirements hot-reload command
+        com.devmod.mob.MobRequirementsCommand.register(event.getDispatcher());
+        // Zone debug visualization command
+        com.devmod.arena.zone.ZoneDebugCommand.register(event.getDispatcher());
     }
 
     // NOTE: Server-side PlayerTickEvent is not available in NeoForge.

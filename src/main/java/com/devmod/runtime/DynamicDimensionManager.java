@@ -33,7 +33,6 @@ import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
@@ -50,7 +49,13 @@ import com.devmod.arena.config.InstanceLimitConfig;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.InstanceSettingsValidator;
+import com.devmod.arena.zone.ArenaZone;
+import com.devmod.arena.zone.ZoneLayout;
 import com.devmod.mixin.MinecraftServerAccessor;
+import com.devmod.runtime.biome.ZoneBiomeSource;
+import com.devmod.runtime.environment.DimensionEnvironmentManager;
+import com.devmod.runtime.generator.ArenaChunkGenerator;
+import com.devmod.runtime.generator.ArenaFlatChunkGenerator;
 
 public class DynamicDimensionManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicDimensionManager.class);
@@ -200,15 +205,22 @@ public class DynamicDimensionManager {
         var dimensionTypeRegistry = nn(server.registryAccess().registryOrThrow(dimensionTypeRegistryKey), "dimension type registry");
         var dimensionType = nn(dimensionTypeRegistry.getHolderOrThrow(overworldType), "dimension type");
 
-        // Create flat generator settings for void world
-        // This creates a minimal world with just bedrock at y=0
-        ResourceKey<? extends net.minecraft.core.Registry<? extends net.minecraft.world.level.biome.Biome>> biomeRegistryKey =
-            nn(Registries.BIOME, "biome registry key");
-        var biomeRegistry = nn(server.registryAccess().registryOrThrow(biomeRegistryKey), "biome registry");
-        ResourceKey<net.minecraft.world.level.biome.Biome> voidBiomeKey =
-            nn(Biomes.THE_VOID, "void biome key");
+        // Resolve biome from template/mob requirements via DimensionEnvironmentManager
+        ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
+        ArenaTemplate template = (registry != null && arenaId != null)
+            ? registry.get(arenaId).orElse(null)
+            : null;
 
-        var biomeHolder = nn(biomeRegistry.getHolderOrThrow(voidBiomeKey), "void biome");
+        // Get optimal biome from environment manager
+        Holder<net.minecraft.world.level.biome.Biome> biomeHolder = nn(
+            DimensionEnvironmentManager.INSTANCE.resolveBiome(
+                template,
+                null, // mobIds will be set later when quest starts
+                server
+            ),
+            "biome holder from environment manager"
+        );
+        LOGGER.debug("[DynamicDim] Using biome {} for dimension {}", biomeHolder, dimensionKey.location());
 
         FlatLevelGeneratorSettings flatSettings = new FlatLevelGeneratorSettings(
             nn(Optional.<HolderSet<StructureSet>>empty(), "structures"),
@@ -223,12 +235,11 @@ public class DynamicDimensionManager {
         layerInfo.add(new FlatLayerInfo(1, nn(Blocks.BEDROCK, "bedrock block")));
         flatSettings.updateLayers();
 
-        // Note: We need to set layers via reflection or use a custom generator
-        // For now, create a flat source that will generate void
-        ChunkGenerator chunkGenerator = new FlatLevelSource(flatSettings);
+        // Create chunk generator - use ArenaFlatChunkGenerator for multi-biome support
+        ChunkGenerator chunkGenerator = createChunkGenerator(template, flatSettings, biomeHolder);
 
         // Create the level stem
-        LevelStem levelStem = new LevelStem(dimensionType, chunkGenerator);
+        LevelStem levelStem = new LevelStem(dimensionType, nn(chunkGenerator, "chunk generator"));
 
         // Use Mixin accessor to add dimension to server
         // This is the critical part that requires the Mixin
@@ -237,9 +248,243 @@ public class DynamicDimensionManager {
         if (newLevel != null) {
             // Generate the arena platform
             generateArenaPlatform(newLevel, arenaId);
+
+            // Configure environment settings (time, lighting) via manager
+            DimensionEnvironmentManager.INSTANCE.configureEnvironment(
+                dimensionKey,
+                template,
+                null, // mobIds will be set when quest starts
+                newLevel
+            );
         }
 
         return newLevel;
+    }
+
+    /**
+     * Creates the appropriate chunk generator based on template settings.
+     * Uses ArenaFlatChunkGenerator for multi-biome zone support, otherwise FlatLevelSource.
+     *
+     * @param template The arena template (may be null)
+     * @param flatSettings The flat level settings
+     * @param defaultBiome The default biome holder
+     * @return The configured chunk generator
+     */
+    private ChunkGenerator createChunkGenerator(
+            @Nullable ArenaTemplate template,
+            FlatLevelGeneratorSettings flatSettings,
+            Holder<net.minecraft.world.level.biome.Biome> defaultBiome
+    ) {
+        // Check if template has zone settings with multiple zones
+        var zoneSettings = template != null ? template.zoneSettings() : null;
+        if (zoneSettings != null && zoneSettings.enabled()) {
+            // Build zone layout if we have zone definitions
+            if (!zoneSettings.zones().isEmpty()) {
+                ZoneLayout zoneLayout = buildZoneLayoutFromTemplate(template);
+
+                if (zoneLayout != null && !zoneLayout.zones().isEmpty()) {
+                    // Create zone-aware biome source
+                    var biomeRegistry = server.registryAccess().registryOrThrow(nn(Registries.BIOME, "biome registry key"));
+                    ZoneBiomeSource zoneBiomeSource = ZoneBiomeSource.fromZoneLayout(
+                            zoneLayout, biomeRegistry, defaultBiome
+                    );
+
+                    // Calculate arena bounds
+                    ArenaChunkGenerator.ArenaBounds bounds = calculateArenaBounds(template);
+                    ArenaZone.ZoneShape shape = determineArenaShape(template);
+
+                    LOGGER.info("[DynamicDim] Using ArenaFlatChunkGenerator with {} zones",
+                            zoneLayout.zones().size());
+
+                    return new ArenaFlatChunkGenerator(
+                            zoneBiomeSource,
+                            bounds,
+                            shape,
+                            flatSettings
+                    );
+                }
+            }
+        }
+
+        // Fallback: Use standard FlatLevelSource for simple single-biome arenas
+        LOGGER.debug("[DynamicDim] Using standard FlatLevelSource (no zones configured)");
+        return new FlatLevelSource(nn(flatSettings, "flat settings"));
+    }
+
+    /**
+     * Builds a ZoneLayout from template zone settings.
+     * Uses striped layout to divide arena into horizontal strips for each zone.
+     */
+    @Nullable
+    private ZoneLayout buildZoneLayoutFromTemplate(@Nullable ArenaTemplate template) {
+        if (template == null || template.zoneSettings() == null) {
+            return null;
+        }
+
+        var zoneSettings = template.zoneSettings();
+        if (zoneSettings == null || zoneSettings.zones().isEmpty()) {
+            return null;
+        }
+
+        // Get arena dimensions
+        Integer sizeXValue = template.sizeX();
+        Integer sizeZValue = template.sizeZ();
+        int sizeX = sizeXValue != null ? sizeXValue.intValue() : template.size();
+        int sizeZ = sizeZValue != null ? sizeZValue.intValue() : template.size();
+        int halfSize = Math.max(sizeX, sizeZ) / 2;
+
+        // Build zones using striped layout strategy
+        ZoneLayout.Builder builder = ZoneLayout.builder(halfSize);
+
+        int totalZones = zoneSettings.zones().size();
+        for (int i = 0; i < totalZones; i++) {
+            var zoneDef = zoneSettings.zones().get(i);
+            ArenaZone zone = createZoneFromDefinition(zoneDef, i, totalZones, halfSize);
+            if (zone != null) {
+                builder.addZone(zone);
+            }
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Creates an ArenaZone from a zone definition.
+     * Calculates bounds using striped layout (horizontal strips).
+     */
+    @Nullable
+    private ArenaZone createZoneFromDefinition(
+            ArenaTemplate.ZoneSettings.ZoneDefinition zoneDef,
+            int zoneIndex,
+            int totalZones,
+            int halfSize
+    ) {
+        try {
+            // Calculate bounds using striped layout (divide arena into horizontal strips)
+            int stripeHeight = (halfSize * 2) / Math.max(1, totalZones);
+            int z1 = -halfSize + (zoneIndex * stripeHeight);
+            int z2 = (zoneIndex == totalZones - 1) ? halfSize : z1 + stripeHeight;
+
+            ArenaZone.ZoneBounds bounds = ArenaZone.ZoneBounds.rect(-halfSize, z1, halfSize, z2);
+
+            // Create base zone
+            ArenaZone zone = new ArenaZone(
+                    zoneDef.name(),
+                    ArenaZone.ZoneShape.RECTANGULAR,
+                    bounds,
+                    com.devmod.arena.zone.ZoneEnvironment.DEFAULT,
+                    List.of(),
+                    zoneIndex // Priority based on index
+            );
+
+            // Apply environment if any zone-specific settings are specified
+            boolean hasEnvironmentSettings = zoneDef.biome() != null ||
+                    zoneDef.floorMaterial() != null ||
+                    zoneDef.skyLight() != null ||
+                    zoneDef.blockLight() != null ||
+                    zoneDef.time() != null;
+
+            if (hasEnvironmentSettings) {
+                String biomeId = zoneDef.biome();
+                String floorId = zoneDef.floorMaterial();
+                Integer skyLightVal = zoneDef.skyLight();
+                Integer blockLightVal = zoneDef.blockLight();
+                var env = new com.devmod.arena.zone.ZoneEnvironment(
+                        biomeId != null
+                                ? Optional.of(ResourceLocation.parse(biomeId))
+                                : Optional.empty(),
+                        floorId != null
+                                ? Optional.of(ResourceLocation.parse(floorId))
+                                : Optional.empty(),
+                        new com.devmod.arena.zone.ZoneEnvironment.LightingConfig(
+                                skyLightVal != null ? skyLightVal.intValue() : 15,
+                                blockLightVal != null ? blockLightVal.intValue() : 0,
+                                false
+                        ),
+                        parseTimeConfig(zoneDef.time())
+                );
+                zone = zone.withEnvironment(env);
+            }
+
+            return zone;
+        } catch (Exception e) {
+            LOGGER.warn("[DynamicDim] Failed to create zone from definition '{}': {}",
+                    zoneDef.name(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Parses a time config string to TimeConfig enum.
+     */
+    private com.devmod.arena.zone.ZoneEnvironment.TimeConfig parseTimeConfig(@Nullable String time) {
+        if (time == null) {
+            return com.devmod.arena.zone.ZoneEnvironment.TimeConfig.ANY;
+        }
+        return switch (time.toLowerCase(java.util.Locale.ROOT)) {
+            case "day" -> com.devmod.arena.zone.ZoneEnvironment.TimeConfig.DAY;
+            case "night" -> com.devmod.arena.zone.ZoneEnvironment.TimeConfig.NIGHT;
+            case "dusk", "sunset" -> com.devmod.arena.zone.ZoneEnvironment.TimeConfig.DUSK;
+            case "dawn", "sunrise" -> com.devmod.arena.zone.ZoneEnvironment.TimeConfig.DAWN;
+            default -> com.devmod.arena.zone.ZoneEnvironment.TimeConfig.ANY;
+        };
+    }
+
+    /**
+     * Calculates arena bounds from template.
+     * Returns shape-appropriate bounds (rectangular, circular, or ring).
+     */
+    private ArenaChunkGenerator.ArenaBounds calculateArenaBounds(@Nullable ArenaTemplate template) {
+        if (template == null) {
+            return ArenaChunkGenerator.ArenaBounds.rectangular(-32, -32, 32, 32);
+        }
+
+        Integer sizeXVal = template.sizeX();
+        Integer sizeZVal = template.sizeZ();
+        int sizeX = sizeXVal != null ? sizeXVal.intValue() : template.size();
+        int sizeZ = sizeZVal != null ? sizeZVal.intValue() : template.size();
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+
+        // Origin determines center
+        int centerX = template.origin() != null ? template.origin().x() : 0;
+        int centerZ = template.origin() != null ? template.origin().z() : 0;
+
+        // Use radius as max of halfX/halfZ for circular shapes
+        int radius = Math.max(halfX, halfZ);
+
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
+        return switch (shape) {
+            case CIRCULAR -> ArenaChunkGenerator.ArenaBounds.circular(centerX, centerZ, radius);
+            case RING -> {
+                Integer innerRadiusVal = template.ringInnerRadius();
+                int innerRadius = innerRadiusVal != null ? innerRadiusVal.intValue() : radius / 2;
+                yield ArenaChunkGenerator.ArenaBounds.ring(centerX, centerZ, radius, innerRadius);
+            }
+            case RECTANGULAR -> ArenaChunkGenerator.ArenaBounds.rectangular(
+                    centerX - halfX, centerZ - halfZ,
+                    centerX + halfX, centerZ + halfZ
+            );
+        };
+    }
+
+    /**
+     * Determines the arena shape from template.
+     * Reads the arenaShape field from the template and maps to ZoneShape.
+     */
+    private ArenaZone.ZoneShape determineArenaShape(@Nullable ArenaTemplate template) {
+        if (template == null || template.arenaShape() == null) {
+            return ArenaZone.ZoneShape.RECTANGULAR;
+        }
+        return switch (template.arenaShape()) {
+            case RECTANGULAR -> ArenaZone.ZoneShape.RECTANGULAR;
+            case CIRCULAR -> ArenaZone.ZoneShape.CIRCULAR;
+            case RING -> ArenaZone.ZoneShape.RING;
+        };
     }
 
     /**
@@ -296,6 +541,20 @@ public class DynamicDimensionManager {
 
             // Register with Distant Horizons for LOD compatibility
             com.devmod.integration.DistantHorizonsIntegration.registerDynamicDimension(newLevel);
+
+            // Post LevelEvent.Load to notify other mods about the new dimension
+            try {
+                net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
+                    new net.neoforged.neoforge.event.level.LevelEvent.Load(newLevel)
+                );
+                LOGGER.debug("[DynamicDim] Posted LevelEvent.Load for {}", dimensionKey.location());
+            } catch (Exception e) {
+                LOGGER.warn("[DynamicDim] Failed to post LevelEvent.Load: {}", e.getMessage());
+            }
+
+            // Register with LittleTiles for animation handler compatibility
+            // This forces lazy initialization of the per-level handler
+            com.devmod.integration.LittleTilesIntegration.registerDynamicDimension(newLevel);
 
             LOGGER.info("[DynamicDim] Successfully injected dimension {}", dimensionKey.location());
             return newLevel;
@@ -529,6 +788,9 @@ public class DynamicDimensionManager {
         // 3. Unregister from Distant Horizons BEFORE cleanup
         com.devmod.integration.DistantHorizonsIntegration.unregisterDynamicDimension(resolvedKey);
 
+        // 3b. Clean up environment settings
+        DimensionEnvironmentManager.INSTANCE.cleanupDimension(resolvedKey);
+
         // 4. Clean up tracking maps BEFORE file deletion
         // This prevents other code from trying to use this dimension
         dimensionToInstance.remove(resolvedKey);
@@ -555,13 +817,25 @@ public class DynamicDimensionManager {
      */
     private boolean unloadDimension(ResourceKey<Level> dimensionKey, ServerLevel level) {
         try {
-            // 1. Save dimension data before unloading
+            // 1. Post LevelEvent.Unload to notify other mods before unloading
+            try {
+                net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
+                    new net.neoforged.neoforge.event.level.LevelEvent.Unload(
+                        java.util.Objects.requireNonNull(level, "level")
+                    )
+                );
+                LOGGER.debug("[DynamicDim] Posted LevelEvent.Unload for {}", dimensionKey.location());
+            } catch (Exception e) {
+                LOGGER.warn("[DynamicDim] Failed to post LevelEvent.Unload: {}", e.getMessage());
+            }
+
+            // 2. Save dimension data before unloading
             level.save(null, true, false);
 
-            // 2. Get the levels map via Mixin accessor
+            // 3. Get the levels map via Mixin accessor
             Map<ResourceKey<Level>, ServerLevel> levels = ((MinecraftServerAccessor) server).getLevels();
 
-            // 3. Remove from the levels map
+            // 4. Remove from the levels map
             levels.remove(dimensionKey);
 
             // 4. Close the level's resources
@@ -663,6 +937,11 @@ public class DynamicDimensionManager {
             0   // Level pitch
         );
 
+        // Sync environment settings (frozen time) to the client
+        var envSettings = DimensionEnvironmentManager.INSTANCE.getSettings(dimensionKey);
+        String biomeId = envSettings.map(s -> s.biomeId()).orElse("");
+        DimensionEnvironmentManager.INSTANCE.getTimeController().syncToPlayer(player, dimensionKey, biomeId);
+
         LOGGER.info("[DynamicDim] Teleported {} to instance {}", player.getName().getString(), instanceId);
         return true;
     }
@@ -672,6 +951,9 @@ public class DynamicDimensionManager {
      */
     public boolean teleportToOverworld(ServerPlayer player) {
         if (server == null) return false;
+
+        // Capture previous dimension before teleport to clear environment sync
+        ResourceKey<Level> previousDim = player.level().dimension();
 
         ServerLevel overworld = server.overworld();
         BlockPos spawnPos = overworld.getSharedSpawnPos();
@@ -685,6 +967,12 @@ public class DynamicDimensionManager {
             player.getYRot(),
             player.getXRot()
         );
+
+        // Clear environment sync (frozen time, biome) for the arena dimension
+        // This prevents client from keeping stale frozen time after leaving arena
+        if (isInstanceDimension(previousDim)) {
+            DimensionEnvironmentManager.INSTANCE.getTimeController().clearSyncForPlayer(player, previousDim);
+        }
 
         LOGGER.debug("[DynamicDim] Teleported {} to overworld", player.getName().getString());
         return true;

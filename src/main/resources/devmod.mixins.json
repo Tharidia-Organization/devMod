@@ -7,14 +7,17 @@
   "mixins": [
     "MinecraftServerAccessor",
     "RecipeManagerMixin",
-    "DebugPacketsMixin"
+    "DebugPacketsMixin",
+    "MobDespawnMixin"
   ],
   "client": [
     "client.GameRendererMixin",
     "client.CameraShakeMixin",
     "client.ModelPartTransformMixin",
     "client.LivingEntityRendererMixin",
-    "client.DebugRendererMixin"
+    "client.DebugRendererMixin",
+    "client.HexereiDynamicRegistriesMixin",
+    "client.ClientLevelTimeMixin"
   ],
   "injectors": {
     "defaultRequire": 1

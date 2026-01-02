@@ -56,7 +56,15 @@ class ChannelCollisionGuardTest {
                     "MOB/ITEM channel out of range (1-4): " + name + " = " + id);
             }
 
+            // UNIFIED NOTIFICATION CENTER: 120-129
+            if (name.startsWith("UNIFIED_") || name.startsWith("NOTIFICATION_") ||
+                name.startsWith("SEASON_PASS_") || name.equals("REQUEST_SEASON_PASS")) {
+                assertTrue(id >= 120 && id <= 129,
+                    "NOTIFICATION CENTER channel out of range (120-129): " + name + " = " + id);
+            }
+
             // ENDURANCE: 5-25 (QUEST_SEQUENCE excluded - it's in PARTY range)
+            // REQUEST_SEASON_PASS excluded - it's in NOTIFICATION CENTER range
             if ((name.startsWith("START_QUEST") || name.startsWith("QUEST_") ||
                 name.startsWith("SHOP_") || name.startsWith("PERK_") ||
                 name.startsWith("PERSONAL_") || name.startsWith("REQUEST_") ||
@@ -64,7 +72,8 @@ class ChannelCollisionGuardTest {
                 name.startsWith("TOKEN_") || name.startsWith("RECORD_") ||
                 name.startsWith("COMBO_") || name.startsWith("INSTANCE_") ||
                 name.startsWith("WAVE_") || name.equals("MOB_CONFIG_CONFIRM"))
-                && !name.equals("QUEST_SEQUENCE")) {
+                && !name.equals("QUEST_SEQUENCE")
+                && !name.equals("REQUEST_SEASON_PASS")) {
                 assertTrue(id >= 5 && id <= 25,
                     "ENDURANCE channel out of range (5-25): " + name + " = " + id);
             }

@@ -15,7 +15,8 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.util.I18n;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -61,11 +62,11 @@ public class InstanceLoadingOverlay {
         int panelY = (screenHeight - PANEL_HEIGHT) / 2;
 
         // Semi-transparent background overlay
-        graphics.fill(0, 0, screenWidth, screenHeight, 0x88000000);
+        graphics.fill(0, 0, screenWidth, screenHeight, OverlayTheme.withAlpha(0x000000, OverlayTheme.Alpha.SUBTLE));
 
         // Panel background
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, UIConstants.Border.DEFAULT());
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, UIConstants.Background.PANEL_SOLID());
+        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, DesignTokens.Stroke.DEFAULT);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, DesignTokens.Background.PANEL_SOLID);
 
         // Spinner
         int spinnerCenterX = panelX + 30;
@@ -77,25 +78,25 @@ public class InstanceLoadingOverlay {
             int dotX = spinnerCenterX + (int) (Math.cos(angle) * spinnerRadius);
             int dotY = spinnerCenterY + (int) (Math.sin(angle) * spinnerRadius);
             int alpha = 255 - (i * 28);
-            int dotColor = (alpha << 24) | (UIConstants.Accent.BLUE() & 0x00FFFFFF);
+            int dotColor = (alpha << 24) | (DesignTokens.Semantic.INFO & 0x00FFFFFF);
             graphics.fill(dotX - 2, dotY - 2, dotX + 2, dotY + 2, dotColor);
         }
 
         // Title
         String title = I18n.translate("devmod.loading.preparing_quest").getString();
-        graphics.drawString(font, "§l" + title, panelX + 55, panelY + 15, UIConstants.Text.PRIMARY());
+        graphics.drawString(font, "§l" + title, panelX + 55, panelY + 15, DesignTokens.Text.PRIMARY);
 
         // Status message
-        graphics.drawString(font, statusMessage, panelX + 55, panelY + 32, UIConstants.Text.SECONDARY());
+        graphics.drawString(font, statusMessage, panelX + 55, panelY + 32, DesignTokens.Text.SECONDARY);
 
         // Elapsed time
         long elapsed = System.currentTimeMillis() - startTime;
         String timeText = String.format("%.1fs", elapsed / 1000.0);
-        graphics.drawString(font, timeText, panelX + 55, panelY + 50, UIConstants.Text.MUTED());
+        graphics.drawString(font, timeText, panelX + 55, panelY + 50, DesignTokens.Text.MUTED);
 
         // Hint
         String hint = I18n.translate("devmod.loading.please_wait").getString();
-        graphics.drawCenteredString(font, "§8" + hint, panelX + PANEL_WIDTH / 2, panelY + PANEL_HEIGHT - 12, UIConstants.Text.MUTED());
+        graphics.drawCenteredString(font, "§8" + hint, panelX + PANEL_WIDTH / 2, panelY + PANEL_HEIGHT - 12, DesignTokens.Text.MUTED);
     }
 
     // === Public API ===

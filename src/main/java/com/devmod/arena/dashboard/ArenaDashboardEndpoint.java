@@ -1062,6 +1062,65 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         return prefix + ":" + params.templateId();
     }
 
+    // ========== Bootstrap Status Endpoint ==========
+
+    /**
+     * Bootstrap status response for template system health monitoring.
+     * GET /api/arena/bootstrap/status
+     */
+    public record BootstrapStatusResponse(
+        boolean initialized,
+        boolean watcherActive,
+        boolean reloadInProgress,
+        int templateCount,
+        int errorCount,
+        boolean lastLoadSuccess,
+        String directory,
+        String validationMode,
+        Instant generatedAt
+    ) {
+        public static BootstrapStatusResponse notConfigured() {
+            return new BootstrapStatusResponse(
+                false, false, false, 0, 0, false, null, null, Instant.now()
+            );
+        }
+    }
+
+    /**
+     * Handles /api/arena/bootstrap/status request.
+     * Returns template system health status including watcher state, reload progress, and last load result.
+     */
+    public BootstrapStatusResponse handleBootstrapStatus(TokenInfo token) {
+        if (!token.permissions().canReadMetrics()) {
+            throw new SecurityException("Token lacks metrics permission");
+        }
+
+        // Get bootstrap from DevMod singleton
+        com.devmod.arena.registry.TemplateRegistryBootstrap bootstrap =
+            com.devmod.DevMod.getArenaTemplateBootstrap();
+
+        if (bootstrap == null) {
+            return BootstrapStatusResponse.notConfigured();
+        }
+
+        var lastResult = bootstrap.getLastLoadResult();
+        int templateCount = lastResult != null ? lastResult.templates().size() : 0;
+        int errorCount = lastResult != null ? lastResult.errors().size() : 0;
+        boolean lastLoadSuccess = lastResult != null && lastResult.success();
+
+        return new BootstrapStatusResponse(
+            lastResult != null,                    // initialized
+            bootstrap.isWatcherActive(),           // watcherActive
+            bootstrap.isReloadInProgress(),        // reloadInProgress
+            templateCount,                         // templateCount
+            errorCount,                            // errorCount
+            lastLoadSuccess,                       // lastLoadSuccess
+            bootstrap.templateDirectory().toString(), // directory
+            bootstrap.validationMode().name(),     // validationMode
+            Instant.now()                          // generatedAt
+        );
+    }
+
     // ========== G9: Export Endpoints ==========
 
     /**

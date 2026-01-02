@@ -77,7 +77,9 @@ public class HazardValidator {
             }
 
             // Type limit
-            int count = typeCounts.merge(hazard.type(), 1, Integer::sum);
+            Integer existingCount = typeCounts.get(hazard.type());
+            int count = (existingCount != null ? existingCount.intValue() : 0) + 1;
+            typeCounts.put(hazard.type(), Integer.valueOf(count));
             int limit = TYPE_LIMITS.getOrDefault(hazard.type(), Integer.MAX_VALUE);
             if (count > limit) {
                 errors.add("Hazard[%d] exceeds type limit %d for '%s'".formatted(i, limit, hazard.type()));

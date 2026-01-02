@@ -1,5 +1,6 @@
 package com.devmod.endurance;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -8,6 +9,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+
+import com.devmod.network.PayloadValidation;
 
 public record QuestSyncPayload(
     boolean hasActiveQuest,
@@ -55,7 +58,7 @@ public record QuestSyncPayload(
     int momentumStateOrdinal,
     boolean isOverdrive,
     long overdriveRemaining
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<QuestSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "quest_sync"))
@@ -199,6 +202,57 @@ public record QuestSyncPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += 1; // hasActiveQuest
+        size += estimatedUtfSize(questName);
+        size += estimatedUtfSize(templateId);
+        size += varIntSize(templateVersion);
+        size += estimatedUtfSize(policyId);
+        size += varIntSize(policyVersion);
+        size += estimatedUtfSize(instanceId);
+        size += estimatedUtfSize(arenaId);
+        size += estimatedUtfSize(difficultyLabel);
+        size += estimatedUtfSize(questTypeLabel);
+        size += varIntSize(currentWave);
+        size += varIntSize(totalWaves);
+        size += 1; // endlessMode
+        size += varIntSize(pointsEarned);
+        size += varIntSize(mobsKilled);
+        size += varIntSize(mobsKilledInWave);
+        size += varIntSize(totalMobsInWave);
+        size += varIntSize(damageDealt);
+        size += varIntSize(damageTaken);
+        size += varIntSize(deaths);
+        size += 8; // sessionDurationMs
+        size += varIntSize(stateOrdinal);
+        size += varIntSize(objectiveTypeOrdinal);
+        size += estimatedUtfSize(objectiveTitle);
+        size += estimatedUtfSize(objectiveDescription);
+        size += varIntSize(objectiveProgress);
+        size += varIntSize(objectiveTarget);
+        size += 1; // objectiveComplete
+        size += 1; // objectiveFailed
+        size += varIntSize(waveModifiers.size());
+        for (String mod : waveModifiers) {
+            size += estimatedUtfSize(mod);
+        }
+        size += varIntSize(currentCombo);
+        size += varIntSize(maxCombo);
+        size += varIntSize(styleScore);
+        size += varIntSize(styleRankOrdinal);
+        size += varIntSize(flowStateOrdinal);
+        size += 4; // virtuosoProgress
+        size += 4; // staleRisk
+        size += varIntSize(uniqueActionCount);
+        size += varIntSize(momentumPercent);
+        size += varIntSize(momentumStateOrdinal);
+        size += 1; // isOverdrive
+        size += 8; // overdriveRemaining
+        return size;
+    }
+
     /**
      * Create an empty payload (no active quest).
      */
@@ -263,5 +317,23 @@ public record QuestSyncPayload(
             return values[objectiveTypeOrdinal];
         }
         return WaveObjectiveState.Type.KILL_ALL;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

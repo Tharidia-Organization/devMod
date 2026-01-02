@@ -16,7 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.telemetry.UiTelemetry;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 @OnlyIn(Dist.CLIENT)
 public abstract class ModScreen extends Screen {
@@ -197,29 +197,29 @@ public abstract class ModScreen extends Screen {
      */
     protected void renderPanelBackground(GuiGraphics graphics, int x, int y, int panelWidth, int panelHeight) {
         // Background
-        graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL());
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, DesignTokens.Background.PANEL());
 
         // Border
-        graphics.fill(x, y, x + panelWidth, y + 1, UIConstants.Border.DEFAULT());
-        graphics.fill(x, y + panelHeight - 1, x + panelWidth, y + panelHeight, UIConstants.Border.DEFAULT());
-        graphics.fill(x, y, x + 1, y + panelHeight, UIConstants.Border.DEFAULT());
-        graphics.fill(x + panelWidth - 1, y, x + panelWidth, y + panelHeight, UIConstants.Border.DEFAULT());
+        graphics.fill(x, y, x + panelWidth, y + 1, DesignTokens.Border.DEFAULT());
+        graphics.fill(x, y + panelHeight - 1, x + panelWidth, y + panelHeight, DesignTokens.Border.DEFAULT());
+        graphics.fill(x, y, x + 1, y + panelHeight, DesignTokens.Border.DEFAULT());
+        graphics.fill(x + panelWidth - 1, y, x + panelWidth, y + panelHeight, DesignTokens.Border.DEFAULT());
     }
 
     /**
      * Renders a section header with colored line.
      */
     protected void renderSectionHeader(GuiGraphics graphics, String text, int x, int y, int sectionWidth) {
-        graphics.drawString(Objects.requireNonNull(font), text, x, y, UIConstants.Text.ACCENT(), false);
-        graphics.fill(x, y + 12, x + sectionWidth, y + 13, UIConstants.Accent.BLUE());
+        graphics.drawString(Objects.requireNonNull(font), text, x, y, DesignTokens.Text.ACCENT(), false);
+        graphics.fill(x, y + 12, x + sectionWidth, y + 13, DesignTokens.Accent.BLUE());
     }
 
     /**
      * Renders a label-value pair.
      */
     protected void renderLabelValue(GuiGraphics graphics, String label, String value, int x, int y) {
-        graphics.drawString(Objects.requireNonNull(font), label + ":", x, y, UIConstants.Text.MUTED(), false);
-        graphics.drawString(Objects.requireNonNull(font), value, x + font.width(label + ": "), y, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(Objects.requireNonNull(font), label + ":", x, y, DesignTokens.Text.MUTED(), false);
+        graphics.drawString(Objects.requireNonNull(font), value, x + font.width(label + ": "), y, DesignTokens.Text.PRIMARY(), false);
     }
 
     /**

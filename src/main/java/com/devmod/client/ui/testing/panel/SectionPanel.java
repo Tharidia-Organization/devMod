@@ -8,7 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_SEPARATOR;
 import static com.devmod.client.ui.testing.panel.PanelConstants.DESCRIPTION_HEIGHT;
@@ -48,7 +48,7 @@ public record SectionPanel(
 
         // Description
         if (description != null) {
-            graphics.drawString(font, description, x, currentY, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(font, description, x, currentY, DesignTokens.Text.SECONDARY(), false);
             currentY += DESCRIPTION_HEIGHT;
         }
 
@@ -92,7 +92,7 @@ public record SectionPanel(
     public static final class Builder {
         private final String id;
         private final String title;
-        private int titleColor = UIConstants.Text.PRIMARY();
+        private int titleColor = DesignTokens.Text.PRIMARY();
         private String description = "";
         private boolean showSeparator = false;
         private final ArrayList<ButtonRow> rows = new ArrayList<>();

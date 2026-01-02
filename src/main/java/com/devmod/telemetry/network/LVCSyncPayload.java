@@ -1,11 +1,14 @@
 package com.devmod.telemetry.network;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+
+import com.devmod.network.PayloadValidation;
 
 /**
  * Network payload for syncing LVC (Last Value Cache) telemetry data to clients.
@@ -48,7 +51,7 @@ public record LVCSyncPayload(
 
     // Top weapons (name:kills pairs, comma-separated)
     String topWeapons
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<LVCSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "lvc_sync"))
@@ -110,6 +113,30 @@ public record LVCSyncPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += 8; // currentDPS
+        size += 8; // peakDPS
+        size += varIntSize(hitCount);
+        size += varIntSize(missCount);
+        size += varIntSize(criticalHitCount);
+        size += 8; // totalDamage
+        size += varIntSize(killCount);
+        size += varIntSize(deathCount);
+        size += varIntSize(currentCombo);
+        size += varIntSize(maxCombo);
+        size += varIntSize(highestWave);
+        size += varIntSize(wavesCompleted);
+        size += varIntSize(dashCount);
+        size += varIntSize(dodgeCount);
+        size += varIntSize(perfectDodgeCount);
+        size += 8; // totalDamageNegated
+        size += 8; // totalStaminaSpent
+        size += estimatedUtfSize(topWeapons);
+        return size;
+    }
+
     /**
      * Create an empty payload (no data).
      */
@@ -147,5 +174,23 @@ public record LVCSyncPayload(
      */
     public boolean hasData() {
         return hitCount > 0 || killCount > 0 || totalDamage > 0;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

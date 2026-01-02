@@ -22,6 +22,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.telemetry.economy.EconomyMetricsService;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -32,23 +33,23 @@ public class EconomyOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "economy_overlay");
 
-    // === UI Colors ===
-    private static final int PANEL_BG = 0xE0101020;           // Dark blue 88% opacity
-    private static final int PANEL_BG_HEADER = 0xFF1A1A30;    // Slightly lighter header
-    private static final int PANEL_BORDER = 0xFFFFD700;       // Gold
-    private static final int TEXT_TITLE = 0xFFFFD700;         // Gold
-    private static final int TEXT_WHITE = 0xFFFFFFFF;         // White
-    private static final int TEXT_VALUE = 0xFF55FF55;         // Bright green
-    private static final int TEXT_WARNING = 0xFFFFAA00;       // Orange
-    private static final int TEXT_DANGER = 0xFFFF5555;        // Red
-    private static final int TEXT_MUTED = 0xFF888888;         // Gray
-    private static final int TEXT_CYAN = 0xFF55FFFF;          // Cyan
-    private static final int TEXT_PURPLE = 0xFFAA55FF;        // Purple
+    // === UI Colors (delegating to OverlayTheme) ===
+    private static final int PANEL_BG = OverlayTheme.Economy.BG;
+    private static final int PANEL_BG_HEADER = OverlayTheme.Panel.BG_HEADER;
+    private static final int PANEL_BORDER = OverlayTheme.Border.GOLD;
+    private static final int TEXT_TITLE = OverlayTheme.Text.GOLD;
+    private static final int TEXT_WHITE = OverlayTheme.Text.PRIMARY;
+    private static final int TEXT_VALUE = OverlayTheme.Text.VALUE_BRIGHT;
+    private static final int TEXT_WARNING = OverlayTheme.Text.WARNING_ORANGE;
+    private static final int TEXT_DANGER = OverlayTheme.Text.DANGER_BRIGHT;
+    private static final int TEXT_MUTED = OverlayTheme.Text.HINT;
+    private static final int TEXT_CYAN = OverlayTheme.Text.CYAN;
+    private static final int TEXT_PURPLE = OverlayTheme.Text.PURPLE;
 
-    private static final int BAR_BG = 0xFF333344;             // Progress bar background
-    private static final int BAR_GREEN = 0xFF44AA44;          // High drop rate
-    private static final int BAR_YELLOW = 0xFFAAAA44;         // Medium drop rate
-    private static final int BAR_RED = 0xFFAA4444;            // Low drop rate
+    private static final int BAR_BG = OverlayTheme.Progress.BG_ALT;
+    private static final int BAR_GREEN = OverlayTheme.Progress.FILL_GREEN;
+    private static final int BAR_YELLOW = OverlayTheme.Progress.FILL_YELLOW;
+    private static final int BAR_RED = OverlayTheme.Progress.FILL_RED;
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 220;
@@ -206,7 +207,7 @@ public class EconomyOverlay {
         textY += LINE_HEIGHT + 6;
 
         // Separator
-        graphics.fill(x + 8, textY, x + PANEL_WIDTH - 8, textY + 1, 0x44FFFFFF);
+        graphics.fill(x + 8, textY, x + PANEL_WIDTH - 8, textY + 1, OverlayTheme.Border.divider(TEXT_WHITE));
         textY += 6;
 
         // Acquisition rate with color coding
@@ -290,7 +291,7 @@ public class EconomyOverlay {
         textY += LINE_HEIGHT + 4;
 
         // Separator
-        graphics.fill(x + 8, textY, x + PANEL_WIDTH - 8, textY + 1, 0x44FFFFFF);
+        graphics.fill(x + 8, textY, x + PANEL_WIDTH - 8, textY + 1, OverlayTheme.Border.divider(TEXT_WHITE));
         textY += 6;
 
         if (cachedMobStats == null || cachedMobStats.isEmpty()) {
@@ -319,7 +320,7 @@ public class EconomyOverlay {
 
                 // Background track
                 graphics.fill(scrollBarX, scrollBarTop, scrollBarX + 3,
-                    scrollBarTop + scrollAreaHeight, 0x44FFFFFF);
+                    scrollBarTop + scrollAreaHeight, OverlayTheme.Border.divider(TEXT_WHITE));
 
                 // Scroll thumb
                 float scrollRatio = (float) scrollOffset / (cachedMobStats.size() - MAX_VISIBLE_MOBS);

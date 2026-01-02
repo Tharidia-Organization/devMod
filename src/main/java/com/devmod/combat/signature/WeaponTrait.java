@@ -11,12 +11,13 @@ import net.minecraft.world.item.ItemStack;
 
 public class WeaponTrait {
 
-    private final ResourceLocation id;
-    private final String nameKey;
-    private final String descriptionKey;
-    private final String adjective;
-    private final SoulImprint.ImprintStat requiredStat;
-    private final TraitEffect effect;
+    // Fields annotated @Nonnull - constructor validates via Objects.requireNonNull()
+    @Nonnull private final ResourceLocation id;
+    @Nonnull private final String nameKey;
+    @Nonnull private final String descriptionKey;
+    @Nonnull private final String adjective;
+    @Nonnull private final SoulImprint.ImprintStat requiredStat;
+    @Nonnull private final TraitEffect effect;
     private final int color;
 
     /**
@@ -78,12 +79,14 @@ public class WeaponTrait {
 
     @Nonnull
     public Component getName() {
-        return Component.translatable(nameKey);
+        // Component.translatable() never returns null but isn't annotated @Nonnull
+        return Objects.requireNonNull(Component.translatable(nameKey));
     }
 
     @Nonnull
     public Component getDescription() {
-        return Component.translatable(descriptionKey);
+        // Component.translatable() never returns null but isn't annotated @Nonnull
+        return Objects.requireNonNull(Component.translatable(descriptionKey));
     }
 
     @Nonnull

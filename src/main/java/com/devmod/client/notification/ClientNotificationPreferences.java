@@ -4,6 +4,8 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.google.gson.Gson;
 
 import net.neoforged.api.distmarker.Dist;
@@ -109,6 +111,7 @@ public class ClientNotificationPreferences {
     /**
      * Get raw category preference data.
      */
+    @Nullable
     public CategoryPreference getCategoryPreference(NotificationCategory category) {
         return categoryPreferences.get(category);
     }

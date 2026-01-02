@@ -15,6 +15,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.telemetry.TelemetryService;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -23,12 +24,12 @@ public class TelemetryStatusOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "telemetry_status");
 
-    // UI Colors
-    private static final int PANEL_BG = 0xAA1A1A2E;
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;
-    private static final int TEXT_MUTED = 0xFFAAAAAA;
-    private static final int RECORDING_COLOR = 0xFFFF4444;
-    private static final int PAUSED_COLOR = 0xFFFFAA00;
+    // UI Colors - delegating to OverlayTheme
+    private static final int PANEL_BG = OverlayTheme.Panel.BG_LIGHT;
+    private static final int TEXT_NORMAL = OverlayTheme.Text.PRIMARY;
+    private static final int TEXT_MUTED = OverlayTheme.Text.MUTED;
+    private static final int RECORDING_COLOR = OverlayTheme.Status.RECORDING;
+    private static final int PAUSED_COLOR = OverlayTheme.Status.PAUSED;
 
     // State - disabled by default for regular users, only QA testers/developers need this
     private static boolean enabled = false;

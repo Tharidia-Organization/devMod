@@ -139,7 +139,8 @@ public class SmartBrainLibCompat implements CompatModule {
         return apiAvailable;
     }
 
-    private static <T> @Nonnull T requireNonNull(T value, String name) {
+    @Nonnull
+    private static <T> T requireNonNull(T value, String name) {
         return Objects.requireNonNull(value, name);
     }
 
@@ -264,7 +265,7 @@ public class SmartBrainLibCompat implements CompatModule {
             var brain = entity.getBrain();
             if (brain != null) {
                 // Check for attack target memory
-                @Nonnull MemoryModuleType<LivingEntity> attackTargetType =
+                MemoryModuleType<LivingEntity> attackTargetType =
                     requireNonNull(MemoryModuleType.ATTACK_TARGET, "ATTACK_TARGET");
                 Optional<LivingEntity> attackTarget = brain.getMemory(attackTargetType);
                 return attackTarget != null && attackTarget.isPresent();
@@ -295,7 +296,7 @@ public class SmartBrainLibCompat implements CompatModule {
         try {
             var brain = entity.getBrain();
             if (brain != null) {
-                @Nonnull MemoryModuleType<LivingEntity> attackTargetType =
+                MemoryModuleType<LivingEntity> attackTargetType =
                     requireNonNull(MemoryModuleType.ATTACK_TARGET, "ATTACK_TARGET");
                 Optional<LivingEntity> attackTargetOpt = brain.getMemory(attackTargetType);
 

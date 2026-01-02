@@ -16,6 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.arena.BuildPhase;
 import com.devmod.arena.ProgressFlags;
+import com.devmod.network.PayloadValidation;
 
 public record BuildProgressPayload(
     UUID arenaId,
@@ -24,7 +25,7 @@ public record BuildProgressPayload(
     int blocksPlaced,
     int totalBlocks,
     int flags
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -150,6 +151,11 @@ public record BuildProgressPayload(
     @Nonnull
     public Type<BuildProgressPayload> type() {
         return Objects.requireNonNull(TYPE, "payload type");
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 28;
     }
 
     // ========== Serialization ==========

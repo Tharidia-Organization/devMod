@@ -11,8 +11,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class PlaceholderModule implements EditorModule {
 
@@ -88,21 +88,21 @@ public class PlaceholderModule implements EditorModule {
             ? "Layout: " + layout.getScreenSize().name()
             : "Layout: not initialized";
 
-        graphics.drawString(font, "Editor state: Not supported for this item", x, y, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(font, "Editor state: Not supported for this item", x, y, DesignTokens.Text.SECONDARY(), false);
         y += 15;
 
         graphics.drawString(font, "Item: " + (item.isEmpty() ? "None" : item.getHoverName().getString()),
-                           x, y, UIConstants.Text.PRIMARY(), false);
+                           x, y, DesignTokens.Text.PRIMARY(), false);
         y += 15;
 
-        graphics.drawString(font, layoutInfo, x, y, UIConstants.Text.MUTED(), false);
+        graphics.drawString(font, layoutInfo, x, y, DesignTokens.Text.MUTED(), false);
         y += 20;
 
         graphics.drawString(font, "Why: item is not in editable tags or supported module not yet implemented.",
-                           x, y, UIConstants.Text.MUTED(), false);
+                           x, y, DesignTokens.Text.MUTED(), false);
         y += 15;
         graphics.drawString(font, "Add to editable tags (melee/ranged/shields) or whitelist to enable editing.",
-                           x, y, UIConstants.Text.MUTED(), false);
+                           x, y, DesignTokens.Text.MUTED(), false);
     }
 
     @Override

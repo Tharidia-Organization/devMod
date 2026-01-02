@@ -2,13 +2,26 @@ package com.devmod.network;
 
 import java.util.Objects;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
-
+/**
+ * Network payload for updating mob stats from the editor UI.
+ * Sent from client to server when a player modifies mob attributes.
+ *
+ * <p><b>CRITICAL:</b> The record field order MUST match the encode/decode order in STREAM_CODEC.
+ * If fields are reordered, added, or removed, update the codec accordingly to prevent
+ * network deserialization errors.</p>
+ *
+ * <p>Field order: isGlobal, entityId, followRange, damage, maxHealth, armor, attackRange, speed, knockbackResist</p>
+ *
+ * @see com.devmod.network.handlers.MobItemNetworkHandler#handleMobData
+ * @see com.devmod.client.ui.screens.MobConfigScreenState#save
+ */
 public record UpdateMobStatsPayload(
         boolean isGlobal,
         int entityId,

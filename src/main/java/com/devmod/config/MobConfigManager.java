@@ -167,8 +167,39 @@ public class MobConfigManager {
      * Does not save to disk to avoid overwriting user configurations.
      */
     public static void clearAllGlobalStats() {
-        globalConfigs.clear();
+        CONFIG_LOCK.writeLock().lock();
+        try {
+            globalConfigs.clear();
+        } finally {
+            CONFIG_LOCK.writeLock().unlock();
+        }
         LOGGER.debug("Cleared all mob configurations (in-memory only)");
+    }
+
+    /**
+     * Clears all global configurations and persists the empty config to disk.
+     */
+    public static void clearAllGlobalStatsAndSave() {
+        CONFIG_LOCK.writeLock().lock();
+        try {
+            globalConfigs.clear();
+            saveInternal();
+        } finally {
+            CONFIG_LOCK.writeLock().unlock();
+        }
+        LOGGER.info("Cleared all mob configurations and saved to disk");
+    }
+
+    /**
+     * Returns the number of configured mob types.
+     */
+    public static int getGlobalConfigCount() {
+        CONFIG_LOCK.readLock().lock();
+        try {
+            return globalConfigs.size();
+        } finally {
+            CONFIG_LOCK.readLock().unlock();
+        }
     }
 
     // ========== BACKUP & RECOVERY SYSTEM ==========

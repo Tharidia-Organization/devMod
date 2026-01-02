@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import com.devmod.DevMod;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.config.Config;
 
 public class ImpactVFX {
@@ -32,26 +33,25 @@ public class ImpactVFX {
     private static final long SLASH_DURATION_MS = 600;  // Longer to see the animation
     private static final long LINE_DURATION_MS = 2000;
 
-    // Colors - Electric Blue theme
-    private static final int COLOR_CORE_PRIMARY = 0xFF3D5AFE;     // Electric blue
-    private static final int COLOR_CORE_SECONDARY = 0xFF00E5FF;   // Cyan
-    private static final int COLOR_CORE_GLOW = 0xFF82B1FF;        // Light blue
-    private static final int COLOR_SLASH = 0xFF3D5AFE;            // Electric blue
-    private static final int COLOR_LINE = 0xFF00E5FF;             // Cyan
+    // Colors - Electric Blue theme (delegating to OverlayTheme.Impact)
+    private static final int COLOR_CORE_PRIMARY = OverlayTheme.Impact.CORE_PRIMARY;
+    private static final int COLOR_CORE_SECONDARY = OverlayTheme.Impact.CORE_SECONDARY;
+    private static final int COLOR_CORE_GLOW = OverlayTheme.Impact.CORE_GLOW;
+    private static final int COLOR_SLASH = OverlayTheme.Impact.SLASH;
+    private static final int COLOR_LINE = OverlayTheme.Impact.LINE;
 
     /**
      * Adds a new impact effect.
-     * Spawns both VFX effects (vortex, slash, lines) and the 3D panel.
+     * Only spawns VFX effects (vortex, slash, lines).
+     * Panel spawning is now handled by ImpactHudController.
      */
     public static void addImpact(Vec3 hitPoint, Vec3 slashDirection, ImpactData data) {
         if (!isVfxEnabled()) {
-            Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(data);
             return;
         }
 
         boolean anyEffectEnabled = isVortexEnabled() || isSlashEnabled() || isLinesEnabled();
         if (!anyEffectEnabled) {
-            Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(data);
             return;
         }
 
@@ -62,9 +62,6 @@ public class ImpactVFX {
 
         activeEffects.add(new ImpactEffect(Objects.requireNonNull(hitPoint, "hitPoint"),
             slashDirection));
-
-        // Also spawn the 3D panel
-        Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(data);
     }
 
     /**

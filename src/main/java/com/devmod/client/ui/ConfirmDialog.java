@@ -221,7 +221,7 @@ public final class ConfirmDialog extends BaseOverlay {
                                  int mouseX, int mouseY) {
         float titleScale = Typography.withUiScale(Typography.BODY);
         float bodyScale = Typography.withUiScale(Typography.VALUE);
-        int padding = ScaledCoord.scaleDim(com.devmod.client.ui.editor.core.UIConstants.Spacing.XL);
+        int padding = ScaledCoord.scaleDim(com.devmod.client.ui.editor.core.DesignTokens.Spacing.XL);
 
         // Title
         Typography.drawText(
@@ -230,7 +230,7 @@ public final class ConfirmDialog extends BaseOverlay {
             title,
             x + padding,
             y + padding,
-            com.devmod.client.ui.editor.core.UIConstants.Text.TITLE(),
+            com.devmod.client.ui.editor.core.DesignTokens.Text.TITLE(),
             titleScale
         );
 
@@ -243,7 +243,7 @@ public final class ConfirmDialog extends BaseOverlay {
                 line,
                 x + padding,
                 lineY,
-                com.devmod.client.ui.editor.core.UIConstants.Text.PRIMARY(),
+                com.devmod.client.ui.editor.core.DesignTokens.Text.PRIMARY(),
                 bodyScale
             );
             lineY += ScaledCoord.scaleDim(LINE_HEIGHT);
@@ -252,7 +252,7 @@ public final class ConfirmDialog extends BaseOverlay {
         // Buttons
         btnWidth = ScaledCoord.scaleDim(BUTTON_WIDTH);
         btnHeight = ScaledCoord.scaleDim(BUTTON_HEIGHT);
-        int gap = ScaledCoord.scaleDim(com.devmod.client.ui.editor.core.UIConstants.Spacing.MD);
+        int gap = ScaledCoord.scaleDim(com.devmod.client.ui.editor.core.DesignTokens.Spacing.MD);
         btnY = y + height - btnHeight - padding;
         confirmX = x + width / 2 - btnWidth - gap;
         cancelX = x + width / 2 + gap;
@@ -307,17 +307,17 @@ public final class ConfirmDialog extends BaseOverlay {
         int minHeight = BASE_HEIGHT;
         int linesHeight = LINE_HEIGHT * Math.max(1, messageLines.size());
         int bodySpace = 60 + linesHeight;
-        int buttonsSpace = BUTTON_HEIGHT + com.devmod.client.ui.editor.core.UIConstants.Spacing.XL;
+        int buttonsSpace = BUTTON_HEIGHT + com.devmod.client.ui.editor.core.DesignTokens.Spacing.XL;
         int total = ScaledCoord.alignTo4(bodySpace + buttonsSpace);
         return Math.max(minHeight, total);
     }
 
     private int getAccentColor() {
         return switch (style) {
-            case PRIMARY -> com.devmod.client.ui.editor.core.UIConstants.Accent.CYAN();
-            case WARNING -> com.devmod.client.ui.editor.core.UIConstants.Accent.ORANGE();
-            case DANGER -> com.devmod.client.ui.editor.core.UIConstants.Accent.RED();
-            case SUCCESS -> com.devmod.client.ui.editor.core.UIConstants.Accent.GREEN();
+            case PRIMARY -> com.devmod.client.ui.editor.core.DesignTokens.Accent.CYAN();
+            case WARNING -> com.devmod.client.ui.editor.core.DesignTokens.Accent.ORANGE();
+            case DANGER -> com.devmod.client.ui.editor.core.DesignTokens.Accent.RED();
+            case SUCCESS -> com.devmod.client.ui.editor.core.DesignTokens.Accent.GREEN();
         };
     }
 

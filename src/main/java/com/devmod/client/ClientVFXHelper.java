@@ -89,6 +89,7 @@ public final class ClientVFXHelper {
     /**
      * Adds impact VFX at the specified location.
      * Called from DamageHandler via DistExecutor.
+     * Note: Panel spawning is now handled by ImpactHudController.
      */
     public static void addImpactVFX(Vec3 hitPoint, Vec3 slashDirection, ImpactData impactData) {
         // Trigger headshot flash effect if hit was to the head
@@ -96,11 +97,11 @@ public final class ClientVFXHelper {
             HeadshotFlashVFX.trigger();
         }
 
+        // Only add VFX effects if we have a hit point
         if (hitPoint != null) {
             ImpactVFX.addImpact(hitPoint, slashDirection, impactData);
-        } else {
-            Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(impactData);
         }
+        // Panel spawning is handled by ImpactHudController.onImpact()
     }
 
     /**

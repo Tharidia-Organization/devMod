@@ -8,6 +8,9 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
+
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.DevMod;
@@ -16,9 +19,6 @@ import com.devmod.mailbox.MailboxPermissions;
 import com.devmod.mailbox.api.AuthMiddleware;
 import com.devmod.mailbox.moderation.AdminAuditLog;
 import com.devmod.mailbox.network.MailboxNetworkHandler;
-
-import io.javalin.http.Context;
-import io.javalin.http.HttpStatus;
 
 /**
  * REST API controller for user management.

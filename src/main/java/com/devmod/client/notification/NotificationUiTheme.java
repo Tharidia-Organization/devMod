@@ -1,19 +1,35 @@
 package com.devmod.client.notification;
 
-import net.minecraft.util.Mth;
-
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 
+/**
+ * Theme constants for the Notification UI system.
+ *
+ * <p>This class provides notification-specific colors that complement the
+ * core {@link DesignTokens} palette. The notification system uses a warmer
+ * color scheme (browns/golds) to distinguish it from the main editor UI.
+ *
+ * <p>Utility methods delegate to {@link DesignTokens} for consistency.
+ *
+ * @see DesignTokens for the core design token definitions
+ */
 public final class NotificationUiTheme {
 
     private NotificationUiTheme() {}
 
-    // Base palette (RGB)
+    // ═══════════════════════════════════════════════════════════════
+    // NOTIFICATION-SPECIFIC PALETTE (warm tones)
+    // These complement DesignTokens with notification-specific colors
+    // ═══════════════════════════════════════════════════════════════
+
+    // Text colors (warm cream tones for notification panels)
     public static final int RGB_TEXT_PRIMARY = 0xF5F1E8;
     public static final int RGB_TEXT_SECONDARY = 0xCBBFA8;
     public static final int RGB_TEXT_MUTED = 0x938877;
 
+    // Panel gradients (warm browns)
     public static final int RGB_PANEL_TOP = 0x2A2319;
     public static final int RGB_PANEL_BOTTOM = 0x162227;
     public static final int RGB_BACKDROP_TOP = mix(RGB_PANEL_TOP, 0x000000, 0.45f);
@@ -21,25 +37,38 @@ public final class NotificationUiTheme {
     public static final int RGB_PANEL_INNER_TOP = 0x30281E;
     public static final int RGB_PANEL_INNER_BOTTOM = 0x1B252A;
 
+    // Surface colors
     public static final int RGB_SURFACE_TOP = 0x2E271D;
     public static final int RGB_SURFACE_BOTTOM = 0x221C14;
     public static final int RGB_SURFACE_HOVER_TOP = 0x3A3124;
     public static final int RGB_SURFACE_HOVER_BOTTOM = 0x2A2218;
     public static final int RGB_SURFACE_READ = 0x1E1811;
 
+    // Accent colors (gold/teal)
     public static final int RGB_ACCENT = 0xE1A44C;
     public static final int RGB_ACCENT_SOFT = 0x9B6D2E;
     public static final int RGB_ACCENT_ALT = 0x2CB5A0;
 
+    // ═══════════════════════════════════════════════════════════════
+    // UTILITY METHODS (delegate to DesignTokens)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Apply alpha to an RGB color.
+     * @see DesignTokens#withAlpha(int, int)
+     */
     public static int withAlpha(int rgb, int alpha) {
-        return (alpha << 24) | (rgb & 0x00FFFFFF);
+        return DesignTokens.withAlpha(rgb, alpha);
     }
 
+    /**
+     * Mix two RGB colors (ignores alpha).
+     * @see DesignTokens#lerp(int, int, float)
+     */
     public static int mix(int rgbA, int rgbB, float t) {
-        int r = (int) Mth.lerp(t, (rgbA >> 16) & 0xFF, (rgbB >> 16) & 0xFF);
-        int g = (int) Mth.lerp(t, (rgbA >> 8) & 0xFF, (rgbB >> 8) & 0xFF);
-        int b = (int) Mth.lerp(t, rgbA & 0xFF, rgbB & 0xFF);
-        return (r << 16) | (g << 8) | b;
+        // Use DesignTokens.lerp but handle RGB (no alpha channel)
+        int result = DesignTokens.lerp(rgbA | 0xFF000000, rgbB | 0xFF000000, t);
+        return result & 0x00FFFFFF; // Strip alpha for RGB-only result
     }
 
     public static int getCategoryColor(NotificationCategory category) {

@@ -8,7 +8,7 @@
 
 ```bash
 ./gradlew build
-./gradlew test
+./gradlew test --no-build-cache
 ./gradlew runGameTestServer   # server-side validation (recommended)
 ./gradlew runServer           # manual server sanity (optional)
 ./gradlew runClient           # client sanity (optional)
@@ -38,7 +38,7 @@ rg -n '"mixins"' src/main/resources/devmod.mixins.json
 ### 4) Network ID uniqueness
 
 ```bash
-./gradlew test --tests 'com.devmod.network.ChannelIdCollisionTest'
+./gradlew test --no-build-cache --tests 'com.devmod.network.ChannelIdCollisionTest'
 ```
 
 ### 5) Namespace checks
@@ -65,7 +65,7 @@ Expected:
 ## Verification (Local)
 
 ```bash
-./gradlew --no-daemon --console=plain test \
+./gradlew --no-build-cache --no-daemon --console=plain test \
   --tests "com.devmod.client.ui.radial.RadialMenuMacroCategoryTest" \
   --tests "com.devmod.network.ChannelIdCollisionTest" \
   --tests "com.devmod.endurance.RewardSystemDirectTest" \

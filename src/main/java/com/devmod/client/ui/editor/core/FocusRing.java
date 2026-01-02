@@ -50,4 +50,17 @@ public final class FocusRing {
         graphics.fill(fx - 1, fy - 1, fx + fw + 1, fy + fh + 1, 0x4000D4FF);
         AxiomRenderer.drawBorder(graphics, fx, fy, fw, fh, COLOR);
     }
+
+    /**
+     * Render a simple focus ring (no glow, just border).
+     *
+     * @param graphics The graphics context
+     * @param x Component X position
+     * @param y Component Y position
+     * @param w Component width
+     * @param h Component height
+     */
+    public static void renderSimple(GuiGraphics graphics, int x, int y, int w, int h) {
+        AxiomRenderer.drawBorder(graphics, x, y, w, h, COLOR);
+    }
 }

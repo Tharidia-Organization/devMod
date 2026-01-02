@@ -7,8 +7,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class TextNoteSection implements EditorSection.CustomSection {
     private static final int DEFAULT_HEIGHT = 16;
@@ -22,7 +22,7 @@ public final class TextNoteSection implements EditorSection.CustomSection {
     private final int textColor;
 
     public TextNoteSection(String id, String text) {
-        this(id, text, DEFAULT_HEIGHT, DEFAULT_TEXT_INSET_X, DEFAULT_TEXT_OFFSET_Y, UIConstants.Text.MUTED());
+        this(id, text, DEFAULT_HEIGHT, DEFAULT_TEXT_INSET_X, DEFAULT_TEXT_OFFSET_Y, DesignTokens.Text.MUTED());
     }
 
     public TextNoteSection(String id, String text, int height, int textInsetX, int textOffsetY, int textColor) {

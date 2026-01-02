@@ -422,7 +422,7 @@ public final class UIConstants {
         /** Panel padding */
         public static final int PANEL_PADDING = SM;
 
-        // Aliases from old UIConstants
+        // Aliases from old DesignTokens
         public static final int PADDING_XS = XS;
         public static final int PADDING_SM = SM;
         public static final int PADDING_MD = MD;
@@ -609,7 +609,7 @@ public final class UIConstants {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // BODY PART COLORS (merged from ui/UIConstants)
+    // BODY PART COLORS (merged from ui/DesignTokens)
     // ═══════════════════════════════════════════════════════════════
 
     public static final class BodyPart {
@@ -621,7 +621,7 @@ public final class UIConstants {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // STATUS COLORS (merged from ui/UIConstants)
+    // STATUS COLORS (merged from ui/DesignTokens)
     // ═══════════════════════════════════════════════════════════════
 
     public static final class Status {
@@ -639,7 +639,7 @@ public final class UIConstants {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // TOGGLE COLORS (merged from ui/UIConstants)
+    // TOGGLE COLORS (merged from ui/DesignTokens)
     // ═══════════════════════════════════════════════════════════════
 
     public static final class Toggle {
@@ -655,7 +655,7 @@ public final class UIConstants {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // POSITION CONSTANTS (merged from ui/UIConstants)
+    // POSITION CONSTANTS (merged from ui/DesignTokens)
     // ═══════════════════════════════════════════════════════════════
 
     public static final class Position {
@@ -667,7 +667,7 @@ public final class UIConstants {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // SOUND FEEDBACK (merged from ui/UIConstants)
+    // SOUND FEEDBACK (merged from ui/DesignTokens)
     // ═══════════════════════════════════════════════════════════════
 
     /**
@@ -732,7 +732,7 @@ public final class UIConstants {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // UTILITY METHODS (additional from ui/UIConstants)
+    // UTILITY METHODS (additional from ui/DesignTokens)
     // ═══════════════════════════════════════════════════════════════
 
     public static int setAlpha(int color, int alpha) {

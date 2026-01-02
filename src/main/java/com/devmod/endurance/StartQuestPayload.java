@@ -13,6 +13,8 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 public record StartQuestPayload(
     String mobId,
     int totalWaves,
@@ -22,7 +24,7 @@ public record StartQuestPayload(
     @Nullable UUID partyId,
     List<UUID> partyMemberIds,
     String kitId
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<StartQuestPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "start_endurance_quest"))
@@ -139,5 +141,34 @@ public record StartQuestPayload(
      */
     public ResourceLocation getMobResourceLocation() {
         return Objects.requireNonNull(ResourceLocation.parse(Objects.requireNonNull(mobId)));
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        // mobId string
+        size += varIntSize(mobId != null ? mobId.length() : 0) + (mobId != null ? mobId.length() : 0);
+        size += 1; // totalWaves (varint, typically 1 byte)
+        size += 1; // endlessMode boolean
+        size += 2; // arenaSize (varint, typically 1-2 bytes)
+        size += 1; // questType ordinal
+        size += 1; // partyId presence boolean
+        if (partyId != null) {
+            size += 16; // UUID
+        }
+        size += 1; // partyMemberIds count
+        size += partyMemberIds.size() * 16; // UUIDs
+        // kitId string
+        size += varIntSize(kitId != null ? kitId.length() : 0) + (kitId != null ? kitId.length() : 0);
+        return size;
+    }
+
+    private static int varIntSize(int value) {
+        int size = 1;
+        while ((value & ~0x7F) != 0) {
+            value >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

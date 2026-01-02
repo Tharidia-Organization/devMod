@@ -308,20 +308,33 @@ public final class RadialMenuRegistry {
         List<RadialCategory> categories = requireCategories(map, MacroCategory.COMBAT);
 
         // Category 1: Combat HUD
-        categories.add(RadialCategory.builder("combat_hud")
+        RadialCategory combatHud = RadialCategory.builder("combat_hud")
             .name("HUD")
             .color(0xFFFF4444)
             .icon("")
             .iconStack(stack(Items.DIAMOND_SWORD))
             .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_3D_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE))
+            .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_SHOW_RECAP))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_IMPACT_DISMISS))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_BOSS_PHASE_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_ECONOMY_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_ECONOMY_VIEW_CYCLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_ECONOMY_SORT_CYCLE))
-            .build());
+            .build();
+
+        // Impact HUD Presets subcategory
+        RadialCategory impactPresets = combatHud.addSubcategory("impact_presets", "Impact Presets", 0xFFFF6666,
+            stack(Items.COMPARATOR));
+        impactPresets.addItems(
+            RadialMenuItem.registry(ActionIds.HUD_IMPACT_PRESET_MINIMAL),
+            RadialMenuItem.registry(ActionIds.HUD_IMPACT_PRESET_DETAILED),
+            RadialMenuItem.registry(ActionIds.HUD_IMPACT_PRESET_TRAINING)
+        );
+
+        categories.add(combatHud);
 
         // Category 2: Heatmaps
         RadialCategory heatmaps = RadialCategory.builder("heatmaps")
@@ -390,6 +403,7 @@ public final class RadialMenuRegistry {
             .iconStack(stack(Items.MAP))
             .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_LIST))
             .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_INFO))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_STATUS))
             .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_RELOAD))
             .item(RadialMenuItem.registry(ActionIds.ARENA_VALIDATE))
             .item(RadialMenuItem.registry(ActionIds.ARENA_METRICS))
@@ -725,6 +739,7 @@ public final class RadialMenuRegistry {
             .iconStack(stack(Items.TOTEM_OF_UNDYING))
             .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SCREEN_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SHOP_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_SEASON_PASS_OPEN))
             .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_START))
             .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_CONTINUE))
             .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_EXIT))

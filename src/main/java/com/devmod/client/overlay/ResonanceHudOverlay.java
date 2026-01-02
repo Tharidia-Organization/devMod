@@ -16,6 +16,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
+
 @OnlyIn(Dist.CLIENT)
 public class ResonanceHudOverlay implements LayeredDraw.Layer {
 
@@ -28,7 +30,7 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
 
     // Screen effect state
     private float screenFlashAlpha = 0f;
-    private int screenFlashColor = 0xFFFFFF;
+    private int screenFlashColor = OverlayTheme.stripAlpha(OverlayTheme.Text.PRIMARY);
     private float shakeIntensity = 0f;
     private float shakeOffsetX = 0f;
     private float shakeOffsetY = 0f;
@@ -209,7 +211,7 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
         String bonusText = "+" + notif.styleBonus + " STYLE";
         int bonusWidth = mc.font.width(bonusText);
         int bonusAlpha = (int) (alpha * 200);
-        int bonusColor = (bonusAlpha << 24) | 0xFFFFFF;
+        int bonusColor = OverlayTheme.withAlpha(OverlayTheme.Text.PRIMARY, bonusAlpha);
         graphics.drawString(mc.font, bonusText, -bonusWidth / 2, 15, bonusColor, false);
 
         graphics.pose().popPose();

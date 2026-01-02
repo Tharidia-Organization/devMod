@@ -8,7 +8,7 @@ import com.google.errorprone.annotations.InlineMe;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_THUMB_HOVER;
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_THUMB_NORMAL;
@@ -32,7 +32,7 @@ public final class PanelContainer {
 
     // Appearance
     private boolean showBackground = true;
-    private int backgroundColor = UIConstants.Background.PANEL();
+    private int backgroundColor = DesignTokens.Background.PANEL();
     private int padding = 8;
 
     // Scrollbar interaction

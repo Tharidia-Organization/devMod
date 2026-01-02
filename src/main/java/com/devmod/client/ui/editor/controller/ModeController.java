@@ -6,7 +6,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.editor.EditorModule;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.state.ItemEditorState;
 import com.devmod.config.EditorClientConfig;
 
@@ -74,7 +74,7 @@ public final class ModeController {
                 : "Switched to PREVIEW");
         }
 
-        showStatus("Preview Mode", UIConstants.Accent.CYAN());
+        showStatus("Preview Mode", DesignTokens.Accent.PRIMARY);
         onModeChanged.run();
     }
 
@@ -93,7 +93,7 @@ public final class ModeController {
             module.logEvent("Switched to APPLY (dirty on)");
         }
 
-        showStatus("Apply Mode", UIConstants.Accent.GREEN());
+        showStatus("Apply Mode", DesignTokens.Semantic.SUCCESS);
         onModeChanged.run();
     }
 
@@ -144,7 +144,7 @@ public final class ModeController {
                     ? EditorClientConfig.EditorDefaultMode.PREVIEW
                     : EditorClientConfig.EditorDefaultMode.APPLY
             );
-            showStatus("Default mode saved", UIConstants.Accent.BLUE());
+            showStatus("Default mode saved", DesignTokens.Semantic.INFO);
         } catch (Exception ignored) {
             // Best-effort: config may be read-only in some contexts
         }

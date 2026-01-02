@@ -22,7 +22,7 @@ import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceQuestState;
 import com.devmod.endurance.QuestActionPayload;
 
@@ -40,7 +40,7 @@ public class QuickToolsPanel implements HubPanel {
     // Layout
     private static final int PADDING = 10;
     private static final int SECTION_HEADER_HEIGHT = 16;
-    private static final int BUTTON_HEIGHT = UIConstants.Size.BUTTON_HEIGHT;
+    private static final int BUTTON_HEIGHT = DesignTokens.Size.BUTTON_HEIGHT;
     private static final int BUTTON_GAP = 4;
     private static final int SESSION_LINE_HEIGHT = 12;
 
@@ -83,10 +83,10 @@ public class QuickToolsPanel implements HubPanel {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.PANEL());
 
         // Left border separator
-        graphics.fill(x, y, x + 1, y + height, UIConstants.Border.SEPARATOR());
+        graphics.fill(x, y, x + 1, y + height, DesignTokens.Border.SEPARATOR());
 
         int contentY = y + PADDING;
         int contentX = x + PADDING;
@@ -163,7 +163,7 @@ public class QuickToolsPanel implements HubPanel {
         // Sync state every frame in case external toggles changed it.
         button.toggled(enabled);
         button.style(required && !enabled ? EditorButton.Style.DANGER : EditorButton.Style.NORMAL);
-        button.accent(required && !enabled ? UIConstants.Status.WARNING() : UIConstants.Border.DEFAULT());
+        button.accent(required && !enabled ? DesignTokens.Semantic.WARNING : DesignTokens.Border.DEFAULT());
         button.render(graphics, rx, ry, rwidth, BUTTON_HEIGHT, mouseX, mouseY);
     }
 
@@ -182,7 +182,7 @@ public class QuickToolsPanel implements HubPanel {
         if (safeFont.width(tester) > rwidth) {
             tester = tester.substring(0, Math.min(tester.length(), 20)) + "...";
         }
-        graphics.drawString(safeFont, tester, rx, ry, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, tester, rx, ry, DesignTokens.Text.SECONDARY(), false);
         ry += SESSION_LINE_HEIGHT + 2;
 
         // Session duration
@@ -191,7 +191,7 @@ public class QuickToolsPanel implements HubPanel {
         long minutes = (durationMs % 3600000) / 60000;
         long seconds = (durationMs % 60000) / 1000;
         String time = String.format("Time: %02d:%02d:%02d", hours, minutes, seconds);
-        graphics.drawString(safeFont, time, rx, ry, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, time, rx, ry, DesignTokens.Text.SECONDARY(), false);
         ry += SESSION_LINE_HEIGHT + 2;
 
         // Progress
@@ -199,15 +199,15 @@ public class QuickToolsPanel implements HubPanel {
         int failed = TestingSession.INSTANCE.getFailedTests();
         int total = TestingSession.INSTANCE.getTotalTests();
         String progress = String.format("Tests: %d/%d", passed + failed, total);
-        graphics.drawString(safeFont, progress, rx, ry, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, progress, rx, ry, DesignTokens.Text.SECONDARY(), false);
         ry += SESSION_LINE_HEIGHT + 2;
 
         // Pass rate
         if (passed + failed > 0) {
             float passRate = (float) passed / (passed + failed) * 100;
             String rate = String.format("Pass Rate: %.0f%%", passRate);
-            int rateColor = passRate >= 80 ? UIConstants.Status.SUCCESS() :
-                           passRate >= 50 ? UIConstants.Status.WARNING() : UIConstants.Status.ERROR();
+            int rateColor = passRate >= 80 ? DesignTokens.Semantic.SUCCESS :
+                           passRate >= 50 ? DesignTokens.Semantic.WARNING : DesignTokens.Semantic.ERROR;
             graphics.drawString(safeFont, rate, rx, ry, rateColor, false);
         }
     }

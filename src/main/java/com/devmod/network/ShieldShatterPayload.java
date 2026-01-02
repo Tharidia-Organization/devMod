@@ -15,7 +15,7 @@ public record ShieldShatterPayload(
     double centerY,
     double centerZ,
     float finalDamage  // The damage that broke the shield
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<ShieldShatterPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "shield_shatter"))
@@ -44,10 +44,28 @@ public record ShieldShatterPayload(
         return Objects.requireNonNull(TYPE, "payload type");
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(entityId);
+        size += 8 * 3; // centerX/Y/Z
+        size += 4; // finalDamage
+        return size;
+    }
+
     /**
      * Creates a shatter payload at the entity's position.
      */
     public static ShieldShatterPayload at(int entityId, double x, double y, double z, float damage) {
         return new ShieldShatterPayload(entityId, x, y, z, damage);
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

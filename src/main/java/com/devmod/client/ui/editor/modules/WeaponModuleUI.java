@@ -18,9 +18,9 @@ import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorTextField;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.debug.DebugInfoSection;
 import com.devmod.client.ui.editor.debug.ItemDebugInfo;
 import com.devmod.client.ui.editor.debug.ValueComparison;
@@ -154,7 +154,7 @@ public class WeaponModuleUI {
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Damage multiplier when hitting the head. 1.5x = headshots deal 50% more damage.")
@@ -164,7 +164,7 @@ public class WeaponModuleUI {
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Damage multiplier for body/torso hits. 1.0 = normal damage.")
@@ -174,7 +174,7 @@ public class WeaponModuleUI {
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Damage multiplier when hitting arms. 0.8x = arm hits deal 20% less damage.")
@@ -184,7 +184,7 @@ public class WeaponModuleUI {
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Damage multiplier when hitting legs. 0.7x = leg hits deal 30% less damage.")
@@ -214,7 +214,7 @@ public class WeaponModuleUI {
         attackDamageSlider = new EditorSlider("atkDmg", "Attack Damage", 0f, 50f, 0f)
             .step(0.5f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Base damage added to attacks. Final = (Base + Attack Damage) * Multipliers. Uses minecraft:attack_damage attribute.")
@@ -223,7 +223,7 @@ public class WeaponModuleUI {
         attackSpeedSlider = new EditorSlider("atkSpd", "Attack Speed", -5f, 4f, 0f)
             .step(0.1f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("Modifier to attack cooldown. Player base is 4.0, so -2.4 means 1.6 attacks/sec. DPS = Damage * (4 + Speed).")
@@ -233,7 +233,7 @@ public class WeaponModuleUI {
             .step(0.1f)
             .format("%.1f")
             .suffix(" blocks")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(dataSource)
             .info("Additional melee range. Player base reach is 3.0 blocks. Uses minecraft:entity_interaction_range.")
@@ -242,7 +242,7 @@ public class WeaponModuleUI {
         attackKnockbackSlider = new EditorSlider("atkKB", "Knockback", 0f, 5f, 0f)
             .step(0.1f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(dataSource)
             .info("Additional knockback strength. 1.0 = one Knockback enchantment level. Uses minecraft:attack_knockback.")
@@ -252,7 +252,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(dataSource)
             .info("Percentage multiplier to final damage. 50% = 1.5x damage. Uses devmod:damage_bonus custom attribute.")
@@ -262,7 +262,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
             .info("AoE sweep damage ratio. 100% = full damage to nearby enemies. Similar to Sweeping Edge. Uses minecraft:sweeping_damage_ratio.")
@@ -272,7 +272,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
             .info("Percentage of target's armor ignored. 50% pen vs 20 armor = effective 10 armor. Applied before damage reduction.")
@@ -281,7 +281,7 @@ public class WeaponModuleUI {
         baseDamageBonusSlider = new EditorSlider("baseDmg", "Base Damage Bonus", -50f, 50f, 0f)
             .step(0.5f)
             .format("+%.1f")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Flat bonus to weapon's base damage before multipliers. Negative values reduce damage.")
@@ -291,7 +291,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Permanently reduces target's armor on hit. Stacks up to cap. Uses devmod:armor_shred attribute.")
@@ -332,7 +332,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.PERCENT)
+            .trackColor(DesignTokens.SliderColors.PERCENT)
             .showInput(true)
             .source(dataSource)
             .enabled(stats.critChance > 0)
@@ -343,7 +343,7 @@ public class WeaponModuleUI {
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .enabled(stats.critChance > 0)
@@ -370,7 +370,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
             .enabled(stats.lifesteal > 0)
@@ -394,7 +394,7 @@ public class WeaponModuleUI {
         EditorSlider fireDamage = new EditorSlider("fireDmg", "Fire Damage", 0f, 20f, 0f)
             .step(0.5f)
             .format("+%.1f")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .enabled(stats.fireDamageBonus > 0)
@@ -418,7 +418,7 @@ public class WeaponModuleUI {
         EditorSlider magicDamage = new EditorSlider("magicDmg", "Magic Damage", 0f, 20f, 0f)
             .step(0.5f)
             .format("+%.1f")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
             .enabled(stats.magicDamageBonus > 0)
@@ -466,7 +466,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("+%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Bonus damage vs undead mobs (Zombies, Skeletons, Phantoms, etc.). Similar to Smite enchant.")
@@ -476,7 +476,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("+%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Bonus damage vs arthropods (Spiders, Silverfish, Bees, Endermites). Similar to Bane of Arthropods.")
@@ -486,7 +486,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("+%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Bonus damage specifically against players. PvP-focused modifier.")
@@ -496,7 +496,7 @@ public class WeaponModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
             .info("Percentage of damage that bypasses ALL armor and protection. 100% = full true damage.")
@@ -534,7 +534,7 @@ public class WeaponModuleUI {
         maxDurabilitySlider = new EditorSlider("maxDur", "Max Durability", 0f, 4096f, 0f)
             .step(16f)
             .format("%.0f")
-            .trackColor(UIConstants.SliderColors.DURABILITY)
+            .trackColor(DesignTokens.SliderColors.DURABILITY)
             .showInput(true)
             .source(dataSource)
             .info("Maximum durability points. Netherite sword = 2031. Item breaks when current damage reaches this value.")
@@ -543,7 +543,7 @@ public class WeaponModuleUI {
         currentDamageSlider = new EditorSlider("curDmg", "Current Damage", 0f, 4096f, 0f)
             .step(1f)
             .format("%.0f")
-            .trackColor(UIConstants.SliderColors.DURABILITY)
+            .trackColor(DesignTokens.SliderColors.DURABILITY)
             .showInput(true)
             .source(dataSource)
             .info("Current damage taken. 0 = full durability. When this reaches max durability, item breaks.")
@@ -552,7 +552,7 @@ public class WeaponModuleUI {
         repairCostSlider = new EditorSlider("repair", "Repair Cost", 0f, 100f, 0f)
             .step(1f)
             .format("%.0f")
-            .trackColor(UIConstants.SliderColors.DURABILITY)
+            .trackColor(DesignTokens.SliderColors.DURABILITY)
             .showInput(true)
             .source(dataSource)
             .info("XP level cost to repair/rename in anvil. Increases each repair. Max 39 before 'Too Expensive'.")
@@ -593,13 +593,13 @@ public class WeaponModuleUI {
         toolDefaultSpeedSlider = new EditorSlider("toolDefaultSpeed", "Default Mining Speed", 0f, 64f, stats.toolDefaultMiningSpeed)
             .step(0.1f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .onChange(v -> { stats.toolDefaultMiningSpeed = v; module.markDirty("Tool default speed"); });
 
         toolDamagePerBlockSlider = new EditorSlider("toolDamagePerBlock", "Damage Per Block", 0f, 64f, stats.toolDamagePerBlock)
             .step(1f)
             .format("%.0f")
-            .trackColor(UIConstants.SliderColors.DURABILITY)
+            .trackColor(DesignTokens.SliderColors.DURABILITY)
             .onChange(v -> { stats.toolDamagePerBlock = Math.round(v); module.markDirty("Tool damage per block"); });
 
         int maxRules = 3;
@@ -625,9 +625,9 @@ public class WeaponModuleUI {
             "toolRulesNote",
             "Block tags (e.g. minecraft:mineable/pickaxe) with speed + drops",
             24,
-            UIConstants.Spacing.SM,
+            DesignTokens.Spacing.SM,
             6,
-            UIConstants.Text.SECONDARY()
+            DesignTokens.Text.SECONDARY()
         ));
         return sections;
     }
@@ -642,7 +642,7 @@ public class WeaponModuleUI {
                 "maceHeader",
                 "Smash Attack",
                 EditorDimensions.SECTION_HEADER_HEIGHT,
-                UIConstants.Spacing.SM,
+                DesignTokens.Spacing.SM,
                 4
             ),
             new SliderSectionAdapter(variants.getSmashBonusSlider()),
@@ -659,7 +659,7 @@ public class WeaponModuleUI {
                 "tridentHeader",
                 "Throw / Riptide",
                 EditorDimensions.SECTION_HEADER_HEIGHT,
-                UIConstants.Spacing.SM,
+                DesignTokens.Spacing.SM,
                 4
             ),
             new SliderSectionAdapter(variants.getThrowDamageSlider()),
@@ -744,7 +744,7 @@ public class WeaponModuleUI {
         if (mc != null && mc.keyboardHandler != null) {
             mc.keyboardHandler.setClipboard(Objects.requireNonNull(safePayload, "payload cannot be null"));
         }
-        module.reportStatusPublic("Debug info copied!", UIConstants.Accent.GREEN());
+        module.reportStatusPublic("Debug info copied!", DesignTokens.Accent.GREEN());
     }
 
     private String buildDebugClipboardText(ItemDebugInfo info, List<ValueComparison> comparisons,
@@ -810,7 +810,7 @@ public class WeaponModuleUI {
 
     class DpsPreviewSection implements EditorSection.CustomSection {
         private static final int HEIGHT_EXTRA = 14;
-        private static final int TEXT_OFFSET_Y = UIConstants.Spacing.SM;
+        private static final int TEXT_OFFSET_Y = DesignTokens.Spacing.SM;
 
         @Override
         public String getId() { return "dpsPreview"; }
@@ -819,7 +819,7 @@ public class WeaponModuleUI {
         public String getLabel() { return "DPS Preview"; }
 
         @Override
-        public int getHeight() { return UIConstants.Spacing.LG + HEIGHT_EXTRA; }
+        public int getHeight() { return DesignTokens.Spacing.LG + HEIGHT_EXTRA; }
 
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
@@ -829,7 +829,7 @@ public class WeaponModuleUI {
             int textWidth = font.width(Objects.requireNonNull(dpsText));
             int x = bounds.x() + (bounds.width() - textWidth) / 2;
             int y = bounds.y() + TEXT_OFFSET_Y;
-            graphics.drawString(font, dpsText, x, y, UIConstants.Text.VALUE(), false);
+            graphics.drawString(font, dpsText, x, y, DesignTokens.Text.VALUE(), false);
         }
     }
 
@@ -860,7 +860,7 @@ public class WeaponModuleUI {
             speedSlider = new EditorSlider(id + "Speed", "Mining Speed Multiplier", 0f, 64f, data.speed)
                 .step(0.1f)
                 .format("%.1f")
-                .trackColor(UIConstants.SliderColors.SPECIAL)
+                .trackColor(DesignTokens.SliderColors.SPECIAL)
                 .onChange(v -> {
                     data.speed = v;
                     sync();
@@ -901,9 +901,9 @@ public class WeaponModuleUI {
         @Override
         public int getHeight() {
             int height = tagField.calculateHeight();
-            height += UIConstants.Spacing.SM;
+            height += DesignTokens.Spacing.SM;
             height += speedSlider.calculateHeight();
-            height += UIConstants.Spacing.SM;
+            height += DesignTokens.Spacing.SM;
             height += EditorDimensions.TOGGLE_HEIGHT;
             return height;
         }
@@ -914,9 +914,9 @@ public class WeaponModuleUI {
             int y = bounds.y();
             int width = bounds.width();
             y += tagField.render(graphics, x, y, width, mouseX, mouseY);
-            y += UIConstants.Spacing.SM;
+            y += DesignTokens.Spacing.SM;
             speedSlider.render(graphics, x, y, width, mouseX, mouseY);
-            y += speedSlider.calculateHeight() + UIConstants.Spacing.SM;
+            y += speedSlider.calculateHeight() + DesignTokens.Spacing.SM;
             dropsToggle.render(graphics, x, y, width, mouseX, mouseY);
         }
 

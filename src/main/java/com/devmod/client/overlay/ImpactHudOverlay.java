@@ -16,6 +16,8 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.config.Config;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -26,14 +28,14 @@ public class ImpactHudOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "impact_analysis");
 
-    // === UI Colors (reference image style) ===
-    private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
-    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue
-    private static final int PANEL_BORDER_GLOW = 0x553D5AFE;  // Glow border
+    // === UI Colors (using DesignTokens for consistency) ===
+    private static final int PANEL_BG = DesignTokens.Bg.LEVEL_1;           // Standard 0xE0 alpha
+    private static final int PANEL_BORDER = DesignTokens.Accent.PRIMARY;   // Cyan accent
+    private static final int PANEL_BORDER_GLOW = DesignTokens.Accent.GLOW; // Glow border
 
     // === Dimensions ===
-    private static final int PANEL_PADDING = 8;
-    private static final int LINE_HEIGHT = 10;
+    private static final int PANEL_PADDING = OverlayTheme.Dimension.PADDING;
+    private static final int LINE_HEIGHT = OverlayTheme.Dimension.LINE_HEIGHT_COMPACT;
     private static final int SECTION_SPACING = 6;
     private static final int PANEL_GAP = 8;
 
@@ -69,6 +71,12 @@ public class ImpactHudOverlay {
      */
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (!enabled) return;
+
+        // Check controller display mode
+        ImpactDisplayMode displayMode = ImpactHudController.INSTANCE.getDisplayMode();
+        if (displayMode == ImpactDisplayMode.OFF || displayMode == ImpactDisplayMode.MINIMAL) {
+            return; // 2D overlay only shows in DETAILED or ANALYSIS mode
+        }
 
         ImpactData data = ImpactData.get();
         if (data == null) return;

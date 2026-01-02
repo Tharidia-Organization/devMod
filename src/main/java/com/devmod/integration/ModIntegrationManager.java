@@ -13,14 +13,15 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatRegistry;
+import com.devmod.compat.mods.epicfight.EpicFightCompat;
 import com.devmod.util.MixinLogFilter;
 
 public class ModIntegrationManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModIntegrationManager.class);
 
     private static boolean pehkuiLoaded = false;
-    private static boolean betterCombatLoaded = false;
     private static boolean distantHorizonsLoaded = false;
+    private static boolean littleTilesLoaded = false;
     private static boolean initialized = false;
 
     /**
@@ -37,16 +38,16 @@ public class ModIntegrationManager {
 
         // Use new Compat utility for detection
         pehkuiLoaded = Compat.isLoaded(Compat.Mods.PEHKUI);
-        betterCombatLoaded = Compat.isLoaded(Compat.Mods.BETTER_COMBAT);
         distantHorizonsLoaded = Compat.isLoaded(Compat.Mods.DISTANT_HORIZONS);
+        littleTilesLoaded = Compat.isLoaded(Compat.Mods.LITTLETILES);
 
         // Initialize legacy integrations
-        if (betterCombatLoaded) {
-            BetterCombatIntegration.init();
-        }
-
         if (distantHorizonsLoaded) {
             DistantHorizonsIntegration.init();
+        }
+
+        if (littleTilesLoaded) {
+            LittleTilesIntegration.init();
         }
 
         // Initialize new CompatRegistry system
@@ -54,8 +55,8 @@ public class ModIntegrationManager {
 
         LOGGER.info("[DevMod] Mod Integration Status:");
         LOGGER.info("  - Pehkui: {}", pehkuiLoaded ? "ENABLED" : "not found");
-        LOGGER.info("  - Better Combat: {}", betterCombatLoaded ? "ENABLED" : "not found");
         LOGGER.info("  - Distant Horizons: {}", distantHorizonsLoaded ? "ENABLED" : "not found");
+        LOGGER.info("  - LittleTiles: {}", littleTilesLoaded ? "ENABLED" : "not found");
         LOGGER.info("  - CompatRegistry modules: {}", CompatRegistry.getActiveCount());
 
         initialized = true;
@@ -75,6 +76,9 @@ public class ModIntegrationManager {
         // P3 - Combat/Attributes (Animation Libraries)
         CompatRegistry.register(new com.devmod.compat.mods.geckolib.GeckoLibModuleCompat());
         CompatRegistry.register(new com.devmod.compat.mods.azurelib.AzureLibCompat());
+
+        // P3 - Combat/Attributes (Combat Overhauls)
+        CompatRegistry.register(new com.devmod.compat.mods.epicfight.EpicFightCompat());
 
         // P3 - Combat/Attributes (Equipment)
         CompatRegistry.register(new com.devmod.compat.mods.curios.CuriosCompat());
@@ -187,10 +191,6 @@ public class ModIntegrationManager {
         return pehkuiLoaded;
     }
 
-    public static boolean isBetterCombatLoaded() {
-        return betterCombatLoaded;
-    }
-
     public static boolean isDistantHorizonsLoaded() {
         return distantHorizonsLoaded;
     }
@@ -199,60 +199,75 @@ public class ModIntegrationManager {
         return initialized;
     }
 
-    // === Better Combat Integration Methods ===
+    // === Epic Fight Integration Methods ===
+    // Epic Fight is the core combat mod - delegates to EpicFightCompat
 
     /**
-     * Gets the current Better Combat attack name.
-     * @return attack name, or null if BC is not active
+     * Checks if Epic Fight is loaded and available.
+     */
+    public static boolean isEpicFightLoaded() {
+        return EpicFightCompat.isAvailable();
+    }
+
+    /**
+     * Checks if Epic Fight combat is active for an entity.
+     * Returns true if entity has a patch and is either in battle mode or performing an action.
+     */
+    public static boolean isEpicFightCombatActive(@Nullable LivingEntity entity) {
+        if (entity == null) return false;
+        return EpicFightCompat.isCombatActive(entity);
+    }
+
+    /**
+     * Checks if a player is in Epic Fight battle mode.
+     */
+    public static boolean isInEpicFightBattleMode(@Nullable Player player) {
+        if (player == null) return false;
+        return EpicFightCompat.isInBattleMode(player);
+    }
+
+    /**
+     * Gets the current Epic Fight animation name for an entity.
+     * @return animation name, or null if not available
      */
     @Nullable
-    public static String getBetterCombatAttackName(Player player) {
-        if (!betterCombatLoaded || player == null) return null;
-        try {
-            return BetterCombatIntegration.getCurrentAttackName(player);
-        } catch (Exception e) {
-            LOGGER.debug("[DevMod] Failed to get Better Combat attack name: {}", e.getMessage());
-            return null;
-        }
+    public static String getEpicFightAnimationName(@Nullable LivingEntity entity) {
+        if (entity == null) return null;
+        return EpicFightCompat.getCurrentAnimationName(entity);
     }
 
     /**
-     * Gets the extended reach from Better Combat.
-     * @return reach bonus, or 0
+     * Gets the Epic Fight stamina for a player.
+     * @return current stamina, or -1 if not available
      */
-    public static double getBetterCombatReach(Player player) {
-        if (!betterCombatLoaded || player == null) return 0;
-        try {
-            return BetterCombatIntegration.getExtendedReach(player);
-        } catch (Exception e) {
-            LOGGER.debug("[DevMod] Failed to get Better Combat reach: {}", e.getMessage());
-            return 0;
-        }
+    public static float getEpicFightStamina(@Nullable Player player) {
+        if (player == null) return -1f;
+        return EpicFightCompat.getStamina(player);
     }
 
     /**
-     * Checks if the player is in a Better Combat combo.
+     * Gets the Epic Fight max stamina for a player.
+     * @return max stamina, or -1 if not available
      */
-    public static boolean isInBetterCombatCombo(Player player) {
-        if (!betterCombatLoaded || player == null) return false;
-        try {
-            return BetterCombatIntegration.isInCombo(player);
-        } catch (Exception e) {
-            LOGGER.debug("[DevMod] Failed to check Better Combat combo state: {}", e.getMessage());
-            return false;
-        }
+    public static float getEpicFightMaxStamina(@Nullable Player player) {
+        if (player == null) return -1f;
+        return EpicFightCompat.getMaxStamina(player);
     }
 
     /**
-     * Gets the Better Combat combo count.
+     * Gets the Epic Fight stamina percentage for a player.
+     * @return stamina percentage (0-1), or -1 if not available
      */
-    public static int getBetterCombatComboCount(Player player) {
-        if (!betterCombatLoaded || player == null) return 0;
-        try {
-            return BetterCombatIntegration.getComboCount(player);
-        } catch (Exception e) {
-            LOGGER.debug("[DevMod] Failed to get Better Combat combo count: {}", e.getMessage());
-            return 0;
-        }
+    public static float getEpicFightStaminaPercent(@Nullable Player player) {
+        if (player == null) return -1f;
+        return EpicFightCompat.getStaminaPercent(player);
+    }
+
+    /**
+     * Checks if an entity is currently performing an Epic Fight action.
+     */
+    public static boolean isInEpicFightAction(@Nullable LivingEntity entity) {
+        if (entity == null) return false;
+        return EpicFightCompat.isInAction(entity);
     }
 }

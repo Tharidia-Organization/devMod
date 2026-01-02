@@ -24,7 +24,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.ClientShopCache;
 import com.devmod.endurance.RequestShopSyncPayload;
 import com.devmod.endurance.RewardSystem;
@@ -35,41 +35,53 @@ import com.devmod.util.I18n;
 public class EnduranceShopScreen extends Screen {
     private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
 
-    // Layout constants - using UIConstants for consistency
-    private static final int CATEGORY_WIDTH = UIConstants.Size.CATEGORY_WIDTH;
+    // Layout constants - using DesignTokens for consistency
+    private static final int CATEGORY_WIDTH = 140;  // Category sidebar width
     private static final int ITEM_HEIGHT = 70;
-    private static final int ITEM_MARGIN = UIConstants.Spacing.GAP_SMALL + 1;
+    private static final int ITEM_MARGIN = 5;  // Small gap between items
 
-    // Colors - Standardized to UIConstants
-    private static final int COLOR_BG = UIConstants.Background.PANEL();
-    private static final int COLOR_CATEGORY_BG = UIConstants.Background.HEADER();
-    private static final int COLOR_ITEM_BG = UIConstants.Background.INPUT();
-    private static final int COLOR_ITEM_HOVER = UIConstants.Background.HOVER();
-    private static final int COLOR_ITEM_DISABLED = UIConstants.Text.DISABLED();
-    private static final int COLOR_ACCENT = UIConstants.Accent.GOLD();  // Gold for tokens
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
-    private static final int COLOR_ERROR = UIConstants.Accent.RED();
+    // Colors - Standardized to DesignTokens
+    private static final int COLOR_BG = DesignTokens.Bg.LEVEL_0;
+    private static final int COLOR_CATEGORY_BG = DesignTokens.Bg.LEVEL_1;
+    private static final int COLOR_ITEM_BG = DesignTokens.Surface.LEVEL_0;
+    private static final int COLOR_ITEM_HOVER = DesignTokens.Surface.LEVEL_1;
+    private static final int COLOR_ITEM_DISABLED = DesignTokens.Text.MUTED;
+    private static final int COLOR_ACCENT = DesignTokens.Semantic.WARNING;  // Gold for tokens
+    private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_SUCCESS = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_ERROR = DesignTokens.Semantic.ERROR;
+
+    // Shop-specific colors (no direct tokens)
+    private static final int COLOR_BLUE = DesignTokens.Semantic.INFO;
+    private static final int COLOR_PURPLE = 0xFFA371F7;
+    private static final int COLOR_YELLOW = 0xFFFFD700;
+    private static final int COLOR_CYAN = DesignTokens.Accent.PRIMARY;
 
     // Category colors matching ShopCategory
     private static final Map<RewardSystem.ShopCategory, Integer> CATEGORY_COLORS = Map.of(
-        RewardSystem.ShopCategory.STATS, UIConstants.Accent.GREEN(),
-        RewardSystem.ShopCategory.PERKS, UIConstants.Accent.BLUE(),
-        RewardSystem.ShopCategory.UTILITY, UIConstants.Accent.GOLD(),
-        RewardSystem.ShopCategory.COSMETICS, UIConstants.Accent.PURPLE()
+        RewardSystem.ShopCategory.STATS, COLOR_SUCCESS,
+        RewardSystem.ShopCategory.PERKS, COLOR_BLUE,
+        RewardSystem.ShopCategory.UTILITY, COLOR_ACCENT,
+        RewardSystem.ShopCategory.COSMETICS, COLOR_PURPLE
     );
 
     // Currency colors
     private static final Map<RewardSystem.Currency, Integer> CURRENCY_COLORS = Map.of(
-        RewardSystem.Currency.TOKENS, UIConstants.Accent.GOLD(),
-        RewardSystem.Currency.COINS, UIConstants.Accent.YELLOW(),
-        RewardSystem.Currency.PRESTIGE, UIConstants.Accent.PURPLE(),
-        RewardSystem.Currency.GEMS, UIConstants.Accent.CYAN(),
-        RewardSystem.Currency.BLOOD_GEMS, UIConstants.Accent.RED()
+        RewardSystem.Currency.TOKENS, COLOR_ACCENT,
+        RewardSystem.Currency.COINS, COLOR_YELLOW,
+        RewardSystem.Currency.PRESTIGE, COLOR_PURPLE,
+        RewardSystem.Currency.GEMS, COLOR_CYAN,
+        RewardSystem.Currency.BLOOD_GEMS, COLOR_ERROR
     );
 
+    private enum ViewMode {
+        SHOP,
+        CHALLENGES
+    }
+
     // State
+    private ViewMode viewMode = ViewMode.SHOP;
     private RewardSystem.ShopCategory selectedCategory = RewardSystem.ShopCategory.STATS;
     private List<RewardSystem.ShopItem> categoryItems = new ArrayList<>();
     private int scrollOffset = 0;
@@ -100,6 +112,13 @@ public class EnduranceShopScreen extends Screen {
         updateCategoryItems();
 
         // All buttons are now rendered custom - no vanilla widgets needed
+    }
+
+    private List<ClientChallengeCache.ChallengeDisplayData> getChallengeSnapshot() {
+        if (ClientChallengeCache.INSTANCE.hasCachedData()) {
+            return ClientChallengeCache.INSTANCE.getChallenges();
+        }
+        return List.of();
     }
 
     private void loadPlayerData() {
@@ -153,13 +172,18 @@ public class EnduranceShopScreen extends Screen {
         // Category sidebar with custom buttons
         renderCategorySidebar(graphics, mouseX, mouseY);
 
-        // Item list
-        renderItemList(graphics, mouseX, mouseY);
+        if (viewMode == ViewMode.CHALLENGES) {
+            // Render challenges view
+            renderChallengeList(graphics, mouseX, mouseY);
+        } else {
+            // Item list
+            renderItemList(graphics, mouseX, mouseY);
 
-        // Selected item details
-        RewardSystem.ShopItem item = selectedItem;
-        if (item != null) {
-            renderItemDetails(graphics, item);
+            // Selected item details
+            RewardSystem.ShopItem item = selectedItem;
+            if (item != null) {
+                renderItemDetails(graphics, item);
+            }
         }
 
         // Custom action buttons (Back, Purchase)
@@ -209,19 +233,45 @@ public class EnduranceShopScreen extends Screen {
 
         // Category buttons (custom rendered)
         int catY = 60;
-        int catBtnW = CATEGORY_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 2;
-        int catBtnH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int catBtnW = CATEGORY_WIDTH - DesignTokens.Space.PANEL_PADDING * 2;
+        int catBtnH = DesignTokens.Component.BUTTON_HEIGHT_LG;
 
         for (RewardSystem.ShopCategory category : RewardSystem.ShopCategory.values()) {
-            int catBtnX = UIConstants.Spacing.PANEL_MARGIN;
-            boolean isSelected = category == selectedCategory;
+            int catBtnX = DesignTokens.Space.PANEL_PADDING;
+            boolean isSelected = viewMode == ViewMode.SHOP && category == selectedCategory;
             boolean isHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, catBtnX, catY, catBtnW, catBtnH);
             int catColor = getCategoryColor(category);
 
             String catName = getCategoryLabel(category);
-            renderButton(graphics, catBtnX, catY, catBtnW, catBtnH, catName, isHovered, isSelected ? catColor : UIConstants.Border.DEFAULT());
+            renderButton(graphics, catBtnX, catY, catBtnW, catBtnH, catName, isHovered, isSelected ? catColor : DesignTokens.Accent.PRIMARY);
 
-            catY += catBtnH + UIConstants.Spacing.GAP_SMALL;
+            catY += catBtnH + 4;
+        }
+
+        // Separator
+        catY += 10;
+        graphics.fill(DesignTokens.Space.PANEL_PADDING, catY, CATEGORY_WIDTH - DesignTokens.Space.PANEL_PADDING, catY + 1, DesignTokens.Stroke.MUTED);
+        catY += 15;
+
+        // Challenges button (special category)
+        int catBtnX = DesignTokens.Space.PANEL_PADDING;
+        boolean challengesSelected = viewMode == ViewMode.CHALLENGES;
+        boolean challengesHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, catBtnX, catY, catBtnW, catBtnH);
+        String challengesLabel = Objects.requireNonNull(I18n.translate("devmod.endurance.challenges").getString());
+
+        // Show challenge count badge
+        List<ClientChallengeCache.ChallengeDisplayData> challenges = getChallengeSnapshot();
+        int challengeCount = challenges.size();
+        int completedCount = (int) challenges.stream().filter(ClientChallengeCache.ChallengeDisplayData::completed).count();
+        String badge = completedCount + "/" + challengeCount;
+
+        renderButton(graphics, catBtnX, catY, catBtnW, catBtnH, challengesLabel, challengesHovered, challengesSelected ? COLOR_ACCENT : DesignTokens.Accent.PRIMARY);
+
+        // Badge showing completion
+        if (challengeCount > 0) {
+            int badgeColor = completedCount == challengeCount ? COLOR_SUCCESS : COLOR_ACCENT;
+            int badgeX = catBtnX + catBtnW - Objects.requireNonNull(font).width(badge) - 5;
+            graphics.drawString(Objects.requireNonNull(font), badge, badgeX, catY + (catBtnH - 8) / 2, badgeColor);
         }
     }
 
@@ -248,8 +298,118 @@ public class EnduranceShopScreen extends Screen {
         if (maxScroll > 0) {
             int scrollbarHeight = (int) ((float) listHeight / (listHeight + maxScroll) * listHeight);
             int scrollbarY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - scrollbarHeight));
-            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR());
+            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, DesignTokens.Stroke.MUTED);
             graphics.fill(listX + listWidth - 5, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, COLOR_ACCENT);
+        }
+    }
+
+    /**
+     * Renders the daily challenges list view.
+     * Uses all ChallengeDisplayData methods for complete integration.
+     */
+    private void renderChallengeList(GuiGraphics graphics, int mouseX, int mouseY) {
+        int listX = CATEGORY_WIDTH + 10;
+        int listY = 50;
+        int listWidth = width - CATEGORY_WIDTH - 20;
+        int listHeight = height - 100;
+        int challengeItemHeight = ITEM_HEIGHT + 10;
+        List<ClientChallengeCache.ChallengeDisplayData> challenges = getChallengeSnapshot();
+
+        // Title
+        String title = Objects.requireNonNull(I18n.translate("devmod.endurance.daily_challenges").getString());
+        graphics.drawCenteredString(Objects.requireNonNull(font), title, listX + listWidth / 2, listY, COLOR_ACCENT);
+        listY += 20;
+        listHeight -= 20;
+
+        if (challenges.isEmpty()) {
+            // No challenges available
+            String noData = Objects.requireNonNull(I18n.translate("devmod.endurance.no_challenges").getString());
+            graphics.drawCenteredString(Objects.requireNonNull(font), noData, listX + listWidth / 2, listY + 50, COLOR_TEXT_DIM);
+            return;
+        }
+
+        // Clip area for scrolling
+        graphics.enableScissor(listX, listY, listX + listWidth, listY + listHeight);
+
+        int y = listY - scrollOffset;
+        for (ClientChallengeCache.ChallengeDisplayData challenge : challenges) {
+            if (y + challengeItemHeight > listY && y < listY + listHeight) {
+                renderChallengeItem(graphics, challenge, listX, y, listWidth, challengeItemHeight, mouseX, mouseY);
+            }
+            y += challengeItemHeight + ITEM_MARGIN;
+        }
+
+        graphics.disableScissor();
+
+        // Calculate scroll for challenges
+        int contentHeight = challenges.size() * (challengeItemHeight + ITEM_MARGIN);
+        int challengeMaxScroll = Math.max(0, contentHeight - listHeight);
+        if (challengeMaxScroll > 0) {
+            int scrollbarHeight = (int) ((float) listHeight / (listHeight + challengeMaxScroll) * listHeight);
+            int scrollbarY = listY + (int) ((float) scrollOffset / challengeMaxScroll * (listHeight - scrollbarHeight));
+            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, DesignTokens.Stroke.MUTED);
+            graphics.fill(listX + listWidth - 5, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, COLOR_ACCENT);
+        }
+    }
+
+    /**
+     * Renders a single challenge item using all ChallengeDisplayData record methods.
+     */
+    private void renderChallengeItem(GuiGraphics graphics, ClientChallengeCache.ChallengeDisplayData challenge,
+                                      int x, int y, int itemWidth, int itemHeight, int mouseX, int mouseY) {
+        boolean isHovered = mouseX >= x && mouseX <= x + itemWidth && mouseY >= y && mouseY < y + itemHeight;
+        boolean isCompleted = challenge.completed();
+
+        // Background
+        int bgColor = isCompleted ? DesignTokens.Surface.LEVEL_2 : (isHovered ? COLOR_ITEM_HOVER : COLOR_ITEM_BG);
+        graphics.fill(x, y, x + itemWidth, y + itemHeight, bgColor);
+
+        // Difficulty color indicator (using difficultyColor from record)
+        graphics.fill(x, y, x + 4, y + itemHeight, challenge.difficultyColor());
+
+        // Challenge name (Component from record)
+        int nameColor = isCompleted ? COLOR_SUCCESS : COLOR_TEXT;
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(challenge.name()), x + 10, y + 5, nameColor);
+
+        // Description (Component from record)
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(challenge.description()), x + 10, y + 18, COLOR_TEXT_DIM);
+
+        // Difficulty badge (using difficultyName from record)
+        String diffBadge = "[" + challenge.difficultyName() + "]";
+        int diffBadgeX = x + itemWidth - Objects.requireNonNull(font).width(diffBadge) - 10;
+        graphics.drawString(Objects.requireNonNull(font), diffBadge, diffBadgeX, y + 5, challenge.difficultyColor());
+
+        // Progress bar using getProgress() method
+        int barX = x + 10;
+        int barY = y + 35;
+        int barWidth = itemWidth - 120;
+        int barHeight = 8;
+
+        // Background bar
+        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, DesignTokens.Stroke.MUTED);
+
+        // Filled portion using getProgress() (0.0-1.0)
+        float progress = challenge.getProgress();
+        int filledWidth = (int) (barWidth * progress);
+        int progressColor = isCompleted ? COLOR_SUCCESS : COLOR_ACCENT;
+        graphics.fill(barX, barY, barX + filledWidth, barY + barHeight, progressColor);
+
+        // Progress text using getProgressText() method
+        String progressText = challenge.getProgressText();
+        graphics.drawString(Objects.requireNonNull(font), progressText, barX + barWidth + 5, barY, COLOR_TEXT);
+
+        // Reward text using getRewardText() method
+        String rewardText = challenge.getRewardText();
+        int rewardColor = isCompleted ? COLOR_TEXT_DIM : COLOR_ACCENT;
+        graphics.drawString(Objects.requireNonNull(font), rewardText, x + 10, y + itemHeight - 15, rewardColor);
+
+        // Completed/Rewarded status
+        if (challenge.rewarded()) {
+            String claimed = Objects.requireNonNull(I18n.translate("devmod.endurance.reward_claimed").getString());
+            graphics.drawString(Objects.requireNonNull(font), claimed, x + itemWidth - font.width(claimed) - 10, y + itemHeight - 15, COLOR_SUCCESS);
+        } else if (isCompleted) {
+            String claimable = Objects.requireNonNull(I18n.translate("devmod.endurance.claim_reward").getString());
+            graphics.drawString(Objects.requireNonNull(font), claimable, x + itemWidth - font.width(claimable) - 10, y + itemHeight - 15, COLOR_YELLOW);
         }
     }
 
@@ -265,7 +425,7 @@ public class EnduranceShopScreen extends Screen {
         if (maxedOut) {
             bgColor = COLOR_ITEM_DISABLED;
         } else if (isSelected) {
-            bgColor = UIConstants.Background.ACTIVE();
+            bgColor = DesignTokens.Surface.LEVEL_2;
         } else if (isHovered) {
             bgColor = COLOR_ITEM_HOVER;
         } else {
@@ -327,7 +487,7 @@ public class EnduranceShopScreen extends Screen {
         y += 25;
 
         // Divider
-        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, UIConstants.Border.SEPARATOR());
+        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, DesignTokens.Stroke.MUTED);
         y += 10;
 
         // Description (word wrap)
@@ -363,21 +523,21 @@ public class EnduranceShopScreen extends Screen {
         int buttonY = height - 40;
 
         // Back button (secondary - left side)
-        int backW = UIConstants.Size.BUTTON_WIDTH_SMALL - 20;
-        int backH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
-        int backX = UIConstants.Spacing.PANEL_MARGIN;
+        int backW = 80 - 20;
+        int backH = DesignTokens.Component.BUTTON_HEIGHT_LG;
+        int backX = DesignTokens.Space.PANEL_PADDING;
         boolean backHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, backX, buttonY, backW, backH);
         renderButton(graphics, backX, buttonY, backW, backH,
-            I18n.translate("devmod.ui.back").getString(), backHovered, UIConstants.Border.DEFAULT());
+            I18n.translate("devmod.ui.back").getString(), backHovered, DesignTokens.Accent.PRIMARY);
 
         // Purchase button (primary CTA - green, right side)
-        int purchaseW = UIConstants.Size.BUTTON_WIDTH_SMALL;
-        int purchaseH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int purchaseW = 80;
+        int purchaseH = DesignTokens.Component.BUTTON_HEIGHT_LG;
         int purchaseX = width - purchaseW - 10;
         boolean canPurchase = selectedItem != null && canAfford(selectedItem)
             && playerPurchases.getOrDefault(selectedItem.id, 0) < selectedItem.maxPurchases;
         boolean purchaseHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, purchaseX, buttonY, purchaseW, purchaseH);
-        int purchaseColor = canPurchase ? UIConstants.Accent.GREEN() : UIConstants.Text.DISABLED();
+        int purchaseColor = canPurchase ? COLOR_SUCCESS : DesignTokens.Text.MUTED;
         renderButton(graphics, purchaseX, buttonY, purchaseW, purchaseH,
             I18n.translate("devmod.ui.purchase").getString(), purchaseHovered && canPurchase, purchaseColor);
     }
@@ -386,12 +546,12 @@ public class EnduranceShopScreen extends Screen {
      * Render a custom styled button.
      */
     private void renderButton(GuiGraphics graphics, int x, int y, int w, int h, String text, boolean hovered, int color) {
-        int bgColor = hovered ? color : UIConstants.Background.INPUT();
+        int bgColor = hovered ? color : DesignTokens.Surface.LEVEL_0;
         graphics.fill(x, y, x + w, y + h, bgColor);
         AxiomRenderer.drawBorder(graphics, x, y, w, h, color);
         int textX = x + (w - Objects.requireNonNull(font).width(Objects.requireNonNull(text))) / 2;
         int textY = y + (h - 8) / 2;
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(text), textX, textY, hovered ? UIConstants.Text.WHITE() : color, false);
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(text), textX, textY, hovered ? 0xFFFFFFFF : color, false);
     }
 
     private String getCategoryLabel(RewardSystem.ShopCategory category) {
@@ -474,33 +634,42 @@ public class EnduranceShopScreen extends Screen {
 
         // Check category button clicks
         int catY = 60;
-        int catBtnW = CATEGORY_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 2;
-        int catBtnH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
-        int catBtnX = UIConstants.Spacing.PANEL_MARGIN;
+        int catBtnW = CATEGORY_WIDTH - DesignTokens.Space.PANEL_PADDING * 2;
+        int catBtnH = DesignTokens.Component.BUTTON_HEIGHT_LG;
+        int catBtnX = DesignTokens.Space.PANEL_PADDING;
 
         for (RewardSystem.ShopCategory category : RewardSystem.ShopCategory.values()) {
             if (AxiomRenderer.isMouseOver(mx, my, catBtnX, catY, catBtnW, catBtnH)) {
                 selectCategory(category);
                 return true;
             }
-            catY += catBtnH + UIConstants.Spacing.GAP_SMALL;
+            catY += catBtnH + 4;
+        }
+
+        // Check Challenges button click (after separator)
+        catY += 10 + 1 + 15; // separator spacing
+        if (AxiomRenderer.isMouseOver(mx, my, catBtnX, catY, catBtnW, catBtnH)) {
+            viewMode = ViewMode.CHALLENGES;
+            selectedItem = null;
+            scrollOffset = 0;
+            return true;
         }
 
         // Check action button clicks
         int buttonY = height - 40;
 
         // Back button
-        int backW = UIConstants.Size.BUTTON_WIDTH_SMALL - 20;
-        int backH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
-        int backX = UIConstants.Spacing.PANEL_MARGIN;
+        int backW = 80 - 20;
+        int backH = DesignTokens.Component.BUTTON_HEIGHT_LG;
+        int backX = DesignTokens.Space.PANEL_PADDING;
         if (AxiomRenderer.isMouseOver(mx, my, backX, buttonY, backW, backH)) {
             goBack();
             return true;
         }
 
         // Purchase button
-        int purchaseW = UIConstants.Size.BUTTON_WIDTH_SMALL;
-        int purchaseH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int purchaseW = 80;
+        int purchaseH = DesignTokens.Component.BUTTON_HEIGHT_LG;
         int purchaseX = width - purchaseW - 10;
         if (AxiomRenderer.isMouseOver(mx, my, purchaseX, buttonY, purchaseW, purchaseH)) {
             purchaseSelected();
@@ -532,8 +701,10 @@ public class EnduranceShopScreen extends Screen {
     }
 
     private void selectCategory(RewardSystem.ShopCategory category) {
+        viewMode = ViewMode.SHOP;
         selectedCategory = category;
         selectedItem = null;
+        scrollOffset = 0;
         updateCategoryItems();
     }
 

@@ -343,7 +343,7 @@ public final class MailboxNetworkHandler extends NetworkHandlerBase {
             return null;
         }
 
-        String trimmed = recipientName.trim();
+        String trimmed = Objects.requireNonNull(recipientName.trim(), "trimmed name");
         ServerPlayer online = sender.server.getPlayerList().getPlayerByName(trimmed);
         if (online != null) {
             return online.getUUID();

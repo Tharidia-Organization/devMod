@@ -1,6 +1,7 @@
 package com.devmod.notification;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -116,7 +117,7 @@ public final class PartyNotificationBridge implements PartyManager.PartyEventLis
         notifyMembersExcluding(party, null, "quest_finished", Map.of("quest", questName));
     }
 
-    private void notifyMembersExcluding(PartyData party, UUID excludeMemberId, String eventType,
+    private void notifyMembersExcluding(PartyData party, @Nullable UUID excludeMemberId, String eventType,
                                         Map<String, String> params) {
         for (UUID memberId : party.getMembers()) {
             if (excludeMemberId != null && memberId.equals(excludeMemberId)) {
@@ -136,7 +137,7 @@ public final class PartyNotificationBridge implements PartyManager.PartyEventLis
 
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
-            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
             if (player != null) {
                 return player.getName().getString();
             }

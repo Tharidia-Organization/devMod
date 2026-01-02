@@ -3,12 +3,14 @@ package com.devmod.client.endurance;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.network.chat.Component;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 
 public class ClientChallengeCache {
@@ -30,8 +32,8 @@ public class ClientChallengeCache {
         for (ChallengeSyncPayload.ChallengeData data : payload.challenges()) {
             challenges.add(new ChallengeDisplayData(
                     data.id(),
-                    Component.translatable(data.nameKey()),
-                    Component.translatable(data.descriptionKey(), data.targetValue()),
+                    Component.translatable(Objects.requireNonNull(data.nameKey())),
+                    Component.translatable(Objects.requireNonNull(data.descriptionKey()), data.targetValue()),
                     getDifficultyName(data.difficulty()),
                     getDifficultyColor(data.difficulty()),
                     data.targetValue(),
@@ -81,11 +83,11 @@ public class ClientChallengeCache {
 
     private int getDifficultyColor(int difficulty) {
         return switch (difficulty) {
-            case 0 -> 0xFF55FF55; // Green
-            case 1 -> 0xFFFFFF55; // Yellow
-            case 2 -> 0xFFFF8800; // Orange
-            case 3 -> 0xFFFF5555; // Red
-            default -> 0xFFAAAAAA;
+            case 0 -> DesignTokens.Semantic.SUCCESS;  // Green - Easy
+            case 1 -> DesignTokens.Semantic.WARNING;  // Yellow - Medium
+            case 2 -> 0xFFFF8800;                     // Orange - Hard
+            case 3 -> DesignTokens.Semantic.ERROR;    // Red - Extreme
+            default -> DesignTokens.Text.MUTED;
         };
     }
 

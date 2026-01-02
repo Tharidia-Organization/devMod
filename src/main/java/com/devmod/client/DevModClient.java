@@ -16,6 +16,7 @@ import com.devmod.DevMod;
 import com.devmod.actions.client.DevModClientActions;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.network.ClientNetworkPayloadHooks;
+import com.devmod.client.overlay.ImpactHudController;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.network.NetworkHandler;
@@ -54,6 +55,10 @@ public class DevModClient {
         event.enqueueWork(() -> {
             SettingsManager.INSTANCE.load();
             DevMod.LOGGER.info("[DevMod] Settings loaded from disk");
+
+            // Initialize Impact HUD Controller (context-aware display modes)
+            ImpactHudController.INSTANCE.initialize();
+            DevMod.LOGGER.info("[DevMod] ImpactHudController initialized");
         }).exceptionally(e -> {
             DevMod.LOGGER.error("[DevMod] Failed to load settings", e);
             return null;

@@ -17,7 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.mailbox.client.ClientTicketCache;
 import com.devmod.mailbox.network.payload.TicketCreatePayload;
 import com.devmod.mailbox.ticket.TicketCategory;
@@ -54,7 +54,7 @@ public class TicketCreateScreen extends Screen {
 
     // Status
     @Nullable private String statusMessage;
-    private int statusColor = UIConstants.Text.MUTED();
+    private int statusColor = DesignTokens.Text.MUTED();
     private long statusMessageAt = 0;
     private static final long STATUS_TTL_MS = 5000;
 
@@ -76,40 +76,33 @@ public class TicketCreateScreen extends Screen {
         panelY = (height - PANEL_HEIGHT) / 2;
 
         // Subject field
-        subjectField = new EditBox(getFont(), panelX + 100, panelY + 60, PANEL_WIDTH - 120, 20,
-            Component.literal("Subject"));
-        subjectField.setMaxLength(100);
-        subjectField.setHint(Component.literal("Brief summary of the issue..."));
-        addRenderableWidget(subjectField);
+        final EditBox subjectBox = new EditBox(getFont(), panelX + 100, panelY + 60, PANEL_WIDTH - 120, 20,
+            Objects.requireNonNull(Component.literal("Subject")));
+        subjectBox.setMaxLength(100);
+        subjectBox.setHint(Objects.requireNonNull(Component.literal("Brief summary of the issue...")));
+        addRenderableWidget(subjectBox);
+        subjectField = subjectBox;
 
         // Description field (multi-line simulation with larger edit box)
-        descriptionField = new EditBox(getFont(), panelX + 100, panelY + 160, PANEL_WIDTH - 120, 20,
-            Component.literal("Description"));
-        descriptionField.setMaxLength(1000);
-        descriptionField.setHint(Component.literal("Describe your issue in detail..."));
-        addRenderableWidget(descriptionField);
+        final EditBox descBox = new EditBox(getFont(), panelX + 100, panelY + 160, PANEL_WIDTH - 120, 20,
+            Objects.requireNonNull(Component.literal("Description")));
+        descBox.setMaxLength(1000);
+        descBox.setHint(Objects.requireNonNull(Component.literal("Describe your issue in detail...")));
+        addRenderableWidget(descBox);
+        descriptionField = descBox;
 
-        // Category buttons
-        categoryButtons = new EditorButton[TicketCategory.values().length];
-        int catX = panelX + 100;
-        int catY = panelY + 100;
-        int catWidth = 80;
-
+        // Category buttons (positioned during render, not init)
+        final EditorButton[] catButtons = new EditorButton[TicketCategory.values().length];
         for (int i = 0; i < TicketCategory.values().length; i++) {
             TicketCategory cat = TicketCategory.values()[i];
             final int index = i;
-            categoryButtons[i] = EditorButton.builder("cat_" + cat.name(), cat.getDisplayName())
+            catButtons[i] = EditorButton.builder("cat_" + cat.name(), cat.getDisplayName())
                 .style(cat == selectedCategory ? EditorButton.Style.PRIMARY : EditorButton.Style.GHOST)
                 .size(EditorButton.Size.SMALL)
                 .onClick(() -> selectCategory(index))
                 .build();
-
-            if (catX + catWidth > panelX + PANEL_WIDTH - 20) {
-                catX = panelX + 100;
-                catY += 26;
-            }
-            catX += catWidth + 5;
         }
+        categoryButtons = catButtons;
 
         // Submit button
         submitButton = EditorButton.builder("submit", "Submit Ticket")
@@ -131,14 +124,15 @@ public class TicketCreateScreen extends Screen {
         selectedPriority = selectedCategory.getDefaultPriority();
 
         // Update button styles
-        if (categoryButtons != null) {
-            for (int i = 0; i < categoryButtons.length; i++) {
-                if (categoryButtons[i] != null) {
-                    categoryButtons[i].style(i == index ? EditorButton.Style.PRIMARY : EditorButton.Style.GHOST);
+        final EditorButton[] catBtns = categoryButtons;
+        if (catBtns != null) {
+            for (int i = 0; i < catBtns.length; i++) {
+                if (catBtns[i] != null) {
+                    catBtns[i].style(i == index ? EditorButton.Style.PRIMARY : EditorButton.Style.GHOST);
                 }
             }
         }
-        UIConstants.Sound.click();
+        DesignTokens.Sound.click();
     }
 
     @Override
@@ -149,7 +143,7 @@ public class TicketCreateScreen extends Screen {
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xE8101820);
 
         // Border
-        int borderColor = UIConstants.Border.DEFAULT();
+        int borderColor = DesignTokens.Border.DEFAULT();
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 1, borderColor);
         graphics.fill(panelX, panelY + PANEL_HEIGHT - 1, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
         graphics.fill(panelX, panelY, panelX + 1, panelY + PANEL_HEIGHT, borderColor);
@@ -157,16 +151,16 @@ public class TicketCreateScreen extends Screen {
 
         // Title
         String title = "Create New Ticket";
-        graphics.drawString(getFont(), title, panelX + 15, panelY + 15, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(getFont(), title, panelX + 15, panelY + 15, DesignTokens.Text.PRIMARY(), false);
 
         // Separator
-        graphics.fill(panelX + 10, panelY + 35, panelX + PANEL_WIDTH - 10, panelY + 36, UIConstants.Border.DEFAULT());
+        graphics.fill(panelX + 10, panelY + 35, panelX + PANEL_WIDTH - 10, panelY + 36, DesignTokens.Border.DEFAULT());
 
         // Subject label
-        graphics.drawString(getFont(), "Subject:", panelX + 15, panelY + 65, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(getFont(), "Subject:", panelX + 15, panelY + 65, DesignTokens.Text.SECONDARY(), false);
 
         // Category label
-        graphics.drawString(getFont(), "Category:", panelX + 15, panelY + 100, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(getFont(), "Category:", panelX + 15, panelY + 100, DesignTokens.Text.SECONDARY(), false);
 
         // Render category buttons
         int catX = panelX + 100;
@@ -187,7 +181,7 @@ public class TicketCreateScreen extends Screen {
         }
 
         // Description label
-        graphics.drawString(getFont(), "Description:", panelX + 15, panelY + 165, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(getFont(), "Description:", panelX + 15, panelY + 165, DesignTokens.Text.SECONDARY(), false);
 
         // Priority indicator
         String priorityText = "Priority: " + selectedPriority.getDisplayName();
@@ -196,7 +190,7 @@ public class TicketCreateScreen extends Screen {
 
         // Hint text
         String hint = "Tip: Select a category to set the default priority. Abuse reports are high priority.";
-        graphics.drawString(getFont(), hint, panelX + 15, panelY + 220, UIConstants.Text.MUTED(), false);
+        graphics.drawString(getFont(), hint, panelX + 15, panelY + 220, DesignTokens.Text.MUTED(), false);
 
         // Buttons
         int buttonY = panelY + PANEL_HEIGHT - 40;
@@ -228,41 +222,43 @@ public class TicketCreateScreen extends Screen {
 
     private int getPriorityColor(TicketPriority priority) {
         return switch (priority) {
-            case LOW -> UIConstants.Text.MUTED();
-            case NORMAL -> UIConstants.Text.PRIMARY();
-            case HIGH -> UIConstants.Accent.GOLD();
-            case URGENT -> UIConstants.Accent.RED();
+            case LOW -> DesignTokens.Text.MUTED();
+            case NORMAL -> DesignTokens.Text.PRIMARY();
+            case HIGH -> DesignTokens.Accent.GOLD();
+            case URGENT -> DesignTokens.Accent.RED();
         };
     }
 
     private void onSubmitClicked() {
-        if (subjectField == null || descriptionField == null) return;
+        final EditBox subjectBox = subjectField;
+        final EditBox descBox = descriptionField;
+        if (subjectBox == null || descBox == null) return;
 
-        String subject = subjectField.getValue().trim();
-        String description = descriptionField.getValue().trim();
+        String subject = subjectBox.getValue().trim();
+        String description = descBox.getValue().trim();
 
         // Validation
         if (subject.isEmpty()) {
-            setStatusMessage("Please enter a subject", UIConstants.Status.WARNING());
-            UIConstants.Sound.warning();
+            setStatusMessage("Please enter a subject", DesignTokens.Status.WARNING());
+            DesignTokens.Sound.warning();
             return;
         }
 
         if (subject.length() < 5) {
-            setStatusMessage("Subject must be at least 5 characters", UIConstants.Status.WARNING());
-            UIConstants.Sound.warning();
+            setStatusMessage("Subject must be at least 5 characters", DesignTokens.Status.WARNING());
+            DesignTokens.Sound.warning();
             return;
         }
 
         if (description.isEmpty()) {
-            setStatusMessage("Please enter a description", UIConstants.Status.WARNING());
-            UIConstants.Sound.warning();
+            setStatusMessage("Please enter a description", DesignTokens.Status.WARNING());
+            DesignTokens.Sound.warning();
             return;
         }
 
         if (description.length() < 20) {
-            setStatusMessage("Description must be at least 20 characters", UIConstants.Status.WARNING());
-            UIConstants.Sound.warning();
+            setStatusMessage("Description must be at least 20 characters", DesignTokens.Status.WARNING());
+            DesignTokens.Sound.warning();
             return;
         }
 
@@ -288,8 +284,8 @@ public class TicketCreateScreen extends Screen {
             0
         ));
 
-        setStatusMessage("Ticket submitted!", UIConstants.Status.SUCCESS());
-        UIConstants.Sound.success();
+        setStatusMessage("Ticket submitted!", DesignTokens.Status.SUCCESS());
+        DesignTokens.Sound.success();
 
         // Close after short delay
         Minecraft.getInstance().tell(() -> onCancelClicked());
@@ -298,7 +294,7 @@ public class TicketCreateScreen extends Screen {
     private void onCancelClicked() {
         Minecraft mc = Minecraft.getInstance();
         mc.setScreen(parentScreen);
-        UIConstants.Sound.click();
+        DesignTokens.Sound.click();
     }
 
     private void setStatusMessage(String message, int color) {
@@ -311,20 +307,12 @@ public class TicketCreateScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
-        // Category buttons
-        int catX = panelX + 100;
-        int catY = panelY + 95;
-        int catWidth = 80;
-
-        if (categoryButtons != null) {
-            for (EditorButton btn : categoryButtons) {
-                if (btn != null) {
-                    if (btn.mouseClicked(mouseX, mouseY, button)) return true;
-                    catX += catWidth + 5;
-                    if (catX + catWidth > panelX + PANEL_WIDTH - 20) {
-                        catX = panelX + 100;
-                        catY += 26;
-                    }
+        // Category buttons (use internal bounds from last render)
+        final EditorButton[] catBtns = categoryButtons;
+        if (catBtns != null) {
+            for (EditorButton btn : catBtns) {
+                if (btn != null && btn.mouseClicked(mouseX, mouseY, button)) {
+                    return true;
                 }
             }
         }

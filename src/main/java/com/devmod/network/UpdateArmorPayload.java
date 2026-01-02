@@ -11,6 +11,18 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.stats.ArmorStats;
 
+/**
+ * Network payload for updating armor stats from the editor UI.
+ * Sent from client to server when a player modifies armor attributes.
+ *
+ * <p><b>CRITICAL:</b> The record field order MUST match the encode/decode order in STREAM_CODEC.
+ * If fields are reordered, added, or removed, update the codec accordingly to prevent
+ * network deserialization errors.</p>
+ *
+ * <p>Field order: isGlobal, slot, physicalReduction, fireReduction, magicReduction,
+ * explosionReduction, projectileReduction, armorBonus, toughnessBonus, knockbackResistance,
+ * thornsEnabled, thornsPercent, shieldReflect, shieldBlockStrength, shieldRecovery, itemName</p>
+ */
 public record UpdateArmorPayload(
     boolean isGlobal,           // true = global config, false = specific item
     int slot,                   // Equipment slot index (0=HEAD, 1=CHEST, 2=LEGS, 3=FEET)

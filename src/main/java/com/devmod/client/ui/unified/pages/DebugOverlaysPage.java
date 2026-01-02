@@ -18,7 +18,8 @@ import com.devmod.client.rendering.PathfindingDebugger;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.scroll.Scrollbar;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.debug.client.DebugRenderBools;
@@ -37,6 +38,8 @@ public class DebugOverlaysPage implements SettingsPage {
 
     // Scroll drag state
     private boolean isDraggingScrollbar = false;
+    private boolean showScrollbar = false;
+    private int lastContentX, lastContentWidth;
     private int lastContentY, lastContentHeight;
     private final EditorButton disableAllBtn = new EditorButton("debug-disable-all", "Disable All").style(EditorButton.Style.DANGER);
     private final EditorButton enableAllBtn = new EditorButton("debug-enable-all", "Enable All").style(EditorButton.Style.SUCCESS);
@@ -55,13 +58,16 @@ public class DebugOverlaysPage implements SettingsPage {
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         // Store dimensions for scroll calculations
+        lastContentX = x;
         lastContentY = y;
+        lastContentWidth = width;
         lastContentHeight = height;
         visibleHeight = height;
 
         // Calculate total content height
         totalContentHeight = calculateContentHeight();
         maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
+        showScrollbar = totalContentHeight > visibleHeight;
 
         // Clamp scroll offset
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
@@ -123,7 +129,7 @@ public class DebugOverlaysPage implements SettingsPage {
             // ==========================================
             // Section: Core Debug
             // ==========================================
-            graphics.drawString(safeFont, "Core Debug Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, "Core Debug Tools", x, currentY, DesignTokens.Text.PRIMARY, false);
             currentY += 14;
 
             // Debug Renderer toggle
@@ -139,7 +145,7 @@ public class DebugOverlaysPage implements SettingsPage {
             currentY += SECTION_SPACING;
 
             // Section: Custom AI Tools
-            graphics.drawString(safeFont, "Custom AI Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, "Custom AI Tools", x, currentY, DesignTokens.Text.PRIMARY, false);
             currentY += 14;
 
             // Line of Sight toggle
@@ -155,7 +161,7 @@ public class DebugOverlaysPage implements SettingsPage {
             currentY += SECTION_SPACING;
 
             // Section: Spatial
-            graphics.drawString(safeFont, "Spatial Analysis", x, currentY, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, "Spatial Analysis", x, currentY, DesignTokens.Text.PRIMARY, false);
             currentY += 14;
 
             // Room Bounds toggle
@@ -166,12 +172,12 @@ public class DebugOverlaysPage implements SettingsPage {
             currentY += SECTION_SPACING;
 
             // Quick actions
-            graphics.drawString(safeFont, "Quick Actions", x, currentY, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, "Quick Actions", x, currentY, DesignTokens.Text.PRIMARY, false);
             currentY += 14;
 
             // Disable All / Enable All buttons
             int buttonWidth = 100;
-            int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
+            int buttonHeight = DesignTokens.Component.BUTTON_HEIGHT_LG;
             int buttonSpacing = 10;
 
             disableAllBtn.onClick(this::disableAll);
@@ -185,7 +191,7 @@ public class DebugOverlaysPage implements SettingsPage {
         }
 
         // Render scrollbar if content exceeds visible area
-        if (totalContentHeight > visibleHeight) {
+        if (showScrollbar) {
             renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, height);
         }
     }
@@ -218,7 +224,7 @@ public class DebugOverlaysPage implements SettingsPage {
 
         // Section: Quick Actions
         height += 14; // Header
-        height += UIConstants.Size.BUTTON_HEIGHT + 10; // Buttons
+        height += DesignTokens.Component.BUTTON_HEIGHT_LG + 10; // Buttons
 
         return height;
     }
@@ -227,18 +233,9 @@ public class DebugOverlaysPage implements SettingsPage {
      * Render the scrollbar.
      */
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
-        // Track background
-        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT());
-
-        // Calculate thumb size and position
-        float visibleRatio = (float) visibleHeight / totalContentHeight;
-        int thumbHeight = Math.max(20, (int) (height * visibleRatio));
-        float scrollRatio = (float) scrollOffset / maxScrollOffset;
-        int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
-
-        // Thumb
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
-        graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
+        Scrollbar.render(graphics, x, y, barWidth, height,
+            scrollOffset, totalContentHeight, visibleHeight,
+            false, isDraggingScrollbar);
     }
 
     /**
@@ -250,27 +247,27 @@ public class DebugOverlaysPage implements SettingsPage {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         @Nonnull String safeLabel = Objects.requireNonNull(label, "label");
         @Nonnull String safeDescription = Objects.requireNonNull(description, "description");
-        int rowWidth = width - 20;
+        int rowWidth = width - 20 - (showScrollbar ? SCROLLBAR_WIDTH + 4 : 0);
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
         if (hovered) {
-            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER());
+            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, DesignTokens.Surface.LEVEL_1);
         }
 
         // Orange indicator for native API
         graphics.fill(x, y + 2, x + 3, y + 12, 0xFFFF8800);
 
         // Label
-        graphics.drawString(safeFont, safeLabel, x + 8, y + 2, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, safeLabel, x + 8, y + 2, DesignTokens.Text.PRIMARY, false);
 
         // Description
-        graphics.drawString(safeFont, safeDescription, x + 8, y + 12, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, safeDescription, x + 8, y + 12, DesignTokens.Text.MUTED, false);
 
         // Toggle switch
-        int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
-        int toggleY = y + (ROW_HEIGHT - UIConstants.Size.TOGGLE_HEIGHT) / 2;
+        int toggleX = x + rowWidth - 36;
+        int toggleY = y + (ROW_HEIGHT - 18) / 2;
         AxiomRenderer.drawToggle(graphics, safeFont, toggleX, toggleY,
-            UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
+            36, 18, enabled, hovered);
 
         return y + ROW_HEIGHT;
     }
@@ -282,46 +279,44 @@ public class DebugOverlaysPage implements SettingsPage {
         @Nonnull String safeLabel = Objects.requireNonNull(label, "label");
         @Nonnull String safeDescription = Objects.requireNonNull(description, "description");
         String safeHotkey = Objects.requireNonNullElse(hotkey, "");
-        int rowWidth = width - 20;
+        int rowWidth = width - 20 - (showScrollbar ? SCROLLBAR_WIDTH + 4 : 0);
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
         // Background on hover
         if (hovered) {
-            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER());
+            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, DesignTokens.Surface.LEVEL_1);
         }
 
         // Label
-        graphics.drawString(safeFont, safeLabel, x, y + 2, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, safeLabel, x, y + 2, DesignTokens.Text.PRIMARY, false);
 
         // Hotkey badge (if present)
         if (!safeHotkey.isEmpty()) {
             int hotkeyX = x + safeFont.width(safeLabel) + 8;
-            graphics.fill(hotkeyX - 2, y, hotkeyX + safeFont.width(safeHotkey) + 2, y + 10, UIConstants.Background.INPUT());
-            graphics.drawString(safeFont, safeHotkey, hotkeyX, y + 1, UIConstants.Text.MUTED(), false);
+            graphics.fill(hotkeyX - 2, y, hotkeyX + safeFont.width(safeHotkey) + 2, y + 10, DesignTokens.Bg.LEVEL_0);
+            graphics.drawString(safeFont, safeHotkey, hotkeyX, y + 1, DesignTokens.Text.MUTED, false);
         }
 
         // Description
-        graphics.drawString(safeFont, safeDescription, x, y + 12, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, safeDescription, x, y + 12, DesignTokens.Text.MUTED, false);
 
         // Toggle switch
-        int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
-        int toggleY = y + (ROW_HEIGHT - UIConstants.Size.TOGGLE_HEIGHT) / 2;
+        int toggleX = x + rowWidth - 36;
+        int toggleY = y + (ROW_HEIGHT - 18) / 2;
         AxiomRenderer.drawToggle(graphics, safeFont, toggleX, toggleY,
-            UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
+            36, 18, enabled, hovered);
 
         return y + ROW_HEIGHT;
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
-        // Check if click is within content area
-        if (mouseX < contentX || mouseX > contentX + contentWidth ||
-            mouseY < contentY || mouseY > contentY + lastContentHeight) {
+        if (button != 0 || !isMouseOverContent(mouseX, mouseY)) {
             return false;
         }
 
         // Check scrollbar click
-        if (totalContentHeight > visibleHeight) {
+        if (showScrollbar) {
             int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
             if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH) {
                 isDraggingScrollbar = true;
@@ -339,7 +334,7 @@ public class DebugOverlaysPage implements SettingsPage {
             }
         }
 
-        int rowWidth = contentWidth - 20 - SCROLLBAR_WIDTH;
+        int rowWidth = contentWidth - 20 - (showScrollbar ? SCROLLBAR_WIDTH + 4 : 0);
         // Apply scroll offset to Y coordinate for hit detection
         int y = contentY - scrollOffset;
 
@@ -488,6 +483,9 @@ public class DebugOverlaysPage implements SettingsPage {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (!showScrollbar || maxScrollOffset <= 0 || !isMouseOverContent(mouseX, mouseY)) {
+            return false;
+        }
         // Scroll speed: 20 pixels per scroll unit
         scrollOffset -= (int) (scrollY * 20);
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
@@ -500,12 +498,15 @@ public class DebugOverlaysPage implements SettingsPage {
             isDraggingScrollbar = false;
             return true;
         }
-        return false;
+        boolean handled = false;
+        handled |= disableAllBtn.mouseReleased(mouseX, mouseY, button);
+        handled |= enableAllBtn.mouseReleased(mouseX, mouseY, button);
+        return handled;
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (isDraggingScrollbar && maxScrollOffset > 0) {
+        if (button == 0 && isDraggingScrollbar && maxScrollOffset > 0) {
             // Calculate thumb dimensions for accurate drag positioning
             float visibleRatio = (float) visibleHeight / totalContentHeight;
             int thumbHeight = Math.max(20, (int) (lastContentHeight * visibleRatio));
@@ -524,5 +525,10 @@ public class DebugOverlaysPage implements SettingsPage {
     @Override
     public int getContentHeight() {
         return calculateContentHeight();
+    }
+
+    private boolean isMouseOverContent(double mouseX, double mouseY) {
+        return mouseX >= lastContentX && mouseX <= lastContentX + lastContentWidth
+            && mouseY >= lastContentY && mouseY <= lastContentY + lastContentHeight;
     }
 }

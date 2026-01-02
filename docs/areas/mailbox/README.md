@@ -1,6 +1,6 @@
 # Sistema Mailbox MMO
 
-> Last updated: 2025-12-26
+> Last updated: 2025-12-30
 > Status: CURRENT (verified against code)
 
 Sistema di mailbox in-game in stile MMO con centro notizie e informazioni utente.
@@ -82,15 +82,25 @@ com.devmod.mailbox/
 │   │   └── TesterTaskScreen.java        # UI task tester
 │   └── notifications/
 │       └── NotificationService + UnifiedToastOverlay # Toast unificati per mail/news
-└── api/
-    ├── MailboxApiServer.java            # Server REST Javalin
-    ├── AuthMiddleware.java              # Auth JWT middleware
-    └── controllers/
-        ├── MessageController.java       # CRUD messaggi
-        ├── NewsController.java          # CRUD news
-        ├── TaskController.java          # CRUD task
-        ├── UserController.java          # Gestione utenti
-        └── ConfigController.java        # Config + stats
+├── api/
+│   ├── MailboxApiServer.java            # Server REST Javalin
+│   ├── AuthMiddleware.java              # Auth JWT middleware
+│   └── controllers/
+│       ├── MessageController.java       # CRUD messaggi
+│       ├── NewsController.java          # CRUD news
+│       ├── TaskController.java          # CRUD task
+│       ├── UserController.java          # Gestione utenti
+│       └── ConfigController.java        # Config + stats
+├── search/
+│   └── MailboxSearchEngine.java         # Ricerca full-text messaggi
+├── template/
+│   └── MessageTemplate.java             # Template messaggi predefiniti
+├── ticket/
+│   ├── TicketManager.java               # Gestione ticket supporto
+│   ├── Ticket.java                      # Record ticket
+│   └── TicketRepository.java            # Persistenza ticket
+└── webhook/
+    └── WebhookDispatcher.java           # Dispatch eventi verso webhook esterni
 ```
 
 ### Network Channels
@@ -220,33 +230,94 @@ NewsManager.INSTANCE.publishNews(
 
 ## Configurazione
 
-Parametri configurabili tramite `MailboxConfig`:
+Parametri configurabili tramite `MailboxConfig` (file `config/devmod/mailbox_config.json`, backup `.bak`).
+
+### Limiti e rate
 
 | Parametro | Default | Descrizione |
 |-----------|---------|-------------|
 | maxMessagesPerPlayer | 100 | Max messaggi per inbox |
 | maxSubjectLength | 128 | Lunghezza max oggetto |
 | maxBodyLength | 2000 | Lunghezza max corpo |
-| defaultMessageTtl | 30 giorni | Scadenza messaggi |
+| defaultMessageTtlDays | 30 | Scadenza messaggi (giorni) |
+| maxAttachmentsPerMessage | 5 | Max allegati per messaggio |
 | maxMessagesPerMinute | 10 | Rate limit invio |
 | maxMessagesPerDay | 0 | Limite giornaliero (0 = disattivo) |
 | maxMessagesPerRecipientPerDay | 0 | Limite giornaliero per destinatario (0 = disattivo) |
 | sendCooldownSeconds | 5 | Cooldown tra invii |
+
+### Broadcast
+
+| Parametro | Default | Descrizione |
+|-----------|---------|-------------|
 | broadcastBatchSize | 500 | Destinatari per batch broadcast |
 | broadcastBatchDelayMs | 0 | Ritardo tra batch broadcast (ms) |
+| broadcastQueueEnabled | false | Accoda i broadcast massivi |
+| broadcastQueueThreshold | 1000 | Soglia destinatari per usare la coda |
+
+### Content filter
+
+| Parametro | Default | Descrizione |
+|-----------|---------|-------------|
+| contentFilterEnabled | true | Abilita filtro contenuti |
+| contentFilterAction | BLOCK | Azione: BLOCK, FLAG, CENSOR |
+| contentFilterWords | [] | Parole proibite |
+| contentFilterPatterns | [] | Regex proibite |
+
+### Player messaging e allegati
+
+| Parametro | Default | Descrizione |
+|-----------|---------|-------------|
 | playerToPlayerEnabled | true | Messaggi tra giocatori |
+| minLevelToSend | 0 | Livello minimo per inviare |
 | itemAttachmentsEnabled | true | Allegati item |
 | currencyAttachmentsEnabled | true | Allegati valuta |
-| messageRetentionDays | 30 giorni | Retention per soft-delete prima del purge |
-| hardDeleteOnUserDelete | false | Elimina subito (hard delete) al delete utente |
+| itemAttachmentWhitelistEnabled | false | Richiede whitelist per allegati item |
+| itemAttachmentWhitelist | [] | Lista item consentiti |
+| itemAttachmentBlacklist | [] | Lista item bloccati |
+| currencyAttachmentAllowed | [] | Valute consentite (vuoto = tutte) |
+| currencyAttachmentMaxAmounts | {} | Massimi per valuta |
 
-Configurazione persistita in `serverconfig/devmod/mailbox_config.json` (backup `.bak`).
+### News
+
+| Parametro | Default | Descrizione |
+|-----------|---------|-------------|
+| maxNewsArticles | 50 | Numero max news |
+| defaultNewsTtlDays | 90 | Scadenza news (giorni) |
+
+### API admin
+
+| Parametro | Default | Descrizione |
+|-----------|---------|-------------|
+| apiEnabled | false | Abilita server API admin |
+| apiPort | 8765 | Porta API admin |
+| apiSecretKey | "" | Segreto login (auto-generato se vuoto) |
+| apiAllowedOrigins | localhost:5173/4173 | Origini CORS consentite |
+
+### Ruoli e permessi
+
+| Parametro | Default | Descrizione |
+|-----------|---------|-------------|
+| useOpLevelForRoles | true | Usa OP level per admin/tester |
+| adminUuids | [] | UUID admin espliciti |
+| testerUuids | [] | UUID tester espliciti |
+| blockedSenderUuids | [] | UUID bloccati in invio |
+| blockedReceiverUuids | [] | UUID bloccati in ricezione |
+
+### Retention e manutenzione
+
+| Parametro | Default | Descrizione |
+|-----------|---------|-------------|
+| maintenanceMode | false | Blocco invii (manutenzione) |
+| messageRetentionDays | 30 | Retention soft-delete (giorni) |
+| hardDeleteOnUserDelete | false | Elimina subito al delete utente |
 
 Per l'admin API, `apiSecretKey` viene generato automaticamente se mancante e salvato su file.
 
 ## Admin API
 
-L'API REST admin e disponibile su `http://localhost:8090/api/` (porta configurabile).
+L'API REST admin e disponibile su `http://localhost:8765/api/` (porta configurabile).
+Ricordati di abilitare `apiEnabled` e di aprire la porta sul firewall.
 
 ### Autenticazione
 
@@ -395,7 +466,7 @@ curl -X PUT http://localhost:8090/api/config \
   }'
 ```
 
-Le modifiche sono persistite automaticamente in `serverconfig/devmod/mailbox_config.json`.
+Le modifiche sono persistite automaticamente in `config/devmod/mailbox_config.json`.
 
 ---
 

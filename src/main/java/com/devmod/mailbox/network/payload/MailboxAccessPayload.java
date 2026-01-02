@@ -6,13 +6,15 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+
+import com.devmod.network.PayloadValidation;
 /**
  * Payload to sync mailbox access flags to the client.
  */
 public record MailboxAccessPayload(
     boolean isAdmin,
     boolean isTester
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<MailboxAccessPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "mailbox_access"))
@@ -37,5 +39,10 @@ public record MailboxAccessPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 2; // two booleans
     }
 }

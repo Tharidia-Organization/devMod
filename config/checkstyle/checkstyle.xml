@@ -26,16 +26,17 @@
             1. java.* (standard library)
             2. javax.* (extensions)
             3. org.* (external: SLF4J, JUnit, DuckDB, etc.)
-            4. com.* (external: Google Gson, Mojang, etc.) - but NOT com.devmod
-            5. net.minecraft.* (Minecraft)
-            6. net.neoforged.* (NeoForge)
-            7. com.devmod.* (our mod)
+            4. io.* (external: Netty, Javalin, etc.)
+            5. com.* (external: Google Gson, Mojang, etc.) - but NOT com.devmod
+            6. net.minecraft.* (Minecraft)
+            7. net.neoforged.* (NeoForge)
+            8. com.devmod.* (our mod)
 
             Within each group, imports are sorted alphabetically.
             Static imports come last.
         -->
         <module name="ImportOrder">
-            <property name="groups" value="java,javax,org,/^com\.(?!devmod\.).*/,net.minecraft,net.neoforged,com.devmod"/>
+            <property name="groups" value="java,javax,org,io,/^com\.(?!devmod\.).*/,net.minecraft,net.neoforged,com.devmod"/>
             <property name="ordered" value="true"/>
             <property name="separated" value="true"/>
             <property name="option" value="bottom"/>

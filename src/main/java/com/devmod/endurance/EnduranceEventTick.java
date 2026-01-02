@@ -24,6 +24,7 @@ import com.devmod.arena.api.ArenaHandle;
 import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
+import com.devmod.runtime.environment.DimensionEnvironmentManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
 
@@ -36,6 +37,7 @@ public class EnduranceEventTick {
     private static final int WAVE_CHECK_INTERVAL = 20; // Check every second
     private static final int ARENA_CLEANUP_INTERVAL = 40; // Check every 2 seconds
     private static final int MOB_VALIDATION_INTERVAL = 60; // Check every 3 seconds
+    private static final int MOB_AI_DEBUG_INTERVAL = 100; // Debug AI state every 5 seconds (just for monitoring)
 
     // ═══════════════════════════════════════════════════════════════
     // MAIN TICK HANDLER
@@ -71,6 +73,10 @@ public class EnduranceEventTick {
             }
             QuestStartSequence.INSTANCE.tick(server);
             EnduranceQuestManager.INSTANCE.tickAsyncBuilds(server);
+
+            // Tick dimension environment manager (enforces frozen time per-dimension)
+            DimensionEnvironmentManager.INSTANCE.tick(server);
+
             tickPendingInstanceStarts(server);
             tickPendingWaveStarts(server);
 
@@ -112,6 +118,11 @@ public class EnduranceEventTick {
         // Mob validation - check wave mobs are alive (every 3 seconds)
         if (tickCounter % MOB_VALIDATION_INTERVAL == 0) {
             validateAndRespawnWaveMobs();
+        }
+
+        // Debug mob AI state (every 2 seconds) - helps diagnose attack issues
+        if (tickCounter % MOB_AI_DEBUG_INTERVAL == 0) {
+            debugMobAttackState();
         }
 
         // Periodic checks (every second)
@@ -551,12 +562,18 @@ public class EnduranceEventTick {
      * This prevents external mobs from interfering with the quest.
      */
     private static void cleanupExternalMobsInArenas() {
+        // Early exit if no active sessions - avoids server lookup
+        var sessions = EnduranceQuestManager.INSTANCE.getActiveSessions();
+        if (sessions.isEmpty()) {
+            LOGGER.trace("[EnduranceQuest] cleanupExternalMobsInArenas: skipped (no active sessions)");
+            return;
+        }
+        LOGGER.trace("[EnduranceQuest] cleanupExternalMobsInArenas: processing {} sessions", sessions.size());
+
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
 
-        for (EnduranceQuestManager.ActiveQuestSession session :
-                EnduranceQuestManager.INSTANCE.getActiveSessions().values()) {
-
+        for (EnduranceQuestManager.ActiveQuestSession session : sessions.values()) {
             ArenaContext arena = session.getArena();
             if (arena == null) {
                 // Arena not yet assigned, skip cleanup for this session
@@ -605,12 +622,18 @@ public class EnduranceEventTick {
      * (not player kills), respawn them to ensure wave can be completed.
      */
     private static void validateAndRespawnWaveMobs() {
+        // Early exit if no active sessions - avoids server lookup
+        var sessions = EnduranceQuestManager.INSTANCE.getActiveSessions();
+        if (sessions.isEmpty()) {
+            LOGGER.trace("[EnduranceQuest] validateAndRespawnWaveMobs: skipped (no active sessions)");
+            return;
+        }
+        LOGGER.trace("[EnduranceQuest] validateAndRespawnWaveMobs: checking {} sessions", sessions.size());
+
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
 
-        for (Map.Entry<UUID, EnduranceQuestManager.ActiveQuestSession> entry :
-                EnduranceQuestManager.INSTANCE.getActiveSessions().entrySet()) {
-
+        for (Map.Entry<UUID, EnduranceQuestManager.ActiveQuestSession> entry : sessions.entrySet()) {
             EnduranceQuestManager.ActiveQuestSession session = entry.getValue();
             EnduranceQuest quest = session.getQuest();
 
@@ -641,6 +664,15 @@ public class EnduranceEventTick {
                 if (entity != null && entity.isAlive()) {
                     aliveMobs++;
                 } else {
+                    // Log dead mob info at debug level (mobs will be cleaned up by respawnMissingMobs)
+                    if (entity == null) {
+                        LOGGER.debug("[EnduranceQuest] Mob {} not found via getEntity() - removed from level", mobId);
+                    } else {
+                        Entity.RemovalReason removalReason = entity.getRemovalReason();
+                        LOGGER.debug("[EnduranceQuest] Mob {} exists but isAlive()={}, isRemoved()={}, removalReason={}",
+                            mobId, entity.isAlive(), entity.isRemoved(),
+                            removalReason != null ? removalReason.name() : "null");
+                    }
                     deadMobIds.add(mobId);
                 }
             }
@@ -652,7 +684,7 @@ public class EnduranceEventTick {
             int missingMobs = expectedAlive - aliveMobs;
 
             if (missingMobs > 0) {
-                LOGGER.warn("[EnduranceQuest] Wave {} has {} missing mobs (external deaths). Respawning...",
+                LOGGER.info("[EnduranceQuest] Wave {} has {} missing mobs (external deaths). Cleaning up and respawning...",
                     waveState.getWaveNumber(), missingMobs);
 
                 // Respawn the missing mobs
@@ -684,6 +716,121 @@ public class EnduranceEventTick {
         if (player != null) {
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.mobs_respawned", successfulRespawns)
                 .withStyle(ChatFormatting.YELLOW)));
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MOB AI DEBUG
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Debug mob attack state and apply fallback targeting to all endurance mobs.
+     * This fixes modded mobs that have custom dimension checks that prevent targeting in dynamic dimensions.
+     */
+    private static void debugMobAttackState() {
+        // Skip entirely if debug logging is disabled - saves iteration overhead
+        if (!LOGGER.isDebugEnabled()) return;
+
+        // Early exit if no active sessions
+        var sessions = EnduranceQuestManager.INSTANCE.getActiveSessions();
+        if (sessions.isEmpty()) return;
+
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return;
+
+        for (EnduranceQuestManager.ActiveQuestSession session : sessions.values()) {
+            ArenaContext arena = session.getArena();
+            if (arena == null) continue;
+
+            Optional<WaveManager.WaveState> waveStateOpt = WaveManager.INSTANCE.getWaveState(arena.getId());
+            if (waveStateOpt.isEmpty()) continue;
+
+            WaveManager.WaveState waveState = waveStateOpt.get();
+            net.minecraft.server.level.ServerLevel level = arena.getLevel();
+
+            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(session.getPlayerId()));
+            if (player == null) continue;
+
+            // Debug only first mob to monitor AI state (targeting handled by EnduranceTargetPlayerGoal)
+            for (UUID mobId : waveState.getSpawnedMobs()) {
+                Entity entity = level.getEntity(Objects.requireNonNull(mobId));
+                if (entity instanceof Mob mob && entity.isAlive()) {
+                    debugSingleMobAttackState(mob, player);
+                    break; // Only debug first mob
+                }
+            }
+        }
+    }
+
+    // NOTE: Fallback targeting is now handled by EnduranceTargetPlayerGoal
+    // registered at spawn time in WaveManager.awakeMobAI()
+
+    /**
+     * Debug a single mob's attack state in detail.
+     */
+    private static void debugSingleMobAttackState(Mob mob, ServerPlayer player) {
+        var target = mob.getTarget();
+        Entity safePlayer = Objects.requireNonNull(player, "player");
+        double distToPlayer = mob.distanceTo(safePlayer);
+        boolean canSee = mob.getSensing().hasLineOfSight(safePlayer);
+
+        // Default melee attack range
+        double attackRange = 2.0;
+
+        // Check navigation state
+        var navigation = mob.getNavigation();
+        boolean isNavigating = navigation.isInProgress();
+        var currentPath = navigation.getPath();
+        boolean hasPath = currentPath != null && !currentPath.isDone();
+
+        // Log running goals - iterate through available goals and check which are running
+        StringBuilder runningGoals = new StringBuilder();
+        StringBuilder runningTargetGoals = new StringBuilder();
+
+        for (var wrappedGoal : mob.goalSelector.getAvailableGoals()) {
+            if (wrappedGoal.isRunning()) {
+                if (runningGoals.length() > 0) runningGoals.append(", ");
+                runningGoals.append(wrappedGoal.getGoal().getClass().getSimpleName());
+            }
+        }
+
+        for (var wrappedGoal : mob.targetSelector.getAvailableGoals()) {
+            if (wrappedGoal.isRunning()) {
+                if (runningTargetGoals.length() > 0) runningTargetGoals.append(", ");
+                runningTargetGoals.append(wrappedGoal.getGoal().getClass().getSimpleName());
+            }
+        }
+
+        // Check if mob is in attack range
+        boolean inAttackRange = distToPlayer <= attackRange + 1.0; // +1 for player hitbox
+
+        // Only log if debug is enabled to avoid string building overhead
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[MobAI Debug] {} -> target={}, dist={}, inRange={}, canSee={}, nav={}, hasPath={}, goals=[{}], targetGoals=[{}]",
+                mob.getType().toString(),
+                target != null ? target.getName().getString() : "NONE",
+                String.format("%.1f", distToPlayer),
+                inAttackRange,
+                canSee,
+                isNavigating,
+                hasPath,
+                runningGoals.length() > 0 ? runningGoals.toString() : "none",
+                runningTargetGoals.length() > 0 ? runningTargetGoals.toString() : "none"
+            );
+
+            // If mob has target but isn't attacking when in range, log more details
+            if (target != null && inAttackRange && canSee) {
+                for (var wrappedGoal : mob.goalSelector.getAvailableGoals()) {
+                    var goal = wrappedGoal.getGoal();
+                    String goalName = goal.getClass().getSimpleName();
+                    if (goalName.contains("Attack") || goalName.contains("Melee")) {
+                        boolean canUse = goal.canUse();
+                        boolean isRunning = wrappedGoal.isRunning();
+                        LOGGER.debug("[MobAI Debug]   Attack goal '{}': canUse={}, isRunning={}, priority={}",
+                            goalName, canUse, isRunning, wrappedGoal.getPriority());
+                    }
+                }
+            }
         }
     }
 }

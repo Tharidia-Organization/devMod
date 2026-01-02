@@ -28,13 +28,13 @@ DevMod testing uses three layers:
 
 ```bash
 # All JUnit tests
-./gradlew test
+./gradlew test --no-build-cache
 
 # Direct tests only (pure logic)
-./gradlew test --tests 'com.devmod.*DirectTest'
+./gradlew test --no-build-cache --tests 'com.devmod.*DirectTest'
 
 # Narrow package
-./gradlew test --tests 'com.devmod.arena.*'
+./gradlew test --no-build-cache --tests 'com.devmod.arena.*'
 
 # GameTests (headless server)
 ./gradlew runGameTestServer

@@ -1,9 +1,12 @@
 package com.devmod.endurance.contracts;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+
+import io.netty.buffer.ByteBuf;
 
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -11,13 +14,12 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
 public record ContractSyncPayload(
     @Nonnull List<ContractData> contracts,
     float totalMultiplier
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<ContractSyncPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "contract_sync")));
@@ -32,6 +34,16 @@ public record ContractSyncPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(contracts.size());
+        for (ContractData contract : contracts) {
+            size += estimateContractSize(contract);
+        }
+        size += 4; // totalMultiplier float
+        return size;
     }
 
     /**
@@ -88,5 +100,37 @@ public record ContractSyncPayload(
             .toList();
 
         return new ContractSyncPayload(Objects.requireNonNull(data), session.getRewardMultiplier());
+    }
+
+    private static int estimateContractSize(ContractData data) {
+        if (data == null) {
+            return 0;
+        }
+        int size = 0;
+        size += estimatedUtfSize(data.id);
+        size += estimatedUtfSize(data.nameKey);
+        size += varIntSize(data.tierOrdinal);
+        size += varIntSize(data.color);
+        size += 4; // multiplier float
+        size += 1; // violated boolean
+        return size;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

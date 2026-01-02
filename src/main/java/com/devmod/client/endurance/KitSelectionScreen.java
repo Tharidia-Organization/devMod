@@ -52,6 +52,9 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.editor.EditorStartTab;
+import com.devmod.client.ui.editor.ItemEditorScreen;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.KitManager;
 import com.devmod.endurance.KitPersistence;
@@ -69,22 +72,29 @@ public class KitSelectionScreen extends Screen {
     private static final int TAB_HEIGHT = 28;
     private static final int SLOT_SIZE = 22;
 
-    // Colors - Professional dark theme
-    private static final int COLOR_BG = 0xFF0D1117;
-    private static final int COLOR_PANEL = 0xFF161B22;
-    private static final int COLOR_PANEL_HEADER = 0xFF21262D;
-    private static final int COLOR_ITEM_BG = 0xFF0D1117;
-    private static final int COLOR_ITEM_HOVER = 0xFF30363D;
-    private static final int COLOR_SLOT_EMPTY = 0xFF21262D;
-    private static final int COLOR_SLOT_FILLED = 0xFF30363D;
-    private static final int COLOR_SLOT_SELECTED = 0xFF1F6FEB;
-    private static final int COLOR_ACCENT = 0xFF58A6FF;
-    private static final int COLOR_ACCENT_GREEN = 0xFF3FB950;
-    private static final int COLOR_ACCENT_ORANGE = 0xFFD29922;
-    private static final int COLOR_ACCENT_PURPLE = 0xFFA371F7;
-    private static final int COLOR_TEXT = 0xFFE6EDF3;
-    private static final int COLOR_TEXT_DIM = 0xFF7D8590;
-    private static final int COLOR_BORDER = 0xFF30363D;
+    // Colors - Using DesignTokens for consistency
+    private static final int COLOR_BG = DesignTokens.Bg.LEVEL_0;
+    private static final int COLOR_PANEL = DesignTokens.Bg.LEVEL_1;
+    private static final int COLOR_PANEL_HEADER = DesignTokens.Surface.LEVEL_1;
+    private static final int COLOR_ITEM_BG = DesignTokens.Bg.LEVEL_0;
+    private static final int COLOR_ITEM_HOVER = DesignTokens.Surface.LEVEL_2;
+    private static final int COLOR_SLOT_EMPTY = DesignTokens.Surface.LEVEL_1;
+    private static final int COLOR_SLOT_FILLED = DesignTokens.Surface.LEVEL_2;
+    private static final int COLOR_SLOT_SELECTED = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_ACCENT = DesignTokens.Accent.SECONDARY;
+    private static final int COLOR_ACCENT_GREEN = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_ACCENT_ORANGE = DesignTokens.Semantic.WARNING;
+    private static final int COLOR_ACCENT_PURPLE = 0xFFA371F7;  // Kit-specific purple (no token equivalent)
+    private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.MUTED;
+    private static final int COLOR_TEXT_INVERSE = DesignTokens.Text.INVERSE;
+    private static final int COLOR_TEXT_WHITE = 0xFFFFFFFF;
+    private static final int COLOR_BORDER = DesignTokens.Stroke.DEFAULT;
+
+    // Button success variants
+    private static final int COLOR_BTN_SUCCESS_HOVER = 0xFF2EA043;
+    private static final int COLOR_BTN_SUCCESS_BORDER_HOVER = 0xFF3FB950;
+    private static final int COLOR_BTN_SUCCESS_BORDER = 0xFF238636;
 
     @Immutable
     @FunctionalInterface
@@ -174,8 +184,6 @@ public class KitSelectionScreen extends Screen {
 
     // UI Components
     @Nullable
-    private EditBox searchBox;
-    @Nullable
     private final Consumer<List<ItemStack>> onKitSelected;
     @Nullable
     private final Screen parentScreen;
@@ -209,7 +217,10 @@ public class KitSelectionScreen extends Screen {
         kitSlots.clear();
         CustomKit kit = editingKit;
         if (kit != null) {
-            List<ItemStack> items = kit.toItemStacks();
+            // Use full restoration to preserve attributes, durability, NBT, etc.
+            var mc = Minecraft.getInstance();
+            var registryAccess = mc.level != null ? mc.level.registryAccess() : null;
+            List<ItemStack> items = kit.toItemStacks(registryAccess);
             int slot = 5;
             for (ItemStack stack : items) {
                 if (!stack.isEmpty()) {
@@ -246,14 +257,14 @@ public class KitSelectionScreen extends Screen {
         int searchWidth = 200;
         int searchX = PANEL_PADDING + 8;
         int searchY = TAB_HEIGHT + PANEL_PADDING + 36;
-        searchBox = new EditBox(safeFont, searchX, searchY, searchWidth, 18, I18n.ui("search"));
-        searchBox.setHint(Objects.requireNonNull(I18n.translate("devmod.kit.search_items")));
-        searchBox.setBordered(true);
-        searchBox.setResponder(query -> {
+        final EditBox box = new EditBox(safeFont, searchX, searchY, searchWidth, 18, I18n.ui("search"));
+        box.setHint(Objects.requireNonNull(I18n.translate("devmod.kit.search_items")));
+        box.setBordered(true);
+        box.setResponder(query -> {
             searchQuery = query;
             filterItems();
         });
-        addRenderableWidget(Objects.requireNonNull(searchBox));
+        addRenderableWidget(box);
     }
 
     private void loadAllItems() {
@@ -346,9 +357,9 @@ public class KitSelectionScreen extends Screen {
                 graphics.fill(tabX, TAB_HEIGHT - 4, tabX + tabW, TAB_HEIGHT - 2, cat.color);
             }
 
-            String label = cat.tabLabel();
+            String label = Objects.requireNonNull(cat.tabLabel());
             int textX = tabX + (tabW - safeFont.width(label)) / 2;
-            graphics.drawString(safeFont, label, textX, 10, selected ? 0xFF000000 : COLOR_TEXT);
+            graphics.drawString(safeFont, label, textX, 10, selected ? COLOR_TEXT_INVERSE : COLOR_TEXT);
 
             tabX += tabW + 4;
         }
@@ -565,7 +576,7 @@ public class KitSelectionScreen extends Screen {
             graphics.renderItem(stack, x + 3, y + 3);
             if (stack.getCount() > 1) {
                 String count = Objects.requireNonNull(String.valueOf(stack.getCount()));
-                graphics.drawString(safeFont, count, x + SLOT_SIZE - safeFont.width(count) - 1, y + SLOT_SIZE - 9, 0xFFFFFFFF);
+                graphics.drawString(safeFont, count, x + SLOT_SIZE - safeFont.width(count) - 1, y + SLOT_SIZE - 9, COLOR_TEXT_WHITE);
             }
             // Enchant indicator
             if (stack.isEnchanted()) {
@@ -607,17 +618,17 @@ public class KitSelectionScreen extends Screen {
         // Use Kit button (prominent)
         int useW = 120;
         boolean useHover = mouseX >= rx - useW && mouseX < rx && mouseY >= btnY && mouseY < btnY + btnH;
-        graphics.fill(rx - useW, btnY, rx, btnY + btnH, useHover ? 0xFF2EA043 : COLOR_ACCENT_GREEN);
-        renderBorder(graphics, rx - useW, btnY, useW, btnH, useHover ? 0xFF3FB950 : 0xFF238636);
-        String useText = I18n.translate("devmod.kit.button.use").getString();
-        graphics.drawString(safeFont, useText, rx - useW + (useW - safeFont.width(useText)) / 2, btnY + 10, 0xFFFFFFFF);
+        graphics.fill(rx - useW, btnY, rx, btnY + btnH, useHover ? COLOR_BTN_SUCCESS_HOVER : COLOR_ACCENT_GREEN);
+        renderBorder(graphics, rx - useW, btnY, useW, btnH, useHover ? COLOR_BTN_SUCCESS_BORDER_HOVER : COLOR_BTN_SUCCESS_BORDER);
+        String useText = Objects.requireNonNull(I18n.translate("devmod.kit.button.use").getString());
+        graphics.drawString(safeFont, useText, rx - useW + (useW - safeFont.width(useText)) / 2, btnY + 10, COLOR_TEXT_WHITE);
 
         // Save button
         int saveW = 110;
         boolean saveHover = mouseX >= rx - useW - saveW - 10 && mouseX < rx - useW - 10 && mouseY >= btnY && mouseY < btnY + btnH;
         graphics.fill(rx - useW - saveW - 10, btnY, rx - useW - 10, btnY + btnH, saveHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
         renderBorder(graphics, rx - useW - saveW - 10, btnY, saveW, btnH, saveHover ? COLOR_ACCENT : COLOR_BORDER);
-        String saveText = I18n.translate("devmod.kit.button.save_preset").getString();
+        String saveText = Objects.requireNonNull(I18n.translate("devmod.kit.button.save_preset").getString());
         graphics.drawString(safeFont, saveText, rx - useW - saveW - 10 + (saveW - safeFont.width(saveText)) / 2, btnY + 10, COLOR_TEXT);
     }
 
@@ -711,7 +722,7 @@ public class KitSelectionScreen extends Screen {
                              mouseY >= btnY && mouseY < btnY + 24;
         graphics.fill(popupX + popupW/2 - 40, btnY, popupX + popupW/2 + 40, btnY + 24, cancelHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
         renderBorder(graphics, popupX + popupW/2 - 40, btnY, 80, 24, cancelHover ? COLOR_ACCENT : COLOR_BORDER);
-        String cancelLabel = I18n.ui("cancel").getString();
+        String cancelLabel = Objects.requireNonNull(I18n.ui("cancel").getString());
         graphics.drawString(safeFont, cancelLabel, popupX + popupW/2 - safeFont.width(cancelLabel) / 2, btnY + 8, COLOR_TEXT);
     }
 
@@ -736,14 +747,16 @@ public class KitSelectionScreen extends Screen {
             dialogX + 10, dialogY + 11, COLOR_TEXT);
 
         // Name input field
-        if (kitNameBox == null) {
-            kitNameBox = new EditBox(safeFont, dialogX + 20, dialogY + 50, dialogW - 40, 20, I18n.ui("kit_name"));
-            kitNameBox.setValue(Objects.requireNonNull(kitNameInput));
-            kitNameBox.setHint(Objects.requireNonNull(I18n.translate("devmod.kit.enter_name")));
-            addRenderableWidget(Objects.requireNonNull(kitNameBox));
+        EditBox nameBox = kitNameBox;
+        if (nameBox == null) {
+            nameBox = new EditBox(safeFont, dialogX + 20, dialogY + 50, dialogW - 40, 20, I18n.ui("kit_name"));
+            nameBox.setValue(Objects.requireNonNull(kitNameInput));
+            nameBox.setHint(Objects.requireNonNull(I18n.translate("devmod.kit.enter_name")));
+            kitNameBox = nameBox;
+            addRenderableWidget(nameBox);
         }
 
-        Objects.requireNonNull(kitNameBox).render(graphics, mouseX, mouseY, 0);
+        nameBox.render(graphics, mouseX, mouseY, 0);
 
         // Buttons
         int btnY = dialogY + dialogH - 40;
@@ -752,7 +765,7 @@ public class KitSelectionScreen extends Screen {
         boolean cancelHover = mouseX >= dialogX + 20 && mouseX < dialogX + 100 && mouseY >= btnY && mouseY < btnY + 26;
         graphics.fill(dialogX + 20, btnY, dialogX + 100, btnY + 26, cancelHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
         renderBorder(graphics, dialogX + 20, btnY, 80, 26, cancelHover ? COLOR_ACCENT : COLOR_BORDER);
-        String cancelLabel = I18n.ui("cancel").getString();
+        String cancelLabel = Objects.requireNonNull(I18n.ui("cancel").getString());
         graphics.drawString(safeFont, cancelLabel,
             dialogX + 20 + (80 - safeFont.width(cancelLabel)) / 2, btnY + 9, COLOR_TEXT);
 
@@ -760,11 +773,11 @@ public class KitSelectionScreen extends Screen {
         boolean saveHover = mouseX >= dialogX + dialogW - 100 && mouseX < dialogX + dialogW - 20 &&
                            mouseY >= btnY && mouseY < btnY + 26;
         graphics.fill(dialogX + dialogW - 100, btnY, dialogX + dialogW - 20, btnY + 26,
-            saveHover ? 0xFF2EA043 : COLOR_ACCENT_GREEN);
-        renderBorder(graphics, dialogX + dialogW - 100, btnY, 80, 26, saveHover ? 0xFF3FB950 : 0xFF238636);
+            saveHover ? COLOR_BTN_SUCCESS_HOVER : COLOR_ACCENT_GREEN);
+        renderBorder(graphics, dialogX + dialogW - 100, btnY, 80, 26, saveHover ? COLOR_BTN_SUCCESS_BORDER_HOVER : COLOR_BTN_SUCCESS_BORDER);
         String saveLabel = "§l" + I18n.ui("save").getString();
         graphics.drawString(safeFont, saveLabel,
-            dialogX + dialogW - 100 + (80 - safeFont.width(saveLabel)) / 2, btnY + 9, 0xFFFFFFFF);
+            dialogX + dialogW - 100 + (80 - safeFont.width(saveLabel)) / 2, btnY + 9, COLOR_TEXT_WHITE);
     }
 
     private void renderTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -1017,6 +1030,12 @@ public class KitSelectionScreen extends Screen {
             // Right click = remove
             kitSlots.remove(slot);
             playRemoveSound();
+        } else if (button == 0 && hasControlDown()) {
+            // Ctrl+left click = open full item editor
+            ItemStack stack = kitSlots.get(slot);
+            if (stack != null && !stack.isEmpty()) {
+                openItemEditor(slot, stack);
+            }
         } else if (button == 0 && hasShiftDown()) {
             // Shift+left click = enchant menu
             ItemStack stack = kitSlots.get(slot);
@@ -1170,8 +1189,9 @@ public class KitSelectionScreen extends Screen {
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        if (showNameDialog && kitNameBox != null && kitNameBox.isFocused()) {
-            return kitNameBox.charTyped(chr, modifiers);
+        final EditBox nameBox = kitNameBox;
+        if (showNameDialog && nameBox != null && nameBox.isFocused()) {
+            return nameBox.charTyped(chr, modifiers);
         }
         return super.charTyped(chr, modifiers);
     }
@@ -1247,6 +1267,36 @@ public class KitSelectionScreen extends Screen {
         playClickSound();
     }
 
+    /**
+     * Opens the full ItemEditor for the item in the specified slot.
+     * When the user applies changes in the editor, the modified item
+     * is returned via callback and placed back in the slot.
+     *
+     * @param slot The kit slot index
+     * @param stack The item to edit
+     */
+    private void openItemEditor(int slot, ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+
+        // Create callback to receive the edited item
+        java.util.function.Consumer<ItemStack> onItemEdited = editedStack -> {
+            if (editedStack != null && !editedStack.isEmpty()) {
+                kitSlots.put(slot, editedStack);
+                LOGGER.debug("Kit slot {} updated with edited item: {}", slot, editedStack.getHoverName().getString());
+            }
+        };
+
+        // Use GENERAL tab as default - the editor will auto-detect the appropriate module
+        EditorStartTab startTab = EditorStartTab.GENERAL;
+
+        // Open the editor with callback support
+        var mc = Minecraft.getInstance();
+        mc.setScreen(new ItemEditorScreen(stack, startTab, this, onItemEdited));
+        playClickSound();
+    }
+
     private void loadAvailableEnchantments(int slot) {
         availableEnchants.clear();
         ItemStack stack = kitSlots.get(slot);
@@ -1275,7 +1325,7 @@ public class KitSelectionScreen extends Screen {
         availableEnchants.sort(Comparator.comparing(e -> e.displayName));
     }
 
-    private String formatEnchantmentName(String path) {
+    private String formatEnchantmentName(@Nonnull String path) {
         return UNDERSCORE_SPLITTER.splitToList(path).stream()
             .map(word -> word.substring(0, 1).toUpperCase(Locale.ROOT) + word.substring(1))
             .reduce((a, b) -> a + " " + b)

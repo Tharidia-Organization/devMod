@@ -27,13 +27,6 @@ import javax.crypto.spec.PBEKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Splitter;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import com.devmod.mailbox.MailboxConfig;
-import com.devmod.mailbox.moderation.AdminAuditLog;
-
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 import io.javalin.http.UnauthorizedResponse;
@@ -41,6 +34,13 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+
+import com.google.common.base.Splitter;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import com.devmod.mailbox.MailboxConfig;
+import com.devmod.mailbox.moderation.AdminAuditLog;
 
 /**
  * JWT authentication middleware for the Mailbox API.
@@ -123,7 +123,7 @@ public final class AuthMiddleware {
 
         if (request == null || request.username() == null || request.password() == null) {
             ctx.status(HttpStatus.BAD_REQUEST);
-            ctx.json(new LoginResponse(false, null, "Missing credentials"));
+            ctx.json(new LoginResponse(false, null, null, "Missing credentials"));
             return;
         }
 
@@ -131,7 +131,7 @@ public final class AuthMiddleware {
         String rateKey = rateLimitKey(ctx, username);
         if (isRateLimited(rateKey)) {
             ctx.status(HttpStatus.TOO_MANY_REQUESTS);
-            ctx.json(new LoginResponse(false, null, "Too many attempts. Try again later."));
+            ctx.json(new LoginResponse(false, null, null, "Too many attempts. Try again later."));
             return;
         }
 
@@ -143,7 +143,7 @@ public final class AuthMiddleware {
             recordFailedAttempt(rateKey);
             LOGGER.warn("Failed login attempt for user: {}", username);
             ctx.status(HttpStatus.UNAUTHORIZED);
-            ctx.json(new LoginResponse(false, null, "Invalid credentials"));
+            ctx.json(new LoginResponse(false, null, null, "Invalid credentials"));
             return;
         }
 
@@ -154,6 +154,7 @@ public final class AuthMiddleware {
 
         // Generate JWT token
         String token = generateToken(user);
+        long expiresAt = Instant.now().toEpochMilli() + TOKEN_VALIDITY_MS;
 
         LOGGER.info("Successful login for user: {}", request.username());
         AdminAuditLog.INSTANCE.log(AdminAuditLog.AuditEntry.builder()
@@ -167,16 +168,25 @@ public final class AuthMiddleware {
                 LOGGER.warn("[Auth] Failed to persist admin login audit log", error);
                 return null;
             });
-        ctx.json(new LoginResponse(true, token, null));
+        ctx.json(new LoginResponse(true, token, expiresAt, null));
     }
 
     /**
      * Validate JWT token - called as before handler.
+     * Also applies per-IP rate limiting for API protection.
      */
     public static void validateToken(Context ctx) {
         // Skip auth for login endpoint
         if (ctx.path().endsWith("/auth/login")) {
             return;
+        }
+
+        // P0: Per-IP rate limiting for API endpoints
+        String ip = ctx.ip();
+        String apiCategory = "api_" + extractEndpointCategory(ctx.path());
+        if (!com.devmod.network.IpRateLimiter.INSTANCE.checkRateLimit(ip, apiCategory)) {
+            ctx.status(HttpStatus.TOO_MANY_REQUESTS);
+            throw new io.javalin.http.HttpResponseException(429, "Rate limit exceeded. Please wait.");
         }
 
         String authHeader = ctx.header("Authorization");
@@ -196,6 +206,23 @@ public final class AuthMiddleware {
             claims.getSubject(),
             claims.get("role", String.class)
         ));
+    }
+
+    /**
+     * Extract endpoint category from path for rate limiting.
+     */
+    private static String extractEndpointCategory(String path) {
+        if (path == null) return "unknown";
+        // Extract first path segment after /api/
+        if (path.startsWith("/api/")) {
+            String remainder = path.substring(5);
+            int slashIndex = remainder.indexOf('/');
+            String segment = slashIndex >= 0 ? remainder.substring(0, slashIndex) : remainder;
+            if (!segment.isEmpty()) {
+                return segment;
+            }
+        }
+        return "general";
     }
 
     /**
@@ -296,7 +323,7 @@ public final class AuthMiddleware {
 
     // DTOs
     public record LoginRequest(String username, String password) {}
-    public record LoginResponse(boolean success, @Nullable String token, @Nullable String error) {}
+    public record LoginResponse(boolean success, @Nullable String token, @Nullable Long expiresAt, @Nullable String error) {}
     public record AdminUser(String username, String passwordHash, String role) {}
     public record AuthenticatedUser(String username, String role) {}
     public record AdminUserStore(List<AdminUser> users) {}

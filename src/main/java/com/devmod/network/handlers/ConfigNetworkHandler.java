@@ -4,22 +4,87 @@ import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import com.devmod.network.ChannelId;
 import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.network.GlobalConfigSyncPayload;
 import com.devmod.network.MobConfigConfirmPayload;
 import com.devmod.network.NetworkHandler;
 import com.devmod.network.PacketValidator;
 import com.devmod.network.PacketValidator.ValidationResult;
+import com.devmod.network.PayloadValidation.PayloadLimits;
 import com.devmod.network.RecipeClientSyncPayload;
+import com.devmod.network.RecipeSyncPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryPacketHandler;
 import com.devmod.util.I18n;
 
-public final class ConfigNetworkHandler extends NetworkHandlerBase {
+import static com.devmod.network.PayloadValidation.validated;
+
+/**
+ * P2: Domain-specific network handler for config/recipe/telemetry payloads.
+ */
+public final class ConfigNetworkHandler extends NetworkHandlerBase implements PayloadRegistrar {
+
+    public static final ConfigNetworkHandler INSTANCE = new ConfigNetworkHandler();
 
     private ConfigNetworkHandler() {}
+
+    // =================================================================================
+    // PAYLOAD REGISTRATION (P2: Domain-specific registration)
+    // =================================================================================
+
+    @Override
+    public String getDomainName() {
+        return "config";
+    }
+
+    @Override
+    public void registerPayloads(RegisterPayloadHandlersEvent event) {
+        // RECIPE_SYNC: Client -> Server recipe modifications
+        event.registrar(ChannelId.RECIPE_SYNC.asString()).playToServer(
+            nn(RecipeSyncPayload.TYPE),
+            nn(RecipeSyncPayload.STREAM_CODEC),
+            validated(ConfigNetworkHandler::handleRecipeSync, PayloadLimits.LARGE)
+        );
+
+        // TELEMETRY_BATCH: Client -> Server telemetry events
+        event.registrar(ChannelId.TELEMETRY_BATCH.asString()).playToServer(
+            nn(TelemetryBatchPayload.TYPE),
+            nn(TelemetryBatchPayload.STREAM_CODEC),
+            validated(ConfigNetworkHandler::handleTelemetryBatch, PayloadLimits.TELEMETRY)
+        );
+
+        // GLOBAL_CONFIG_SYNC: Server -> Client config sync
+        event.registrar(ChannelId.GLOBAL_CONFIG_SYNC.asString()).playToClient(
+            nn(GlobalConfigSyncPayload.TYPE),
+            nn(GlobalConfigSyncPayload.STREAM_CODEC),
+            ConfigNetworkHandler::handleGlobalConfigSync
+        );
+
+        // RECIPE_CLIENT_SYNC: Server -> Client recipe sync
+        event.registrar(ChannelId.RECIPE_CLIENT_SYNC.asString()).playToClient(
+            nn(RecipeClientSyncPayload.TYPE),
+            nn(RecipeClientSyncPayload.STREAM_CODEC),
+            ConfigNetworkHandler::handleRecipeClientSync
+        );
+
+        // EDITOR_APPLY_CONFIRM: Server -> Client editor confirmation
+        event.registrar(ChannelId.EDITOR_APPLY_CONFIRM.asString()).playToClient(
+            nn(EditorApplyConfirmPayload.TYPE),
+            nn(EditorApplyConfirmPayload.STREAM_CODEC),
+            ConfigNetworkHandler::handleEditorApplyConfirm
+        );
+
+        // MOB_CONFIG_CONFIRM: Server -> Client mob config confirmation
+        event.registrar(ChannelId.MOB_CONFIG_CONFIRM.asString()).playToClient(
+            nn(MobConfigConfirmPayload.TYPE),
+            nn(MobConfigConfirmPayload.STREAM_CODEC),
+            ConfigNetworkHandler::handleMobConfigConfirm
+        );
+    }
 
     // =================================================================================
     // RECIPE SYNC (server-side)

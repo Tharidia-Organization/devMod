@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Nullable;
@@ -18,10 +20,17 @@ public class DuckDBConnectionManager implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBConnectionManager.class);
 
     private final Path dbPath;
-    private final ReentrantLock connectionLock = new ReentrantLock();
+    private final ReentrantLock connectionLock = new ReentrantLock(true); // Fair lock
     @Nullable
     private Connection connection;
     private volatile boolean shuttingDown = false;
+
+    // P0-006: Connection acquisition metrics
+    private final AtomicLong totalAcquisitions = new AtomicLong(0);
+    private final AtomicLong acquisitionTimeouts = new AtomicLong(0);
+    private final AtomicLong totalWaitTimeNanos = new AtomicLong(0);
+    private final AtomicLong maxWaitTimeNanos = new AtomicLong(0);
+    private final AtomicLong contentionEvents = new AtomicLong(0);
 
     /**
      * Create a connection manager for the specified database path.
@@ -37,9 +46,17 @@ public class DuckDBConnectionManager implements AutoCloseable {
      * Get the database connection, creating it if necessary.
      *
      * This method is thread-safe. The returned connection should NOT be closed
-     * by the caller - use it and let the manager handle lifecycle.
+     * by the caller - it is a shared connection managed by this class.
      *
-     * @return Active database connection
+     * IMPORTANT: Do NOT use this in try-with-resources that auto-closes Connection!
+     * Correct usage:
+     *   Connection conn = connectionManager.getConnection();
+     *   try (PreparedStatement stmt = conn.prepareStatement(sql)) { ... }
+     *
+     * Incorrect (will break concurrent operations):
+     *   try (Connection conn = connectionManager.getConnection(); ...) { ... }
+     *
+     * @return Active database connection (DO NOT CLOSE)
      * @throws SQLException if connection cannot be established
      */
     public Connection getConnection() throws SQLException {
@@ -47,8 +64,51 @@ public class DuckDBConnectionManager implements AutoCloseable {
             throw new SQLException("DuckDB is shutting down, cannot provide connection");
         }
 
-        connectionLock.lock();
+        // P0-006: Track acquisition metrics
+        long startNanos = System.nanoTime();
+        boolean wasContended = connectionLock.hasQueuedThreads();
+        if (wasContended) {
+            contentionEvents.incrementAndGet();
+        }
+
+        boolean acquired;
         try {
+            // P0-006: Use tryLock with timeout instead of blocking lock()
+            acquired = connectionLock.tryLock(
+                DuckDBConfig.CONNECTION_TIMEOUT_SECONDS,
+                TimeUnit.SECONDS
+            );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SQLException("Connection acquisition interrupted", e);
+        }
+
+        if (!acquired) {
+            acquisitionTimeouts.incrementAndGet();
+            LOGGER.error("[DuckDB] Connection acquisition timeout after {}s (contention: {}, queue: {})",
+                DuckDBConfig.CONNECTION_TIMEOUT_SECONDS, contentionEvents.get(),
+                connectionLock.getQueueLength());
+            throw new SQLException("Connection acquisition timeout - database may be overloaded");
+        }
+
+        try {
+            // P0-006: Record wait time metrics
+            long waitNanos = System.nanoTime() - startNanos;
+            totalWaitTimeNanos.addAndGet(waitNanos);
+            totalAcquisitions.incrementAndGet();
+
+            // Update max wait time atomically
+            long currentMax;
+            do {
+                currentMax = maxWaitTimeNanos.get();
+                if (waitNanos <= currentMax) break;
+            } while (!maxWaitTimeNanos.compareAndSet(currentMax, waitNanos));
+
+            // Warn if wait time is excessive (> 1 second)
+            if (waitNanos > 1_000_000_000L) {
+                LOGGER.warn("[DuckDB] Slow connection acquisition: {}ms", waitNanos / 1_000_000);
+            }
+
             Connection conn = connection;
             if (conn == null || conn.isClosed()) {
                 conn = createConnectionWithRetry();
@@ -57,6 +117,24 @@ public class DuckDBConnectionManager implements AutoCloseable {
             return conn;
         } finally {
             connectionLock.unlock();
+        }
+    }
+
+    /**
+     * Get the database connection without checked exception.
+     *
+     * Same as {@link #getConnection()} but wraps SQLException in RuntimeException.
+     * Useful when calling from lambda expressions or contexts where checked
+     * exceptions are inconvenient.
+     *
+     * @return Active database connection (DO NOT CLOSE)
+     * @throws RuntimeException wrapping SQLException if connection fails
+     */
+    public Connection getConnectionUnchecked() {
+        try {
+            return getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get DuckDB connection", e);
         }
     }
 
@@ -486,5 +564,105 @@ public class DuckDBConnectionManager implements AutoCloseable {
 
         LOGGER.info("[DuckDB] Startup validation PASSED");
         return true;
+    }
+
+    // ============================================
+    // P0-006: CONNECTION METRICS
+    // ============================================
+
+    /**
+     * Get connection acquisition statistics for monitoring.
+     *
+     * @return ConnectionMetrics snapshot
+     */
+    public ConnectionMetrics getConnectionMetrics() {
+        return new ConnectionMetrics(
+            totalAcquisitions.get(),
+            acquisitionTimeouts.get(),
+            contentionEvents.get(),
+            totalWaitTimeNanos.get(),
+            maxWaitTimeNanos.get(),
+            connectionLock.getQueueLength(),
+            connectionLock.isLocked()
+        );
+    }
+
+    /**
+     * Reset connection metrics (useful for periodic reporting).
+     */
+    public void resetConnectionMetrics() {
+        totalAcquisitions.set(0);
+        acquisitionTimeouts.set(0);
+        contentionEvents.set(0);
+        totalWaitTimeNanos.set(0);
+        maxWaitTimeNanos.set(0);
+        LOGGER.debug("[DuckDB] Connection metrics reset");
+    }
+
+    /**
+     * Log current connection metrics at INFO level.
+     */
+    public void logConnectionMetrics() {
+        ConnectionMetrics m = getConnectionMetrics();
+        if (m.totalAcquisitions() == 0) {
+            LOGGER.info("[DuckDB] Connection metrics: no acquisitions yet");
+            return;
+        }
+
+        double avgWaitMs = m.totalAcquisitions() > 0
+            ? (double) m.totalWaitTimeNanos() / m.totalAcquisitions() / 1_000_000.0
+            : 0;
+        double maxWaitMs = m.maxWaitTimeNanos() / 1_000_000.0;
+        double timeoutRate = m.totalAcquisitions() > 0
+            ? (double) m.acquisitionTimeouts() / m.totalAcquisitions() * 100
+            : 0;
+
+        LOGGER.info("[DuckDB] Connection metrics: acquisitions={}, timeouts={} ({}%), " +
+            "contention={}, avgWait={}ms, maxWait={}ms, queueLen={}",
+            m.totalAcquisitions(), m.acquisitionTimeouts(),
+            String.format("%.2f", timeoutRate),
+            m.contentionEvents(),
+            String.format("%.2f", avgWaitMs),
+            String.format("%.2f", maxWaitMs),
+            m.currentQueueLength());
+    }
+
+    /**
+     * Immutable snapshot of connection metrics.
+     */
+    public record ConnectionMetrics(
+        long totalAcquisitions,
+        long acquisitionTimeouts,
+        long contentionEvents,
+        long totalWaitTimeNanos,
+        long maxWaitTimeNanos,
+        int currentQueueLength,
+        boolean isLocked
+    ) {
+        /**
+         * Calculate average wait time in milliseconds.
+         */
+        public double avgWaitTimeMs() {
+            return totalAcquisitions > 0
+                ? (double) totalWaitTimeNanos / totalAcquisitions / 1_000_000.0
+                : 0;
+        }
+
+        /**
+         * Calculate timeout rate as percentage.
+         */
+        public double timeoutRatePercent() {
+            return totalAcquisitions > 0
+                ? (double) acquisitionTimeouts / totalAcquisitions * 100
+                : 0;
+        }
+
+        /**
+         * Check if contention is high (> 10% of acquisitions).
+         */
+        public boolean isHighContention() {
+            return totalAcquisitions > 0 &&
+                (double) contentionEvents / totalAcquisitions > 0.1;
+        }
     }
 }

@@ -29,8 +29,8 @@ public class AccessoriesCompat implements CompatModule {
     private static boolean apiAvailable = false;
 
     // Cached reflection references
-    private static Class<?> accessoriesApiClass;
-    private static Method getCapabilityMethod;
+    @Nullable private static Class<?> accessoriesApiClass;
+    @Nullable private static Method getCapabilityMethod;
 
     // Common slot types
     public static final String SLOT_RING = "ring";
@@ -103,7 +103,8 @@ public class AccessoriesCompat implements CompatModule {
                 }
             }
 
-            if (accessoriesApiClass != null) {
+            final Class<?> apiClass = accessoriesApiClass;
+            if (apiClass != null) {
                 // Verify required API classes exist and load capability method
                 try {
                     // Verify container classes exist (not stored, just validated)
@@ -111,7 +112,7 @@ public class AccessoriesCompat implements CompatModule {
                     Class.forName("io.wispforest.accessories.api.slot.SlotReference");
 
                     // Get API methods
-                    getCapabilityMethod = accessoriesApiClass.getMethod(
+                    getCapabilityMethod = apiClass.getMethod(
                         "getCapability", LivingEntity.class);
 
                     apiAvailable = true;
@@ -159,12 +160,13 @@ public class AccessoriesCompat implements CompatModule {
      */
     @Nullable
     public static Object getCapability(LivingEntity entity) {
-        if (!apiAvailable || entity == null || getCapabilityMethod == null) {
+        final Method capabilityMethod = getCapabilityMethod;
+        if (!apiAvailable || entity == null || capabilityMethod == null) {
             return null;
         }
 
         try {
-            Object result = getCapabilityMethod.invoke(null, entity);
+            Object result = capabilityMethod.invoke(null, entity);
             if (result instanceof Optional<?>) {
                 return ((Optional<?>) result).orElse(null);
             }

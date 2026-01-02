@@ -18,6 +18,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 
+import net.neoforged.neoforge.network.PacketDistributor;
+
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.combat.signature.SoulImprintManager;
 import com.devmod.endurance.challenges.DailyChallengeManager;
@@ -78,7 +80,10 @@ public class EnduranceEventCombat {
                     } else {
                         actionType = ComboSystem.ActionType.LIGHT_ATTACK;
                     }
-                    comboSession.registerAction(actionType, damage);
+                    ComboSystem.ActionResult result = comboSession.registerAction(actionType, damage);
+
+                    // Sync combat flow state to client
+                    syncCombatFlowToClient(player, actionType.displayName, result.styleEarned());
 
                     // Update tension system with combo progress
                     if (target instanceof Mob mob) {
@@ -285,8 +290,9 @@ public class EnduranceEventCombat {
 
             // Record kill in combo system
             ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
+            ComboSystem.ActionResult killResult = null;
             if (comboSession != null) {
-                comboSession.registerKill(false, 0); // Basic kill
+                killResult = comboSession.registerKill(false, 0); // Basic kill
             }
 
             // Process momentum gain from kill
@@ -295,6 +301,12 @@ public class EnduranceEventCombat {
                 // State changed - could trigger sound/visual effects here
                 LOGGER.debug("[Momentum] Player {} state changed to {}", playerId, momentumResult.state());
             }
+
+            // Sync combat flow state after kill (includes momentum update)
+            String killAction = killResult != null && killResult.announcement() != null
+                ? killResult.announcement().action.displayName : "Kill";
+            int killPoints = killResult != null ? killResult.styleEarned() : 0;
+            syncCombatFlowToClient(player, killAction, killPoints);
 
             // Track kill during Phoenix Rising for bonus rewards
             ComebackSystem.INSTANCE.recordKill(playerId);
@@ -470,4 +482,33 @@ public class EnduranceEventCombat {
     }
 
     private record CriticalHitMarker(int targetId, long timestamp) {}
+
+    // ═══════════════════════════════════════════════════════════════
+    // COMBAT FLOW SYNC
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Syncs combat flow state (combo, style, momentum) to the client.
+     * Call after any combo action or momentum change.
+     */
+    public static void syncCombatFlowToClient(ServerPlayer player, String lastAction, int lastPoints) {
+        if (player == null) return;
+
+        UUID playerId = player.getUUID();
+        ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
+        MomentumTracker.MomentumSession momentumSession = MomentumTracker.INSTANCE.getSession(playerId);
+
+        CombatFlowSyncPayload payload = CombatFlowSyncPayload.fromSession(
+            comboSession, momentumSession, lastAction, lastPoints
+        );
+
+        PacketDistributor.sendToPlayer(player, Objects.requireNonNull(payload));
+    }
+
+    /**
+     * Syncs combat flow state without action info.
+     */
+    public static void syncCombatFlowToClient(ServerPlayer player) {
+        syncCombatFlowToClient(player, "", 0);
+    }
 }

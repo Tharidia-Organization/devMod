@@ -3,19 +3,28 @@ package com.devmod.mailbox.network.payload;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+
+import com.devmod.network.PayloadValidation;
 
 /**
  * Unified payload for mailbox actions (read, delete, claim).
  * Reduces the number of payload classes while maintaining type safety.
  */
 public record MailboxActionPayload(
-    Action action,
-    UUID messageId
-) implements CustomPacketPayload {
+    @Nonnull Action action,
+    @Nonnull UUID messageId
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
+
+    public MailboxActionPayload {
+        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(messageId, "messageId");
+    }
 
     public static final Type<MailboxActionPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "mailbox_action"))
@@ -88,5 +97,10 @@ public record MailboxActionPayload(
             }
             return READ;
         }
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 1 + 16; // VarInt for action + UUID
     }
 }

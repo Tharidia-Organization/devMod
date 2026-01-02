@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.mailbox.ticket.TicketCategory;
 import com.devmod.mailbox.ticket.TicketPriority;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Payload for creating a new ticket from client to server.
@@ -18,7 +19,7 @@ public record TicketCreatePayload(
     TicketPriority priority,
     String subject,
     String description
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     // Security limits
     private static final int MAX_SUBJECT_LENGTH = 256;
@@ -41,10 +42,10 @@ public record TicketCreatePayload(
     }
 
     private static void encode(RegistryFriendlyByteBuf buf, TicketCreatePayload payload) {
-        buf.writeEnum(payload.category);
-        buf.writeEnum(payload.priority);
-        buf.writeUtf(payload.subject);
-        buf.writeUtf(payload.description);
+        buf.writeEnum(Objects.requireNonNull(payload.category));
+        buf.writeEnum(Objects.requireNonNull(payload.priority));
+        buf.writeUtf(Objects.requireNonNull(payload.subject));
+        buf.writeUtf(Objects.requireNonNull(payload.description));
     }
 
     private static TicketCreatePayload decode(RegistryFriendlyByteBuf buf) {
@@ -59,5 +60,31 @@ public record TicketCreatePayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(category.ordinal()) + varIntSize(priority.ordinal());
+        size += estimatedUtfSize(subject);
+        size += estimatedUtfSize(description);
+        return size;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

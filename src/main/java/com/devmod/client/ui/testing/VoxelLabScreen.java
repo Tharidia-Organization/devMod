@@ -19,14 +19,14 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 @OnlyIn(Dist.CLIENT)
 public class VoxelLabScreen extends Screen {
 
     private static final int HEADER_HEIGHT = 50;
     private static final int TAB_BAR_HEIGHT = 32;
-    private static final int PADDING = UIConstants.Spacing.PADDING_LG;
+    private static final int PADDING = DesignTokens.Spacing.PADDING_LG;
     private static final int TAB_SPACING = 4;
 
     // Tab management
@@ -167,7 +167,7 @@ public class VoxelLabScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
-        graphics.fill(0, 0, width, height, UIConstants.Background.CONTENT());
+        graphics.fill(0, 0, width, height, DesignTokens.Background.CONTENT());
 
         var font = Objects.requireNonNull(this.font, "font");
 
@@ -189,11 +189,11 @@ public class VoxelLabScreen extends Screen {
     private void renderHeader(GuiGraphics graphics, net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
         Font safeFont = Objects.requireNonNull(font, "font");
         // Title
-        graphics.drawString(safeFont, "Voxel Lab", PADDING, PADDING, UIConstants.Text.TITLE(), false);
+        graphics.drawString(safeFont, "Voxel Lab", PADDING, PADDING, DesignTokens.Text.TITLE(), false);
 
         // Subtitle with tab description
         String subtitle = Objects.requireNonNull(activeTab.getDescription(), "subtitle");
-        graphics.drawString(safeFont, subtitle, PADDING, PADDING + 14, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, subtitle, PADDING, PADDING + 14, DesignTokens.Text.SECONDARY(), false);
 
         // Close button
         int closeX = width - PADDING - 24;
@@ -206,7 +206,7 @@ public class VoxelLabScreen extends Screen {
         int tabY = HEADER_HEIGHT - 6;
 
         // Tab bar background
-        graphics.fill(0, tabY, width, tabY + TAB_BAR_HEIGHT, UIConstants.Background.PANEL());
+        graphics.fill(0, tabY, width, tabY + TAB_BAR_HEIGHT, DesignTokens.Background.PANEL());
 
         // Render tab buttons
         int tabX = PADDING;
@@ -220,7 +220,7 @@ public class VoxelLabScreen extends Screen {
         }
 
         // Bottom border
-        graphics.fill(0, tabY + TAB_BAR_HEIGHT - 1, width, tabY + TAB_BAR_HEIGHT, UIConstants.Border.DEFAULT());
+        graphics.fill(0, tabY + TAB_BAR_HEIGHT - 1, width, tabY + TAB_BAR_HEIGHT, DesignTokens.Border.DEFAULT());
     }
 
     private int calculateTabWidth(VoxelLabTab tab) {

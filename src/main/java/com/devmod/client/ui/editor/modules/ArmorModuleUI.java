@@ -17,8 +17,8 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.debug.DebugInfoSection;
 import com.devmod.client.ui.editor.debug.ItemDebugInfo;
 import com.devmod.client.ui.editor.debug.ValueComparison;
@@ -139,7 +139,7 @@ public class ArmorModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DEFENSE)
+            .trackColor(DesignTokens.SliderColors.DEFENSE)
             .showInput(true)
             .source(source)
             .info("Reduces physical damage (melee attacks, falls). Max 80%. Formula: Damage * (1 - Reduction%). Stacks with armor value.")
@@ -149,7 +149,7 @@ public class ArmorModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
             .info("Reduces fire damage (burning, lava, Fire Aspect). Max 80%. Similar to Fire Protection enchant.")
@@ -159,7 +159,7 @@ public class ArmorModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(source)
             .info("Reduces magic damage (potions, Guardians, Evokers). Max 80%. Bypassed by true damage.")
@@ -169,7 +169,7 @@ public class ArmorModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
             .info("Reduces explosion damage (Creepers, TNT, Ghast fireballs). Max 80%. Similar to Blast Protection.")
@@ -179,7 +179,7 @@ public class ArmorModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DEFENSE)
+            .trackColor(DesignTokens.SliderColors.DEFENSE)
             .showInput(true)
             .source(source)
             .info("Reduces projectile damage (arrows, tridents, fireballs). Max 80%. Similar to Projectile Protection.")
@@ -193,7 +193,7 @@ public class ArmorModuleUI {
             .step(1f)
             .format("+%.0f")
             .suffix(" pts")
-            .trackColor(UIConstants.SliderColors.DEFENSE)
+            .trackColor(DesignTokens.SliderColors.DEFENSE)
             .showInput(true)
             .source(source)
             .info("Adds to armor points (shields icon). Each point reduces damage by ~4% up to 80% cap. Uses minecraft:armor attribute.")
@@ -203,7 +203,7 @@ public class ArmorModuleUI {
             .step(0.5f)
             .format("+%.1f")
             .suffix(" pts")
-            .trackColor(UIConstants.SliderColors.DEFENSE)
+            .trackColor(DesignTokens.SliderColors.DEFENSE)
             .showInput(true)
             .source(source)
             .info("Reduces armor effectiveness loss from heavy hits. Diamond/Netherite have 2-3 base. Uses minecraft:armor_toughness.")
@@ -213,7 +213,7 @@ public class ArmorModuleUI {
             .step(5f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(source)
             .info("Reduces knockback from hits. 100% = no knockback. Netherite gives 10% per piece. Uses minecraft:knockback_resistance.")
@@ -232,7 +232,7 @@ public class ArmorModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
             .info("Reflects damage back to attacker. 50% means attacker takes half the damage they dealt. Only works if Thorns Reflect is enabled.")
@@ -251,7 +251,7 @@ public class ArmorModuleUI {
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.DEFENSE)
+            .trackColor(DesignTokens.SliderColors.DEFENSE)
             .showInput(true)
             .source(source)
             .info("Damage blocked when shielding. 1.0 = full block, 0.5 = half damage still passes through.")
@@ -261,7 +261,7 @@ public class ArmorModuleUI {
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("How fast the shield recovers after being disabled by an axe. 2.0 = instant recovery, 0.5 = very slow.")
@@ -275,7 +275,7 @@ public class ArmorModuleUI {
             .step(0.05f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(source)
             .info("Base transparency of the energy shield. 1.0 = fully opaque, 0.1 = barely visible.")
@@ -290,7 +290,7 @@ public class ArmorModuleUI {
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(source)
             .info("Strength of the edge glow effect. Higher = brighter edges.")
@@ -300,7 +300,7 @@ public class ArmorModuleUI {
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(source)
             .info("Animated energy field noise pattern intensity. 0 = smooth, 0.5 = very turbulent.")
@@ -310,7 +310,7 @@ public class ArmorModuleUI {
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("Speed of shield animation effects. 1.0 = normal, 2.0 = double speed.")
@@ -327,7 +327,7 @@ public class ArmorModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix("°")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(source)
             .info("Maximum random angle for deflected projectiles. 0° = perfect reflection, 30° = very scattered.")
@@ -342,7 +342,7 @@ public class ArmorModuleUI {
             .step(0.05f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("Projectile speed after deflection. 100% = same speed, 50% = half speed, 150% = faster.")
@@ -356,7 +356,7 @@ public class ArmorModuleUI {
             .step(1f)
             .format("%.0f")
             .suffix(" dmg")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
             .info("Damage required in a single hit to break the shield. Higher = more durable.")
@@ -371,7 +371,7 @@ public class ArmorModuleUI {
             .step(0.5f)
             .format("%.1f")
             .suffix("s")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("Seconds before shield starts regenerating after being shattered.")
@@ -631,7 +631,7 @@ public class ArmorModuleUI {
         if (mc != null && mc.keyboardHandler != null) {
             mc.keyboardHandler.setClipboard(Objects.requireNonNull(safePayload, "payload cannot be null"));
         }
-        module.reportStatusPublic("Debug info copied!", UIConstants.Accent.GREEN());
+        module.reportStatusPublic("Debug info copied!", DesignTokens.Accent.GREEN());
     }
 
     private String buildDebugClipboardText(ItemDebugInfo info, List<ValueComparison> comparisons,
@@ -691,11 +691,11 @@ public class ArmorModuleUI {
 
     private class EhpPreviewSection implements EditorSection.CustomSection {
         private static final int HEIGHT_EXTRA = 14;
-        private static final int TEXT_OFFSET_Y = UIConstants.Spacing.SM;
+        private static final int TEXT_OFFSET_Y = DesignTokens.Spacing.SM;
 
         @Override public String getId() { return "ehpPreview"; }
         @Override public String getLabel() { return "EHP Preview"; }
-        @Override public int getHeight() { return UIConstants.Spacing.LG + HEIGHT_EXTRA; }
+        @Override public int getHeight() { return DesignTokens.Spacing.LG + HEIGHT_EXTRA; }
 
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
@@ -705,7 +705,7 @@ public class ArmorModuleUI {
             int textWidth = font.width(Objects.requireNonNull(text, "text"));
             int x = bounds.x() + (bounds.width() - textWidth) / 2;
             int y = bounds.y() + TEXT_OFFSET_Y;
-            graphics.drawString(font, text, x, y, UIConstants.Text.VALUE(), false);
+            graphics.drawString(font, text, x, y, DesignTokens.Text.VALUE(), false);
         }
     }
 }

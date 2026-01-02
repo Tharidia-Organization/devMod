@@ -1,0 +1,35 @@
+{
+  "mobId": "minecraft:wither",
+  "biome": {
+    "preferred": "minecraft:nether_wastes",
+    "validBiomes": [],
+    "required": false
+  },
+  "light": {
+    "min": 0,
+    "max": 15,
+    "prefersDark": false,
+    "prefersLight": false
+  },
+  "floor": {
+    "blocks": ["minecraft:obsidian", "minecraft:bedrock", "minecraft:netherrack"],
+    "requiresSolid": true,
+    "canSpawnOnLiquid": false,
+    "canSpawnInAir": true,
+    "preferred": "minecraft:obsidian"
+  },
+  "space": {
+    "width": 0.9,
+    "height": 3.5,
+    "clearanceAbove": 10.0,
+    "clearanceAround": 8.0
+  },
+  "time": "ANY",
+  "boss": {
+    "isBoss": true,
+    "minPlayers": 1,
+    "requiresActivation": true,
+    "activationItem": "minecraft:wither_skeleton_skull",
+    "activationStructure": "wither_spawn_structure"
+  }
+}

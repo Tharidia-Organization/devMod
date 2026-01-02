@@ -166,6 +166,46 @@ public final class DuckDBConfig {
     public static int LOG_BACKPRESSURE_SAMPLE_RATE = getInt("devmod.duckdb.log_backpressure_sample", "DEVMOD_DUCKDB_LOG_BACKPRESSURE_SAMPLE", 100);
 
     // ============================================
+    // P2: SAMPLING CONTROLS
+    // ============================================
+
+    /**
+     * Global sampling master switch.
+     * When false, all events are recorded (no sampling).
+     * When true, per-category sampling rates apply.
+     */
+    public static boolean SAMPLING_ENABLED = getBoolean("devmod.duckdb.sampling_enabled", "DEVMOD_DUCKDB_SAMPLING_ENABLED", true);
+
+    /**
+     * Sampling rate for LOW priority events (0.0-1.0).
+     * Examples: player_snapshots, player_attribute_changes, spatial_heatmaps
+     * Default: 10% (0.1) - these are high-volume, low-value events
+     */
+    public static double SAMPLE_RATE_LOW = getDouble("devmod.duckdb.sample_rate_low", "DEVMOD_DUCKDB_SAMPLE_RATE_LOW", 0.1);
+
+    /**
+     * Sampling rate for NORMAL priority events (0.0-1.0).
+     * Examples: player_abilities, spatial_alerts, spatial_room_transitions
+     * Default: 50% (0.5) - moderate volume
+     */
+    public static double SAMPLE_RATE_NORMAL = getDouble("devmod.duckdb.sample_rate_normal", "DEVMOD_DUCKDB_SAMPLE_RATE_NORMAL", 0.5);
+
+    /**
+     * Sampling rate for HIGH priority events (0.0-1.0).
+     * Examples: combat_spawns, combat_heals, endurance_combos
+     * Default: 100% (1.0) - important gameplay events
+     */
+    public static double SAMPLE_RATE_HIGH = getDouble("devmod.duckdb.sample_rate_high", "DEVMOD_DUCKDB_SAMPLE_RATE_HIGH", 1.0);
+
+    /**
+     * Sampling rate for CRITICAL priority events (0.0-1.0).
+     * Examples: combat_hits, combat_deaths, endurance_sessions
+     * Default: 100% (1.0) - NEVER sample critical events
+     * Note: This should always be 1.0 - configurable for edge cases only
+     */
+    public static double SAMPLE_RATE_CRITICAL = getDouble("devmod.duckdb.sample_rate_critical", "DEVMOD_DUCKDB_SAMPLE_RATE_CRITICAL", 1.0);
+
+    // ============================================
     // CONFIG RESOLUTION HELPERS
     // ============================================
 
@@ -227,6 +267,28 @@ public final class DuckDBConfig {
         if (value != null) {
             try {
                 return Long.parseLong(value.trim());
+            } catch (NumberFormatException ignored) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
+    }
+
+    /**
+     * Get double value from JVM property or environment variable.
+     * Priority: JVM property > env var > defaultValue
+     * Values are clamped to [0.0, 1.0] for sampling rates.
+     */
+    private static double getDouble(String jvmProp, String envVar, double defaultValue) {
+        String value = System.getProperty(jvmProp);
+        if (value == null) {
+            value = System.getenv(envVar);
+        }
+        if (value != null) {
+            try {
+                double parsed = Double.parseDouble(value.trim());
+                // Clamp to valid sampling range
+                return Math.max(0.0, Math.min(1.0, parsed));
             } catch (NumberFormatException ignored) {
                 return defaultValue;
             }

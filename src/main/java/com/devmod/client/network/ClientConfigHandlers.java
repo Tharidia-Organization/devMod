@@ -66,7 +66,8 @@ public final class ClientConfigHandlers {
      */
     public static void handleEditorApplyConfirm(EditorApplyConfirmPayload payload) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+        var player = mc.player;
+        if (player == null) return;
 
         Component message;
         if (payload.success()) {
@@ -77,7 +78,7 @@ public final class ClientConfigHandlers {
         } else {
             message = I18n.errorWithDetails("devmod.editor.apply.failed", payload.message());
         }
-        mc.player.displayClientMessage(message, false);
+        player.displayClientMessage(message, false);
 
         LOGGER.debug("[DevMod] Editor apply confirm: success={}, global={}, scope={}, item={}",
             payload.success(), payload.global(), payload.scope(), payload.itemId());
@@ -89,7 +90,8 @@ public final class ClientConfigHandlers {
      */
     public static void handleMobConfigConfirm(MobConfigConfirmPayload payload) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+        var player = mc.player;
+        if (player == null) return;
 
         Component message;
         if (payload.success()) {
@@ -102,7 +104,7 @@ public final class ClientConfigHandlers {
         } else {
             message = I18n.errorWithDetails("devmod.mob.config.failed", payload.message());
         }
-        mc.player.displayClientMessage(message, false);
+        player.displayClientMessage(message, false);
 
         LOGGER.debug("[DevMod] Mob config confirm: success={}, global={}, mob={}, affected={}",
             payload.success(), payload.isGlobal(), payload.mobTypeName(), payload.affectedCount());

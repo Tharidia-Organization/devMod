@@ -1,16 +1,16 @@
 package com.devmod.client.ui.unified;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public enum SettingsCategory {
-    GENERAL("General", "G", UIConstants.Status.INFO(), "General mod settings"),
-    EDITOR("Editor", "E", UIConstants.Accent.CYAN(), "Item Editor UI settings"),
-    DEBUG("Debug", "D", UIConstants.Status.WARNING(), "Debug overlays and tools"),
-    VISUALIZERS("Visualizers", "V", UIConstants.Accent.PURPLE, "Heatmaps and visualizations"),
-    COMBAT("Combat", "C", UIConstants.Status.ERROR(), "Weapon and damage settings"),
-    MOBS("Mobs", "M", UIConstants.Accent.ORANGE(), "Mob configuration"),
-    TELEMETRY("Telemetry", "T", UIConstants.Status.SUCCESS(), "Analytics and export"),
-    KEYBINDS("Keybinds", "K", UIConstants.Text.MUTED(), "Keyboard shortcuts");
+    GENERAL("General", "G", DesignTokens.Semantic.INFO, "General mod settings"),
+    EDITOR("Editor", "E", DesignTokens.Accent.PRIMARY, "Item Editor UI settings"),
+    DEBUG("Debug", "D", DesignTokens.Semantic.WARNING, "Debug overlays and tools"),
+    VISUALIZERS("Visualizers", "V", DesignTokens.Accent.PURPLE, "Heatmaps and visualizations"),
+    COMBAT("Combat", "C", DesignTokens.Semantic.ERROR, "Weapon and damage settings"),
+    MOBS("Mobs", "M", DesignTokens.Accent.ORANGE, "Mob configuration"),
+    TELEMETRY("Telemetry", "T", DesignTokens.Semantic.SUCCESS, "Analytics and export"),
+    KEYBINDS("Keybinds", "K", DesignTokens.Text.MUTED, "Keyboard shortcuts");
 
     private final String label;
     private final String icon;

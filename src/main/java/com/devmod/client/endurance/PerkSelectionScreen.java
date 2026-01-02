@@ -22,7 +22,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.components.CountdownTimer;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PerkSelectionPayload;
 import com.devmod.util.I18n;
@@ -30,14 +30,20 @@ import com.devmod.util.I18n;
 @OnlyIn(Dist.CLIENT)
 public class PerkSelectionScreen extends Screen {
 
-    // === Colors - Standardized to UIConstants ===
-    private static final int COLOR_CARD_BG = UIConstants.Background.INPUT();
-    private static final int COLOR_CARD_HOVER = UIConstants.Background.HOVER();
-    private static final int COLOR_CARD_SELECTED = UIConstants.Background.ACTIVE();
-    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT();  // Blue instead of purple
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
-    private static final int COLOR_ACCENT = UIConstants.Accent.BLUE();  // Blue instead of purple
+    // === Colors - Using DesignTokens for consistency ===
+    private static final int COLOR_CARD_BG = DesignTokens.Surface.LEVEL_0;
+    private static final int COLOR_CARD_HOVER = DesignTokens.Surface.LEVEL_2;
+    private static final int COLOR_CARD_SELECTED = DesignTokens.Surface.LEVEL_3;
+    private static final int COLOR_BORDER = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_ACCENT = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_SCREEN_BG = DesignTokens.Bg.LEVEL_0;
+    private static final int COLOR_PANEL_BG = DesignTokens.Bg.LEVEL_2;
+    private static final int COLOR_SUCCESS = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_ERROR = DesignTokens.Semantic.ERROR;
+    private static final int COLOR_WARNING = DesignTokens.Semantic.WARNING;
+    private static final int COLOR_INFO = DesignTokens.Semantic.INFO;
     private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
 
     // === Dimensions (base values, may be scaled down for small screens) ===
@@ -187,7 +193,7 @@ public class PerkSelectionScreen extends Screen {
 
         // Background
         int bgAlpha = (int) (0xEE * fadeProgress);
-        graphics.fill(0, 0, width, height, (bgAlpha << 24) | (UIConstants.Background.SCREEN() & 0x00FFFFFF));
+        graphics.fill(0, 0, width, height, (bgAlpha << 24) | (COLOR_SCREEN_BG & 0x00FFFFFF));
 
         // Title
         if (fadeProgress > 0.3f) {
@@ -236,7 +242,7 @@ public class PerkSelectionScreen extends Screen {
         // Keybind hints
         if (fadeProgress > 0.8f) {
             graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.perk.keybind_hint").getString()),
-                width / 2, height - 25, applyAlpha(UIConstants.Text.MUTED(), fadeProgress));
+                width / 2, height - 25, applyAlpha(DesignTokens.Text.MUTED, fadeProgress));
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -335,7 +341,7 @@ public class PerkSelectionScreen extends Screen {
                 bottomInfoY -= 11;
             } else if (perk.isRecommended()) {
                 String recBadge = "\u2192 Recommended"; // → Recommended
-                g.drawString(safeFont, recBadge, cardX + contentPadding, bottomInfoY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
+                g.drawString(safeFont, recBadge, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_SUCCESS, alpha));
                 bottomInfoY -= 11;
             }
 
@@ -350,7 +356,7 @@ public class PerkSelectionScreen extends Screen {
         } else if (hovered && !perk.description().isEmpty()) {
             // Show stat hint only if not stackable (to avoid overlap)
             String hintText = "\u2191 " + getCompactStatHint(perk); // ↑ prefix
-            g.drawString(safeFont, hintText, cardX + contentPadding, bottomInfoY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
+            g.drawString(safeFont, hintText, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_SUCCESS, alpha));
         }
     }
 
@@ -398,7 +404,7 @@ public class PerkSelectionScreen extends Screen {
         int panelY = 60;
 
         // Panel background
-        g.fill(panelX, panelY, panelX + panelW, panelY + panelH, applyAlpha(UIConstants.Background.PANEL(), alpha));
+        g.fill(panelX, panelY, panelX + panelW, panelY + panelH, applyAlpha(COLOR_PANEL_BG, alpha));
 
         // Panel border
         int borderColor = applyAlpha(COLOR_BORDER, alpha);
@@ -420,7 +426,7 @@ public class PerkSelectionScreen extends Screen {
 
             // Highlight bar for hovered
             if (isHovered) {
-                g.fill(panelX + 4, lineY - 2, panelX + panelW - 4, lineY + 16, applyAlpha(UIConstants.Background.HOVER(), alpha));
+                g.fill(panelX + 4, lineY - 2, panelX + panelW - 4, lineY + 16, applyAlpha(COLOR_CARD_HOVER, alpha));
             }
 
             // Synergy indicator (star if completing synergy, dot otherwise)
@@ -454,7 +460,7 @@ public class PerkSelectionScreen extends Screen {
             } else if (perk.stackable() && perk.currentStacks() > 0) {
                 // Stack indicator if applicable (only if no synergy score)
                 String stackStr = "x" + perk.currentStacks();
-                g.drawString(safeFont, stackStr, panelX + 115, lineY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
+                g.drawString(safeFont, stackStr, panelX + 115, lineY, applyAlpha(COLOR_SUCCESS, alpha));
             }
 
             // Key stat hint (right-aligned)
@@ -472,10 +478,10 @@ public class PerkSelectionScreen extends Screen {
      */
     private int getCategoryStatColor(PerkChoicesPayload.PerkChoice perk) {
         String cat = perk.categoryName().toLowerCase(Locale.ROOT);
-        if (cat.contains("offense") || cat.contains("damage")) return UIConstants.Accent.RED();
-        if (cat.contains("defense") || cat.contains("armor")) return UIConstants.Accent.BLUE();
-        if (cat.contains("utility") || cat.contains("speed")) return UIConstants.Accent.GOLD();
-        if (cat.contains("heal") || cat.contains("regen")) return UIConstants.Accent.GREEN();
+        if (cat.contains("offense") || cat.contains("damage")) return COLOR_ERROR;
+        if (cat.contains("defense") || cat.contains("armor")) return COLOR_INFO;
+        if (cat.contains("utility") || cat.contains("speed")) return COLOR_WARNING;
+        if (cat.contains("heal") || cat.contains("regen")) return COLOR_SUCCESS;
         return perk.categoryColor() | 0xFF000000;
     }
 
@@ -539,7 +545,7 @@ public class PerkSelectionScreen extends Screen {
         int x = width - textWidth - COUNTDOWN_MARGIN;
         int y = COUNTDOWN_MARGIN;
 
-        int bgColor = applyAlpha(UIConstants.Background.PANEL(), fadeProgress * 0.6f);
+        int bgColor = applyAlpha(COLOR_PANEL_BG, fadeProgress * 0.6f);
         graphics.fill(x - 6, y - 4, x + textWidth + 6, y + safeFont.lineHeight + 4, bgColor);
 
         float pulse = countdown.getPulse();
@@ -570,8 +576,8 @@ public class PerkSelectionScreen extends Screen {
 
         // Skip button
         if (skipButton != null && elapsed > FADE_IN_DURATION * 0.5f) {
-            int skipW = UIConstants.Size.BUTTON_WIDTH_MEDIUM;
-            int skipH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+            int skipW = DesignTokens.Component.BUTTON_MIN_WIDTH * 2;
+            int skipH = DesignTokens.Component.BUTTON_HEIGHT_LG;
             int skipX = width / 2 - skipW / 2;
             int skipY = height - 50;
             skipButton.render(graphics, skipX, skipY, skipW, skipH, mouseX, mouseY);

@@ -37,10 +37,11 @@ import com.devmod.components.RangedComponents;
 import com.devmod.components.UsableComponents;
 import com.devmod.components.WeaponComponents;
 import com.devmod.config.Config;
+import com.devmod.config.ConfigValidator;
 import com.devmod.config.EditorClientConfig;
 import com.devmod.config.GameMechanicsConfig;
 import com.devmod.config.GameplayOverridesManager;
-import com.devmod.debug.DebugNetworkHandler;
+import com.devmod.core.Services;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.integration.ModIntegrationManager;
 
@@ -100,6 +101,12 @@ public class DevMod {
         FOOD_COMPONENTS.register(eventBus);
         FUEL_COMPONENTS.register(eventBus);
 
+        // Register custom biome sources for multi-zone arenas
+        com.devmod.runtime.biome.ModBiomeSources.register(eventBus);
+
+        // Register custom chunk generators for arena dimensions
+        com.devmod.runtime.generator.ModChunkGenerators.register(eventBus);
+
         // Register configuration
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         modContainer.registerConfig(ModConfig.Type.COMMON, GameMechanicsConfig.SPEC, "devmod-mechanics.toml");
@@ -112,6 +119,9 @@ public class DevMod {
         // Initialize external mod integration (Pehkui, Better Combat, etc.)
         ModIntegrationManager.init();
 
+        // Initialize service registry for dependency injection
+        Services.initialize();
+
         // Initialize PresetRegistry (hierarchical preset system) - client only
         if (FMLEnvironment.dist.isClient()) {
             initClientSideRegistries();
@@ -120,7 +130,6 @@ public class DevMod {
         DevModActions.registerCommon();
 
         // Network payload registration (mod bus)
-        eventBus.addListener(DebugNetworkHandler::registerPayloads);
 
         // NOTE: Keybinds are now registered in DevModClient (client-only class)
 
@@ -129,6 +138,9 @@ public class DevMod {
 
         // Initialize gameplay overrides manager (JSON-based per-instance config)
         GameplayOverridesManager.INSTANCE.initialize();
+
+        // Run configuration validation
+        validateConfiguration();
 
         LOGGER.info("DevMod loaded successfully!");
     }
@@ -250,6 +262,24 @@ public class DevMod {
             editorConfigClass.getMethod("onConfigReload").invoke(null);
         } catch (Exception e) {
             LOGGER.debug("Could not reload EditorConfig: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Validate all configuration at startup.
+     * Logs warnings/errors for misconfiguration but doesn't fail startup.
+     */
+    private void validateConfiguration() {
+        try {
+            ConfigValidator.ValidationResult result = ConfigValidator.validateAll();
+
+            // The validateAll() method already logs all details internally
+            // Just log a summary here
+            if (!result.isValid()) {
+                LOGGER.warn("[DevMod] Configuration has issues. Check logs above for details.");
+            }
+        } catch (Exception e) {
+            LOGGER.warn("[DevMod] Configuration validation failed with exception: {}", e.getMessage());
         }
     }
 }

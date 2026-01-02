@@ -7,18 +7,20 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
 public record PersonalRecordsSyncPayload(
     int totalQuestsAttempted,
     int totalQuestsCompleted,
     int totalPointsEarned,
     Map<String, MobRecord> mobRecords
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_STRING_LENGTH = 128;
     private static final int MAX_RECORDS = 100;
@@ -101,10 +103,41 @@ public record PersonalRecordsSyncPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += 4; // totalQuestsAttempted
+        size += 4; // totalQuestsCompleted
+        size += 4; // totalPointsEarned
+        int count = Math.min(mobRecords.size(), MAX_RECORDS);
+        size += 4; // record count
+        int written = 0;
+        for (Map.Entry<String, MobRecord> entry : mobRecords.entrySet()) {
+            if (written >= count) {
+                break;
+            }
+            size += estimatedFixedUtfSize(entry.getKey());
+            size += 4; // attempts
+            size += 4; // completions
+            size += 4; // bestScore
+            size += 4; // highestWave
+            written++;
+        }
+        return size;
+    }
+
     /**
      * Get record for a specific mob ID.
      */
     public MobRecord getRecord(String mobId) {
         return mobRecords.getOrDefault(mobId, new MobRecord(0, 0, 0, 0));
+    }
+
+    private static int estimatedFixedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return 4;
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return 4 + bytes.length;
     }
 }

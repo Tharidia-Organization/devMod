@@ -11,6 +11,7 @@ public record GoldenReference(
     int ceilingBlocks,
     int underfloorBlocks,
     int hazardBlocks,
+    int lightingBlocks,
     int totalBlocks,
     List<int[]> spawnSlots
 ) {
@@ -24,7 +25,9 @@ public record GoldenReference(
         int ceilingBlocks = 64 * 64 * 1;
         int underfloorBlocks = 64 * 64 * 3;
         int hazardBlocks = 0;
-        int total = floorBlocks + wallBlocks + ceilingBlocks + underfloorBlocks + hazardBlocks; // 22_748
+        // Lighting: blockLight=10, spacing=12, grid=5x5=25 ambient lights
+        int lightingBlocks = 25;
+        int total = floorBlocks + wallBlocks + ceilingBlocks + underfloorBlocks + hazardBlocks + lightingBlocks; // 22_773
 
         List<int[]> slots = List.of(
             new int[]{0, 65, 0},
@@ -44,7 +47,7 @@ public record GoldenReference(
             new int[]{-14, 65, 8}
         );
 
-        return new GoldenReference(arena, floor, ceiling, floorBlocks, wallBlocks, ceilingBlocks, underfloorBlocks, hazardBlocks, total, slots);
+        return new GoldenReference(arena, floor, ceiling, floorBlocks, wallBlocks, ceilingBlocks, underfloorBlocks, hazardBlocks, lightingBlocks, total, slots);
     }
 
     /**
@@ -57,20 +60,32 @@ public record GoldenReference(
 
         int size = 80;
         int floorBlocks = size * size * 1; // 6,400
-        int wallBlocks = (2 * (size + size - 2)) * 11; // perimeter * (height - overlaps) = 316 * 11 = 3,476
+        int wallBlocks = (2 * (size + size - 2)) * 11; // perimeter * (height - floor overlap) = 316 * 11 = 3,476
         int ceilingBlocks = size * size * 1; // 6,400
         int underfloorBlocks = size * size * 3; // 19,200
         int hazardBlocks = (int) Math.round(Math.PI * ((32 * 32) - (30 * 30))); // ~390
-        int total = floorBlocks + wallBlocks + ceilingBlocks + underfloorBlocks + hazardBlocks;
+        // Lighting: blockLight=12, spacing=8, grid=10x10=100 ambient + 1 explicit
+        int lightingBlocks = 101;
+        int total = floorBlocks + wallBlocks + ceilingBlocks + underfloorBlocks + hazardBlocks + lightingBlocks;
 
         List<int[]> slots = List.of(
-            new int[]{0, 65, 0},       // player
-            new int[]{-30, 65, 0},     // melee
-            new int[]{30, 65, 0},      // ranged
-            new int[]{35, 65, 35},     // corner
-            new int[]{0, 65, 30}       // boss
+            new int[]{0, 65, 0},       // center, player
+            new int[]{-25, 65, 0},     // melee
+            new int[]{25, 65, 0},      // ranged
+            new int[]{0, 65, -25},     // melee
+            new int[]{20, 65, 20},     // corner
+            new int[]{-20, 65, 20},    // corner
+            new int[]{20, 65, -20},    // corner
+            new int[]{-20, 65, -20},   // corner
+            new int[]{22, 65, 12},     // melee
+            new int[]{-22, 65, 12},    // melee
+            new int[]{22, 65, -12},    // ranged
+            new int[]{-22, 65, -12},   // ranged
+            new int[]{12, 65, 22},     // ranged
+            new int[]{-12, 65, 22},    // ranged
+            new int[]{0, 65, 25}       // boss
         );
 
-        return new GoldenReference(arena, floor, ceiling, floorBlocks, wallBlocks, ceilingBlocks, underfloorBlocks, hazardBlocks, total, slots);
+        return new GoldenReference(arena, floor, ceiling, floorBlocks, wallBlocks, ceilingBlocks, underfloorBlocks, hazardBlocks, lightingBlocks, total, slots);
     }
 }

@@ -12,17 +12,17 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.rendering.HeatmapVisualizer;
-import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
 import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.SafeSpotVisualizer;
 import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.client.ui.unified.persistence.SettingsData;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.rendering.HeatmapType;
 
 public class VisualizersPage implements SettingsPage {
 
@@ -36,6 +36,8 @@ public class VisualizersPage implements SettingsPage {
     private int visibleHeight = 0;
     private int totalContentHeight = 0;
     private boolean isDraggingScrollbar = false;
+    private boolean showScrollbar = false;
+    private int lastContentX, lastContentWidth;
     private int lastContentY, lastContentHeight;
 
     // Light level settings
@@ -85,13 +87,16 @@ public class VisualizersPage implements SettingsPage {
         if (viewDistSliderPulse > 0) viewDistSliderPulse = Math.max(0, viewDistSliderPulse - 0.05f);
 
         // Store dimensions for scroll calculations
+        lastContentX = x;
         lastContentY = y;
+        lastContentWidth = width;
         lastContentHeight = height;
         visibleHeight = height;
 
         // Calculate total content height
         totalContentHeight = calculateContentHeight();
         maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
+        showScrollbar = totalContentHeight > visibleHeight;
 
         // Clamp scroll offset
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
@@ -113,8 +118,8 @@ public class VisualizersPage implements SettingsPage {
 
             // Radius slider
             // Calculate effective width accounting for scrollbar if present
-            int effectiveWidth = totalContentHeight > visibleHeight ? width - SCROLLBAR_WIDTH - 8 : width;
-            graphics.drawString(safeFont, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
+            int effectiveWidth = showScrollbar ? Math.max(0, width - SCROLLBAR_WIDTH - 8) : width;
+            graphics.drawString(safeFont, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
             int labelWidth = 120;
             int buttonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
             int sliderX = x + labelWidth;
@@ -223,7 +228,7 @@ public class VisualizersPage implements SettingsPage {
 
             // View Distance slider
             // Calculate effective width accounting for scrollbar if present (reuse from earlier)
-            graphics.drawString(safeFont, "View Distance: " + viewDistance + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(safeFont, "View Distance: " + viewDistance + " blocks", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
             int vdLabelWidth = 140;
             int vdButtonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
             int vdSliderX = x + vdLabelWidth;
@@ -257,7 +262,7 @@ public class VisualizersPage implements SettingsPage {
             currentY += ROW_HEIGHT;
 
             // Hint about view distance
-            graphics.drawString(safeFont, "Affects all visualizers render range", x, currentY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "Affects all visualizers render range", x, currentY, DesignTokens.Text.MUTED, false);
             currentY += 16;
 
             // Hint
@@ -269,7 +274,7 @@ public class VisualizersPage implements SettingsPage {
         }
 
         // Render scrollbar if content exceeds visible area
-        if (totalContentHeight > visibleHeight) {
+        if (showScrollbar) {
             renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, height);
         }
     }
@@ -308,33 +313,33 @@ public class VisualizersPage implements SettingsPage {
      * Render the scrollbar.
      */
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
-        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT());
+        graphics.fill(x, y, x + barWidth, y + height, DesignTokens.Bg.LEVEL_0);
         float visibleRatio = (float) visibleHeight / totalContentHeight;
         int thumbHeight = Math.max(20, (int) (height * visibleRatio));
         float scrollRatio = maxScrollOffset > 0 ? (float) scrollOffset / maxScrollOffset : 0;
         int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
+        int thumbColor = isDraggingScrollbar ? DesignTokens.Accent.PRIMARY : DesignTokens.Stroke.DEFAULT;
         graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
     private int renderToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                  int mouseX, int mouseY, String label, String description, boolean enabled) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
-        int rowWidth = width - 20;
+        int rowWidth = width - 20 - (showScrollbar ? SCROLLBAR_WIDTH + 4 : 0);
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
         if (hovered) {
-            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER());
+            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, DesignTokens.Surface.LEVEL_1);
         }
 
         // Label and description
-        graphics.drawString(safeFont, label, x, y + 2, UIConstants.Text.PRIMARY(), false);
-        graphics.drawString(safeFont, description, x, y + 12, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
+        graphics.drawString(safeFont, description, x, y + 12, DesignTokens.Text.MUTED, false);
 
         // Toggle - use standardized dimensions
-        int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
-        int toggleY = y + (ROW_HEIGHT - UIConstants.Size.TOGGLE_HEIGHT) / 2;
-        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, toggleY, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
+        int toggleX = x + rowWidth - 36;
+        int toggleY = y + (ROW_HEIGHT - 18) / 2;
+        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, toggleY, 36, 18, enabled, hovered);
 
         return y + ROW_HEIGHT;
     }
@@ -342,31 +347,31 @@ public class VisualizersPage implements SettingsPage {
     private int renderHeatmapToggle(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                      int mouseX, int mouseY, String label, HeatmapType type, int color) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
-        int rowWidth = width - 20;
+        int rowWidth = width - 20 - (showScrollbar ? SCROLLBAR_WIDTH + 4 : 0);
         boolean enabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + 20;
 
         if (hovered) {
-            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + 18, UIConstants.Background.HOVER());
+            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + 18, DesignTokens.Surface.LEVEL_1);
         }
 
         // Color indicator
         graphics.fill(x, y + 2, x + 12, y + 14, color);
-        AxiomRenderer.drawBorder(graphics, x, y + 2, 12, 12, UIConstants.Border.DEFAULT());
+        AxiomRenderer.drawBorder(graphics, x, y + 2, 12, 12, DesignTokens.Stroke.DEFAULT);
 
         // Label
-        graphics.drawString(safeFont, label, x + 18, y + 4, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, label, x + 18, y + 4, DesignTokens.Text.PRIMARY, false);
 
         // Toggle - use standardized dimensions
-        int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
-        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, y, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
+        int toggleX = x + rowWidth - 36;
+        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, y, 36, 18, enabled, hovered);
 
         return y + 20;
     }
 
     private void disableAllHeatmaps() {
         invokeAction(ActionIds.DEBUG_HEATMAP_CLEAR_ALL);
-        UIConstants.Sound.delete();
+        // Sound handled by EditorButton
     }
 
     private void invokeAction(String actionId) {
@@ -389,11 +394,11 @@ public class VisualizersPage implements SettingsPage {
     private void renderSlider(GuiGraphics graphics, int x, int y, int width, int height,
                                float value, int mouseX, int mouseY, float pulseAnimation) {
         // Background track
-        graphics.fill(x, y + height / 2 - 2, x + width, y + height / 2 + 2, UIConstants.Background.INPUT());
+        graphics.fill(x, y + height / 2 - 2, x + width, y + height / 2 + 2, DesignTokens.Bg.LEVEL_0);
 
         // Fill track
         int fillWidth = (int) (width * value);
-        graphics.fill(x, y + height / 2 - 2, x + fillWidth, y + height / 2 + 2, UIConstants.Border.ACCENT());
+        graphics.fill(x, y + height / 2 - 2, x + fillWidth, y + height / 2 + 2, DesignTokens.Accent.PRIMARY);
 
         // Handle
         int handleX = x + fillWidth - 4;
@@ -405,24 +410,22 @@ public class VisualizersPage implements SettingsPage {
             int glowAlpha = 60 + (int) (pulseAnimation * 100);
             graphics.fill(handleX - 2 - pulseExpand, y - pulseExpand,
                 handleX + 10 + pulseExpand, y + height + pulseExpand,
-                UIConstants.setAlpha(UIConstants.Border.ACCENT(), glowAlpha));
+                DesignTokens.withAlpha(DesignTokens.Accent.PRIMARY, glowAlpha));
         }
 
-        graphics.fill(handleX, y, handleX + 8, y + height, UIConstants.Border.DEFAULT());
+        graphics.fill(handleX, y, handleX + 8, y + height, DesignTokens.Stroke.DEFAULT);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
         if (button != 0) return false;
 
-        // Check if click is within content area
-        if (mouseX < contentX || mouseX > contentX + contentWidth ||
-            mouseY < contentY || mouseY > contentY + lastContentHeight) {
+        if (!isMouseOverContent(mouseX, mouseY)) {
             return false;
         }
 
         // Check scrollbar click
-        if (totalContentHeight > visibleHeight) {
+        if (showScrollbar) {
             int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
             if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2) {
                 isDraggingScrollbar = true;
@@ -439,7 +442,7 @@ public class VisualizersPage implements SettingsPage {
             }
         }
 
-        int rowWidth = contentWidth - 20 - SCROLLBAR_WIDTH;
+        int rowWidth = contentWidth - 20 - (showScrollbar ? SCROLLBAR_WIDTH + 4 : 0);
         // Apply scroll offset for hit detection
         int y = contentY - scrollOffset;
 
@@ -448,16 +451,14 @@ public class VisualizersPage implements SettingsPage {
 
         // Light Level toggle
         if (isInToggleArea(mouseX, mouseY, contentX, y, rowWidth)) {
-            boolean wasEnabled = LightLevelOverlay.INSTANCE.isEnabled();
             invokeAction(ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE);
-            if (wasEnabled) UIConstants.Sound.toggleOff(); else UIConstants.Sound.toggleOn();
             return true;
         }
         y += ROW_HEIGHT;
 
         // Radius controls - slider click/drag
-        int sliderX = contentX + 120;
-        int localSliderWidth = Math.min(contentWidth - 140, 200);
+        int sliderX = sliderContentX;
+        int localSliderWidth = sliderWidth;
 
         // Click on slider to set value directly
         if (isMouseOver((int) mouseX, (int) mouseY, sliderX, y, localSliderWidth, 16)) {
@@ -480,14 +481,12 @@ public class VisualizersPage implements SettingsPage {
         // Heatmap toggles - use all enum values for consistency
         for (HeatmapType type : HeatmapType.values()) {
             if (isInToggleArea(mouseX, mouseY, contentX, y, rowWidth)) {
-                boolean wasEnabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
                 String actionId = heatmapActionId(type);
                 if (actionId != null) {
                     invokeAction(actionId);
                 } else {
                     HeatmapVisualizer.INSTANCE.toggle(type);
                 }
-                if (wasEnabled) UIConstants.Sound.toggleOff(); else UIConstants.Sound.toggleOn();
                 return true;
             }
             y += 20;
@@ -501,18 +500,14 @@ public class VisualizersPage implements SettingsPage {
 
         // Safe Spot toggle
         if (isInToggleArea(mouseX, mouseY, contentX, y, rowWidth)) {
-            boolean wasEnabled = SafeSpotVisualizer.INSTANCE.isEnabled();
             invokeAction(ActionIds.DEBUG_SAFE_SPOTS_TOGGLE);
-            if (wasEnabled) UIConstants.Sound.toggleOff(); else UIConstants.Sound.toggleOn();
             return true;
         }
         y += ROW_HEIGHT;
 
         // Vertical Levels toggle
         if (isInToggleArea(mouseX, mouseY, contentX, y, rowWidth)) {
-            boolean wasEnabled = VerticalLevelsVisualizer.INSTANCE.isEnabled();
             invokeAction(ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE);
-            if (wasEnabled) UIConstants.Sound.toggleOff(); else UIConstants.Sound.toggleOn();
             return true;
         }
         y += ROW_HEIGHT;
@@ -524,8 +519,8 @@ public class VisualizersPage implements SettingsPage {
         y += ROW_HEIGHT;
 
         // View Distance controls
-        int vdSliderX = contentX + 140;
-        int localVdSliderWidth = Math.min(contentWidth - 160, 180);
+        int vdSliderX = viewDistSliderX;
+        int localVdSliderWidth = viewDistSliderWidth;
 
         // Click on view distance slider
         if (isMouseOver((int) mouseX, (int) mouseY, vdSliderX, y, localVdSliderWidth, 16)) {
@@ -652,6 +647,9 @@ public class VisualizersPage implements SettingsPage {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (!showScrollbar || maxScrollOffset <= 0 || !isMouseOverContent(mouseX, mouseY)) {
+            return false;
+        }
         scrollOffset -= (int) (scrollY * 20);
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
         return true;
@@ -674,6 +672,11 @@ public class VisualizersPage implements SettingsPage {
 
     @Override
     public int getContentHeight() {
-        return 450;
+        return calculateContentHeight();
+    }
+
+    private boolean isMouseOverContent(double mouseX, double mouseY) {
+        return mouseX >= lastContentX && mouseX <= lastContentX + lastContentWidth
+            && mouseY >= lastContentY && mouseY <= lastContentY + lastContentHeight;
     }
 }

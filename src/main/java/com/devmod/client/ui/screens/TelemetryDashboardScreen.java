@@ -34,7 +34,8 @@ import com.devmod.client.rendering.SafeSpotVisualizer;
 import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.rendering.HeatmapType;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.testing.stats.EnvironmentalDamageStats;
 import com.devmod.testing.stats.HazardTypeRegistry.HazardType;
@@ -47,6 +48,7 @@ public class TelemetryDashboardScreen extends Screen {
     private static final int TAB_WIDTH = 80;
     private static final int TAB_HEIGHT = 22;
     private static final int ROW_HEIGHT = 26;
+    private static final int STATS_PAGE_SIZE = 10;
 
     @Nullable
     private final Screen parent;
@@ -114,7 +116,7 @@ public class TelemetryDashboardScreen extends Screen {
         AxiomRenderer.drawScreenBackground(graphics, this.width, this.height);
 
         // Title
-        AxiomRenderer.drawCenteredTitle(graphics, safeFont, this.width, UIConstants.Position.TITLE_Y, "Telemetry Dashboard");
+        AxiomRenderer.drawCenteredTitle(graphics, safeFont, this.width, 8, "Telemetry Dashboard");
 
         // Tab bar
         int tabStartX = (this.width - (DashboardTab.values().length * TAB_WIDTH)) / 2;
@@ -149,7 +151,7 @@ public class TelemetryDashboardScreen extends Screen {
         backButton
             .style(EditorButton.Style.NORMAL)
             .onClick(this::onClose);
-        backButton.render(graphics, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        backButton.render(graphics, buttonX, buttonY, buttonWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
     }
 
     private void renderOverlaysTab(GuiGraphics graphics, int x, int y) {
@@ -158,14 +160,14 @@ public class TelemetryDashboardScreen extends Screen {
         y += 20;
 
         // Use dynamic keybind names from KeyInputHandler
-        y = drawOverlayToggle(graphics, x, y, "Debug Overlay", KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY, DebugRenderer.INSTANCE.isEnabled(), UIConstants.Accent.ORANGE());
-        y = drawOverlayToggle(graphics, x, y, "Light Level", KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY, LightLevelOverlay.INSTANCE.isEnabled(), UIConstants.Accent.YELLOW());
-        y = drawOverlayToggle(graphics, x, y, "Heatmap", KeyInputHandler.TOGGLE_HEATMAP_KEY, HeatmapVisualizer.INSTANCE.hasActiveHeatmaps(), UIConstants.Accent.PURPLE());
-        y = drawOverlayToggle(graphics, x, y, "Room Bounds", KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY, RoomBoundsVisualizer.INSTANCE.isEnabled(), UIConstants.Accent.ORANGE());
-        y = drawOverlayToggle(graphics, x, y, "Pathfinding", KeyInputHandler.TOGGLE_PATHFINDING_KEY, PathfindingDebugger.INSTANCE.isEnabled(), UIConstants.Accent.CYAN());
-        y = drawOverlayToggle(graphics, x, y, "Line of Sight", KeyInputHandler.TOGGLE_LOS_KEY, LineOfSightVisualizer.INSTANCE.isEnabled(), UIConstants.Accent.GREEN());
-        y = drawOverlayToggle(graphics, x, y, "Vertical Levels", KeyInputHandler.TOGGLE_VERTICAL_LEVELS_KEY, VerticalLevelsVisualizer.INSTANCE.isEnabled(), UIConstants.Accent.YELLOW());
-        drawOverlayToggle(graphics, x, y, "Safe Spots", KeyInputHandler.TOGGLE_SAFE_SPOT_KEY, SafeSpotVisualizer.INSTANCE.isEnabled(), UIConstants.Accent.RED());
+        y = drawOverlayToggle(graphics, x, y, "Debug Overlay", KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY, DebugRenderer.INSTANCE.isEnabled(), DesignTokens.Accent.ORANGE());
+        y = drawOverlayToggle(graphics, x, y, "Light Level", KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY, LightLevelOverlay.INSTANCE.isEnabled(), DesignTokens.Accent.YELLOW());
+        y = drawOverlayToggle(graphics, x, y, "Heatmap", KeyInputHandler.TOGGLE_HEATMAP_KEY, HeatmapVisualizer.INSTANCE.hasActiveHeatmaps(), DesignTokens.Accent.PURPLE());
+        y = drawOverlayToggle(graphics, x, y, "Room Bounds", KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY, RoomBoundsVisualizer.INSTANCE.isEnabled(), DesignTokens.Accent.ORANGE());
+        y = drawOverlayToggle(graphics, x, y, "Pathfinding", KeyInputHandler.TOGGLE_PATHFINDING_KEY, PathfindingDebugger.INSTANCE.isEnabled(), DesignTokens.Accent.CYAN());
+        y = drawOverlayToggle(graphics, x, y, "Line of Sight", KeyInputHandler.TOGGLE_LOS_KEY, LineOfSightVisualizer.INSTANCE.isEnabled(), DesignTokens.Accent.GREEN());
+        y = drawOverlayToggle(graphics, x, y, "Vertical Levels", KeyInputHandler.TOGGLE_VERTICAL_LEVELS_KEY, VerticalLevelsVisualizer.INSTANCE.isEnabled(), DesignTokens.Accent.YELLOW());
+        drawOverlayToggle(graphics, x, y, "Safe Spots", KeyInputHandler.TOGGLE_SAFE_SPOT_KEY, SafeSpotVisualizer.INSTANCE.isEnabled(), DesignTokens.Accent.RED());
     }
 
     private int drawOverlayToggle(GuiGraphics graphics, int x, int y, String name, KeyMapping keyMapping, boolean enabled, int accentColor) {
@@ -174,24 +176,24 @@ public class TelemetryDashboardScreen extends Screen {
         boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, CONTENT_WIDTH, ROW_HEIGHT - 2);
 
         if (hovered) {
-            graphics.fill(x - 2, y, x + CONTENT_WIDTH + 2, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER());
+            graphics.fill(x - 2, y, x + CONTENT_WIDTH + 2, y + ROW_HEIGHT - 2, DesignTokens.Background.HOVER());
         }
 
         // Accent bar
         graphics.fill(x, y + 4, x + 3, y + ROW_HEIGHT - 6, accentColor);
 
         // Name + dynamic hotkey from KeyMapping
-        graphics.drawString(safeFont, safeName, x + 10, y + 6, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, safeName, x + 10, y + 6, DesignTokens.Text.PRIMARY(), false);
         String hotkeyText = keyMapping.isUnbound()
             ? "unbound"
             : Objects.requireNonNull(keyMapping.getTranslatedKeyMessage().getString(), "hotkeyText");
-        int hotkeyColor = keyMapping.isUnbound() ? UIConstants.Text.MUTED() & 0x88FFFFFF : UIConstants.Text.MUTED();
+        int hotkeyColor = keyMapping.isUnbound() ? DesignTokens.Text.MUTED() & 0x88FFFFFF : DesignTokens.Text.MUTED();
         String hotkeyLabel = Objects.requireNonNull("(" + hotkeyText + ")", "hotkeyLabel");
         graphics.drawString(safeFont, hotkeyLabel, x + 10 + safeFont.width(safeName) + 6, y + 6, hotkeyColor, false);
 
         // Toggle
-        int toggleX = x + CONTENT_WIDTH - UIConstants.Size.TOGGLE_WIDTH;
-        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, y + 3, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
+        int toggleX = x + CONTENT_WIDTH - DesignTokens.Size.TOGGLE_WIDTH;
+        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, y + 3, DesignTokens.Size.TOGGLE_WIDTH, DesignTokens.Size.TOGGLE_HEIGHT, enabled, hovered);
 
         return y + ROW_HEIGHT;
     }
@@ -201,16 +203,16 @@ public class TelemetryDashboardScreen extends Screen {
         AxiomRenderer.drawSectionHeader(graphics, safeFont, x, y, "Export Heatmap Data");
         y += 20;
 
-        y = drawExportButton(graphics, x, y, "Death Heatmap", UIConstants.Accent.RED());
-        y = drawExportButton(graphics, x, y, "Movement Heatmap", UIConstants.Accent.CYAN());
-        y = drawExportButton(graphics, x, y, "Camping Heatmap", UIConstants.Accent.YELLOW());
-        y = drawExportButton(graphics, x, y, "Stuck Heatmap", UIConstants.Accent.ORANGE());
-        y = drawExportButton(graphics, x, y, "Aggro Drop Heatmap", UIConstants.Accent.PURPLE());
-        y = drawExportButton(graphics, x, y, "Kiting Heatmap", UIConstants.Accent.GREEN());
-        y = drawExportButton(graphics, x, y, "Choke Points", UIConstants.Accent.RED());
-        y = drawExportButton(graphics, x, y, "Parkour Falls", UIConstants.Accent.ORANGE());
+        y = drawExportButton(graphics, x, y, "Death Heatmap", DesignTokens.Accent.RED());
+        y = drawExportButton(graphics, x, y, "Movement Heatmap", DesignTokens.Accent.CYAN());
+        y = drawExportButton(graphics, x, y, "Camping Heatmap", DesignTokens.Accent.YELLOW());
+        y = drawExportButton(graphics, x, y, "Stuck Heatmap", DesignTokens.Accent.ORANGE());
+        y = drawExportButton(graphics, x, y, "Aggro Drop Heatmap", DesignTokens.Accent.PURPLE());
+        y = drawExportButton(graphics, x, y, "Kiting Heatmap", DesignTokens.Accent.GREEN());
+        y = drawExportButton(graphics, x, y, "Choke Points", DesignTokens.Accent.RED());
+        y = drawExportButton(graphics, x, y, "Parkour Falls", DesignTokens.Accent.ORANGE());
         y += 8; // Gap before damage stats
-        drawExportButton(graphics, x, y, "Damage Statistics", UIConstants.Accent.GREEN());
+        drawExportButton(graphics, x, y, "Damage Statistics", DesignTokens.Accent.GREEN());
 
         // Hint
         int hintY = this.height - 60;
@@ -222,20 +224,20 @@ public class TelemetryDashboardScreen extends Screen {
         String safeName = Objects.requireNonNull(name, "name");
         boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4);
 
-        int bgColor = hovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL();
+        int bgColor = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
         graphics.fill(x, y, x + CONTENT_WIDTH, y + ROW_HEIGHT - 4, bgColor);
 
         // Accent bar
         graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, accentColor);
 
         // Border
-        AxiomRenderer.drawBorder(graphics, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4, hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT());
+        AxiomRenderer.drawBorder(graphics, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4, hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT());
 
         // Text
-        graphics.drawString(safeFont, "Export " + safeName, x + 10, y + 5, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, "Export " + safeName, x + 10, y + 5, DesignTokens.Text.PRIMARY(), false);
 
         // Arrow
-        graphics.drawString(safeFont, ">", x + CONTENT_WIDTH - 12, y + 5, hovered ? UIConstants.Text.ACCENT() : UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, ">", x + CONTENT_WIDTH - 12, y + 5, hovered ? DesignTokens.Text.ACCENT() : DesignTokens.Text.MUTED(), false);
 
         return y + ROW_HEIGHT;
     }
@@ -250,6 +252,7 @@ public class TelemetryDashboardScreen extends Screen {
             refreshStats();
             lastRefreshTime = now;
         }
+        clampStatsScroll();
         Font safeFont = getSafeFont();
 
         // Control row: Refresh button + Auto-refresh toggle
@@ -266,62 +269,67 @@ public class TelemetryDashboardScreen extends Screen {
                 lastRefreshTime = System.currentTimeMillis();
                 showMessage("Stats refreshed!");
             });
-        refreshButton.render(graphics, startX, y, btnWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        refreshButton.render(graphics, startX, y, btnWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Auto-refresh toggle
         int toggleX = startX + btnWidth + 10;
-        boolean autoHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, toggleX, y, toggleWidth, UIConstants.Size.BUTTON_HEIGHT);
-        int toggleBg = autoHovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL();
-        graphics.fill(toggleX, y, toggleX + toggleWidth, y + UIConstants.Size.BUTTON_HEIGHT, toggleBg);
-        AxiomRenderer.drawBorder(graphics, toggleX, y, toggleWidth, UIConstants.Size.BUTTON_HEIGHT,
-            autoRefresh ? UIConstants.Accent.GREEN() : UIConstants.Border.DEFAULT());
+        boolean autoHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, toggleX, y, toggleWidth, DesignTokens.Size.BUTTON_HEIGHT);
+        int toggleBg = autoHovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
+        graphics.fill(toggleX, y, toggleX + toggleWidth, y + DesignTokens.Size.BUTTON_HEIGHT, toggleBg);
+        AxiomRenderer.drawBorder(graphics, toggleX, y, toggleWidth, DesignTokens.Size.BUTTON_HEIGHT,
+            autoRefresh ? DesignTokens.Accent.GREEN() : DesignTokens.Border.DEFAULT());
 
         String autoLabel = autoRefresh ? "Auto: ON" : "Auto: OFF";
-        int autoColor = autoRefresh ? UIConstants.Accent.GREEN() : UIConstants.Text.SECONDARY();
+        int autoColor = autoRefresh ? DesignTokens.Accent.GREEN() : DesignTokens.Text.SECONDARY();
         int labelWidth = safeFont.width(autoLabel);
         graphics.drawString(safeFont, autoLabel, toggleX + (toggleWidth - labelWidth) / 2, y + 6, autoColor, false);
 
         y += 30;
 
         // Stats panel
-        int panelHeight = Math.min(10, cachedStats.size()) * 12 + 16;
+        int panelHeight = Math.min(STATS_PAGE_SIZE, cachedStats.size()) * 12 + 16;
         AxiomRenderer.drawSimplePanel(graphics, x, y, CONTENT_WIDTH, panelHeight);
 
         int textY = y + 8;
-        int maxDisplay = Math.min(10, cachedStats.size() - scrollOffset);
+        int maxDisplay = Math.min(STATS_PAGE_SIZE, cachedStats.size() - scrollOffset);
 
-        for (int i = 0; i < maxDisplay; i++) {
-            int index = i + scrollOffset;
-            if (index < cachedStats.size()) {
-                String line = cachedStats.get(index);
-                graphics.drawString(safeFont, line, x + 8, textY, UIConstants.Text.PRIMARY(), false);
-                textY += 12;
+        graphics.enableScissor(x, y, x + CONTENT_WIDTH, y + panelHeight);
+        try {
+            for (int i = 0; i < maxDisplay; i++) {
+                int index = i + scrollOffset;
+                if (index < cachedStats.size()) {
+                    String line = cachedStats.get(index);
+                    graphics.drawString(safeFont, line, x + 8, textY, DesignTokens.Text.PRIMARY(), false);
+                    textY += 12;
+                }
             }
+        } finally {
+            graphics.disableScissor();
         }
 
         // Scroll indicator - always visible when scrollable
-        if (cachedStats.size() > 10) {
+        if (cachedStats.size() > STATS_PAGE_SIZE) {
             String scrollInfo = String.format("§e[%d-%d / %d]§r",
                 scrollOffset + 1,
-                Math.min(scrollOffset + 10, cachedStats.size()),
+                Math.min(scrollOffset + STATS_PAGE_SIZE, cachedStats.size()),
                 cachedStats.size());
 
             // Draw scroll hint bar at bottom
             int hintY = y + panelHeight + 4;
-            graphics.fill(x, hintY, x + CONTENT_WIDTH, hintY + 16, UIConstants.Background.PANEL());
-            AxiomRenderer.drawBorder(graphics, x, hintY, CONTENT_WIDTH, 16, UIConstants.Border.DEFAULT());
+            graphics.fill(x, hintY, x + CONTENT_WIDTH, hintY + 16, DesignTokens.Background.PANEL());
+            AxiomRenderer.drawBorder(graphics, x, hintY, CONTENT_WIDTH, 16, DesignTokens.Border.DEFAULT());
 
             String hintText = Objects.requireNonNull("§7Scroll/↑↓/PgUp/PgDn§r | " + scrollInfo, "hintText");
             String hintTextPlain = Objects.requireNonNull(hintText.replaceAll("§.", ""), "hintTextPlain");
             int textWidth = safeFont.width(hintTextPlain); // Strip color codes for width
-            graphics.drawString(safeFont, hintText, x + (CONTENT_WIDTH - textWidth) / 2, hintY + 4, UIConstants.Accent.YELLOW(), false);
+            graphics.drawString(safeFont, hintText, x + (CONTENT_WIDTH - textWidth) / 2, hintY + 4, DesignTokens.Accent.YELLOW(), false);
 
             // Show scroll arrows if not at edges
             if (scrollOffset > 0) {
-                graphics.drawString(safeFont, "▲", x + 4, hintY + 4, UIConstants.Accent.GREEN(), false);
+                graphics.drawString(safeFont, "▲", x + 4, hintY + 4, DesignTokens.Accent.GREEN(), false);
             }
-            if (scrollOffset < cachedStats.size() - 10) {
-                graphics.drawString(safeFont, "▼", x + CONTENT_WIDTH - 12, hintY + 4, UIConstants.Accent.GREEN(), false);
+            if (scrollOffset < cachedStats.size() - STATS_PAGE_SIZE) {
+                graphics.drawString(safeFont, "▼", x + CONTENT_WIDTH - 12, hintY + 4, DesignTokens.Accent.GREEN(), false);
             }
         }
     }
@@ -395,6 +403,7 @@ public class TelemetryDashboardScreen extends Screen {
         } else {
             cachedStats.add("No environmental damage recorded");
         }
+        clampStatsScroll();
     }
 
     /**
@@ -436,12 +445,12 @@ public class TelemetryDashboardScreen extends Screen {
         AxiomRenderer.drawSectionHeader(graphics, safeFont, x, y, "Load Heatmap Visualizers");
         y += 20;
 
-        y = drawVisualizerButton(graphics, x, y, "Death Heatmap", HeatmapVisualizer.HeatmapType.DEATH, UIConstants.Accent.RED());
-        y = drawVisualizerButton(graphics, x, y, "Movement Heatmap", HeatmapVisualizer.HeatmapType.MOVEMENT, UIConstants.Accent.CYAN());
-        y = drawVisualizerButton(graphics, x, y, "Camping Heatmap", HeatmapVisualizer.HeatmapType.CAMPING, UIConstants.Accent.YELLOW());
-        y = drawVisualizerButton(graphics, x, y, "Stuck Heatmap", HeatmapVisualizer.HeatmapType.STUCK, UIConstants.Accent.ORANGE());
-        y = drawVisualizerButton(graphics, x, y, "Aggro Drop Heatmap", HeatmapVisualizer.HeatmapType.AGGRO_DROP, UIConstants.Accent.PURPLE());
-        y = drawVisualizerButton(graphics, x, y, "Kiting Heatmap", HeatmapVisualizer.HeatmapType.KITING, UIConstants.Accent.GREEN());
+        y = drawVisualizerButton(graphics, x, y, "Death Heatmap", HeatmapType.DEATH, DesignTokens.Accent.RED());
+        y = drawVisualizerButton(graphics, x, y, "Movement Heatmap", HeatmapType.MOVEMENT, DesignTokens.Accent.CYAN());
+        y = drawVisualizerButton(graphics, x, y, "Camping Heatmap", HeatmapType.CAMPING, DesignTokens.Accent.YELLOW());
+        y = drawVisualizerButton(graphics, x, y, "Stuck Heatmap", HeatmapType.STUCK, DesignTokens.Accent.ORANGE());
+        y = drawVisualizerButton(graphics, x, y, "Aggro Drop Heatmap", HeatmapType.AGGRO_DROP, DesignTokens.Accent.PURPLE());
+        y = drawVisualizerButton(graphics, x, y, "Kiting Heatmap", HeatmapType.KITING, DesignTokens.Accent.GREEN());
         y += 12;
 
         // Clear all button (with confirmation)
@@ -451,55 +460,55 @@ public class TelemetryDashboardScreen extends Screen {
 
             // "Confirm" button
             boolean confirmHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, btnWidth, ROW_HEIGHT - 4);
-            int confirmBg = confirmHovered ? 0x80FF0000 : UIConstants.Background.PANEL();
+            int confirmBg = confirmHovered ? 0x80FF0000 : DesignTokens.Background.PANEL();
             graphics.fill(x, y, x + btnWidth, y + ROW_HEIGHT - 4, confirmBg);
-            graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, UIConstants.Accent.RED());
-            AxiomRenderer.drawBorder(graphics, x, y, btnWidth, ROW_HEIGHT - 4, UIConstants.Accent.RED());
+            graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, DesignTokens.Accent.RED());
+            AxiomRenderer.drawBorder(graphics, x, y, btnWidth, ROW_HEIGHT - 4, DesignTokens.Accent.RED());
             String confirmText = "Yes, Clear All";
-            graphics.drawString(safeFont, confirmText, x + (btnWidth - safeFont.width(confirmText)) / 2, y + 5, UIConstants.Accent.RED(), false);
+            graphics.drawString(safeFont, confirmText, x + (btnWidth - safeFont.width(confirmText)) / 2, y + 5, DesignTokens.Accent.RED(), false);
 
             // "Cancel" button
             int cancelX = x + btnWidth + 10;
             boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, y, btnWidth, ROW_HEIGHT - 4);
-            int cancelBg = cancelHovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL();
+            int cancelBg = cancelHovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
             graphics.fill(cancelX, y, cancelX + btnWidth, y + ROW_HEIGHT - 4, cancelBg);
-            AxiomRenderer.drawBorder(graphics, cancelX, y, btnWidth, ROW_HEIGHT - 4, UIConstants.Border.DEFAULT());
+            AxiomRenderer.drawBorder(graphics, cancelX, y, btnWidth, ROW_HEIGHT - 4, DesignTokens.Border.DEFAULT());
             String cancelText = "Cancel";
-            graphics.drawString(safeFont, cancelText, cancelX + (btnWidth - safeFont.width(cancelText)) / 2, y + 5, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, cancelText, cancelX + (btnWidth - safeFont.width(cancelText)) / 2, y + 5, DesignTokens.Text.PRIMARY(), false);
         } else {
             // Normal clear button
             boolean clearHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, CONTENT_WIDTH, ROW_HEIGHT);
-            int clearBg = clearHovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL();
+            int clearBg = clearHovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
             graphics.fill(x, y, x + CONTENT_WIDTH, y + ROW_HEIGHT - 4, clearBg);
-            graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, UIConstants.Accent.RED());
-            AxiomRenderer.drawBorder(graphics, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4, clearHovered ? UIConstants.Accent.RED() : UIConstants.Border.DEFAULT());
+            graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, DesignTokens.Accent.RED());
+            AxiomRenderer.drawBorder(graphics, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4, clearHovered ? DesignTokens.Accent.RED() : DesignTokens.Border.DEFAULT());
             int textWidth = safeFont.width("Clear All Heatmaps");
-            graphics.drawString(safeFont, "Clear All Heatmaps", x + (CONTENT_WIDTH - textWidth) / 2, y + 5, UIConstants.Accent.RED(), false);
+            graphics.drawString(safeFont, "Clear All Heatmaps", x + (CONTENT_WIDTH - textWidth) / 2, y + 5, DesignTokens.Accent.RED(), false);
         }
     }
 
-    private int drawVisualizerButton(GuiGraphics graphics, int x, int y, String name, HeatmapVisualizer.HeatmapType type, int accentColor) {
+    private int drawVisualizerButton(GuiGraphics graphics, int x, int y, String name, HeatmapType type, int accentColor) {
         Font safeFont = getSafeFont();
         String safeName = Objects.requireNonNull(name, "name");
         boolean enabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
         boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4);
 
-        int bgColor = hovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL();
+        int bgColor = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
         graphics.fill(x, y, x + CONTENT_WIDTH, y + ROW_HEIGHT - 4, bgColor);
 
         // Accent bar
         graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, accentColor);
 
         // Border
-        AxiomRenderer.drawBorder(graphics, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4, hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT());
+        AxiomRenderer.drawBorder(graphics, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4, hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT());
 
         // Text
-        graphics.drawString(safeFont, "Load " + safeName, x + 10, y + 5, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, "Load " + safeName, x + 10, y + 5, DesignTokens.Text.PRIMARY(), false);
 
         // Status indicator
         String status = enabled ? "[ACTIVE]" : "";
         if (!status.isEmpty()) {
-            graphics.drawString(safeFont, status, x + CONTENT_WIDTH - safeFont.width(status) - 8, y + 5, UIConstants.Accent.GREEN(), false);
+            graphics.drawString(safeFont, status, x + CONTENT_WIDTH - safeFont.width(status) - 8, y + 5, DesignTokens.Accent.GREEN(), false);
         }
 
         return y + ROW_HEIGHT;
@@ -525,6 +534,7 @@ public class TelemetryDashboardScreen extends Screen {
             if (AxiomRenderer.isMouseOver(mx, my, tabX, tabY, TAB_WIDTH - 2, TAB_HEIGHT)) {
                 currentTab = DashboardTab.values()[i];
                 scrollOffset = 0;
+                showClearConfirmation = false;
                 return true;
             }
         }
@@ -626,7 +636,7 @@ public class TelemetryDashboardScreen extends Screen {
 
         // Auto-refresh toggle
         int toggleX = startX + btnWidth + 10;
-        if (mx >= toggleX && mx < toggleX + toggleWidth && my >= y && my < y + UIConstants.Size.BUTTON_HEIGHT) {
+        if (mx >= toggleX && mx < toggleX + toggleWidth && my >= y && my < y + DesignTokens.Size.BUTTON_HEIGHT) {
             autoRefresh = !autoRefresh;
             if (autoRefresh) {
                 lastRefreshTime = System.currentTimeMillis();
@@ -638,6 +648,14 @@ public class TelemetryDashboardScreen extends Screen {
         }
 
         return false;
+    }
+
+    private int getMaxStatsScroll() {
+        return Math.max(0, cachedStats.size() - STATS_PAGE_SIZE);
+    }
+
+    private void clampStatsScroll() {
+        scrollOffset = Math.max(0, Math.min(scrollOffset, getMaxStatsScroll()));
     }
 
     @Override
@@ -652,13 +670,13 @@ public class TelemetryDashboardScreen extends Screen {
     private boolean handleVisualizersClick(int mx, int my, int x, int y) {
         y += 20; // section header
 
-        HeatmapVisualizer.HeatmapType[] types = {
-            HeatmapVisualizer.HeatmapType.DEATH,
-            HeatmapVisualizer.HeatmapType.MOVEMENT,
-            HeatmapVisualizer.HeatmapType.CAMPING,
-            HeatmapVisualizer.HeatmapType.STUCK,
-            HeatmapVisualizer.HeatmapType.AGGRO_DROP,
-            HeatmapVisualizer.HeatmapType.KITING
+        HeatmapType[] types = {
+            HeatmapType.DEATH,
+            HeatmapType.MOVEMENT,
+            HeatmapType.CAMPING,
+            HeatmapType.STUCK,
+            HeatmapType.AGGRO_DROP,
+            HeatmapType.KITING
         };
 
         String[] actionIds = {
@@ -671,7 +689,7 @@ public class TelemetryDashboardScreen extends Screen {
         };
 
         for (int i = 0; i < types.length; i++) {
-            HeatmapVisualizer.HeatmapType type = types[i];
+            HeatmapType type = types[i];
             if (AxiomRenderer.isMouseOver(mx, my, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4)) {
                 boolean currentlyEnabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
                 invokeAction(actionIds[i]);
@@ -714,11 +732,11 @@ public class TelemetryDashboardScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (currentTab == DashboardTab.STATS && cachedStats.size() > 10) {
+        if (currentTab == DashboardTab.STATS && cachedStats.size() > STATS_PAGE_SIZE) {
             if (scrollY > 0) {
                 scrollOffset = Math.max(0, scrollOffset - 1);
             } else if (scrollY < 0) {
-                scrollOffset = Math.min(cachedStats.size() - 10, scrollOffset + 1);
+                scrollOffset = Math.min(getMaxStatsScroll(), scrollOffset + 1);
             }
             return true;
         }
@@ -732,7 +750,7 @@ public class TelemetryDashboardScreen extends Screen {
             return true;
         }
         // Keyboard navigation for stats tab
-        if (currentTab == DashboardTab.STATS && cachedStats.size() > 10) {
+        if (currentTab == DashboardTab.STATS && cachedStats.size() > STATS_PAGE_SIZE) {
             // Arrow Up / Page Up
             if (keyCode == 265 || keyCode == 266) { // GLFW_KEY_UP = 265, PAGE_UP = 266
                 int amount = keyCode == 266 ? 5 : 1; // Page Up scrolls 5 lines
@@ -742,7 +760,7 @@ public class TelemetryDashboardScreen extends Screen {
             // Arrow Down / Page Down
             if (keyCode == 264 || keyCode == 267) { // GLFW_KEY_DOWN = 264, PAGE_DOWN = 267
                 int amount = keyCode == 267 ? 5 : 1; // Page Down scrolls 5 lines
-                scrollOffset = Math.min(cachedStats.size() - 10, scrollOffset + amount);
+                scrollOffset = Math.min(getMaxStatsScroll(), scrollOffset + amount);
                 return true;
             }
             // Home - go to start
@@ -752,7 +770,7 @@ public class TelemetryDashboardScreen extends Screen {
             }
             // End - go to end
             if (keyCode == 269) { // GLFW_KEY_END
-                scrollOffset = Math.max(0, cachedStats.size() - 10);
+                scrollOffset = getMaxStatsScroll();
                 return true;
             }
         }

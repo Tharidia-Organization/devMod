@@ -120,8 +120,8 @@ public class NotificationPreferencesRepository {
         if (cm == null) {
             throw new SQLException("ConnectionManager not initialized");
         }
-        try (Connection conn = cm.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(createTableSql)) {
+        Connection conn = cm.getConnectionUnchecked();
+        try (PreparedStatement stmt = conn.prepareStatement(createTableSql)) {
             stmt.execute();
             LOGGER.debug("[NotificationPrefs] Schema created/verified");
         }
@@ -154,9 +154,13 @@ public class NotificationPreferencesRepository {
 
     /**
      * Load preferences from database asynchronously.
+     * Fire-and-forget pattern with proper exception handling.
      */
     private void loadPreferencesAsync(UUID playerUuid) {
-        var unused = loadPreferences(playerUuid);
+        loadPreferences(playerUuid).exceptionally(e -> {
+            LOGGER.error("[NotificationPrefs] Async load failed for {}: {}", playerUuid, e.getMessage());
+            return null;
+        });
     }
 
     /**

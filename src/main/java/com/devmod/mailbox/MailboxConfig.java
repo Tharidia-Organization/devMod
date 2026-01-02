@@ -181,6 +181,9 @@ public class MailboxConfig {
     // ROLE/PERMISSION SETTINGS
     // ============================================================================
 
+    /** Whether to use op levels to infer admin/tester roles. */
+    private boolean useOpLevelForRoles = true;
+
     /** Explicit admin UUIDs (string form). */
     private List<String> adminUuids = new ArrayList<>();
 
@@ -316,6 +319,10 @@ public class MailboxConfig {
 
     public List<String> getApiAllowedOrigins() {
         return List.copyOf(apiAllowedOrigins);
+    }
+
+    public boolean isUseOpLevelForRoles() {
+        return useOpLevelForRoles;
     }
 
     public List<String> getAdminUuids() {
@@ -501,6 +508,10 @@ public class MailboxConfig {
             .distinct()
             .toList();
         this.apiAllowedOrigins = new ArrayList<>(cleaned);
+    }
+
+    public void setUseOpLevelForRoles(boolean useOpLevelForRoles) {
+        this.useOpLevelForRoles = useOpLevelForRoles;
     }
 
     public void setAdminUuids(List<String> uuids) {
@@ -722,6 +733,8 @@ public class MailboxConfig {
         if (apiKey != null) setApiSecretKey(apiKey);
         List<String> origins = data.apiAllowedOrigins();
         if (origins != null) setApiAllowedOrigins(origins);
+        Boolean useOpLevel = data.useOpLevelForRoles();
+        if (useOpLevel != null) setUseOpLevelForRoles(useOpLevel);
         List<String> admins = data.adminUuids();
         if (admins != null) setAdminUuids(admins);
         List<String> testers = data.testerUuids();
@@ -776,6 +789,7 @@ public class MailboxConfig {
             apiEnabled,
             apiSecretKey,
             List.copyOf(apiAllowedOrigins),
+            useOpLevelForRoles,
             List.copyOf(adminUuids),
             List.copyOf(testerUuids),
             List.copyOf(blockedSenderUuids),
@@ -863,6 +877,7 @@ public class MailboxConfig {
         @Nullable Boolean apiEnabled,
         @Nullable String apiSecretKey,
         @Nullable List<String> apiAllowedOrigins,
+        @Nullable Boolean useOpLevelForRoles,
         @Nullable List<String> adminUuids,
         @Nullable List<String> testerUuids,
         @Nullable List<String> blockedSenderUuids,

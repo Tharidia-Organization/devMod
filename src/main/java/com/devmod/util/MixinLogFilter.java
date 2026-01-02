@@ -1,12 +1,12 @@
 package com.devmod.util;
 
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -82,7 +82,7 @@ public final class MixinLogFilter extends AbstractFilter {
         }
 
         // Only filter WARN level messages
-        if (event.getLevel() != Level.WARN) {
+        if (!Level.WARN.equals(event.getLevel())) {
             return Result.NEUTRAL;
         }
 
@@ -99,7 +99,7 @@ public final class MixinLogFilter extends AbstractFilter {
 
     @Override
     public Result filter(Logger logger, Level level, Marker marker, Message msg, Throwable t) {
-        if (level != Level.WARN || msg == null) {
+        if (!Level.WARN.equals(level) || msg == null) {
             return Result.NEUTRAL;
         }
 
@@ -116,7 +116,7 @@ public final class MixinLogFilter extends AbstractFilter {
 
     @Override
     public Result filter(Logger logger, Level level, Marker marker, String msg, Object... params) {
-        if (level != Level.WARN || msg == null) {
+        if (!Level.WARN.equals(level) || msg == null) {
             return Result.NEUTRAL;
         }
 
@@ -132,7 +132,7 @@ public final class MixinLogFilter extends AbstractFilter {
 
     @Override
     public Result filter(Logger logger, Level level, Marker marker, Object msg, Throwable t) {
-        if (level != Level.WARN || msg == null) {
+        if (!Level.WARN.equals(level) || msg == null) {
             return Result.NEUTRAL;
         }
 
@@ -156,8 +156,8 @@ public final class MixinLogFilter extends AbstractFilter {
         }
 
         // Check if from mixin system
-        if (!loggerName.toLowerCase().contains("mixin")
-            && !message.toLowerCase().contains("mixin")) {
+        if (!loggerName.toLowerCase(Locale.ROOT).contains("mixin")
+            && !message.toLowerCase(Locale.ROOT).contains("mixin")) {
             return false;
         }
 
@@ -174,7 +174,7 @@ public final class MixinLogFilter extends AbstractFilter {
         }
 
         // Check for known mods with client mixins
-        String lowerMessage = message.toLowerCase();
+        String lowerMessage = message.toLowerCase(Locale.ROOT);
         for (String mod : KNOWN_CLIENT_MIXIN_MODS) {
             if (lowerMessage.contains(mod) &&
                 (lowerMessage.contains("target") || lowerMessage.contains("cannot"))) {

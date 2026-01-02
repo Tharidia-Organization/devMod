@@ -97,7 +97,42 @@ public final class BuildDryRunCalculator {
             }
         }
 
-        return new BuildDryRun(floorBlocks, wallBlocks, ceilingBlocks, underfloorBlocks, hazardBlocks);
+        // Lighting: explicit sources + ambient grid
+        int lightingBlocks = estimateLightingBlocks(template, sizeX, sizeZ);
+
+        return new BuildDryRun(floorBlocks, wallBlocks, ceilingBlocks, underfloorBlocks, hazardBlocks, lightingBlocks);
+    }
+
+    /**
+     * Estimates the number of light source blocks to be placed.
+     * Includes both explicit light sources from template and ambient grid lights.
+     */
+    private static int estimateLightingBlocks(ArenaTemplate template, int sizeX, int sizeZ) {
+        if (template.lighting() == null) return 0;
+
+        var lighting = template.lighting();
+        int count = 0;
+
+        // Count explicit light sources
+        if (lighting.lightSources() != null) {
+            count += lighting.lightSources().size();
+        }
+
+        // Count ambient grid lights (same formula as ArenaBuilder.placeAmbientLighting)
+        if (lighting.ambientLight() && template.floor() != null) {
+            int targetLight = lighting.blockLight();
+            // Light decreases by 1 per block, so for level 15 source to maintain level N,
+            // spacing should be approximately (15 - N) * 2 to ensure overlap
+            // Max spacing 20 to match ArenaBuilder.placeAmbientLighting() for low light targets
+            int spacing = Math.max(4, Math.min(20, (15 - targetLight) * 2 + 2));
+
+            // Grid starts at spacing/2, then every 'spacing' blocks
+            int gridX = (sizeX - spacing / 2 + spacing - 1) / spacing;
+            int gridZ = (sizeZ - spacing / 2 + spacing - 1) / spacing;
+            count += Math.max(0, gridX) * Math.max(0, gridZ);
+        }
+
+        return count;
     }
 
     private static int countOverlap(int wallStart, int wallEnd, int otherStart, int otherEnd) {

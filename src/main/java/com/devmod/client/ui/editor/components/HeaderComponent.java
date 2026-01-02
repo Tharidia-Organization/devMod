@@ -11,11 +11,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class HeaderComponent {
 
@@ -23,11 +23,11 @@ public class HeaderComponent {
     // DIMENSIONS (from Section 2.4)
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int HEIGHT = UIConstants.Size.HEADER_HEIGHT;  // 56px (2 rows)
+    private static final int HEIGHT = DesignTokens.Size.HEADER_HEIGHT;  // 56px (2 rows)
     private static final int ROW_HEIGHT = 28;  // Single row height
-    private static final int TAB_WIDTH = UIConstants.Size.TAB_WIDTH;
-    private static final int TAB_HEIGHT = UIConstants.Size.TAB_HEIGHT;
-    private static final int TAB_GAP = UIConstants.Size.TAB_GAP;
+    private static final int TAB_WIDTH = DesignTokens.Size.TAB_WIDTH;
+    private static final int TAB_HEIGHT = DesignTokens.Size.TAB_HEIGHT;
+    private static final int TAB_GAP = DesignTokens.Size.TAB_GAP;
     private static final int CLOSE_BUTTON_SIZE = 20;
     private static final int ARROW_WIDTH = 14;
     private static final int LEFT_PADDING = 10;
@@ -174,18 +174,18 @@ public class HeaderComponent {
         tabsViewport = ResponsiveLayout.Rect.EMPTY;
 
         // Background for entire header
-        graphics.fill(x, y, x + width, y + headerHeight, UIConstants.Background.HEADER());
+        graphics.fill(x, y, x + width, y + headerHeight, DesignTokens.Background.HEADER());
 
         // ═══════════════════════════════════════════════════════════════
         // ROW 1: Controls (Close, ModeBadge, ScopeBadge) - right aligned
         // ═══════════════════════════════════════════════════════════════
         int row1Y = y;
-        int badgeGap = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
-        int rightPadding = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int badgeGap = ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
+        int rightPadding = ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
 
         // Separator between row 1 and row 2
         graphics.fill(x, row1Y + rowHeight - BORDER_THICKNESS, x + width, row1Y + rowHeight,
-            UIConstants.Border.SEPARATOR());
+            DesignTokens.Border.SEPARATOR());
 
         // Close button (right aligned)
         int closeX = x + width - closeSize - rightPadding;
@@ -210,7 +210,7 @@ public class HeaderComponent {
 
         // Bottom border of header
         graphics.fill(x, y + headerHeight - BORDER_THICKNESS, x + width, y + headerHeight,
-            UIConstants.Border.SEPARATOR());
+            DesignTokens.Border.SEPARATOR());
 
         // Tabs now have the full width available (no badges to reserve space for)
         int tabsAreaX = x + leftPadding;
@@ -225,7 +225,7 @@ public class HeaderComponent {
 
         // Adjust for arrow buttons when overflowing
         if (tabsOverflow) {
-            int arrowPad = arrowWidth + ScaledCoord.scaleDim(UIConstants.Spacing.SM);
+            int arrowPad = arrowWidth + ScaledCoord.scaleDim(DesignTokens.Spacing.SM);
             tabsAreaX += arrowPad;
             tabsAreaWidth -= arrowPad * 2;
             tabMaxScroll = Math.max(0, totalTabWidth - tabsAreaWidth);
@@ -279,7 +279,7 @@ public class HeaderComponent {
             renderArrow(graphics, font, rightArrowBounds, "▶", tabScrollOffset < tabMaxScroll - SCROLL_TOLERANCE,
                 rightArrowHovered);
 
-            int fadeWidth = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+            int fadeWidth = ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
             int fadeTop = tabY;
             int fadeBottom = tabY + tabHeight;
             graphics.fillGradient(tabsViewport.x(), fadeTop, tabsViewport.x() + fadeWidth, fadeBottom,
@@ -303,20 +303,20 @@ public class HeaderComponent {
     private void renderTab(GuiGraphics graphics, net.minecraft.client.gui.Font font,
                            int x, int y, int width, int height, String label, boolean selected, boolean hovered) {
         // Background
-        int bgColor = selected ? UIConstants.Tab.SELECTED :
-                (hovered ? UIConstants.Tab.HOVER : UIConstants.Tab.NORMAL);
+        int bgColor = selected ? DesignTokens.Tab.SELECTED :
+                (hovered ? DesignTokens.Tab.HOVER : DesignTokens.Tab.NORMAL);
         graphics.fill(x, y, x + width, y + height, bgColor);
 
         // Selected indicator (bottom line)
         if (selected) {
-            int indicatorH = ScaledCoord.scaleDim(UIConstants.Spacing.XS);
+            int indicatorH = ScaledCoord.scaleDim(DesignTokens.Spacing.XS);
             graphics.fill(x, y + height - indicatorH, x + width, y + height,
-                    UIConstants.Tab.INDICATOR);
+                    DesignTokens.Tab.INDICATOR);
         }
 
         // Border on hover
         if (hovered && !selected) {
-            AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.HOVER());
+            AxiomRenderer.drawBorder(graphics, x, y, width, height, DesignTokens.Border.HOVER());
         }
 
         // Text (centered) with UI-scale-aware font
@@ -327,8 +327,8 @@ public class HeaderComponent {
         int textX = x + (width - textWidthScaled) / 2;
         int textHeight = Math.round(font.lineHeight * fontScale);
         int textY = y + (height - textHeight) / 2;
-        int textColor = selected ? UIConstants.Text.PRIMARY() :
-                (hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY());
+        int textColor = selected ? DesignTokens.Text.PRIMARY() :
+                (hovered ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY());
         Typography.drawText(graphics, font, displayLabel, textX, textY, textColor, fontScale);
     }
 
@@ -337,16 +337,16 @@ public class HeaderComponent {
                              boolean enabled, boolean hovered) {
         String safeLabel = Objects.requireNonNull(label, "arrow label cannot be null");
         float fontScale = Typography.buttonScale();
-        int bgColor = !enabled ? UIConstants.Button.DISABLED() :
-            (hovered ? UIConstants.Button.HOVER() : UIConstants.Button.NORMAL());
+        int bgColor = !enabled ? DesignTokens.Button.DISABLED() :
+            (hovered ? DesignTokens.Button.HOVER() : DesignTokens.Button.NORMAL());
         graphics.fill(bounds.x(), bounds.y(), bounds.x() + bounds.width(), bounds.y() + bounds.height(), bgColor);
-        int borderColor = enabled && hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
+        int borderColor = enabled && hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, bounds.x(), bounds.y(), bounds.width(), bounds.height(), borderColor);
         int textWidthScaled = Math.round(font.width(safeLabel) * fontScale);
         int textHeightScaled = Math.round(font.lineHeight * fontScale);
         int textX = bounds.x() + (bounds.width() - textWidthScaled) / 2;
         int textY = bounds.y() + (bounds.height() - textHeightScaled) / 2;
-        int textColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.DISABLED();
+        int textColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.DISABLED();
         Typography.drawText(graphics, font, safeLabel, textX, textY, textColor, fontScale);
     }
 
@@ -354,11 +354,11 @@ public class HeaderComponent {
                                    int x, int y) {
         int size = ScaledCoord.scaleDim(CLOSE_BUTTON_SIZE);
         // Background
-        int bgColor = closeButtonHovered ? UIConstants.Button.DANGER_HOVER : UIConstants.Background.INPUT();
+        int bgColor = closeButtonHovered ? DesignTokens.Button.DANGER_HOVER : DesignTokens.Background.INPUT();
         graphics.fill(x, y, x + size, y + size, bgColor);
 
         // Border
-        int borderColor = closeButtonHovered ? UIConstants.Accent.RED() : UIConstants.Border.DEFAULT();
+        int borderColor = closeButtonHovered ? DesignTokens.Accent.RED() : DesignTokens.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, x, y, size, size, borderColor);
 
         // X symbol
@@ -366,7 +366,7 @@ public class HeaderComponent {
         int textWidth = font.width(closeSymbol);
         int textX = x + (size - textWidth) / 2;
         int textY = y + (size - font.lineHeight) / 2;
-        int textColor = closeButtonHovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY();
+        int textColor = closeButtonHovered ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY();
         graphics.drawString(font, closeSymbol, textX, textY, textColor, false);
     }
 

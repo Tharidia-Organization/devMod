@@ -2,13 +2,13 @@ package com.devmod.client.notification.ui;
 
 import java.util.Objects;
 
+import org.lwjgl.glfw.GLFW;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
-
-import org.lwjgl.glfw.GLFW;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -273,23 +273,23 @@ public class NotificationBadgeOverlay {
     }
 
     private static void renderTooltip(GuiGraphics graphics, Font font, int x, int y) {
-        String title = net.minecraft.network.chat.Component
+        String title = Objects.requireNonNull(net.minecraft.network.chat.Component
                 .translatable("devmod.notification.badge.tooltip.title")
-                .getString();
+                .getString());
         String subtitle;
         if (displayedCount == 0) {
-            subtitle = net.minecraft.network.chat.Component
+            subtitle = Objects.requireNonNull(net.minecraft.network.chat.Component
                     .translatable("devmod.notification.badge.tooltip.empty")
-                    .getString();
+                    .getString());
         } else if (urgentCount > 0) {
-            subtitle = net.minecraft.network.chat.Component
+            subtitle = Objects.requireNonNull(net.minecraft.network.chat.Component
                     .translatable("devmod.notification.badge.tooltip.unread_urgent",
                             displayedCount, urgentCount)
-                    .getString();
+                    .getString());
         } else {
-            subtitle = net.minecraft.network.chat.Component
+            subtitle = Objects.requireNonNull(net.minecraft.network.chat.Component
                     .translatable("devmod.notification.badge.tooltip.unread", displayedCount)
-                    .getString();
+                    .getString());
         }
 
         int tooltipWidth = Math.max(font.width(title), font.width(subtitle)) + 16;

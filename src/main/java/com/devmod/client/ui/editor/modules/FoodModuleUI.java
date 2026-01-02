@@ -15,7 +15,7 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
@@ -74,7 +74,7 @@ public class FoodModuleUI {
             .step(1)
             .format("%.0f")
             .suffix(" pts")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Hunger points restored. Each point = half drumstick. Steak = 8, Golden Apple = 4.")
@@ -83,7 +83,7 @@ public class FoodModuleUI {
         saturationSlider = new EditorSlider("saturation", "Saturation", 0.0f, 2.0f, 0.0f)
             .step(0.1f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
             .info("Saturation modifier. Actual saturation = nutrition * modifier * 2. Golden Apple = 1.2, Steak = 0.8.")
@@ -93,7 +93,7 @@ public class FoodModuleUI {
             .step(1)
             .format("%.0f")
             .suffix(" ticks")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("Time to eat in ticks. Default food = 32 (1.6s), Dried Kelp = 16. 20 ticks = 1 second.")

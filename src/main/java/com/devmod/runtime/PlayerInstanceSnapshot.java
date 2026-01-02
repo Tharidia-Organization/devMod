@@ -463,13 +463,13 @@ public class PlayerInstanceSnapshot {
 
     private static void putOptionalString(CompoundTag tag, String key, @Nullable String value) {
         if (value != null) {
-            tag.putString(key, value);
+            tag.putString(key, Objects.requireNonNull(value));
         }
     }
 
     private static void putOptionalUuid(CompoundTag tag, String key, @Nullable UUID value) {
         if (value != null) {
-            tag.putUUID(key, value);
+            tag.putUUID(key, Objects.requireNonNull(value));
         }
     }
 

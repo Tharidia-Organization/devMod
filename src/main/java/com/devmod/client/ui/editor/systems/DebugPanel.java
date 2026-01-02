@@ -17,8 +17,8 @@ import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 
@@ -219,7 +219,7 @@ public class DebugPanel {
         int pad = PANEL_PADDING;
         int lineH = LINE_HEIGHT;
         graphics.fill(x, y, x + width, y + height, PANEL_BG);
-        AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.ACCENT());
+        AxiomRenderer.drawBorder(graphics, x, y, width, height, DesignTokens.Border.ACCENT());
 
         int curY = y + pad;
         graphics.drawString(font, TITLE_TEXT, x + pad, curY, HEADER_TEXT_COLOR, false);

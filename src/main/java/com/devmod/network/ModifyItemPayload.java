@@ -4,13 +4,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
-
+/**
+ * Network payload for modifying item properties (durability, enchantments, attributes).
+ * Sent from client to server when editing items in the editor.
+ *
+ * <p><b>CRITICAL:</b> The record field order MUST match the codec field order.
+ * Uses StreamCodec.composite() - field order defined by method reference order.</p>
+ *
+ * <p>Field order: durability, unbreakable, repairCost, enchantmentChanges, attributeChanges</p>
+ */
 public record ModifyItemPayload(
     int durability,
     boolean unbreakable,

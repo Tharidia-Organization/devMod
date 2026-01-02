@@ -22,8 +22,8 @@ import com.devmod.client.ui.editor.components.EditorTextField;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.ItemPickerOverlay;
 import com.devmod.client.ui.editor.components.RecipeGridComponent;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.sections.InputSectionAdapter;
 import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SimpleSpacer;
@@ -198,7 +198,7 @@ public class RecipeModule extends AbstractEditorModule {
             .step(1)
             .format("%.0f")
             .suffix(" items")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .info("Number of items produced per craft. Most recipes produce 1, but some (planks, sticks) produce more.")
             .onChange(value -> {
@@ -493,7 +493,7 @@ public class RecipeModule extends AbstractEditorModule {
 
         // Null safety check
         if (recipe == null) {
-            reportStatus(I18n.translate("devmod.recipe.error.build_failed").getString(), UIConstants.Accent.RED());
+            reportStatus(I18n.translate("devmod.recipe.error.build_failed").getString(), DesignTokens.Accent.RED());
             return;
         }
 
@@ -502,7 +502,7 @@ public class RecipeModule extends AbstractEditorModule {
         if (result == null || !result.valid()) {
             String error = result != null ? result.getFirstError() : "Unknown validation error";
             String errorMsg = I18n.translate("devmod.recipe.validation_failed", error).getString();
-            reportStatus(errorMsg, UIConstants.Accent.RED());
+            reportStatus(errorMsg, DesignTokens.Accent.RED());
             return;
         }
 
@@ -520,10 +520,10 @@ public class RecipeModule extends AbstractEditorModule {
             clearDirty();
 
             String successMsg = I18n.translate("devmod.recipe.saved_with_id", recipe.id().toString()).getString();
-            reportStatus(successMsg, UIConstants.Accent.GREEN());
+            reportStatus(successMsg, DesignTokens.Accent.GREEN());
         } catch (Exception e) {
             String errorMsg = I18n.translate("devmod.recipe.error.save_failed", e.getMessage()).getString();
-            reportStatus(errorMsg, UIConstants.Accent.RED());
+            reportStatus(errorMsg, DesignTokens.Accent.RED());
         }
     }
 
@@ -714,7 +714,7 @@ public class RecipeModule extends AbstractEditorModule {
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
             // Background
-            graphics.fill(bounds.x() + 4, bounds.y(), bounds.x() + 36, bounds.y() + 32, UIConstants.Background.INPUT());
+            graphics.fill(bounds.x() + 4, bounds.y(), bounds.x() + 36, bounds.y() + 32, DesignTokens.Background.INPUT());
 
             // Item
             graphics.renderItem(Objects.requireNonNull(item, "item"), bounds.x() + 12, bounds.y() + 8);
@@ -722,7 +722,7 @@ public class RecipeModule extends AbstractEditorModule {
             // Name
             Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
             String name = Objects.requireNonNull(item.getHoverName().getString(), "itemName");
-            graphics.drawString(font, name, bounds.x() + 44, bounds.y() + 12, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(font, name, bounds.x() + 44, bounds.y() + 12, DesignTokens.Text.PRIMARY(), false);
         }
     }
 
@@ -775,9 +775,9 @@ public class RecipeModule extends AbstractEditorModule {
             Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
             // Simple text display for now
             graphics.fill(bounds.x() + 4, bounds.y(), bounds.x() + bounds.width() - 4, bounds.y() + 20,
-                UIConstants.Background.INPUT());
+                DesignTokens.Background.INPUT());
             graphics.drawString(font, Objects.requireNonNull(selected.getId(), "categoryId"), bounds.x() + 8, bounds.y() + 6,
-                UIConstants.Text.PRIMARY(), false);
+                DesignTokens.Text.PRIMARY(), false);
         }
 
         @Override
@@ -815,25 +815,25 @@ public class RecipeModule extends AbstractEditorModule {
             int y = bounds.y() + 4;
 
             if (result.valid()) {
-                int color = result.hasWarnings() ? UIConstants.Text.WARNING() : UIConstants.Accent.GREEN();
+                int color = result.hasWarnings() ? DesignTokens.Text.WARNING() : DesignTokens.Accent.GREEN();
                 graphics.drawString(font, Objects.requireNonNull(result.getSummary(), "summary"), bounds.x() + 8, y, color, false);
 
                 // Show warnings
                 y += 12;
                 for (String warning : result.warnings()) {
                     graphics.drawString(font, Objects.requireNonNull("- " + warning, "warning"),
-                        bounds.x() + 12, y, UIConstants.Text.MUTED(), false);
+                        bounds.x() + 12, y, DesignTokens.Text.MUTED(), false);
                     y += 10;
                 }
             } else {
                 graphics.drawString(font, Objects.requireNonNull(result.getSummary(), "summary"),
-                    bounds.x() + 8, y, UIConstants.Accent.RED(), false);
+                    bounds.x() + 8, y, DesignTokens.Accent.RED(), false);
 
                 // Show errors
                 y += 12;
                 for (String error : result.errors()) {
                     graphics.drawString(font, Objects.requireNonNull("- " + error, "error"),
-                        bounds.x() + 12, y, UIConstants.Accent.RED(), false);
+                        bounds.x() + 12, y, DesignTokens.Accent.RED(), false);
                     y += 10;
                 }
             }

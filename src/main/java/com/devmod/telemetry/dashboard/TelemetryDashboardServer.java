@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -77,77 +78,80 @@ public class TelemetryDashboardServer {
             initializeArenaDashboard();
 
             HttpServer httpServer = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
-            httpServer.setExecutor(Executors.newFixedThreadPool(4));
             server = httpServer;
+            HttpServer activeServer = Objects.requireNonNull(server, "server");
+            activeServer.setExecutor(Executors.newFixedThreadPool(4));
 
             // API Routes - Basic
-            httpServer.createContext("/api/health", new ApiHandler(this::handleHealth));
-            httpServer.createContext("/api/summary", new ApiHandler(this::handleSummary));
-            httpServer.createContext("/api/tables", new ApiHandler(this::handleTables));
-            httpServer.createContext("/api/query", new ApiHandler(this::handleQuery));
+            activeServer.createContext("/api/health", new ApiHandler(this::handleHealth));
+            activeServer.createContext("/api/summary", new ApiHandler(this::handleSummary));
+            activeServer.createContext("/api/tables", new ApiHandler(this::handleTables));
+            activeServer.createContext("/api/query", new ApiHandler(this::handleQuery));
 
             // API Routes - Raw Data
-            httpServer.createContext("/api/combat/hits", new ApiHandler(this::handleCombatHits));
-            httpServer.createContext("/api/combat/deaths", new ApiHandler(this::handleCombatDeaths));
-            httpServer.createContext("/api/combat/fights", new ApiHandler(this::handleCombatFights));
-            httpServer.createContext("/api/combat/weapons", new ApiHandler(this::handleCombatWeapons));
-            httpServer.createContext("/api/endurance/sessions", new ApiHandler(this::handleEnduranceSessions));
-            httpServer.createContext("/api/endurance/waves", new ApiHandler(this::handleEnduranceWaves));
-            httpServer.createContext("/api/endurance/perks", new ApiHandler(this::handleEndurancePerks));
-            httpServer.createContext("/api/endurance/performance", new ApiHandler(this::handleEndurancePerformance));
-            httpServer.createContext("/api/player/snapshots", new ApiHandler(this::handlePlayerSnapshots));
-            httpServer.createContext("/api/player/abilities", new ApiHandler(this::handlePlayerAbilities));
-            httpServer.createContext("/api/spatial/heatmaps", new ApiHandler(this::handleSpatialHeatmaps));
-            httpServer.createContext("/api/spatial/transitions", new ApiHandler(this::handleSpatialTransitions));
-            httpServer.createContext("/api/economy/drops", new ApiHandler(this::handleEconomyDrops));
-            httpServer.createContext("/api/economy/kills", new ApiHandler(this::handleEconomyKills));
-            httpServer.createContext("/api/dungeons/runs", new ApiHandler(this::handleDungeonRuns));
-            httpServer.createContext("/api/performance", new ApiHandler(this::handlePerformance));
+            activeServer.createContext("/api/combat/hits", new ApiHandler(this::handleCombatHits));
+            activeServer.createContext("/api/combat/deaths", new ApiHandler(this::handleCombatDeaths));
+            activeServer.createContext("/api/combat/fights", new ApiHandler(this::handleCombatFights));
+            activeServer.createContext("/api/combat/weapons", new ApiHandler(this::handleCombatWeapons));
+            activeServer.createContext("/api/endurance/sessions", new ApiHandler(this::handleEnduranceSessions));
+            activeServer.createContext("/api/endurance/waves", new ApiHandler(this::handleEnduranceWaves));
+            activeServer.createContext("/api/endurance/perks", new ApiHandler(this::handleEndurancePerks));
+            activeServer.createContext("/api/endurance/performance", new ApiHandler(this::handleEndurancePerformance));
+            activeServer.createContext("/api/endurance/leaderboard", new ApiHandler(this::handleLeaderboard));
+            activeServer.createContext("/api/endurance/leaderboard/categories", new ApiHandler(this::handleLeaderboardCategories));
+            activeServer.createContext("/api/player/snapshots", new ApiHandler(this::handlePlayerSnapshots));
+            activeServer.createContext("/api/player/abilities", new ApiHandler(this::handlePlayerAbilities));
+            activeServer.createContext("/api/spatial/heatmaps", new ApiHandler(this::handleSpatialHeatmaps));
+            activeServer.createContext("/api/spatial/transitions", new ApiHandler(this::handleSpatialTransitions));
+            activeServer.createContext("/api/economy/drops", new ApiHandler(this::handleEconomyDrops));
+            activeServer.createContext("/api/economy/kills", new ApiHandler(this::handleEconomyKills));
+            activeServer.createContext("/api/dungeons/runs", new ApiHandler(this::handleDungeonRuns));
+            activeServer.createContext("/api/performance", new ApiHandler(this::handlePerformance));
 
             // API Routes - Analytics (delegated to TelemetryAnalyticsHandlers)
-            httpServer.createContext("/api/analytics/overview", new ApiHandler(handlers::handleAnalyticsOverview));
-            httpServer.createContext("/api/analytics/hits-timeline", new ApiHandler(handlers::handleHitsTimeline));
-            httpServer.createContext("/api/analytics/damage-by-bodypart", new ApiHandler(handlers::handleDamageByBodypart));
-            httpServer.createContext("/api/analytics/damage-by-type", new ApiHandler(handlers::handleDamageByType));
-            httpServer.createContext("/api/analytics/weapon-stats", new ApiHandler(handlers::handleWeaponAnalytics));
-            httpServer.createContext("/api/analytics/mob-kills", new ApiHandler(handlers::handleMobKillsAnalytics));
-            httpServer.createContext("/api/analytics/ttk", new ApiHandler(handlers::handleTTKAnalytics));
-            httpServer.createContext("/api/analytics/accuracy-timeline", new ApiHandler(handlers::handleAccuracyTimeline));
-            httpServer.createContext("/api/analytics/endurance-stats", new ApiHandler(handlers::handleEnduranceAnalytics));
-            httpServer.createContext("/api/analytics/dungeon-stats", new ApiHandler(handlers::handleDungeonAnalytics));
-            httpServer.createContext("/api/analytics/room-stats", new ApiHandler(handlers::handleRoomAnalytics));
-            httpServer.createContext("/api/analytics/loot-rates", new ApiHandler(handlers::handleLootRatesAnalytics));
+            activeServer.createContext("/api/analytics/overview", new ApiHandler(handlers::handleAnalyticsOverview));
+            activeServer.createContext("/api/analytics/hits-timeline", new ApiHandler(handlers::handleHitsTimeline));
+            activeServer.createContext("/api/analytics/damage-by-bodypart", new ApiHandler(handlers::handleDamageByBodypart));
+            activeServer.createContext("/api/analytics/damage-by-type", new ApiHandler(handlers::handleDamageByType));
+            activeServer.createContext("/api/analytics/weapon-stats", new ApiHandler(handlers::handleWeaponAnalytics));
+            activeServer.createContext("/api/analytics/mob-kills", new ApiHandler(handlers::handleMobKillsAnalytics));
+            activeServer.createContext("/api/analytics/ttk", new ApiHandler(handlers::handleTTKAnalytics));
+            activeServer.createContext("/api/analytics/accuracy-timeline", new ApiHandler(handlers::handleAccuracyTimeline));
+            activeServer.createContext("/api/analytics/endurance-stats", new ApiHandler(handlers::handleEnduranceAnalytics));
+            activeServer.createContext("/api/analytics/dungeon-stats", new ApiHandler(handlers::handleDungeonAnalytics));
+            activeServer.createContext("/api/analytics/room-stats", new ApiHandler(handlers::handleRoomAnalytics));
+            activeServer.createContext("/api/analytics/loot-rates", new ApiHandler(handlers::handleLootRatesAnalytics));
 
             // API Routes - Advanced Analytics v2 (delegated to TelemetryAnalyticsHandlers)
-            httpServer.createContext("/api/analytics/dps-timeline", new ApiHandler(handlers::handleDpsTimeline));
-            httpServer.createContext("/api/analytics/player-stats", new ApiHandler(handlers::handlePlayerStats));
-            httpServer.createContext("/api/analytics/player-comparison", new ApiHandler(handlers::handlePlayerComparison));
-            httpServer.createContext("/api/analytics/trends", new ApiHandler(handlers::handleTrends));
-            httpServer.createContext("/api/analytics/performance", new ApiHandler(handlers::handlePerformanceAnalytics));
-            httpServer.createContext("/api/analytics/fight-analysis", new ApiHandler(handlers::handleFightAnalysis));
-            httpServer.createContext("/api/analytics/damage-taken", new ApiHandler(handlers::handleDamageTaken));
-            httpServer.createContext("/api/analytics/players-list", new ApiHandler(handlers::handlePlayersList));
+            activeServer.createContext("/api/analytics/dps-timeline", new ApiHandler(handlers::handleDpsTimeline));
+            activeServer.createContext("/api/analytics/player-stats", new ApiHandler(handlers::handlePlayerStats));
+            activeServer.createContext("/api/analytics/player-comparison", new ApiHandler(handlers::handlePlayerComparison));
+            activeServer.createContext("/api/analytics/trends", new ApiHandler(handlers::handleTrends));
+            activeServer.createContext("/api/analytics/performance", new ApiHandler(handlers::handlePerformanceAnalytics));
+            activeServer.createContext("/api/analytics/fight-analysis", new ApiHandler(handlers::handleFightAnalysis));
+            activeServer.createContext("/api/analytics/damage-taken", new ApiHandler(handlers::handleDamageTaken));
+            activeServer.createContext("/api/analytics/players-list", new ApiHandler(handlers::handlePlayersList));
 
             // Arena analytics (DD36) + auth
-            server.createContext("/api/arena/token", new ApiHandler(this::handleArenaToken));
-            server.createContext("/api/analytics/arena/templates", new ApiHandler(this::handleArenaTemplates));
-            server.createContext("/api/analytics/arena/build-metrics", new ApiHandler(this::handleArenaBuildMetrics));
-            server.createContext("/api/analytics/arena/performance", new ApiHandler(this::handleArenaPerformance));
-            server.createContext("/api/analytics/arena/spawn-heatmap", new ApiHandler(this::handleArenaSpawnHeatmap));
-            server.createContext("/api/analytics/arena/death-heatmap", new ApiHandler(this::handleArenaDeathHeatmap));
-            server.createContext("/api/analytics/arena/wave-correlation", new ApiHandler(this::handleArenaWaveCorrelation));
-            server.createContext("/api/analytics/arena/templates-failure-rate", new ApiHandler(this::handleArenaTemplatesFailureRate));
-            server.createContext("/api/export/arena/build-metrics", new ApiHandler(this::handleArenaExportBuildMetrics));
-            server.createContext("/api/export/arena/performance", new ApiHandler(this::handleArenaExportPerformance));
-            server.createContext("/api/export/arena/wave-correlation", new ApiHandler(this::handleArenaExportWaveCorrelation));
+            activeServer.createContext("/api/arena/token", new ApiHandler(this::handleArenaToken));
+            activeServer.createContext("/api/analytics/arena/templates", new ApiHandler(this::handleArenaTemplates));
+            activeServer.createContext("/api/analytics/arena/build-metrics", new ApiHandler(this::handleArenaBuildMetrics));
+            activeServer.createContext("/api/analytics/arena/performance", new ApiHandler(this::handleArenaPerformance));
+            activeServer.createContext("/api/analytics/arena/spawn-heatmap", new ApiHandler(this::handleArenaSpawnHeatmap));
+            activeServer.createContext("/api/analytics/arena/death-heatmap", new ApiHandler(this::handleArenaDeathHeatmap));
+            activeServer.createContext("/api/analytics/arena/wave-correlation", new ApiHandler(this::handleArenaWaveCorrelation));
+            activeServer.createContext("/api/analytics/arena/templates-failure-rate", new ApiHandler(this::handleArenaTemplatesFailureRate));
+            activeServer.createContext("/api/export/arena/build-metrics", new ApiHandler(this::handleArenaExportBuildMetrics));
+            activeServer.createContext("/api/export/arena/performance", new ApiHandler(this::handleArenaExportPerformance));
+            activeServer.createContext("/api/export/arena/wave-correlation", new ApiHandler(this::handleArenaExportWaveCorrelation));
 
             // Static files for dashboard SPA
-            server.createContext("/dashboard", new StaticFileHandler("/dashboard"));
+            activeServer.createContext("/dashboard", new StaticFileHandler("/dashboard"));
             // Also serve static files from root (for relative paths in HTML)
-            server.createContext("/style.css", new StaticFileHandler("/dashboard"));
-            server.createContext("/app.js", new StaticFileHandler("/dashboard"));
+            activeServer.createContext("/style.css", new StaticFileHandler("/dashboard"));
+            activeServer.createContext("/app.js", new StaticFileHandler("/dashboard"));
 
-            server.start();
+            activeServer.start();
             running.set(true);
             LOGGER.info("[Dashboard] Server started at http://{}:{}/dashboard", BIND_ADDRESS, port);
 
@@ -234,9 +238,73 @@ public class TelemetryDashboardServer {
 
     private String handleHealth(HttpExchange exchange) {
         Map<String, Object> health = new HashMap<>();
-        health.put("status", "ok");
-        health.put("duckdb_enabled", DuckDBTelemetryService.INSTANCE.isEnabled());
+        var telemetry = DuckDBTelemetryService.INSTANCE;
+
+        // Basic status
+        health.put("status", telemetry.isEnabled() && !telemetry.isCircuitBroken() ? "ok" : "degraded");
+        health.put("duckdb_enabled", telemetry.isEnabled());
+        health.put("circuit_broken", telemetry.isCircuitBroken());
         health.put("timestamp", System.currentTimeMillis());
+
+        // Batch writer stats
+        var writer = telemetry.getBatchWriter();
+        if (writer != null) {
+            Map<String, Object> writerStats = new HashMap<>();
+            writerStats.put("total_inserts", writer.getTotalInserts());
+            writerStats.put("total_batches", writer.getTotalBatches());
+            writerStats.put("pending_inserts", writer.getPendingInserts());
+            writerStats.put("dropped_inserts", writer.getDroppedInserts());
+            writerStats.put("error_count", writer.getErrorCount());
+            writerStats.put("pressure_level", writer.getPressureLevel());
+            health.put("writer", writerStats);
+
+            // P2: Latency stats with P99
+            var latencyStats = writer.getWriteLatencyStats();
+            if (latencyStats.sampleCount() > 0) {
+                Map<String, Object> latency = new HashMap<>();
+                latency.put("sample_count", latencyStats.sampleCount());
+                latency.put("avg_ms", Math.round(latencyStats.avgMs() * 100) / 100.0);
+                latency.put("p50_ms", Math.round(latencyStats.p50Ms() * 100) / 100.0);
+                latency.put("p95_ms", Math.round(latencyStats.p95Ms() * 100) / 100.0);
+                latency.put("p99_ms", Math.round(latencyStats.p99Ms() * 100) / 100.0);
+                latency.put("max_ms", Math.round(latencyStats.maxMs() * 100) / 100.0);
+                latency.put("transient_errors", latencyStats.transientErrors());
+                latency.put("permanent_errors", latencyStats.permanentErrors());
+                latency.put("degradation_errors", latencyStats.degradationErrors());
+                latency.put("total_errors", latencyStats.totalErrors());
+                latency.put("p99_high", latencyStats.isP99High(500.0));
+                latency.put("error_rate_high", latencyStats.isErrorRateHigh(1.0));
+                health.put("latency", latency);
+            }
+
+            // P2: Sampling stats
+            var samplingConfig = writer.getSamplingConfig();
+            Map<String, Object> sampling = new HashMap<>();
+            sampling.put("enabled", samplingConfig.enabled());
+            sampling.put("sampled_out_count", writer.getSampledOutCount());
+            sampling.put("critical_rate", samplingConfig.criticalRate());
+            sampling.put("high_rate", samplingConfig.highRate());
+            sampling.put("normal_rate", samplingConfig.normalRate());
+            sampling.put("low_rate", samplingConfig.lowRate());
+            health.put("sampling", sampling);
+        }
+
+        // Connection metrics
+        var connectionManager = telemetry.getConnectionManager();
+        if (connectionManager != null) {
+            var connMetrics = connectionManager.getConnectionMetrics();
+            Map<String, Object> connection = new HashMap<>();
+            connection.put("total_acquisitions", connMetrics.totalAcquisitions());
+            connection.put("timeouts", connMetrics.acquisitionTimeouts());
+            connection.put("contention_events", connMetrics.contentionEvents());
+            connection.put("avg_wait_ms", Math.round(connMetrics.avgWaitTimeMs() * 100) / 100.0);
+            connection.put("timeout_rate_pct", Math.round(connMetrics.timeoutRatePercent() * 100) / 100.0);
+            connection.put("high_contention", connMetrics.isHighContention());
+            connection.put("queue_length", connMetrics.currentQueueLength());
+            connection.put("locked", connMetrics.isLocked());
+            health.put("connection", connection);
+        }
+
         return gson.toJson(health);
     }
 
@@ -322,6 +390,71 @@ public class TelemetryDashboardServer {
         int limit = getIntParam(paramOrEmpty(params, "limit"), 200);
         Map<String, String> filters = buildArenaFilters(params);
         return gson.toJson(queryTableWithFilters("endurance_performance", from, to, limit, "ts", filters));
+    }
+
+    private String handleLeaderboard(HttpExchange exchange) {
+        Map<String, String> params = parseQueryParams(exchange);
+        String categoryName = paramOrEmpty(params, "category");
+        String arenaId = params.get("arenaId");
+        String scope = paramOrEmpty(params, "scope"); // global, weekly, arena
+        int limit = getIntParam(paramOrEmpty(params, "limit"), 10);
+
+        com.devmod.endurance.LeaderboardSystem.LeaderboardCategory category;
+        try {
+            category = com.devmod.endurance.LeaderboardSystem.LeaderboardCategory.valueOf(
+                categoryName.isEmpty() ? "WAVES_COMPLETED" : categoryName.toUpperCase(java.util.Locale.ROOT)
+            );
+        } catch (IllegalArgumentException e) {
+            return gson.toJson(Map.of("error", "Unknown category: " + categoryName));
+        }
+
+        java.util.List<com.devmod.endurance.LeaderboardSystem.LeaderboardEntry> entries;
+        if ("weekly".equalsIgnoreCase(scope)) {
+            entries = com.devmod.endurance.LeaderboardSystem.INSTANCE.getWeeklyTopEntries(category, limit);
+        } else if ("arena".equalsIgnoreCase(scope) && arenaId != null && !arenaId.isEmpty()) {
+            entries = com.devmod.endurance.LeaderboardSystem.INSTANCE.getTopEntries(category, arenaId, limit);
+        } else {
+            entries = com.devmod.endurance.LeaderboardSystem.INSTANCE.getTopEntries(category, limit);
+        }
+
+        // Convert to serializable format
+        java.util.List<Map<String, Object>> result = new java.util.ArrayList<>();
+        int rank = 1;
+        for (var entry : entries) {
+            Map<String, Object> row = new java.util.LinkedHashMap<>();
+            row.put("rank", rank++);
+            row.put("playerId", entry.playerId().toString());
+            row.put("playerName", entry.playerName());
+            row.put("score", entry.score());
+            row.put("formattedScore", com.devmod.endurance.LeaderboardSystem.formatScore(category, entry.score()));
+            row.put("arenaId", entry.arenaId());
+            row.put("timestamp", entry.timestamp() != null ? entry.timestamp().toEpochMilli() : null);
+            row.put("metadata", entry.metadata());
+            result.add(row);
+        }
+
+        return gson.toJson(Map.of(
+            "category", category.name(),
+            "displayName", category.displayName,
+            "description", category.description,
+            "higherIsBetter", category.higherIsBetter,
+            "scope", scope.isEmpty() ? "global" : scope,
+            "arenaId", arenaId,
+            "entries", result
+        ));
+    }
+
+    private String handleLeaderboardCategories(HttpExchange exchange) {
+        java.util.List<Map<String, Object>> categories = new java.util.ArrayList<>();
+        for (var cat : com.devmod.endurance.LeaderboardSystem.LeaderboardCategory.values()) {
+            Map<String, Object> row = new java.util.LinkedHashMap<>();
+            row.put("id", cat.name());
+            row.put("displayName", cat.displayName);
+            row.put("description", cat.description);
+            row.put("higherIsBetter", cat.higherIsBetter);
+            categories.add(row);
+        }
+        return gson.toJson(Map.of("categories", categories));
     }
 
     private String handlePlayerSnapshots(HttpExchange exchange) {

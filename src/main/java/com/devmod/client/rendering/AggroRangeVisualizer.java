@@ -25,6 +25,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -41,11 +42,11 @@ public class AggroRangeVisualizer {
         return SettingsManager.INSTANCE.getSettings().visualizers.getRenderDistance();
     }
 
-    // Colors (ARGB)
-    private static final int COLOR_FOLLOW_HOSTILE = 0x40FF5555;   // Red, translucent
-    private static final int COLOR_FOLLOW_NEUTRAL = 0x40FFFF55;   // Yellow, translucent
-    private static final int COLOR_ATTACK_RANGE = 0x60FF0000;     // Deep red, slightly more opaque
-    private static final int COLOR_PASSIVE = 0x4055FF55;          // Green, translucent
+    // Colors (delegating to OverlayTheme.Debug)
+    private static final int COLOR_FOLLOW_HOSTILE = OverlayTheme.Debug.RANGE_HOSTILE;
+    private static final int COLOR_FOLLOW_NEUTRAL = OverlayTheme.Debug.RANGE_NEUTRAL;
+    private static final int COLOR_ATTACK_RANGE = OverlayTheme.Debug.RANGE_ATTACK;
+    private static final int COLOR_PASSIVE = OverlayTheme.Debug.RANGE_PASSIVE;
 
     private AggroRangeVisualizer() {}
 

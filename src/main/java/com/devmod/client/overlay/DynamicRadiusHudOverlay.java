@@ -20,6 +20,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.SpawnabilityOverlay;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.util.I18n;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -28,8 +29,9 @@ public final class DynamicRadiusHudOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "dynamic_radius_hint");
 
-    private static final int BG_COLOR = 0x88000000;
-    private static final int TEXT_COLOR = 0xFFE6E6E6;
+    // Colors (delegating to OverlayTheme)
+    private static final int BG_COLOR = OverlayTheme.withAlpha(0x000000, OverlayTheme.Alpha.SUBTLE);
+    private static final int TEXT_COLOR = OverlayTheme.Text.LIGHT;
     private static final int PADDING = 2;
     private static final int MARGIN = 6;
     private static final int LINE_GAP = 2;

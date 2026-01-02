@@ -147,6 +147,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         // Custom hazard registry (optional)
         this.validator.withRegisteredCustomHazards(CustomHazardRegistry.getInstance().all());
 
+        // P1: Block/entity whitelist validation
+        configureBlockEntityWhitelist(this.configSnapshot);
+
         // Optional: enable structure validation if manifest exists (default path)
         try {
             ArenaTemplateConfig.ConfigSnapshot activeSnapshot = this.configSnapshot;
@@ -181,6 +184,66 @@ public class ArenaTemplateRegistry implements AutoCloseable {
     }
 
     /**
+     * P1: Configure block/entity whitelist validation from config snapshot.
+     */
+    private void configureBlockEntityWhitelist(@Nullable ArenaTemplateConfig.ConfigSnapshot snapshot) {
+        if (snapshot == null) {
+            // Use defaults
+            this.validator.withBlockEntityWhitelist(BlockEntityWhitelist.defaults());
+            return;
+        }
+
+        String whitelistPath = snapshot.whitelistPath();
+        String whitelistMode = snapshot.whitelistMode();
+
+        // Parse mode from config
+        BlockEntityWhitelist.Mode mode = BlockEntityWhitelist.Mode.WARN;
+        if (whitelistMode != null && !whitelistMode.isBlank()) {
+            try {
+                mode = BlockEntityWhitelist.Mode.valueOf(whitelistMode.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                if (loggingEnabled) {
+                    LOGGER.warn("Invalid whitelist mode '{}', defaulting to WARN", whitelistMode);
+                }
+            }
+        }
+
+        // Skip validation entirely if mode is SKIP
+        if (mode == BlockEntityWhitelist.Mode.SKIP) {
+            this.validator.withBlockEntityWhitelist(BlockEntityWhitelist.disabled());
+            return;
+        }
+
+        // Try to load from file, fall back to defaults
+        BlockEntityWhitelist whitelist;
+        if (whitelistPath != null && !whitelistPath.isBlank()) {
+            try {
+                whitelist = BlockEntityWhitelist.parse(Path.of(whitelistPath));
+                if (loggingEnabled) {
+                    LOGGER.info("Loaded block/entity whitelist from {} (mode={})", whitelistPath, whitelist.getMode());
+                }
+            } catch (Exception e) {
+                if (loggingEnabled) {
+                    LOGGER.warn("Failed to load whitelist from {}, using defaults: {}", whitelistPath, e.getMessage());
+                }
+                whitelist = BlockEntityWhitelist.defaults();
+            }
+        } else {
+            whitelist = BlockEntityWhitelist.defaults();
+        }
+
+        whitelist = whitelist.withMode(mode);
+        this.validator.withBlockEntityWhitelist(whitelist);
+
+        // Emit telemetry
+        telemetry.emit("arena.whitelist.configured", Map.of(
+            "mode", whitelist.getMode().name(),
+            "enabled", whitelist.isEnabled(),
+            "path", whitelistPath != null ? whitelistPath : "default"
+        ));
+    }
+
+    /**
      * Applies a new config snapshot to the registry runtime state.
      */
     public void applyConfigSnapshot(@Nullable ArenaTemplateConfig.ConfigSnapshot snapshot) {
@@ -199,6 +262,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             snapshot.structureMaxBlockCount() > 0 ? snapshot.structureMaxBlockCount() : 100_000,
             snapshot.structureMaxEntityCount() > 0 ? snapshot.structureMaxEntityCount() : 50
         ));
+
+        // P1: Refresh block/entity whitelist on config reload
+        configureBlockEntityWhitelist(snapshot);
     }
 
     public void setLoggingEnabled(boolean enabled) {
@@ -718,6 +784,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             mergeIntByStrategy("size", child.size(), parent.size(), 0),
             mergeIntegerByStrategy("sizeX", child.sizeX(), parent.sizeX()),
             mergeIntegerByStrategy("sizeZ", child.sizeZ(), parent.sizeZ()),
+            // ArenaShape and ringInnerRadius (added for circular/ring arena support)
+            child.arenaShape() != null ? child.arenaShape() : parent.arenaShape(),
+            mergeIntegerByStrategy("ringInnerRadius", child.ringInnerRadius(), parent.ringInnerRadius()),
             mergeRequiredByStrategy("floor", child.floor(), parent.floor(), this::mergeFloor),
             mergeRequiredByStrategy("walls", child.walls(), parent.walls(), this::mergeWalls),
             mergeRequiredByStrategy("ceiling", child.ceiling(), parent.ceiling(), this::mergeCeiling),
@@ -739,6 +808,8 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             mergeByStrategy("structureNbt", child.structureNbt(), parent.structureNbt(), null),
             mergeRequiredByStrategy("limits", child.limits(), parent.limits(), this::mergeLimits),
             mergeRequiredByStrategy("buildSettings", child.buildSettings(), parent.buildSettings(), this::mergeBuildSettings),
+            // OVERRIDE for zoneSettings (complete replacement)
+            mergeByStrategy("zoneSettings", child.zoneSettings(), parent.zoneSettings(), null),
             // OVERRIDE for arrays
             mergeListByStrategy("tags", child.tags(), parent.tags())
         );

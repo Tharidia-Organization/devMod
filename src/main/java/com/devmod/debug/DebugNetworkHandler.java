@@ -14,6 +14,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import com.devmod.network.PayloadValidation;
+
 import static com.devmod.network.ChannelId.DEBUG_SYNC;
 import static com.devmod.network.ChannelId.DEBUG_TOGGLE;
 
@@ -33,7 +35,8 @@ public class DebugNetworkHandler {
             event.registrar(DEBUG_TOGGLE.asString()).playToServer(
                 Objects.requireNonNull(DebugTogglePayload.TYPE),
                 Objects.requireNonNull(DebugTogglePayload.STREAM_CODEC),
-                DebugNetworkHandler::handleDebugToggle
+                PayloadValidation.validated(DebugNetworkHandler::handleDebugToggle,
+                    PayloadValidation.PayloadLimits.SMALL)
             );
 
             // Debug Sync (server to client) - sync enabled state to client

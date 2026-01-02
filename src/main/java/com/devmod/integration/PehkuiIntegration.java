@@ -15,8 +15,6 @@ public class PehkuiIntegration {
 
     // Cache of classes and methods for performance
     @Nullable
-    private static Class<?> scaleTypesClass = null;
-    @Nullable
     private static Object baseScaleType = null;
     @Nullable
     private static Object hitboxWidthScaleType = null;
@@ -37,10 +35,10 @@ public class PehkuiIntegration {
 
         try {
             // Load ScaleTypes class
-            scaleTypesClass = Class.forName("virtuoel.pehkui.api.ScaleTypes");
+            Class<?> scaleTypes = Class.forName("virtuoel.pehkui.api.ScaleTypes");
 
             // Get BASE field (visual scale)
-            Object baseScaleTypeLocal = scaleTypesClass.getField("BASE").get(null);
+            Object baseScaleTypeLocal = scaleTypes.getField("BASE").get(null);
             if (baseScaleTypeLocal == null) {
                 throw new IllegalStateException("Pehkui BASE scale type missing");
             }
@@ -48,11 +46,11 @@ public class PehkuiIntegration {
             // Get HITBOX_WIDTH field (hitbox scale) - may not exist in old versions
             Object hitboxScaleTypeLocal = null;
             try {
-                hitboxScaleTypeLocal = scaleTypesClass.getField("HITBOX_WIDTH").get(null);
+                hitboxScaleTypeLocal = scaleTypes.getField("HITBOX_WIDTH").get(null);
             } catch (NoSuchFieldException e) {
                 // Fallback a WIDTH se HITBOX_WIDTH non esiste
                 try {
-                    hitboxScaleTypeLocal = scaleTypesClass.getField("WIDTH").get(null);
+                    hitboxScaleTypeLocal = scaleTypes.getField("WIDTH").get(null);
                 } catch (NoSuchFieldException e2) {
                     hitboxScaleTypeLocal = baseScaleTypeLocal; // Use BASE as fallback
                 }
@@ -104,15 +102,18 @@ public class PehkuiIntegration {
             initReflection();
         }
 
-        if (!initSuccess || baseScaleType == null || getScaleDataMethod == null || getScaleMethod == null) {
+        final Object scaleType = baseScaleType;
+        final Method scaleDataMethod = getScaleDataMethod;
+        final Method scaleMethod = getScaleMethod;
+        if (!initSuccess || scaleType == null || scaleDataMethod == null || scaleMethod == null) {
             return null;
         }
 
         try {
-            Object scaleData = getScaleDataMethod.invoke(baseScaleType, entity);
+            Object scaleData = scaleDataMethod.invoke(scaleType, entity);
             if (scaleData == null) return 1.0f;
 
-            Object result = getScaleMethod.invoke(scaleData);
+            Object result = scaleMethod.invoke(scaleData);
             if (result instanceof Float f) {
                 return f;
             } else if (result instanceof Number n) {
@@ -141,15 +142,18 @@ public class PehkuiIntegration {
             initReflection();
         }
 
-        if (!initSuccess || hitboxWidthScaleType == null || getScaleDataMethod == null || getScaleMethod == null) {
+        final Object scaleType = hitboxWidthScaleType;
+        final Method scaleDataMethod = getScaleDataMethod;
+        final Method scaleMethod = getScaleMethod;
+        if (!initSuccess || scaleType == null || scaleDataMethod == null || scaleMethod == null) {
             return null;
         }
 
         try {
-            Object scaleData = getScaleDataMethod.invoke(hitboxWidthScaleType, entity);
+            Object scaleData = scaleDataMethod.invoke(scaleType, entity);
             if (scaleData == null) return 1.0f;
 
-            Object result = getScaleMethod.invoke(scaleData);
+            Object result = scaleMethod.invoke(scaleData);
             if (result instanceof Float f) {
                 return f;
             } else if (result instanceof Number n) {

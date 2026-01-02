@@ -18,24 +18,25 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.QuestCompletionPayload;
 
 @OnlyIn(Dist.CLIENT)
 public class QuestCompletionScreen extends Screen {
 
     // === Colors - Thematic victory screen (gold theme) ===
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
-    private static final int COLOR_GOLD = UIConstants.Accent.GOLD();
-    private static final int COLOR_GEM = UIConstants.Accent.PURPLE();  // Blood gems
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
-    private static final int COLOR_BONUS = UIConstants.Accent.CYAN();
+    private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_GOLD = DesignTokens.Semantic.WARNING;
+    private static final int COLOR_GEM = 0xFFA371F7;  // Blood gems (purple)
+    private static final int COLOR_SUCCESS = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_BONUS = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_ORANGE = 0xFFFF8C00;  // Mutators/achievements
 
-    // === Dimensions (base values, may be scaled for small screens) - using UIConstants ===
-    private static final int BASE_PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_LARGE;
+    // === Dimensions (base values, may be scaled for small screens) ===
+    private static final int BASE_PANEL_WIDTH = DesignTokens.Component.MODAL_MAX_WIDTH;
     private static final int BASE_PANEL_HEIGHT = 380;
-    private static final int MIN_PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_SMALL;
+    private static final int MIN_PANEL_WIDTH = 280;
 
     // Calculated panel dimensions (set in init)
     private int PANEL_WIDTH = BASE_PANEL_WIDTH;
@@ -133,7 +134,7 @@ public class QuestCompletionScreen extends Screen {
         // Keybind hint
         if (fadeProgress > 0.8f) {
             float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
-            int hintColor = applyAlpha(UIConstants.Text.MUTED(), hintAlpha);
+            int hintColor = applyAlpha(DesignTokens.Text.MUTED, hintAlpha);
             graphics.drawCenteredString(Objects.requireNonNull(font), "ESC / Enter: Continue", centerX, panelY + PANEL_HEIGHT + 10, hintColor);
         }
 
@@ -247,7 +248,7 @@ public class QuestCompletionScreen extends Screen {
         }
 
         // Separator
-        int sepColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
+        int sepColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
         g.fill(panelX + 30, y, panelX + PANEL_WIDTH - 30, y + 1, sepColor);
         y += 15;
 
@@ -277,7 +278,7 @@ public class QuestCompletionScreen extends Screen {
 
         // Prestige points
         if (data.prestigeEarned() > 0) {
-            g.drawCenteredString(safeFont, "\u2726 " + data.prestigeEarned() + " Prestige", centerX, y, applyAlpha(UIConstants.Accent.PURPLE(), alpha));
+            g.drawCenteredString(safeFont, "\u2726 " + data.prestigeEarned() + " Prestige", centerX, y, applyAlpha(COLOR_GEM, alpha));
             y += 14;
         }
         y += 8;
@@ -296,7 +297,7 @@ public class QuestCompletionScreen extends Screen {
                 y += 12;
             }
             if (data.activeMutators() > 0) {
-                g.drawCenteredString(safeFont, "\u2714 " + data.activeMutators() + " Mutators Active", centerX, y, applyAlpha(UIConstants.Accent.ORANGE(), alpha));
+                g.drawCenteredString(safeFont, "\u2714 " + data.activeMutators() + " Mutators Active", centerX, y, applyAlpha(COLOR_ORANGE, alpha));
                 y += 12;
             }
             y += 6;
@@ -319,17 +320,17 @@ public class QuestCompletionScreen extends Screen {
         y += 12;
 
         if (data.totalDamageTaken() > 0) {
-            g.drawString(safeFont, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(UIConstants.Accent.RED(), alpha));
+            g.drawString(safeFont, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha));
         }
         if (data.deaths() > 0) {
-            g.drawString(safeFont, "Deaths: " + data.deaths(), rightX, y, applyAlpha(UIConstants.Accent.RED(), alpha));
+            g.drawString(safeFont, "Deaths: " + data.deaths(), rightX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha));
         }
         y += 18;
 
         // === ACHIEVEMENTS ===
         List<String> achievements = data.achievementNames();
         if (!achievements.isEmpty()) {
-            g.drawCenteredString(safeFont, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(UIConstants.Accent.GOLD(), alpha));
+            g.drawCenteredString(safeFont, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(COLOR_GOLD, alpha));
             y += 14;
 
             int maxY = panelY + PANEL_HEIGHT - 60;
@@ -338,10 +339,10 @@ public class QuestCompletionScreen extends Screen {
                 if (y > maxY) {
                     // Show indicator for remaining achievements
                     int remaining = achievements.size() - achievementsShown;
-                    g.drawCenteredString(safeFont, "+" + remaining + " more...", centerX, y, applyAlpha(UIConstants.Text.MUTED(), alpha));
+                    g.drawCenteredString(safeFont, "+" + remaining + " more...", centerX, y, applyAlpha(DesignTokens.Text.MUTED, alpha));
                     break;
                 }
-                g.drawCenteredString(safeFont, "\u2605 " + achievement, centerX, y, applyAlpha(UIConstants.Accent.ORANGE(), alpha));
+                g.drawCenteredString(safeFont, "\u2605 " + achievement, centerX, y, applyAlpha(COLOR_ORANGE, alpha));
                 y += 11;
                 achievementsShown++;
             }
@@ -357,8 +358,8 @@ public class QuestCompletionScreen extends Screen {
     private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
         int centerX = width / 2;
         int panelY = (height - PANEL_HEIGHT) / 2;
-        int buttonWidth = UIConstants.Size.BUTTON_WIDTH_MEDIUM;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int buttonWidth = 100;  // Standard medium button width
+        int buttonHeight = DesignTokens.Component.BUTTON_HEIGHT_LG;
         int buttonX = centerX - buttonWidth / 2;
         int buttonY = panelY + PANEL_HEIGHT - 40;
 

@@ -10,12 +10,12 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.EditorSpacing;
 import com.devmod.client.ui.editor.core.FocusRing;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class EditorSlider {
 
@@ -51,7 +51,7 @@ public class EditorSlider {
     // Display
     private String format = "%.2f";
     private String suffix = "";
-    private int trackColor = UIConstants.SliderColors.NEUTRAL;
+    private int trackColor = DesignTokens.SliderColors.NEUTRAL;
     private boolean showLabel = true;
     private boolean showValue = true;
     private boolean showInput = false;
@@ -266,7 +266,7 @@ public class EditorSlider {
 
         // Label on the left
         if (showLabel) {
-            int labelColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
+            int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
             graphics.drawString(font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
 
             // Track position after label for badges/buttons
@@ -287,18 +287,18 @@ public class EditorSlider {
         }
 
         // Track background
-        int trackBg = enabled ? UIConstants.Slider.TRACK : UIConstants.Slider.TRACK_DISABLED;
+        int trackBg = enabled ? DesignTokens.Slider.TRACK : DesignTokens.Slider.TRACK_DISABLED;
         graphics.fill(trackX, trackY, trackX + trackWidth, trackY + TRACK_HEIGHT, trackBg);
 
         // Filled portion
         float ratio = (value - min) / (max - min);
         int filledWidth = (int) (trackWidth * ratio);
-        int fillColor = enabled ? trackColor : UIConstants.withAlpha(trackColor, 0x80);
+        int fillColor = enabled ? trackColor : DesignTokens.withAlpha(trackColor, 0x80);
         graphics.fill(trackX, trackY, trackX + filledWidth, trackY + TRACK_HEIGHT, fillColor);
 
         // Track border
-        int borderColor = focused ? UIConstants.Border.ACCENT() :
-                         (hovered ? UIConstants.Border.HOVER() : UIConstants.Border.DEFAULT());
+        int borderColor = focused ? DesignTokens.Border.ACCENT() :
+                         (hovered ? DesignTokens.Border.HOVER() : DesignTokens.Border.DEFAULT());
         AxiomRenderer.drawBorder(graphics, trackX, trackY, trackWidth, TRACK_HEIGHT, borderColor);
 
         // Thumb
@@ -309,12 +309,12 @@ public class EditorSlider {
         thumbX = Mth.clamp(thumbX, trackX, trackX + trackWidth - THUMB_SIZE);
 
         int thumbColor = dragging ? trackColor :
-                        (hovered ? UIConstants.Background.ACTIVE() : UIConstants.Background.HOVER());
-        if (!enabled) thumbColor = UIConstants.Slider.THUMB_DISABLED;
+                        (hovered ? DesignTokens.Background.ACTIVE() : DesignTokens.Background.HOVER());
+        if (!enabled) thumbColor = DesignTokens.Slider.THUMB_DISABLED;
 
         graphics.fill(thumbX, thumbY, thumbX + THUMB_SIZE, thumbY + THUMB_SIZE, thumbColor);
         AxiomRenderer.drawBorder(graphics, thumbX, thumbY, THUMB_SIZE, THUMB_SIZE,
-                                hovered || dragging ? trackColor : UIConstants.Border.DEFAULT());
+                                hovered || dragging ? trackColor : DesignTokens.Border.DEFAULT());
 
         // Value text on the right
         if (showInput && inputField != null) {
@@ -322,14 +322,14 @@ public class EditorSlider {
                 inputField.setNumericValue(value);
             }
             int inputX = trackX + trackWidth + EditorSpacing.S;
-            int inputY = y + (HEIGHT - UIConstants.Size.INPUT_HEIGHT) / 2;
+            int inputY = y + (HEIGHT - DesignTokens.Size.INPUT_HEIGHT) / 2;
             inputField.render(graphics, inputX, inputY, INPUT_WIDTH, mouseX, mouseY);
         } else if (showValue) {
             String safeFormat = format != null ? format : "%.2f";
             String safeSuffix = suffix != null ? suffix : "";
             String valueText = String.format(safeFormat, value) + safeSuffix;
             int valueX = trackX + trackWidth + EditorSpacing.S;
-            int valueColor = enabled ? UIConstants.Text.VALUE() : UIConstants.Text.MUTED();
+            int valueColor = enabled ? DesignTokens.Text.VALUE() : DesignTokens.Text.MUTED();
             graphics.drawString(font, valueText, valueX, y + TEXT_OFFSET_Y, valueColor, false);
         }
 
@@ -344,7 +344,7 @@ public class EditorSlider {
             int markerX = trackX + (int) (trackWidth * defaultRatio);
             int markerY = trackY + TRACK_HEIGHT - DEFAULT_MARKER_HEIGHT;
             graphics.fill(markerX - DEFAULT_MARKER_HALF_WIDTH, markerY,
-                markerX + DEFAULT_MARKER_HALF_WIDTH, trackY + TRACK_HEIGHT, UIConstants.Text.MUTED());
+                markerX + DEFAULT_MARKER_HALF_WIDTH, trackY + TRACK_HEIGHT, DesignTokens.Text.MUTED());
         }
 
         return totalHeight;

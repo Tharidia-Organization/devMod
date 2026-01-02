@@ -1,11 +1,15 @@
 package com.devmod.notification;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,6 +28,8 @@ import com.devmod.notification.persistence.NotificationPreferencesRepository;
  * </ul>
  */
 public class NotificationRouter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationRouter.class);
 
     /**
      * Cache of player preferences. Will be populated from persistence layer.
@@ -103,7 +109,17 @@ public class NotificationRouter {
         preferencesCache.put(playerUuid, preferences);
         NotificationPreferencesRepository repo = NotificationPreferencesRepository.INSTANCE;
         if (repo.isInitialized()) {
-            repo.savePreferences(preferences);
+            CompletableFuture<?> future = repo.savePreferences(preferences).handle((result, ex) -> {
+                if (ex != null) {
+                    LOGGER.warn("[NotificationRouter] Failed to save preferences for {}: {}",
+                            playerUuid, ex.getMessage());
+                }
+                return null;
+            });
+            // Fire-and-forget with error logging
+            if (future.isDone() && LOGGER.isTraceEnabled()) {
+                LOGGER.trace("[NotificationRouter] Preferences saved immediately for {}", playerUuid);
+            }
         }
     }
 
@@ -125,7 +141,7 @@ public class NotificationRouter {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return false;
 
-        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUuid, "playerUuid"));
         return player != null;
     }
 

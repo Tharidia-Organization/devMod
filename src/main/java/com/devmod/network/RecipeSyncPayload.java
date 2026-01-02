@@ -24,11 +24,20 @@ import com.devmod.recipe.SmeltingRecipeData;
 import com.devmod.recipe.SmithingRecipeData;
 import com.devmod.recipe.StonecuttingRecipeData;
 
+/**
+ * Network payload for syncing recipe data between server and clients.
+ * Supports crafting, smelting, smithing, and stonecutting recipes.
+ *
+ * <p><b>CRITICAL:</b> The record field order MUST match the encode/decode method order.
+ * Uses custom encode/decode methods - update both if fields change.</p>
+ *
+ * <p>Field order: recipes, isGlobal, operation</p>
+ */
 public record RecipeSyncPayload(
     @Nonnull List<RecipeData> recipes,
     boolean isGlobal,
     @Nonnull SyncOperation operation
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final Gson GSON = new GsonBuilder().create();
 
@@ -48,6 +57,41 @@ public record RecipeSyncPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(operation.ordinal()) + 1; // operation + bool
+        size += varIntSize(recipes.size());
+        for (RecipeData recipe : recipes) {
+            ResourceLocation id = recipe.id();
+            size += estimatedUtfSize(id != null ? id.toString() : "");
+
+            String typeDiscriminator = getTypeDiscriminator(recipe);
+            size += estimatedUtfSize(typeDiscriminator);
+
+            String json = GSON.toJson(recipe.toJson());
+            size += estimatedUtfSize(json);
+        }
+        return size;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 
     // ═══════════════════════════════════════════════════════════════

@@ -11,15 +11,26 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.devmod.arena.serialization.TemplateSerializer;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 
 public class TemplateLoader {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TemplateLoader.class);
+
     private final TemplateSerializer serializer = new TemplateSerializer();
     private final TemplateValidator validator;
     private final TemplateValidator.ValidationMode validationMode;
     private final ArenaTelemetry telemetry;
+
+    // P1: Template manifest for checksum validation
+    @Nullable
+    private TemplateManifest manifest;
 
     public TemplateLoader(TemplateValidator validator,
                           TemplateValidator.ValidationMode validationMode,
@@ -27,6 +38,7 @@ public class TemplateLoader {
         this.validator = validator;
         this.validationMode = validationMode;
         this.telemetry = telemetry;
+        this.manifest = null;
         // Attempt to load JSON schema if present (draft schema in docs)
         try {
             SchemaValidator.tryLoadFromResource("schemas/arena_template.schema.json");
@@ -34,6 +46,33 @@ public class TemplateLoader {
             SchemaValidator.tryLoadFromPath(schemaPath);
         } catch (Exception ignored) {
             // keep defaults if schema load fails
+        }
+    }
+
+    /**
+     * P1: Set the template manifest for checksum validation.
+     *
+     * @param manifest The manifest to use, or null to disable checksum validation
+     */
+    public void setManifest(@Nullable TemplateManifest manifest) {
+        this.manifest = manifest;
+        if (manifest != null && manifest.hasEntries()) {
+            LOGGER.info("Template checksum validation enabled with {} entries, mode={}",
+                manifest.getMode());
+        }
+    }
+
+    /**
+     * P1: Load manifest from a file path.
+     *
+     * @param manifestPath Path to the manifest JSON file
+     */
+    public void loadManifest(Path manifestPath) {
+        try {
+            this.manifest = TemplateManifest.parse(manifestPath);
+        } catch (IOException e) {
+            LOGGER.warn("Failed to load template manifest from {}: {}", manifestPath, e.getMessage());
+            this.manifest = TemplateManifest.empty();
         }
     }
 
@@ -204,6 +243,36 @@ public class TemplateLoader {
                 return;
             }
 
+            // P1: Checksum validation against manifest
+            if (manifest != null) {
+                TemplateManifest.ChecksumValidationResult checksumResult = manifest.validate(normalized);
+
+                if (checksumResult.isError()) {
+                    // STRICT mode: checksum mismatch is a hard error
+                    errors.add(path + ": " + checksumResult.message());
+                    telemetry.emit("arena.template.checksum_failed", Map.of(
+                        "file", path.toString(),
+                        "templateId", normalized.id(),
+                        "expected", checksumResult.expectedChecksum() != null ? checksumResult.expectedChecksum() : "none",
+                        "computed", checksumResult.computedChecksum() != null ? checksumResult.computedChecksum() : "none",
+                        "strict", true
+                    ));
+                    return;
+                } else if (checksumResult.isWarning()) {
+                    // WARN mode: log warning but continue loading
+                    LOGGER.warn("[TemplateLoader] Checksum warning for {}: {}", normalized.id(), checksumResult.message());
+                    telemetry.emit("arena.template.checksum_warning", Map.of(
+                        "file", path.toString(),
+                        "templateId", normalized.id(),
+                        "expected", checksumResult.expectedChecksum() != null ? checksumResult.expectedChecksum() : "none",
+                        "computed", checksumResult.computedChecksum() != null ? checksumResult.computedChecksum() : "none"
+                    ));
+                } else if (!checksumResult.skipped() && checksumResult.computedChecksum() != null) {
+                    // Valid or no manifest entry - log computed checksum for future manifest generation
+                    LOGGER.debug("[TemplateLoader] Template {} checksum: {}", normalized.id(), checksumResult.computedChecksum());
+                }
+            }
+
             loaded.add(normalized);
             telemetry.emit("arena.template.loaded_file", Map.of(
                 "templateId", normalized.id(),
@@ -253,6 +322,8 @@ public class TemplateLoader {
             template.size(),
             template.sizeX(),
             template.sizeZ(),
+            template.arenaShape(),
+            template.ringInnerRadius(),
             template.floor(),
             template.walls(),
             template.ceiling(),
@@ -271,6 +342,7 @@ public class TemplateLoader {
             template.structureNbt(),
             template.limits(),
             template.buildSettings(),
+            template.zoneSettings(),
             template.tags()
         );
     }

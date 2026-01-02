@@ -41,7 +41,7 @@ public class RoomBoundsVisualizer {
     private BlockPos pendingPointB = null;
 
     // Colori per le room - delegating to OverlayTheme.Debug (single source of truth)
-    private static final int[] ROOM_COLORS = OverlayTheme.Debug.ROOM_PALETTE;
+    private static final int[] ROOM_COLORS = OverlayTheme.Debug.roomPalette();
 
     private RoomBoundsVisualizer() {}
 

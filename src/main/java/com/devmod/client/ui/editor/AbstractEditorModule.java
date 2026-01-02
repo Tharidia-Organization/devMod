@@ -19,10 +19,10 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public abstract class AbstractEditorModule implements EditorModule {
 
@@ -155,7 +155,7 @@ public abstract class AbstractEditorModule implements EditorModule {
     @Override
     public void renderContent(GuiGraphics graphics, ResponsiveLayout.Rect contentBounds, int mouseX, int mouseY) {
         var font = Minecraft.getInstance().font;
-        int y = contentBounds.y() + UIConstants.Spacing.MD;
+        int y = contentBounds.y() + DesignTokens.Spacing.MD;
 
         // Render sections
         List<EditorSection> sections = getSections();
@@ -170,23 +170,23 @@ public abstract class AbstractEditorModule implements EditorModule {
             // Render section header label if it's a HeaderSection
             if (section instanceof EditorSection.HeaderSection headerSection) {
                 graphics.drawString(Objects.requireNonNull(font, "font cannot be null"), headerSection.getLabel(),
-                    contentBounds.x() + UIConstants.Spacing.SM,
+                    contentBounds.x() + DesignTokens.Spacing.SM,
                     y + (section.getHeight() - 8) / 2,
-                    UIConstants.Text.TITLE(), false);
+                    DesignTokens.Text.TITLE(), false);
             }
 
             section.render(graphics, sectionBounds, mouseX, mouseY);
-            y += section.getHeight() + UIConstants.Spacing.SM;
+            y += section.getHeight() + DesignTokens.Spacing.SM;
         }
     }
 
     @Override
     public int calculateContentHeight() {
-        int height = UIConstants.Spacing.MD;
+        int height = DesignTokens.Spacing.MD;
         for (EditorSection section : getSections()) {
-            height += section.getHeight() + UIConstants.Spacing.SM;
+            height += section.getHeight() + DesignTokens.Spacing.SM;
         }
-        return height + UIConstants.Spacing.MD;
+        return height + DesignTokens.Spacing.MD;
     }
 
     // ═══════════════════════════════════════════════════════════════

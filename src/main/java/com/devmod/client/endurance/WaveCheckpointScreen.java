@@ -23,7 +23,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
@@ -32,18 +32,19 @@ import com.devmod.util.I18n;
 
 public class WaveCheckpointScreen extends Screen {
 
-    // === Colors - Standardized to UIConstants ===
-    private static final int COLOR_BG_TOP = UIConstants.Background.PANEL();
-    private static final int COLOR_BG_BOTTOM = UIConstants.Background.INPUT();
-    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT();  // Blue instead of orange
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
-    private static final int COLOR_GOLD = UIConstants.Accent.GOLD();
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
-    private static final int COLOR_ACCENT = UIConstants.Accent.BLUE();  // Blue instead of orange
+    // === Colors - Using DesignTokens for consistency ===
+    private static final int COLOR_BG_TOP = DesignTokens.Bg.LEVEL_2;
+    private static final int COLOR_BG_BOTTOM = DesignTokens.Surface.LEVEL_0;
+    private static final int COLOR_BORDER = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_SUCCESS = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_GOLD = DesignTokens.Semantic.WARNING;
+    private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_ACCENT = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_DAMAGE = DesignTokens.Semantic.ERROR;
 
-    // === Dimensions - using UIConstants for consistency ===
-    private static final int PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_MEDIUM;
+    // === Dimensions - using DesignTokens for consistency ===
+    private static final int PANEL_WIDTH = DesignTokens.Component.MODAL_MAX_WIDTH;
     private static final int PANEL_HEIGHT = 260;
 
     // === Animation Timing (ms) ===
@@ -207,7 +208,7 @@ public class WaveCheckpointScreen extends Screen {
         // === Hint ===
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float hintAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
-            int hintColor = applyAlpha(UIConstants.Text.MUTED(), hintAlpha);
+            int hintColor = applyAlpha(DesignTokens.Text.MUTED, hintAlpha);
             graphics.drawCenteredString(Objects.requireNonNull(font), "ESC/F11: Continue  |  F12: Exit", centerX, panelY + PANEL_HEIGHT - 22, hintColor);
         }
 
@@ -250,7 +251,7 @@ public class WaveCheckpointScreen extends Screen {
         }
 
         // Inner border highlight (top)
-        int highlightColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
+        int highlightColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
         g.fill(x, y, x + w, y + 1, highlightColor);
     }
 
@@ -294,7 +295,7 @@ public class WaveCheckpointScreen extends Screen {
             new StatEntry("Time", formatDuration(sessionDurationMs), COLOR_TEXT, 0, false),
             new StatEntry("Points", "+" + pointsEarned, COLOR_ACCENT, 0, true),
             new StatEntry("Kills", String.valueOf(mobsKilled), COLOR_SUCCESS, 1, true),
-            new StatEntry("Damage", String.valueOf(damageDealt), UIConstants.Accent.RED(), 1, true),
+            new StatEntry("Damage", String.valueOf(damageDealt), COLOR_DAMAGE, 1, true),
             new StatEntry("Combo", String.valueOf(maxCombo), COLOR_GOLD, 2, true)
         };
 
@@ -327,11 +328,11 @@ public class WaveCheckpointScreen extends Screen {
         // Background box
         int boxWidth = 140;
         int boxHeight = 22;
-        int bgColor = applyAlpha(UIConstants.Background.INPUT(), alpha);
+        int bgColor = applyAlpha(DesignTokens.Surface.LEVEL_0, alpha);
         g.fill(x, y, x + boxWidth, y + boxHeight, bgColor);
 
         // Border
-        int borderColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
+        int borderColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
         g.fill(x, y, x + boxWidth, y + 1, borderColor);
 
         // Label
@@ -389,7 +390,7 @@ public class WaveCheckpointScreen extends Screen {
         g.drawCenteredString(safeFont, progressText, panelX + panelWidth / 2, y - 2, labelColor);
 
         // Bar background
-        int bgColor = applyAlpha(UIConstants.Background.INPUT(), alpha);
+        int bgColor = applyAlpha(DesignTokens.Surface.LEVEL_0, alpha);
         g.fill(barX, y + 10, barX + barWidth, y + 10 + barHeight, bgColor);
 
         // Animated fill (guard against division by zero)
@@ -410,12 +411,12 @@ public class WaveCheckpointScreen extends Screen {
         // Shine effect
         if (fillWidth > 10) {
             int shineX = barX + (int)((elapsed / 20) % fillWidth);
-            int shineColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
+            int shineColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
             g.fill(shineX, y + 10, shineX + 3, y + 10 + barHeight, shineColor);
         }
 
         // Border
-        int borderColor = applyAlpha(UIConstants.Border.MUTED(), alpha);
+        int borderColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
         g.fill(barX, y + 10, barX + barWidth, y + 11, borderColor);
         g.fill(barX, y + 10 + barHeight - 1, barX + barWidth, y + 10 + barHeight, borderColor);
     }
@@ -442,7 +443,7 @@ public class WaveCheckpointScreen extends Screen {
         int panelY = centerY - PANEL_HEIGHT / 2;
 
         int buttonWidth = (PANEL_WIDTH - 60) / 2;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int buttonHeight = DesignTokens.Component.BUTTON_HEIGHT_LG;
         int buttonY = panelY + PANEL_HEIGHT - 55;
 
         if (continueButton != null) {

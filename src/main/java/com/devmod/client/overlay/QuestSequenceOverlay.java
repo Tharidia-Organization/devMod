@@ -20,7 +20,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.party.ArrivalConfirmPayload;
 import com.devmod.party.QuestSequencePayload;
 
@@ -216,17 +216,17 @@ public class QuestSequenceOverlay {
         int boxY = 40;
 
         // Background
-        int bgColor = UIConstants.setAlpha(UIConstants.Background.PANEL_SOLID(), (int) (0xE0 * animationProgress));
+        int bgColor = DesignTokens.withAlpha(DesignTokens.Background.PANEL_SOLID, (int) (0xE0 * animationProgress));
         graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, bgColor);
 
         // Border with glow effect based on phase
         int borderColor = getPhaseColor();
-        borderColor = UIConstants.setAlpha(borderColor, alpha);
+        borderColor = DesignTokens.withAlpha(borderColor, alpha);
         graphics.renderOutline(boxX, boxY, boxWidth, boxHeight, borderColor);
 
         // Phase title
         Component phaseText = Objects.requireNonNull(getPhaseText(), "phase text");
-        int textColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY(), alpha);
+        int textColor = DesignTokens.withAlpha(DesignTokens.Text.PRIMARY, alpha);
         graphics.drawCenteredString(font, phaseText, boxX + boxWidth / 2, boxY + 8, textColor);
 
         // Render based on phase
@@ -251,12 +251,12 @@ public class QuestSequenceOverlay {
         var safeFont = Objects.requireNonNull(font, "font");
         if (subtitle != null && !subtitle.isBlank()) {
             String safeSubtitle = Objects.requireNonNull(subtitle, "subtitle");
-            int subtitleColor = UIConstants.setAlpha(UIConstants.Text.SECONDARY(), alpha);
+            int subtitleColor = DesignTokens.withAlpha(DesignTokens.Text.SECONDARY, alpha);
             graphics.drawCenteredString(safeFont, safeSubtitle, boxX + boxWidth / 2, boxY + 22, subtitleColor);
         }
         String countdownText = Objects.requireNonNull(String.valueOf(secondsRemaining), "countdown");
         int countdownColor = getCountdownColor();
-        countdownColor = UIConstants.setAlpha(countdownColor, alpha);
+        countdownColor = DesignTokens.withAlpha(countdownColor, alpha);
 
         graphics.pose().pushPose();
         graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
@@ -268,7 +268,7 @@ public class QuestSequenceOverlay {
     private void renderBriefing(GuiGraphics graphics, net.minecraft.client.gui.Font font,
                                 int boxX, int boxY, int boxWidth, int alpha) {
         var safeFont = Objects.requireNonNull(font, "font");
-        int textColor = UIConstants.setAlpha(UIConstants.Text.SECONDARY(), alpha);
+        int textColor = DesignTokens.withAlpha(DesignTokens.Text.SECONDARY, alpha);
         int lineY = boxY + 24;
 
         if (title != null && !title.isBlank()) {
@@ -299,7 +299,7 @@ public class QuestSequenceOverlay {
      * Render "GO!" message.
      */
     private void renderGoMessage(GuiGraphics graphics, net.minecraft.client.gui.Font font, int boxX, int boxY, int boxWidth, int alpha) {
-        int goColor = UIConstants.setAlpha(UIConstants.Accent.GREEN(), alpha);
+        int goColor = DesignTokens.withAlpha(DesignTokens.Semantic.SUCCESS, alpha);
         graphics.pose().pushPose();
         graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
         graphics.pose().scale(2f, 2f, 1f);
@@ -316,7 +316,7 @@ public class QuestSequenceOverlay {
 
         // Arrival count
         String arrivalText = Objects.requireNonNull(arrived + " / " + total + " arrived", "arrival text");
-        int arrivalColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY(), alpha);
+        int arrivalColor = DesignTokens.withAlpha(DesignTokens.Text.PRIMARY, alpha);
         var safeFont = Objects.requireNonNull(font, "font");
         graphics.drawCenteredString(safeFont, arrivalText, boxX + boxWidth / 2, boxY + 28, arrivalColor);
 
@@ -332,14 +332,14 @@ public class QuestSequenceOverlay {
             boolean isArrived = i < arrived;
 
             int dotColor = isArrived
-                ? UIConstants.setAlpha(UIConstants.Accent.GREEN(), alpha)
-                : UIConstants.setAlpha(UIConstants.Text.DISABLED(), alpha);
+                ? DesignTokens.withAlpha(DesignTokens.Semantic.SUCCESS, alpha)
+                : DesignTokens.withAlpha(DesignTokens.Text.DISABLED, alpha);
 
             graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, dotColor);
 
             // Checkmark for arrived
             if (isArrived) {
-                int checkColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY(), alpha);
+                int checkColor = DesignTokens.withAlpha(DesignTokens.Text.PRIMARY, alpha);
                 graphics.drawString(safeFont, "✓", dotX + 1, dotY, checkColor);
             }
         }
@@ -347,7 +347,7 @@ public class QuestSequenceOverlay {
         // Timeout warning
         if (secondsRemaining <= 10 && secondsRemaining > 0) {
             String timeoutText = Objects.requireNonNull("Timeout in " + secondsRemaining + "s", "timeout text");
-            int timeoutColor = UIConstants.setAlpha(UIConstants.Accent.GOLD(), alpha);
+            int timeoutColor = DesignTokens.withAlpha(DesignTokens.Accent.GOLD, alpha);
             graphics.drawCenteredString(safeFont, timeoutText, boxX + boxWidth / 2, boxY + 62, timeoutColor);
         }
     }
@@ -362,13 +362,13 @@ public class QuestSequenceOverlay {
         int barHeight = 4;
 
         // Bar background
-        int barBgColor = UIConstants.setAlpha(UIConstants.Background.INPUT(), alpha);
+        int barBgColor = DesignTokens.withAlpha(DesignTokens.Background.INPUT, alpha);
         graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barBgColor);
 
         // Bar progress
         float progress = getPhaseProgress();
         int progressWidth = (int) (barWidth * progress);
-        int barColor = UIConstants.setAlpha(getPhaseColor(), alpha);
+        int barColor = DesignTokens.withAlpha(getPhaseColor(), alpha);
         graphics.fill(barX, barY, barX + progressWidth, barY + barHeight, barColor);
     }
 
@@ -390,24 +390,24 @@ public class QuestSequenceOverlay {
 
     private int getPhaseColor() {
         return switch (currentPhase) {
-            case COUNTDOWN_START -> UIConstants.Accent.GOLD();
-            case TELEPORTING -> UIConstants.Accent.CYAN();
-            case WAITING_FOR_ARRIVALS -> UIConstants.Accent.PURPLE();
-            case SYNCING -> UIConstants.Accent.CYAN();
-            case STARTING -> UIConstants.Accent.GREEN();
-            case STARTED -> UIConstants.Accent.GREEN();
-            case CANCELLED -> UIConstants.Accent.RED();
-            case BRIEFING -> UIConstants.Accent.CYAN();
-            case SAFE_WINDOW -> UIConstants.Accent.GREEN();
-            case WAVE_INCOMING -> UIConstants.Accent.GOLD();
-            case BOSS_INTRO -> UIConstants.Accent.RED();
+            case COUNTDOWN_START -> DesignTokens.Accent.GOLD;
+            case TELEPORTING -> DesignTokens.Accent.PRIMARY;
+            case WAITING_FOR_ARRIVALS -> DesignTokens.Accent.PURPLE;
+            case SYNCING -> DesignTokens.Accent.PRIMARY;
+            case STARTING -> DesignTokens.Semantic.SUCCESS;
+            case STARTED -> DesignTokens.Semantic.SUCCESS;
+            case CANCELLED -> DesignTokens.Semantic.ERROR;
+            case BRIEFING -> DesignTokens.Accent.PRIMARY;
+            case SAFE_WINDOW -> DesignTokens.Semantic.SUCCESS;
+            case WAVE_INCOMING -> DesignTokens.Accent.GOLD;
+            case BOSS_INTRO -> DesignTokens.Semantic.ERROR;
         };
     }
 
     private int getCountdownColor() {
-        if (secondsRemaining <= 1) return UIConstants.Accent.RED();
-        if (secondsRemaining <= 3) return UIConstants.Accent.GOLD();
-        return UIConstants.Text.PRIMARY();
+        if (secondsRemaining <= 1) return DesignTokens.Semantic.ERROR;
+        if (secondsRemaining <= 3) return DesignTokens.Accent.GOLD;
+        return DesignTokens.Text.PRIMARY;
     }
 
     private float getPhaseProgress() {

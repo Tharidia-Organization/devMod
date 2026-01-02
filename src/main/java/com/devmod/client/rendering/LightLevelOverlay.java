@@ -20,6 +20,8 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
+
 @OnlyIn(Dist.CLIENT)
 public class LightLevelOverlay {
     public static final LightLevelOverlay INSTANCE = new LightLevelOverlay();
@@ -209,14 +211,14 @@ public class LightLevelOverlay {
 
             int combinedLight = data.lightLevel();
 
-            // Text color based on light level
+            // Text color based on light level (delegating to OverlayTheme.Debug)
             int textColor;
             if (combinedLight == 0) {
-                textColor = 0xFFFF0000; // Rosso
+                textColor = OverlayTheme.Debug.LIGHT_DANGER;
             } else if (combinedLight <= 7) {
-                textColor = 0xFFFFFF00; // Giallo
+                textColor = OverlayTheme.Debug.LIGHT_WARN;
             } else {
-                textColor = 0xFF00FF00; // Verde
+                textColor = OverlayTheme.Debug.LIGHT_SAFE;
             }
 
             // Label position (block center, slightly above)

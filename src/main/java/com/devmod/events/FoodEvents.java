@@ -99,8 +99,10 @@ public class FoodEvents {
             // Get the effect from registry
             Optional<Holder.Reference<MobEffect>> effectHolder = getEffectHolder(effectData.effectId);
             if (effectHolder.isPresent()) {
+                Holder.Reference<MobEffect> ref = effectHolder.get();
+                Holder<MobEffect> effect = Objects.requireNonNull((Holder<MobEffect>) ref);
                 MobEffectInstance instance = new MobEffectInstance(
-                    effectHolder.get(),
+                    effect,
                     effectData.duration,
                     effectData.amplifier
                 );

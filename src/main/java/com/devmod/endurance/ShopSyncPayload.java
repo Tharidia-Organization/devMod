@@ -1,17 +1,20 @@
 package com.devmod.endurance;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
 public record ShopSyncPayload(
     int tokens,
@@ -20,7 +23,7 @@ public record ShopSyncPayload(
     int gems,
     int bloodGems,
     Map<String, Integer> purchases
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<ShopSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "shop_sync"))
@@ -80,6 +83,24 @@ public record ShopSyncPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += 5 * 4; // tokens, coins, prestige, gems, bloodGems
+        int count = Math.min(purchases.size(), MAX_PURCHASES);
+        size += 4; // purchase count
+        int written = 0;
+        for (Map.Entry<String, Integer> entry : purchases.entrySet()) {
+            if (written >= count) {
+                break;
+            }
+            size += estimatedUtfSize(entry.getKey());
+            size += 4; // value
+            written++;
+        }
+        return size;
+    }
+
     /**
      * Create a sync payload from a player wallet.
      */
@@ -92,5 +113,23 @@ public record ShopSyncPayload(
             wallet.getCurrency(RewardSystem.Currency.BLOOD_GEMS),
             new HashMap<>(wallet.getPurchases())
         );
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

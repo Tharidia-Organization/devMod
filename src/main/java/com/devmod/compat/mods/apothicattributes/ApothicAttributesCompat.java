@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringTokenizer;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -24,7 +25,7 @@ import com.devmod.compat.CompatModule;
 
 public class ApothicAttributesCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApothicAttributesCompat.class);
-    public static final String MOD_ID = "apothicattributes";
+    public static final String MOD_ID = "apothic_attributes";
 
     private static boolean available = false;
     private static boolean initialized = false;
@@ -33,29 +34,33 @@ public class ApothicAttributesCompat implements CompatModule {
     private static final Map<String, Optional<Holder<Attribute>>> attributeCache = new HashMap<>();
 
     // Known Apothic Attributes (ResourceLocation paths)
-    public static final String CRIT_CHANCE = "apothicattributes:crit_chance";
-    public static final String CRIT_DAMAGE = "apothicattributes:crit_damage";
-    public static final String LIFE_STEAL = "apothicattributes:life_steal";
-    public static final String ARMOR_SHRED = "apothicattributes:armor_shred";
-    public static final String ARMOR_PIERCE = "apothicattributes:armor_pierce";
-    public static final String PROJECTILE_DAMAGE = "apothicattributes:projectile_damage";
-    public static final String DRAW_SPEED = "apothicattributes:draw_speed";
-    public static final String DODGE_CHANCE = "apothicattributes:dodge_chance";
-    public static final String MINING_SPEED = "apothicattributes:mining_speed";
-    public static final String EXPERIENCE_GAIN = "apothicattributes:experience_gain";
-    public static final String HEALING_RECEIVED = "apothicattributes:healing_received";
-    public static final String GHOST_HEALTH = "apothicattributes:ghost_health";
-    public static final String COLD_DAMAGE = "apothicattributes:cold_damage";
-    public static final String FIRE_DAMAGE = "apothicattributes:fire_damage";
-    public static final String CURRENT_HP_DAMAGE = "apothicattributes:current_hp_damage";
-    public static final String OVERHEAL = "apothicattributes:overheal";
+    // Namespace changed from "attributeslib" to "apothic_attributes" in 1.21
+    public static final String CRIT_CHANCE = "apothic_attributes:crit_chance";
+    public static final String CRIT_DAMAGE = "apothic_attributes:crit_damage";
+    public static final String LIFE_STEAL = "apothic_attributes:life_steal";
+    public static final String ARMOR_SHRED = "apothic_attributes:armor_shred";
+    public static final String ARMOR_PIERCE = "apothic_attributes:armor_pierce";
+    public static final String ARROW_DAMAGE = "apothic_attributes:arrow_damage";
+    public static final String ARROW_VELOCITY = "apothic_attributes:arrow_velocity";
+    public static final String DRAW_SPEED = "apothic_attributes:draw_speed";
+    public static final String DODGE_CHANCE = "apothic_attributes:dodge_chance";
+    public static final String MINING_SPEED = "apothic_attributes:mining_speed";
+    public static final String EXPERIENCE_GAINED = "apothic_attributes:experience_gained";
+    public static final String HEALING_RECEIVED = "apothic_attributes:healing_received";
+    public static final String GHOST_HEALTH = "apothic_attributes:ghost_health";
+    public static final String COLD_DAMAGE = "apothic_attributes:cold_damage";
+    public static final String FIRE_DAMAGE = "apothic_attributes:fire_damage";
+    public static final String CURRENT_HP_DAMAGE = "apothic_attributes:current_hp_damage";
+    public static final String OVERHEAL = "apothic_attributes:overheal";
+    public static final String PROT_PIERCE = "apothic_attributes:prot_pierce";
+    public static final String PROT_SHRED = "apothic_attributes:prot_shred";
 
     // All tracked attributes for enumeration
     private static final List<String> ALL_ATTRIBUTES = List.of(
         CRIT_CHANCE, CRIT_DAMAGE, LIFE_STEAL, ARMOR_SHRED, ARMOR_PIERCE,
-        PROJECTILE_DAMAGE, DRAW_SPEED, DODGE_CHANCE, MINING_SPEED,
-        EXPERIENCE_GAIN, HEALING_RECEIVED, GHOST_HEALTH, COLD_DAMAGE,
-        FIRE_DAMAGE, CURRENT_HP_DAMAGE, OVERHEAL
+        ARROW_DAMAGE, ARROW_VELOCITY, DRAW_SPEED, DODGE_CHANCE, MINING_SPEED,
+        EXPERIENCE_GAINED, HEALING_RECEIVED, GHOST_HEALTH, COLD_DAMAGE,
+        FIRE_DAMAGE, CURRENT_HP_DAMAGE, OVERHEAL, PROT_PIERCE, PROT_SHRED
     );
 
     @Override
@@ -141,7 +146,7 @@ public class ApothicAttributesCompat implements CompatModule {
         return cached.orElse(null);
     }
 
-    private static Optional<Holder<Attribute>> resolveAttribute(String attributeId) {
+    private static Optional<Holder<Attribute>> resolveAttribute(@Nonnull String attributeId) {
         try {
             ResourceLocation rl = ResourceLocation.tryParse(attributeId);
             if (rl == null) {
@@ -242,10 +247,17 @@ public class ApothicAttributesCompat implements CompatModule {
     }
 
     /**
-     * Get projectile damage bonus.
+     * Get arrow damage bonus.
      */
-    public static double getProjectileDamage(LivingEntity entity) {
-        return getAttributeValue(entity, PROJECTILE_DAMAGE);
+    public static double getArrowDamage(LivingEntity entity) {
+        return getAttributeValue(entity, ARROW_DAMAGE);
+    }
+
+    /**
+     * Get arrow velocity bonus.
+     */
+    public static double getArrowVelocity(LivingEntity entity) {
+        return getAttributeValue(entity, ARROW_VELOCITY);
     }
 
     /**
@@ -270,10 +282,10 @@ public class ApothicAttributesCompat implements CompatModule {
     }
 
     /**
-     * Get experience gain multiplier.
+     * Get experience gained multiplier.
      */
-    public static double getExperienceGain(LivingEntity entity) {
-        return getAttributeValue(entity, EXPERIENCE_GAIN);
+    public static double getExperienceGained(LivingEntity entity) {
+        return getAttributeValue(entity, EXPERIENCE_GAINED);
     }
 
     /**

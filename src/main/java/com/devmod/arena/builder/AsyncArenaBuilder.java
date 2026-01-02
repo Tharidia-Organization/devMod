@@ -29,6 +29,11 @@ public class AsyncArenaBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncArenaBuilder.class);
 
+    // P2: Queue depth limits for backpressure
+    private static final int DEFAULT_MAX_QUEUE_DEPTH = 5;
+    private static final int DEFAULT_CRITICAL_QUEUE_DEPTH = 10;
+    private static final double SEVERE_PRESSURE_MSPT = 45.0;
+
     private final ArenaTelemetry telemetry;
     private final ArenaBuilder.BlockPlacer blockPlacer;
     private final BackpressureManager backpressure;
@@ -39,6 +44,10 @@ public class AsyncArenaBuilder {
     private final PerformanceBudgetEnforcer performanceEnforcer;
     private boolean performanceTrackingActive = false;
 
+    // P2: Queue depth configuration
+    private volatile int maxQueueDepth = DEFAULT_MAX_QUEUE_DEPTH;
+    private volatile int criticalQueueDepth = DEFAULT_CRITICAL_QUEUE_DEPTH;
+
     // Active builds
     private final Queue<AsyncBuild> activeBuildQueue = new ConcurrentLinkedQueue<>();
     private final Map<UUID, AsyncBuild> buildsByArenaId = new LinkedHashMap<>();
@@ -47,12 +56,14 @@ public class AsyncArenaBuilder {
     private long totalBlocksPlaced = 0;
     private long totalBuildsCompleted = 0;
     private long totalBuildsFailed = 0;
+    private long totalBuildsRejectedQueueFull = 0;
+    private long totalBuildsCancelledPressure = 0;
 
     public AsyncArenaBuilder(
             ArenaTelemetry telemetry,
             ArenaBuilder.BlockPlacer blockPlacer,
             Supplier<Double> msptSupplier) {
-        this(telemetry, blockPlacer, msptSupplier, new BackpressureManager(), null);
+        this(telemetry, blockPlacer, msptSupplier, BackpressureManager.createOptimized(), null);
     }
 
     public AsyncArenaBuilder(
@@ -68,7 +79,7 @@ public class AsyncArenaBuilder {
             ArenaBuilder.BlockPlacer blockPlacer,
             Supplier<Double> msptSupplier,
             ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
-        this(telemetry, blockPlacer, msptSupplier, new BackpressureManager(), configSnapshot);
+        this(telemetry, blockPlacer, msptSupplier, BackpressureManager.createOptimized(), configSnapshot);
     }
 
     public AsyncArenaBuilder(
@@ -141,20 +152,44 @@ public class AsyncArenaBuilder {
             int originZ,
             Consumer<AsyncBuildResult> callback) {
 
-        // Instance-only gate: block overworld builds when configured and using Minecraft block placer
-        if (instanceGate != null && blockPlacer instanceof com.devmod.arena.integration.MinecraftBlockPlacer mcPlacer) {
-            InstanceOnlyGate.Result gateResult = instanceGate.check(mcPlacer.level(), "AsyncArenaBuilder.submitBuild");
-            if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
-                LOGGER.error("Instance-only gate blocked async build for template {} in {}", template.id(), mcPlacer.level().dimension().location());
-                callback.accept(AsyncBuildResult.failure(arenaId, template.id(), "instance_only_blocked", 0, 0));
-                return false;
-            } else if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
-                LOGGER.warn("Instance-only gate: debug-only build for template {} in {}", template.id(), mcPlacer.level().dimension().location());
+        // Instance-only gate: block overworld builds when configured and using block placer with level access
+        if (instanceGate != null) {
+            net.minecraft.server.level.ServerLevel gateLevel = null;
+            if (blockPlacer instanceof com.devmod.arena.integration.BatchBlockPlacer batchPlacer) {
+                gateLevel = batchPlacer.level();
+            } else if (blockPlacer instanceof com.devmod.arena.integration.MinecraftBlockPlacer mcPlacer) {
+                gateLevel = mcPlacer.level();
+            }
+            if (gateLevel != null) {
+                InstanceOnlyGate.Result gateResult = instanceGate.check(gateLevel, "AsyncArenaBuilder.submitBuild");
+                if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
+                    LOGGER.error("Instance-only gate blocked async build for template {} in {}", template.id(), gateLevel.dimension().location());
+                    callback.accept(AsyncBuildResult.failure(arenaId, template.id(), "instance_only_blocked", 0, 0));
+                    return false;
+                } else if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
+                    LOGGER.warn("Instance-only gate: debug-only build for template {} in {}", template.id(), gateLevel.dimension().location());
+                }
             }
         }
 
         if (buildsByArenaId.containsKey(arenaId)) {
             LOGGER.warn("Build already in progress for arena {}", arenaId);
+            return false;
+        }
+
+        // P2: Queue depth check - reject if queue is at max capacity
+        int currentQueueSize = activeBuildQueue.size();
+        if (currentQueueSize >= maxQueueDepth) {
+            totalBuildsRejectedQueueFull++;
+            LOGGER.warn("Build queue full ({}/{}), rejecting build for template {}",
+                currentQueueSize, maxQueueDepth, template.id());
+            telemetry.emit("arena.async_build.rejected_queue_full", Map.of(
+                "arenaId", arenaId.toString(),
+                "templateId", template.id(),
+                "queueSize", currentQueueSize,
+                "maxQueueDepth", maxQueueDepth
+            ));
+            callback.accept(AsyncBuildResult.failure(arenaId, template.id(), "queue_full", 0, 0));
             return false;
         }
 
@@ -220,6 +255,30 @@ public class AsyncArenaBuilder {
         }
 
         int blocksThisTick = backpressure.update(currentMspt);
+
+        // P2: Queue depth shedding under severe pressure
+        int queueSize = activeBuildQueue.size();
+        if (currentMspt > SEVERE_PRESSURE_MSPT && queueSize > criticalQueueDepth) {
+            // Cancel oldest builds to reduce queue to critical depth
+            int buildsToCancel = queueSize - criticalQueueDepth;
+            LOGGER.warn("Severe pressure (MSPT={}, queue={}): shedding {} oldest builds",
+                String.format("%.1f", currentMspt), queueSize, buildsToCancel);
+
+            for (int i = 0; i < buildsToCancel && !activeBuildQueue.isEmpty(); i++) {
+                AsyncBuild oldest = activeBuildQueue.peek();
+                if (oldest != null) {
+                    cancelBuild(oldest.arenaId, null, "queue_pressure_shedding");
+                    totalBuildsCancelledPressure++;
+                }
+            }
+
+            telemetry.emit("arena.async_build.queue_shedding", Map.of(
+                "mspt", currentMspt,
+                "queueSizeBefore", queueSize,
+                "queueSizeAfter", activeBuildQueue.size(),
+                "buildsCancelled", buildsToCancel
+            ));
+        }
 
         if (action == PerformanceAction.ABORT) {
             telemetry.emit("arena.build.aborted.performance", Map.of(
@@ -405,6 +464,12 @@ public class AsyncArenaBuilder {
 
         } else {
             totalBuildsCompleted++;
+
+            // P2: Flush BatchBlockPlacer before commit to ensure all blocks are placed
+            if (blockPlacer instanceof com.devmod.arena.integration.BatchBlockPlacer batchPlacer) {
+                batchPlacer.flush();
+            }
+
             build.transaction.commit();
 
             LOGGER.info("Async build completed for arena {}: {} blocks in {}ms",
@@ -426,6 +491,22 @@ public class AsyncArenaBuilder {
             eventDispatcher.emitBuildCompleted(
                 build.template.id(), build.arenaId,
                 build.budget.getCurrentBlocks(), 0, build.budget.getElapsedMs());
+
+            // P1: Clear placer cache after successful commit to prevent memory leak
+            if (blockPlacer instanceof com.devmod.arena.integration.BatchBlockPlacer bp) {
+                if (LOGGER.isDebugEnabled()) {
+                    com.devmod.arena.integration.BatchBlockPlacer.PlacementStats stats = bp.getStats();
+                    int trackedStates = bp.getTrackedStateCount();
+                    LOGGER.debug("[AsyncArenaBuilder] BatchBlockPlacer stats: placed={}, flushes={}, cacheHitRate={:.2f}%, trackedStates={}",
+                        stats.totalPlaced(), stats.batchFlushes(), stats.cacheHitRate() * 100, trackedStates);
+                }
+                bp.clearCache();
+            } else if (blockPlacer instanceof com.devmod.arena.integration.MinecraftBlockPlacer mcPlacer) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("[AsyncArenaBuilder] MinecraftBlockPlacer trackedStates={}", mcPlacer.getTrackedStateCount());
+                }
+                mcPlacer.clearCache();
+            }
         }
     }
 
@@ -494,6 +575,70 @@ public class AsyncArenaBuilder {
 
     public long getTotalBuildsFailed() {
         return totalBuildsFailed;
+    }
+
+    // P2: Queue depth backpressure stats and configuration
+
+    public long getTotalBuildsRejectedQueueFull() {
+        return totalBuildsRejectedQueueFull;
+    }
+
+    public long getTotalBuildsCancelledPressure() {
+        return totalBuildsCancelledPressure;
+    }
+
+    public int getMaxQueueDepth() {
+        return maxQueueDepth;
+    }
+
+    public void setMaxQueueDepth(int maxQueueDepth) {
+        this.maxQueueDepth = Math.max(1, maxQueueDepth);
+    }
+
+    public int getCriticalQueueDepth() {
+        return criticalQueueDepth;
+    }
+
+    public void setCriticalQueueDepth(int criticalQueueDepth) {
+        this.criticalQueueDepth = Math.max(1, criticalQueueDepth);
+    }
+
+    /**
+     * Returns comprehensive queue status for monitoring.
+     */
+    public QueueStatus getQueueStatus() {
+        return new QueueStatus(
+            activeBuildQueue.size(),
+            maxQueueDepth,
+            criticalQueueDepth,
+            totalBuildsRejectedQueueFull,
+            totalBuildsCancelledPressure,
+            backpressure.isUnderPressure()
+        );
+    }
+
+    /**
+     * Queue status snapshot for monitoring.
+     */
+    public record QueueStatus(
+        int currentSize,
+        int maxDepth,
+        int criticalDepth,
+        long rejectedQueueFull,
+        long cancelledPressure,
+        boolean underPressure
+    ) {
+        public boolean isAtCapacity() {
+            return currentSize >= maxDepth;
+        }
+
+        public boolean isOverCritical() {
+            return currentSize > criticalDepth;
+        }
+
+        public double utilizationRatio() {
+            return maxDepth > 0 ? (double) currentSize / maxDepth : 0.0;
+        }
     }
 
     // === Supporting Types ===

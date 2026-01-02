@@ -93,17 +93,19 @@ public class C2MECompat implements CompatModule {
 
             for (String className : configClasses) {
                 try {
-                    configClass = Class.forName(className);
+                    // Local final for null analyzer - Class.forName never returns null
+                    final Class<?> foundConfigClass = Class.forName(className);
+                    configClass = foundConfigClass;
                     LOGGER.debug("[Compat:c2me] Found config at {}", className);
 
                     // Try to get config instance
                     try {
-                        Field instanceField = configClass.getField("INSTANCE");
+                        Field instanceField = foundConfigClass.getField("INSTANCE");
                         configInstance = instanceField.get(null);
                     } catch (NoSuchFieldException e) {
                         LOGGER.trace("[Compat:c2me] INSTANCE field missing on {}", className, e);
                         try {
-                            Method getInstanceMethod = configClass.getMethod("getInstance");
+                            Method getInstanceMethod = foundConfigClass.getMethod("getInstance");
                             configInstance = getInstanceMethod.invoke(null);
                         } catch (NoSuchMethodException e2) {
                             LOGGER.trace("[Compat:c2me] getInstance method missing on {}", className, e2);
@@ -270,5 +272,61 @@ public class C2MECompat implements CompatModule {
             }
         }
         return "C2ME: API available";
+    }
+
+    // ============================================================
+    // Performance Tuning Recommendations
+    // ============================================================
+
+    /**
+     * Get recommended blocks/tick based on C2ME thread count.
+     * More threads = can handle more blocks without lag.
+     *
+     * @return recommended blocks per tick (500 default, up to 800 with C2ME)
+     */
+    public static int getRecommendedBlocksPerTick() {
+        if (!available) {
+            return 500; // default without C2ME
+        }
+
+        Map<String, Object> config = getConfig();
+        Object threads = config.get("globalThreads");
+
+        if (threads instanceof Number) {
+            int threadCount = ((Number) threads).intValue();
+            if (threadCount >= 8) {
+                return 800;
+            }
+            if (threadCount >= 4) {
+                return 650;
+            }
+        }
+        return 550; // C2ME present but few threads
+    }
+
+    /**
+     * Get recommended MSPT threshold for backpressure.
+     * C2ME smooths out spikes, so we can be less sensitive.
+     *
+     * @return recommended MSPT threshold (40.0 default, up to 50.0 with C2ME)
+     */
+    public static double getRecommendedMsptThreshold() {
+        if (!available) {
+            return 40.0; // default without C2ME
+        }
+        return isThreadedWorldGenEnabled() ? 50.0 : 45.0;
+    }
+
+    /**
+     * Get recommended chunk loading timeout.
+     * C2ME parallelizes loading, so it should be faster overall.
+     *
+     * @return recommended timeout in milliseconds (30000 default, down to 20000 with C2ME)
+     */
+    public static int getRecommendedChunkTimeoutMs() {
+        if (!available) {
+            return 30_000; // default 30s without C2ME
+        }
+        return isThreadedWorldGenEnabled() ? 20_000 : 25_000;
     }
 }

@@ -2,13 +2,23 @@ package com.devmod.network;
 
 import java.util.Objects;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
-
+/*
+ * Network payload for updating weapon stats from the editor UI.
+ * Sent from client to server when a player modifies weapon attributes.
+ *
+ * CRITICAL: The record field order MUST match the encode/decode order in STREAM_CODEC.
+ * If fields are reordered, added, or removed, update the codec accordingly to prevent
+ * network deserialization errors.
+ *
+ * Field order: isGlobal, head, body, legs, pen, bonus, name
+ */
 public record UpdateWeaponPayload(
         boolean isGlobal,
         float head,

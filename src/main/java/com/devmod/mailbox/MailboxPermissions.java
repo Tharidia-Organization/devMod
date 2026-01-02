@@ -195,7 +195,8 @@ public final class MailboxPermissions {
         }
 
         // Check op level
-        if (player != null && player.hasPermissions(TESTER_PERMISSION_LEVEL)) {
+        MailboxConfig config = MailboxConfig.INSTANCE;
+        if (config.isUseOpLevelForRoles() && player != null && player.hasPermissions(TESTER_PERMISSION_LEVEL)) {
             return true;
         }
 
@@ -213,7 +214,8 @@ public final class MailboxPermissions {
         }
 
         // Check op level
-        if (player != null && player.hasPermissions(ADMIN_PERMISSION_LEVEL)) {
+        MailboxConfig config = MailboxConfig.INSTANCE;
+        if (config.isUseOpLevelForRoles() && player != null && player.hasPermissions(ADMIN_PERMISSION_LEVEL)) {
             return true;
         }
 

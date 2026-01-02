@@ -72,6 +72,8 @@ class ArenaBuilderAsyncPriorityTest {
             base.size(),
             base.sizeX(),
             base.sizeZ(),
+            base.arenaShape(),
+            base.ringInnerRadius(),
             base.floor(),
             base.walls(),
             base.ceiling(),
@@ -90,6 +92,7 @@ class ArenaBuilderAsyncPriorityTest {
             base.structureNbt(),
             base.limits(),
             buildSettings,
+            base.zoneSettings(),
             base.tags()
         );
     }

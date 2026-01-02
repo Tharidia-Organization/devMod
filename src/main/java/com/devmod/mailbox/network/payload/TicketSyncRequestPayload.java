@@ -7,10 +7,12 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 /**
  * Payload for requesting a ticket sync from the server.
  */
-public record TicketSyncRequestPayload() implements CustomPacketPayload {
+public record TicketSyncRequestPayload() implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TicketSyncRequestPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "ticket_sync_request"))
@@ -32,5 +34,10 @@ public record TicketSyncRequestPayload() implements CustomPacketPayload {
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 0; // Empty payload
     }
 }

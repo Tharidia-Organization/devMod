@@ -2,7 +2,7 @@ package com.devmod.client.ui.unified.persistence;
 
 import java.util.Map;
 
-import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
+import com.devmod.rendering.HeatmapType;
 
 public class SettingsData {
 

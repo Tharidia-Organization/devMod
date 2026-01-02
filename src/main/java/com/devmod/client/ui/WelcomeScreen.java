@@ -29,7 +29,7 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.actions.client.OnboardingActionPayload;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorToggle;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
@@ -42,9 +42,9 @@ public class WelcomeScreen extends Screen {
     private static final int COLOR_BORDER = 0xFF6366f1;      // Indigo accent (intentionally different from Impact blue)
     private static final int COLOR_TITLE = 0xFF818cf8;       // Light indigo
     private static final int COLOR_SUBTITLE = 0xFFa5b4fc;    // Lighter indigo
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
-    private static final int COLOR_KEY = UIConstants.Accent.YELLOW;  // Yellow for keybinds
+    private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_KEY = DesignTokens.Accent.YELLOW;  // Yellow for keybinds
     private static final int COLOR_PARTICLE = 0xFF6366f1;    // Indigo particles
 
     // === Dimensions ===

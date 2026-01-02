@@ -6,10 +6,10 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import com.devmod.mailbox.broadcast.BroadcastQueueWorker;
-
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
+
+import com.devmod.mailbox.broadcast.BroadcastQueueWorker;
 
 /**
  * REST API controller for broadcast queue jobs.

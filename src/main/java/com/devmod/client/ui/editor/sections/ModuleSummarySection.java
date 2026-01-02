@@ -12,8 +12,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class ModuleSummarySection implements EditorSection.CustomSection {
 
@@ -59,21 +59,21 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
         int w = bounds.width();
 
         // Header background
-        graphics.fill(x, y, x + w, y + HEADER_HEIGHT, UIConstants.Background.HEADER());
+        graphics.fill(x, y, x + w, y + HEADER_HEIGHT, DesignTokens.Background.HEADER());
 
         // Accent bar
         graphics.fill(x, y, x + 3, y + HEADER_HEIGHT, accentColor);
 
         // Title
         String safeTitle = Objects.requireNonNull(title, "title");
-        graphics.drawString(font, safeTitle, x + PADDING, y + 6, UIConstants.Text.TITLE(), false);
+        graphics.drawString(font, safeTitle, x + PADDING, y + 6, DesignTokens.Text.TITLE(), false);
 
         // Stats
         int statY = y + HEADER_HEIGHT;
         for (StatEntry stat : stats) {
             // Label
             String label = Objects.requireNonNull(stat.label, "label");
-            graphics.drawString(font, label, x + PADDING, statY + 3, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(font, label, x + PADDING, statY + 3, DesignTokens.Text.SECONDARY(), false);
 
             // Value (right-aligned)
             String valueStr = stat.format != null ? String.format(stat.format, stat.value) : String.valueOf(stat.value);
@@ -103,10 +103,10 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
 
     private int getBadgeColor(String source) {
         return switch (source.toUpperCase(Locale.ROOT)) {
-            case "DEV" -> UIConstants.Accent.BLUE();
-            case "NBT" -> UIConstants.Accent.ORANGE();
+            case "DEV" -> DesignTokens.Accent.BLUE();
+            case "NBT" -> DesignTokens.Accent.ORANGE();
             case "VAN", "VANILLA" -> 0xFF666666;
-            default -> UIConstants.Background.INPUT();
+            default -> DesignTokens.Background.INPUT();
         };
     }
 
@@ -116,11 +116,11 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
 
     public record StatEntry(String label, double value, @Nullable String format, int color, @Nullable String source) {
         public StatEntry(String label, double value) {
-            this(label, value, "%.1f", UIConstants.Text.PRIMARY(), null);
+            this(label, value, "%.1f", DesignTokens.Text.PRIMARY(), null);
         }
 
         public StatEntry(String label, double value, String format) {
-            this(label, value, format, UIConstants.Text.PRIMARY(), null);
+            this(label, value, format, DesignTokens.Text.PRIMARY(), null);
         }
     }
 
@@ -135,7 +135,7 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
     public static final class Builder {
         private final String id;
         private final String title;
-        private int accentColor = UIConstants.Accent.BLUE();
+        private int accentColor = DesignTokens.Accent.BLUE();
         private final List<StatEntry> stats = new ArrayList<>();
 
         private Builder(String id, String title) {

@@ -6,89 +6,70 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+
 import org.joml.Matrix4f;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.collision.compat.GeckoLibCompat;
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
+import com.devmod.compat.BaseCompatModule;
 
-public class GeckoLibModuleCompat implements CompatModule {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GeckoLibModuleCompat.class);
+/**
+ * Compatibility module for GeckoLib.
+ *
+ * <p>Migrated to extend BaseCompatModule for standardized initialization,
+ * reflection caching, and error handling.
+ */
+public class GeckoLibModuleCompat extends BaseCompatModule {
+
     public static final String MOD_ID = "geckolib";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
+    // Class names for reflection
+    private static final String ANIMATABLE_CACHE_CLASS = "software.bernie.geckolib.animatable.instance.AnimatableInstanceCache";
+    private static final String ANIMATION_CONTROLLER_CLASS = "software.bernie.geckolib.animation.AnimationController";
 
-    // Cached reflection for additional features
-    private static Class<?> animatableManagerClass;
-    private static Class<?> animationControllerClass;
+    // Singleton instance
+    private static GeckoLibModuleCompat instance;
 
-    @Override
-    public String modId() {
-        return MOD_ID;
+    public GeckoLibModuleCompat() {
+        super(MOD_ID, "GeckoLib", 18); // High priority - animation library affects rendering
+        instance = this;
     }
 
     @Override
-    public String displayName() {
-        return "GeckoLib";
-    }
-
-    @Override
-    public int priority() {
-        // High priority - animation library affects rendering
-        return 18;
-    }
-
-    @Override
-    public void initCommon() {
-        if (initialized) return;
-        initialized = true;
-
-        if (!Compat.isLoaded(MOD_ID)) {
-            LOGGER.debug("[Compat:geckolib] GeckoLib not found");
-            return;
+    protected void doInitCommon() throws Exception {
+        // Check using collision compat first
+        if (!GeckoLibCompat.isGeckoLibPresent()) {
+            throw new Exception("GeckoLib not present according to collision compat");
         }
 
-        // Use existing detection from collision compat
-        available = GeckoLibCompat.isGeckoLibPresent();
+        // Load additional API classes
+        loadAdditionalApi();
 
-        if (available) {
-            LOGGER.info("[Compat:geckolib] GeckoLib detected");
-            LOGGER.debug("[Compat:geckolib] Version: {}", Compat.getVersion(MOD_ID));
-            loadAdditionalApi();
-        }
+        info("GeckoLib detected and initialized");
     }
 
     /**
      * Load additional API features beyond collision compat.
      */
     private void loadAdditionalApi() {
-        try {
-            // Try to load animation state tracking
-            animatableManagerClass = Class.forName(
-                "software.bernie.geckolib.animatable.instance.AnimatableInstanceCache");
+        // Try to load animation state tracking
+        Class<?> animatableManagerClass = loadOptionalClass(ANIMATABLE_CACHE_CLASS);
+        Class<?> animationControllerClass = loadOptionalClass(ANIMATION_CONTROLLER_CLASS);
 
-            animationControllerClass = Class.forName(
-                "software.bernie.geckolib.animation.AnimationController");
+        if (animationControllerClass != null) {
+            debug("AnimationController class: {}", animationControllerClass.getName());
+        }
 
-            if (animationControllerClass != null) {
-                LOGGER.debug("[Compat:geckolib] AnimationController class: {}", animationControllerClass.getName());
-            }
-            LOGGER.debug("[Compat:geckolib] Animation API loaded");
-
-        } catch (ClassNotFoundException e) {
-            LOGGER.debug("[Compat:geckolib] Animation API not available: {}", e.getMessage());
+        if (animatableManagerClass != null) {
+            debug("Animation API loaded");
         }
     }
 
     @Override
-    public void initClient() {
-        if (!available) return;
-        LOGGER.debug("[Compat:geckolib] Client initialization complete");
+    protected void doInitClient() {
+        debug("Client initialization complete");
     }
 
     @Override
@@ -96,11 +77,15 @@ public class GeckoLibModuleCompat implements CompatModule {
         return "GeckoLib entity detection, bone transform extraction, animation tracking";
     }
 
+    // ============================================================================
+    // STATIC API
+    // ============================================================================
+
     /**
-     * Check if GeckoLib is available.
+     * Check if GeckoLib is loaded and available.
      */
-    public static boolean isAvailable() {
-        return available;
+    public static boolean isGeckoLibLoaded() {
+        return instance != null && instance.available;
     }
 
     /**
@@ -110,7 +95,7 @@ public class GeckoLibModuleCompat implements CompatModule {
      * @param entity The entity to check
      * @return true if entity is a GeckoLib animated entity
      */
-    public static boolean isGeckoLibEntity(LivingEntity entity) {
+    public static boolean isGeckoLibEntity(@Nonnull LivingEntity entity) {
         return GeckoLibCompat.isGeckoLibEntity(entity);
     }
 
@@ -121,7 +106,7 @@ public class GeckoLibModuleCompat implements CompatModule {
      * @param entity The entity
      * @return Map of bone name to transform matrix
      */
-    public static Map<String, Matrix4f> extractBoneTransforms(LivingEntity entity) {
+    public static Map<String, Matrix4f> extractBoneTransforms(@Nonnull LivingEntity entity) {
         return GeckoLibCompat.extractGeckoLibTransforms(entity);
     }
 
@@ -132,7 +117,8 @@ public class GeckoLibModuleCompat implements CompatModule {
      * @param geckoLibName The bone name
      * @return Standardized name
      */
-    public static String mapBoneName(String geckoLibName) {
+    @Nonnull
+    public static String mapBoneName(@Nonnull String geckoLibName) {
         return GeckoLibCompat.mapBoneName(geckoLibName);
     }
 
@@ -147,12 +133,12 @@ public class GeckoLibModuleCompat implements CompatModule {
      * Get the current animation state for an entity.
      *
      * @param entity The GeckoLib entity
-     * @return Animation state info, or null
+     * @return Animation state info, or empty map
      */
     public static Map<String, Object> getAnimationState(LivingEntity entity) {
         Map<String, Object> state = new LinkedHashMap<>();
 
-        if (!available || entity == null || !isGeckoLibEntity(entity)) {
+        if (!isGeckoLibLoaded() || entity == null || !isGeckoLibEntity(entity)) {
             return state;
         }
 
@@ -163,6 +149,7 @@ public class GeckoLibModuleCompat implements CompatModule {
             Method getAnimatableCacheMethod = entity.getClass().getMethod("getAnimatableInstanceCache");
             Object cache = getAnimatableCacheMethod.invoke(entity);
 
+            Class<?> animatableManagerClass = instance.classCache.get(ANIMATABLE_CACHE_CLASS);
             if (cache != null && animatableManagerClass != null) {
                 Method getManagerMethod = cache.getClass().getMethod("getManagerForId", long.class);
                 // Get manager for instance ID 0 (common case)
@@ -189,7 +176,7 @@ public class GeckoLibModuleCompat implements CompatModule {
                                     }
                                 }
                             } catch (Exception e) {
-                                LOGGER.trace("[Compat:geckolib] Failed to read animation name", e);
+                                instance.logger.trace("[Compat:geckolib] Failed to read animation name", e);
                             }
                         }
 
@@ -201,7 +188,9 @@ public class GeckoLibModuleCompat implements CompatModule {
             }
 
         } catch (Exception e) {
-            LOGGER.debug("[Compat:geckolib] Could not get animation state: {}", e.getMessage());
+            if (instance != null) {
+                instance.debug("Could not get animation state: {}", e.getMessage());
+            }
         }
 
         return state;
@@ -225,7 +214,7 @@ public class GeckoLibModuleCompat implements CompatModule {
      * @param entity The entity
      * @return Type name
      */
-    public static String getGeckoLibEntityType(LivingEntity entity) {
+    public static String getGeckoLibEntityType(@Nonnull LivingEntity entity) {
         if (!isGeckoLibEntity(entity)) {
             return "unknown";
         }
@@ -238,7 +227,9 @@ public class GeckoLibModuleCompat implements CompatModule {
                 return model.getClass().getSimpleName();
             }
         } catch (Exception e) {
-            LOGGER.trace("[Compat:geckolib] Failed to get GeoModel", e);
+            if (instance != null) {
+                instance.logger.trace("[Compat:geckolib] Failed to get GeoModel", e);
+            }
         }
 
         return entity.getClass().getSimpleName();
@@ -248,10 +239,11 @@ public class GeckoLibModuleCompat implements CompatModule {
      * Get status summary.
      */
     public static String getStatusSummary() {
-        if (!available) {
+        if (!isGeckoLibLoaded()) {
             return "GeckoLib: not available";
         }
-        boolean hasAnimApi = animatableManagerClass != null;
+
+        boolean hasAnimApi = instance != null && instance.classCache.containsKey(ANIMATABLE_CACHE_CLASS);
         return "GeckoLib: available" + (hasAnimApi ? " [animation API]" : "");
     }
 }

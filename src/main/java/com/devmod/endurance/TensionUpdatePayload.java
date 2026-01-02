@@ -8,8 +8,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadValidation;
 
-public record TensionUpdatePayload(float tensionPercent, int tensionLevel, boolean bossImminent) implements CustomPacketPayload {
+public record TensionUpdatePayload(float tensionPercent, int tensionLevel, boolean bossImminent)
+        implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "tension_update"));
     public static final Type<TensionUpdatePayload> TYPE = new Type<>(Objects.requireNonNull(ID));
@@ -37,6 +39,11 @@ public record TensionUpdatePayload(float tensionPercent, int tensionLevel, boole
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 4 + 4 + 1;
     }
 
     /**

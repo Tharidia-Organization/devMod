@@ -7,6 +7,8 @@ import java.util.concurrent.locks.LockSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.compat.mods.c2me.C2MECompat;
+
 public class ChunkLoadingManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChunkLoadingManager.class);
@@ -14,9 +16,8 @@ public class ChunkLoadingManager {
     // DD9: Ticket type for arena builds - used for chunk force-loading
     public static final String TICKET_TYPE_ARENA_BUILD = "arena_build";
 
-    // DD9: Polling interval and default timeout
+    // DD9: Polling interval (timeout is dynamic via getDefaultTimeoutMs())
     private static final long POLL_INTERVAL_NS = 10_000_000; // 10ms
-    private static final int DEFAULT_TIMEOUT_MS = 30_000; // 30 seconds
 
     // Retry configuration
     private static final int DEFAULT_MAX_RETRIES = 3;
@@ -97,9 +98,18 @@ public class ChunkLoadingManager {
 
     /**
      * Ensures chunks are loaded using default timeout.
+     * Timeout is optimized when C2ME is available.
      */
     public ChunkLoadResult ensureChunksLoaded(int minX, int minZ, int maxX, int maxZ) {
-        return ensureChunksLoaded(minX, minZ, maxX, maxZ, DEFAULT_TIMEOUT_MS);
+        return ensureChunksLoaded(minX, minZ, maxX, maxZ, getDefaultTimeoutMs());
+    }
+
+    /**
+     * Get the default timeout, optimized for C2ME if available.
+     * C2ME parallelizes chunk loading, so timeouts can be shorter.
+     */
+    private static int getDefaultTimeoutMs() {
+        return C2MECompat.getRecommendedChunkTimeoutMs();
     }
 
     /**
@@ -149,9 +159,10 @@ public class ChunkLoadingManager {
 
     /**
      * Ensures chunks are loaded with default retry configuration.
+     * Timeout is optimized when C2ME is available.
      */
     public ChunkLoadResult ensureChunksLoadedWithRetry(int minX, int minZ, int maxX, int maxZ) {
-        return ensureChunksLoadedWithRetry(minX, minZ, maxX, maxZ, DEFAULT_TIMEOUT_MS, DEFAULT_MAX_RETRIES);
+        return ensureChunksLoadedWithRetry(minX, minZ, maxX, maxZ, getDefaultTimeoutMs(), DEFAULT_MAX_RETRIES);
     }
 
     /**

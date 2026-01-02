@@ -10,8 +10,9 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadValidation;
 
-public record AbilityActionPayload(@Nullable AbilityType ability, int direction) implements CustomPacketPayload {
+public record AbilityActionPayload(@Nullable AbilityType ability, int direction) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final CustomPacketPayload.Type<AbilityActionPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(
@@ -72,5 +73,11 @@ public record AbilityActionPayload(@Nullable AbilityType ability, int direction)
     public enum AbilityType {
         DASH,
         DODGE
+    }
+
+    @Override
+    public int estimatedSize() {
+        // Two VarInts: ability ordinal + direction
+        return 2;
     }
 }

@@ -16,7 +16,7 @@ public record ShieldImpactPayload(
     double impactZ,
     float damage,
     boolean wasDeflection  // true if a projectile was deflected
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<ShieldImpactPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "shield_impact"))
@@ -47,6 +47,15 @@ public record ShieldImpactPayload(
         return Objects.requireNonNull(TYPE, "payload type");
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(entityId);
+        size += 8 * 3; // impactX/Y/Z
+        size += 4; // damage
+        size += 1; // wasDeflection
+        return size;
+    }
+
     /**
      * Creates an impact payload for damage blocked.
      */
@@ -59,5 +68,15 @@ public record ShieldImpactPayload(
      */
     public static ShieldImpactPayload projectileDeflected(int entityId, double x, double y, double z, float damage) {
         return new ShieldImpactPayload(entityId, x, y, z, damage, true);
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

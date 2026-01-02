@@ -1,5 +1,6 @@
 package com.devmod.mailbox.network.payload;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -12,13 +13,15 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 /**
  * Payload to sync news articles from server to client.
  */
 public record NewsSyncPayload(
     List<NewsArticleData> articles,
     int unreadCount
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     // Security limits
     private static final int MAX_ARTICLES = 100;
@@ -89,6 +92,46 @@ public record NewsSyncPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(articles.size());
+        for (NewsArticleData article : articles) {
+            size += estimateArticleSize(article);
+        }
+        size += varIntSize(unreadCount);
+        return size;
+    }
+
+    private static int estimateArticleSize(NewsArticleData article) {
+        int size = 16; // UUID
+        size += estimatedUtfSize(article.title);
+        size += estimatedUtfSize(article.content);
+        size += varIntSize(article.categoryOrdinal);
+        size += estimatedUtfSize(article.authorName);
+        size += 8; // publishedAtMillis
+        size += varIntSize(article.priority);
+        size += 1; // isRead
+        return size;
+    }
+
+    private static int estimatedUtfSize(@Nullable String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 
     /**

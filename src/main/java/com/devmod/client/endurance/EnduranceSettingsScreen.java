@@ -15,7 +15,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.config.GameMechanicsConfig;
 import com.devmod.util.I18n;
 
@@ -27,6 +27,15 @@ public class EnduranceSettingsScreen extends Screen {
     private static final int PADDING = 12;
     private static final int SLIDER_HEIGHT = 20;
     private static final int SLIDER_SPACING = 6;
+
+    // Section colors - using DesignTokens
+    private static final int COLOR_RED = DesignTokens.Semantic.ERROR;
+    private static final int COLOR_ORANGE = 0xFFFF8C00;   // No direct token
+    private static final int COLOR_GOLD = DesignTokens.Semantic.WARNING;
+    private static final int COLOR_CYAN = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_PURPLE = 0xFFA371F7;   // No direct token
+    private static final int COLOR_GREEN = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_BLUE = DesignTokens.Semantic.INFO;
 
     private final Screen parent;
     private final List<ConfigSection> sections = new ArrayList<>();
@@ -55,7 +64,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.clear();
 
         // Execution System
-        var execution = new ConfigSection(I18n.translate("devmod.endurance.settings.section.execution").getString(), UIConstants.Accent.RED());
+        var execution = new ConfigSection(I18n.translate("devmod.endurance.settings.section.execution").getString(), COLOR_RED);
         execution.addSlider(I18n.translate("devmod.endurance.settings.execution.hp_threshold").getString(), GameMechanicsConfig.EXECUTION_HP_THRESHOLD, 0.01, 0.50, "%.0f%%", 100);
         execution.addSlider(I18n.translate("devmod.endurance.settings.execution.duration_ticks").getString(), GameMechanicsConfig.EXECUTION_DURATION_TICKS, 10, 100);
         execution.addSlider(I18n.translate("devmod.endurance.settings.execution.cooldown_ticks").getString(), GameMechanicsConfig.EXECUTION_COOLDOWN_TICKS, 0, 200);
@@ -66,7 +75,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(execution);
 
         // Combo System
-        var combo = new ConfigSection(I18n.translate("devmod.endurance.settings.section.combo").getString(), UIConstants.Accent.ORANGE());
+        var combo = new ConfigSection(I18n.translate("devmod.endurance.settings.section.combo").getString(), COLOR_ORANGE);
         combo.addSlider(I18n.translate("devmod.endurance.settings.combo.timeout_ticks").getString(), GameMechanicsConfig.COMBO_TIMEOUT_TICKS, 20, 200);
         combo.addSlider(I18n.translate("devmod.endurance.settings.combo.base_points").getString(), GameMechanicsConfig.COMBO_BASE_POINTS, 1, 100);
         combo.addSlider(I18n.translate("devmod.endurance.settings.combo.multiplier_inc").getString(), GameMechanicsConfig.COMBO_MULTIPLIER_INCREMENT, 0.01, 0.5, "%.2f", 1);
@@ -78,7 +87,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(combo);
 
         // Style Rank System
-        var styleRank = new ConfigSection(I18n.translate("devmod.endurance.settings.section.style_rank").getString(), UIConstants.Accent.GOLD());
+        var styleRank = new ConfigSection(I18n.translate("devmod.endurance.settings.section.style_rank").getString(), COLOR_GOLD);
         styleRank.addSlider(I18n.translate("devmod.endurance.settings.style_rank.c_threshold").getString(), GameMechanicsConfig.STYLE_RANK_C_THRESHOLD, 50, 500);
         styleRank.addSlider(I18n.translate("devmod.endurance.settings.style_rank.b_threshold").getString(), GameMechanicsConfig.STYLE_RANK_B_THRESHOLD, 100, 1000);
         styleRank.addSlider(I18n.translate("devmod.endurance.settings.style_rank.a_threshold").getString(), GameMechanicsConfig.STYLE_RANK_A_THRESHOLD, 200, 2000);
@@ -90,7 +99,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(styleRank);
 
         // Momentum / Flow State
-        var momentum = new ConfigSection(I18n.translate("devmod.endurance.settings.section.momentum").getString(), UIConstants.Accent.CYAN());
+        var momentum = new ConfigSection(I18n.translate("devmod.endurance.settings.section.momentum").getString(), COLOR_CYAN);
         momentum.addSlider(I18n.translate("devmod.endurance.settings.momentum.decay_rate").getString(), GameMechanicsConfig.MOMENTUM_DECAY_RATE, 0.0, 0.5, "%.0f%%/s", 100);
         momentum.addSlider(I18n.translate("devmod.endurance.settings.momentum.kill_boost").getString(), GameMechanicsConfig.MOMENTUM_KILL_BOOST, 0.0, 1.0, "%.0f%%", 100);
         momentum.addSlider(I18n.translate("devmod.endurance.settings.momentum.hit_boost").getString(), GameMechanicsConfig.MOMENTUM_HIT_BOOST, 0.0, 0.5, "%.0f%%", 100);
@@ -101,7 +110,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(momentum);
 
         // Devil's Bargain
-        var bargain = new ConfigSection(I18n.translate("devmod.endurance.settings.section.devils_bargain").getString(), UIConstants.Accent.PURPLE());
+        var bargain = new ConfigSection(I18n.translate("devmod.endurance.settings.section.devils_bargain").getString(), COLOR_PURPLE);
         bargain.addToggle(I18n.translate("devmod.endurance.settings.devils_bargain.enabled").getString(), GameMechanicsConfig.BARGAIN_ENABLED);
         bargain.addSlider(I18n.translate("devmod.endurance.settings.devils_bargain.first_altar_wave").getString(), GameMechanicsConfig.BARGAIN_ALTAR_SPAWN_WAVE, 1, 20);
         bargain.addSlider(I18n.translate("devmod.endurance.settings.devils_bargain.altar_interval").getString(), GameMechanicsConfig.BARGAIN_ALTAR_INTERVAL_WAVES, 1, 10);
@@ -112,7 +121,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(bargain);
 
         // Arena Hazards
-        var hazards = new ConfigSection(I18n.translate("devmod.endurance.settings.section.hazards").getString(), UIConstants.Accent.GREEN());
+        var hazards = new ConfigSection(I18n.translate("devmod.endurance.settings.section.hazards").getString(), COLOR_GREEN);
         hazards.addToggle(I18n.translate("devmod.endurance.settings.hazards.enabled").getString(), GameMechanicsConfig.HAZARD_ENABLED);
         hazards.addSlider(I18n.translate("devmod.endurance.settings.hazards.floor_crumble_wave").getString(), GameMechanicsConfig.HAZARD_FLOOR_CRUMBLE_WAVE, 1, 50);
         hazards.addSlider(I18n.translate("devmod.endurance.settings.hazards.blood_moon_wave").getString(), GameMechanicsConfig.HAZARD_BLOOD_MOON_WAVE, 1, 50);
@@ -124,7 +133,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(hazards);
 
         // Wave Configuration
-        var waves = new ConfigSection(I18n.translate("devmod.endurance.settings.section.waves").getString(), UIConstants.Accent.BLUE());
+        var waves = new ConfigSection(I18n.translate("devmod.endurance.settings.section.waves").getString(), COLOR_BLUE);
         waves.addSlider(I18n.translate("devmod.endurance.settings.waves.base_mob_count").getString(), GameMechanicsConfig.WAVE_BASE_MOB_COUNT, 1, 50);
         waves.addSlider(I18n.translate("devmod.endurance.settings.waves.mob_scaling").getString(), GameMechanicsConfig.WAVE_MOB_SCALING, 1.0, 3.0, "%.1fx", 1);
         waves.addSlider(I18n.translate("devmod.endurance.settings.waves.intermission").getString(), GameMechanicsConfig.WAVE_INTERMISSION_TICKS, 20, 600);
@@ -134,7 +143,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(waves);
 
         // Rewards
-        var rewards = new ConfigSection(I18n.translate("devmod.endurance.settings.section.rewards").getString(), UIConstants.Accent.GOLD());
+        var rewards = new ConfigSection(I18n.translate("devmod.endurance.settings.section.rewards").getString(), COLOR_GOLD);
         rewards.addSlider(I18n.translate("devmod.endurance.settings.rewards.xp_multiplier").getString(), GameMechanicsConfig.REWARD_XP_MULTIPLIER, 0.1, 10.0, "%.1fx", 1);
         rewards.addSlider(I18n.translate("devmod.endurance.settings.rewards.style_multiplier").getString(), GameMechanicsConfig.REWARD_STYLE_MULTIPLIER, 0.1, 10.0, "%.1fx", 1);
         rewards.addSlider(I18n.translate("devmod.endurance.settings.rewards.drop_rate_bonus").getString(), GameMechanicsConfig.REWARD_DROP_RATE_BONUS, 0.0, 5.0, "%.0f%%", 100);
@@ -142,7 +151,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(rewards);
 
         // Season Pass System
-        var seasonPass = new ConfigSection(I18n.translate("devmod.endurance.settings.section.season_pass").getString(), UIConstants.Accent.PURPLE());
+        var seasonPass = new ConfigSection(I18n.translate("devmod.endurance.settings.section.season_pass").getString(), COLOR_PURPLE);
         seasonPass.addSlider(I18n.translate("devmod.endurance.settings.season_pass.max_tier").getString(), GameMechanicsConfig.SEASON_MAX_TIER, 10, 500);
         seasonPass.addSlider(I18n.translate("devmod.endurance.settings.season_pass.xp_per_tier").getString(), GameMechanicsConfig.SEASON_XP_PER_TIER, 100, 10000);
         seasonPass.addSlider(I18n.translate("devmod.endurance.settings.season_pass.duration_days").getString(), GameMechanicsConfig.SEASON_DURATION_DAYS, 7, 365);
@@ -162,7 +171,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(seasonPass);
 
         // Guild System
-        var guild = new ConfigSection(I18n.translate("devmod.endurance.settings.section.guild").getString(), UIConstants.Accent.CYAN());
+        var guild = new ConfigSection(I18n.translate("devmod.endurance.settings.section.guild").getString(), COLOR_CYAN);
         guild.addSlider(I18n.translate("devmod.endurance.settings.guild.max_size").getString(), GameMechanicsConfig.GUILD_MAX_SIZE, 5, 200);
         guild.addSlider(I18n.translate("devmod.endurance.settings.guild.max_level").getString(), GameMechanicsConfig.GUILD_MAX_LEVEL, 5, 100);
         guild.addSlider(I18n.translate("devmod.endurance.settings.guild.create_cost").getString(), GameMechanicsConfig.GUILD_CREATE_COST, 0, 100000);
@@ -185,7 +194,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(guild);
 
         // Ascension/Prestige System
-        var ascension = new ConfigSection(I18n.translate("devmod.endurance.settings.section.ascension").getString(), UIConstants.Accent.GOLD());
+        var ascension = new ConfigSection(I18n.translate("devmod.endurance.settings.section.ascension").getString(), COLOR_GOLD);
         ascension.addSlider(I18n.translate("devmod.endurance.settings.ascension.max_level").getString(), GameMechanicsConfig.ASCENSION_MAX_LEVEL, 1, 50);
         ascension.addSlider(I18n.translate("devmod.endurance.settings.ascension.min_prestige").getString(), GameMechanicsConfig.ASCENSION_MIN_PRESTIGE, 10, 1000);
         ascension.addSlider(I18n.translate("devmod.endurance.settings.ascension.cost_scaling").getString(), GameMechanicsConfig.ASCENSION_COST_SCALING, 0, 500);
@@ -200,7 +209,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(ascension);
 
         // Tension System (Boss Spawning)
-        var tension = new ConfigSection(I18n.translate("devmod.endurance.settings.section.tension").getString(), UIConstants.Accent.RED());
+        var tension = new ConfigSection(I18n.translate("devmod.endurance.settings.section.tension").getString(), COLOR_RED);
         tension.addSlider(I18n.translate("devmod.endurance.settings.tension.base_wave_gain").getString(), GameMechanicsConfig.TENSION_BASE_WAVE_GAIN, 0.0, 1.0, "%.0f%%", 100);
         tension.addSlider(I18n.translate("devmod.endurance.settings.tension.no_hit_bonus").getString(), GameMechanicsConfig.TENSION_NO_HIT_BONUS, 0.0, 1.0, "%.0f%%", 100);
         tension.addSlider(I18n.translate("devmod.endurance.settings.tension.min_threshold").getString(), GameMechanicsConfig.TENSION_MIN_THRESHOLD, 0.1, 1.0, "%.0f%%", 100);
@@ -214,7 +223,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(tension);
 
         // Perk Rarity System
-        var perkRarity = new ConfigSection(I18n.translate("devmod.endurance.settings.section.perk_rarity").getString(), UIConstants.Accent.PURPLE());
+        var perkRarity = new ConfigSection(I18n.translate("devmod.endurance.settings.section.perk_rarity").getString(), COLOR_PURPLE);
         perkRarity.addSlider(I18n.translate("devmod.endurance.settings.perk_rarity.common_weight").getString(), GameMechanicsConfig.PERK_COMMON_WEIGHT, 0, 100);
         perkRarity.addSlider(I18n.translate("devmod.endurance.settings.perk_rarity.uncommon_weight").getString(), GameMechanicsConfig.PERK_UNCOMMON_WEIGHT, 0, 100);
         perkRarity.addSlider(I18n.translate("devmod.endurance.settings.perk_rarity.rare_weight").getString(), GameMechanicsConfig.PERK_RARE_WEIGHT, 0, 100);
@@ -231,7 +240,7 @@ public class EnduranceSettingsScreen extends Screen {
         sections.add(perkRarity);
 
         // Challenge System
-        var challenges = new ConfigSection(I18n.translate("devmod.endurance.settings.section.challenges").getString(), UIConstants.Accent.GREEN());
+        var challenges = new ConfigSection(I18n.translate("devmod.endurance.settings.section.challenges").getString(), COLOR_GREEN);
         challenges.addSlider(I18n.translate("devmod.endurance.settings.challenges.daily_count").getString(), GameMechanicsConfig.CHALLENGE_DAILY_COUNT, 1, 10);
         challenges.addSlider(I18n.translate("devmod.endurance.settings.challenges.weekly_count").getString(), GameMechanicsConfig.CHALLENGE_WEEKLY_COUNT, 1, 5);
         challenges.addSlider(I18n.translate("devmod.endurance.settings.challenges.daily_reset_hour").getString(), GameMechanicsConfig.CHALLENGE_DAILY_RESET_HOUR, 0, 23);
@@ -272,7 +281,7 @@ public class EnduranceSettingsScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
-        graphics.fill(0, 0, width, height, UIConstants.Background.CONTENT());
+        graphics.fill(0, 0, width, height, DesignTokens.Bg.LEVEL_0);
 
         var safeFont = Objects.requireNonNull(font);
 
@@ -288,20 +297,20 @@ public class EnduranceSettingsScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
-    private void renderHeader(GuiGraphics graphics, net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
+    private void renderHeader(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
         // Header background
-        graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER());
-        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, UIConstants.Border.DEFAULT());
+        graphics.fill(0, 0, width, HEADER_HEIGHT, DesignTokens.Bg.LEVEL_1);
+        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, DesignTokens.Accent.PRIMARY);
 
         // Title
         graphics.drawString(font, I18n.translate("devmod.endurance.settings.title").getString(),
-            PADDING, 12, UIConstants.Text.TITLE(), false);
+            PADDING, 12, DesignTokens.Text.PRIMARY, false);
 
         // Subtitle
         if (activeSection >= 0 && activeSection < sections.size()) {
             String sectionName = sections.get(activeSection).name;
             graphics.drawString(font, I18n.ui("category", sectionName).getString(),
-                PADDING, 26, UIConstants.Text.SECONDARY(), false);
+                PADDING, 26, DesignTokens.Text.SECONDARY, false);
         }
 
         // Back button
@@ -312,14 +321,14 @@ public class EnduranceSettingsScreen extends Screen {
         }
     }
 
-    private void renderSidebar(GuiGraphics graphics, net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
+    private void renderSidebar(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
         int sidebarX = 0;
         int sidebarY = HEADER_HEIGHT;
         int sidebarH = height - HEADER_HEIGHT;
 
         // Sidebar background
-        graphics.fill(sidebarX, sidebarY, sidebarX + SIDEBAR_WIDTH, sidebarY + sidebarH, UIConstants.Background.PANEL());
-        graphics.fill(sidebarX + SIDEBAR_WIDTH - 1, sidebarY, sidebarX + SIDEBAR_WIDTH, sidebarY + sidebarH, UIConstants.Border.DEFAULT());
+        graphics.fill(sidebarX, sidebarY, sidebarX + SIDEBAR_WIDTH, sidebarY + sidebarH, DesignTokens.Bg.LEVEL_1);
+        graphics.fill(sidebarX + SIDEBAR_WIDTH - 1, sidebarY, sidebarX + SIDEBAR_WIDTH, sidebarY + sidebarH, DesignTokens.Accent.PRIMARY);
 
         int y = sidebarY + PADDING;
         int tabH = 28;
@@ -334,7 +343,7 @@ public class EnduranceSettingsScreen extends Screen {
             if (isActive) {
                 graphics.fill(sidebarX + 4, y, sidebarX + SIDEBAR_WIDTH - 1, y + tabH, section.color);
             } else if (isHovered) {
-                graphics.fill(sidebarX + 4, y, sidebarX + SIDEBAR_WIDTH - 1, y + tabH, UIConstants.Background.HOVER());
+                graphics.fill(sidebarX + 4, y, sidebarX + SIDEBAR_WIDTH - 1, y + tabH, DesignTokens.Surface.LEVEL_1);
             }
 
             // Left accent bar for active
@@ -343,19 +352,19 @@ public class EnduranceSettingsScreen extends Screen {
             }
 
             // Section name
-            int textColor = isActive ? 0xFFFFFFFF : UIConstants.Text.PRIMARY();
+            int textColor = isActive ? 0xFFFFFFFF : DesignTokens.Text.PRIMARY;
             graphics.drawString(font, section.name, sidebarX + 12, y + 10, textColor, false);
 
             // Item count badge
             String countStr = String.valueOf(section.items.size());
             int countX = sidebarX + SIDEBAR_WIDTH - 20;
-            graphics.drawString(font, countStr, countX, y + 10, UIConstants.Text.MUTED(), false);
+            graphics.drawString(font, countStr, countX, y + 10, DesignTokens.Text.MUTED, false);
 
             y += tabH + 2;
         }
     }
 
-    private void renderContent(GuiGraphics graphics, net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
+    private void renderContent(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
         int contentX = SIDEBAR_WIDTH + PADDING;
         int contentY = HEADER_HEIGHT + PADDING;
         int contentW = width - SIDEBAR_WIDTH - PADDING * 2;
@@ -384,8 +393,8 @@ public class EnduranceSettingsScreen extends Screen {
             int scrollbarX = contentX + contentW - 4;
             int scrollbarH = Math.max(20, (int) ((float) contentH / (contentH + maxScroll) * contentH));
             int scrollbarY = contentY + (int) ((float) scrollOffset / maxScroll * (contentH - scrollbarH));
-            graphics.fill(scrollbarX, contentY, scrollbarX + 4, contentY + contentH, UIConstants.Background.INPUT());
-            graphics.fill(scrollbarX, scrollbarY, scrollbarX + 4, scrollbarY + scrollbarH, UIConstants.Border.DEFAULT());
+            graphics.fill(scrollbarX, contentY, scrollbarX + 4, contentY + contentH, DesignTokens.Surface.LEVEL_0);
+            graphics.fill(scrollbarX, scrollbarY, scrollbarX + 4, scrollbarY + scrollbarH, DesignTokens.Accent.PRIMARY);
         }
     }
 
@@ -527,7 +536,7 @@ public class EnduranceSettingsScreen extends Screen {
     }
 
     private interface ConfigItem {
-        void render(GuiGraphics graphics, net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY);
+        void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY);
         int getHeight();
         boolean mouseClicked(double mouseX, double mouseY, int sliderX, int sliderY, int sliderW);
         void mouseReleased();
@@ -552,9 +561,9 @@ public class EnduranceSettingsScreen extends Screen {
         }
 
         @Override
-        public void render(GuiGraphics graphics, net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
+        public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             // Label
-            graphics.drawString(font, label, x, y + 2, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
 
             // Slider track
             int sliderX = x + 140;
@@ -562,13 +571,13 @@ public class EnduranceSettingsScreen extends Screen {
             int sliderY = y + 5;
             int sliderH = 10;
 
-            graphics.fill(sliderX, sliderY, sliderX + sliderW, sliderY + sliderH, UIConstants.Background.INPUT());
+            graphics.fill(sliderX, sliderY, sliderX + sliderW, sliderY + sliderH, DesignTokens.Surface.LEVEL_0);
 
             // Slider fill
             double value = config.get();
             double ratio = (value - min) / (max - min);
             int fillW = (int) (ratio * sliderW);
-            graphics.fill(sliderX, sliderY, sliderX + fillW, sliderY + sliderH, UIConstants.Accent.BLUE());
+            graphics.fill(sliderX, sliderY, sliderX + fillW, sliderY + sliderH, COLOR_BLUE);
 
             // Slider handle
             int handleX = sliderX + fillW - 3;
@@ -576,7 +585,7 @@ public class EnduranceSettingsScreen extends Screen {
 
             // Value display
             String valueStr = String.format(format, value * displayScale);
-            graphics.drawString(font, valueStr, sliderX + sliderW + 8, y + 2, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(font, valueStr, sliderX + sliderW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
         }
 
         @Override
@@ -635,9 +644,9 @@ public class EnduranceSettingsScreen extends Screen {
         }
 
         @Override
-        public void render(GuiGraphics graphics, net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
+        public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             // Label
-            graphics.drawString(font, label, x, y + 2, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
 
             // Slider track
             int sliderX = x + 140;
@@ -645,20 +654,20 @@ public class EnduranceSettingsScreen extends Screen {
             int sliderY = y + 5;
             int sliderH = 10;
 
-            graphics.fill(sliderX, sliderY, sliderX + sliderW, sliderY + sliderH, UIConstants.Background.INPUT());
+            graphics.fill(sliderX, sliderY, sliderX + sliderW, sliderY + sliderH, DesignTokens.Surface.LEVEL_0);
 
             // Slider fill
             int value = config.get();
             double ratio = (double) (value - min) / (max - min);
             int fillW = (int) (ratio * sliderW);
-            graphics.fill(sliderX, sliderY, sliderX + fillW, sliderY + sliderH, UIConstants.Accent.BLUE());
+            graphics.fill(sliderX, sliderY, sliderX + fillW, sliderY + sliderH, COLOR_BLUE);
 
             // Slider handle
             int handleX = sliderX + fillW - 3;
             graphics.fill(handleX, sliderY - 2, handleX + 6, sliderY + sliderH + 2, 0xFFFFFFFF);
 
             // Value display
-            graphics.drawString(font, String.valueOf(value), sliderX + sliderW + 8, y + 2, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(font, String.valueOf(value), sliderX + sliderW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
         }
 
         @Override
@@ -713,9 +722,9 @@ public class EnduranceSettingsScreen extends Screen {
         }
 
         @Override
-        public void render(GuiGraphics graphics, net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
+        public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             // Label
-            graphics.drawString(font, label, x, y + 2, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
 
             // Toggle box
             int toggleX = x + 140;
@@ -724,7 +733,7 @@ public class EnduranceSettingsScreen extends Screen {
             int toggleH = 14;
 
             boolean enabled = config.get();
-            int bgColor = enabled ? UIConstants.Accent.GREEN() : UIConstants.Background.INPUT();
+            int bgColor = enabled ? COLOR_GREEN : DesignTokens.Surface.LEVEL_0;
             graphics.fill(toggleX, toggleY, toggleX + toggleW, toggleY + toggleH, bgColor);
 
             // Toggle indicator
@@ -735,7 +744,7 @@ public class EnduranceSettingsScreen extends Screen {
             String status = enabled
                 ? I18n.translate("devmod.overlay.on").getString()
                 : I18n.translate("devmod.overlay.off").getString();
-            graphics.drawString(font, status, toggleX + toggleW + 8, y + 2, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(font, status, toggleX + toggleW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
         }
 
         @Override

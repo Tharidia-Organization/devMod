@@ -245,6 +245,7 @@ public class PerkSystem {
 
         // Pending perk choices
         private List<Perk> pendingChoices = new ArrayList<>();
+        private int lastPerkChoicesWave = 0;
 
         // Applied attribute modifiers (for cleanup)
         private final List<AttributeModifier> appliedModifiers = new ArrayList<>();
@@ -362,8 +363,12 @@ public class PerkSystem {
         public float getCurseRewardMultiplier() { return curseRewardMultiplier; }
 
         public List<Perk> getPendingChoices() { return pendingChoices; }
-        public void setPendingChoices(List<Perk> choices) { this.pendingChoices = choices; }
+        public void setPendingChoices(List<Perk> choices, int waveNumber) {
+            this.pendingChoices = choices;
+            this.lastPerkChoicesWave = waveNumber;
+        }
         public void clearPendingChoices() { pendingChoices.clear(); }
+        public int getLastPerkChoicesWave() { return lastPerkChoicesWave; }
 
         public UUID getPlayerId() { return playerId; }
         public UUID getQuestId() { return questId; }
@@ -781,7 +786,7 @@ public class PerkSystem {
             attempts++;
         }
 
-        session.setPendingChoices(choices);
+        session.setPendingChoices(choices, waveNumber);
 
         // Telemetry: record perk choices offered
         if (!choices.isEmpty()) {
@@ -952,7 +957,8 @@ public class PerkSystem {
             perk.tier,
             perk.category,
             session.getPerkStacks(perk.id),
-            session.getTotalPerksAcquired()
+            session.getTotalPerksAcquired(),
+            session.getLastPerkChoicesWave()
         );
 
         // Trigger player attribute snapshot on perk acquisition

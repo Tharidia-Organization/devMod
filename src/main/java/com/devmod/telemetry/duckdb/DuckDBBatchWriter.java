@@ -51,6 +51,12 @@ public class DuckDBBatchWriter {
     private final AtomicLong flushCount = new AtomicLong(0);
     private final AtomicLong errorCount = new AtomicLong(0);
 
+    // P2: Latency tracker with P99 percentiles and error breakdown
+    private final LatencyTracker writeLatencyTracker = new LatencyTracker();
+
+    // P2: Sampling statistics
+    private final AtomicLong sampledOutCount = new AtomicLong(0);
+
     private volatile boolean running = false;
 
     // Flush lock: DuckDB is single-writer, prevent concurrent flushes
@@ -453,7 +459,7 @@ public class DuckDBBatchWriter {
     /**
      * Queue an endurance reward event.
      */
-    public void queueEnduranceReward(Instant ts, UUID playerId, UUID sessionId,
+    public void queueEnduranceReward(Instant ts, UUID playerId, @Nullable UUID sessionId,
                                       @Nullable String templateId, @Nullable Integer templateVersion,
                                       @Nullable String policyId, @Nullable Integer policyVersion,
                                       @Nullable UUID arenaId, String eventType,
@@ -989,6 +995,15 @@ public class DuckDBBatchWriter {
     private void queueInsert(String tableName, Object[] values) {
         if (!running) return;
 
+        // P2: Sampling - check if this event should be sampled out
+        if (DuckDBConfig.SAMPLING_ENABLED) {
+            EventPriority priority = TABLE_PRIORITY.getOrDefault(tableName, EventPriority.NORMAL);
+            if (!shouldSampleEvent(priority)) {
+                sampledOutCount.incrementAndGet();
+                return;
+            }
+        }
+
         // Update pressure level based on total queue size (atomic update)
         int totalPending = getPendingInserts();
         if (totalPending >= PRESSURE_THRESHOLD_CRITICAL) {
@@ -1064,6 +1079,30 @@ public class DuckDBBatchWriter {
             default: // NORMAL pressure - no drops (removed random drop to ensure test reliability)
                 return false;
         }
+    }
+
+    /**
+     * P2: Determine if an event should be sampled (included) based on priority.
+     * Returns true if the event should be recorded, false if it should be sampled out.
+     */
+    private boolean shouldSampleEvent(EventPriority priority) {
+        double sampleRate = switch (priority) {
+            case CRITICAL -> DuckDBConfig.SAMPLE_RATE_CRITICAL;
+            case HIGH -> DuckDBConfig.SAMPLE_RATE_HIGH;
+            case NORMAL -> DuckDBConfig.SAMPLE_RATE_NORMAL;
+            case LOW -> DuckDBConfig.SAMPLE_RATE_LOW;
+        };
+
+        // Fast path: always include if rate is 1.0
+        if (sampleRate >= 1.0) {
+            return true;
+        }
+        // Fast path: always exclude if rate is 0.0
+        if (sampleRate <= 0.0) {
+            return false;
+        }
+        // Random sampling using ThreadLocalRandom for performance
+        return java.util.concurrent.ThreadLocalRandom.current().nextDouble() < sampleRate;
     }
 
     // ============================================
@@ -1166,6 +1205,7 @@ public class DuckDBBatchWriter {
         boolean autoCommitOriginal = true;
         int flushed = 0;
         List<Object[]> batch = null;
+        long writeStartNanos = System.nanoTime(); // P2: Track write latency
 
         try {
             conn = connectionManager.getConnection();
@@ -1202,6 +1242,9 @@ public class DuckDBBatchWriter {
                 conn.commit();
                 consecutiveErrors.set(0);
 
+                // P2: Record successful write latency
+                writeLatencyTracker.recordNanos(System.nanoTime() - writeStartNanos);
+
                 if (DuckDBConfig.LOG_INSERTS) {
                     LOGGER.debug("[DuckDB] Inserted {} rows into {}", flushed, tableName);
                 }
@@ -1228,6 +1271,9 @@ public class DuckDBBatchWriter {
             DuckDBErrorClassifier.ErrorType errorType = DuckDBErrorClassifier.classify(e);
             errorCount.incrementAndGet();
             long errors = consecutiveErrors.incrementAndGet();
+
+            // P2: Record error by type for metrics
+            writeLatencyTracker.recordError(errorType);
 
             // Determine threshold based on error type
             int threshold = (errorType == DuckDBErrorClassifier.ErrorType.PERMANENT)
@@ -1699,5 +1745,89 @@ public class DuckDBBatchWriter {
         return flushCount.get() > 0
             ? (double) flushLatencyTotalMs.get() / flushCount.get()
             : 0.0;
+    }
+
+    /**
+     * P2: Get write latency statistics with P99 percentiles and error breakdown.
+     *
+     * @return LatencyStats snapshot with avg, p50, p95, p99, max, and error counts
+     */
+    public LatencyTracker.LatencyStats getWriteLatencyStats() {
+        return writeLatencyTracker.getStats();
+    }
+
+    /**
+     * P2: Log write latency statistics at INFO level.
+     * Useful for periodic monitoring reports.
+     */
+    public void logWriteLatencyStats() {
+        var stats = writeLatencyTracker.getStats();
+        if (stats.sampleCount() == 0) {
+            LOGGER.info("[DuckDB] Write latency: no samples yet");
+            return;
+        }
+
+        LOGGER.info("[DuckDB] Write latency: {}", stats.toLogString());
+
+        // Warn if P99 is high (> 500ms suggests performance issues)
+        if (stats.isP99High(500.0)) {
+            LOGGER.warn("[DuckDB] High P99 write latency: {}ms (threshold: 500ms)",
+                String.format("%.2f", stats.p99Ms()));
+        }
+
+        // Warn if error rate is high (> 1%)
+        if (stats.isErrorRateHigh(1.0)) {
+            LOGGER.warn("[DuckDB] High error rate: {}/{} writes failed (transient={}, permanent={}, degradation={})",
+                stats.totalErrors(), stats.sampleCount(),
+                stats.transientErrors(), stats.permanentErrors(), stats.degradationErrors());
+        }
+    }
+
+    /**
+     * P2: Reset write latency statistics.
+     * Useful for periodic metric collection cycles.
+     */
+    public void resetWriteLatencyStats() {
+        writeLatencyTracker.reset();
+        LOGGER.debug("[DuckDB] Write latency stats reset");
+    }
+
+    /**
+     * P2: Get count of events sampled out (not recorded due to sampling rate).
+     */
+    public long getSampledOutCount() {
+        return sampledOutCount.get();
+    }
+
+    /**
+     * P2: Get current sampling configuration for display.
+     */
+    public SamplingConfig getSamplingConfig() {
+        return new SamplingConfig(
+            DuckDBConfig.SAMPLING_ENABLED,
+            DuckDBConfig.SAMPLE_RATE_CRITICAL,
+            DuckDBConfig.SAMPLE_RATE_HIGH,
+            DuckDBConfig.SAMPLE_RATE_NORMAL,
+            DuckDBConfig.SAMPLE_RATE_LOW
+        );
+    }
+
+    /**
+     * P2: Immutable sampling configuration snapshot.
+     */
+    public record SamplingConfig(
+        boolean enabled,
+        double criticalRate,
+        double highRate,
+        double normalRate,
+        double lowRate
+    ) {
+        public String toLogString() {
+            if (!enabled) {
+                return "disabled (all events recorded)";
+            }
+            return String.format("critical=%.0f%% high=%.0f%% normal=%.0f%% low=%.0f%%",
+                criticalRate * 100, highRate * 100, normalRate * 100, lowRate * 100);
+        }
     }
 }

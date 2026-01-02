@@ -16,7 +16,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.mailbox.client.ClientTicketCache.TicketData;
 import com.devmod.mailbox.network.payload.TicketActionPayload;
 
@@ -43,7 +43,7 @@ public class TicketCommentScreen extends Screen {
     @Nullable private EditorButton cancelButton;
 
     @Nullable private String statusMessage;
-    private int statusColor = UIConstants.Text.MUTED();
+    private int statusColor = DesignTokens.Text.MUTED();
     private long statusMessageAt = 0;
 
     public TicketCommentScreen(@Nullable Screen parent, UUID ticketId, String subject) {
@@ -73,18 +73,19 @@ public class TicketCommentScreen extends Screen {
         panelX = (width - PANEL_WIDTH) / 2;
         panelY = (height - PANEL_HEIGHT) / 2;
 
-        commentField = new EditBox(
+        EditBox field = new EditBox(
             getFont(),
             panelX + 20,
             panelY + 90,
             PANEL_WIDTH - 40,
             20,
-            Component.translatable("devmod.ticket.comment.placeholder")
+            Objects.requireNonNull(Component.translatable("devmod.ticket.comment.placeholder"))
         );
-        commentField.setMaxLength(1000);
-        commentField.setHint(Component.translatable("devmod.ticket.comment.placeholder"));
-        commentField.setFocused(true);
-        addRenderableWidget(commentField);
+        field.setMaxLength(1000);
+        field.setHint(Objects.requireNonNull(Component.translatable("devmod.ticket.comment.placeholder")));
+        field.setFocused(true);
+        addRenderableWidget(field);
+        commentField = field;
 
         submitButton = EditorButton.builder("ticket_comment_submit",
                 Component.translatable("devmod.ticket.comment.submit").getString())
@@ -106,23 +107,23 @@ public class TicketCommentScreen extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xE8101820);
-        int borderColor = UIConstants.Border.DEFAULT();
+        int borderColor = DesignTokens.Border.DEFAULT();
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 1, borderColor);
         graphics.fill(panelX, panelY + PANEL_HEIGHT - 1, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
         graphics.fill(panelX, panelY, panelX + 1, panelY + PANEL_HEIGHT, borderColor);
         graphics.fill(panelX + PANEL_WIDTH - 1, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
 
         String titleLabel = Objects.requireNonNull(Component.translatable("devmod.ticket.comment.title"), "title").getString();
-        graphics.drawString(getFont(), titleLabel, panelX + 15, panelY + 15, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(getFont(), titleLabel, panelX + 15, panelY + 15, DesignTokens.Text.PRIMARY(), false);
 
         if (!subject.isBlank()) {
             String subjectLabel = Component.translatable("devmod.ticket.comment.subject", subject).getString();
-            graphics.drawString(getFont(), subjectLabel, panelX + 15, panelY + 35, UIConstants.Text.MUTED(), false);
+            graphics.drawString(getFont(), subjectLabel, panelX + 15, panelY + 35, DesignTokens.Text.MUTED(), false);
         }
 
         graphics.drawString(getFont(),
             Component.translatable("devmod.ticket.comment.label").getString(),
-            panelX + 15, panelY + 70, UIConstants.Text.SECONDARY(), false);
+            panelX + 15, panelY + 70, DesignTokens.Text.SECONDARY(), false);
 
         int buttonY = panelY + PANEL_HEIGHT - 35;
         if (cancelButton != null) {
@@ -165,21 +166,21 @@ public class TicketCommentScreen extends Screen {
         if (comment.isEmpty()) {
             setStatusMessage(
                 Component.translatable("devmod.ticket.comment.empty").getString(),
-                UIConstants.Status.WARNING()
+                DesignTokens.Status.WARNING()
             );
-            UIConstants.Sound.warning();
+            DesignTokens.Sound.warning();
             return;
         }
 
-        PacketDistributor.sendToServer(TicketActionPayload.addComment(ticketId, comment));
-        UIConstants.Sound.click();
+        PacketDistributor.sendToServer(Objects.requireNonNull(TicketActionPayload.addComment(ticketId, comment)));
+        DesignTokens.Sound.click();
         if (minecraft != null) {
             minecraft.setScreen(parent);
         }
     }
 
     private void onCancel() {
-        UIConstants.Sound.click();
+        DesignTokens.Sound.click();
         if (minecraft != null) {
             minecraft.setScreen(parent);
         }

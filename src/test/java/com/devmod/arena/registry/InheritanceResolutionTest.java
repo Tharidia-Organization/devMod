@@ -83,6 +83,8 @@ class InheritanceResolutionTest {
             base.size(),
             base.sizeX(),
             base.sizeZ(),
+            base.arenaShape(),
+            base.ringInnerRadius(),
             base.floor(),
             base.walls(),
             base.ceiling(),
@@ -101,6 +103,7 @@ class InheritanceResolutionTest {
             base.structureNbt(),
             base.limits(),
             base.buildSettings(),
+            base.zoneSettings(),
             tags
         );
     }

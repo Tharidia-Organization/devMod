@@ -21,9 +21,9 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class AttributeListSection implements EditorSection.CustomSection {
 
@@ -63,13 +63,13 @@ public final class AttributeListSection implements EditorSection.CustomSection {
         );
 
         // Add standard vanilla attributes with default values
-        addVanillaAttribute(Attributes.ATTACK_DAMAGE, "Attack Damage", 1.0, 0, 50, UIConstants.SliderColors.DAMAGE, mods);
-        addVanillaAttribute(Attributes.ATTACK_SPEED, "Attack Speed", 4.0, 0, 10, UIConstants.SliderColors.SPEED, mods);
-        addVanillaAttribute(Attributes.ARMOR, "Armor", 0.0, 0, 30, UIConstants.SliderColors.DEFENSE, mods);
-        addVanillaAttribute(Attributes.ARMOR_TOUGHNESS, "Armor Toughness", 0.0, 0, 20, UIConstants.SliderColors.DEFENSE, mods);
-        addVanillaAttribute(Attributes.KNOCKBACK_RESISTANCE, "Knockback Resistance", 0.0, 0, 1, UIConstants.SliderColors.NEUTRAL, mods);
-        addVanillaAttribute(Attributes.ATTACK_KNOCKBACK, "Attack Knockback", 0.0, 0, 5, UIConstants.SliderColors.DAMAGE, mods);
-        addVanillaAttribute(Attributes.MOVEMENT_SPEED, "Movement Speed", 0.1, 0, 1, UIConstants.SliderColors.SPEED, mods);
+        addVanillaAttribute(Attributes.ATTACK_DAMAGE, "Attack Damage", 1.0, 0, 50, DesignTokens.SliderColors.DAMAGE, mods);
+        addVanillaAttribute(Attributes.ATTACK_SPEED, "Attack Speed", 4.0, 0, 10, DesignTokens.SliderColors.SPEED, mods);
+        addVanillaAttribute(Attributes.ARMOR, "Armor", 0.0, 0, 30, DesignTokens.SliderColors.DEFENSE, mods);
+        addVanillaAttribute(Attributes.ARMOR_TOUGHNESS, "Armor Toughness", 0.0, 0, 20, DesignTokens.SliderColors.DEFENSE, mods);
+        addVanillaAttribute(Attributes.KNOCKBACK_RESISTANCE, "Knockback Resistance", 0.0, 0, 1, DesignTokens.SliderColors.NEUTRAL, mods);
+        addVanillaAttribute(Attributes.ATTACK_KNOCKBACK, "Attack Knockback", 0.0, 0, 5, DesignTokens.SliderColors.DAMAGE, mods);
+        addVanillaAttribute(Attributes.MOVEMENT_SPEED, "Movement Speed", 0.1, 0, 1, DesignTokens.SliderColors.SPEED, mods);
     }
 
     private void addVanillaAttribute(Holder<Attribute> attribute, String displayName, double defaultValue,
@@ -243,9 +243,9 @@ public final class AttributeListSection implements EditorSection.CustomSection {
 
         // Header
         graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + HEADER_HEIGHT,
-            UIConstants.Background.HEADER());
+            DesignTokens.Background.HEADER());
         graphics.drawString(font, title, bounds.x() + TEXT_INSET_X,
-            y + (HEADER_HEIGHT - 8) / 2, UIConstants.Text.TITLE(), false);
+            y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.TITLE(), false);
         y += HEADER_HEIGHT;
 
         // Render each attribute slider

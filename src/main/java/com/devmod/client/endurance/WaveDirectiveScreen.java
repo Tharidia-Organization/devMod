@@ -20,7 +20,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.components.CountdownTimer;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.util.I18n;
@@ -92,9 +92,9 @@ public class WaveDirectiveScreen extends Screen {
         int panelX = (width - PANEL_WIDTH) / 2;
         int panelY = (height - panelHeight) / 2;
 
-        int bgTop = UIConstants.Background.PANEL();
-        int bgBottom = UIConstants.Background.INPUT();
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + panelHeight + 2, UIConstants.Border.DEFAULT());
+        int bgTop = DesignTokens.Bg.LEVEL_1;
+        int bgBottom = DesignTokens.Bg.LEVEL_0;
+        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + panelHeight + 2, DesignTokens.Stroke.DEFAULT);
         for (int i = 0; i < panelHeight; i++) {
             float t = (float) i / panelHeight;
             int lineColor = lerpColor(bgTop, bgBottom, t);
@@ -102,7 +102,7 @@ public class WaveDirectiveScreen extends Screen {
         }
 
         graphics.drawCenteredString(font, "Choose Your Directive", width / 2, panelY + 6,
-            UIConstants.Text.PRIMARY());
+            DesignTokens.Text.PRIMARY);
         renderCountdown(graphics, font, panelX, panelY, PANEL_WIDTH);
 
         int cardWidth = PANEL_WIDTH - PANEL_PADDING * 2;
@@ -112,27 +112,27 @@ public class WaveDirectiveScreen extends Screen {
         for (int i = 0; i < payload.choices().size(); i++) {
             WaveDirectiveChoicesPayload.DirectiveChoice choice = payload.choices().get(i);
             int y = cardY + i * (CARD_HEIGHT + CARD_GAP);
-            int borderColor = UIConstants.Border.SEPARATOR();
-            int cardColor = UIConstants.Background.PANEL();
+            int borderColor = DesignTokens.Stroke.MUTED;
+            int cardColor = DesignTokens.Surface.LEVEL_0;
             graphics.fill(cardX - 1, y - 1, cardX + cardWidth + 1, y + CARD_HEIGHT + 1, borderColor);
             graphics.fill(cardX, y, cardX + cardWidth, y + CARD_HEIGHT, cardColor);
 
             String name = choice.name() != null ? choice.name() : "Directive";
             graphics.drawString(Objects.requireNonNull(font, "font"), name, cardX + 8, y + 6,
-                UIConstants.Text.PRIMARY(), false);
+                DesignTokens.Text.PRIMARY, false);
 
             String desc = choice.description() != null ? choice.description() : "";
             List<String> lines = wrapText(font, desc, cardWidth - 120);
             for (int lineIndex = 0; lineIndex < Math.min(2, lines.size()); lineIndex++) {
                 graphics.drawString(Objects.requireNonNull(font, "font"),
                     Objects.requireNonNull(lines.get(lineIndex), "lineText"),
-                    cardX + 8, y + 20 + lineIndex * 10, UIConstants.Text.SECONDARY(), false);
+                    cardX + 8, y + 20 + lineIndex * 10, DesignTokens.Text.SECONDARY, false);
             }
 
             String rewardText = "Reward x" + String.format("%.2f", choice.rewardMultiplier());
             graphics.drawString(Objects.requireNonNull(font, "font"), rewardText,
                 cardX + 8, y + CARD_HEIGHT - 16,
-                UIConstants.Accent.GOLD(), false);
+                DesignTokens.Semantic.WARNING, false);
 
             EditorButton btn = selectButtons.size() > i ? selectButtons.get(i) : null;
             if (btn != null) {
@@ -241,11 +241,11 @@ public class WaveDirectiveScreen extends Screen {
         int x = panelX + panelWidth - textWidth - COUNTDOWN_PADDING;
         int y = panelY + 6;
 
-        int bgColor = UIConstants.setAlpha(UIConstants.Background.INPUT(), 160);
+        int bgColor = DesignTokens.withAlpha(DesignTokens.Bg.LEVEL_0, 160);
         graphics.fill(x - 4, y - 2, x + textWidth + 4, y + font.lineHeight + 2, bgColor);
 
         float pulse = countdown.getPulse();
-        int textColor = UIConstants.setAlpha(countdown.getColor(), (int) (255 * pulse));
+        int textColor = DesignTokens.withAlpha(countdown.getColor(), (int) (255 * pulse));
         graphics.drawString(font, text, x, y, textColor, false);
     }
 }

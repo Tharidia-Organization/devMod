@@ -1,5 +1,6 @@
 package com.devmod.network;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -26,7 +27,7 @@ import com.devmod.recipe.StonecuttingRecipeData;
 public record RecipeClientSyncPayload(
     @Nonnull List<RecipeData> recipes,
     @Nonnull SyncOperation operation
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final Gson GSON = new GsonBuilder().create();
 
@@ -46,6 +47,16 @@ public record RecipeClientSyncPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(operation.ordinal());
+        size += varIntSize(recipes.size());
+        for (RecipeData recipe : recipes) {
+            size += estimateRecipeSize(recipe);
+        }
+        return size;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -223,5 +234,45 @@ public record RecipeClientSyncPayload(
             "operation=" + operation +
             ", recipes=" + recipes.size() +
             '}';
+    }
+
+    private static int estimateRecipeSize(RecipeData recipe) {
+        if (recipe == null) {
+            return 0;
+        }
+        int size = 0;
+        ResourceLocation id = recipe.id();
+        size += estimateResourceLocationSize(id);
+        String typeDiscriminator = getTypeDiscriminator(recipe);
+        size += estimatedUtfSize(typeDiscriminator);
+        String json = GSON.toJson(recipe.toJson());
+        size += estimatedUtfSize(json);
+        return size;
+    }
+
+    private static int estimateResourceLocationSize(ResourceLocation id) {
+        if (id == null) {
+            return varIntSize(0);
+        }
+        String text = id.toString();
+        return estimatedUtfSize(text);
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

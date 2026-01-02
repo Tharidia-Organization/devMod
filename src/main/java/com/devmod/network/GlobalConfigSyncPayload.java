@@ -15,7 +15,7 @@ import com.devmod.stats.WeaponStats;
 public record GlobalConfigSyncPayload(
     CompoundTag armorConfigs,
     CompoundTag weaponConfigs
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<GlobalConfigSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "global_config_sync"))
@@ -35,6 +35,14 @@ public record GlobalConfigSyncPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += armorConfigs != null ? armorConfigs.sizeInBytes() : 0;
+        size += weaponConfigs != null ? weaponConfigs.sizeInBytes() : 0;
+        return size;
     }
 
     /**

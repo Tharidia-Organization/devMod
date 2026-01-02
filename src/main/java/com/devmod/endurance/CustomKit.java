@@ -162,11 +162,33 @@ public class CustomKit {
 
     /**
      * Convert kit items back to ItemStacks for use.
+     * This basic version only restores item type and count.
+     * For full restoration including attributes and NBT, use {@link #toItemStacks(net.minecraft.core.RegistryAccess)}.
      */
     public List<ItemStack> toItemStacks() {
         List<ItemStack> stacks = new ArrayList<>();
         for (KitItem item : items) {
             ItemStack stack = item.toItemStack();
+            if (!stack.isEmpty()) {
+                stacks.add(stack);
+            }
+        }
+        return stacks;
+    }
+
+    /**
+     * Convert kit items back to ItemStacks with full data restoration.
+     * This restores all serialized data including attributes, durability, NBT, enchantments, etc.
+     * @param registryAccess Registry access for deserialization
+     * @return List of fully restored ItemStacks
+     */
+    public List<ItemStack> toItemStacks(net.minecraft.core.RegistryAccess registryAccess) {
+        if (registryAccess == null) {
+            return toItemStacks(); // Fallback to basic version
+        }
+        List<ItemStack> stacks = new ArrayList<>();
+        for (KitItem item : items) {
+            ItemStack stack = item.toItemStackWithEnchantments(registryAccess);
             if (!stack.isEmpty()) {
                 stacks.add(stack);
             }
@@ -190,7 +212,21 @@ public class CustomKit {
             this(itemId, count, nbtTag, new java.util.ArrayList<>(), null);
         }
 
+        /**
+         * Creates a KitItem from an ItemStack without full serialization.
+         * Use {@link #fromItemStack(ItemStack, RegistryAccess)} for full serialization with NBT.
+         */
         public static KitItem fromItemStack(ItemStack stack) {
+            return fromItemStack(stack, null);
+        }
+
+        /**
+         * Creates a KitItem from an ItemStack with optional full serialization.
+         *
+         * @param stack The item stack to convert
+         * @param registryAccess Registry access for full NBT serialization (can be null for partial serialization)
+         */
+        public static KitItem fromItemStack(ItemStack stack, @javax.annotation.Nullable net.minecraft.core.RegistryAccess registryAccess) {
             if (stack == null || stack.isEmpty()) {
                 return new KitItem("minecraft:air", 0, null, new java.util.ArrayList<>(), null);
             }
@@ -199,7 +235,21 @@ public class CustomKit {
             ResourceLocation itemKey = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(itemObj));
             String id = Objects.requireNonNull(itemKey.toString());
 
-            // Extract enchantments
+            // Serialize full ItemStack as SNBT to preserve all components (attributes, durability, custom data, etc.)
+            String serializedNbt = null;
+            try {
+                // Use provided registry access for serialization
+                if (registryAccess != null) {
+                    net.minecraft.nbt.Tag saved = stack.save(registryAccess);
+                    if (saved != null) {
+                        serializedNbt = saved.toString();
+                    }
+                }
+            } catch (Exception e) {
+                // Fall back to partial serialization if full serialization fails
+            }
+
+            // Extract enchantments (kept for backwards compatibility and quick access)
             java.util.List<EnchantmentData> enchants = new java.util.ArrayList<>();
             var enchantsComponent = Objects.requireNonNull(net.minecraft.core.component.DataComponents.ENCHANTMENTS);
             net.minecraft.world.item.enchantment.ItemEnchantments itemEnchants =
@@ -232,7 +282,7 @@ public class CustomKit {
                 }
             }
 
-            return new KitItem(id, stack.getCount(), null, enchants, potionIdHolder.get());
+            return new KitItem(id, stack.getCount(), serializedNbt, enchants, potionIdHolder.get());
         }
 
         public ItemStack toItemStack() {
@@ -254,17 +304,32 @@ public class CustomKit {
         }
 
         /**
-         * Apply enchantments and potions to the stack using registry access.
-         * Call this on the server side where registry is available.
+         * Reconstruct the full ItemStack using registry access.
+         * If SNBT data is available, deserializes the complete item with all components.
+         * Otherwise falls back to basic item + enchantments + potions.
          */
         public ItemStack toItemStackWithEnchantments(net.minecraft.core.RegistryAccess registryAccess) {
+            // Try to deserialize from full SNBT first (preserves attributes, durability, custom data, etc.)
+            if (nbtTag != null && !nbtTag.isEmpty() && registryAccess != null) {
+                try {
+                    net.minecraft.nbt.CompoundTag tag = net.minecraft.nbt.TagParser.parseTag(Objects.requireNonNull(nbtTag));
+                    java.util.Optional<ItemStack> parsed = ItemStack.parse(Objects.requireNonNull(registryAccess), Objects.requireNonNull(tag));
+                    if (parsed.isPresent() && !parsed.get().isEmpty()) {
+                        return parsed.get();
+                    }
+                } catch (Exception e) {
+                    // Fall back to legacy deserialization if SNBT parsing fails
+                }
+            }
+
+            // Legacy fallback: basic item + enchantments + potions
             ItemStack stack = toItemStack();
             if (stack.isEmpty()) {
                 return stack;
             }
 
             // Apply enchantments
-            if (enchantments != null && !enchantments.isEmpty()) {
+            if (enchantments != null && !enchantments.isEmpty() && registryAccess != null) {
                 try {
                     var enchantRegKey = Objects.requireNonNull(net.minecraft.core.registries.Registries.ENCHANTMENT);
                     var enchantmentRegistry = registryAccess.registryOrThrow(enchantRegKey);
@@ -286,7 +351,7 @@ public class CustomKit {
             }
 
             // Apply potion if applicable
-            if (potionId != null && !potionId.isEmpty()) {
+            if (potionId != null && !potionId.isEmpty() && registryAccess != null) {
                 try {
                     ResourceLocation potionLoc = ResourceLocation.tryParse(Objects.requireNonNull(potionId));
                     if (potionLoc != null) {

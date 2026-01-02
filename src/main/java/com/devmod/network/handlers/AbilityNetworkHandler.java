@@ -5,16 +5,61 @@ import java.util.Objects;
 
 import net.minecraft.server.level.ServerPlayer;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import com.devmod.abilities.AbilityActionPayload;
 import com.devmod.abilities.DashAbilitySystem;
 import com.devmod.abilities.DodgeAbilitySystem;
 import com.devmod.abilities.StaminaSyncPayload;
+import com.devmod.network.ChannelId;
+import com.devmod.network.NetworkHandler;
+import com.devmod.network.PayloadValidation.PayloadLimits;
 
-public final class AbilityNetworkHandler extends NetworkHandlerBase {
+import static com.devmod.network.PayloadValidation.validated;
+
+/**
+ * P2: Domain-specific network handler for ability system payloads.
+ * Handles stamina sync and ability actions (dash, dodge).
+ */
+public final class AbilityNetworkHandler extends NetworkHandlerBase implements PayloadRegistrar {
+
+    public static final AbilityNetworkHandler INSTANCE = new AbilityNetworkHandler();
 
     private AbilityNetworkHandler() {}
+
+    // =================================================================================
+    // PAYLOAD REGISTRATION (P2: Domain-specific registration)
+    // =================================================================================
+
+    @Override
+    public String getDomainName() {
+        return "ability";
+    }
+
+    @Override
+    public void registerPayloads(RegisterPayloadHandlersEvent event) {
+        // STAMINA_SYNC: Server -> Client stamina updates for HUD
+        event.registrar(ChannelId.STAMINA_SYNC.asString()).playToClient(
+            nn(StaminaSyncPayload.TYPE),
+            nn(StaminaSyncPayload.STREAM_CODEC),
+            validated((payload, context) -> {
+                if (FMLEnvironment.dist == Dist.CLIENT) {
+                    observeFuture(context.enqueueWork(() ->
+                        NetworkHandler.withClientHooks(hooks -> hooks.handleStaminaSync(payload))), "stamina sync");
+                }
+            }, PayloadLimits.SMALL)
+        );
+
+        // ABILITY_ACTION: Client -> Server ability activation requests
+        event.registrar(ChannelId.ABILITY_ACTION.asString()).playToServer(
+            nn(AbilityActionPayload.TYPE),
+            nn(AbilityActionPayload.STREAM_CODEC),
+            validated(AbilityNetworkHandler::handleAbilityAction, PayloadLimits.QUEST_ACTION)
+        );
+    }
 
     // =================================================================================
     // ABILITY ACTION (server-side)

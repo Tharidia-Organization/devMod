@@ -7,10 +7,10 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nullable;
 
-import com.devmod.mailbox.moderation.AdminAuditLog;
-
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
+
+import com.devmod.mailbox.moderation.AdminAuditLog;
 /**
  * REST API controller for admin audit log entries.
  */

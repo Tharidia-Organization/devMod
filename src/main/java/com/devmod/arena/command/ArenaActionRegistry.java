@@ -52,6 +52,17 @@ public final class ArenaActionRegistry {
                 .handler(context -> handleCommand(context, "arena template reload", ActionIds.ARENA_TEMPLATE_RELOAD))
                 .build());
 
+        ActionRegistry.register(RadialAction.builder(ActionIds.ARENA_TEMPLATE_STATUS)
+                .labelKey("devmod.action.arena.template.status")
+                .descriptionKey("devmod.action.arena.template.status.desc")
+                .category(ActionCategory.ARENA)
+                .menuPath("Root/Arena/Templates/Status")
+                .icon(Items.CLOCK)
+                .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+                .commandHint("arena template status")
+                .handler(context -> handleCommand(context, "arena template status", ActionIds.ARENA_TEMPLATE_STATUS))
+                .build());
+
         ActionRegistry.register(RadialAction.builder(ActionIds.ARENA_AUTOSMOKE_RUN)
                 .labelKey("devmod.action.arena.autosmoke.run")
                 .descriptionKey("devmod.action.arena.autosmoke.run.desc")

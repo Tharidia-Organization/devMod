@@ -1,5 +1,7 @@
 package com.devmod.client.network;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -29,12 +31,14 @@ public final class ClientImpactHandlers {
      */
     public static void handleImpactSync(ImpactSyncPayload payload) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) {
+        final var level = mc.level;
+        final var player = mc.player;
+        if (player == null || level == null) {
             return;
         }
 
         // Get the victim entity from the world
-        Entity entity = mc.level.getEntity(payload.victimEntityId());
+        Entity entity = level.getEntity(payload.victimEntityId());
         if (!(entity instanceof LivingEntity victim)) {
             return;
         }
@@ -58,7 +62,7 @@ public final class ClientImpactHandlers {
 
         // Create ImpactData using the local player as attacker
         ImpactData impactData = new ImpactData(
-            mc.player.getUUID(),
+            player.getUUID(),
             victim,
             bodyPart,
             payload.multiplier(),
@@ -89,7 +93,8 @@ public final class ClientImpactHandlers {
     /**
      * Triggers visual effects for the impact.
      */
-    private static void triggerImpactVfx(ImpactData impactData, Vec3 hitPoint, Vec3 slashDirection, LivingEntity victim) {
+    private static void triggerImpactVfx(ImpactData impactData, Vec3 hitPoint,
+                                         @Nullable Vec3 slashDirection, LivingEntity victim) {
         try {
             // Use reflection to call ImpactHudService.triggerImpactVfx
             Class<?> hudServiceClass = Class.forName("com.devmod.client.overlay.ImpactHudService");

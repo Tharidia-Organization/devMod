@@ -26,24 +26,20 @@ public final class NotificationNetworkHandler {
             return;
         }
 
-        var future = context.enqueueWork(() -> {
+        context.enqueueWork(() -> {
             NotificationRouter.NotificationPreferences prefs = payload.toPreferences(player.getUUID());
-            var saveFuture = NotificationPreferencesRepository.INSTANCE.savePreferences(prefs)
+            NotificationPreferencesRepository.INSTANCE.savePreferences(prefs)
                 .exceptionally(ex -> {
                     LOGGER.warn("[NotificationNetwork] Failed to save preferences for {}", player.getUUID(), ex);
                     return null;
                 });
-            if (saveFuture.isCancelled()) {
-                LOGGER.debug("[NotificationNetwork] Preferences save cancelled for {}", player.getUUID());
-            }
 
             PacketDistributor.sendToPlayer(
                     Objects.requireNonNull(player),
-                    NotificationPreferencesSyncPayload.from(prefs));
+                    Objects.requireNonNull(NotificationPreferencesSyncPayload.from(prefs)));
+        }).exceptionally(ex -> {
+            LOGGER.error("[NotificationNetwork] Failed to process preferences update for {}", player.getUUID(), ex);
+            return null;
         });
-
-        if (future.isCancelled()) {
-            LOGGER.debug("[NotificationNetwork] Preferences update enqueue cancelled");
-        }
     }
 }

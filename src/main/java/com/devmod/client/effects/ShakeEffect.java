@@ -177,9 +177,11 @@ public class ShakeEffect {
     }
 
     private float calculateDistanceMultiplier(Player player) {
-        if (maxDistance <= 0 || source == null) return 1f;
+        // Local final for null analyzer - source is @Nullable field
+        final ShakeSource src = source;
+        if (maxDistance <= 0 || src == null) return 1f;
 
-        Vec3 sourcePos = source.getPosition();
+        Vec3 sourcePos = src.getPosition();
         if (sourcePos == null) return 1f;
 
         double distance = player.position().distanceTo(sourcePos);

@@ -104,6 +104,8 @@ class TemplateValidatorBoundsGapTest {
             base.size(),
             base.sizeX(),
             base.sizeZ(),
+            base.arenaShape(),
+            base.ringInnerRadius(),
             base.floor(),
             walls != null ? walls : base.walls(),
             ceiling != null ? ceiling : base.ceiling(),
@@ -122,6 +124,7 @@ class TemplateValidatorBoundsGapTest {
             base.structureNbt(),
             base.limits(),
             base.buildSettings(),
+            base.zoneSettings(),
             base.tags()
         );
     }

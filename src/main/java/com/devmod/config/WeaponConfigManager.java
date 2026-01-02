@@ -51,7 +51,7 @@ import net.minecraft.world.level.block.Block;
 import com.devmod.DevMod;
 import com.devmod.attributes.ModAttributes;
 import com.devmod.components.WeaponComponents;
-import com.devmod.integration.PufferfishCompat;
+import com.devmod.integration.PufferfishIntegration;
 import com.devmod.network.PacketValidator;
 import com.devmod.stats.WeaponStats;
 
@@ -401,7 +401,7 @@ public class WeaponConfigManager {
     }
 
     private static Holder<Attribute> holder(net.neoforged.neoforge.registries.DeferredHolder<Attribute, Attribute> def) {
-        Attribute mapped = PufferfishCompat.map(def);
+        Attribute mapped = PufferfishIntegration.map(def);
         return holder(mapped);
     }
 

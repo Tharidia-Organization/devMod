@@ -97,6 +97,14 @@ public class NotificationSoundManager {
         soundConfigs.put("combo.lost", new SoundConfig(
                 SoundEvents.ITEM_BREAK, 1.2f, 0.3f));
 
+        // Combat Flow HUD sounds
+        soundConfigs.put("combatflow.combo.hit", new SoundConfig(
+                SoundEvents.EXPERIENCE_ORB_PICKUP, 1.4f, 0.3f));  // Subtle tick
+        soundConfigs.put("combatflow.rank.up", new SoundConfig(
+                SoundEvents.PLAYER_LEVELUP, 1.5f, 0.7f));  // Fanfare
+        soundConfigs.put("combatflow.overdrive", new SoundConfig(
+                SoundEvents.TOTEM_USE, 1.2f, 0.8f));  // Powerful activation
+
         // Resonance sounds
         soundConfigs.put("resonance.chain", new SoundConfig(
                 Objects.requireNonNull(SoundEvents.NOTE_BLOCK_BELL.value()), 1.5f, 0.5f));
@@ -234,13 +242,14 @@ public class NotificationSoundManager {
      */
     public void playSound(SoundEvent sound, float pitch, float volume) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc == null) return;
+        if (mc == null || sound == null) return;
 
         SoundManager soundManager = mc.getSoundManager();
         if (soundManager == null) return;
 
         try {
-            soundManager.play(SimpleSoundInstance.forUI(sound, pitch, volume));
+            soundManager.play(Objects.requireNonNull(
+                SimpleSoundInstance.forUI(Objects.requireNonNull(sound), pitch, volume)));
         } catch (Exception e) {
             LOGGER.warn("[NotificationSound] Failed to play sound: {}", e.getMessage());
         }

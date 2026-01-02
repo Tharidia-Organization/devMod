@@ -8,10 +8,12 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 public record InviteResponsePayload(
     UUID inviteId,
     boolean accepted
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<InviteResponsePayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "invite_response"))
@@ -50,5 +52,10 @@ public record InviteResponsePayload(
      */
     public static InviteResponsePayload decline(UUID inviteId) {
         return new InviteResponsePayload(inviteId, false);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 16 + 1; // UUID (16 bytes) + boolean (1 byte)
     }
 }

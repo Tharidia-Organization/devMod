@@ -15,6 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 
 @OnlyIn(Dist.CLIENT)
@@ -99,15 +100,13 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
 
         // Draw panel background
         int panelHeight = PADDING * 2 + activeContracts.size() * LINE_HEIGHT + LINE_HEIGHT; // +1 for total
-        int bgAlpha = 180;
         graphics.fill(x - PADDING, y - PADDING,
             x + panelWidth, y + panelHeight,
-            (bgAlpha << 24) | 0x1A1A1A);
+            OverlayTheme.Panel.BG_STANDARD);
 
         // Draw header
         String headerText = "BLOOD CONTRACTS";
-        int headerColor = 0xFF8800;
-        graphics.drawString(mc.font, headerText, x, y, headerColor, true);
+        graphics.drawString(mc.font, headerText, x, y, OverlayTheme.Contract.HEADER, true);
         y += LINE_HEIGHT + 2;
 
         // Violation flash effect
@@ -121,11 +120,11 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
 
         // Draw total multiplier
         y += 4;
-        graphics.fill(x, y - 2, x + panelWidth - PADDING, y - 1, 0x44FFFFFF); // Separator line
+        graphics.fill(x, y - 2, x + panelWidth - PADDING, y - 1, OverlayTheme.Contract.SEPARATOR);
 
         String totalText = String.format("TOTAL: %.1fx", totalMultiplier);
-        int totalColor = totalMultiplier >= 2.0f ? 0xFF4444 :
-                        totalMultiplier >= 1.5f ? 0xFFAA00 : 0xAAFFAA;
+        int totalColor = totalMultiplier >= 2.0f ? OverlayTheme.Contract.MULTIPLIER_HIGH :
+                        totalMultiplier >= 1.5f ? OverlayTheme.Contract.MULTIPLIER_MED : OverlayTheme.Contract.MULTIPLIER_LOW;
 
         // Pulse effect on high multipliers
         if (totalMultiplier >= 2.0f) {
@@ -150,7 +149,7 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
         // Violated contracts get strikethrough and dim color
         if (contract.violated()) {
             alpha = flashViolation ? 128 + (int)(Math.sin(System.currentTimeMillis() * 0.01) * 64) : 128;
-            color = 0x888888;
+            color = OverlayTheme.stripAlpha(OverlayTheme.Contract.VIOLATED);
         }
 
         int fullColor = (alpha << 24) | (color & 0xFFFFFF);
@@ -164,9 +163,9 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
 
         if (contract.violated()) {
             // Strikethrough for violated
-            graphics.drawString(mc.font, name, nameX, y, 0xFF888888, false);
+            graphics.drawString(mc.font, name, nameX, y, OverlayTheme.Contract.VIOLATED, false);
             int nameWidth = mc.font.width(name);
-            graphics.fill(nameX, y + 4, nameX + nameWidth, y + 5, 0xFFFF4444);
+            graphics.fill(nameX, y + 4, nameX + nameWidth, y + 5, OverlayTheme.Contract.STRIKETHROUGH);
         } else {
             graphics.drawString(mc.font, name, nameX, y, fullColor, true);
         }
@@ -176,7 +175,7 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
         int multiplierWidth = mc.font.width(multiplierText);
         int multiplierX = graphics.guiWidth() - PADDING * 2 - multiplierWidth;
 
-        int multiplierColor = contract.violated() ? 0xFF666666 : 0xFFFFFF;
+        int multiplierColor = contract.violated() ? OverlayTheme.Contract.VIOLATED_MUTED : OverlayTheme.Contract.MULTIPLIER_TEXT;
         graphics.drawString(mc.font, multiplierText, multiplierX, y, multiplierColor, false);
     }
 

@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.input.KeyInputHandler;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
@@ -25,17 +26,17 @@ public class QuickHelpOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "quick_help_hud");
 
-    // Colors
-    private static final int PANEL_BG = 0xCC1A1A2E;
-    private static final int PANEL_BORDER = 0xFF4CAF50;
-    private static final int TEXT_TITLE = 0xFF81C784;
-    private static final int TEXT_KEY = 0xFFFFFFFF;
-    private static final int TEXT_DESC = 0xFFAAAAAA;
-    private static final int TEXT_CATEGORY = 0xFF64B5F6;
+    // Colors (delegating to OverlayTheme)
+    private static final int PANEL_BG = OverlayTheme.Panel.BG_STANDARD;
+    private static final int PANEL_BORDER = OverlayTheme.Border.SUCCESS;
+    private static final int TEXT_TITLE = OverlayTheme.Help.TITLE;
+    private static final int TEXT_KEY = OverlayTheme.Text.PRIMARY;
+    private static final int TEXT_DESC = OverlayTheme.Text.MUTED;
+    private static final int TEXT_CATEGORY = OverlayTheme.Help.CATEGORY;
 
     // Layout
-    private static final int PANEL_PADDING = 12;
-    private static final int LINE_HEIGHT = 12;
+    private static final int PANEL_PADDING = OverlayTheme.Dimension.PADDING_COMFORTABLE;
+    private static final int LINE_HEIGHT = 12; // Slightly larger than standard for readability
     private static final int KEY_WIDTH = 50;
 
     // State
@@ -120,7 +121,7 @@ public class QuickHelpOverlay {
 
         // Footer hint
         y += 8;
-        graphics.drawCenteredString(safeFont, "Press K for full settings", panelX + panelWidth / 2, y, 0xFF555555);
+        graphics.drawCenteredString(safeFont, "Press K for full settings", panelX + panelWidth / 2, y, OverlayTheme.Help.HINT);
     }
 
     private static int renderCategory(GuiGraphics graphics, Font font, int x, int y, String name) {
@@ -140,7 +141,7 @@ public class QuickHelpOverlay {
         String keyName = Objects.requireNonNull(key.getTranslatedKeyMessage().getString());
         int keyBgWidth = Math.max(KEY_WIDTH, safeFont.width(keyName) + 8);
 
-        graphics.fill(x, y - 1, x + keyBgWidth, y + LINE_HEIGHT - 1, 0xFF333333);
+        graphics.fill(x, y - 1, x + keyBgWidth, y + LINE_HEIGHT - 1, OverlayTheme.Help.KEY_BG);
 
         int keyTextX = x + (keyBgWidth - safeFont.width(Objects.requireNonNull(keyName))) / 2;
         graphics.drawString(safeFont, keyName, keyTextX, y, TEXT_KEY, false);

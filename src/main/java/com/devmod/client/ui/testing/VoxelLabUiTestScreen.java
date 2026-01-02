@@ -17,7 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.testing.panel.CollapsiblePanel;
 import com.devmod.client.ui.testing.panel.GridPanel;
 import com.devmod.client.ui.testing.panel.HeaderPanel;
@@ -112,7 +112,7 @@ public class VoxelLabUiTestScreen extends Screen {
 
         // VFX Section (collapsible)
         UIPanel vfxContent = SectionPanel.builder("vfx-content", "Effects")
-            .titleColor(UIConstants.Text.SECONDARY())
+            .titleColor(DesignTokens.Text.SECONDARY())
             .addButton(impactButtons.vfxMasterToggle())
             .addRow(impactButtons.vfxVortexToggle(), impactButtons.vfxSlashToggle(), impactButtons.vfxLinesToggle())
             .addSpacer(4)
@@ -177,13 +177,13 @@ public class VoxelLabUiTestScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
-        graphics.fill(0, 0, width, height, UIConstants.Background.CONTENT());
+        graphics.fill(0, 0, width, height, DesignTokens.Background.CONTENT());
 
         var font = Objects.requireNonNull(this.font, "font");
 
         // Header
-        graphics.drawString(font, "Voxel Lab", PADDING, PADDING, UIConstants.Text.TITLE(), false);
-        graphics.drawString(font, "UI Component Showcase & Impact HUD Manager", PADDING, PADDING + 12, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(font, "Voxel Lab", PADDING, PADDING, DesignTokens.Text.TITLE(), false);
+        graphics.drawString(font, "UI Component Showcase & Impact HUD Manager", PADDING, PADDING + 12, DesignTokens.Text.SECONDARY(), false);
 
         // Show cases button
         showCasesButton.render(graphics, PADDING, PADDING + 30, 180, 22, mouseX, mouseY);
@@ -262,10 +262,10 @@ public class VoxelLabUiTestScreen extends Screen {
         int areaRight = width - SIDEBAR_WIDTH - PADDING - 20;
         int areaBottom = height - PADDING;
 
-        graphics.fill(PADDING - 4, areaTop, areaRight, areaBottom, UIConstants.Background.PANEL());
+        graphics.fill(PADDING - 4, areaTop, areaRight, areaBottom, DesignTokens.Background.PANEL());
 
         var font = Objects.requireNonNull(this.font, "font");
-        graphics.drawString(font, "EditorButton Variants", PADDING, areaTop + 6, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(font, "EditorButton Variants", PADDING, areaTop + 6, DesignTokens.Text.PRIMARY(), false);
 
         for (DemoButton demo : demoButtons) {
             demo.button.render(graphics, demo.x, demo.y, demo.width, demo.button.getSize().height(), mouseX, mouseY);

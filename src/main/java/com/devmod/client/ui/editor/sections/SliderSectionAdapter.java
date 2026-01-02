@@ -4,8 +4,8 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class SliderSectionAdapter implements EditorSection.SliderSection {
     private final EditorSlider slider;
@@ -46,7 +46,7 @@ public final class SliderSectionAdapter implements EditorSection.SliderSection {
     @Override public float getMax() { return slider.getMax(); }
     @Override public float getStep() { return slider.getStep(); }
     @Override public String getFormat() { return "%.2f"; }
-    @Override public int getColor() { return UIConstants.SliderColors.NEUTRAL; }
+    @Override public int getColor() { return DesignTokens.SliderColors.NEUTRAL; }
     @Override public boolean isDragging() { return slider.isDragging(); }
     @Override public void setDragging(boolean dragging) { }
 }

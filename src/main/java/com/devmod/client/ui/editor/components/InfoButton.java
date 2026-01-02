@@ -9,11 +9,11 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.SliderDescriptions;
 import com.devmod.client.ui.editor.core.TooltipManager;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class InfoButton {
 
@@ -122,8 +122,8 @@ public final class InfoButton {
                     && mouseY >= y && mouseY < y + scaledSize;
 
         // Draw circular button background
-        int bgColor = hovered ? UIConstants.Background.HOVER() : UIConstants.Background.DARKER();
-        int borderColor = hovered ? UIConstants.Accent.CYAN() : UIConstants.Border.DEFAULT();
+        int bgColor = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.DARKER();
+        int borderColor = hovered ? DesignTokens.Accent.CYAN() : DesignTokens.Border.DEFAULT();
 
         // Draw as rounded rectangle (approximating circle)
         graphics.fill(x, y, x + scaledSize, y + scaledSize, bgColor);
@@ -131,7 +131,7 @@ public final class InfoButton {
 
         // Draw "?" text centered
         String questionMark = "?";
-        int textColor = hovered ? UIConstants.Accent.CYAN() : UIConstants.Text.SECONDARY();
+        int textColor = hovered ? DesignTokens.Accent.CYAN() : DesignTokens.Text.SECONDARY();
         int textX = x + (scaledSize - font.width(questionMark)) / 2;
         int textY = y + (scaledSize - TEXT_HEIGHT) / 2;
         graphics.drawString(font, questionMark, textX, textY, textColor, false);

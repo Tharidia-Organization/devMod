@@ -5,11 +5,11 @@ import java.util.Objects;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.DirtyRegionTracker;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSpacing;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.scroll.ScrollManager;
 import com.devmod.client.ui.scroll.ScrollMetrics;
 import com.devmod.client.ui.scroll.ScrollMode;
@@ -100,7 +100,7 @@ public class ScrollableContentArea {
         lastScrollOffset = currentOffset;
 
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.CONTENT());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.CONTENT());
 
         // Render content with scissoring (try/finally for safety)
         ResponsiveLayout.Rect scissorBounds = Objects.requireNonNull(contentBounds, "contentBounds");
@@ -119,7 +119,7 @@ public class ScrollableContentArea {
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int width, int height,
                                   int mouseX, int mouseY) {
         // Track background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.DARKER());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.DARKER());
 
         // Get metrics from scroll manager
         ScrollMetrics metrics = scrollManager.calculateMetrics();
@@ -132,13 +132,13 @@ public class ScrollableContentArea {
         boolean isDragging = scrollManager.isDragging();
 
         // Thumb color based on state
-        int thumbColor = isDragging ? UIConstants.Slider.THUMB_DRAG :
-                        (thumbHovered ? UIConstants.Slider.THUMB_HOVER : UIConstants.Slider.THUMB);
+        int thumbColor = isDragging ? DesignTokens.Slider.THUMB_DRAG :
+                        (thumbHovered ? DesignTokens.Slider.THUMB_HOVER : DesignTokens.Slider.THUMB);
         graphics.fill(x + THUMB_INSET, thumbY, x + width - THUMB_INSET, thumbY + thumbHeight, thumbColor);
 
         // Thumb border when hovered or dragging
         if (thumbHovered || isDragging) {
-            AxiomRenderer.drawBorder(graphics, x, thumbY, width, thumbHeight, UIConstants.Border.ACCENT());
+            AxiomRenderer.drawBorder(graphics, x, thumbY, width, thumbHeight, DesignTokens.Border.ACCENT());
         }
     }
 

@@ -43,7 +43,7 @@ public class NotificationSettingsScreen extends Screen {
     private boolean globalMute;
     private boolean preferChat;
     private float masterVolume;
-    private NotificationPriority minPriority;
+    private NotificationPriority minPriority = NotificationPriority.LOW;
 
     private int scrollOffset;
     private int maxScroll;

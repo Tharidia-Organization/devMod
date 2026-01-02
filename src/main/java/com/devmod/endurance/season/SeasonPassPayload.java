@@ -7,11 +7,13 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
 public record SeasonPassPayload(
     // Season info
@@ -32,7 +34,7 @@ public record SeasonPassPayload(
     long boostRemainingSeconds,
     // Visible rewards (next 10 tiers)
     List<RewardEntry> upcomingRewards
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_STRING_LENGTH = 128;
     private static final int MAX_REWARDS = 20;
@@ -158,6 +160,30 @@ public record SeasonPassPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += 4; // seasonNumber
+        size += estimatedFixedUtfSize(seasonName);
+        size += 8; // remainingDays
+        size += 1; // seasonActive
+        size += 4; // currentTier
+        size += 4; // currentXP
+        size += 4; // xpToNextTier
+        size += 4; // tierProgress
+        size += 1; // premium
+        size += 4; // unclaimedRewards
+        size += 1; // hasBoost
+        size += 4; // boostMultiplier
+        size += 8; // boostRemainingSeconds
+        int count = Math.min(upcomingRewards.size(), MAX_REWARDS);
+        size += 4; // rewardCount
+        for (int i = 0; i < count; i++) {
+            size += estimateRewardSize(upcomingRewards.get(i));
+        }
+        return size;
+    }
+
     /**
      * Create payload from system data for a player.
      */
@@ -204,5 +230,28 @@ public record SeasonPassPayload(
             summary.boostRemainingSeconds(),
             rewards
         );
+    }
+
+    private static int estimateRewardSize(RewardEntry entry) {
+        if (entry == null) {
+            return 0;
+        }
+        int size = 0;
+        size += 4; // tier
+        size += estimatedFixedUtfSize(entry.freeRewardName);
+        size += estimatedFixedUtfSize(entry.premiumRewardName);
+        size += 1; // freeUnlocked
+        size += 1; // freeClaimed
+        size += 1; // premiumUnlocked
+        size += 1; // premiumClaimed
+        return size;
+    }
+
+    private static int estimatedFixedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return 4;
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return 4 + bytes.length;
     }
 }

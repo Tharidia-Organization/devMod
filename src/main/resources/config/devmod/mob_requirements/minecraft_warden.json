@@ -1,0 +1,35 @@
+{
+  "mobId": "minecraft:warden",
+  "biome": {
+    "preferred": "minecraft:deep_dark",
+    "validBiomes": ["minecraft:deep_dark", "minecraft:dripstone_caves"],
+    "required": false
+  },
+  "light": {
+    "min": 0,
+    "max": 0,
+    "prefersDark": true,
+    "prefersLight": false
+  },
+  "floor": {
+    "blocks": ["minecraft:sculk", "minecraft:deepslate", "minecraft:stone"],
+    "requiresSolid": true,
+    "canSpawnOnLiquid": false,
+    "canSpawnInAir": false,
+    "preferred": "minecraft:sculk"
+  },
+  "space": {
+    "width": 0.9,
+    "height": 2.9,
+    "clearanceAbove": 4.0,
+    "clearanceAround": 3.0
+  },
+  "time": "ANY",
+  "boss": {
+    "isBoss": true,
+    "minPlayers": 1,
+    "requiresActivation": false,
+    "activationItem": null,
+    "activationStructure": null
+  }
+}

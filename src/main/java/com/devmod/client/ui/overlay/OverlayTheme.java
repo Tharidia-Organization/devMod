@@ -465,10 +465,14 @@ public final class OverlayTheme {
         public static final int ROOM_GAP = 0xFFFF0000;
 
         /** Room palette array for indexed access */
-        public static final int[] ROOM_PALETTE = {
+        private static final int[] ROOM_PALETTE = {
             ROOM_RED, ROOM_GREEN, ROOM_BLUE, ROOM_YELLOW,
             ROOM_MAGENTA, ROOM_CYAN, ROOM_ORANGE, ROOM_PURPLE
         };
+
+        public static int[] roomPalette() {
+            return ROOM_PALETTE.clone();
+        }
 
         // --- Line of sight visualizer ---
         /** Target visible (green) */
@@ -530,6 +534,61 @@ public final class OverlayTheme {
         public static final int SHIELD = 0x44FFFF;
 
         private Flash() {}
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // OVERLAY DIMENSIONS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Standard dimensions for HUD overlays.
+     * Use these for consistent spacing across all overlays.
+     */
+    public static final class Dimension {
+        /** Compact line height (dense HUDs like ImpactHud) */
+        public static final int LINE_HEIGHT_COMPACT = 10;
+        /** Standard line height (most overlays) */
+        public static final int LINE_HEIGHT = 11;
+        /** Readable line height (tutorials, help) */
+        public static final int LINE_HEIGHT_READABLE = 14;
+
+        /** Tight panel padding (compact overlays) */
+        public static final int PADDING_TIGHT = 6;
+        /** Standard panel padding (most overlays) */
+        public static final int PADDING = 8;
+        /** Comfortable panel padding (tutorials, help) */
+        public static final int PADDING_COMFORTABLE = 12;
+        /** Spacious panel padding (modals, full screens) */
+        public static final int PADDING_SPACIOUS = 16;
+
+        /** Progress bar height */
+        public static final int PROGRESS_BAR_HEIGHT = 8;
+        /** Small progress bar */
+        public static final int PROGRESS_BAR_HEIGHT_SM = 4;
+
+        private Dimension() {}
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // UTILITY COLORS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Common utility colors for effects, highlights, and overlays.
+     */
+    public static final class Utility {
+        /** Pure white for pulse/glow effects */
+        public static final int WHITE = 0xFFFFFFFF;
+        /** Pure black */
+        public static final int BLACK = 0xFF000000;
+        /** Shadow/highlight background (25% black) */
+        public static final int SHADOW = 0x40000000;
+        /** Light shadow (15% black) */
+        public static final int SHADOW_LIGHT = 0x26000000;
+        /** Heavy shadow (50% black) */
+        public static final int SHADOW_HEAVY = 0x80000000;
+
+        private Utility() {}
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

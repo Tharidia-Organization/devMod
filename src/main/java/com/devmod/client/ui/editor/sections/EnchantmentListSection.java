@@ -25,9 +25,9 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class EnchantmentListSection implements EditorSection.CustomSection {
 
@@ -186,32 +186,32 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
         // Damage enchantments
         if (key.contains("sharpness") || key.contains("smite") || key.contains("bane") ||
             key.contains("power") || key.contains("impaling")) {
-            return UIConstants.SliderColors.DAMAGE;
+            return DesignTokens.SliderColors.DAMAGE;
         }
 
         // Protection enchantments
         if (key.contains("protection") || key.contains("feather") || key.contains("respiration")) {
-            return UIConstants.SliderColors.DEFENSE;
+            return DesignTokens.SliderColors.DEFENSE;
         }
 
         // Speed/utility enchantments
         if (key.contains("efficiency") || key.contains("swift") || key.contains("soul_speed") ||
             key.contains("depth_strider") || key.contains("frost_walker")) {
-            return UIConstants.SliderColors.SPEED;
+            return DesignTokens.SliderColors.SPEED;
         }
 
         // Durability enchantments
         if (key.contains("unbreaking") || key.contains("mending")) {
-            return UIConstants.SliderColors.DURABILITY;
+            return DesignTokens.SliderColors.DURABILITY;
         }
 
         // Special enchantments
         if (key.contains("silk") || key.contains("fortune") || key.contains("looting") ||
             key.contains("infinity") || key.contains("flame") || key.contains("fire_aspect")) {
-            return UIConstants.SliderColors.SPECIAL;
+            return DesignTokens.SliderColors.SPECIAL;
         }
 
-        return UIConstants.SliderColors.NEUTRAL;
+        return DesignTokens.SliderColors.NEUTRAL;
     }
 
     private String getInfoForEnchantment(Holder<Enchantment> holder, int maxLevel) {
@@ -280,16 +280,16 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
         // Header
         graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + HEADER_HEIGHT,
-            UIConstants.Background.HEADER());
+            DesignTokens.Background.HEADER());
         graphics.drawString(font, title, bounds.x() + TEXT_INSET_X,
-            y + (HEADER_HEIGHT - 8) / 2, UIConstants.Text.TITLE(), false);
+            y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.TITLE(), false);
 
         // Count active enchantments
         long activeCount = entries.stream().filter(e -> e.currentLevel > 0).count();
         String countText = "(" + activeCount + " active)";
         int countWidth = font.width(countText);
         graphics.drawString(font, countText, bounds.x() + bounds.width() - countWidth - TEXT_INSET_X,
-            y + (HEADER_HEIGHT - 8) / 2, UIConstants.Text.MUTED(), false);
+            y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.MUTED(), false);
 
         y += HEADER_HEIGHT;
 

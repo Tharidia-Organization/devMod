@@ -85,6 +85,7 @@ public class Config {
     public static final ModConfigSpec.BooleanValue IMPACT_VFX_SLASH_ENABLED;
     public static final ModConfigSpec.BooleanValue IMPACT_VFX_LINES_ENABLED;
     public static final ModConfigSpec.DoubleValue IMPACT_VFX_INTENSITY;
+    public static final ModConfigSpec.ConfigValue<String> IMPACT_DISPLAY_MODE_DEFAULT;
 
     // ============================================
     // PERFORMANCE SETTINGS
@@ -254,6 +255,10 @@ public class Config {
         IMPACT_VFX_INTENSITY = BUILDER
                 .comment("Impact VFX intensity multiplier (0.1 = subtle, 1.0 = normal, 2.0 = intense)")
                 .defineInRange("impactVfxIntensity", 1.0, 0.1, 2.0);
+
+        IMPACT_DISPLAY_MODE_DEFAULT = BUILDER
+                .comment("Default display mode for Impact HUD (OFF, MINIMAL, DETAILED, ANALYSIS)")
+                .define("impactDisplayModeDefault", "DETAILED");
 
         BUILDER.pop();
 

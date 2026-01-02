@@ -9,7 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public class WeaponModuleVariants {
 
@@ -104,7 +104,7 @@ public class WeaponModuleVariants {
             .step(0.5f)
             .format("%.1f")
             .suffix(" per block")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Extra damage per block fallen. Mace default = 3.0. Total = Base + (Fall Height * Bonus).")
@@ -113,7 +113,7 @@ public class WeaponModuleVariants {
         smashCapSlider = new EditorSlider("smashCap", "Max Bonus Damage", 0f, 300f, 150f)
             .step(5f)
             .format("%.0f")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Maximum bonus damage from falling. Prevents infinite scaling.")
@@ -122,7 +122,7 @@ public class WeaponModuleVariants {
         smashKnockbackSlider = new EditorSlider("smashKb", "Smash Knockback", 0f, 5f, 1.0f)
             .step(0.1f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(dataSource)
             .info("Knockback strength on smash attack. Higher = enemies fly further.")
@@ -132,7 +132,7 @@ public class WeaponModuleVariants {
             .step(5f)
             .format("%.0f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Percentage of damage dealt to nearby enemies in AoE. 50% = half damage to secondary targets.")
@@ -148,7 +148,7 @@ public class WeaponModuleVariants {
         throwDamageSlider = new EditorSlider("throwDmg", "Throw Damage", 0f, 30f, 8f)
             .step(0.5f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Damage dealt when trident hits as thrown projectile. Vanilla = 8.0.")
@@ -158,7 +158,7 @@ public class WeaponModuleVariants {
             .step(0.1f)
             .format("%.2f")
             .suffix(" blocks/tick")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("How fast trident travels when thrown. Higher = longer range, faster flight.")
@@ -167,7 +167,7 @@ public class WeaponModuleVariants {
         loyaltySpeedSlider = new EditorSlider("loyaltySpeed", "Return Speed (Loyalty)", 0f, 5f, 1.5f)
             .step(0.1f)
             .format("%.2f")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("How fast trident returns with Loyalty enchant. 0 = no return.")
@@ -177,7 +177,7 @@ public class WeaponModuleVariants {
             .step(0.5f)
             .format("%.1f")
             .suffix(" blocks")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("Maximum distance player travels when using Riptide in water/rain.")
@@ -186,7 +186,7 @@ public class WeaponModuleVariants {
         riptideDamageSlider = new EditorSlider("riptideDmg", "Riptide Damage", 0f, 20f, 6f)
             .step(0.5f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Damage dealt to entities hit during Riptide dash.")

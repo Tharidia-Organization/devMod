@@ -109,7 +109,7 @@ export default function TicketsPage() {
       if (categoryFilter) params.append('category', categoryFilter);
       params.append('page', page.toString());
       params.append('pageSize', '20');
-      const res = await api.get<TicketListResponse>(`/api/tickets?${params}`);
+      const res = await api.get<TicketListResponse>(`/tickets?${params}`);
       return res.data;
     },
   });
@@ -118,7 +118,7 @@ export default function TicketsPage() {
   const { data: stats } = useQuery({
     queryKey: ['ticketStats'],
     queryFn: async () => {
-      const res = await api.get<TicketStatsResponse>('/api/tickets/stats');
+      const res = await api.get<TicketStatsResponse>('/tickets/stats');
       return res.data;
     },
   });
@@ -128,7 +128,7 @@ export default function TicketsPage() {
     queryKey: ['ticket', selectedTicketId],
     queryFn: async () => {
       if (!selectedTicketId) return null;
-      const res = await api.get<TicketDetailResponse>(`/api/tickets/${selectedTicketId}`);
+      const res = await api.get<TicketDetailResponse>(`/tickets/${selectedTicketId}`);
       return res.data;
     },
     enabled: !!selectedTicketId,
@@ -137,7 +137,7 @@ export default function TicketsPage() {
   // Update ticket mutation
   const updateTicketMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { status?: string; priority?: string; resolutionNotes?: string } }) => {
-      const res = await api.put(`/api/tickets/${id}`, data);
+      const res = await api.put(`/tickets/${id}`, data);
       return res.data;
     },
     onSuccess: () => {
@@ -150,9 +150,7 @@ export default function TicketsPage() {
   // Add comment mutation
   const addCommentMutation = useMutation({
     mutationFn: async ({ ticketId, content, isInternal }: { ticketId: string; content: string; isInternal: boolean }) => {
-      const res = await api.post(`/api/tickets/${ticketId}/comments`, {
-        authorUuid: '00000000-0000-0000-0000-000000000000', // Admin placeholder
-        authorName: 'Admin',
+      const res = await api.post(`/tickets/${ticketId}/comments`, {
         content,
         isInternal,
       });

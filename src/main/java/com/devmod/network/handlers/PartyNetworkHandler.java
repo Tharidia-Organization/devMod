@@ -5,17 +5,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.annotation.Nullable;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import com.devmod.network.ChannelId;
 import com.devmod.network.NetworkHandler;
+import com.devmod.network.PayloadValidation.PayloadLimits;
 import com.devmod.party.ArrivalConfirmPayload;
 import com.devmod.party.CancelSequencePayload;
 import com.devmod.party.InviteResponsePayload;
@@ -28,9 +29,78 @@ import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.util.I18n;
 
-public final class PartyNetworkHandler extends NetworkHandlerBase {
+import static com.devmod.network.PayloadValidation.validated;
+
+/**
+ * P2: Domain-specific network handler for party system payloads.
+ * Handles party creation, invites, quest sequences, and synchronization.
+ */
+public final class PartyNetworkHandler extends NetworkHandlerBase implements PayloadRegistrar {
+
+    public static final PartyNetworkHandler INSTANCE = new PartyNetworkHandler();
 
     private PartyNetworkHandler() {}
+
+    // =================================================================================
+    // PAYLOAD REGISTRATION (P2: Domain-specific registration)
+    // =================================================================================
+
+    @Override
+    public String getDomainName() {
+        return "party";
+    }
+
+    @Override
+    public void registerPayloads(RegisterPayloadHandlersEvent event) {
+        // PARTY_ACTION: Client -> Server party actions (create, leave, kick, etc.)
+        event.registrar(ChannelId.PARTY_ACTION.asString()).playToServer(
+            nn(PartyActionPayload.TYPE),
+            nn(PartyActionPayload.STREAM_CODEC),
+            validated(PartyNetworkHandler::handlePartyAction, PayloadLimits.SMALL)
+        );
+
+        // PARTY_SYNC: Server -> Client party state sync
+        event.registrar(ChannelId.PARTY_SYNC.asString()).playToClient(
+            nn(PartySyncPayload.TYPE),
+            nn(PartySyncPayload.STREAM_CODEC),
+            validated(PartyNetworkHandler::handlePartySync, PayloadLimits.SMALL)
+        );
+
+        // QUEST_SEQUENCE: Server -> Client quest start sequence updates
+        event.registrar(ChannelId.QUEST_SEQUENCE.asString()).playToClient(
+            nn(QuestSequencePayload.TYPE),
+            nn(QuestSequencePayload.STREAM_CODEC),
+            validated(PartyNetworkHandler::handleQuestSequence, PayloadLimits.SMALL)
+        );
+
+        // NAMED_INVITE: Client -> Server invite by player name
+        event.registrar(ChannelId.NAMED_INVITE.asString()).playToServer(
+            nn(NamedInvitePayload.TYPE),
+            nn(NamedInvitePayload.STREAM_CODEC),
+            validated(PartyNetworkHandler::handleNamedInvite, PayloadLimits.SMALL)
+        );
+
+        // ARRIVAL_CONFIRM: Client -> Server confirm arrival at arena
+        event.registrar(ChannelId.ARRIVAL_CONFIRM.asString()).playToServer(
+            nn(ArrivalConfirmPayload.TYPE),
+            nn(ArrivalConfirmPayload.STREAM_CODEC),
+            validated(PartyNetworkHandler::handleArrivalConfirm, PayloadLimits.SMALL)
+        );
+
+        // CANCEL_SEQUENCE: Client -> Server cancel quest start sequence
+        event.registrar(ChannelId.CANCEL_SEQUENCE.asString()).playToServer(
+            nn(CancelSequencePayload.TYPE),
+            nn(CancelSequencePayload.STREAM_CODEC),
+            validated(PartyNetworkHandler::handleCancelSequence, PayloadLimits.SMALL)
+        );
+
+        // INVITE_RESPONSE: Client -> Server accept/decline invite
+        event.registrar(ChannelId.INVITE_RESPONSE.asString()).playToServer(
+            nn(InviteResponsePayload.TYPE),
+            nn(InviteResponsePayload.STREAM_CODEC),
+            validated(PartyNetworkHandler::handleInviteResponse, PayloadLimits.SMALL)
+        );
+    }
 
     // =================================================================================
     // PARTY ACTION (server-side)

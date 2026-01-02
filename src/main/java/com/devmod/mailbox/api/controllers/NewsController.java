@@ -7,15 +7,15 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
+
 import com.devmod.DevMod;
 import com.devmod.mailbox.api.AuthMiddleware;
 import com.devmod.mailbox.moderation.AdminAuditLog;
 import com.devmod.mailbox.news.NewsArticle;
 import com.devmod.mailbox.news.NewsCategory;
 import com.devmod.mailbox.news.NewsManager;
-
-import io.javalin.http.Context;
-import io.javalin.http.HttpStatus;
 
 /**
  * REST API controller for news articles.

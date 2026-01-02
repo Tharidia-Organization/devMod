@@ -7,9 +7,9 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class SourceBadge {
 
@@ -18,13 +18,13 @@ public class SourceBadge {
      */
     public enum Source {
         /** Value modified by DevMod (component or global config) */
-        DEV("DEV", UIConstants.Accent.CYAN(), "Modified by DevMod"),
+        DEV("DEV", DesignTokens.Accent.CYAN(), "Modified by DevMod"),
         /** Value loaded from item NBT data */
-        NBT("NBT", UIConstants.Accent.ORANGE(), "From item NBT data"),
+        NBT("NBT", DesignTokens.Accent.ORANGE(), "From item NBT data"),
         /** Default vanilla value (no modification) */
-        VANILLA("VAN", UIConstants.Text.MUTED(), "Vanilla default"),
+        VANILLA("VAN", DesignTokens.Text.MUTED(), "Vanilla default"),
         /** Value differs from original (unsaved changes) */
-        MODIFIED("MOD", UIConstants.Accent.YELLOW, "Unsaved changes");
+        MODIFIED("MOD", DesignTokens.Accent.YELLOW, "Unsaved changes");
 
         private final String label;
         private final int color;
@@ -105,11 +105,11 @@ public class SourceBadge {
         this.hovered = mouseX >= x && mouseX < x + badgeW && mouseY >= y && mouseY < y + badgeH;
 
         // Background with source color (muted)
-        int bgColor = UIConstants.withAlpha(source.getColor(), hovered ? HOVER_BG_ALPHA : IDLE_BG_ALPHA);
+        int bgColor = DesignTokens.withAlpha(source.getColor(), hovered ? HOVER_BG_ALPHA : IDLE_BG_ALPHA);
         graphics.fill(x, y, x + badgeW, y + badgeH, bgColor);
 
         // Border
-        int borderColor = hovered ? source.getColor() : UIConstants.withAlpha(source.getColor(), BORDER_ALPHA);
+        int borderColor = hovered ? source.getColor() : DesignTokens.withAlpha(source.getColor(), BORDER_ALPHA);
         drawThinBorder(graphics, x, y, badgeW, badgeH, borderColor);
 
         // Label centered
@@ -136,7 +136,7 @@ public class SourceBadge {
         int height = Math.round(font.lineHeight * textScale);
         this.hovered = mouseX >= x && mouseX < x + textWidth && mouseY >= y && mouseY < y + height;
 
-        int color = hovered ? UIConstants.lighten(source.getColor(), 0.2f) : source.getColor();
+        int color = hovered ? DesignTokens.lighten(source.getColor(), 0.2f) : source.getColor();
         Typography.drawText(graphics, font, label, x, y, color, textScale);
 
         return textWidth + ScaledCoord.scale(INLINE_PADDING);

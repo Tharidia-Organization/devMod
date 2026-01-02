@@ -33,9 +33,10 @@ import com.devmod.config.FuelConfigManager;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.mailbox.MailboxPermissions;
+import com.devmod.mob.MobRequirementsRegistry;
 import com.devmod.network.GameMechanicsSyncPayload;
-import com.devmod.notification.network.NotificationPreferencesSyncPayload;
 import com.devmod.notification.PartyNotificationBridge;
+import com.devmod.notification.network.NotificationPreferencesSyncPayload;
 import com.devmod.notification.persistence.NotificationHistoryRepository;
 import com.devmod.notification.persistence.NotificationPreferencesRepository;
 import com.devmod.stats.ArmorStats;
@@ -175,6 +176,16 @@ public class CommonModEvents {
             LOGGER.info("[DevMod] WeeklyChallengeManager initialized successfully");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize WeeklyChallengeManager", e);
+        }
+
+        // Initialize MobRequirementsRegistry for optimal mob conditions
+        try {
+            MobRequirementsRegistry.INSTANCE.initialize(ConfigPaths.getGameDir());
+            // Pre-cache requirements with server access for better biome detection
+            MobRequirementsRegistry.INSTANCE.preCacheAll(event.getServer());
+            LOGGER.info("[DevMod] MobRequirementsRegistry initialized successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize MobRequirementsRegistry", e);
         }
 
         // Initialize MailboxConfig persistence
@@ -410,13 +421,22 @@ public class CommonModEvents {
                     NotificationPreferencesRepository repo = NotificationPreferencesRepository.INSTANCE;
                     if (repo.isInitialized()) {
                         java.util.UUID playerUuid = player.getUUID();
-                        repo.loadPreferences(playerUuid).thenAccept(prefs -> {
+                        java.util.concurrent.CompletableFuture<?> future = repo.loadPreferences(playerUuid).thenAccept(prefs -> {
                             if (player.isRemoved() || player.server == null) {
                                 return;
                             }
                             player.server.execute(() ->
                                     PacketDistributor.sendToPlayer(player, java.util.Objects.requireNonNull(NotificationPreferencesSyncPayload.from(prefs))));
+                        }).handle((result, ex) -> {
+                            if (ex != null) {
+                                LOGGER.warn("[DevMod] Failed to sync notification preferences async for {}: {}",
+                                    playerUuid, ex.getMessage());
+                            }
+                            return null;
                         });
+                        if (future.isDone() && LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("[DevMod] Preferences synced immediately for {}", playerUuid);
+                        }
                     }
                 } catch (Exception e) {
                     LOGGER.warn("[DevMod] Failed to sync notification preferences to {}: {}",

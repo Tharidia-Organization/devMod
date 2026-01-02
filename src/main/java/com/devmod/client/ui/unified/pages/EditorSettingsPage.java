@@ -9,10 +9,11 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.EditorScaleCalculator;
 import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.scroll.Scrollbar;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.config.EditorClientConfig;
@@ -39,6 +40,15 @@ public class EditorSettingsPage implements SettingsPage {
 
     // Scale button options
     private static final EditorClientConfig.EditorUiScale[] SCALE_OPTIONS = EditorClientConfig.EditorUiScale.values();
+
+    // Scroll state
+    private int scrollOffset = 0;
+    private int maxScrollOffset = 0;
+    private int visibleHeight = 0;
+    private int totalContentHeight = 0;
+    private boolean isDraggingScrollbar = false;
+    private boolean showScrollbar = false;
+    private int lastContentX, lastContentY, lastContentWidth, lastContentHeight;
 
     @Override
     public SettingsCategory getCategory() {
@@ -70,76 +80,98 @@ public class EditorSettingsPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
-        int currentY = y;
+        lastContentX = x;
+        lastContentY = y;
+        lastContentWidth = width;
+        lastContentHeight = height;
+        visibleHeight = height;
 
-        // === SECTION: UI Scale ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "UI Scale");
-        currentY += ROW_HEIGHT;
+        totalContentHeight = calculateContentHeight();
+        maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
+        showScrollbar = totalContentHeight > visibleHeight;
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
 
-        // Description
-        graphics.drawString(font, "Select the editor panel scale:", x, currentY, UIConstants.Text.SECONDARY(), false);
-        currentY += 14;
+        int effectiveWidth = showScrollbar ? Math.max(0, width - Scrollbar.WIDTH - 4) : width;
 
-        // Scale buttons row
-        int buttonX = x;
-        for (EditorClientConfig.EditorUiScale scale : SCALE_OPTIONS) {
-            boolean selected = scale == currentUiScale;
-            boolean hovered = isMouseOver(mouseX, mouseY, buttonX, currentY, BUTTON_WIDTH, BUTTON_HEIGHT);
+        graphics.enableScissor(x, y, x + width, y + height);
+        try {
+            int currentY = y - scrollOffset;
 
-            drawScaleButton(graphics, font, buttonX, currentY, BUTTON_WIDTH, BUTTON_HEIGHT,
-                    getScaleLabel(scale), selected, hovered);
+            // === SECTION: UI Scale ===
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "UI Scale");
+            currentY += ROW_HEIGHT;
 
-            buttonX += BUTTON_WIDTH + BUTTON_GAP;
+            // Description
+            graphics.drawString(font, "Select the editor panel scale:", x, currentY, DesignTokens.Text.SECONDARY, false);
+            currentY += 14;
+
+            // Scale buttons row
+            int buttonX = x;
+            for (EditorClientConfig.EditorUiScale scale : SCALE_OPTIONS) {
+                boolean selected = scale == currentUiScale;
+                boolean hovered = isMouseOver(mouseX, mouseY, buttonX, currentY, BUTTON_WIDTH, BUTTON_HEIGHT);
+
+                drawScaleButton(graphics, font, buttonX, currentY, BUTTON_WIDTH, BUTTON_HEIGHT,
+                        getScaleLabel(scale), selected, hovered);
+
+                buttonX += BUTTON_WIDTH + BUTTON_GAP;
+            }
+            currentY += BUTTON_HEIGHT + 8;
+
+            // Current scale info + preview
+            float effectiveScale = renderScaleInfo(graphics, font, x, currentY);
+            currentY += ROW_HEIGHT + 4;
+            renderScalePreview(graphics, font, x, currentY, effectiveWidth, effectiveScale);
+            currentY += PREVIEW_HEIGHT + 16;
+
+            // Separator
+            AxiomRenderer.drawSeparator(graphics, x, currentY, width);
+            currentY += 16;
+
+            // === SECTION: Default Mode ===
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Default Mode");
+            currentY += ROW_HEIGHT;
+
+            // Mode description
+            graphics.drawString(font, "Mode when opening the editor:", x, currentY, DesignTokens.Text.SECONDARY, false);
+            currentY += 14;
+
+            // Preview button
+            boolean previewSelected = currentDefaultMode == EditorClientConfig.EditorDefaultMode.PREVIEW;
+            boolean previewHovered = isMouseOver(mouseX, mouseY, x, currentY, 100, BUTTON_HEIGHT);
+            drawModeButton(graphics, font, x, currentY, 100, BUTTON_HEIGHT, "PREVIEW",
+                    "Safe, client-only", previewSelected, previewHovered, DesignTokens.Semantic.WARNING);
+
+            // Apply button
+            boolean applySelected = currentDefaultMode == EditorClientConfig.EditorDefaultMode.APPLY;
+            boolean applyHovered = isMouseOver(mouseX, mouseY, x + 110, currentY, 100, BUTTON_HEIGHT);
+            drawModeButton(graphics, font, x + 110, currentY, 100, BUTTON_HEIGHT, "APPLY",
+                    "Persistent changes", applySelected, applyHovered, DesignTokens.Semantic.SUCCESS);
+
+            currentY += BUTTON_HEIGHT + 16;
+
+            // Separator
+            AxiomRenderer.drawSeparator(graphics, x, currentY, width);
+            currentY += 16;
+
+            // === SECTION: Sound Effects ===
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Sound Effects");
+            currentY += ROW_HEIGHT;
+
+            // Sound toggle row
+            renderToggleRow(graphics, font, x, currentY, effectiveWidth, "Editor Sounds",
+                    "Button clicks, slider ticks, toggles", currentSoundsEnabled, mouseX, mouseY);
+            currentY += ROW_HEIGHT + 8;
+
+            // Hint
+            AxiomRenderer.drawHint(graphics, font, x, currentY, "Changes are applied when you click Apply.");
+        } finally {
+            graphics.disableScissor();
         }
-        currentY += BUTTON_HEIGHT + 8;
 
-        // Current scale info + preview
-        float effectiveScale = renderScaleInfo(graphics, font, x, currentY);
-        currentY += ROW_HEIGHT + UIConstants.Spacing.GAP_SMALL;
-        renderScalePreview(graphics, font, x, currentY, width, effectiveScale);
-        currentY += PREVIEW_HEIGHT + UIConstants.Spacing.GAP_LARGE;
-
-        // Separator
-        AxiomRenderer.drawSeparator(graphics, x, currentY, width);
-        currentY += 16;
-
-        // === SECTION: Default Mode ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Default Mode");
-        currentY += ROW_HEIGHT;
-
-        // Mode description
-        graphics.drawString(font, "Mode when opening the editor:", x, currentY, UIConstants.Text.SECONDARY(), false);
-        currentY += 14;
-
-        // Preview button
-        boolean previewSelected = currentDefaultMode == EditorClientConfig.EditorDefaultMode.PREVIEW;
-        boolean previewHovered = isMouseOver(mouseX, mouseY, x, currentY, 100, BUTTON_HEIGHT);
-        drawModeButton(graphics, font, x, currentY, 100, BUTTON_HEIGHT, "PREVIEW",
-                "Safe, client-only", previewSelected, previewHovered, UIConstants.Accent.YELLOW());
-
-        // Apply button
-        boolean applySelected = currentDefaultMode == EditorClientConfig.EditorDefaultMode.APPLY;
-        boolean applyHovered = isMouseOver(mouseX, mouseY, x + 110, currentY, 100, BUTTON_HEIGHT);
-        drawModeButton(graphics, font, x + 110, currentY, 100, BUTTON_HEIGHT, "APPLY",
-                "Persistent changes", applySelected, applyHovered, UIConstants.Accent.GREEN());
-
-        currentY += BUTTON_HEIGHT + 16;
-
-        // Separator
-        AxiomRenderer.drawSeparator(graphics, x, currentY, width);
-        currentY += 16;
-
-        // === SECTION: Sound Effects ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Sound Effects");
-        currentY += ROW_HEIGHT;
-
-        // Sound toggle row
-        renderToggleRow(graphics, font, x, currentY, width, "Editor Sounds",
-                "Button clicks, slider ticks, toggles", currentSoundsEnabled, mouseX, mouseY);
-        currentY += ROW_HEIGHT + 8;
-
-        // Hint
-        AxiomRenderer.drawHint(graphics, font, x, currentY, "Changes are applied when you click Apply.");
+        if (showScrollbar) {
+            renderScrollbar(graphics, x + width - Scrollbar.WIDTH - 2, y, Scrollbar.WIDTH, height);
+        }
     }
 
     private float renderScaleInfo(GuiGraphics graphics, Font font, int x, int y) {
@@ -167,7 +199,7 @@ public class EditorSettingsPage implements SettingsPage {
         String info = String.format("Current: %s → %.2fx | Panel: %d×%d px | Screen: %d×%d",
                 scaleSource, effectiveScale, panelW, panelH, screenW, screenH);
 
-        graphics.drawString(Objects.requireNonNull(font), info, x, y, UIConstants.Text.MUTED(), false);
+        graphics.drawString(Objects.requireNonNull(font), info, x, y, DesignTokens.Text.MUTED, false);
         return effectiveScale;
     }
 
@@ -178,8 +210,8 @@ public class EditorSettingsPage implements SettingsPage {
         int previewX = x;
         int previewY = y;
 
-        graphics.fill(previewX, previewY, previewX + previewWidth, previewY + previewHeight, UIConstants.Background.INPUT());
-        AxiomRenderer.drawBorder(graphics, previewX, previewY, previewWidth, previewHeight, UIConstants.Border.MUTED());
+        graphics.fill(previewX, previewY, previewX + previewWidth, previewY + previewHeight, DesignTokens.Bg.LEVEL_0);
+        AxiomRenderer.drawBorder(graphics, previewX, previewY, previewWidth, previewHeight, DesignTokens.Stroke.MUTED);
 
         int panelW = ScaledCoord.scaleDim(EditorConstants.PANEL_WIDTH, effectiveScale);
         int panelH = ScaledCoord.scaleDim(EditorConstants.PANEL_HEIGHT, effectiveScale);
@@ -192,19 +224,19 @@ public class EditorSettingsPage implements SettingsPage {
         int panelX = previewX + (previewWidth - scaledW) / 2;
         int panelY = previewY + (previewHeight - scaledH) / 2;
 
-        graphics.fill(panelX, panelY, panelX + scaledW, panelY + scaledH, UIConstants.Background.PANEL());
-        AxiomRenderer.drawBorder(graphics, panelX, panelY, scaledW, scaledH, UIConstants.Border.DEFAULT());
+        graphics.fill(panelX, panelY, panelX + scaledW, panelY + scaledH, DesignTokens.Bg.LEVEL_1);
+        AxiomRenderer.drawBorder(graphics, panelX, panelY, scaledW, scaledH, DesignTokens.Stroke.DEFAULT);
 
         int headerH = Math.max(1, Math.round(ScaledCoord.scaleDim(EditorConstants.HEADER_HEIGHT, effectiveScale) * fitScale));
-        graphics.fill(panelX, panelY, panelX + scaledW, panelY + headerH, UIConstants.Background.HEADER());
+        graphics.fill(panelX, panelY, panelX + scaledW, panelY + headerH, DesignTokens.Surface.LEVEL_2);
 
         int leftW = Math.max(1, Math.round(ScaledCoord.scaleDim(EditorConstants.LEFT_COLUMN_WIDTH, effectiveScale) * fitScale));
-        graphics.fill(panelX, panelY + headerH, panelX + leftW, panelY + scaledH, UIConstants.Background.INPUT());
-        graphics.fill(panelX + leftW, panelY + headerH, panelX + leftW + 1, panelY + scaledH, UIConstants.Border.SEPARATOR());
+        graphics.fill(panelX, panelY + headerH, panelX + leftW, panelY + scaledH, DesignTokens.Bg.LEVEL_0);
+        graphics.fill(panelX + leftW, panelY + headerH, panelX + leftW + 1, panelY + scaledH, DesignTokens.Stroke.MUTED);
 
         String label = String.format("Preview %.2fx", effectiveScale);
         graphics.drawString(safeFont, Objects.requireNonNull(label, "label"),
-            previewX + 6, previewY + previewHeight - 12, UIConstants.Text.MUTED(), false);
+            previewX + 6, previewY + previewHeight - 12, DesignTokens.Text.MUTED, false);
     }
 
     private void drawScaleButton(GuiGraphics graphics, Font font, int x, int y, int w, int h,
@@ -213,23 +245,23 @@ public class EditorSettingsPage implements SettingsPage {
         // Background
         int bgColor;
         if (selected) {
-            bgColor = UIConstants.setAlpha(UIConstants.Accent.CYAN(), 80);
+            bgColor = DesignTokens.withAlpha(DesignTokens.Semantic.INFO, 80);
         } else if (hovered) {
-            bgColor = UIConstants.Background.HOVER();
+            bgColor = DesignTokens.Surface.LEVEL_1;
         } else {
-            bgColor = UIConstants.Background.INPUT();
+            bgColor = DesignTokens.Bg.LEVEL_0;
         }
         graphics.fill(x, y, x + w, y + h, bgColor);
 
         // Border
-        int borderColor = selected ? UIConstants.Accent.CYAN() : (hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT());
+        int borderColor = selected ? DesignTokens.Semantic.INFO : (hovered ? DesignTokens.Accent.PRIMARY : DesignTokens.Stroke.DEFAULT);
         AxiomRenderer.drawBorder(graphics, x, y, w, h, borderColor);
 
         // Text centered
         int textW = safeFont.width(Objects.requireNonNull(label, "label"));
         int textX = x + (w - textW) / 2;
         int textY = y + (h - 8) / 2;
-        int textColor = selected ? UIConstants.Text.PRIMARY() : (hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY());
+        int textColor = selected ? DesignTokens.Text.PRIMARY : (hovered ? DesignTokens.Text.PRIMARY : DesignTokens.Text.SECONDARY);
         graphics.drawString(safeFont, Objects.requireNonNull(label, "label"), textX, textY, textColor, false);
     }
 
@@ -239,11 +271,11 @@ public class EditorSettingsPage implements SettingsPage {
         // Background
         int bgColor;
         if (selected) {
-            bgColor = UIConstants.setAlpha(accentColor, 60);
+            bgColor = DesignTokens.withAlpha(accentColor, 60);
         } else if (hovered) {
-            bgColor = UIConstants.Background.HOVER();
+            bgColor = DesignTokens.Surface.LEVEL_1;
         } else {
-            bgColor = UIConstants.Background.INPUT();
+            bgColor = DesignTokens.Bg.LEVEL_0;
         }
         graphics.fill(x, y, x + w, y + h, bgColor);
 
@@ -253,17 +285,17 @@ public class EditorSettingsPage implements SettingsPage {
         }
 
         // Border
-        int borderColor = selected ? accentColor : (hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT());
+        int borderColor = selected ? accentColor : (hovered ? DesignTokens.Accent.PRIMARY : DesignTokens.Stroke.DEFAULT);
         AxiomRenderer.drawBorder(graphics, x, y, w, h, borderColor);
 
         // Label
         int textX = x + 8;
         graphics.drawString(safeFont, Objects.requireNonNull(label, "label"),
-            textX, y + 4, selected ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY(), false);
+            textX, y + 4, selected ? DesignTokens.Text.PRIMARY : DesignTokens.Text.SECONDARY, false);
 
         // Description (smaller)
         graphics.drawString(safeFont, Objects.requireNonNull(desc, "description"),
-            textX, y + 13, UIConstants.Text.MUTED(), false);
+            textX, y + 13, DesignTokens.Text.MUTED, false);
     }
 
     private void renderToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
@@ -271,14 +303,14 @@ public class EditorSettingsPage implements SettingsPage {
         boolean rowHovered = isMouseOver(mouseX, mouseY, x, y, width, ROW_HEIGHT);
 
         if (rowHovered) {
-            graphics.fill(x, y, x + width, y + ROW_HEIGHT, UIConstants.Background.HOVER());
+            graphics.fill(x, y, x + width, y + ROW_HEIGHT, DesignTokens.Surface.LEVEL_1);
         }
 
-        graphics.drawString(font, label, x, y + 4, UIConstants.Text.PRIMARY(), false);
-        graphics.drawString(font, description, x, y + 14, UIConstants.Text.MUTED(), false);
+        graphics.drawString(font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
+        graphics.drawString(font, description, x, y + 14, DesignTokens.Text.MUTED, false);
 
-        int toggleX = x + width - UIConstants.Size.TOGGLE_WIDTH;
-        AxiomRenderer.drawToggle(graphics, font, toggleX, y, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, rowHovered);
+        int toggleX = x + width - 36;
+        AxiomRenderer.drawToggle(graphics, font, toggleX, y, 36, 18, enabled, rowHovered);
     }
 
     private String getScaleLabel(EditorClientConfig.EditorUiScale scale) {
@@ -293,9 +325,26 @@ public class EditorSettingsPage implements SettingsPage {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
-        if (button != 0) return false;
+        if (button != 0 || !isMouseOverContent(mouseX, mouseY)) return false;
 
-        int currentY = contentY;
+        if (showScrollbar) {
+            int scrollbarX = contentX + contentWidth - Scrollbar.WIDTH - 2;
+            if (mouseX >= scrollbarX && mouseX <= scrollbarX + Scrollbar.WIDTH + 2) {
+                isDraggingScrollbar = true;
+                float visibleRatio = (float) visibleHeight / totalContentHeight;
+                int thumbHeight = Math.max(20, (int) (lastContentHeight * visibleRatio));
+                int trackHeight = lastContentHeight - thumbHeight;
+                if (trackHeight > 0) {
+                    float clickRatio = (float) (mouseY - contentY - thumbHeight / 2.0f) / trackHeight;
+                    clickRatio = Math.max(0, Math.min(1, clickRatio));
+                    scrollOffset = (int)(maxScrollOffset * clickRatio);
+                }
+                return true;
+            }
+        }
+
+        int effectiveWidth = showScrollbar ? Math.max(0, contentWidth - Scrollbar.WIDTH - 4) : contentWidth;
+        int currentY = contentY - scrollOffset;
 
         // Skip section header
         currentY += ROW_HEIGHT;
@@ -315,8 +364,8 @@ public class EditorSettingsPage implements SettingsPage {
         currentY += BUTTON_HEIGHT + 8;
 
         // Scale info row + preview
-        currentY += ROW_HEIGHT + UIConstants.Spacing.GAP_SMALL;
-        currentY += PREVIEW_HEIGHT + UIConstants.Spacing.GAP_LARGE;
+        currentY += ROW_HEIGHT + 4;
+        currentY += PREVIEW_HEIGHT + 16;
 
         // Separator
         currentY += 16;
@@ -347,11 +396,46 @@ public class EditorSettingsPage implements SettingsPage {
         currentY += ROW_HEIGHT;
 
         // Sound toggle row
-        if (isMouseOver((int) mouseX, (int) mouseY, contentX, currentY, contentWidth, ROW_HEIGHT)) {
+        if (isMouseOver((int) mouseX, (int) mouseY, contentX, currentY, effectiveWidth, ROW_HEIGHT)) {
             currentSoundsEnabled = !currentSoundsEnabled;
             return true;
         }
 
+        return false;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (!showScrollbar || maxScrollOffset <= 0 || !isMouseOverContent(mouseX, mouseY)) {
+            return false;
+        }
+        scrollOffset -= (int) (scrollY * 20);
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (isDraggingScrollbar) {
+            isDraggingScrollbar = false;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (button == 0 && isDraggingScrollbar && maxScrollOffset > 0) {
+            float visibleRatio = (float) visibleHeight / totalContentHeight;
+            int thumbHeight = Math.max(20, (int) (lastContentHeight * visibleRatio));
+            int trackHeight = lastContentHeight - thumbHeight;
+            if (trackHeight > 0) {
+                float dragRatio = (float) (mouseY - lastContentY - thumbHeight / 2.0f) / trackHeight;
+                dragRatio = Math.max(0, Math.min(1, dragRatio));
+                scrollOffset = (int)(maxScrollOffset * dragRatio);
+            }
+            return true;
+        }
         return false;
     }
 
@@ -386,10 +470,42 @@ public class EditorSettingsPage implements SettingsPage {
 
     @Override
     public int getContentHeight() {
-        return 280 + PREVIEW_HEIGHT + UIConstants.Spacing.GAP_LARGE;
+        return calculateContentHeight();
+    }
+
+    private int calculateContentHeight() {
+        int height = 0;
+        // UI Scale
+        height += ROW_HEIGHT;
+        height += 14;
+        height += BUTTON_HEIGHT + 8;
+        height += ROW_HEIGHT + 4;
+        height += PREVIEW_HEIGHT + 16;
+        height += 16;
+        // Default Mode
+        height += ROW_HEIGHT;
+        height += 14;
+        height += BUTTON_HEIGHT + 16;
+        height += 16;
+        // Sound Effects
+        height += ROW_HEIGHT;
+        height += ROW_HEIGHT + 8;
+        height += 20;
+        return height;
     }
 
     private boolean isMouseOver(int mouseX, int mouseY, int x, int y, int width, int height) {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+    }
+
+    private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
+        Scrollbar.render(graphics, x, y, barWidth, height,
+            scrollOffset, totalContentHeight, visibleHeight,
+            false, isDraggingScrollbar);
+    }
+
+    private boolean isMouseOverContent(double mouseX, double mouseY) {
+        return mouseX >= lastContentX && mouseX <= lastContentX + lastContentWidth
+            && mouseY >= lastContentY && mouseY <= lastContentY + lastContentHeight;
     }
 }

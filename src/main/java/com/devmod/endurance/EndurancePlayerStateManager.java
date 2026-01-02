@@ -151,13 +151,17 @@ public class EndurancePlayerStateManager {
 
     /**
      * Apply a short invulnerability window after teleport/respawn.
+     * Uses Resistance IV (80% damage reduction) instead of V (100%) to allow
+     * some damage through - prevents complete invulnerability bugs.
      */
     public void applySafeWindowEffects(ServerPlayer player, int ticks) {
         if (player == null || ticks <= 0) {
             return;
         }
         int duration = Math.max(1, ticks);
-        player.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE), duration, 4, false, false));
+        // Amplifier 3 = Resistance IV = 80% damage reduction (NOT 100% invulnerable)
+        // This provides protection while still allowing damage to register
+        player.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE), duration, 3, false, false));
         player.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.REGENERATION), duration, 1, false, false));
     }
 

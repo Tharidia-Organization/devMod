@@ -17,12 +17,15 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.world.phys.AABB;
 
+import com.devmod.arena.cleanup.BlockIntegrityVerifier;
+import com.devmod.arena.cleanup.PostBuildEntityAudit;
 import com.devmod.arena.concurrency.ArenaBuildRateLimiter;
 import com.devmod.arena.concurrency.BuildPermit;
 import com.devmod.arena.concurrency.TemplateLockManager;
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
 import com.devmod.arena.gate.InstanceOnlyGate;
+import com.devmod.arena.integration.BatchBlockPlacer;
 import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.metrics.MetricsCompatibilityLayer;
 import com.devmod.arena.monitor.MsptMonitor;
@@ -35,6 +38,10 @@ import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.registry.ValidationResult;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.devmod.arena.zone.ArenaZone;
+import com.devmod.arena.zone.ZoneEnvironment;
+import com.devmod.arena.zone.ZoneLayout;
+import com.devmod.util.HotPathLogger;
 
 public class ArenaBuilder {
 
@@ -208,12 +215,20 @@ public class ArenaBuilder {
 
         // Instance-only gate check (fail fast before validation)
         var gate = instanceGate;
-        if (gate != null && blockPlacer instanceof MinecraftBlockPlacer mcb) {
-            try {
-                gate.requireAllowedOrThrow(mcb.getLevel(), "ArenaBuilder.build", template.id(), template.version());
-            } catch (InstanceOnlyGate.GateBlockedException e) {
-                LOGGER.error(e.getMessage());
-                return BuildResult.failure(e.getMessage(), new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
+        if (gate != null) {
+            net.minecraft.server.level.ServerLevel gateLevel = null;
+            if (blockPlacer instanceof BatchBlockPlacer batchPlacer) {
+                gateLevel = batchPlacer.getLevel();
+            } else if (blockPlacer instanceof MinecraftBlockPlacer mcb) {
+                gateLevel = mcb.getLevel();
+            }
+            if (gateLevel != null) {
+                try {
+                    gate.requireAllowedOrThrow(gateLevel, "ArenaBuilder.build", template.id(), template.version());
+                } catch (InstanceOnlyGate.GateBlockedException e) {
+                    LOGGER.error(e.getMessage());
+                    return BuildResult.failure(e.getMessage(), new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
+                }
             }
         }
 
@@ -362,8 +377,10 @@ public class ArenaBuilder {
 
             transaction = new BuildTransaction(template.id(), maxBlocks, maxDurationMs);
 
-            LOGGER.info("Starting build for template '{}' at ({},{},{}) with max {} blocks",
-                template.id(), originX, originY, originZ, maxBlocks);
+            // P0: Gate hot-path log behind rate limiter to reduce log spam during bulk builds
+            HotPathLogger.rateLimitedInfo(LOGGER, "arena.build.start", 5000,
+                () -> String.format("Starting build for template '%s' at (%d,%d,%d) with max %d blocks",
+                    template.id(), originX, originY, originZ, maxBlocks));
 
             // Build telemetry with policy context
             Map<String, Object> startEventData = new java.util.HashMap<>();
@@ -431,8 +448,18 @@ public class ArenaBuilder {
                 placeHazards(template, originX, originZ, transaction);
             }
 
+            // Place lighting sources based on template configuration
+            if (template.lighting() != null) {
+                placeLighting(template, originX, originZ, transaction);
+            }
+
             if (buildOrder != ArenaTemplate.BuildSettings.Order.STRUCTURE_FIRST && template.structureNbt() != null) {
                 placeStructure(template, originX, originY, originZ, transaction);
+            }
+
+            // P2: Flush BatchBlockPlacer before commit to ensure all blocks are placed
+            if (blockPlacer instanceof BatchBlockPlacer batchPlacer) {
+                batchPlacer.flush();
             }
 
             // 8. Commit transaction
@@ -468,6 +495,10 @@ public class ArenaBuilder {
             if (blockPlacer instanceof ResidualProvider residualProvider) {
                 residualMetrics = residualProvider.measureResiduals(template, originX, originY, originZ, expectedBlocks);
                 residualSource = "provider";
+            } else if (blockPlacer instanceof BatchBlockPlacer batchPlacer) {
+                // BatchBlockPlacer uses level-based metrics via MetricsCompatibilityLayer
+                residualMetrics = measureResiduals(template, originX, originY, originZ, batchPlacer.getLevel());
+                residualSource = "batch";
             } else if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
                 residualMetrics = measureResiduals(template, originX, originY, originZ, mcPlacer);
                 residualSource = "minecraft";
@@ -494,10 +525,73 @@ public class ArenaBuilder {
             }
         telemetry.emit("arena.build.end", endEventData);
 
-        LOGGER.info("Build completed for '{}' in {}ms: {} blocks",
-            template.id(), duration, transaction.getBlockCount());
+        // P0: Gate hot-path log behind rate limiter to reduce log spam during bulk builds
+        final int blockCount = transaction.getBlockCount();
+        HotPathLogger.rateLimitedInfo(LOGGER, "arena.build.complete", 5000,
+            () -> String.format("Build completed for '%s' in %dms: %d blocks",
+                template.id(), duration, blockCount));
+
+        // P1: Post-build entity audit to detect residual entities
+        net.minecraft.server.level.ServerLevel auditLevel = null;
+        if (blockPlacer instanceof BatchBlockPlacer batchPlacer) {
+            auditLevel = batchPlacer.getLevel();
+        } else if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
+            auditLevel = mcPlacer.getLevel();
+        }
+        if (auditLevel != null) {
+            net.minecraft.server.level.ServerLevel level = auditLevel;
+            if (level != null) {
+                int size = template.size();
+                PostBuildEntityAudit.AuditResult auditResult = new PostBuildEntityAudit()
+                    .audit(level, originX, originY, originZ,
+                           originX + size, originY + size, originZ + size);
+                if (auditResult.hasResiduals()) {
+                    telemetry.emit("arena.build.residual_entities", Map.of(
+                        "templateId", template.id(),
+                        "arenaId", arenaId.toString(),
+                        "residualCount", auditResult.residualEntities(),
+                        "itemsFound", auditResult.itemsFound(),
+                        "mobsFound", auditResult.mobsFound(),
+                        "auditDurationMs", auditResult.auditDurationMs()
+                    ));
+                }
+
+                // P1: Block integrity verification
+                BlockIntegrityVerifier.VerificationResult integrityResult = new BlockIntegrityVerifier()
+                    .verify(level, originX, originY, originZ,
+                            originX + size, originY + size, originZ + size,
+                            transaction.getBlockCount());
+                if (integrityResult.hasIntegrityIssues()) {
+                    telemetry.emit("arena.build.integrity_issue", Map.of(
+                        "templateId", template.id(),
+                        "arenaId", arenaId.toString(),
+                        "expectedBlocks", integrityResult.expectedBlocks(),
+                        "actualBlocks", integrityResult.actualNonAirBlocks(),
+                        "integrityPercent", integrityResult.integrityPercent(),
+                        "sampleFailures", integrityResult.sampleFailures(),
+                        "verificationDurationMs", integrityResult.verificationDurationMs()
+                    ));
+                }
+            }
+        }
 
         recordBuildOutcome(true, false, template.id());
+
+        // P1: Clear placer cache after successful commit to prevent memory leak
+        if (blockPlacer instanceof BatchBlockPlacer batchPlacer) {
+            if (LOGGER.isDebugEnabled()) {
+                BatchBlockPlacer.PlacementStats stats = batchPlacer.getStats();
+                int trackedStates = batchPlacer.getTrackedStateCount();
+                LOGGER.debug("[ArenaBuilder] BatchBlockPlacer stats: placed={}, flushes={}, cacheHitRate={:.2f}%, trackedStates={}",
+                    stats.totalPlaced(), stats.batchFlushes(), stats.cacheHitRate() * 100, trackedStates);
+            }
+            batchPlacer.clearCache();
+        } else if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("[ArenaBuilder] MinecraftBlockPlacer trackedStates={}", mcPlacer.getTrackedStateCount());
+            }
+            mcPlacer.clearCache();
+        }
 
         return BuildResult.success(arenaId, template.id(), transaction.getBlockCount(), duration);
 
@@ -612,11 +706,14 @@ public class ArenaBuilder {
 
     @Nullable
     private String resolveDimension() {
-        if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
-            var level = mcPlacer.getLevel();
-            if (level != null) {
-                return level.dimension().location().toString();
-            }
+        net.minecraft.server.level.ServerLevel level = null;
+        if (blockPlacer instanceof BatchBlockPlacer batchPlacer) {
+            level = batchPlacer.getLevel();
+        } else if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
+            level = mcPlacer.getLevel();
+        }
+        if (level != null) {
+            return level.dimension().location().toString();
         }
         return null;
     }
@@ -631,28 +728,269 @@ public class ArenaBuilder {
         return sz != null ? sz.intValue() : template.size();
     }
 
+    // === Shape-aware helpers ===
+
+    /**
+     * Checks if relative coordinates (dx, dz from center) are inside the arena shape.
+     * For RECTANGULAR: checks bounds
+     * For CIRCULAR: checks if within radius
+     * For RING: checks if within outer radius and outside inner radius
+     */
+    private boolean isInArenaShape(int dx, int dz, ArenaTemplate template) {
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
+        int halfX = getSizeX(template) / 2;
+        int halfZ = getSizeZ(template) / 2;
+
+        return switch (shape) {
+            case RECTANGULAR -> dx >= -halfX && dx < halfX && dz >= -halfZ && dz < halfZ;
+            case CIRCULAR -> {
+                int radius = Math.max(halfX, halfZ);
+                yield (dx * dx + dz * dz) <= (radius * radius);
+            }
+            case RING -> {
+                int outerRadius = Math.max(halfX, halfZ);
+                Integer innerRadiusVal = template.ringInnerRadius();
+                int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+                int distSq = dx * dx + dz * dz;
+                yield distSq <= (outerRadius * outerRadius) && distSq >= (innerRadius * innerRadius);
+            }
+        };
+    }
+
+    /**
+     * Checks if relative coordinates are on the circular/ring border for wall placement.
+     * @param dx relative X from center
+     * @param dz relative Z from center
+     * @param template arena template
+     * @param thickness wall thickness (outward from edge)
+     * @return true if position should have a wall block
+     */
+    private boolean isOnCircularBorder(int dx, int dz, ArenaTemplate template, int thickness) {
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null || shape == ArenaTemplate.ArenaShape.RECTANGULAR) {
+            return false; // Rectangular walls handled separately
+        }
+
+        int halfX = getSizeX(template) / 2;
+        int halfZ = getSizeZ(template) / 2;
+        int outerRadius = Math.max(halfX, halfZ);
+        int distSq = dx * dx + dz * dz;
+
+        // Outer wall: between outerRadius and outerRadius + thickness
+        int outerWallInnerSq = outerRadius * outerRadius;
+        int outerWallOuterSq = (outerRadius + thickness) * (outerRadius + thickness);
+        boolean onOuterWall = distSq >= outerWallInnerSq && distSq < outerWallOuterSq;
+
+        if (shape == ArenaTemplate.ArenaShape.CIRCULAR) {
+            return onOuterWall;
+        }
+
+        // RING shape: also has inner wall
+        Integer innerRadiusVal = template.ringInnerRadius();
+        int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+        int innerWallOuterSq = innerRadius * innerRadius;
+        int innerWallInnerSq = Math.max(0, (innerRadius - thickness) * (innerRadius - thickness));
+        boolean onInnerWall = distSq <= innerWallOuterSq && distSq >= innerWallInnerSq;
+
+        return onOuterWall || onInnerWall;
+    }
+
     private void buildFloor(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         if (template.floor() == null) return;
 
+        // Check if zone-aware floor building is needed
+        var zoneSettings = template.zoneSettings();
+        if (zoneSettings != null && zoneSettings.enabled() && !zoneSettings.zones().isEmpty()) {
+            // Check if any zone has a custom floor material
+            boolean hasZoneFloorMaterials = zoneSettings.zones().stream()
+                .anyMatch(z -> {
+                    String mat = z.floorMaterial();
+                    return mat != null && !mat.isEmpty();
+                });
+            if (hasZoneFloorMaterials) {
+                buildZoneAwareFloor(template, originX, originZ, zoneSettings, tx);
+                return;
+            }
+        }
+
+        // Fall back to template-level floor
+        buildTemplateFloor(template, originX, originZ, tx);
+    }
+
+    /**
+     * Builds floor with zone-specific materials.
+     * Each zone can have a different floor material defined in its environment.
+     */
+    private void buildZoneAwareFloor(ArenaTemplate template, int originX, int originZ,
+                                     ArenaTemplate.ZoneSettings zoneSettings, BuildTransaction tx) {
         var floor = template.floor();
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
-        int startX = originX - (sizeX / 2);
-        int startZ = originZ - (sizeZ / 2);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
 
-        for (int dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++) {
+        // Build zone layout with environments for floor material lookup
+        ZoneLayout layout = buildZoneLayoutWithEnvironments(zoneSettings, halfX, halfZ);
+
+        // Track zone floor placements for telemetry
+        java.util.Map<String, Integer> zoneBlockCounts = new java.util.HashMap<>();
+
+        int radius = Math.max(halfX, halfZ);
+        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
+        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
+
+        for (int dx = -iterHalfX; dx < iterHalfX; dx++) {
+            for (int dz = -iterHalfZ; dz < iterHalfZ; dz++) {
+                if (!isInArenaShape(dx, dz, template)) {
+                    continue;
+                }
+
+                // Determine material based on zone
+                String material = floor.material(); // Default
+                String zoneName = "default";
+
+                // Find which zone this position belongs to
+                java.util.Optional<ArenaZone> zone = layout.getZoneAt(dx, dz);
+                if (zone.isPresent()) {
+                    ArenaZone z = zone.get();
+                    zoneName = z.name();
+                    // Check if zone has custom floor material
+                    java.util.Optional<net.minecraft.resources.ResourceLocation> zoneMaterial =
+                        z.environment().floorMaterial();
+                    if (zoneMaterial.isPresent()) {
+                        material = zoneMaterial.get().toString();
+                    }
+                }
+
+                // Border check - shape-aware (border uses template material, not zone)
+                if (floor.borderMaterial() != null && floor.borderWidth() > 0) {
+                    boolean inBorder = isOnFloorBorder(dx, dz, template, floor.borderWidth());
+                    if (inBorder) {
+                        material = floor.borderMaterial();
+                        zoneName = "border";
+                    }
+                }
+
                 for (int dy = 0; dy < floor.thickness(); dy++) {
-                    int worldX = startX + dx;
+                    int worldX = originX + dx;
                     int worldY = floor.y() + dy;
-                    int worldZ = startZ + dz;
+                    int worldZ = originZ + dz;
+                    placeBlock(worldX, worldY, worldZ, material, tx);
+                }
+
+                // Track per-zone counts
+                zoneBlockCounts.merge(zoneName, floor.thickness(), (a, b) -> a.intValue() + b.intValue());
+            }
+        }
+
+        // Emit telemetry for zone-aware floor placement
+        telemetry.emit("arena.floor.zone_aware", Map.of(
+            "templateId", template.id(),
+            "zoneCount", zoneSettings.zones().size(),
+            "zoneCounts", zoneBlockCounts
+        ));
+
+        LOGGER.debug("Built zone-aware floor for '{}': {} zones, counts: {}",
+            template.id(), zoneSettings.zones().size(), zoneBlockCounts);
+    }
+
+    /**
+     * Builds zone layout with proper ZoneEnvironment including floor materials.
+     */
+    private ZoneLayout buildZoneLayoutWithEnvironments(ArenaTemplate.ZoneSettings settings, int halfX, int halfZ) {
+        var zones = settings.zones();
+        int zoneCount = zones.size();
+
+        ZoneLayout.Builder builder = ZoneLayout.builder(Math.max(halfX, halfZ));
+
+        if (zoneCount == 1) {
+            builder.strategy(ZoneLayout.LayoutStrategy.SINGLE);
+            var def = zones.get(0);
+            ArenaZone zone = ArenaZone.rectangular(def.name(), -halfX, -halfZ, halfX, halfZ)
+                .withEnvironment(createZoneEnvironment(def));
+            builder.addZone(zone);
+        } else if (zoneCount == 2) {
+            builder.strategy(ZoneLayout.LayoutStrategy.STRIPED_VERTICAL);
+            var def0 = zones.get(0);
+            var def1 = zones.get(1);
+            builder.addZone(ArenaZone.rectangular(def0.name(), -halfX, -halfZ, 0, halfZ)
+                .withEnvironment(createZoneEnvironment(def0)));
+            builder.addZone(ArenaZone.rectangular(def1.name(), 0, -halfZ, halfX, halfZ)
+                .withEnvironment(createZoneEnvironment(def1)));
+        } else if (zoneCount <= 4) {
+            builder.strategy(ZoneLayout.LayoutStrategy.QUADRANT);
+            if (zones.size() >= 1) {
+                builder.addZone(ArenaZone.rectangular(zones.get(0).name(), 0, -halfZ, halfX, 0)
+                    .withEnvironment(createZoneEnvironment(zones.get(0))));
+            }
+            if (zones.size() >= 2) {
+                builder.addZone(ArenaZone.rectangular(zones.get(1).name(), -halfX, -halfZ, 0, 0)
+                    .withEnvironment(createZoneEnvironment(zones.get(1))));
+            }
+            if (zones.size() >= 3) {
+                builder.addZone(ArenaZone.rectangular(zones.get(2).name(), -halfX, 0, 0, halfZ)
+                    .withEnvironment(createZoneEnvironment(zones.get(2))));
+            }
+            if (zones.size() >= 4) {
+                builder.addZone(ArenaZone.rectangular(zones.get(3).name(), 0, 0, halfX, halfZ)
+                    .withEnvironment(createZoneEnvironment(zones.get(3))));
+            }
+        } else {
+            builder.strategy(ZoneLayout.LayoutStrategy.SINGLE);
+            builder.addZone(ArenaZone.rectangular("main", -halfX, -halfZ, halfX, halfZ));
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Builds template-level floor (non-zone-aware).
+     */
+    private void buildTemplateFloor(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
+        var floor = template.floor();
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+
+        // For circular/ring shapes, we need to iterate in a square bounding box
+        // and check each position against the shape
+        int radius = Math.max(halfX, halfZ);
+        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
+        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
+
+        for (int dx = -iterHalfX; dx < iterHalfX; dx++) {
+            for (int dz = -iterHalfZ; dz < iterHalfZ; dz++) {
+                // Check if position is within arena shape
+                if (!isInArenaShape(dx, dz, template)) {
+                    continue;
+                }
+
+                for (int dy = 0; dy < floor.thickness(); dy++) {
+                    int worldX = originX + dx;
+                    int worldY = floor.y() + dy;
+                    int worldZ = originZ + dz;
 
                     String material = floor.material();
-                    // Border check
+
+                    // Border check - shape-aware
                     if (floor.borderMaterial() != null && floor.borderWidth() > 0) {
-                        boolean inBorderX = dx < floor.borderWidth() || dx >= sizeX - floor.borderWidth();
-                        boolean inBorderZ = dz < floor.borderWidth() || dz >= sizeZ - floor.borderWidth();
-                        if (inBorderX || inBorderZ) {
+                        boolean inBorder = isOnFloorBorder(dx, dz, template, floor.borderWidth());
+                        if (inBorder) {
                             material = floor.borderMaterial();
                         }
                     }
@@ -663,31 +1001,98 @@ public class ArenaBuilder {
         }
     }
 
+    /**
+     * Checks if a position is on the floor border for the given shape.
+     */
+    private boolean isOnFloorBorder(int dx, int dz, ArenaTemplate template, int borderWidth) {
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
+        int halfX = getSizeX(template) / 2;
+        int halfZ = getSizeZ(template) / 2;
+
+        return switch (shape) {
+            case RECTANGULAR -> {
+                // Convert to 0-based coords for border check
+                int localX = dx + halfX;
+                int localZ = dz + halfZ;
+                boolean inBorderX = localX < borderWidth || localX >= (halfX * 2) - borderWidth;
+                boolean inBorderZ = localZ < borderWidth || localZ >= (halfZ * 2) - borderWidth;
+                yield inBorderX || inBorderZ;
+            }
+            case CIRCULAR -> {
+                int radius = Math.max(halfX, halfZ);
+                int distSq = dx * dx + dz * dz;
+                int innerBorderSq = (radius - borderWidth) * (radius - borderWidth);
+                yield distSq >= innerBorderSq;
+            }
+            case RING -> {
+                int outerRadius = Math.max(halfX, halfZ);
+                Integer innerRadiusVal = template.ringInnerRadius();
+                int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+                int distSq = dx * dx + dz * dz;
+                // Border at outer edge and inner edge
+                int outerBorderSq = (outerRadius - borderWidth) * (outerRadius - borderWidth);
+                int innerBorderSq = (innerRadius + borderWidth) * (innerRadius + borderWidth);
+                yield distSq >= outerBorderSq || distSq <= innerBorderSq;
+            }
+        };
+    }
+
     private void buildWalls(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         var walls = template.walls();
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
-        int startX = originX - (sizeX / 2);
-        int startZ = originZ - (sizeZ / 2);
-        int endX = startX + sizeX - 1;
-        int endZ = startZ + sizeZ - 1;
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
 
-        for (int dy = 0; dy < walls.height(); dy++) {
-            int worldY = walls.startY() + dy;
+        if (shape == ArenaTemplate.ArenaShape.RECTANGULAR) {
+            // Original rectangular wall logic
+            int startX = originX - halfX;
+            int startZ = originZ - halfZ;
+            int endX = startX + sizeX - 1;
+            int endZ = startZ + sizeZ - 1;
 
-            // North and South walls
-            for (int t = 0; t < walls.thickness(); t++) {
-                for (int x = startX; x <= endX; x++) {
-                    placeBlock(x, worldY, startZ - t, walls.material(), tx);
-                    placeBlock(x, worldY, endZ + t, walls.material(), tx);
+            for (int dy = 0; dy < walls.height(); dy++) {
+                int worldY = walls.startY() + dy;
+
+                // North and South walls
+                for (int t = 0; t < walls.thickness(); t++) {
+                    for (int x = startX; x <= endX; x++) {
+                        placeBlock(x, worldY, startZ - t, walls.material(), tx);
+                        placeBlock(x, worldY, endZ + t, walls.material(), tx);
+                    }
+                }
+
+                // East and West walls
+                for (int t = 0; t < walls.thickness(); t++) {
+                    for (int z = startZ + 1; z <= endZ - 1; z++) {
+                        placeBlock(startX - t, worldY, z, walls.material(), tx);
+                        placeBlock(endX + t, worldY, z, walls.material(), tx);
+                    }
                 }
             }
+        } else {
+            // Circular or ring wall - iterate bounding box and check border
+            int radius = Math.max(halfX, halfZ);
+            int outerExtent = radius + walls.thickness();
 
-            // East and West walls
-            for (int t = 0; t < walls.thickness(); t++) {
-                for (int z = startZ + 1; z <= endZ - 1; z++) { // avoid double-counting corners
-                    placeBlock(startX - t, worldY, z, walls.material(), tx);
-                    placeBlock(endX + t, worldY, z, walls.material(), tx);
+            for (int dy = 0; dy < walls.height(); dy++) {
+                int worldY = walls.startY() + dy;
+
+                for (int dx = -outerExtent; dx <= outerExtent; dx++) {
+                    for (int dz = -outerExtent; dz <= outerExtent; dz++) {
+                        if (isOnCircularBorder(dx, dz, template, walls.thickness())) {
+                            placeBlock(originX + dx, worldY, originZ + dz, walls.material(), tx);
+                        }
+                    }
                 }
             }
         }
@@ -695,15 +1100,30 @@ public class ArenaBuilder {
 
     private void buildCeiling(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         var ceiling = template.ceiling();
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
-        int startX = originX - (sizeX / 2);
-        int startZ = originZ - (sizeZ / 2);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
 
-        for (int dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++) {
+        // For circular/ring shapes, use radius as extent
+        int radius = Math.max(halfX, halfZ);
+        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
+        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
+
+        for (int dx = -iterHalfX; dx < iterHalfX; dx++) {
+            for (int dz = -iterHalfZ; dz < iterHalfZ; dz++) {
+                // Check if position is within arena shape
+                if (!isInArenaShape(dx, dz, template)) {
+                    continue;
+                }
+
                 for (int dy = 0; dy < ceiling.thickness(); dy++) {
-                    placeBlock(startX + dx, ceiling.y() + dy, startZ + dz, ceiling.material(), tx);
+                    placeBlock(originX + dx, ceiling.y() + dy, originZ + dz, ceiling.material(), tx);
                 }
             }
         }
@@ -714,17 +1134,32 @@ public class ArenaBuilder {
         var floor = template.floor();
         if (floor == null) return;
 
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
-        int startX = originX - (sizeX / 2);
-        int startZ = originZ - (sizeZ / 2);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
 
         String material = underfloor.sameAsFloor() ? floor.material() : underfloor.material();
 
-        for (int dx = 0; dx < sizeX; dx++) {
-            for (int dz = 0; dz < sizeZ; dz++) {
+        // For circular/ring shapes, use radius as extent
+        int radius = Math.max(halfX, halfZ);
+        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
+        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
+
+        for (int dx = -iterHalfX; dx < iterHalfX; dx++) {
+            for (int dz = -iterHalfZ; dz < iterHalfZ; dz++) {
+                // Check if position is within arena shape
+                if (!isInArenaShape(dx, dz, template)) {
+                    continue;
+                }
+
                 for (int dy = 1; dy <= underfloor.depth(); dy++) {
-                    placeBlock(startX + dx, floor.y() - dy, startZ + dz, material, tx);
+                    placeBlock(originX + dx, floor.y() - dy, originZ + dz, material, tx);
                 }
             }
         }
@@ -896,20 +1331,47 @@ public class ArenaBuilder {
 
     private void placeMagmaFloor(ArenaTemplate.Hazard hazard, ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         double coverage = ((Number) hazard.params().getOrDefault("coverage", 0.1d)).doubleValue();
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
-        int startX = originX - (sizeX / 2);
-        int startZ = originZ - (sizeZ / 2);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
         int y = resolveY(hazard, template);
-        int total = (int) Math.round(sizeX * sizeZ * Math.min(coverage, 0.5));
+
+        // Estimate arena area based on shape
+        int arenaArea;
+        int radius = Math.max(halfX, halfZ);
+        if (shape == ArenaTemplate.ArenaShape.CIRCULAR) {
+            arenaArea = (int) (Math.PI * radius * radius);
+        } else if (shape == ArenaTemplate.ArenaShape.RING) {
+            Integer innerRadiusVal = template.ringInnerRadius();
+            int innerRadius = innerRadiusVal != null ? innerRadiusVal : radius / 2;
+            arenaArea = (int) (Math.PI * (radius * radius - innerRadius * innerRadius));
+        } else {
+            arenaArea = sizeX * sizeZ;
+        }
+
+        int total = (int) Math.round(arenaArea * Math.min(coverage, 0.5));
         String block = (String) hazard.params().getOrDefault("block", "minecraft:magma_block");
         int placed = 0;
+
+        // Iterate in shape-aware manner
+        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
+        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
+
         // Deterministic grid placement every 2 blocks until coverage met
         outer:
-        for (int dx = 0; dx < sizeX; dx += 2) {
-            for (int dz = 0; dz < sizeZ; dz += 2) {
+        for (int dx = -iterHalfX; dx < iterHalfX; dx += 2) {
+            for (int dz = -iterHalfZ; dz < iterHalfZ; dz += 2) {
                 if (placed >= total) break outer;
-                placeBlock(startX + dx, y, startZ + dz, block, tx);
+                if (!isInArenaShape(dx, dz, template)) {
+                    continue;
+                }
+                placeBlock(originX + dx, y, originZ + dz, block, tx);
                 placed++;
             }
         }
@@ -962,6 +1424,353 @@ public class ArenaBuilder {
         }
     }
 
+    /**
+     * Places lighting based on template configuration.
+     * Supports both template-level lighting and zone-aware lighting.
+     *
+     * <p>If zones are enabled in the template, lighting is placed per-zone based on
+     * each zone's environment lighting configuration. Otherwise, uses template-level lighting.</p>
+     */
+    private void placeLighting(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
+        // Check if zone-aware lighting is needed
+        var zoneSettings = template.zoneSettings();
+        if (zoneSettings != null && zoneSettings.enabled() && !zoneSettings.zones().isEmpty()) {
+            placeZoneAwareLighting(template, originX, originZ, zoneSettings, tx);
+            return;
+        }
+
+        // Fall back to template-level lighting
+        placeTemplateLighting(template, originX, originZ, tx);
+    }
+
+    /**
+     * Places zone-aware lighting based on zone definitions.
+     * Each zone can have different lighting requirements.
+     */
+    private void placeZoneAwareLighting(ArenaTemplate template, int originX, int originZ,
+                                        ArenaTemplate.ZoneSettings zoneSettings, BuildTransaction tx) {
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+        int floorY = template.floor() != null ? template.floor().y() : 64;
+
+        int totalLights = 0;
+
+        // Build ZoneLayout from zone definitions for bounds checking
+        ZoneLayout layout = buildZoneLayoutFromSettings(zoneSettings, halfX, halfZ);
+
+        for (var zoneDef : zoneSettings.zones()) {
+            // Convert ZoneDefinition to ZoneEnvironment for unified handling
+            ZoneEnvironment environment = createZoneEnvironment(zoneDef);
+
+            // Skip if no lighting requirements
+            if (!environment.lighting().placeLightSources() && environment.lighting().blockLight() <= 0) {
+                continue;
+            }
+
+            // Find the corresponding ArenaZone for bounds
+            ArenaZone zone = layout.zones().stream()
+                .filter(z -> z.name().equals(zoneDef.name()))
+                .findFirst()
+                .orElse(null);
+
+            if (zone == null) {
+                LOGGER.warn("Zone '{}' not found in layout, skipping lighting", zoneDef.name());
+                continue;
+            }
+
+            // Place lights within this zone's bounds using environment config
+            int zoneLights = placeZoneLighting(zone, originX, originZ, floorY,
+                environment.lighting().blockLight(), template, tx);
+            totalLights += zoneLights;
+
+            LOGGER.debug("Placed {} lights in zone '{}' (target level: {}, env: {})",
+                zoneLights, zoneDef.name(), environment.lighting().blockLight(),
+                environment.hasRequirements() ? "custom" : "default");
+        }
+
+        if (totalLights > 0) {
+            telemetry.emit("arena.lighting.zone_aware", Map.of(
+                "templateId", template.id(),
+                "totalLights", totalLights,
+                "zoneCount", zoneSettings.zones().size()
+            ));
+        }
+    }
+
+    /**
+     * Creates a ZoneEnvironment from an ArenaTemplate.ZoneDefinition.
+     * Converts raw definition data into the structured domain model.
+     */
+    private ZoneEnvironment createZoneEnvironment(ArenaTemplate.ZoneSettings.ZoneDefinition zoneDef) {
+        // Parse biome if present
+        java.util.Optional<net.minecraft.resources.ResourceLocation> biome = java.util.Optional.empty();
+        String biomeStr = zoneDef.biome();
+        if (biomeStr != null && !biomeStr.isEmpty()) {
+            biome = java.util.Optional.of(net.minecraft.resources.ResourceLocation.parse(biomeStr));
+        }
+
+        // Parse floor material if present
+        java.util.Optional<net.minecraft.resources.ResourceLocation> floorMaterial = java.util.Optional.empty();
+        String floorStr = zoneDef.floorMaterial();
+        if (floorStr != null && !floorStr.isEmpty()) {
+            floorMaterial = java.util.Optional.of(net.minecraft.resources.ResourceLocation.parse(floorStr));
+        }
+
+        // Build lighting config
+        Integer skyLightVal = zoneDef.skyLight();
+        Integer blockLightVal = zoneDef.blockLight();
+        int skyLight = skyLightVal != null ? skyLightVal.intValue() : 15;
+        int blockLight = blockLightVal != null ? blockLightVal.intValue() : 0;
+        boolean placeSources = blockLight > 0;
+        ZoneEnvironment.LightingConfig lighting = new ZoneEnvironment.LightingConfig(skyLight, blockLight, placeSources);
+
+        // Parse time config
+        ZoneEnvironment.TimeConfig time = ZoneEnvironment.TimeConfig.ANY;
+        String timeStr = zoneDef.time();
+        if (timeStr != null && !timeStr.isEmpty()) {
+            try {
+                time = ZoneEnvironment.TimeConfig.valueOf(timeStr.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("Unknown time config '{}' for zone '{}', using ANY", timeStr, zoneDef.name());
+            }
+        }
+
+        return new ZoneEnvironment(biome, floorMaterial, lighting, time);
+    }
+
+    /**
+     * Builds a ZoneLayout from template zone settings for bounds checking.
+     */
+    private ZoneLayout buildZoneLayoutFromSettings(ArenaTemplate.ZoneSettings settings, int halfX, int halfZ) {
+        var zones = settings.zones();
+        int zoneCount = zones.size();
+
+        // Simple strategy: divide arena based on zone count
+        ZoneLayout.Builder builder = ZoneLayout.builder(Math.max(halfX, halfZ));
+
+        if (zoneCount == 1) {
+            builder.strategy(ZoneLayout.LayoutStrategy.SINGLE);
+            var def = zones.get(0);
+            builder.addZone(ArenaZone.rectangular(def.name(), -halfX, -halfZ, halfX, halfZ));
+        } else if (zoneCount == 2) {
+            // Vertical split
+            builder.strategy(ZoneLayout.LayoutStrategy.STRIPED_VERTICAL);
+            var def0 = zones.get(0);
+            var def1 = zones.get(1);
+            builder.addZone(ArenaZone.rectangular(def0.name(), -halfX, -halfZ, 0, halfZ));
+            builder.addZone(ArenaZone.rectangular(def1.name(), 0, -halfZ, halfX, halfZ));
+        } else if (zoneCount <= 4) {
+            // Quadrant layout
+            builder.strategy(ZoneLayout.LayoutStrategy.QUADRANT);
+            if (zones.size() >= 1) builder.addZone(ArenaZone.rectangular(zones.get(0).name(), 0, -halfZ, halfX, 0));
+            if (zones.size() >= 2) builder.addZone(ArenaZone.rectangular(zones.get(1).name(), -halfX, -halfZ, 0, 0));
+            if (zones.size() >= 3) builder.addZone(ArenaZone.rectangular(zones.get(2).name(), -halfX, 0, 0, halfZ));
+            if (zones.size() >= 4) builder.addZone(ArenaZone.rectangular(zones.get(3).name(), 0, 0, halfX, halfZ));
+        } else {
+            // Default: single zone for remaining
+            builder.strategy(ZoneLayout.LayoutStrategy.SINGLE);
+            builder.addZone(ArenaZone.rectangular("main", -halfX, -halfZ, halfX, halfZ));
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Places lighting within a specific zone's bounds.
+     */
+    private int placeZoneLighting(ArenaZone zone, int originX, int originZ, int floorY,
+                                  int targetLight, ArenaTemplate template, BuildTransaction tx) {
+        var bounds = zone.bounds();
+
+        // Calculate light source spacing based on target light level
+        // Max spacing increased to 20 for low light targets with weaker sources
+        int spacing = Math.max(4, Math.min(20, (15 - targetLight) * 2 + 2));
+
+        // Determine Y level for light placement
+        int lightY = floorY + 1;
+        if (template.ceiling() != null && template.ceiling().enabled()) {
+            // Account for ceiling thickness to place light below the ceiling blocks
+            int ceilingThickness = Math.max(1, template.ceiling().thickness());
+            lightY = template.ceiling().y() - ceilingThickness;
+        } else if (template.walls() != null && template.walls().enabled()) {
+            lightY = template.walls().startY() + template.walls().height() - 2;
+        }
+
+        String lightBlock = selectLightBlock(targetLight);
+        int placedCount = 0;
+
+        // Place lights in grid within zone bounds
+        int startX = originX + bounds.x1();
+        int endX = originX + bounds.x2();
+        int startZ = originZ + bounds.z1();
+        int endZ = originZ + bounds.z2();
+
+        for (int x = startX + spacing / 2; x < endX; x += spacing) {
+            for (int z = startZ + spacing / 2; z < endZ; z += spacing) {
+                // Verify position is within zone (important for non-rectangular zones)
+                if (zone.contains(x - originX, z - originZ)) {
+                    placeBlock(x, lightY, z, lightBlock, tx);
+                    placedCount++;
+                }
+            }
+        }
+
+        return placedCount;
+    }
+
+    /**
+     * Places template-level lighting (non-zone-aware).
+     * Includes explicit light sources and ambient grid lighting.
+     */
+    private void placeTemplateLighting(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
+        var lighting = template.lighting();
+        if (lighting == null) return;
+
+        int placedLights = 0;
+        int skippedLights = 0;
+
+        // Calculate arena bounds for validation
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+
+        // 1. Place explicit light sources from template
+        // Note: Y coordinate in LightSource is relative to floor if floor exists
+        if (lighting.lightSources() != null && !lighting.lightSources().isEmpty()) {
+            for (var lightSource : lighting.lightSources()) {
+                int[] pos = lightSource.pos();
+                if (pos != null && pos.length == 3) {
+                    // Validate bounds before placement (pos is relative to origin)
+                    int relX = pos[0];
+                    int relZ = pos[2];
+                    if (relX < -halfX || relX >= halfX || relZ < -halfZ || relZ >= halfZ) {
+                        LOGGER.warn("Light source at [{}, {}, {}] is outside arena bounds, skipping",
+                            pos[0], pos[1], pos[2]);
+                        skippedLights++;
+                        continue;
+                    }
+
+                    int x = originX + pos[0];
+                    int y = pos[1];
+                    int z = originZ + pos[2];
+
+                    // Y is floor-relative when floor exists (pos[1] is offset from floor)
+                    if (template.floor() != null) {
+                        y = template.floor().y() + pos[1];
+                    }
+
+                    placeBlock(x, y, z, lightSource.block(), tx);
+                    placedLights++;
+                }
+            }
+        }
+
+        if (skippedLights > 0) {
+            LOGGER.warn("Skipped {} light sources outside arena bounds for template '{}'",
+                skippedLights, template.id());
+        }
+
+        // 2. Place ambient grid lighting if enabled
+        if (lighting.ambientLight() && lighting.blockLight() > 0) {
+            placedLights += placeAmbientLighting(template, originX, originZ, lighting.blockLight(), tx);
+        }
+
+        if (placedLights > 0) {
+            LOGGER.debug("Placed {} light sources for template '{}'", placedLights, template.id());
+            telemetry.emit("arena.lighting.placed", Map.of(
+                "templateId", template.id(),
+                "count", placedLights,
+                "ambientEnabled", lighting.ambientLight(),
+                "targetBlockLight", lighting.blockLight()
+            ));
+        }
+    }
+
+    /**
+     * Places ambient lighting in a grid pattern to achieve target light level.
+     * Uses sea lanterns (light level 15) spaced to maintain target brightness.
+     */
+    private int placeAmbientLighting(ArenaTemplate template, int originX, int originZ, int targetLight, BuildTransaction tx) {
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int startX = originX - (sizeX / 2);
+        int startZ = originZ - (sizeZ / 2);
+
+        // Determine light Y level with fallback chain: floor -> ceiling -> walls -> default
+        int lightY;
+        if (template.floor() != null) {
+            lightY = template.floor().y() + 1; // 1 block above floor for ground-level lighting
+        } else if (template.ceiling() != null && template.ceiling().enabled()) {
+            // No floor - use ceiling as anchor (account for thickness)
+            int ceilingThickness = Math.max(1, template.ceiling().thickness());
+            lightY = template.ceiling().y() - ceilingThickness;
+        } else if (template.walls() != null && template.walls().enabled()) {
+            // No floor or ceiling - use wall height
+            lightY = template.walls().startY() + Math.max(1, template.walls().height() / 2);
+        } else {
+            // No structural reference - use reasonable default (Y=65)
+            lightY = 65;
+        }
+
+        // Override with ceiling mount if ceiling exists (preferred position)
+        if (template.ceiling() != null && template.ceiling().enabled()) {
+            // Account for ceiling thickness to place light below the ceiling blocks
+            int ceilingThickness = Math.max(1, template.ceiling().thickness());
+            lightY = template.ceiling().y() - ceilingThickness;
+        } else if (template.floor() != null && template.walls() != null && template.walls().enabled()) {
+            // Place at wall height minus 2 if no ceiling but floor and walls exist
+            lightY = template.walls().startY() + template.walls().height() - 2;
+        }
+
+        // Calculate light source spacing based on target light level
+        // Light decreases by 1 per block, so for level 15 source to maintain level N,
+        // spacing should be approximately (15 - N) * 2 to ensure overlap
+        // Max spacing increased to 20 to support low light targets with weaker sources
+        int spacing = Math.max(4, Math.min(20, (15 - targetLight) * 2 + 2));
+
+        // Determine light block based on target level
+        String lightBlock = selectLightBlock(targetLight);
+
+        int placedCount = 0;
+        for (int dx = spacing / 2; dx < sizeX; dx += spacing) {
+            for (int dz = spacing / 2; dz < sizeZ; dz += spacing) {
+                int x = startX + dx;
+                int z = startZ + dz;
+
+                placeBlock(x, lightY, z, lightBlock, tx);
+                placedCount++;
+            }
+        }
+
+        return placedCount;
+    }
+
+    /**
+     * Selects appropriate light-emitting block based on target light level.
+     * Uses weaker sources for lower target levels to avoid over-lighting.
+     */
+    private String selectLightBlock(int targetLight) {
+        // Use appropriate light sources to match target levels
+        // Light level of source affects achievable minimum at spacing midpoints
+        if (targetLight >= 14) {
+            return "minecraft:sea_lantern"; // Light level 15
+        } else if (targetLight >= 11) {
+            return "minecraft:glowstone"; // Light level 15
+        } else if (targetLight >= 8) {
+            return "minecraft:lantern"; // Light level 15
+        } else if (targetLight >= 5) {
+            return "minecraft:soul_lantern"; // Light level 10 - better for mid-low levels
+        } else if (targetLight >= 1) {
+            return "minecraft:redstone_torch"; // Light level 7 - for very low levels
+        } else {
+            // Target is 0 or negative - use weakest available
+            return "minecraft:redstone_torch"; // Light level 7
+        }
+    }
+
     private void placeBlock(int x, int y, int z, String material, BuildTransaction tx) {
         maybeCheckPerformance(tx);
         long packedPos = CompactBlockTracker.pack(x, y, z);
@@ -970,14 +1779,17 @@ public class ArenaBuilder {
     }
 
     private void initPerformanceMonitoring() {
-        if (!(blockPlacer instanceof MinecraftBlockPlacer mcPlacer)) {
-            return;
+        net.minecraft.server.level.ServerLevel level = null;
+        if (blockPlacer instanceof BatchBlockPlacer batchPlacer) {
+            level = batchPlacer.getLevel();
+        } else if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
+            level = mcPlacer.getLevel();
         }
-        var level = mcPlacer.getLevel();
         if (level == null || level.getServer() == null) {
             return;
         }
-        Supplier<Double> supplier = () -> level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
+        final net.minecraft.server.level.ServerLevel finalLevel = level;
+        Supplier<Double> supplier = () -> finalLevel.getServer().getAverageTickTimeNanos() / 1_000_000.0;
         MsptMonitor monitor = new MsptMonitor();
         msptSupplier = supplier;
         msptMonitor = monitor;
@@ -1279,11 +2091,15 @@ public class ArenaBuilder {
     }
 
     private void maybeCheckGoldenReference(ArenaTemplate template, BuildTransaction tx) {
-        if (!"default_flat_64".equals(template.id())) {
+        GoldenReference golden;
+        if ("default_flat_64".equals(template.id())) {
+            golden = GoldenReference.defaultFlat64();
+        } else if ("boss_ring_80".equals(template.id())) {
+            golden = GoldenReference.bossRing80();
+        } else {
             return;
         }
         BuildDryRun dryRun = BuildDryRunCalculator.calculate(template);
-        GoldenReference golden = GoldenReference.defaultFlat64();
         List<String> diffs = new ArrayList<>();
         if (dryRun.floorBlocks() != golden.floorBlocks()) {
             diffs.add("floor " + dryRun.floorBlocks() + "!=" + golden.floorBlocks());
@@ -1419,6 +2235,13 @@ public class ArenaBuilder {
      * Computes residual metrics using MetricsCompatibilityLayer when level is available.
      */
     private ResidualMetrics measureResiduals(ArenaTemplate template, int originX, int originY, int originZ, MinecraftBlockPlacer mcPlacer) {
+        return measureResiduals(template, originX, originY, originZ, mcPlacer.level());
+    }
+
+    /**
+     * Computes residual metrics using MetricsCompatibilityLayer with a ServerLevel.
+     */
+    private ResidualMetrics measureResiduals(ArenaTemplate template, int originX, int originY, int originZ, net.minecraft.server.level.ServerLevel level) {
         BuildDryRun dryRun = BuildDryRunCalculator.calculate(template);
         int expectedBlocks = dryRun.totalBlocks();
 
@@ -1448,7 +2271,7 @@ public class ArenaBuilder {
         }
 
         AABB bounds = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
-        var residuals = MetricsCompatibilityLayer.measureResiduals(mcPlacer.level(), bounds, expectedBlocks);
+        var residuals = MetricsCompatibilityLayer.measureResiduals(level, bounds, expectedBlocks);
         return new ResidualMetrics(residuals.entitiesResidual(), residuals.blocksResidual());
     }
 

@@ -36,6 +36,7 @@ public class ClientQuestCache {
             lastWave = 0;
             wasActive = false;
             com.devmod.client.overlay.QuestSequenceOverlay.INSTANCE.clear();
+            com.devmod.client.config.ClientMechanicsCache.INSTANCE.clearActiveQuestContext();
         }
 
         // Sync with IntegratedTestSession
@@ -89,6 +90,7 @@ public class ClientQuestCache {
         lastUpdateTime = 0;
         com.devmod.client.overlay.QuestSequenceOverlay.INSTANCE.clear();
         EnduranceUiCache.clear();
+        com.devmod.client.config.ClientMechanicsCache.INSTANCE.clearAll();
     }
 
     /**

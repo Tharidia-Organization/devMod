@@ -11,8 +11,8 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.EditorStartTab;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class ModuleCardSection implements EditorSection.CustomSection {
 
@@ -86,11 +86,11 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
                && mouseY >= lastY && mouseY < lastY + lastHeight;
 
         // Background
-        int bgColor = hovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL();
+        int bgColor = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
         graphics.fill(lastX, lastY, lastX + lastWidth, lastY + CARD_HEIGHT, bgColor);
 
         // Border (accent on hover)
-        int borderColor = hovered ? accentColor : UIConstants.Border.DEFAULT();
+        int borderColor = hovered ? accentColor : DesignTokens.Border.DEFAULT();
         drawBorder(graphics, lastX, lastY, lastWidth, CARD_HEIGHT, borderColor, hovered ? HOVER_BORDER_WIDTH : 1);
 
         // Icon area
@@ -105,10 +105,10 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
 
         // Title
         int textX = iconX + ICON_SIZE + CARD_PADDING;
-        graphics.drawString(font, safeTitle, textX, lastY + TITLE_Y_OFFSET, UIConstants.Text.TITLE(), false);
+        graphics.drawString(font, safeTitle, textX, lastY + TITLE_Y_OFFSET, DesignTokens.Text.TITLE(), false);
 
         // Description
-        graphics.drawString(font, safeDescription, textX, lastY + DESC_Y_OFFSET, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(font, safeDescription, textX, lastY + DESC_Y_OFFSET, DesignTokens.Text.SECONDARY(), false);
 
         // Arrow indicator on hover
         if (hovered) {
@@ -150,7 +150,7 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
             "Weapon Editor",
             "Damage, speed, knockback, sweep",
             "⚔",
-            UIConstants.Accent.RED(),
+            DesignTokens.Accent.RED(),
             callback
         );
     }
@@ -162,7 +162,7 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
             "Armor Editor",
             "Defense, toughness, knockback resistance",
             "🛡",
-            UIConstants.Accent.BLUE(),
+            DesignTokens.Accent.BLUE(),
             callback
         );
     }
@@ -174,7 +174,7 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
             "Recipe Editor",
             "Crafting and smithing recipes",
             "📖",
-            UIConstants.Accent.GREEN(),
+            DesignTokens.Accent.GREEN(),
             callback
         );
     }
@@ -186,7 +186,7 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
             "Usable Item Editor",
             "Cooldowns, use duration, throwables",
             "⏱",
-            UIConstants.Accent.ORANGE(),
+            DesignTokens.Accent.ORANGE(),
             callback
         );
     }
@@ -198,7 +198,7 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
             "Food Editor",
             "Nutrition, saturation, effects",
             "🍖",
-            UIConstants.Accent.GREEN(),
+            DesignTokens.Accent.GREEN(),
             callback
         );
     }
@@ -210,7 +210,7 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
             "Fuel Editor",
             "Burn time, cook time settings",
             "🔥",
-            UIConstants.Accent.ORANGE(),
+            DesignTokens.Accent.ORANGE(),
             callback
         );
     }

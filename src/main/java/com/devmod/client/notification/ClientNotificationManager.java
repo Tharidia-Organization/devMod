@@ -32,8 +32,11 @@ import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.client.notification.ui.NotificationBadgeOverlay;
 import com.devmod.client.overlay.ResonanceHudOverlay;
+import com.devmod.mailbox.MessageType;
+import com.devmod.mailbox.network.payload.MailboxNotifyPayload;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
+import com.devmod.notification.NotificationCenterActionData;
 import com.devmod.notification.NotificationPriority;
 import com.devmod.notification.network.UnifiedNotificationPayload;
 
@@ -103,9 +106,23 @@ public class ClientNotificationManager {
     }
 
     /**
+     * Handle mailbox notify payloads and surface them in the UI.
+     */
+    public void handleMailboxNotify(MailboxNotifyPayload payload) {
+        if (payload == null || payload.messageId() == null) {
+            return;
+        }
+        Notification notification = buildMailboxNotification(payload);
+        handleNotification(notification);
+    }
+
+    /**
      * Handle a notification object.
      */
     public void handleNotification(Notification notification) {
+        if (isDuplicateMailboxNotification(notification)) {
+            return;
+        }
         addToHistory(notification);
         updateBadgeCounts(true);
 
@@ -138,6 +155,68 @@ public class ClientNotificationManager {
         if (shouldAutoInvokeAction(notification)) {
             NotificationActionResolver.invoke(notification, ActionOrigin.EVENT);
         }
+    }
+
+    private Notification buildMailboxNotification(MailboxNotifyPayload payload) {
+        MessageType type = resolveMessageType(payload.messageTypeOrdinal());
+        NotificationPriority priority = switch (type) {
+            case ADMIN -> NotificationPriority.URGENT;
+            case REWARD -> NotificationPriority.HIGH;
+            default -> NotificationPriority.NORMAL;
+        };
+
+        return Notification.builder(NotificationCategory.MAILBOX)
+            .id(payload.messageId())
+            .titleKey("devmod.notification.mailbox.title")
+            .messageKey("devmod.notification.mailbox.message")
+            .param("sender", payload.getDisplaySender())
+            .param("subject", payload.subject())
+            .param("unread", payload.totalUnread())
+            .priority(priority)
+            .soundId("mailbox.new")
+            .actionId(ActionIds.UI_NOTIFICATION_CENTER_OPEN)
+            .actionDataJson(NotificationCenterActionData.forTab("MAILBOX", payload.messageId()).toJson())
+            .relatedEntityId(payload.messageId())
+            .persistToMailbox(false)
+            .build();
+    }
+
+    private MessageType resolveMessageType(int ordinal) {
+        MessageType[] values = MessageType.values();
+        if (ordinal >= 0 && ordinal < values.length) {
+            return values[ordinal];
+        }
+        return MessageType.SYSTEM;
+    }
+
+    private boolean isDuplicateMailboxNotification(Notification notification) {
+        UUID messageId = resolveMailboxMessageId(notification);
+        if (messageId == null) {
+            return false;
+        }
+        for (Notification existing : history) {
+            UUID existingId = resolveMailboxMessageId(existing);
+            if (messageId.equals(existingId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Nullable
+    private static UUID resolveMailboxMessageId(Notification notification) {
+        if (notification == null || notification.category() != NotificationCategory.MAILBOX) {
+            return null;
+        }
+        UUID related = notification.relatedEntityId();
+        if (related != null) {
+            return related;
+        }
+        NotificationCenterActionData data = NotificationCenterActionData.fromJson(notification.actionDataJson());
+        if (data != null && "MAILBOX".equalsIgnoreCase(data.tab())) {
+            return data.entityId();
+        }
+        return null;
     }
 
     private void queueToast(QueuedNotification notification) {
@@ -432,8 +511,8 @@ public class ClientNotificationManager {
         String announcement = notification.getParam("announcement", "RESONANCE!");
         int styleBonus = parseInt(notification.getParam("styleBonus", "0"), 0);
         int color = parseInt(notification.getParam("color", "16777215"), 0xFFFFFF);
-        boolean isTrinity = parseBoolean(notification.getParam("isTrinity"));
-        boolean isApocalypse = parseBoolean(notification.getParam("isApocalypse"));
+        boolean isTrinity = parseBoolean(notification.getParam("isTrinity", "false"));
+        boolean isApocalypse = parseBoolean(notification.getParam("isApocalypse", "false"));
 
         ResonanceHudOverlay.INSTANCE.onResonanceTriggered(
             announcement,

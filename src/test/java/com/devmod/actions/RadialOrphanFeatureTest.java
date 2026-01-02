@@ -99,7 +99,12 @@ class RadialOrphanFeatureTest {
             ActionIds.MAILBOX_COMMAND_INBOX, ActionIds.MAILBOX_COMMAND_PURGE,
             ActionIds.NEWS_COMMAND_HELP, ActionIds.NEWS_COMMAND_LIST,
             ActionIds.NEWS_COMMAND_CREATE, ActionIds.NEWS_COMMAND_DELETE,
-            ActionIds.NEWS_COMMAND_PUBLISH
+            ActionIds.NEWS_COMMAND_PUBLISH,
+            // Leaderboard commands (available via /leaderboard command, not radial menu)
+            ActionIds.LEADERBOARD_HELP, ActionIds.LEADERBOARD_LIST,
+            ActionIds.LEADERBOARD_TOP, ActionIds.LEADERBOARD_ME,
+            ActionIds.LEADERBOARD_PLAYER, ActionIds.LEADERBOARD_ARENA,
+            ActionIds.LEADERBOARD_WEEKLY
         );
         for (Field field : ActionIds.class.getDeclaredFields()) {
             if (!Modifier.isStatic(field.getModifiers()) || field.getType() != String.class) {

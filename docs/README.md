@@ -1,112 +1,163 @@
-# DevMod Documentation
+# Documentazione DevMod
 
-> Last updated: 2025-12-26
-> Status: CURRENT (navigation)
+> Ultimo aggiornamento: 2025-12-30
+> Versione: 0.1.0 | Minecraft 1.21.1 | NeoForge 21.1.215
 
-## Start Here
-- [[MOC]] - Master index (curated)
-- [[PROJECT_TOPOLOGY]] - Package and resource layout
-- [[ARCHITECTURE]] - High level architecture
-- [[ENTRYPOINTS]] - Key entrypoints and triggers
-- [[GLOSSARY]] - Terms and domain language
-- [[FEATURES]] - Feature overview
-- [[TRACEABILITY_MATRIX]] - Feature to component mapping
-- [[AUDIT_REPORT]] - Audit findings (historical snapshot)
+DevMod è una mod per Minecraft che aggiunge sistemi avanzati di combattimento, quest endurance, arene template-based, telemetry analytics e molto altro.
 
-## Documentation Status
-- [[DOCUMENTATION_STATUS]] - Status by area and cleanup backlog
-- [[DOCS_GUIDE]] - Where docs live and how to update them
-- [[DOCS_VERIFICATION_REPORT]] - Automated link/path checks
-- [[DOCS_BEHAVIOR_MATRIX]] - Behavior-to-test alignment tracking
+---
 
-## Area Dossiers (core systems)
-- [[areas/arena/README]] - Arena templates and lifecycle
-- [[areas/endurance/README]] - Endurance quest system
-- [[areas/instance/README]] - Instance dimension system
-- [[areas/mailbox/README]] - Mailbox system
-- [[areas/telemetry/README]] - Telemetry pipelines
-- [[areas/radial/README]] - Radial UX and navigation
-- [[areas/client_server/README]] - Client/server boundaries
-- [[areas/config/README]] - Config and feature flags
-- [[areas/tools/README]] - QA tools and automation
+## Indice Rapido
 
-## Cross-Cutting Concerns
-- [[cross_cutting/CONCURRENCY]]
-- [[cross_cutting/CLIENT_SERVER]]
-- [[cross_cutting/TELEMETRY_CONVENTIONS]]
-- [[cross_cutting/ERROR_HANDLING]]
+| Documento | Descrizione |
+|-----------|-------------|
+| [Architettura](ARCHITECTURE.md) | Architettura del progetto con diagrammi |
+| [Database](DATABASE.md) | Schema completo DuckDB (~50 tabelle) |
+| [Pannelli Esterni](PANELS.md) | Come usare Dashboard, Admin Panel, Floating Panels |
+| [Sistemi](SYSTEMS.md) | Spiegazione dettagliata dei sistemi core |
+| [Quickstart](QUICKSTART.md) | Come iniziare a sviluppare |
 
-## Subsystems and Deep Dives
-- [[subsystems/arena-template-rework/README]] - Arena template rework (specs + audits)
-- [[subsystems/editor-design-system/README]] - Editor design system
-- [[subsystems/impact-hud-audit/README]] - Impact HUD audit
-- [[subsystems/prismatic-shield-integration/00-overview]] - Prismatic shield integration
-- [[subsystems/recipe-editor-spec/README]] - Recipe editor spec (planning)
+---
 
-## Design and UX
-- [[GAME_DESIGN_ANALYSIS]]
-- [[design/GAME_DESIGN_EVOLUTION]]
-- [[design/GAME_DESIGN_ROADMAP]]
-- [[UX_PLAYER_JOURNEY]]
-- [[ui/UI_INVENTORY]]
-- [[ui/UI_NAVIGATION_MAP]]
-- [[ui/UI_AUDIT_FINDINGS]]
-- [[ui/UI_LOCALIZATION_TODO]]
+## Panoramica del Progetto
 
-## Testing and QA
-- [[testing/TESTING]] - Testing guide
-- [[testing/TEST_HARNESS]] - Harness setup
-- [[testing/PROGRESSIVE_TEST_PLAN]] - Progressive plan
-- [[_deprecated/testing-reports/L0_REPORT]] through [[_deprecated/testing-reports/L6_REPORT]] - Test reports (historical snapshots)
-- [[testing/QA_WEAPON_PROPERTIES]]
-- [[testing/TEST_WORLD_SETUP]]
+```mermaid
+flowchart TB
+    subgraph Server["Server Runtime"]
+        Arena["Arena Templates"]
+        Endurance["Endurance Quest"]
+        Combat["Combat System"]
+        Mailbox["Mailbox/News"]
+        Telemetry["Telemetry"]
+        Party["Party System"]
+        Instance["Instance Runtime"]
+    end
 
-## Operations, Telemetry, and Runbooks
-- [[telemetry/TELEMETRY_DOCUMENTATION]]
-- [[telemetry/duckdb/DUCKDB_MIGRATION_AUDIT]]
-- [[telemetry/dashboard/DASHBOARD_UPGRADE_PLAN]]
-- [[telemetry/MISSING_TELEMETRY_HOOKS]]
-- [[runbook/arena-alerts]]
-- [[infrastructure/INFRASTRUCTURE_PLAN]]
+    subgraph Client["Client Layer"]
+        UI["UI Screens"]
+        Overlay["HUD Overlays"]
+        Panels["Floating 3D Panels"]
+        Radial["Radial Menu"]
+    end
 
-## Compatibility and Network
-- [[compat/README]]
-- [[compat/MOD_INVENTORY]]
-- [[network/SECURITY_HARDENING]]
-- [[network/PACKET_REGISTRY]]
+    subgraph Persistence["Persistence Layer"]
+        DuckDB[(DuckDB)]
+        Config["Config TOML"]
+        NDJSON["NDJSON Logs"]
+    end
 
-## Audits, Quality, and Remediation
-- [[audit/CLIENT_SERVER_REMEDIATION]]
-- [[audit/MIXIN_SIDE_SAFETY]]
-- [[audit/STATIC_STATE_AND_LEAKS]]
-- [[quality/BASELINE]]
-- [[quality/CORE_REVIEW]]
-- [[quality/REFACTOR_PLAN]]
-- [[quality/FINAL_REPORT]]
-- [[quality/CHANGELOG]]
-- [[quality/INVENTORY]]
-- [[remediation/VERIFY]]
-- [[remediation/FINAL_REPORT]]
-- [[remediation/CHANGELOG_REMEDIATION]]
-- [[remediation/DEDICATED_SERVER_READINESS]]
+    subgraph External["Pannelli Esterni"]
+        Dashboard["Dashboard Telemetry<br/>porta 8642"]
+        AdminPanel["Admin Panel<br/>React/Vite"]
+    end
 
-## Planning and Project Tracking
-- [[project/IMPLEMENTATION_STATUS]]
-- [[project/NEXT_STEPS]]
-- [[project/TODO_WARNINGS]]
-- [[project/BUG_LOG]]
-- [[project/pr-drafts/PR_DRAFT_Debug_MultiEdit]]
+    Combat --> Telemetry
+    Endurance --> Telemetry
+    Arena --> Telemetry
+    Telemetry --> DuckDB
+    Mailbox --> DuckDB
+    Dashboard --> DuckDB
+    AdminPanel --> Mailbox
+```
 
-## Decisions (ADRs)
-- [[adr/ADR-001-endurance-quest-manager]]
-- [[adr/ADR-002-devmod-client-actions]]
-- [[adr/ADR-003-item-editor-screen]]
+---
 
-## Tools
-- [[tools/mcp/codex-mcp-server/README]]
+## Struttura del Codice
 
-## Archive
-- [[_deprecated/]] - Deprecated and historical docs
-- [[reorg/REORG_COMPLETE]] - 2024 reorganization notes (historical)
+```
+src/main/java/com/devmod/
+├── arena/          # Sistema Arena Template
+├── endurance/      # Sistema Endurance Quest
+├── combat/         # Sistema di combattimento
+├── damage/         # Calcolo danni
+├── party/          # Sistema party multiplayer
+├── runtime/        # Gestione istanze dinamiche
+├── mailbox/        # Mailbox, news, task, ticket
+├── telemetry/      # Telemetry e analytics (DuckDB)
+├── notification/   # Sistema notifiche
+├── network/        # Packet registry e handler
+├── config/         # Configurazione
+├── client/         # Layer client (UI, overlay, rendering)
+├── actions/        # Radial actions
+├── compat/         # Compatibilità con altre mod
+└── util/           # Utility condivise
+```
 
-*Use [[MOC]] for navigation and [[DOCUMENTATION_STATUS]] for trust level and cleanup tracking.*
+---
+
+## Feature Principali
+
+### Arena Templates
+Sistema per creare arene basate su template con policy configurabili, build async/sync, autosmoke testing.
+
+### Endurance Quest
+Sistema roguelike con wave progressive, boss, perk, combo, reward e gamification completa.
+
+### Combat System
+Sistema di combattimento avanzato con body-part detection, damage breakdown, hit tracking.
+
+### Telemetry & Analytics
+Pipeline completa di telemetry con persistenza DuckDB, dashboard web, export dati.
+
+### Mailbox System
+Sistema di messaggistica in-game con news, task per tester, ticket support, admin panel.
+
+---
+
+## Pannelli Esterni
+
+DevMod include diversi pannelli esterni per gestione e analytics:
+
+| Pannello | URL/Comando | Descrizione |
+|----------|-------------|-------------|
+| Dashboard Telemetry | `http://127.0.0.1:8642/dashboard` | Analytics in tempo reale |
+| Admin Panel | `cd admin-panel && npm run dev` | Gestione mailbox/news |
+| Floating Panels | In-game | Pannelli 3D nel mondo |
+
+Vedi [PANELS.md](PANELS.md) per istruzioni complete.
+
+---
+
+## Comandi Principali
+
+| Comando | Descrizione |
+|---------|-------------|
+| `/devtest` | HUD, panel, debug tools, endurance helpers |
+| `/arena` | Operazioni arena template |
+| `/devmod telemetry` | Reload, dump, export telemetry |
+| `/devmod dashboard` | Apri/avvia/ferma dashboard |
+| `/mailbox` | Operazioni admin mailbox |
+| `/news` | CRUD news |
+
+---
+
+## Keybind Default
+
+| Tasto | Azione |
+|-------|--------|
+| `G` | Apri menu radiale |
+| `M` | Apri mailbox |
+| `T` | Apri task tester |
+
+---
+
+## Risorse
+
+```
+src/main/resources/
+├── assets/devmod/      # Texture, shader, lang
+├── data/devmod/        # Data pack
+├── schemas/            # JSON schema
+├── db/                 # Schema DuckDB
+└── dashboard/          # Asset web dashboard
+```
+
+---
+
+## Link Utili
+
+- [Database Schema](DATABASE.md) - Tutte le tabelle DuckDB
+- [Pannelli Esterni](PANELS.md) - Come usare i pannelli
+- [Architettura](ARCHITECTURE.md) - Diagrammi e struttura
+- [Sistemi](SYSTEMS.md) - Dettaglio sistemi core
+- [Quickstart](QUICKSTART.md) - Setup sviluppo

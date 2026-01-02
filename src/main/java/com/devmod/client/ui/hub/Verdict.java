@@ -1,11 +1,11 @@
 package com.devmod.client.ui.hub;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public enum Verdict {
-    PASS("PASS", "1", UIConstants.Status.SUCCESS()),
-    FAIL("FAIL", "2", UIConstants.Status.ERROR()),
-    SKIP("SKIP", "3", UIConstants.Text.MUTED());
+    PASS("PASS", "1", DesignTokens.Semantic.SUCCESS),
+    FAIL("FAIL", "2", DesignTokens.Semantic.ERROR),
+    SKIP("SKIP", "3", DesignTokens.Text.MUTED());
 
     private final String label;
     private final String hotkey;

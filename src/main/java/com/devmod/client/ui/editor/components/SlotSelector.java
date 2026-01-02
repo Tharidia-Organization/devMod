@@ -13,11 +13,11 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class SlotSelector {
 
@@ -167,7 +167,7 @@ public final class SlotSelector {
         // Calculate slot positions - centered horizontally
         int totalSlotWidth = slots.size() * slotSize + (slots.size() - 1) * slotGap;
         int startX = x + (width - totalSlotWidth) / 2;
-        int innerPadding = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int innerPadding = ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
         int slotY = y + innerPadding;
 
         // Update hover state
@@ -188,20 +188,20 @@ public final class SlotSelector {
             }
 
             // Slot background
-            int bgColor = isSelected ? UIConstants.Background.ACTIVE() :
-                         (isHovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
+            int bgColor = isSelected ? DesignTokens.Background.ACTIVE() :
+                         (isHovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT());
             graphics.fill(slotX, slotY, slotX + slotSize, slotY + slotSize, bgColor);
 
             // Slot border
-            int borderColor = isSelected ? UIConstants.Border.ACCENT() :
-                             (isHovered ? UIConstants.Border.HOVER() : UIConstants.Border.DEFAULT());
+            int borderColor = isSelected ? DesignTokens.Border.ACCENT() :
+                             (isHovered ? DesignTokens.Border.HOVER() : DesignTokens.Border.DEFAULT());
             AxiomRenderer.drawBorder(graphics, slotX, slotY, slotSize, slotSize, borderColor);
 
             // Render item or short label
             ItemStack itemStack = Objects.requireNonNull(slotInfo.item(), "slot item cannot be null");
             if (!itemStack.isEmpty()) {
                 // Scale item to fit slot (16px base item size -> slot size with padding)
-                int itemPadding = ScaledCoord.scaleDim(UIConstants.Spacing.XS);
+                int itemPadding = ScaledCoord.scaleDim(DesignTokens.Spacing.XS);
                 int targetItemSize = slotSize - itemPadding * 2;
                 float itemScale = targetItemSize / 16.0f;  // 16px is Minecraft's base item render size
 
@@ -217,7 +217,7 @@ public final class SlotSelector {
                 pose.popPose();
             } else {
                 // Show placeholder glyph when empty
-                int textColor = isSelected ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
+                int textColor = isSelected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
                 String placeholder = Objects.requireNonNull(placeholderFor(slotInfo), "placeholder cannot be null");
                 int textX = slotX + (slotSize - font.width(placeholder)) / 2;
                 int textY = slotY + (slotSize - font.lineHeight) / 2;
@@ -230,7 +230,7 @@ public final class SlotSelector {
             String label = Objects.requireNonNull(slots.get(selectedIndex).label(), "label cannot be null");
             int labelX = x + (width - font.width(label)) / 2;
             int labelY = slotY + slotSize + innerPadding;
-            graphics.drawString(font, label, labelX, labelY, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(font, label, labelX, labelY, DesignTokens.Text.SECONDARY(), false);
         }
 
         return height;

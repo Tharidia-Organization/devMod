@@ -10,11 +10,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class FooterComponent {
 
@@ -22,7 +22,7 @@ public class FooterComponent {
     // DIMENSIONS (from Section 2.7)
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int HEIGHT = UIConstants.Size.FOOTER_HEIGHT;  // 60px
+    private static final int HEIGHT = DesignTokens.Size.FOOTER_HEIGHT;  // 60px
     private static final int ACTIONS_HEIGHT = 28;
     private static final int APPLY_WIDTH = 112;
     private static final int APPLY_HEIGHT = 36;
@@ -198,26 +198,26 @@ public class FooterComponent {
         int applyWidth = ScaledCoord.scaleDim(APPLY_WIDTH);
         int applyHeight = ScaledCoord.scaleDim(APPLY_HEIGHT);
         int arrowWidth = ScaledCoord.scaleDim(ACTION_ARROW_WIDTH);
-        int arrowPad = arrowWidth + ScaledCoord.scaleDim(UIConstants.Spacing.SM);
+        int arrowPad = arrowWidth + ScaledCoord.scaleDim(DesignTokens.Spacing.SM);
 
         this.bounds = new ResponsiveLayout.Rect(x, y, width, footerHeight);
 
         // Background
-        graphics.fill(x, y, x + width, y + footerHeight, UIConstants.Background.HEADER());
+        graphics.fill(x, y, x + width, y + footerHeight, DesignTokens.Background.HEADER());
 
         // Top border
-        graphics.fill(x, y, x + width, y + BORDER_THICKNESS, UIConstants.Border.SEPARATOR());
+        graphics.fill(x, y, x + width, y + BORDER_THICKNESS, DesignTokens.Border.SEPARATOR());
 
         // Calculate positions
-        int contentY = y + ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int contentY = y + ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
 
         // Clear undo/redo bounds (no longer rendered in footer)
         undoBounds = ResponsiveLayout.Rect.EMPTY;
         redoBounds = ResponsiveLayout.Rect.EMPTY;
 
         // Action buttons row (History, Export, Import, Presets, Reset, Cancel)
-        int padding = ScaledCoord.scaleDim(UIConstants.Spacing.LG);
-        int applyMargin = ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int padding = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
+        int applyMargin = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
         int startX = x + padding; // initial left padding
         int gapBase = ScaledCoord.scaleDim(ACTION_GAP_BASE);
         int btnY = contentY;
@@ -226,7 +226,7 @@ public class FooterComponent {
         String[] labels = new String[] { "History", "Export", "Import", "Presets", "Templates", "Recipe", "Reset", "Cancel" };
         int[] widths = new int[labels.length];
         float btnFontScale = Typography.buttonScale();
-        int innerPad = ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int innerPad = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
         for (int i = 0; i < labels.length; i++) {
             String lbl = Objects.requireNonNull(labels[i], "label cannot be null");
             int textW = Math.round(font.width(lbl) * btnFontScale);
@@ -242,7 +242,7 @@ public class FooterComponent {
         int available = Math.max(0, applyX - startX - applyMargin);
         if (available < baseRowWidth) {
             float scale = Math.max(ACTION_SCALE_MIN, (float) available / (float) baseRowWidth);
-            gap = Math.max(ScaledCoord.scaleDim(UIConstants.Spacing.XS), Math.round(gapBase * scale));
+            gap = Math.max(ScaledCoord.scaleDim(DesignTokens.Spacing.XS), Math.round(gapBase * scale));
             for (int i = 0; i < widths.length; i++) {
                 widths[i] = Math.max(minWidth, Math.round(widths[i] * scale));
             }
@@ -285,9 +285,9 @@ public class FooterComponent {
             actionScrollOffset = Math.max(0, Math.min(actionScrollOffset, actionMaxScroll));
 
             leftArrowBounds = new ResponsiveLayout.Rect(startX, btnY, arrowWidth, actionsHeight);
-            actionsViewport = new ResponsiveLayout.Rect(leftArrowBounds.right() + ScaledCoord.scaleDim(UIConstants.Spacing.XS), btnY,
+            actionsViewport = new ResponsiveLayout.Rect(leftArrowBounds.right() + ScaledCoord.scaleDim(DesignTokens.Spacing.XS), btnY,
                 Math.max(0, actionsAvailable), actionsHeight);
-            rightArrowBounds = new ResponsiveLayout.Rect(actionsViewport.right() + ScaledCoord.scaleDim(UIConstants.Spacing.XS), btnY, arrowWidth, actionsHeight);
+            rightArrowBounds = new ResponsiveLayout.Rect(actionsViewport.right() + ScaledCoord.scaleDim(DesignTokens.Spacing.XS), btnY, arrowWidth, actionsHeight);
             leftArrowHovered = leftArrowBounds.contains(mouseX, mouseY);
             rightArrowHovered = rightArrowBounds.contains(mouseX, mouseY);
         } else {
@@ -345,7 +345,7 @@ public class FooterComponent {
         }
 
         // Apply button (right aligned)
-        int applyY = y + ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int applyY = y + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
         applyBounds = new ResponsiveLayout.Rect(applyX, applyY, applyWidth, applyHeight);
         applyHovered = applyBounds.contains(mouseX, mouseY);
         renderApplyButton(graphics, font, applyX, applyY, applyWidth, applyHeight);
@@ -357,27 +357,27 @@ public class FooterComponent {
                                                      int x, int y, int width, int height, String label, boolean hovered) {
         float fontScale = Typography.buttonScale();
         ResponsiveLayout.Rect rect = new ResponsiveLayout.Rect(x, y, width, height);
-        int bgColor = hovered ? UIConstants.Button.HOVER() : UIConstants.Button.NORMAL();
+        int bgColor = hovered ? DesignTokens.Button.HOVER() : DesignTokens.Button.NORMAL();
         graphics.fill(x, y, x + width, y + height, bgColor);
-        int borderColor = hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
+        int borderColor = hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
         String safeLabel = Objects.requireNonNull(label, "label cannot be null");
         int textWidthScaled = Math.round(font.width(safeLabel) * fontScale);
         int textHeightScaled = Math.round(font.lineHeight * fontScale);
         int textX = x + (width - textWidthScaled) / 2;
         int textY = y + (height - textHeightScaled) / 2;
-        Typography.drawText(graphics, font, safeLabel, textX, textY, UIConstants.Text.PRIMARY(), fontScale);
+        Typography.drawText(graphics, font, safeLabel, textX, textY, DesignTokens.Text.PRIMARY(), fontScale);
         return rect;
     }
 
     private void renderArrow(GuiGraphics graphics, net.minecraft.client.gui.Font font,
                              ResponsiveLayout.Rect rect, String symbol, boolean enabled, boolean hovered) {
-        int bgColor = !enabled ? UIConstants.Button.DISABLED() :
-            (hovered ? UIConstants.Button.HOVER() : UIConstants.Button.NORMAL());
+        int bgColor = !enabled ? DesignTokens.Button.DISABLED() :
+            (hovered ? DesignTokens.Button.HOVER() : DesignTokens.Button.NORMAL());
         graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), bgColor);
-        int borderColor = enabled && hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
+        int borderColor = enabled && hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), borderColor);
-        int textColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.DISABLED();
+        int textColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.DISABLED();
         float fontScale = Typography.buttonScale();
         String safeSymbol = Objects.requireNonNull(symbol, "symbol cannot be null");
         int textX = rect.x() + (rect.width() - Math.round(font.width(safeSymbol) * fontScale)) / 2;
@@ -391,14 +391,14 @@ public class FooterComponent {
         boolean enabled = canApply && isDirty;
 
         // Background - green tint for primary action
-        int bgColor = !enabled ? UIConstants.Button.DISABLED() :
-                     (applyHovered ? UIConstants.Button.PRIMARY_HOVER : UIConstants.Button.PRIMARY);
+        int bgColor = !enabled ? DesignTokens.Button.DISABLED() :
+                     (applyHovered ? DesignTokens.Button.PRIMARY_HOVER : DesignTokens.Button.PRIMARY);
         graphics.fill(x, y, x + width, y + height, bgColor);
 
         // Border
-        int borderColor = enabled ? UIConstants.Accent.GREEN() : UIConstants.Border.DEFAULT();
+        int borderColor = enabled ? DesignTokens.Accent.GREEN() : DesignTokens.Border.DEFAULT();
         if (applyHovered && enabled) {
-            borderColor = UIConstants.lighten(borderColor, APPLY_BORDER_LIGHTEN);
+            borderColor = DesignTokens.lighten(borderColor, APPLY_BORDER_LIGHTEN);
         }
         AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
 
@@ -413,7 +413,7 @@ public class FooterComponent {
         } else {
             label = "✓ Apply";
         }
-        int textColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.DISABLED();
+        int textColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.DISABLED();
         int textWidthScaled = Math.round(font.width(label) * fontScale);
         int textHeightScaled = Math.round(font.lineHeight * fontScale);
         int textX = x + (width - textWidthScaled) / 2;
@@ -423,9 +423,9 @@ public class FooterComponent {
         // Dirty indicator dot
         if (isDirty) {
             int dotSize = ScaledCoord.scaleDim(DIRTY_DOT_SIZE);
-            int dotX = x + width - ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+            int dotX = x + width - ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
             int dotY = y + ScaledCoord.scaleDim(DIRTY_DOT_Y_OFFSET);
-            graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, UIConstants.Accent.ORANGE());
+            graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, DesignTokens.Accent.ORANGE());
         }
     }
 

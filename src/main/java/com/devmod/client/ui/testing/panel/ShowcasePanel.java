@@ -8,7 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_HEIGHT_MEDIUM;
 import static com.devmod.client.ui.testing.panel.PanelConstants.ROW_SPACING;
@@ -51,7 +51,7 @@ public final class ShowcasePanel implements UIPanel {
 
         // Title
         if (title != null && !title.isEmpty()) {
-            graphics.drawString(font, title, x, y, UIConstants.Text.TITLE(), false);
+            graphics.drawString(font, title, x, y, DesignTokens.Text.TITLE(), false);
         }
 
         // Grid of items
@@ -75,7 +75,7 @@ public final class ShowcasePanel implements UIPanel {
 
             // Render description below
             graphics.drawString(font, item.description, itemX, itemY + BUTTON_HEIGHT_MEDIUM + 4,
-                UIConstants.Text.SECONDARY(), false);
+                DesignTokens.Text.SECONDARY(), false);
         }
     }
 

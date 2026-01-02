@@ -3,6 +3,7 @@ package com.devmod.client.ui.editor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -51,6 +52,7 @@ import com.devmod.client.ui.editor.components.SlotSelector;
 import com.devmod.client.ui.editor.controller.InputRouter;
 import com.devmod.client.ui.editor.controller.ModeController;
 import com.devmod.client.ui.editor.controller.OverlayController;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.client.ui.editor.core.EditorConfig;
 import com.devmod.client.ui.editor.core.EditorLayout;
@@ -60,7 +62,6 @@ import com.devmod.client.ui.editor.core.GridValidator;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.debug.DebugOverlay;
 import com.devmod.client.ui.editor.favorites.FavoritePresetStore;
 import com.devmod.client.ui.editor.modules.ArmorModule;
@@ -81,7 +82,7 @@ import com.devmod.client.ui.editor.systems.TemplateOverlay;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.EditorClientConfig;
 import com.devmod.config.WeaponConfigManager;
-import com.devmod.integration.PufferfishCompat;
+import com.devmod.integration.PufferfishIntegration;
 import com.devmod.network.ArmorStatsPayload;
 import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.stats.ArmorStats;
@@ -201,6 +202,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private final ItemStack item;
     private final ItemStack originalItem;
     private final EditorStartTab requestedTab;
+
+    /** Optional parent screen to return to on close */
+    @Nullable
+    private final Screen parentScreen;
+
+    /** Optional callback when item editing is complete */
+    @Nullable
+    private final Consumer<ItemStack> onItemEdited;
     @Nullable
     private EditorModule activeModule;
     @Nullable
@@ -274,9 +283,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @SuppressWarnings("this-escape") // Callback registration in constructor is intentional
     public ItemEditorScreen(ItemStack item, EditorStartTab startTab) {
+        this(item, startTab, null, null);
+    }
+
+    @SuppressWarnings("this-escape") // Callback registration in constructor is intentional
+    public ItemEditorScreen(ItemStack item, EditorStartTab startTab,
+                            @Nullable Screen parentScreen, @Nullable Consumer<ItemStack> onItemEdited) {
         super(java.util.Objects.requireNonNull(Component.literal("Item Editor"), "title"));
         this.item = item.copy();
         this.originalItem = item.copy();
+        this.parentScreen = parentScreen;
+        this.onItemEdited = onItemEdited;
         this.editorState = new ItemEditorState(item);
         this.modeController = new ModeController(editorState)
             .setStatusCallback(this::showStatus);
@@ -314,7 +331,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         EditorModule resolvedModule = Objects.requireNonNull(resolveModule(item, requestedTab), "active module");
         activeModule = resolvedModule;
         editorState.setActiveModule(resolvedModule);
-        resolvedModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO() : color));
+        resolvedModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? DesignTokens.Semantic.INFO : color));
         resolvedModule.setModuleSwitchCallback(this::switchModule);
         resolvedModule.setItem(item);
         resolvedModule.init(layout);
@@ -453,7 +470,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         // Check for unsaved changes
         if (activeModule != null && activeModule.hasUnsavedChanges()) {
-            showStatus("Unsaved changes - save or discard first", UIConstants.Accent.ORANGE());
+            showStatus("Unsaved changes - save or discard first", DesignTokens.Semantic.WARNING);
             return;
         }
 
@@ -466,7 +483,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         EditorModule resolvedModule = Objects.requireNonNull(resolveModule(item, targetTab), "active module");
         activeModule = resolvedModule;
         editorState.setActiveModule(resolvedModule);
-        resolvedModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO() : color));
+        resolvedModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? DesignTokens.Semantic.INFO : color));
         resolvedModule.setModuleSwitchCallback(this::switchModule);
         resolvedModule.setItem(item);
         resolvedModule.init(layout);
@@ -480,7 +497,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         // Reset scroll
         scrollArea.setScrollOffset(0);
 
-        showStatus("Switched to " + resolvedModule.getTitle(), UIConstants.Accent.INFO());
+        showStatus("Switched to " + resolvedModule.getTitle(), DesignTokens.Semantic.INFO);
         DevMod.LOGGER.info("[ItemEditor] Switched module to: {}", targetTab);
     }
 
@@ -581,7 +598,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             ConfirmDialog dialog = ConfirmDialog.switchSlot(slot.label(), activeModule.getPendingChanges().size(),
                 () -> {
                     selectedSlot = slot;
-                    showStatus("Switched to " + slot.label(), UIConstants.Accent.BLUE());
+                    showStatus("Switched to " + slot.label(), DesignTokens.Semantic.INFO);
                 },
                 () -> {});
             activeDialog = dialog;
@@ -589,7 +606,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             return;
         }
         selectedSlot = slot;
-        showStatus("Switched to " + slot.label(), UIConstants.Accent.BLUE());
+        showStatus("Switched to " + slot.label(), DesignTokens.Semantic.INFO);
         if (showMultiEditPanel) {
             refreshMultiEditSelection();
         }
@@ -642,7 +659,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 ? "Switched to PREVIEW (discarded changes)"
                 : "Switched to PREVIEW");
         }
-        showStatus("Preview Mode", UIConstants.Accent.CYAN());
+        showStatus("Preview Mode", DesignTokens.Accent.PRIMARY);
     }
 
     private void switchToApplyMode() {
@@ -654,7 +671,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             }
             activeModule.logEvent("Switched to APPLY (dirty on)");
         }
-        showStatus("Apply Mode", UIConstants.Accent.GREEN());
+        showStatus("Apply Mode", DesignTokens.Semantic.SUCCESS);
     }
 
     /**
@@ -663,7 +680,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private void saveUserModePreference() {
         try {
             EditorClientConfig.EDITOR_DEFAULT_MODE.set(isPreviewMode() ? EditorClientConfig.EditorDefaultMode.PREVIEW : EditorClientConfig.EditorDefaultMode.APPLY);
-            showStatus("Default mode saved", UIConstants.Accent.BLUE());
+            showStatus("Default mode saved", DesignTokens.Semantic.INFO);
         } catch (Exception ignored) {
             // Best-effort: config may be read-only in some contexts
         }
@@ -674,13 +691,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             .onUndo(() -> {
                 if (activeModule != null && activeModule.canUndo()) {
                     activeModule.undo();
-                    showStatus("Undone", UIConstants.Accent.BLUE());
+                    showStatus("Undone", DesignTokens.Semantic.INFO);
                 }
             })
             .onRedo(() -> {
                 if (activeModule != null && activeModule.canRedo()) {
                     activeModule.redo();
-                    showStatus("Redone", UIConstants.Accent.BLUE());
+                    showStatus("Redone", DesignTokens.Semantic.INFO);
                 }
             })
             .onApply(this::applyChanges)
@@ -695,7 +712,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                     EditorModule module = Objects.requireNonNull(activeModule, "active module");
                     ConfirmDialog dialog = ConfirmDialog.resetToDefault(() -> {
                         module.resetToOriginal();
-                        showStatus("Reset to original", UIConstants.Accent.ORANGE());
+                        showStatus("Reset to original", DesignTokens.Semantic.WARNING);
                     }, () -> {});
                     activeDialog = dialog;
                     dialog.show();
@@ -710,7 +727,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             case "import" -> handleImport();
             case "presets" -> {
                 if (!supportsDataOps()) {
-                    showStatus("Presets available only for weapons/armors", UIConstants.Accent.ORANGE());
+                    showStatus("Presets available only for weapons/armors", DesignTokens.Semantic.WARNING);
                     return;
                 }
                 overlayController.toggle(OverlayController.OverlayType.PRESETS);
@@ -772,8 +789,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         perfMonitor.startFrame();
         // Dark overlay background, but leave vanilla hotbar area unobscured
-        int hotbarReserve = ScaledCoord.scaleDim(UIConstants.Spacing.XXL);
-        graphics.fill(0, 0, width, Math.max(0, height - hotbarReserve), UIConstants.Background.OVERLAY());
+        int hotbarReserve = ScaledCoord.scaleDim(DesignTokens.Space._7);
+        graphics.fill(0, 0, width, Math.max(0, height - hotbarReserve), DesignTokens.Bg.LEVEL_0);
 
         // Get layout areas (centralized in EditorLayout)
         var panelBounds = editorLayout.getPanelBounds();
@@ -788,12 +805,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         // Main panel background
         graphics.fill(panelBounds.x(), panelBounds.y(),
                      panelBounds.right(), panelBounds.bottom(),
-                     UIConstants.Background.PANEL());
+                     DesignTokens.Bg.LEVEL_2);
 
         // Panel border
         AxiomRenderer.drawBorder(graphics, panelBounds.x(), panelBounds.y(),
                                 panelBounds.width(), panelBounds.height(),
-                                UIConstants.Border.DEFAULT());
+                                DesignTokens.Stroke.DEFAULT);
 
         // Header (tabs + badges + close)
         header.render(graphics, headerBounds.x(), headerBounds.y(), headerBounds.width(), mouseX, mouseY);
@@ -816,20 +833,20 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         // Render multi-edit panel if visible (placed beneath left column area)
         if (showMultiEditPanel && multiEditPanel != null) {
-            int panelX = leftBounds.x() + UIConstants.Spacing.MD;
-            int panelY = contentY + UIConstants.Spacing.MD;
-            int panelW = leftBounds.width() - UIConstants.Spacing.MD * 2;
+            int panelX = leftBounds.x() + DesignTokens.Spacing.MD;
+            int panelY = contentY + DesignTokens.Spacing.MD;
+            int panelW = leftBounds.width() - DesignTokens.Spacing.MD * 2;
             multiEditPanel.render(graphics, font, panelX, panelY, panelW, mouseX, mouseY);
         }
 
         // Content area (scrollable)
-        int contentX = contentBounds.x() + UIConstants.Spacing.MD;
-        int contentWidth = contentBounds.width() - UIConstants.Spacing.MD * 2;
-        graphics.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, UIConstants.Background.CONTENT());
+        int contentX = contentBounds.x() + DesignTokens.Spacing.MD;
+        int contentWidth = contentBounds.width() - DesignTokens.Spacing.MD * 2;
+        graphics.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, DesignTokens.Background.CONTENT());
         if (activeModule != null) {
             EditorModule module = Objects.requireNonNull(activeModule, "active module");
             perfMonitor.startTiming("render_content");
-            int viewportHeight = contentHeight - UIConstants.Spacing.MD * 2;
+            int viewportHeight = contentHeight - DesignTokens.Spacing.MD * 2;
             scrollArea.render(graphics, contentX, contentY, contentWidth, contentHeight,
                 mouseX, mouseY, partialTick, (g, x, y, w, mx, my) -> {
                     ResponsiveLayout.Rect bounds = new ResponsiveLayout.Rect(x, y, w, viewportHeight);
@@ -929,12 +946,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         ResponsiveLayout.Rect leftPanel = layout.getFavoritesPanelArea();
         if (!leftPanel.isEmpty()) {
             graphics.fill(leftPanel.x(), leftPanel.y(), leftPanel.right(), leftPanel.bottom(),
-                         UIConstants.Background.PANEL());
+                         DesignTokens.Bg.LEVEL_2);
             AxiomRenderer.drawBorder(graphics, leftPanel.x(), leftPanel.y(),
-                                    leftPanel.width(), leftPanel.height(), UIConstants.Border.DEFAULT());
+                                    leftPanel.width(), leftPanel.height(), DesignTokens.Stroke.DEFAULT);
             graphics.drawString(safeFont, FAVORITES_TITLE_TEXT, leftPanel.x() + FAVORITES_TITLE_OFFSET_X,
                 leftPanel.y() + FAVORITES_TITLE_OFFSET_Y,
-                               UIConstants.Text.SECONDARY(), false);
+                               DesignTokens.Text.SECONDARY(), false);
 
             List<ItemEditorDataManager.PresetData> favorites = getFavoritePresetsForActiveType();
             int rowHeight = FAVORITES_ROW_HEIGHT;
@@ -948,7 +965,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                     && mouseY >= rowY && mouseY <= rowY + rowHeight;
                 if (hovered) {
                     graphics.fill(leftPanel.x() + FAVORITES_ROW_HOVER_INSET, rowY,
-                        leftPanel.right() - FAVORITES_ROW_HOVER_INSET, rowY + rowHeight, UIConstants.Background.HOVER());
+                        leftPanel.right() - FAVORITES_ROW_HOVER_INSET, rowY + rowHeight, DesignTokens.Background.HOVER());
                     if (tooltipText == null) {
                         tooltipText = preset.name;
                         tooltipX = mouseX;
@@ -958,7 +975,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 String label = preset.name == null ? FAVORITES_LABEL_FALLBACK : preset.name;
                 graphics.drawString(safeFont, FAVORITES_LABEL_PREFIX + label, leftPanel.x() + FAVORITES_ROW_TEXT_OFFSET_X,
                     rowY + FAVORITES_ROW_TEXT_OFFSET_Y,
-                    hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY(), false);
+                    hovered ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY(), false);
             }
 
             // Pin toggle for last loaded preset
@@ -969,10 +986,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 int btnW = FAVORITES_PIN_BUTTON_WIDTH;
                 int btnH = FAVORITES_PIN_BUTTON_HEIGHT;
                 int btnX = leftPanel.x() + FAVORITES_PIN_BUTTON_OFFSET_X;
-                graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, UIConstants.Button.NORMAL());
-                AxiomRenderer.drawBorder(graphics, btnX, btnY, btnW, btnH, UIConstants.Border.DEFAULT());
+                graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, DesignTokens.Button.NORMAL());
+                AxiomRenderer.drawBorder(graphics, btnX, btnY, btnW, btnH, DesignTokens.Stroke.DEFAULT);
                 graphics.drawString(safeFont, pinLabel, btnX + FAVORITES_PIN_TEXT_OFFSET_X,
-                    btnY + FAVORITES_PIN_TEXT_OFFSET_Y, UIConstants.Text.PRIMARY(), false);
+                    btnY + FAVORITES_PIN_TEXT_OFFSET_Y, DesignTokens.Text.PRIMARY(), false);
             }
         }
 
@@ -981,12 +998,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             ResponsiveLayout.Rect rightPanel = layout.getDevModePanelArea();
             if (!rightPanel.isEmpty()) {
                 graphics.fill(rightPanel.x(), rightPanel.y(), rightPanel.right(), rightPanel.bottom(),
-                             UIConstants.Background.PANEL());
+                             DesignTokens.Bg.LEVEL_2);
                 AxiomRenderer.drawBorder(graphics, rightPanel.x(), rightPanel.y(),
-                                        rightPanel.width(), rightPanel.height(), UIConstants.Border.DEFAULT());
+                                        rightPanel.width(), rightPanel.height(), DesignTokens.Stroke.DEFAULT);
                 graphics.drawString(safeFont, DEV_PANEL_HEADER_TEXT, rightPanel.x() + DEV_PANEL_TEXT_OFFSET_X,
                     rightPanel.y() + DEV_PANEL_TEXT_OFFSET_Y,
-                                   UIConstants.Text.SECONDARY(), false);
+                                   DesignTokens.Text.SECONDARY(), false);
             }
         }
     }
@@ -1037,11 +1054,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int x = historyBounds.x();
         int y = historyBounds.y();
 
-        graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL_SOLID());
-        AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, UIConstants.Border.DEFAULT());
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, DesignTokens.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, DesignTokens.Stroke.DEFAULT);
 
         graphics.drawString(safeFont, HISTORY_TITLE_TEXT, x + HISTORY_PANEL_TITLE_OFFSET_X, y + HISTORY_PANEL_TITLE_OFFSET_Y,
-            UIConstants.Text.TITLE(), false);
+            DesignTokens.Text.TITLE(), false);
         int listY = y + HISTORY_PANEL_LIST_OFFSET_Y;
         var entries = activeModule.getHistoryEntries();
         int lineHeight = HISTORY_PANEL_LINE_HEIGHT;
@@ -1052,7 +1069,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int visibleLines = listHeight / lineHeight;
         if (entries.isEmpty()) {
             graphics.drawString(safeFont, HISTORY_EMPTY_TEXT, x + HISTORY_PANEL_TEXT_OFFSET_X, listY,
-                UIConstants.Text.MUTED(), false);
+                DesignTokens.Text.MUTED(), false);
         } else {
             int startFromEnd = historyScrollOffset / lineHeight;
             int startIndex = Math.max(0, entries.size() - visibleLines - startFromEnd);
@@ -1062,7 +1079,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 String entry = entries.get(entries.size() - 1 - i);
                 int entryY = listY + (i - startIndex) * lineHeight;
                 graphics.drawString(safeFont, entry, x + HISTORY_PANEL_TEXT_OFFSET_X, entryY,
-                    UIConstants.Text.SECONDARY(), false);
+                    DesignTokens.Text.SECONDARY(), false);
             }
         }
 
@@ -1072,17 +1089,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             ? HISTORY_SHOWING_EMPTY
             : HISTORY_SHOWING_PREFIX + Math.min(visibleLines, entries.size()) + HISTORY_SHOWING_SEPARATOR + entries.size();
         graphics.drawString(safeFont, countText, x + HISTORY_PANEL_TEXT_OFFSET_X, footerY,
-            UIConstants.Text.MUTED(), false);
+            DesignTokens.Text.MUTED(), false);
 
         // Clear button
         int clearW = HISTORY_PANEL_CLEAR_WIDTH;
         int clearH = HISTORY_PANEL_CLEAR_HEIGHT;
         int clearX = x + panelWidth - clearW - HISTORY_PANEL_CLEAR_OFFSET_X;
         int clearY = footerY - HISTORY_PANEL_CLEAR_OFFSET_Y;
-        int clearBg = entries.isEmpty() ? UIConstants.Button.DISABLED() : UIConstants.Background.INPUT();
+        int clearBg = entries.isEmpty() ? DesignTokens.Button.DISABLED() : DesignTokens.Background.INPUT();
         graphics.fill(clearX, clearY, clearX + clearW, clearY + clearH, clearBg);
-        AxiomRenderer.drawBorder(graphics, clearX, clearY, clearW, clearH, UIConstants.Border.DEFAULT());
-        int clearColor = entries.isEmpty() ? UIConstants.Text.DISABLED() : UIConstants.Text.PRIMARY();
+        AxiomRenderer.drawBorder(graphics, clearX, clearY, clearW, clearH, DesignTokens.Stroke.DEFAULT);
+        int clearColor = entries.isEmpty() ? DesignTokens.Text.DISABLED() : DesignTokens.Text.PRIMARY();
         graphics.drawString(safeFont, HISTORY_CLEAR_TEXT, clearX + HISTORY_PANEL_CLEAR_TEXT_OFFSET_X,
             clearY + HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y, clearColor, false);
     }
@@ -1124,7 +1141,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private ResponsiveLayout.Rect getHistoryPanelBounds() {
         int x = layout.getEditorX() + layout.getEditorWidth() - HISTORY_PANEL_WIDTH - HISTORY_PANEL_MARGIN_RIGHT;
-        int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + HISTORY_PANEL_MARGIN_TOP;
+        int y = layout.getEditorY() + DesignTokens.Size.HEADER_HEIGHT + HISTORY_PANEL_MARGIN_TOP;
         return new ResponsiveLayout.Rect(x, y, HISTORY_PANEL_WIDTH, HISTORY_PANEL_HEIGHT);
     }
 
@@ -1142,9 +1159,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int tipY = Math.max(y - TOOLTIP_OFFSET_Y, TOOLTIP_SCREEN_MARGIN);
 
         graphics.fill(tipX, tipY, tipX + tipWidth, tipY + TOOLTIP_HEIGHT, TOOLTIP_BG);
-        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, TOOLTIP_HEIGHT, UIConstants.Border.DEFAULT());
+        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, TOOLTIP_HEIGHT, DesignTokens.Stroke.DEFAULT);
         graphics.drawString(safeFont, safeText, tipX + TOOLTIP_TEXT_OFFSET_X, tipY + TOOLTIP_TEXT_OFFSET_Y,
-            UIConstants.Text.PRIMARY(), false);
+            DesignTokens.Text.PRIMARY(), false);
 
         tooltipText = null;
     }
@@ -1171,7 +1188,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
         graphics.fill(devArea.x(), devArea.y(), devArea.right(), devArea.bottom(), DEV_PANEL_BG);
-        AxiomRenderer.drawBorder(graphics, devArea.x(), devArea.y(), devArea.width(), devArea.height(), UIConstants.Border.ACCENT());
+        AxiomRenderer.drawBorder(graphics, devArea.x(), devArea.y(), devArea.width(), devArea.height(), DesignTokens.Accent.PRIMARY);
 
         int textY = devArea.y() + DEV_PANEL_TEXT_OFFSET_Y;
         graphics.drawString(safeFont, DEV_PANEL_TITLE_TEXT, devArea.x() + DEV_PANEL_TEXT_OFFSET_X, textY,
@@ -1180,17 +1197,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         EditorCache.CacheStats stats = EditorCache.INSTANCE.getStats();
         graphics.drawString(safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
-            textY, UIConstants.Text.SECONDARY(), false);
+            textY, DesignTokens.Text.SECONDARY(), false);
         textY += DEV_PANEL_LINE_STEP;
         graphics.drawString(safeFont, String.format("Hit: %.1f%%", stats.hitRate() * 100), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
-            textY, UIConstants.Text.SECONDARY(), false);
+            textY, DesignTokens.Text.SECONDARY(), false);
         textY += DEV_PANEL_LINE_STEP;
 
         graphics.drawString(safeFont, "Size: " + layout.getScreenSize(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
-            textY, UIConstants.Text.SECONDARY(), false);
+            textY, DesignTokens.Text.SECONDARY(), false);
         textY += DEV_PANEL_LINE_STEP;
         graphics.drawString(safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
-            textY, UIConstants.Text.SECONDARY(), false);
+            textY, DesignTokens.Text.SECONDARY(), false);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -1366,7 +1383,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             if (multiEditPanel != null) {
                 multiEditPanel.setExpanded(true);
             }
-            showStatus("MultiEdit refreshed", UIConstants.Accent.BLUE());
+            showStatus("MultiEdit refreshed", DesignTokens.Semantic.INFO);
             return true;
         }
 
@@ -1414,11 +1431,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         // Ctrl+Enter quick apply (only APPLY + dirty)
         if (keyCode == GLFW.GLFW_KEY_ENTER && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
             if (isPreviewMode()) {
-                showStatus("Preview mode: cannot apply", UIConstants.Accent.ORANGE());
+                showStatus("Preview mode: cannot apply", DesignTokens.Semantic.WARNING);
             } else if (activeModule != null && activeModule.hasUnsavedChanges()) {
                 applyChanges();
             } else {
-                showStatus("No changes to apply", UIConstants.Accent.ORANGE());
+                showStatus("No changes to apply", DesignTokens.Semantic.WARNING);
             }
             return true;
         }
@@ -1428,9 +1445,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             if (multiEditManager != null && multiEditManager.hasSnapshot()) {
                 var result = multiEditManager.restoreSnapshot();
                 if (result.failureCount() == 0) {
-                    showStatus("Batch undo: " + result.successCount() + " items restored", UIConstants.Accent.GREEN());
+                    showStatus("Batch undo: " + result.successCount() + " items restored", DesignTokens.Semantic.SUCCESS);
                 } else {
-                    showStatus("Batch undo: " + result.successCount() + " ok, " + result.failureCount() + " failed", UIConstants.Accent.ORANGE());
+                    showStatus("Batch undo: " + result.successCount() + " ok, " + result.failureCount() + " failed", DesignTokens.Semantic.WARNING);
                 }
                 return true;
             }
@@ -1469,10 +1486,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 try {
                     var p = debugPanel.exportRecentToTempFile(10);
                     debugPanel.log("Exported recent to: " + p.toString());
-                    showStatus("Exported debug recent", UIConstants.Accent.BLUE());
+                    showStatus("Exported debug recent", DesignTokens.Semantic.INFO);
                 } catch (Exception e) {
                     debugPanel.log("Export failed: " + e.getMessage());
-                    showStatus("Export failed", UIConstants.Accent.ORANGE());
+                    showStatus("Export failed", DesignTokens.Semantic.WARNING);
                 }
                 return true;
             }
@@ -1480,7 +1497,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             // Ctrl+L -> clear debug log
             if (keyCode == GLFW.GLFW_KEY_L && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
                 debugPanel.clear();
-                showStatus("Debug log cleared", UIConstants.Accent.BLUE());
+                showStatus("Debug log cleared", DesignTokens.Semantic.INFO);
                 return true;
             }
         }
@@ -1589,7 +1606,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         if (activeModule == null) return;
 
         if (!activeModule.hasUnsavedChanges()) {
-            showStatus("No changes to apply", UIConstants.Accent.ORANGE());
+            showStatus("No changes to apply", DesignTokens.Semantic.WARNING);
             activeModule.logEvent("Apply skipped (no changes)");
             return;
         }
@@ -1624,7 +1641,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 payload = activeModule.buildPayload(isGlobalMode());
             }
             if (payload == null) {
-                showStatus("Apply not available for this module (no payload)", UIConstants.Accent.ORANGE());
+                showStatus("Apply not available for this module (no payload)", DesignTokens.Semantic.WARNING);
                 activeModule.logEvent("Apply skipped: no payload");
                 return;
             }
@@ -1642,11 +1659,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             EditorCache.INSTANCE.invalidateAll();
 
             playSound(SoundEvents.UI_BUTTON_CLICK.value());
-            showStatus("Changes applied!", UIConstants.Accent.GREEN());
+            showStatus("Changes applied!", DesignTokens.Semantic.SUCCESS);
             activeModule.logEvent("Apply sent to server");
 
         } catch (Exception e) {
-            showStatus("Failed to apply: " + e.getMessage(), UIConstants.Accent.RED());
+            showStatus("Failed to apply: " + e.getMessage(), DesignTokens.Semantic.ERROR);
             if (activeModule != null) {
                 activeModule.logEvent("Apply error: " + e.getMessage());
             }
@@ -1674,7 +1691,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         ItemEditorDataManager.INSTANCE.addHistoryEntry(action, itemId, details);
 
         String statusMsg = detail.isBlank() ? (payload.success() ? "Server confirmed" : "Server rejected") : detail;
-        showStatus(statusMsg, payload.success() ? UIConstants.Accent.GREEN() : UIConstants.Accent.RED());
+        showStatus(statusMsg, payload.success() ? DesignTokens.Semantic.SUCCESS : DesignTokens.Semantic.ERROR);
     }
 
     @Override
@@ -1698,7 +1715,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void handleExport() {
         if (!supportsDataOps()) {
-            showStatus("Export available only for weapons/armors", UIConstants.Accent.ORANGE());
+            showStatus("Export available only for weapons/armors", DesignTokens.Semantic.WARNING);
             return;
         }
 
@@ -1723,14 +1740,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         boolean ok = data.exportToFile(config, fileName);
         if (ok) {
             data.addHistoryEntry("export", config.itemName, fileName);
-            showStatus("Exported to " + fileName + ".json", UIConstants.Accent.GREEN());
+            showStatus("Exported to " + fileName + ".json", DesignTokens.Semantic.SUCCESS);
             // Also emit datapack with current overrides for sharing (partial spec 06-persistence)
             int exported = DatapackIO.exportOverrides(DEFAULT_DATAPACK_NAME);
             if (exported > 0) {
-                showStatus("Datapack: " + DEFAULT_DATAPACK_NAME + " (" + exported + " items)", UIConstants.Accent.BLUE());
+                showStatus("Datapack: " + DEFAULT_DATAPACK_NAME + " (" + exported + " items)", DesignTokens.Semantic.INFO);
             }
         } else {
-            showStatus("Export failed", UIConstants.Accent.RED());
+            showStatus("Export failed", DesignTokens.Semantic.ERROR);
         }
     }
 
@@ -1780,14 +1797,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void handleImport() {
         if (!supportsDataOps()) {
-            showStatus("Import available only for weapons/armors", UIConstants.Accent.ORANGE());
+            showStatus("Import available only for weapons/armors", DesignTokens.Semantic.WARNING);
             return;
         }
 
         ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
         List<String> exports = data.listExportFiles();
         if (exports.isEmpty()) {
-            showStatus("No exports found", UIConstants.Accent.ORANGE());
+            showStatus("No exports found", DesignTokens.Semantic.WARNING);
             return;
         }
 
@@ -1797,13 +1814,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             ItemEditorDataManager.ItemConfigExport imported = data.importFromFile(fileName);
             applyImportedStats(imported, "Imported " + fileName);
             data.addHistoryEntry("import", item.getHoverName().getString(), fileName);
-            showStatus("Imported " + fileName, UIConstants.Accent.BLUE());
+            showStatus("Imported " + fileName, DesignTokens.Semantic.INFO);
             int applied = DatapackIO.importOverrides(DEFAULT_DATAPACK_NAME);
             if (applied > 0) {
-                showStatus("Imported datapack overrides (" + applied + ")", UIConstants.Accent.BLUE());
+                showStatus("Imported datapack overrides (" + applied + ")", DesignTokens.Semantic.INFO);
             }
         } catch (Exception e) {
-            showStatus("Import failed: " + e.getMessage(), UIConstants.Accent.RED());
+            showStatus("Import failed: " + e.getMessage(), DesignTokens.Semantic.ERROR);
         }
     }
 
@@ -1915,7 +1932,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void applyImportedStats(ItemEditorDataManager.ItemConfigExport config, String reason) {
         if (config == null || config.stats == null) {
-            showStatus("Import file missing stats", UIConstants.Accent.RED());
+            showStatus("Import file missing stats", DesignTokens.Semantic.ERROR);
             return;
         }
 
@@ -1961,7 +1978,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             armorModule.applyExternalStats(newStats, reason);
             armorModule.applyPreview();
         } else {
-            showStatus("Unsupported editor for import", UIConstants.Accent.RED());
+            showStatus("Unsupported editor for import", DesignTokens.Semantic.ERROR);
         }
     }
 
@@ -2025,7 +2042,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.getHolder(Objects.requireNonNull(key)).orElse(null);
                 // Map to Pufferfish equivalent if present
                 if (holder == null) {
-                    holder = PufferfishCompat.map(id, BuiltInRegistries.ATTRIBUTE);
+                    holder = PufferfishIntegration.map(id, BuiltInRegistries.ATTRIBUTE);
                 }
                 if (holder == null) continue;
                 AttributeModifier.Operation op = switch (attr.operation) {
@@ -2056,13 +2073,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         String name = template.name == null ? "template" : template.name;
         ItemEditorDataManager.INSTANCE.addHistoryEntry("template_apply", item.getHoverName().getString(), name);
         lastLoadedPreset = name;
-        showStatus("Applied template " + name, UIConstants.Accent.GREEN());
+        showStatus("Applied template " + name, DesignTokens.Semantic.SUCCESS);
         EditorCache.INSTANCE.invalidateItem(getCurrentItemId());
     }
 
     private void applyPreset(ItemEditorDataManager.PresetData preset) {
         if (preset == null) {
-            showStatus("Preset not found", UIConstants.Accent.RED());
+            showStatus("Preset not found", DesignTokens.Semantic.ERROR);
             return;
         }
         ItemEditorDataManager.ItemConfigExport wrapper = new ItemEditorDataManager.ItemConfigExport();
@@ -2079,7 +2096,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 ItemEditorDataManager.INSTANCE.deletePreset(presetName);
                 ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_delete", item.getHoverName().getString(), presetName);
                 DevMod.LOGGER.info("[Editor] Preset deleted: {}", presetName);
-                showStatus("Preset deleted: " + presetName, UIConstants.Accent.BLUE());
+                showStatus("Preset deleted: " + presetName, DesignTokens.Semantic.INFO);
                 if (presetSelectorOverlay != null) {
                     presetSelectorOverlay.refreshPresets();
                 }
@@ -2100,7 +2117,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         ItemEditorDataManager.INSTANCE.savePreset(preset);
         ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_rename", item.getHoverName().getString(), oldName + " -> " + newName);
         DevMod.LOGGER.info("[Editor] Preset renamed: {} -> {}", oldName, newName);
-        showStatus("Preset renamed: " + newName, UIConstants.Accent.BLUE());
+        showStatus("Preset renamed: " + newName, DesignTokens.Semantic.INFO);
 
         // Update lastLoadedPreset if it was the renamed one
         if (oldName.equals(lastLoadedPreset)) {
@@ -2119,7 +2136,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         ItemEditorDataManager.INSTANCE.savePreset(preset);
         ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_save", item.getHoverName().getString(), presetName);
         DevMod.LOGGER.info("[Editor] Preset saved: {}", presetName);
-        showStatus("Preset saved: " + presetName, UIConstants.Accent.GREEN());
+        showStatus("Preset saved: " + presetName, DesignTokens.Semantic.SUCCESS);
         lastLoadedPreset = presetName;
         if (presetSelectorOverlay != null) {
             presetSelectorOverlay.refreshPresets();
@@ -2154,7 +2171,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 Runnable loadAction = () -> {
                     applyPreset(preset);
                     ItemEditorDataManager.INSTANCE.addHistoryEntry("favorite_load", item.getHoverName().getString(), presetName);
-                    showStatus("Favorite applied: " + presetName, UIConstants.Accent.BLUE());
+                    showStatus("Favorite applied: " + presetName, DesignTokens.Semantic.INFO);
                 };
                 if (activeModule != null && activeModule.hasUnsavedChanges()) {
                     ConfirmDialog dialog = ConfirmDialog.create(
@@ -2185,7 +2202,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 favoriteStore.toggleFavorite(getActiveItemType(), lastLoadedPreset);
                 boolean nowFav = favoriteStore.isFavorite(getActiveItemType(), lastLoadedPreset);
                 String msg = nowFav ? PINNED_PREFIX : UNPINNED_PREFIX;
-                showStatus(msg + lastLoadedPreset, UIConstants.Accent.BLUE());
+                showStatus(msg + lastLoadedPreset, DesignTokens.Semantic.INFO);
                 return true;
             }
         }
@@ -2398,7 +2415,18 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
         // Clear any registered state listeners to prevent memory leaks
         editorState.removeAllListeners();
-        super.onClose();
+
+        // Invoke callback with edited item if available
+        if (onItemEdited != null) {
+            onItemEdited.accept(item);
+        }
+
+        // Return to parent screen if available, otherwise close normally
+        if (parentScreen != null && this.minecraft != null) {
+            this.minecraft.setScreen(parentScreen);
+        } else {
+            super.onClose();
+        }
     }
 
     @Override

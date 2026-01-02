@@ -10,10 +10,10 @@ import javax.annotation.Nullable;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.ScrollState;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class VirtualizedList<T> {
 
@@ -218,8 +218,8 @@ public class VirtualizedList<T> {
         scrollState.update(contentHeight, height);
 
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.CONTENT());
-        AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.DEFAULT());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.CONTENT());
+        AxiomRenderer.drawBorder(graphics, x, y, width, height, DesignTokens.Border.DEFAULT());
 
         if (items.isEmpty()) {
             return;
@@ -246,9 +246,9 @@ public class VirtualizedList<T> {
             boolean hovered = isRowHovered(rowY, mouseX, mouseY);
 
             // Row background
-            int rowBg = selected ? UIConstants.Background.ACTIVE()
-                                 : hovered ? UIConstants.Background.HOVER()
-                                           : UIConstants.Background.PANEL();
+            int rowBg = selected ? DesignTokens.Background.ACTIVE()
+                                 : hovered ? DesignTokens.Background.HOVER()
+                                           : DesignTokens.Background.PANEL();
             graphics.fill(x, rowY, x + width, rowY + rowHeight, rowBg);
 
             // Custom row rendering
@@ -267,7 +267,7 @@ public class VirtualizedList<T> {
 
         // Optional scrollbar
         if (scrollState.isScrollable()) {
-            renderScrollbar(graphics, x + width - ScaledCoord.scaleDim(UIConstants.Spacing.SM), y, height);
+            renderScrollbar(graphics, x + width - ScaledCoord.scaleDim(DesignTokens.Spacing.SM), y, height);
         }
     }
 
@@ -278,7 +278,7 @@ public class VirtualizedList<T> {
     }
 
     private void renderScrollIndicators(GuiGraphics graphics, int x, int y, int width, int height) {
-        int fadeH = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int fadeH = ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
 
         if (scrollState.canScrollUp()) {
             // Top fade
@@ -303,11 +303,11 @@ public class VirtualizedList<T> {
         ScrollState.ScrollbarMetrics metrics = scrollState.calculateScrollbar(height);
 
         // Track
-        graphics.fill(x, y, x + trackWidth, y + height, UIConstants.Background.PANEL());
+        graphics.fill(x, y, x + trackWidth, y + height, DesignTokens.Background.PANEL());
 
         // Thumb
         graphics.fill(x, y + metrics.thumbY(), x + trackWidth, y + metrics.thumbBottom(),
-                      UIConstants.Border.MUTED());
+                      DesignTokens.Border.MUTED());
     }
 
     // =========================================================================

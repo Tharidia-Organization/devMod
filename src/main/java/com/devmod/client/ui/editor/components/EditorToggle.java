@@ -10,10 +10,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class EditorToggle {
 
@@ -178,7 +178,7 @@ public class EditorToggle {
         this.hovered = enabled && bounds.contains(mouseX, mouseY);
 
         // Label on the left
-        int labelColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
+        int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
         String safeLabel = Objects.requireNonNullElse(label, "");
         safeGraphics.drawString(font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
 
@@ -198,18 +198,18 @@ public class EditorToggle {
         // Track background (using TRACK_HEIGHT per spec Section 4.3)
         int trackColor;
         if (!enabled) {
-            trackColor = UIConstants.Background.DARKER();
+            trackColor = DesignTokens.Background.DARKER();
         } else if (value) {
-            trackColor = UIConstants.Accent.GREEN();
+            trackColor = DesignTokens.Accent.GREEN();
         } else {
-            trackColor = UIConstants.Background.INPUT();
+            trackColor = DesignTokens.Background.INPUT();
         }
 
         safeGraphics.fill(toggleX, trackY, toggleX + TOGGLE_WIDTH, trackY + TRACK_HEIGHT, trackColor);
 
         // Border
-        int borderColor = focused ? UIConstants.Border.ACCENT() :
-                         (hovered ? UIConstants.Border.HOVER() : UIConstants.Border.DEFAULT());
+        int borderColor = focused ? DesignTokens.Border.ACCENT() :
+                         (hovered ? DesignTokens.Border.HOVER() : DesignTokens.Border.DEFAULT());
         AxiomRenderer.drawBorder(graphics, toggleX, trackY, TOGGLE_WIDTH, TRACK_HEIGHT, borderColor);
 
         // Handle (using HANDLE_SIZE per spec Section 4.3)
@@ -220,11 +220,11 @@ public class EditorToggle {
 
         int handleColor;
         if (!enabled) {
-            handleColor = UIConstants.Slider.THUMB_DISABLED;
+            handleColor = DesignTokens.Slider.THUMB_DISABLED;
         } else if (hovered) {
-            handleColor = UIConstants.Slider.THUMB_HOVER;
+            handleColor = DesignTokens.Slider.THUMB_HOVER;
         } else {
-            handleColor = UIConstants.Slider.THUMB;
+            handleColor = DesignTokens.Slider.THUMB;
         }
 
         safeGraphics.fill(handleX, handleY, handleX + HANDLE_SIZE, handleY + HANDLE_SIZE, handleColor);
@@ -232,8 +232,8 @@ public class EditorToggle {
         // State indicator text
         String stateText = value ? "ON" : "OFF";
         int stateColor = enabled ?
-            (value ? UIConstants.Accent.GREEN() : UIConstants.Text.MUTED()) :
-            UIConstants.Text.DISABLED();
+            (value ? DesignTokens.Accent.GREEN() : DesignTokens.Text.MUTED()) :
+            DesignTokens.Text.DISABLED();
         int stateX = toggleX - font.width(stateText) - STATE_TEXT_GAP;
         safeGraphics.drawString(font, stateText, stateX, y + TEXT_OFFSET_Y, stateColor, false);
 

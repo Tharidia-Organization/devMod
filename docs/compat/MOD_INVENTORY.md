@@ -1,15 +1,15 @@
 # DevMod - Mod Compatibility Inventory
 
-> Last updated: 2025-12-26
+> Last updated: 2025-12-30
 > Status: CURRENT (verified against code)
 > Source: modules registered in `ModIntegrationManager` and `ClientCompatRegistrar`.
 
 ## Summary
 
-- CompatModule integrations (common): 31
+- CompatModule integrations (common): 33
 - CompatModule integrations (client-only): 3
-- Legacy/direct integrations: 3
-- Total integration points: 37
+- Legacy/direct integrations: 4
+- Total integration points: 40
 
 ## CompatModule Integrations (Common)
 
@@ -34,13 +34,15 @@
 |---|---|
 | `geckolib` | `com.devmod.compat.mods.geckolib.GeckoLibModuleCompat` |
 | `azurelib` | `com.devmod.compat.mods.azurelib.AzureLibCompat` |
+| `epicfight` | `com.devmod.compat.mods.epicfight.EpicFightCompat` |
 | `curios` | `com.devmod.compat.mods.curios.CuriosCompat` |
 | `accessories` | `com.devmod.compat.mods.accessories.AccessoriesCompat` |
 | `irons_spellbooks` | `com.devmod.compat.mods.ironsspellbooks.IronsSpellbooksCompat` |
 | `spell_engine` | `com.devmod.compat.mods.spellengine.SpellEngineCompat` |
 | `spell_power` | `com.devmod.compat.mods.spellpower.SpellPowerCompat` |
 | `ranged_weapon_api` | `com.devmod.compat.mods.rangedweaponapi.RangedWeaponApiCompat` |
-| `apothicattributes` | `com.devmod.compat.mods.apothicattributes.ApothicAttributesCompat` |
+| `apothic_attributes` | `com.devmod.compat.mods.apothicattributes.ApothicAttributesCompat` |
+| `elixirum` | `com.devmod.compat.mods.elixirum.ElixirumCompat` |
 | `mowziesmobs` | `com.devmod.compat.mods.mowziesmobs.MowziesMobsCompat` |
 | `smartbrainlib` | `com.devmod.compat.mods.smartbrainlib.SmartBrainLibCompat` |
 | `relics` | `com.devmod.compat.mods.relics.RelicsCompat` |
@@ -81,9 +83,10 @@
 
 | Mod ID | Integration class |
 |---|---|
-| `bettercombat` | `com.devmod.integration.BetterCombatIntegration` |
 | `pehkui` | `com.devmod.integration.PehkuiIntegration` |
 | `distanthorizons` | `com.devmod.integration.DistantHorizonsIntegration` |
+| `littletiles` | `com.devmod.integration.LittleTilesIntegration` |
+| `puffish_attributes` | `com.devmod.integration.PufferfishIntegration` |
 
 ## Notes
 

@@ -21,7 +21,7 @@ import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.VirtualizedList;
 import com.devmod.client.ui.editor.core.BaseOverlay;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public class PresetSelectorOverlay extends BaseOverlay {
 
@@ -37,7 +37,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
     private static final int LIST_VISIBLE_ROWS = 12;
     private static final int PREVIEW_HEIGHT = 50;
     private static final int BUTTON_HEIGHT = 20;
-    private static final int PADDING = UIConstants.Spacing.MD;
+    private static final int PADDING = DesignTokens.Spacing.MD;
     private static final int TITLE_TEXT_OFFSET_Y = 4;
     private static final int CLOSE_BUTTON_SIZE = 12;
     private static final int FILTER_TEXT_OFFSET_Y = 2;
@@ -386,31 +386,31 @@ public class PresetSelectorOverlay extends BaseOverlay {
         String title = TITLE_TEXT;
         int titleWidth = font.width(title);
         graphics.drawString(font, title, x + (width - titleWidth) / 2, currentY + TITLE_TEXT_OFFSET_Y,
-            UIConstants.Text.TITLE(), false);
+            DesignTokens.Text.TITLE(), false);
 
         // Close button (X) in top right
         int closeX = x + width - PADDING - CLOSE_BUTTON_SIZE;
         boolean closeHovered = mouseX >= closeX && mouseX <= closeX + CLOSE_BUTTON_SIZE &&
                                mouseY >= currentY && mouseY <= currentY + TITLE_HEIGHT;
         graphics.drawString(font, CLOSE_LABEL, closeX, currentY + TITLE_TEXT_OFFSET_Y,
-            closeHovered ? CLOSE_HOVER_COLOR : UIConstants.Text.MUTED(), false);
+            closeHovered ? CLOSE_HOVER_COLOR : DesignTokens.Text.MUTED(), false);
 
         currentY += TITLE_HEIGHT;
 
         // Filter info
         String filterInfo = CATEGORY_PREFIX + itemCategory;
         graphics.drawString(font, filterInfo, x + PADDING, currentY + FILTER_TEXT_OFFSET_Y,
-            UIConstants.Text.MUTED(), false);
+            DesignTokens.Text.MUTED(), false);
         currentY += FILTER_ROW_HEIGHT;
 
         // Search box
         renderSearchBox(graphics, font, x + PADDING, currentY, width - PADDING * 2, SEARCH_HEIGHT);
-        currentY += SEARCH_HEIGHT + UIConstants.Spacing.SM;
+        currentY += SEARCH_HEIGHT + DesignTokens.Spacing.SM;
 
         // Preset list
         int listHeight = LIST_VISIBLE_ROWS * LIST_ROW_HEIGHT;
         requirePresetList().render(graphics, x + PADDING, currentY, width - PADDING * 2, listHeight, mouseX, mouseY);
-        currentY += listHeight + UIConstants.Spacing.SM;
+        currentY += listHeight + DesignTokens.Spacing.SM;
 
         // Preview box or Rename box
         if (renamingEntry != null && renameFocused) {
@@ -418,7 +418,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         } else {
             renderPreviewBox(graphics, font, x + PADDING, currentY, width - PADDING * 2, PREVIEW_HEIGHT);
         }
-        currentY += PREVIEW_HEIGHT + UIConstants.Spacing.SM;
+        currentY += PREVIEW_HEIGHT + DesignTokens.Spacing.SM;
 
         // Buttons row (4 buttons when user preset selected, 3 otherwise)
         boolean canRename = selectedEntry != null && selectedEntry.isUserPreset();
@@ -457,7 +457,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         String label = "Rename preset:";
         graphics.drawString(safeFont, Objects.requireNonNull(label, "label"),
             x + RENAME_TEXT_PADDING, y + RENAME_BOX_PADDING,
-            UIConstants.Text.MUTED(), false);
+            DesignTokens.Text.MUTED(), false);
 
         // Input box
         int inputY = y + RENAME_BOX_PADDING + safeFont.lineHeight + RENAME_BOX_PADDING;
@@ -467,29 +467,29 @@ public class PresetSelectorOverlay extends BaseOverlay {
         graphics.fill(x + RENAME_TEXT_PADDING, inputY, x + RENAME_TEXT_PADDING + inputW, inputY + inputH,
             SEARCH_BG_FOCUSED);
         graphics.fill(x + RENAME_TEXT_PADDING, inputY, x + RENAME_TEXT_PADDING + inputW, inputY + BORDER_THICKNESS,
-            UIConstants.Border.ACCENT());
+            DesignTokens.Border.ACCENT());
         graphics.fill(x + RENAME_TEXT_PADDING, inputY + inputH - BORDER_THICKNESS, x + RENAME_TEXT_PADDING + inputW, inputY + inputH,
-            UIConstants.Border.ACCENT());
+            DesignTokens.Border.ACCENT());
 
         // Text
         String displayText = renameBuffer.isEmpty() ? (renamingEntry != null ? renamingEntry.name() : "") : renameBuffer;
         graphics.drawString(safeFont, Objects.requireNonNull(displayText, "displayText"),
             x + RENAME_TEXT_PADDING + RENAME_BOX_PADDING,
-            inputY + (inputH - safeFont.lineHeight) / 2, UIConstants.Text.PRIMARY(), false);
+            inputY + (inputH - safeFont.lineHeight) / 2, DesignTokens.Text.PRIMARY(), false);
 
         // Cursor
         if ((System.currentTimeMillis() / CURSOR_BLINK_MS) % 2 == 0) {
             int cursorX = x + RENAME_TEXT_PADDING + RENAME_BOX_PADDING +
                 safeFont.width(Objects.requireNonNull(renameBuffer, "renameBuffer"));
             graphics.fill(cursorX, inputY + SEARCH_CURSOR_INSET, cursorX + SEARCH_CURSOR_WIDTH,
-                inputY + inputH - SEARCH_CURSOR_INSET, UIConstants.Text.PRIMARY());
+                inputY + inputH - SEARCH_CURSOR_INSET, DesignTokens.Text.PRIMARY());
         }
 
         // Hint
         String hint = "Press Enter to confirm, Escape to cancel";
         graphics.drawString(safeFont, Objects.requireNonNull(hint, "hint"),
             x + RENAME_TEXT_PADDING, y + height - safeFont.lineHeight - RENAME_BOX_PADDING,
-            UIConstants.Text.MUTED(), false);
+            DesignTokens.Text.MUTED(), false);
     }
 
     private void renderSearchBox(GuiGraphics graphics, Font font, int x, int y, int width, int height) {
@@ -499,7 +499,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         graphics.fill(x, y, x + width, y + height, bg);
 
         // Border
-        int borderColor = searchFocused ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
+        int borderColor = searchFocused ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT();
         graphics.fill(x, y, x + width, y + BORDER_THICKNESS, borderColor);
         graphics.fill(x, y + height - BORDER_THICKNESS, x + width, y + height, borderColor);
         graphics.fill(x, y, x + BORDER_THICKNESS, y + height, borderColor);
@@ -507,7 +507,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Text
         String displayText = searchQuery.isEmpty() && !searchFocused ? SEARCH_PLACEHOLDER : searchQuery;
-        int textColor = searchQuery.isEmpty() && !searchFocused ? UIConstants.Text.MUTED() : UIConstants.Text.PRIMARY();
+        int textColor = searchQuery.isEmpty() && !searchFocused ? DesignTokens.Text.MUTED() : DesignTokens.Text.PRIMARY();
         graphics.drawString(safeFont, Objects.requireNonNull(displayText, "displayText"),
             x + SEARCH_TEXT_PADDING, y + (height - safeFont.lineHeight) / 2, textColor, false);
 
@@ -515,7 +515,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         if (searchFocused && (System.currentTimeMillis() / CURSOR_BLINK_MS) % 2 == 0) {
             int cursorX = x + SEARCH_TEXT_PADDING + safeFont.width(Objects.requireNonNull(searchQuery, "searchQuery"));
             graphics.fill(cursorX, y + SEARCH_CURSOR_INSET, cursorX + SEARCH_CURSOR_WIDTH, y + height - SEARCH_CURSOR_INSET,
-                UIConstants.Text.PRIMARY());
+                DesignTokens.Text.PRIMARY());
         }
     }
 
@@ -529,7 +529,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
             int textWidth = safeFont.width(Objects.requireNonNull(msg, "previewMessage"));
             graphics.drawString(safeFont, Objects.requireNonNull(msg, "previewMessage"),
                 x + (width - textWidth) / 2, y + height / 2 - PREVIEW_MESSAGE_OFFSET_Y,
-                UIConstants.Text.MUTED(), false);
+                DesignTokens.Text.MUTED(), false);
             return;
         }
 
@@ -537,7 +537,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         int textY = y + PREVIEW_TEXT_OFFSET_Y;
         graphics.drawString(safeFont, Objects.requireNonNull(SELECTED_PREFIX + selectedEntry.name(), "selectedLabel"),
             x + PREVIEW_TEXT_PADDING, textY,
-            UIConstants.Text.PRIMARY(), false);
+            DesignTokens.Text.PRIMARY(), false);
         textY += PREVIEW_LINE_HEIGHT;
 
         // Scope badge
@@ -558,7 +558,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
                 desc = desc.substring(0, PREVIEW_DESCRIPTION_TRUNCATE) + "...";
             }
             graphics.drawString(safeFont, Objects.requireNonNull(desc, "description"),
-                x + PREVIEW_TEXT_PADDING, textY, UIConstants.Text.MUTED(), false);
+                x + PREVIEW_TEXT_PADDING, textY, DesignTokens.Text.MUTED(), false);
         }
 
         // User preset indicator
@@ -597,7 +597,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         }
         graphics.drawString(font, Objects.requireNonNull(name, "name"),
             x + ROW_NAME_PADDING, y + (LIST_ROW_HEIGHT - font.lineHeight) / 2,
-            UIConstants.Text.PRIMARY(), false);
+            DesignTokens.Text.PRIMARY(), false);
 
         // Category tag on right
         String cat = entry.category();
@@ -606,7 +606,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
             graphics.drawString(font, Objects.requireNonNull(cat, "category"),
                 x + width - catWidth - ROW_CATEGORY_PADDING,
                 y + (LIST_ROW_HEIGHT - font.lineHeight) / 2,
-                UIConstants.Text.MUTED(), false);
+                DesignTokens.Text.MUTED(), false);
         }
     }
 

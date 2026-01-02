@@ -9,11 +9,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class ModeBadge {
 
@@ -51,9 +51,9 @@ public class ModeBadge {
      */
     public enum Scope {
         /** Changes affect all items of this type */
-        GLOBAL("●GLOBAL", "⬤", UIConstants.Mode.GLOBAL_BORDER, UIConstants.Mode.GLOBAL_BG),
+        GLOBAL("●GLOBAL", "⬤", DesignTokens.Mode.GLOBAL_BORDER, DesignTokens.Mode.GLOBAL_BG),
         /** Changes affect only this specific item */
-        SPECIFIC("●SPECIFIC", "◉", UIConstants.Mode.SPECIFIC_BORDER, UIConstants.Mode.SPECIFIC_BG);
+        SPECIFIC("●SPECIFIC", "◉", DesignTokens.Mode.SPECIFIC_BORDER, DesignTokens.Mode.SPECIFIC_BG);
 
         private final String label;
         private final String icon;
@@ -78,9 +78,9 @@ public class ModeBadge {
      */
     public enum Mode {
         /** Preview mode - changes are client-only, reset on close */
-        PREVIEW("PREVIEW", "👁", UIConstants.Mode.PREVIEW_BORDER, UIConstants.Mode.PREVIEW_BG),
+        PREVIEW("PREVIEW", "👁", DesignTokens.Mode.PREVIEW_BORDER, DesignTokens.Mode.PREVIEW_BG),
         /** Apply mode - changes sent to server on Apply */
-        APPLY("APPLY", "⚡", UIConstants.Mode.APPLY_BORDER, UIConstants.Mode.APPLY_BG);
+        APPLY("APPLY", "⚡", DesignTokens.Mode.APPLY_BORDER, DesignTokens.Mode.APPLY_BG);
 
         private final String label;
         private final String icon;
@@ -229,7 +229,7 @@ public class ModeBadge {
 
         // Hover effect
         if (hovered) {
-            bgColor = UIConstants.lighten(bgColor, 0.2f);
+            bgColor = DesignTokens.lighten(bgColor, 0.2f);
         }
 
         // Background
@@ -243,14 +243,14 @@ public class ModeBadge {
         int textHeight = Math.round(font.lineHeight * textScale);
         int textX = x + (badgeWidth - textWidth) / 2;
         int textY = y + (badgeHeight - textHeight) / 2;
-        Typography.drawText(graphics, font, label, textX, textY, UIConstants.Text.PRIMARY(), textScale);
+        Typography.drawText(graphics, font, label, textX, textY, DesignTokens.Text.PRIMARY(), textScale);
 
         // Dropdown indicator (if clickable)
         if (clickable) {
             String indicator = showDropdown ? "▲" : "▼";
             int indicatorWidth = Math.round(font.width(indicator) * textScale);
             int indicatorX = x + badgeWidth - dropdownPadding - indicatorWidth / 2;
-            Typography.drawText(graphics, font, indicator, indicatorX, textY, UIConstants.Text.MUTED(), textScale);
+            Typography.drawText(graphics, font, indicator, indicatorX, textY, DesignTokens.Text.MUTED(), textScale);
         }
 
         return badgeWidth;
@@ -284,8 +284,8 @@ public class ModeBadge {
         }
 
         // Dropdown background
-        graphics.fill(x, y, x + badgeWidth, y + dropdownHeight, UIConstants.Background.PANEL_SOLID());
-        AxiomRenderer.drawBorder(graphics, x, y, badgeWidth, dropdownHeight, UIConstants.Border.DEFAULT());
+        graphics.fill(x, y, x + badgeWidth, y + dropdownHeight, DesignTokens.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, x, y, badgeWidth, dropdownHeight, DesignTokens.Border.DEFAULT());
 
         // Render options
         int optionY = y;
@@ -310,8 +310,8 @@ public class ModeBadge {
             boolean optionHovered = optionBounds.contains(mouseX, mouseY);
 
             // Option background
-            int optionBg = isSelected ? UIConstants.Background.ACTIVE() :
-                          (optionHovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
+            int optionBg = isSelected ? DesignTokens.Background.ACTIVE() :
+                          (optionHovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT());
             graphics.fill(x + OPTION_BORDER_INSET, optionY, x + badgeWidth - OPTION_BORDER_INSET,
                 optionY + badgeHeight, optionBg);
 
@@ -324,7 +324,7 @@ public class ModeBadge {
             // Option text
             int textX = x + OPTION_TEXT_INSET;
             int textY = optionY + (badgeHeight - Math.round(font.lineHeight * textScale)) / 2;
-            int textColor = isSelected ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY();
+            int textColor = isSelected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY();
             Typography.drawText(graphics, font, label, textX, textY, textColor, textScale);
 
             optionY += badgeHeight;
@@ -334,13 +334,13 @@ public class ModeBadge {
         if (includeDefaultAction) {
             ResponsiveLayout.Rect optionBounds = new ResponsiveLayout.Rect(x, optionY, badgeWidth, badgeHeight);
             boolean optionHovered = optionBounds.contains(mouseX, mouseY);
-            int optionBg = optionHovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
+            int optionBg = optionHovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT();
             graphics.fill(x + OPTION_BORDER_INSET, optionY, x + badgeWidth - OPTION_BORDER_INSET,
                 optionY + badgeHeight, optionBg);
             int textX = x + OPTION_TEXT_INSET;
             int textY = optionY + (badgeHeight - Math.round(font.lineHeight * textScale)) / 2;
             Typography.drawText(graphics, font, "Set current as default", textX, textY,
-                UIConstants.Text.SECONDARY(), textScale);
+                DesignTokens.Text.SECONDARY(), textScale);
         }
     }
 

@@ -11,8 +11,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class EditorTextField {
 
@@ -131,7 +131,7 @@ public class EditorTextField {
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
-        int height = UIConstants.Size.INPUT_HEIGHT + INPUT_PADDING; // Label + input
+        int height = DesignTokens.Size.INPUT_HEIGHT + INPUT_PADDING; // Label + input
         this.bounds = new ResponsiveLayout.Rect(x, y, width, height);
 
         // Check hover
@@ -141,29 +141,29 @@ public class EditorTextField {
 
         // Label
         if (label != null && !label.isEmpty()) {
-            int labelColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
+            int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
             graphics.drawString(font, label, x, currentY, labelColor, false);
             currentY += LABEL_LINE_HEIGHT;
         }
 
         // Input field
-        int inputHeight = UIConstants.Size.INPUT_HEIGHT;
+        int inputHeight = DesignTokens.Size.INPUT_HEIGHT;
         this.inputBounds = new ResponsiveLayout.Rect(x, currentY, width, inputHeight);
 
         // Background
-        int bgColor = enabled ? UIConstants.Background.INPUT() : UIConstants.Background.DARKER();
+        int bgColor = enabled ? DesignTokens.Background.INPUT() : DesignTokens.Background.DARKER();
         graphics.fill(x, currentY, x + width, currentY + inputHeight, bgColor);
 
         // Border
         int borderColor;
         if (!valid) {
-            borderColor = UIConstants.Border.ERROR();
+            borderColor = DesignTokens.Border.ERROR();
         } else if (focused) {
-            borderColor = UIConstants.Border.ACCENT();
+            borderColor = DesignTokens.Border.ACCENT();
         } else if (hovered) {
-            borderColor = UIConstants.Border.HOVER();
+            borderColor = DesignTokens.Border.HOVER();
         } else {
-            borderColor = UIConstants.Border.DEFAULT();
+            borderColor = DesignTokens.Border.DEFAULT();
         }
         AxiomRenderer.drawBorder(graphics, x, currentY, width, inputHeight, borderColor);
 
@@ -177,10 +177,10 @@ public class EditorTextField {
 
         if (value.isEmpty() && !focused) {
             // Placeholder
-            graphics.drawString(font, Objects.requireNonNull(placeholder, "placeholder cannot be null"), textX, textY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(font, Objects.requireNonNull(placeholder, "placeholder cannot be null"), textX, textY, DesignTokens.Text.MUTED(), false);
         } else {
             // Actual text
-            int textColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
+            int textColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
             graphics.drawString(font, Objects.requireNonNull(value, "value cannot be null"), textX, textY, textColor, false);
 
             // Selection highlight
@@ -192,7 +192,7 @@ public class EditorTextField {
                 int selX1 = textX + font.width(prefixStart);
                 int selX2 = textX + font.width(prefixEnd);
                 graphics.fill(selX1, currentY + CURSOR_INSET, selX2, currentY + inputHeight - CURSOR_INSET,
-                             UIConstants.withAlpha(UIConstants.Accent.CYAN(), SELECTION_ALPHA));
+                             DesignTokens.withAlpha(DesignTokens.Accent.CYAN(), SELECTION_ALPHA));
             }
 
             // Cursor
@@ -200,7 +200,7 @@ public class EditorTextField {
                 String cursorPrefix = Objects.requireNonNull(value.substring(0, cursorPosition), "cursor prefix cannot be null");
                 int cursorX = textX + font.width(cursorPrefix);
                 graphics.fill(cursorX, currentY + CURSOR_INSET, cursorX + CURSOR_WIDTH, currentY + inputHeight - CURSOR_INSET,
-                             UIConstants.Text.PRIMARY());
+                             DesignTokens.Text.PRIMARY());
             }
         }
 
@@ -210,7 +210,7 @@ public class EditorTextField {
     }
 
     public int calculateHeight() {
-        return UIConstants.Size.INPUT_HEIGHT + INPUT_PADDING;
+        return DesignTokens.Size.INPUT_HEIGHT + INPUT_PADDING;
     }
 
     // ═══════════════════════════════════════════════════════════════

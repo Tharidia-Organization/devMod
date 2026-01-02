@@ -19,9 +19,9 @@ import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.VirtualizedList;
 import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class TemplateOverlay extends BaseOverlay {
 
@@ -75,13 +75,13 @@ public class TemplateOverlay extends BaseOverlay {
                 Typography.drawText(ctx.graphics(), rowFont, name,
                     ctx.x() + ScaledCoord.scaleDim(ROW_TEXT_INSET),
                     ctx.y() + ScaledCoord.scaleDim(ROW_TEXT_INSET),
-                    UIConstants.Text.PRIMARY(), textScale);
+                    DesignTokens.Text.PRIMARY(), textScale);
 
                 int scopeWidth = Math.round(rowFont.width(scope) * textScale);
                 Typography.drawText(ctx.graphics(), rowFont, scope,
                     ctx.x() + ctx.width() - scopeWidth - ScaledCoord.scaleDim(ROW_TEXT_INSET),
                     ctx.y() + ScaledCoord.scaleDim(ROW_TEXT_INSET),
-                    UIConstants.Text.SECONDARY(), textScale);
+                    DesignTokens.Text.SECONDARY(), textScale);
             });
 
     // Buttons using EditorButton component
@@ -154,66 +154,66 @@ public class TemplateOverlay extends BaseOverlay {
         }
 
         // Header
-        Typography.drawText(graphics, font, TITLE_TEXT, panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG),
-            panelY + ScaledCoord.scaleDim(TITLE_OFFSET_Y), UIConstants.Text.TITLE(), textScale);
+        Typography.drawText(graphics, font, TITLE_TEXT, panelX + ScaledCoord.scaleDim(DesignTokens.Spacing.LG),
+            panelY + ScaledCoord.scaleDim(TITLE_OFFSET_Y), DesignTokens.Text.TITLE(), textScale);
         // Filter label
         String filterLabel = filterCategory == null ? FILTER_ALL_LABEL : (FILTER_PREFIX + filterCategory);
-        Typography.drawText(graphics, font, filterLabel, panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG),
-            panelY + ScaledCoord.scaleDim(UIConstants.Spacing.XXL), UIConstants.Text.SECONDARY(), textScale);
+        Typography.drawText(graphics, font, filterLabel, panelX + ScaledCoord.scaleDim(DesignTokens.Spacing.LG),
+            panelY + ScaledCoord.scaleDim(DesignTokens.Spacing.XXL), DesignTokens.Text.SECONDARY(), textScale);
 
         // Search box (lightweight)
         SearchBounds search = getSearchBounds(panelX, panelY, panelW);
         boolean searchHover = mouseX >= search.x() && mouseX <= search.x() + search.w()
             && mouseY >= search.y() && mouseY <= search.y() + search.h();
-        int searchBg = searchHover || searchFocused ? UIConstants.Background.ACTIVE() : UIConstants.Background.INPUT();
+        int searchBg = searchHover || searchFocused ? DesignTokens.Background.ACTIVE() : DesignTokens.Background.INPUT();
         graphics.fill(search.x(), search.y(), search.x() + search.w(), search.y() + search.h(), searchBg);
-        AxiomRenderer.drawBorder(graphics, search.x(), search.y(), search.w(), search.h(), UIConstants.Border.MUTED());
+        AxiomRenderer.drawBorder(graphics, search.x(), search.y(), search.w(), search.h(), DesignTokens.Border.MUTED());
         String placeholder = searchQuery.isEmpty() ? SEARCH_PLACEHOLDER : searchQuery;
-        int searchColor = searchQuery.isEmpty() ? UIConstants.Text.MUTED() : UIConstants.Text.PRIMARY();
-        Typography.drawText(graphics, font, placeholder, search.x() + ScaledCoord.scaleDim(UIConstants.Spacing.SM),
-            search.y() + ScaledCoord.scaleDim(UIConstants.Spacing.SM), searchColor, textScale);
+        int searchColor = searchQuery.isEmpty() ? DesignTokens.Text.MUTED() : DesignTokens.Text.PRIMARY();
+        Typography.drawText(graphics, font, placeholder, search.x() + ScaledCoord.scaleDim(DesignTokens.Spacing.SM),
+            search.y() + ScaledCoord.scaleDim(DesignTokens.Spacing.SM), searchColor, textScale);
 
         // List area - using VirtualizedList
-        int listX = panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG);
-        int listY = search.y() + search.h() + ScaledCoord.scaleDim(UIConstants.Spacing.MD);
-        int listW = panelW - ScaledCoord.scaleDim(UIConstants.Spacing.XXL);
+        int listX = panelX + ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
+        int listY = search.y() + search.h() + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
+        int listW = panelW - ScaledCoord.scaleDim(DesignTokens.Spacing.XXL);
         int listH = ScaledCoord.scaleDim(VISIBLE_ROWS * LIST_ROW_HEIGHT);
 
         // Render the VirtualizedList (rowRenderer configured at initialization)
         templateList.render(graphics, listX, listY, listW, listH, mouseX, mouseY);
 
         // Preview box
-        int previewX = panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG);
-        int previewY = listY + listH + ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int previewX = panelX + ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
+        int previewY = listY + listH + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
         int previewH = ScaledCoord.scaleDim(PREVIEW_HEIGHT);
-        graphics.fill(previewX, previewY, previewX + listW, previewY + previewH, UIConstants.Background.CONTENT());
-        AxiomRenderer.drawBorder(graphics, previewX, previewY, listW, previewH, UIConstants.Border.DEFAULT());
+        graphics.fill(previewX, previewY, previewX + listW, previewY + previewH, DesignTokens.Background.CONTENT());
+        AxiomRenderer.drawBorder(graphics, previewX, previewY, listW, previewH, DesignTokens.Border.DEFAULT());
 
         ItemEditorDataManager.TemplateData selectedTemplate = templateList.getSelectedItem();
         if (selectedTemplate != null) {
             String name = selectedTemplate.name == null ? TEMPLATE_NAME_FALLBACK : selectedTemplate.name;
             Typography.drawText(graphics, font, name, previewX + ScaledCoord.scaleDim(ROW_TEXT_INSET),
-                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET), UIConstants.Text.PRIMARY(), textScale);
+                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET), DesignTokens.Text.PRIMARY(), textScale);
             String scope = SCOPE_PREFIX + (selectedTemplate.itemCategory == null ? SCOPE_UNKNOWN : selectedTemplate.itemCategory);
             Typography.drawText(graphics, font, scope, previewX + ScaledCoord.scaleDim(ROW_TEXT_INSET),
-                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET + PREVIEW_LINE_HEIGHT), UIConstants.Text.SECONDARY(), textScale);
+                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET + PREVIEW_LINE_HEIGHT), DesignTokens.Text.SECONDARY(), textScale);
 
             int ench = selectedTemplate.enchantments == null ? 0 : selectedTemplate.enchantments.size();
             int attrs = selectedTemplate.attributes == null ? 0 : selectedTemplate.attributes.size();
             String touches = String.format(Locale.ROOT, "Touches: Enchants (%d), Attributes (%d)", ench, attrs);
             Typography.drawText(graphics, font, touches, previewX + ScaledCoord.scaleDim(ROW_TEXT_INSET),
-                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET + PREVIEW_LINE_HEIGHT * 2), UIConstants.Text.MUTED(), textScale);
+                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET + PREVIEW_LINE_HEIGHT * 2), DesignTokens.Text.MUTED(), textScale);
         } else {
             Typography.drawText(graphics, font, TEMPLATE_NONE_LABEL, previewX + ScaledCoord.scaleDim(ROW_TEXT_INSET),
-                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET), UIConstants.Text.MUTED(), textScale);
+                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET), DesignTokens.Text.MUTED(), textScale);
         }
 
         // Buttons using EditorButton components
         int btnY = panelY + panelH - ScaledCoord.scaleDim(BUTTON_ROW_OFFSET);
         int btnW = ScaledCoord.scaleDim(BUTTON_WIDTH);
         int btnH = ScaledCoord.scaleDim(BUTTON_HEIGHT);
-        int applyX = panelX + panelW - btnW - ScaledCoord.scaleDim(UIConstants.Spacing.LG);
-        int cancelX = applyX - btnW - ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int applyX = panelX + panelW - btnW - ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
+        int cancelX = applyX - btnW - ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
 
         boolean canApply = selectedTemplate != null;
         applyButton.setEnabled(canApply);
@@ -347,10 +347,10 @@ public class TemplateOverlay extends BaseOverlay {
     }
 
     private SearchBounds getSearchBounds(int panelX, int panelY, int panelW) {
-        int searchX = panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int searchX = panelX + ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
         int searchY = panelY + ScaledCoord.scaleDim(SEARCH_OFFSET_Y);
-        int searchW = panelW - ScaledCoord.scaleDim(UIConstants.Spacing.XXL);
-        int searchH = ScaledCoord.scaleDim(UIConstants.Spacing.XL);
+        int searchW = panelW - ScaledCoord.scaleDim(DesignTokens.Spacing.XXL);
+        int searchH = ScaledCoord.scaleDim(DesignTokens.Spacing.XL);
         return new SearchBounds(searchX, searchY, searchW, searchH);
     }
 

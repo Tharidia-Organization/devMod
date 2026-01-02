@@ -1,6 +1,9 @@
 package com.devmod.endurance.challenges;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+
+import io.netty.buffer.ByteBuf;
 
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -8,12 +11,11 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
 public record ChallengeSyncPayload(
         List<ChallengeData> challenges
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<ChallengeSyncPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "challenge_sync"));
@@ -28,6 +30,15 @@ public record ChallengeSyncPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(challenges.size());
+        for (ChallengeData data : challenges) {
+            size += estimateChallengeSize(data);
+        }
+        return size;
     }
 
     /**
@@ -102,5 +113,41 @@ public record ChallengeSyncPayload(
                 .toList();
 
         return new ChallengeSyncPayload(data);
+    }
+
+    private static int estimateChallengeSize(ChallengeData data) {
+        if (data == null) {
+            return 0;
+        }
+        int size = 0;
+        size += estimatedUtfSize(data.id);
+        size += estimatedUtfSize(data.nameKey);
+        size += estimatedUtfSize(data.descriptionKey);
+        size += varIntSize(data.difficulty);
+        size += varIntSize(data.targetValue);
+        size += varIntSize(data.currentValue);
+        size += varIntSize(data.tokenReward);
+        size += varIntSize(data.prestigeReward);
+        size += 1; // completed
+        size += 1; // rewarded
+        return size;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

@@ -11,12 +11,21 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.config.MobConfigManager;
+import com.devmod.config.WeaponConfigManager;
+import com.devmod.stats.WeaponStats;
 
 public class MobDebugOverlay {
 
-    private static final int COLOR_HITBOX = 0x80FFFF00; // Transparent yellow
-    private static final int COLOR_LABEL = 0xFFFFFF; // White
+    // Colors (delegating to OverlayTheme.Debug)
+    private static final int COLOR_HITBOX = OverlayTheme.Debug.HITBOX;
+    private static final int COLOR_LABEL = OverlayTheme.Debug.LABEL;
+    private static final int COLOR_TITLE = OverlayTheme.Debug.TITLE;
+    private static final long SHAPE_TTL_MS = 150;
+    private static final long LABEL_TTL_MS = 250;
+    private static final double STAT_EPSILON = 0.01;
+    private static final int MAX_NAME_LENGTH = 24;
 
     // Track current mob for continuous rendering
     @Nullable
@@ -53,12 +62,8 @@ public class MobDebugOverlay {
             // Check if the mob is still valid and alive
             if (!trackedMob.isAlive() || trackedMob.isRemoved()) {
                 trackedMob = null;
-                DebugRenderer.INSTANCE.clear();
                 return;
             }
-
-            // Clear previous frame and render the tracked mob
-            DebugRenderer.INSTANCE.clear();
 
             // Render main hitbox
             renderMainHitbox(trackedMob);
@@ -121,10 +126,12 @@ public class MobDebugOverlay {
 
     private static void renderMainHitbox(Mob mob) {
         AABB box = mob.getBoundingBox();
-        DebugRenderer.INSTANCE.addBox(box, COLOR_HITBOX, true);
+        DebugRenderer.INSTANCE.addBox(box, COLOR_HITBOX, true, SHAPE_TTL_MS);
     }
 
     private static void renderBodyParts(LivingEntity entity) {
+        WeaponStats stats = WeaponConfigManager.getGlobalStats();
+
         // Use BodyPartCalculator as SINGLE SOURCE OF TRUTH for body part AABBs
         BodyPartCalculator.BodyPartAABB[] bodyParts = BodyPartCalculator.calculateAllBodyParts(Objects.requireNonNull(entity));
 
@@ -134,14 +141,14 @@ public class MobDebugOverlay {
             int color = bodyPart.color();
 
             // Render the box
-            DebugRenderer.INSTANCE.addBox(box, color, true);
+            DebugRenderer.INSTANCE.addBox(box, color, true, SHAPE_TTL_MS);
 
             // Calculate label position (center of box)
             Vec3 labelPos = getLabelPositionForBodyPart(bodyPart);
-            String labelText = getLabelTextForBodyPart(bodyPart);
+            String labelText = getLabelTextForBodyPart(bodyPart, stats);
 
             // Render the label
-            DebugRenderer.INSTANCE.addLabel(labelPos, labelText, COLOR_LABEL);
+            DebugRenderer.INSTANCE.addLabel(labelPos, labelText, COLOR_LABEL, LABEL_TTL_MS);
         }
     }
 
@@ -162,19 +169,18 @@ public class MobDebugOverlay {
     /**
      * Get label text with damage multiplier for each body part
      */
-    private static String getLabelTextForBodyPart(BodyPartCalculator.BodyPartAABB bodyPart) {
+    private static String getLabelTextForBodyPart(BodyPartCalculator.BodyPartAABB bodyPart, WeaponStats stats) {
         return switch (bodyPart.part()) {
-            case HEAD -> "Head [x2.0]";
-            case ARMS -> "Arms [x0.9]";
-            case BODY -> "Body [x1.0]";
-            case LEGS -> "Legs [x0.75]";
+            case HEAD -> stats.headMult >= 2.0f
+                ? String.format("Head [Crit x%.1f]", stats.headMult)
+                : String.format("Head [x%.2f]", stats.headMult);
+            case ARMS -> String.format("Arms [x%.2f]", stats.armsMult);
+            case BODY -> String.format("Torso [x%.2f]", stats.bodyMult);
+            case LEGS -> String.format("Legs [x%.2f]", stats.legsMult);
         };
     }
 
     private static void renderStats(Mob mob) {
-        // Label position above the mob
-        Vec3 pos = mob.position().add(0, mob.getBbHeight() + 1.0, 0);
-
         // Get current stats
         double health = mob.getHealth();
         double maxHealth = mob.getMaxHealth();
@@ -187,45 +193,73 @@ public class MobDebugOverlay {
         var rangeAttr = mob.getAttribute(Objects.requireNonNull(Attributes.FOLLOW_RANGE));
         double range = rangeAttr != null ? rangeAttr.getValue() : 0.0;
 
+        var reachAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ENTITY_INTERACTION_RANGE));
+        double reach = reachAttr != null ? reachAttr.getValue() : 0.0;
+
         // Check if there's a saved config
         MobConfigManager.SavedStats saved = MobConfigManager.getGlobalStats(mob.getType());
 
         // Build stats text
         StringBuilder stats = new StringBuilder();
-        stats.append("=== ").append(mob.getName().getString()).append(" ===\n");
+        String mobName = truncateName(mob.getName().getString(), MAX_NAME_LENGTH);
+        stats.append("=== ").append(mobName);
+        if (saved != null) {
+            stats.append(" [CFG]");
+        }
+        stats.append(" ===\n");
         stats.append(String.format("HP: %.1f / %.1f", health, maxHealth));
-        if (saved != null && saved.maxHealth() != maxHealth) {
-            stats.append(String.format(" (Config: %.1f)", saved.maxHealth()));
+        if (saved != null && differs(saved.maxHealth(), maxHealth)) {
+            stats.append(String.format(" (cfg %.1f)", saved.maxHealth()));
         }
         stats.append("\n");
 
         stats.append(String.format("Armor: %.1f", armor));
-        if (saved != null && saved.armor() != armor) {
-            stats.append(String.format(" (Config: %.1f)", saved.armor()));
+        if (saved != null && differs(saved.armor(), armor)) {
+            stats.append(String.format(" (cfg %.1f)", saved.armor()));
         }
         stats.append("\n");
 
         // Only show damage if mob has attack damage attribute
         if (damageAttr != null) {
             stats.append(String.format("Damage: %.1f", damage));
-            if (saved != null && saved.damage() != damage) {
-                stats.append(String.format(" (Config: %.1f)", saved.damage()));
+            if (saved != null && differs(saved.damage(), damage)) {
+                stats.append(String.format(" (cfg %.1f)", saved.damage()));
             }
             stats.append("\n");
         }
 
-        stats.append(String.format("Range: %.1f", range));
-        if (saved != null && saved.range() != range) {
-            stats.append(String.format(" (Config: %.1f)", saved.range()));
+        if (rangeAttr != null || saved != null) {
+            if (rangeAttr != null) {
+                stats.append(String.format("Aggro: %.1f", range));
+            } else {
+                stats.append("Aggro: n/a");
+            }
+            if (saved != null && (rangeAttr == null || differs(saved.range(), range))) {
+                stats.append(String.format(" (cfg %.1f)", saved.range()));
+            }
+            stats.append("\n");
+        }
+
+        if (reachAttr != null || saved != null) {
+            if (reachAttr != null) {
+                stats.append(String.format("Reach: %.1f", reach));
+            } else {
+                stats.append("Reach: n/a");
+            }
+            if (saved != null && (reachAttr == null || differs(saved.attackReach(), reach))) {
+                stats.append(String.format(" (cfg %.1f)", saved.attackReach()));
+            }
         }
 
         // Split into multiple labels for better readability
         String[] lines = stats.toString().lines().toArray(String[]::new);
+        Vec3 pos = mob.position().add(0, mob.getBbHeight() + 0.7 + (lines.length * 0.12), 0);
         for (int i = 0; i < lines.length; i++) {
             DebugRenderer.INSTANCE.addLabel(
                 pos.add(0, -i * 0.3, 0),
                 lines[i],
-                i == 0 ? 0xFFFFAA00 : COLOR_LABEL // Title in yellow
+                i == 0 ? COLOR_TITLE : COLOR_LABEL,
+                LABEL_TTL_MS
             );
         }
     }
@@ -245,12 +279,20 @@ public class MobDebugOverlay {
         Vec3 mobPos = mob.position().add(0, mob.getBbHeight() / 2.0, 0); // Center of mob
 
         // Add sphere wireframe to debug renderer
-        // Transparent cyan color (ARGB format: 0x80_00_FF_FF)
-        int color = 0x8000FFFF; // Alpha=0x80 (50%), RGB=0x00FFFF (cyan)
+        int color = OverlayTheme.Debug.AGGRO_SPHERE;
         int segments = 16; // Number of segments for sphere rendering
 
         // Use DebugRenderer to add sphere visualization
-        DebugRenderer.INSTANCE.addSphere(mobPos, aggroRange, color, segments);
+        DebugRenderer.INSTANCE.addSphere(mobPos, aggroRange, color, segments, SHAPE_TTL_MS);
     }
 
+    private static boolean differs(double a, double b) {
+        return Math.abs(a - b) > STAT_EPSILON;
+    }
+
+    private static String truncateName(String name, int maxLen) {
+        if (name == null) return "";
+        if (name.length() <= maxLen) return name;
+        return name.substring(0, maxLen - 2) + "..";
+    }
 }

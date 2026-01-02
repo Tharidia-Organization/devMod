@@ -40,11 +40,15 @@ import com.devmod.client.endurance.WaveCheckpointScreen;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.notification.ui.NotificationCenterScreen;
 import com.devmod.client.overlay.BossPhaseOverlay;
+import com.devmod.client.overlay.CombatRecapScreen;
+import com.devmod.client.overlay.CombatSessionTracker;
 import com.devmod.client.overlay.EconomyOverlay;
 import com.devmod.client.overlay.EnduranceQuestOverlay;
 import com.devmod.client.overlay.EntityDensityOverlay;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactData;
+import com.devmod.client.overlay.ImpactDisplayMode;
+import com.devmod.client.overlay.ImpactHudController;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.overlay.ImpactHudPresets;
 import com.devmod.client.overlay.ImpactVFX;
@@ -98,19 +102,20 @@ import com.devmod.endurance.StartQuestPayload;
 import com.devmod.notification.PartyInviteActionData;
 import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
+import com.devmod.rendering.HeatmapType;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
 
 public final class DevModClientActions {
     private static final AtomicBoolean REGISTERED = new AtomicBoolean(false);
 
-    private static final HeatmapVisualizer.HeatmapType[] HEATMAP_CYCLE = {
-        HeatmapVisualizer.HeatmapType.DEATH,
-        HeatmapVisualizer.HeatmapType.MOVEMENT,
-        HeatmapVisualizer.HeatmapType.CAMPING,
-        HeatmapVisualizer.HeatmapType.STUCK,
-        HeatmapVisualizer.HeatmapType.AGGRO_DROP,
-        HeatmapVisualizer.HeatmapType.KITING
+    private static final HeatmapType[] HEATMAP_CYCLE = {
+        HeatmapType.DEATH,
+        HeatmapType.MOVEMENT,
+        HeatmapType.CAMPING,
+        HeatmapType.STUCK,
+        HeatmapType.AGGRO_DROP,
+        HeatmapType.KITING
     };
     private static int currentHeatmapIndex = -1;
 
@@ -725,6 +730,23 @@ public final class DevModClientActions {
             .handler(context -> Minecraft.getInstance().setScreen(new WelcomeScreen()))
             .build());
 
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_SEASON_PASS_OPEN)
+            .labelKey("devmod.action.season_pass")
+            .descriptionKey("devmod.action.season_pass.desc")
+            .category(ActionCategory.UI)
+            .menuPath("Root/Endurance/Season Pass")
+            .icon(Items.GOLD_INGOT)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                Integer tier = context.getPayload(Integer.class);
+                if (tier != null && tier > 0) {
+                    com.devmod.client.ui.season.SeasonPassScreen.openAtTier(tier);
+                } else {
+                    com.devmod.client.ui.season.SeasonPassScreen.open();
+                }
+            })
+            .build());
+
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_ONBOARDING_START)
             .labelKey("devmod.action.onboarding.start")
             .descriptionKey("devmod.action.onboarding.start.desc")
@@ -820,6 +842,76 @@ public final class DevModClientActions {
                 Impact3DPanelManager.INSTANCE.toggle();
                 String status = Impact3DPanelManager.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.impact_3d_status", status), true);
+            })
+            .build());
+
+        // Impact Display Mode actions
+        ActionRegistry.register(RadialAction.builder(ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE)
+            .labelKey("devmod.action.impact_display_mode")
+            .descriptionKey("devmod.action.impact_display_mode.desc")
+            .category(ActionCategory.COMBAT)
+            .menuPath("Root/Combat/Impact HUD/Display Mode")
+            .icon(Items.COMPARATOR)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                ImpactHudController.INSTANCE.cycleDisplayMode();
+                ImpactDisplayMode mode = ImpactHudController.INSTANCE.getDisplayMode();
+                context.sendSuccess(I18n.translate("devmod.impact.display_mode", mode.getDisplayName()), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.HUD_IMPACT_PRESET_MINIMAL)
+            .labelKey("devmod.action.impact_preset.minimal")
+            .descriptionKey("devmod.action.impact_preset.minimal.desc")
+            .category(ActionCategory.COMBAT)
+            .menuPath("Root/Combat/Impact HUD/Presets/Minimal")
+            .icon(Items.FEATHER)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                ImpactHudController.INSTANCE.applyPreset("minimal");
+                context.sendSuccess(I18n.translate("devmod.impact.preset_applied", "Minimal"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.HUD_IMPACT_PRESET_DETAILED)
+            .labelKey("devmod.action.impact_preset.detailed")
+            .descriptionKey("devmod.action.impact_preset.detailed.desc")
+            .category(ActionCategory.COMBAT)
+            .menuPath("Root/Combat/Impact HUD/Presets/Detailed")
+            .icon(Items.BOOK)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                ImpactHudController.INSTANCE.applyPreset("detailed");
+                context.sendSuccess(I18n.translate("devmod.impact.preset_applied", "Detailed"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.HUD_IMPACT_PRESET_TRAINING)
+            .labelKey("devmod.action.impact_preset.training")
+            .descriptionKey("devmod.action.impact_preset.training.desc")
+            .category(ActionCategory.COMBAT)
+            .menuPath("Root/Combat/Impact HUD/Presets/Training")
+            .icon(Items.KNOWLEDGE_BOOK)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                ImpactHudController.INSTANCE.applyPreset("training");
+                context.sendSuccess(I18n.translate("devmod.impact.preset_applied", "Training"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.HUD_IMPACT_SHOW_RECAP)
+            .labelKey("devmod.action.impact_show_recap")
+            .descriptionKey("devmod.action.impact_show_recap.desc")
+            .category(ActionCategory.COMBAT)
+            .menuPath("Root/Combat/Impact HUD/Show Recap")
+            .icon(Items.PAPER)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                if (CombatSessionTracker.INSTANCE.hasData()) {
+                    CombatRecapScreen.open();
+                } else {
+                    context.sendSuccess(I18n.translate("devmod.impact.no_combat_data"), true);
+                }
             })
             .build());
 
@@ -1016,9 +1108,9 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Heatmaps/Types/Death")
             .icon(Items.SKELETON_SKULL)
-            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapVisualizer.HeatmapType.DEATH))
+            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapType.DEATH))
             .precondition(ActionPreconditions.clientOnly())
-            .handler(context -> toggleHeatmapType(context, HeatmapVisualizer.HeatmapType.DEATH))
+            .handler(context -> toggleHeatmapType(context, HeatmapType.DEATH))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE)
@@ -1027,9 +1119,9 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Heatmaps/Types/Movement")
             .icon(Items.FEATHER)
-            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapVisualizer.HeatmapType.MOVEMENT))
+            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapType.MOVEMENT))
             .precondition(ActionPreconditions.clientOnly())
-            .handler(context -> toggleHeatmapType(context, HeatmapVisualizer.HeatmapType.MOVEMENT))
+            .handler(context -> toggleHeatmapType(context, HeatmapType.MOVEMENT))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE)
@@ -1038,9 +1130,9 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Heatmaps/Types/Camping")
             .icon(Items.CAMPFIRE)
-            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapVisualizer.HeatmapType.CAMPING))
+            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapType.CAMPING))
             .precondition(ActionPreconditions.clientOnly())
-            .handler(context -> toggleHeatmapType(context, HeatmapVisualizer.HeatmapType.CAMPING))
+            .handler(context -> toggleHeatmapType(context, HeatmapType.CAMPING))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_HEATMAP_STUCK_TOGGLE)
@@ -1049,9 +1141,9 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Heatmaps/Types/Stuck")
             .icon(Items.COBWEB)
-            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapVisualizer.HeatmapType.STUCK))
+            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapType.STUCK))
             .precondition(ActionPreconditions.clientOnly())
-            .handler(context -> toggleHeatmapType(context, HeatmapVisualizer.HeatmapType.STUCK))
+            .handler(context -> toggleHeatmapType(context, HeatmapType.STUCK))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_HEATMAP_AGGRO_DROP_TOGGLE)
@@ -1060,9 +1152,9 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Heatmaps/Types/Aggro Drop")
             .icon(Items.ENDER_EYE)
-            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapVisualizer.HeatmapType.AGGRO_DROP))
+            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapType.AGGRO_DROP))
             .precondition(ActionPreconditions.clientOnly())
-            .handler(context -> toggleHeatmapType(context, HeatmapVisualizer.HeatmapType.AGGRO_DROP))
+            .handler(context -> toggleHeatmapType(context, HeatmapType.AGGRO_DROP))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_HEATMAP_KITING_TOGGLE)
@@ -1071,9 +1163,9 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Heatmaps/Types/Kiting")
             .icon(Items.BOW)
-            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapVisualizer.HeatmapType.KITING))
+            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapType.KITING))
             .precondition(ActionPreconditions.clientOnly())
-            .handler(context -> toggleHeatmapType(context, HeatmapVisualizer.HeatmapType.KITING))
+            .handler(context -> toggleHeatmapType(context, HeatmapType.KITING))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE)
@@ -1082,9 +1174,9 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Heatmaps/Types/Light Spawnable")
             .icon(Items.REDSTONE_TORCH)
-            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapVisualizer.HeatmapType.LIGHT_SPAWNABLE))
+            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapType.LIGHT_SPAWNABLE))
             .precondition(ActionPreconditions.clientOnly())
-            .handler(context -> toggleHeatmapType(context, HeatmapVisualizer.HeatmapType.LIGHT_SPAWNABLE))
+            .handler(context -> toggleHeatmapType(context, HeatmapType.LIGHT_SPAWNABLE))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE)
@@ -1093,9 +1185,9 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Heatmaps/Types/Light Dark")
             .icon(Items.COAL)
-            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapVisualizer.HeatmapType.LIGHT_DARK))
+            .toggle(context -> HeatmapVisualizer.INSTANCE.isEnabled(HeatmapType.LIGHT_DARK))
             .precondition(ActionPreconditions.clientOnly())
-            .handler(context -> toggleHeatmapType(context, HeatmapVisualizer.HeatmapType.LIGHT_DARK))
+            .handler(context -> toggleHeatmapType(context, HeatmapType.LIGHT_DARK))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_HEATMAP_CLEAR_CURRENT)
@@ -2496,13 +2588,19 @@ public final class DevModClientActions {
             if (playerCount != null && playerCount > 0) {
                 context.sendSuccess(Component.translatable("devmod.action.arena.quick_test_wizard.player_count_ignored"), true);
             }
+            // P0-003: Use CommandSanitizer for safe command building
+            String templateId = config.templateId();
+            if (!com.devmod.actions.CommandSanitizer.isValidTemplateId(templateId)) {
+                context.sendFailure(net.minecraft.network.chat.Component.literal("Invalid template ID"));
+                return;
+            }
             if (config.forceTemplate()) {
-                context.executeCommand("arena force " + config.templateId() + " 5");
+                context.executeCommand(com.devmod.actions.CommandSanitizer.buildTemplateCommandWithInt("arena force", templateId, 5));
             }
             if (config.dryRun()) {
-                context.executeCommand("arena validate " + config.templateId());
+                context.executeCommand(com.devmod.actions.CommandSanitizer.buildTemplateCommand("arena validate", templateId));
             } else {
-                context.executeCommand("arena create " + config.templateId());
+                context.executeCommand(com.devmod.actions.CommandSanitizer.buildTemplateCommand("arena create", templateId));
             }
         });
     }
@@ -2667,7 +2765,7 @@ public final class DevModClientActions {
         SettingsManager.INSTANCE.markDirty();
 
         if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
-            HeatmapVisualizer.HeatmapType currentType = HEATMAP_CYCLE[currentHeatmapIndex];
+            HeatmapType currentType = HEATMAP_CYCLE[currentHeatmapIndex];
             int loaded = HeatmapVisualizer.INSTANCE.loadDataFromService(currentType);
             int total = HeatmapVisualizer.INSTANCE.getDataCount(currentType);
             String activeTypes = HeatmapVisualizer.INSTANCE.getActiveTypesString();
@@ -2680,7 +2778,7 @@ public final class DevModClientActions {
 
     private static void toggleHeatmaps(ActionContext context) {
         boolean enable = !HeatmapVisualizer.INSTANCE.hasActiveHeatmaps();
-        for (HeatmapVisualizer.HeatmapType type : HeatmapVisualizer.HeatmapType.values()) {
+        for (HeatmapType type : HeatmapType.values()) {
             HeatmapVisualizer.INSTANCE.setEnabled(type, enable);
         }
         if (!enable) {
@@ -2690,7 +2788,7 @@ public final class DevModClientActions {
         context.sendSuccess(I18n.translate("devmod.render.heatmap_toggle_status", status), true);
     }
 
-    private static void toggleHeatmapType(ActionContext context, HeatmapVisualizer.HeatmapType type) {
+    private static void toggleHeatmapType(ActionContext context, HeatmapType type) {
         boolean enable = !HeatmapVisualizer.INSTANCE.isEnabled(type);
         HeatmapVisualizer.INSTANCE.setEnabled(type, enable);
         int index = heatmapIndex(type);
@@ -2705,7 +2803,7 @@ public final class DevModClientActions {
 
     private static void clearCurrentHeatmap(ActionContext context) {
         if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
-            HeatmapVisualizer.HeatmapType currentType = HEATMAP_CYCLE[currentHeatmapIndex];
+            HeatmapType currentType = HEATMAP_CYCLE[currentHeatmapIndex];
             HeatmapVisualizer.INSTANCE.clear(currentType);
             int remaining = HeatmapVisualizer.INSTANCE.getDataCount(currentType);
             context.sendSuccess(I18n.translate("devmod.render.heatmap_type_cleared", currentType.name(), remaining), true);
@@ -2717,13 +2815,13 @@ public final class DevModClientActions {
     private static void clearAllHeatmaps(ActionContext context) {
         HeatmapVisualizer.INSTANCE.clearAll();
         currentHeatmapIndex = -1;
-        for (HeatmapVisualizer.HeatmapType type : HEATMAP_CYCLE) {
+        for (HeatmapType type : HEATMAP_CYCLE) {
             HeatmapVisualizer.INSTANCE.setEnabled(type, false);
         }
         context.sendSuccess(I18n.translate("devmod.render.heatmaps_cleared"), true);
     }
 
-    private static int heatmapIndex(HeatmapVisualizer.HeatmapType type) {
+    private static int heatmapIndex(HeatmapType type) {
         for (int i = 0; i < HEATMAP_CYCLE.length; i++) {
             if (HEATMAP_CYCLE[i] == type) {
                 return i;

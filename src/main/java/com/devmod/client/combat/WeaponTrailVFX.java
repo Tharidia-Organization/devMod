@@ -24,11 +24,10 @@ import net.minecraft.world.item.TieredItem;
 import net.minecraft.world.item.Tiers;
 import net.minecraft.world.phys.Vec3;
 
-import net.neoforged.fml.ModList;
-
 import com.devmod.DevMod;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
+import com.devmod.compat.mods.epicfight.EpicFightCompat;
 
 public class WeaponTrailVFX {
 
@@ -45,18 +44,16 @@ public class WeaponTrailVFX {
     private boolean isSwinging = false;
     private int lastSwingCount = 0;
 
-    // BetterCombat compatibility
+    // Epic Fight compatibility
     @Nullable
-    private static Boolean betterCombatPresent = null;
-    private static boolean betterCombatEventsRegistered = false;
+    private static Boolean epicFightPresent = null;
     private boolean lastAttackKeyState = false;
     private long swingStartTime = 0;
     private static final long SWING_DURATION_MS = 300; // Duration to track after attack starts
     private float lastAttackAnim = 0; // Track attack animation progress
 
-    // BetterCombat event-driven swing detection
-    private volatile boolean betterCombatSwingActive = false;
-    private volatile long betterCombatSwingStartTime = 0;
+    // Epic Fight swing detection state
+    private boolean lastEpicFightInAction = false;
 
     // Trail colors - dynamically extracted from weapon
     private float trailR = 0.8f, trailG = 0.9f, trailB = 1.0f;
@@ -102,7 +99,7 @@ public class WeaponTrailVFX {
 
         long now = System.currentTimeMillis();
 
-        // Detect swing using multiple methods for BetterCombat compatibility
+        // Detect swing using multiple methods for Epic Fight compatibility
         boolean swingDetected = detectSwing(player, mc, now);
 
         // Track position during swing or while trail is fading
@@ -116,46 +113,76 @@ public class WeaponTrailVFX {
         }
     }
 
-    // Debug logging (disable after testing)
-    private static final boolean DEBUG_SWING_DETECTION = true;
+    // Debug logging (disable after testing) - non-final to allow runtime toggle and avoid dead code warnings
+    private static boolean DEBUG_SWING_DETECTION = false;
 
     /**
      * Detect weapon swing using multiple methods for mod compatibility.
-     * Works with vanilla Minecraft and BetterCombat.
+     * Works with vanilla Minecraft and Epic Fight.
      *
      * IMPORTANT: Only detect actual attacks, NOT camera movement or walking.
      */
     private boolean detectSwing(Player player, Minecraft mc, long now) {
-        // Check BetterCombat presence once and register events
-        if (betterCombatPresent == null) {
-            betterCombatPresent = isBetterCombatLoaded();
-            if (betterCombatPresent) {
-                // Register event listeners for BetterCombat's attack events
-                registerBetterCombatEvents();
+        // Check Epic Fight presence once
+        if (epicFightPresent == null) {
+            epicFightPresent = EpicFightCompat.isAvailable();
+            if (epicFightPresent) {
+                DevMod.LOGGER.info("[WeaponTrailVFX] Epic Fight detected - using action-based swing detection");
+            } else {
+                DevMod.LOGGER.info("[WeaponTrailVFX] Epic Fight not detected - using vanilla swing detection");
             }
         }
 
-        // === BetterCombat Event-Driven Detection (Primary when available) ===
-        // This is the most reliable method as it uses BC's own event system
-        if (betterCombatPresent && betterCombatSwingActive) {
-            // BC event triggered a swing - use event timing
-            isSwinging = true;
-            swingStartTime = betterCombatSwingStartTime;
+        // === Epic Fight Detection (Primary when available) ===
+        // Epic Fight uses isInAction() to detect when player is attacking
+        if (Boolean.TRUE.equals(epicFightPresent)) {
+            boolean currentlyInAction = EpicFightCompat.isInAction(Objects.requireNonNull(player));
+            boolean inBattleMode = EpicFightCompat.isInBattleMode(Objects.requireNonNull(player));
 
-            // Check if BC swing should end (use longer duration for BC animations)
-            long bcSwingDuration = SWING_DURATION_MS + 150; // BC animations are often longer
-            if ((now - betterCombatSwingStartTime) > bcSwingDuration) {
-                betterCombatSwingActive = false;
-                isSwinging = false;
+            // Detect action start (transition from not-in-action to in-action)
+            if (currentlyInAction && !lastEpicFightInAction) {
+                isSwinging = true;
+                swingStartTime = now;
                 if (DEBUG_SWING_DETECTION) {
-                    DevMod.LOGGER.info("[WeaponTrailVFX] BetterCombat swing END (duration expired)");
+                    DevMod.LOGGER.info("[WeaponTrailVFX] Epic Fight action START");
                 }
             }
+
+            // Update state
+            lastEpicFightInAction = currentlyInAction;
+
+            // Keep swinging while in action
+            if (currentlyInAction) {
+                return true;
+            }
+
+            // Check if swing should continue (short grace period after action ends)
+            if (isSwinging) {
+                boolean durationPassed = (now - swingStartTime) > SWING_DURATION_MS;
+                if (durationPassed) {
+                    isSwinging = false;
+                    if (DEBUG_SWING_DETECTION) {
+                        DevMod.LOGGER.info("[WeaponTrailVFX] Epic Fight swing END");
+                    }
+                }
+            }
+
+            // In battle mode, also check vanilla swing for combo transitions
+            if (inBattleMode) {
+                return isSwinging || detectVanillaSwing(player, mc, now);
+            }
+
             return isSwinging;
         }
 
-        // === Fallback Methods for Vanilla or when BC events don't fire ===
+        // === Fallback: Vanilla swing detection ===
+        return detectVanillaSwing(player, mc, now);
+    }
 
+    /**
+     * Vanilla swing detection for when Epic Fight is not present or not in battle mode.
+     */
+    private boolean detectVanillaSwing(Player player, Minecraft mc, long now) {
         // Method 1: Vanilla swingTime - most reliable for vanilla
         // swingTime counts down from swing duration to 0 during an attack
         int currentSwingTime = player.swingTime;
@@ -170,7 +197,6 @@ public class WeaponTrailVFX {
         lastSwingCount = currentSwingTime;
 
         // Method 2: Attack animation progress (getAttackAnim)
-        // This returns 0-1 during attack animation, useful for BetterCombat
         float currentAttackAnim = player.getAttackAnim(1.0f);
         if (currentAttackAnim > 0.01f && lastAttackAnim < 0.01f) {
             // Attack animation just started
@@ -184,7 +210,7 @@ public class WeaponTrailVFX {
         }
         lastAttackAnim = currentAttackAnim;
 
-        // Method 3: Attack key + cooldown check (for BetterCombat which may not trigger swingTime)
+        // Method 3: Attack key + cooldown check
         boolean attackKeyPressed = mc.options.keyAttack.isDown();
         if (attackKeyPressed && !lastAttackKeyState && isWeapon(player.getMainHandItem())) {
             // Attack key just pressed - but only count if not already swinging
@@ -213,146 +239,6 @@ public class WeaponTrailVFX {
         }
 
         return isSwinging;
-    }
-
-    /**
-     * Check if BetterCombat mod is loaded.
-     * Uses NeoForge ModList API (preferred) with reflection fallback.
-     */
-    private static boolean isBetterCombatLoaded() {
-        // Method 1: Use NeoForge ModList API (most reliable)
-        try {
-            if (ModList.get().isLoaded("bettercombat")) {
-                DevMod.LOGGER.info("[WeaponTrailVFX] BetterCombat detected via ModList API");
-                return true;
-            }
-        } catch (Exception e) {
-            DevMod.LOGGER.debug("[WeaponTrailVFX] ModList check failed: {}", e.getMessage());
-        }
-
-        // Method 2: Reflection fallback - check multiple possible class names
-        String[] possibleClasses = {
-            "net.bettercombat.BetterCombat",
-            "net.bettercombat.BetterCombatMod",
-            "net.bettercombat.client.BetterCombatClient",
-            "net.bettercombat.api.WeaponAttributes"
-        };
-
-        for (String className : possibleClasses) {
-            try {
-                Class.forName(className, false, WeaponTrailVFX.class.getClassLoader());
-                DevMod.LOGGER.info("[WeaponTrailVFX] BetterCombat detected via reflection: {}", className);
-                return true;
-            } catch (ClassNotFoundException ignored) {
-                // Try next class
-            }
-        }
-
-        DevMod.LOGGER.info("[WeaponTrailVFX] BetterCombat not detected - using vanilla swing detection");
-        return false;
-    }
-
-    /**
-     * Register BetterCombat event listeners using reflection.
-     * This hooks into ATTACK_START and ATTACK_HIT events to detect swings
-     * more reliably than vanilla methods.
-     */
-    private void registerBetterCombatEvents() {
-        if (betterCombatEventsRegistered) return;
-        betterCombatEventsRegistered = true;
-
-        try {
-            // Get BetterCombatClientEvents class
-            Class<?> eventsClass = Class.forName("net.bettercombat.api.client.BetterCombatClientEvents");
-
-            // Get ATTACK_START publisher
-            Object attackStartPublisher = eventsClass.getField("ATTACK_START").get(null);
-
-            // Get Publisher.register method
-            Class<?> publisherClass = attackStartPublisher.getClass();
-            java.lang.reflect.Method registerMethod = null;
-            for (java.lang.reflect.Method m : publisherClass.getMethods()) {
-                if (m.getName().equals("register") && m.getParameterCount() == 1) {
-                    registerMethod = m;
-                    break;
-                }
-            }
-
-            if (registerMethod != null) {
-                // Get the PlayerAttackStart interface
-                Class<?> listenerInterface = Class.forName("net.bettercombat.api.client.BetterCombatClientEvents$PlayerAttackStart");
-
-                // Create a dynamic proxy to handle the callback
-                Object proxy = java.lang.reflect.Proxy.newProxyInstance(
-                    WeaponTrailVFX.class.getClassLoader(),
-                    new Class<?>[] { listenerInterface },
-                    (proxyObj, method, args) -> {
-                        if (method.getName().equals("onPlayerAttackStart")) {
-                            // Attack started - trigger our swing detection
-                            onBetterCombatAttackStart();
-                        }
-                        return null;
-                    }
-                );
-
-                // Register the listener
-                registerMethod.invoke(attackStartPublisher, proxy);
-                DevMod.LOGGER.info("[WeaponTrailVFX] Successfully registered BetterCombat ATTACK_START event listener");
-            }
-
-            // Also register ATTACK_HIT for extended trail during hit
-            Object attackHitPublisher = eventsClass.getField("ATTACK_HIT").get(null);
-            Class<?> hitListenerInterface = Class.forName("net.bettercombat.api.client.BetterCombatClientEvents$PlayerAttackHit");
-
-            Object hitProxy = java.lang.reflect.Proxy.newProxyInstance(
-                WeaponTrailVFX.class.getClassLoader(),
-                new Class<?>[] { hitListenerInterface },
-                (proxyObj, method, args) -> {
-                    if (method.getName().equals("onPlayerAttackHit")) {
-                        // Attack hit - extend swing duration slightly
-                        onBetterCombatAttackHit();
-                    }
-                    return null;
-                }
-            );
-
-            for (java.lang.reflect.Method m : attackHitPublisher.getClass().getMethods()) {
-                if (m.getName().equals("register") && m.getParameterCount() == 1) {
-                    m.invoke(attackHitPublisher, hitProxy);
-                    DevMod.LOGGER.info("[WeaponTrailVFX] Successfully registered BetterCombat ATTACK_HIT event listener");
-                    break;
-                }
-            }
-
-        } catch (ClassNotFoundException e) {
-            DevMod.LOGGER.debug("[WeaponTrailVFX] BetterCombat events API not found: {}", e.getMessage());
-        } catch (Exception e) {
-            DevMod.LOGGER.warn("[WeaponTrailVFX] Failed to register BetterCombat events: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Called when BetterCombat fires an ATTACK_START event.
-     */
-    private void onBetterCombatAttackStart() {
-        betterCombatSwingActive = true;
-        betterCombatSwingStartTime = System.currentTimeMillis();
-        if (DEBUG_SWING_DETECTION) {
-            DevMod.LOGGER.info("[WeaponTrailVFX] BetterCombat ATTACK_START event received");
-        }
-    }
-
-    /**
-     * Called when BetterCombat fires an ATTACK_HIT event.
-     */
-    private void onBetterCombatAttackHit() {
-        // Extend swing time on hit for better visual feedback
-        if (betterCombatSwingActive) {
-            betterCombatSwingStartTime = System.currentTimeMillis() - 100; // Extend by 100ms
-        }
-        if (DEBUG_SWING_DETECTION) {
-            DevMod.LOGGER.info("[WeaponTrailVFX] BetterCombat ATTACK_HIT event received");
-        }
     }
 
     /**
@@ -472,8 +358,9 @@ public class WeaponTrailVFX {
         long now = System.currentTimeMillis();
 
         // Cache result to avoid reflection overhead every frame
-        if (irisShaderActive != null && (now - lastIrisCheck) < IRIS_CHECK_INTERVAL_MS) {
-            return irisShaderActive;
+        final Boolean cached = irisShaderActive;
+        if (cached != null && (now - lastIrisCheck) < IRIS_CHECK_INTERVAL_MS) {
+            return cached.booleanValue();
         }
         lastIrisCheck = now;
 
@@ -488,13 +375,15 @@ public class WeaponTrailVFX {
 
             // Get isShaderPackInUse method
             var isShaderPackInUseMethod = irisApiClass.getMethod("isShaderPackInUse");
-            irisShaderActive = (Boolean) isShaderPackInUseMethod.invoke(irisInstance);
+            Object result = isShaderPackInUseMethod.invoke(irisInstance);
+            boolean active = Boolean.TRUE.equals(result);
+            irisShaderActive = active;
 
-            if (irisShaderActive && DEBUG_SWING_DETECTION) {
+            if (DEBUG_SWING_DETECTION && active) {
                 DevMod.LOGGER.debug("[WeaponTrailVFX] Iris shader pack detected, skipping trail rendering");
             }
 
-            return irisShaderActive;
+            return active;
         } catch (ClassNotFoundException e) {
             // Iris not installed, no shader pack active
             irisShaderActive = false;

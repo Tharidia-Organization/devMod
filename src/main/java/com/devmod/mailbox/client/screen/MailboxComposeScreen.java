@@ -27,7 +27,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.ItemPickerOverlay;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.mailbox.MailboxConfig;
 import com.devmod.mailbox.attachment.CurrencyAttachment;
 import com.devmod.mailbox.attachment.ItemAttachment;
@@ -234,7 +234,7 @@ public class MailboxComposeScreen extends Screen {
             .onItemSelected(this::onItemPicked)
             .onTagSelected(tag -> {
                 errorMessage = "Tags are not supported for attachments";
-                UIConstants.Sound.warning();
+                DesignTokens.Sound.warning();
             });
     }
 
@@ -255,25 +255,26 @@ public class MailboxComposeScreen extends Screen {
     }
 
     private void renderItemPickerOverlay(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (itemPickerOverlay == null || !itemPickerOverlay.isVisible()) {
+        ItemPickerOverlay overlay = itemPickerOverlay;
+        if (overlay == null || !overlay.isVisible()) {
             return;
         }
-        itemPickerOverlay.render(graphics, getFont(), width, height, mouseX, mouseY);
+        overlay.render(graphics, getFont(), width, height, mouseX, mouseY);
     }
 
     private void renderPanel(GuiGraphics graphics) {
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xE8101820);
 
-        int borderColor = UIConstants.Border.DEFAULT();
+        int borderColor = DesignTokens.Border.DEFAULT();
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 1, borderColor);
         graphics.fill(panelX, panelY + PANEL_HEIGHT - 1, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
         graphics.fill(panelX, panelY, panelX + 1, panelY + PANEL_HEIGHT, borderColor);
         graphics.fill(panelX + PANEL_WIDTH - 1, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
 
         graphics.drawString(getFont(), "Compose Message", panelX + 15, panelY + 12,
-            UIConstants.Text.PRIMARY(), false);
+            DesignTokens.Text.PRIMARY(), false);
         graphics.fill(panelX + 10, panelY + 30, panelX + PANEL_WIDTH - 10, panelY + 31,
-            UIConstants.Border.DEFAULT());
+            DesignTokens.Border.DEFAULT());
     }
 
     private void renderFields(GuiGraphics graphics) {
@@ -290,29 +291,35 @@ public class MailboxComposeScreen extends Screen {
     private void renderField(GuiGraphics graphics, @Nullable FieldLayout field) {
         if (field == null) return;
         graphics.drawString(getFont(), field.label, field.labelX, field.labelY,
-            UIConstants.Text.MUTED(), false);
+            DesignTokens.Text.MUTED(), false);
         AxiomRenderer.drawInputBackground(graphics, field.x, field.y, field.width, field.height,
             field.box.isFocused());
     }
 
     private void renderAttachmentHelperButtons(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (attachmentField != null && clearAttachmentButton != null) {
-            int x = attachmentField.x + attachmentField.width + HELPER_BUTTON_GAP;
-            int y = attachmentField.y + (attachmentField.height - HELPER_BUTTON_HEIGHT) / 2;
-            clearAttachmentButton.enabled(true);
-            clearAttachmentButton.render(graphics, x, y, HELPER_BUTTON_WIDTH, HELPER_BUTTON_HEIGHT, mouseX, mouseY);
+        FieldLayout attachField = attachmentField;
+        EditorButton clearBtn = clearAttachmentButton;
+        if (attachField != null && clearBtn != null) {
+            int x = attachField.x + attachField.width + HELPER_BUTTON_GAP;
+            int y = attachField.y + (attachField.height - HELPER_BUTTON_HEIGHT) / 2;
+            clearBtn.enabled(true);
+            clearBtn.render(graphics, x, y, HELPER_BUTTON_WIDTH, HELPER_BUTTON_HEIGHT, mouseX, mouseY);
         }
-        if (itemCountField != null && useItemButton != null) {
-            int x = itemCountField.x + itemCountField.width + HELPER_BUTTON_GAP;
-            int y = itemCountField.y + (itemCountField.height - HELPER_BUTTON_HEIGHT) / 2;
-            useItemButton.enabled(MailboxConfig.INSTANCE.isItemAttachmentsEnabled());
-            useItemButton.render(graphics, x, y, HELPER_BUTTON_WIDTH, HELPER_BUTTON_HEIGHT, mouseX, mouseY);
+        FieldLayout countField = itemCountField;
+        EditorButton itemBtn = useItemButton;
+        if (countField != null && itemBtn != null) {
+            int x = countField.x + countField.width + HELPER_BUTTON_GAP;
+            int y = countField.y + (countField.height - HELPER_BUTTON_HEIGHT) / 2;
+            itemBtn.enabled(MailboxConfig.INSTANCE.isItemAttachmentsEnabled());
+            itemBtn.render(graphics, x, y, HELPER_BUTTON_WIDTH, HELPER_BUTTON_HEIGHT, mouseX, mouseY);
         }
-        if (currencyAmountField != null && useCurrencyButton != null) {
-            int x = currencyAmountField.x + currencyAmountField.width + HELPER_BUTTON_GAP;
-            int y = currencyAmountField.y + (currencyAmountField.height - HELPER_BUTTON_HEIGHT) / 2;
-            useCurrencyButton.enabled(MailboxConfig.INSTANCE.isCurrencyAttachmentsEnabled());
-            useCurrencyButton.render(graphics, x, y, HELPER_BUTTON_WIDTH, HELPER_BUTTON_HEIGHT, mouseX, mouseY);
+        FieldLayout currencyField = currencyAmountField;
+        EditorButton currencyBtn = useCurrencyButton;
+        if (currencyField != null && currencyBtn != null) {
+            int x = currencyField.x + currencyField.width + HELPER_BUTTON_GAP;
+            int y = currencyField.y + (currencyField.height - HELPER_BUTTON_HEIGHT) / 2;
+            currencyBtn.enabled(MailboxConfig.INSTANCE.isCurrencyAttachmentsEnabled());
+            currencyBtn.render(graphics, x, y, HELPER_BUTTON_WIDTH, HELPER_BUTTON_HEIGHT, mouseX, mouseY);
         }
     }
 
@@ -329,15 +336,16 @@ public class MailboxComposeScreen extends Screen {
     private void renderError(GuiGraphics graphics) {
         if (errorMessage == null) return;
         int y = panelY + PANEL_HEIGHT - 55;
-        graphics.drawString(getFont(), errorMessage, panelX + 20, y, UIConstants.Border.ERROR(), false);
+        graphics.drawString(getFont(), errorMessage, panelX + 20, y, DesignTokens.Border.ERROR(), false);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
-        if (itemPickerOverlay != null && itemPickerOverlay.isVisible()) {
-            return itemPickerOverlay.mouseClicked(mouseX, mouseY, width, height);
+        ItemPickerOverlay overlay = itemPickerOverlay;
+        if (overlay != null && overlay.isVisible()) {
+            return overlay.mouseClicked(mouseX, mouseY, width, height);
         }
 
         if (clearAttachmentButton != null && clearAttachmentButton.mouseClicked(mouseX, mouseY, button)) return true;
@@ -361,16 +369,18 @@ public class MailboxComposeScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (itemPickerOverlay != null && itemPickerOverlay.isVisible()) {
-            return itemPickerOverlay.mouseScrolled(mouseX, mouseY, verticalAmount, width, height);
+        ItemPickerOverlay overlay = itemPickerOverlay;
+        if (overlay != null && overlay.isVisible()) {
+            return overlay.mouseScrolled(mouseX, mouseY, verticalAmount, width, height);
         }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (itemPickerOverlay != null && itemPickerOverlay.isVisible()) {
-            return itemPickerOverlay.keyPressed(keyCode);
+        ItemPickerOverlay overlay = itemPickerOverlay;
+        if (overlay != null && overlay.isVisible()) {
+            return overlay.keyPressed(keyCode);
         }
         if (keyCode == 256 /* ESCAPE */) {
             onClose();
@@ -381,8 +391,9 @@ public class MailboxComposeScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        if (itemPickerOverlay != null && itemPickerOverlay.isVisible()) {
-            return itemPickerOverlay.charTyped(codePoint, modifiers);
+        ItemPickerOverlay overlay = itemPickerOverlay;
+        if (overlay != null && overlay.isVisible()) {
+            return overlay.charTyped(codePoint, modifiers);
         }
         return super.charTyped(codePoint, modifiers);
     }
@@ -394,8 +405,9 @@ public class MailboxComposeScreen extends Screen {
 
     @Override
     public void onClose() {
-        if (itemPickerOverlay != null) {
-            itemPickerOverlay.hideImmediate();
+        ItemPickerOverlay overlay = itemPickerOverlay;
+        if (overlay != null) {
+            overlay.hideImmediate();
         }
         Minecraft.getInstance().setScreen(parent);
     }
@@ -404,7 +416,7 @@ public class MailboxComposeScreen extends Screen {
         errorMessage = null;
         if (!MailboxConfig.INSTANCE.isItemAttachmentsEnabled()) {
             errorMessage = "Item attachments are disabled";
-            UIConstants.Sound.error();
+            DesignTokens.Sound.error();
             return;
         }
 
@@ -423,27 +435,27 @@ public class MailboxComposeScreen extends Screen {
 
         int count = parsePositiveInt(itemCount.box.getValue(), 1, "Item count");
         if (count <= 0) {
-            UIConstants.Sound.error();
+            DesignTokens.Sound.error();
             return;
         }
 
         ItemAttachment attachmentData = ItemAttachment.of(itemIdInput, count);
         if (attachmentData == null) {
             errorMessage = "Invalid item ID";
-            UIConstants.Sound.error();
+            DesignTokens.Sound.error();
             return;
         }
 
-        attachment.box.setValue(attachmentData.toJson().toString());
+        attachment.box.setValue(Objects.requireNonNull(attachmentData.toJson().toString()));
         attachment.box.setFocused(true);
-        UIConstants.Sound.click();
+        DesignTokens.Sound.click();
     }
 
     private void onUseCurrencyClicked() {
         errorMessage = null;
         if (!MailboxConfig.INSTANCE.isCurrencyAttachmentsEnabled()) {
             errorMessage = "Currency attachments are disabled";
-            UIConstants.Sound.error();
+            DesignTokens.Sound.error();
             return;
         }
 
@@ -469,14 +481,14 @@ public class MailboxComposeScreen extends Screen {
 
         int amount = parsePositiveInt(currencyAmount.box.getValue(), 10, "Amount");
         if (amount <= 0) {
-            UIConstants.Sound.error();
+            DesignTokens.Sound.error();
             return;
         }
 
         CurrencyAttachment attachmentData = new CurrencyAttachment(type, amount);
-        attachment.box.setValue(attachmentData.toJson().toString());
+        attachment.box.setValue(Objects.requireNonNull(attachmentData.toJson().toString()));
         attachment.box.setFocused(true);
-        UIConstants.Sound.click();
+        DesignTokens.Sound.click();
     }
 
     private void onClearAttachment() {
@@ -487,7 +499,7 @@ public class MailboxComposeScreen extends Screen {
         }
         attachment.box.setValue("");
         attachment.box.setFocused(true);
-        UIConstants.Sound.click();
+        DesignTokens.Sound.click();
     }
 
     private void onItemPicked(ItemStack stack) {
@@ -495,20 +507,19 @@ public class MailboxComposeScreen extends Screen {
         if (itemId == null) {
             return;
         }
-        ResourceLocation itemKey = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        if (itemKey == null) {
-            return;
-        }
-        itemId.box.setValue(itemKey.toString());
+        ResourceLocation itemKey = Objects.requireNonNull(
+            BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem())));
+        itemId.box.setValue(Objects.requireNonNull(itemKey.toString()));
         onUseItemClicked();
     }
 
     private void openItemPicker() {
-        if (itemPickerOverlay == null) {
+        ItemPickerOverlay overlay = itemPickerOverlay;
+        if (overlay == null) {
             return;
         }
-        itemPickerOverlay.show();
-        UIConstants.Sound.click();
+        overlay.show();
+        DesignTokens.Sound.click();
     }
 
     private void onSendClicked() {
@@ -573,7 +584,7 @@ public class MailboxComposeScreen extends Screen {
             attachmentInput
         ));
 
-        UIConstants.Sound.success();
+        DesignTokens.Sound.success();
         onClose();
     }
 

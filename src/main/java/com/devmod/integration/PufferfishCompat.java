@@ -1,89 +1,71 @@
 package com.devmod.integration;
 
-import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 
-import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.registries.DeferredHolder;
-
-import com.devmod.DevMod;
-
+/**
+ * Compatibility layer for Pufferfish's Skills mod.
+ *
+ * <p>Provides utilities for mapping between string IDs and registry holders,
+ * particularly useful for attribute lookups in modded environments.
+ */
 public final class PufferfishCompat {
-    private static final String MODID = "puffish_attributes";
-    private static final boolean LOADED = isLoadedSafe();
-    private static final Map<String, String> PATH_MAP = Map.of(
-        "armor_shred", "armor_shred",
-        "life_steal", "life_steal"
-    );
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PufferfishCompat.class);
 
     private PufferfishCompat() {}
 
-    private static boolean isLoadedSafe() {
+    /**
+     * Map a string ID to a registry holder.
+     *
+     * @param id The resource location string (e.g., "minecraft:generic.max_health")
+     * @param registry The registry to look up in
+     * @return The holder if found, null otherwise
+     */
+    @Nullable
+    public static <T> Holder<T> map(String id, Registry<T> registry) {
+        if (id == null || id.isEmpty()) {
+            return null;
+        }
+
         try {
-            ModList list = ModList.get();
-            return list != null && list.isLoaded(MODID);
+            ResourceLocation location = ResourceLocation.tryParse(id);
+            if (location == null) {
+                LOGGER.warn("[PufferfishCompat] Invalid resource location: {}", id);
+                return null;
+            }
+
+            Optional<Holder.Reference<T>> holder = registry.getHolder(location);
+            return holder.orElse(null);
         } catch (Exception e) {
-            return false;
+            LOGGER.debug("[PufferfishCompat] Failed to map '{}': {}", id, e.getMessage());
+            return null;
         }
-    }
-
-    public static boolean isCompatEnabled() {
-        return LOADED;
     }
 
     /**
-     * Map a DevMod attribute to a Pufferfish equivalent if available.
-     * This implementation compares attribute holders directly for robustness.
+     * Check if Pufferfish's Skills mod is loaded.
      */
-    @Nullable
-    public static Attribute map(DeferredHolder<Attribute, Attribute> attribute) {
-        if (!LOADED) {
-            return attribute.isBound() ? attribute.get() : null;
-        }
-
-        String mappedPath = PATH_MAP.get(attribute.getId().getPath());
-
-        if (mappedPath == null) {
-            return attribute.get();
-        }
-
-        ResourceLocation incoming = attribute.getId();
-        ResourceLocation targetId = ResourceLocation.fromNamespaceAndPath(MODID, mappedPath);
-        Attribute mapped = BuiltInRegistries.ATTRIBUTE.getOptional(targetId).orElse(null);
-
-        if (mapped != null) {
-            DevMod.LOGGER.debug("[PufferfishCompat] Mapped {} to {}", incoming, targetId);
-            return mapped;
-        }
-
-        DevMod.LOGGER.debug("[PufferfishCompat] Missing {} in {}", targetId, MODID);
-        return attribute.isBound() ? attribute.get() : null;
+    public static boolean isLoaded() {
+        return net.neoforged.fml.ModList.get().isLoaded("puffish_skills");
     }
 
     /**
-     * Map a resource-location based attribute to Pufferfish if it is in devmod namespace.
-     * Returns holder from provided registry or null if none exists.
+     * Get the mod version if loaded.
      */
     @Nullable
-    public static Holder.Reference<Attribute> map(@Nullable ResourceLocation id, Registry<Attribute> registry) {
-        if (id == null) return null;
-        Holder.Reference<Attribute> original = registry.getHolder(Objects.requireNonNull(id)).orElse(null);
-        if (!LOADED || !DevMod.MODID.equals(id.getNamespace())) {
-            return original;
-        }
-        String mappedPath = PATH_MAP.get(id.getPath());
-        if (mappedPath == null) {
-            return original;
-        }
-        ResourceLocation targetId = ResourceLocation.fromNamespaceAndPath(MODID, mappedPath);
-        return registry.getHolder(Objects.requireNonNull(targetId)).orElse(original);
+    public static String getVersion() {
+        return net.neoforged.fml.ModList.get()
+            .getModContainerById("puffish_skills")
+            .map(c -> c.getModInfo().getVersion().toString())
+            .orElse(null);
     }
 }

@@ -11,6 +11,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.mailbox.ticket.TicketStatus;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Payload for ticket actions (status updates, comments).
@@ -20,7 +21,12 @@ public record TicketActionPayload(
     UUID ticketId,
     @Nullable String statusId,
     @Nullable String comment
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
+
+    public TicketActionPayload {
+        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(ticketId, "ticketId");
+    }
 
     public enum Action {
         UPDATE_STATUS,
@@ -37,8 +43,8 @@ public record TicketActionPayload(
     );
 
     private static void encode(RegistryFriendlyByteBuf buf, TicketActionPayload payload) {
-        buf.writeEnum(payload.action);
-        buf.writeUUID(payload.ticketId);
+        buf.writeEnum(Objects.requireNonNull(payload.action));
+        buf.writeUUID(Objects.requireNonNull(payload.ticketId));
         buf.writeUtf(payload.statusId != null ? payload.statusId : "");
         buf.writeUtf(payload.comment != null ? payload.comment : "");
     }
@@ -60,6 +66,33 @@ public record TicketActionPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(action.ordinal());
+        size += 16; // UUID
+        size += estimatedUtfSize(statusId);
+        size += estimatedUtfSize(comment);
+        return size;
+    }
+
+    private static int estimatedUtfSize(@Nullable String value) {
+        if (value == null) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 
     /**

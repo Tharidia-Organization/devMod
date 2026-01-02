@@ -12,9 +12,9 @@ import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class DebugInfoSection implements EditorSection.CustomSection {
 
@@ -25,7 +25,7 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
     private static final int HEADER_TEXT_OFFSET_Y =
         (EditorDimensions.SECTION_HEADER_HEIGHT - TEXT_HEIGHT) / 2;
     private static final int BUTTON_TEXT_OFFSET_Y = (BUTTON_HEIGHT - TEXT_HEIGHT) / 2;
-    private static final int DETAIL_INSET = UIConstants.Spacing.SM;
+    private static final int DETAIL_INSET = DesignTokens.Spacing.SM;
 
     private final ItemDebugInfo debugInfo;
     private final List<ValueComparison> comparisons;
@@ -63,15 +63,15 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
     }
 
     private int calculateHeight() {
-        int height = EditorDimensions.SECTION_HEADER_HEIGHT + UIConstants.Spacing.SM;
-        height += infoLines.size() * LINE_HEIGHT + UIConstants.Spacing.SM;
+        int height = EditorDimensions.SECTION_HEADER_HEIGHT + DesignTokens.Spacing.SM;
+        height += infoLines.size() * LINE_HEIGHT + DesignTokens.Spacing.SM;
         height += LINE_HEIGHT; // label
-        height += Math.max(1, comparisons.size()) * LINE_HEIGHT + UIConstants.Spacing.SM;
+        height += Math.max(1, comparisons.size()) * LINE_HEIGHT + DesignTokens.Spacing.SM;
         height += LINE_HEIGHT; // session log label
-        height += Math.max(1, changeLog.size()) * LINE_HEIGHT + UIConstants.Spacing.SM;
+        height += Math.max(1, changeLog.size()) * LINE_HEIGHT + DesignTokens.Spacing.SM;
         height += LINE_HEIGHT; // NBT label
         height += Math.max(1, nbtLines.size()) * LINE_HEIGHT;
-        height += UIConstants.Spacing.MD;
+        height += DesignTokens.Spacing.MD;
         return height;
     }
 
@@ -98,51 +98,51 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
         int width = bounds.width();
 
         // Header background
-        graphics.fill(x, y, x + width, y + EditorDimensions.SECTION_HEADER_HEIGHT, UIConstants.Background.HEADER());
+        graphics.fill(x, y, x + width, y + EditorDimensions.SECTION_HEADER_HEIGHT, DesignTokens.Background.HEADER());
         String title = "DEBUG INFO";
-        graphics.drawString(font, title, x + UIConstants.Spacing.SM, y + HEADER_TEXT_OFFSET_Y,
-            UIConstants.Accent.CYAN(), false);
+        graphics.drawString(font, title, x + DesignTokens.Spacing.SM, y + HEADER_TEXT_OFFSET_Y,
+            DesignTokens.Accent.CYAN(), false);
 
-        int btnX = x + width - BUTTON_WIDTH - UIConstants.Spacing.SM;
+        int btnX = x + width - BUTTON_WIDTH - DesignTokens.Spacing.SM;
         int btnY = y + (EditorDimensions.SECTION_HEADER_HEIGHT - BUTTON_HEIGHT) / 2;
         copyButtonBounds = new ResponsiveLayout.Rect(btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT);
         boolean hovering = copyButtonBounds.contains(mouseX, mouseY);
-        int btnBg = hovering ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
+        int btnBg = hovering ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT();
         graphics.fill(btnX, btnY, btnX + BUTTON_WIDTH, btnY + BUTTON_HEIGHT, btnBg);
-        AxiomRenderer.drawBorder(graphics, btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT, UIConstants.Border.ACCENT());
+        AxiomRenderer.drawBorder(graphics, btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT, DesignTokens.Border.ACCENT());
         String buttonText = "Copy Debug";
         int textX = btnX + (BUTTON_WIDTH - font.width(buttonText)) / 2;
         int textY = btnY + BUTTON_TEXT_OFFSET_Y;
-        graphics.drawString(font, buttonText, textX, textY, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(font, buttonText, textX, textY, DesignTokens.Text.PRIMARY(), false);
 
-        int contentY = y + EditorDimensions.SECTION_HEADER_HEIGHT + UIConstants.Spacing.SM;
-        int indentX = x + UIConstants.Spacing.SM;
+        int contentY = y + EditorDimensions.SECTION_HEADER_HEIGHT + DesignTokens.Spacing.SM;
+        int indentX = x + DesignTokens.Spacing.SM;
 
         for (String line : infoLines) {
-            graphics.drawString(font, line, indentX, contentY, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(font, line, indentX, contentY, DesignTokens.Text.SECONDARY(), false);
             contentY += LINE_HEIGHT;
         }
 
-        contentY += UIConstants.Spacing.SM;
+        contentY += DesignTokens.Spacing.SM;
         contentY = renderComparisonBlock(graphics, font, indentX, contentY);
-        contentY += UIConstants.Spacing.SM;
+        contentY += DesignTokens.Spacing.SM;
         contentY = renderHistoryBlock(graphics, font, indentX, contentY);
-        contentY += UIConstants.Spacing.SM;
+        contentY += DesignTokens.Spacing.SM;
         renderNbtBlock(graphics, font, indentX, contentY);
     }
 
     private int renderComparisonBlock(GuiGraphics graphics, Font font, int x, int y) {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
-        graphics.drawString(safeFont, "Value comparisons", x, y, UIConstants.Text.TITLE(), false);
+        graphics.drawString(safeFont, "Value comparisons", x, y, DesignTokens.Text.TITLE(), false);
         y += LINE_HEIGHT;
         if (comparisons.isEmpty()) {
-            graphics.drawString(safeFont, "(none)", x + DETAIL_INSET, y, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "(none)", x + DETAIL_INSET, y, DesignTokens.Text.MUTED(), false);
             return y + LINE_HEIGHT;
         }
         boolean hasServerBaseline = comparisons.stream().anyMatch(c -> !Double.isNaN(c.serverValue()));
         if (!hasServerBaseline) {
             graphics.drawString(safeFont, "(Server/config baseline not available — showing item only)", x + DETAIL_INSET, y,
-                UIConstants.Text.MUTED(), false);
+                DesignTokens.Text.MUTED(), false);
             y += LINE_HEIGHT;
         }
         for (ValueComparison comp : comparisons) {
@@ -153,9 +153,9 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
                 comp.isModified() ? " [MOD]" :
                 Double.isNaN(comp.serverValue()) ? " [SERVER N/A]" : "";
 
-            int color = comp.hasMismatch() ? UIConstants.Accent.RED() :
-                comp.isModified() ? UIConstants.Accent.YELLOW :
-                Double.isNaN(comp.serverValue()) ? UIConstants.Text.MUTED() : UIConstants.Text.SECONDARY();
+            int color = comp.hasMismatch() ? DesignTokens.Accent.RED() :
+                comp.isModified() ? DesignTokens.Accent.YELLOW :
+                Double.isNaN(comp.serverValue()) ? DesignTokens.Text.MUTED() : DesignTokens.Text.SECONDARY();
 
             String line = String.format("%-18s orig:%7s srv:%7s cur:%7s%s",
                 comp.attributeName(), orig, srv, cur, suffix);
@@ -171,14 +171,14 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
 
     private int renderHistoryBlock(GuiGraphics graphics, Font font, int x, int y) {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
-        graphics.drawString(safeFont, "Session log", x, y, UIConstants.Text.TITLE(), false);
+        graphics.drawString(safeFont, "Session log", x, y, DesignTokens.Text.TITLE(), false);
         y += LINE_HEIGHT;
         if (changeLog.isEmpty()) {
-            graphics.drawString(safeFont, "(no entries)", x + DETAIL_INSET, y, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "(no entries)", x + DETAIL_INSET, y, DesignTokens.Text.MUTED(), false);
             return y + LINE_HEIGHT;
         }
         for (String entry : changeLog) {
-            graphics.drawString(safeFont, entry, x + DETAIL_INSET, y, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(safeFont, entry, x + DETAIL_INSET, y, DesignTokens.Text.SECONDARY(), false);
             y += LINE_HEIGHT;
         }
         return y;
@@ -186,14 +186,14 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
 
     private int renderNbtBlock(GuiGraphics graphics, Font font, int x, int y) {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
-        graphics.drawString(safeFont, "NBT data", x, y, UIConstants.Text.TITLE(), false);
+        graphics.drawString(safeFont, "NBT data", x, y, DesignTokens.Text.TITLE(), false);
         y += LINE_HEIGHT;
         if (nbtLines.isEmpty()) {
-            graphics.drawString(safeFont, "(empty)", x + DETAIL_INSET, y, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "(empty)", x + DETAIL_INSET, y, DesignTokens.Text.MUTED(), false);
             return y + LINE_HEIGHT;
         }
         for (String line : nbtLines) {
-            graphics.drawString(safeFont, line, x + DETAIL_INSET, y, UIConstants.Text.FORMULA(), false);
+            graphics.drawString(safeFont, line, x + DETAIL_INSET, y, DesignTokens.Text.FORMULA(), false);
             y += LINE_HEIGHT;
         }
         return y;

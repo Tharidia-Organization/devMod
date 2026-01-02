@@ -31,7 +31,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
 import com.devmod.endurance.QuestType;
@@ -68,6 +68,7 @@ public class PartyScreen extends Screen {
     private List<EnduranceQuestRegistry.MobQuestConfig> availableMobs = new ArrayList<>();
     private List<EnduranceQuestRegistry.MobQuestConfig> filteredMobs = new ArrayList<>();
     private int selectedMobIndex = 0;
+    @Nullable private ResourceLocation selectedMobId = null;
     private int mobListScrollOffset = 0;
     private String mobSearchText = "";
     private static final int MAX_VISIBLE_MOBS = 6;
@@ -166,6 +167,13 @@ public class PartyScreen extends Screen {
     public List<EnduranceQuestRegistry.MobQuestConfig> getFilteredMobs() { return filteredMobs; }
     public int getSelectedMobIndex() { return selectedMobIndex; }
     public int getMobListScrollOffset() { return mobListScrollOffset; }
+    public boolean isSelectedMobFilteredOut() {
+        ResourceLocation mobId = selectedMobId;
+        if (mobId == null) {
+            return false;
+        }
+        return findMobIndex(mobId, filteredMobs) < 0;
+    }
 
     @Nullable public String getSelectedNamespace() { return selectedNamespace; }
     @Nullable public MobTier getSelectedTierFilter() { return selectedTierFilter; }
@@ -180,6 +188,23 @@ public class PartyScreen extends Screen {
     public void setMobRotationY(float value) { this.mobRotationY = value; }
 
     public int getPreviewWaveNumber() { return previewWaveNumber; }
+
+    @Nullable
+    public EnduranceQuestRegistry.MobQuestConfig getSelectedMobConfig() {
+        ResourceLocation mobId = selectedMobId;
+        if (mobId != null) {
+            for (EnduranceQuestRegistry.MobQuestConfig config : availableMobs) {
+                if (config.mobId.equals(mobId)) {
+                    return config;
+                }
+            }
+            return null;
+        }
+        if (selectedMobIndex >= 0 && selectedMobIndex < filteredMobs.size()) {
+            return filteredMobs.get(selectedMobIndex);
+        }
+        return null;
+    }
 
     @Override
     protected void init() {
@@ -306,14 +331,16 @@ public class PartyScreen extends Screen {
             return a.displayName.compareTo(b.displayName);
         });
 
-        filterMobs();
-
-        for (int i = 0; i < filteredMobs.size(); i++) {
-            if (filteredMobs.get(i).mobId.getPath().equals("zombie")) {
-                selectedMobIndex = i;
-                break;
+        if (selectedMobId == null) {
+            for (EnduranceQuestRegistry.MobQuestConfig config : availableMobs) {
+                if ("zombie".equals(config.mobId.getPath())) {
+                    selectedMobId = config.mobId;
+                    break;
+                }
             }
         }
+
+        filterMobs();
     }
 
     private void filterMobs() {
@@ -330,8 +357,12 @@ public class PartyScreen extends Screen {
                 })
                 .collect(Collectors.toList());
 
-        if (selectedMobIndex >= filteredMobs.size()) {
-            selectedMobIndex = Math.max(0, filteredMobs.size() - 1);
+        int newIndex = findMobIndex(selectedMobId, filteredMobs);
+        if (newIndex < 0 && selectedMobId == null && !filteredMobs.isEmpty()) {
+            selectedMobIndex = 0;
+            selectedMobId = filteredMobs.get(0).mobId;
+        } else {
+            selectedMobIndex = newIndex;
         }
         mobListScrollOffset = 0;
         updatePreviewEntity();
@@ -355,17 +386,19 @@ public class PartyScreen extends Screen {
 
             PartySyncPayload party = ClientPartyCache.getParty();
             if (party != null) {
+                ResourceLocation previousMobId = selectedMobId;
                 ResourceLocation mobId = party.getSelectedMobResourceLocation();
                 if (mobId != null) {
-                    for (int i = 0; i < filteredMobs.size(); i++) {
-                        if (filteredMobs.get(i).mobId.equals(mobId)) {
-                            if (selectedMobIndex != i) {
-                                selectedMobIndex = i;
-                                updatePreviewEntity();
-                            }
-                            break;
-                        }
-                    }
+                    selectedMobId = mobId;
+                }
+
+                int newIndex = findMobIndex(selectedMobId, filteredMobs);
+                boolean selectionChanged = !Objects.equals(previousMobId, selectedMobId);
+                if (newIndex != selectedMobIndex || selectionChanged) {
+                    selectedMobIndex = newIndex;
+                    updatePreviewEntity();
+                } else if (previewEntity == null && selectedMobId != null) {
+                    updatePreviewEntity();
                 }
             }
 
@@ -431,7 +464,7 @@ public class PartyScreen extends Screen {
             disbandButton.enabled(isLeader);
         }
         if (inviteButton != null) {
-            inviteButton.enabled(isInParty);
+            inviteButton.enabled(isInParty && isLeader);
         }
         if (leaveButton != null) {
             leaveButton.enabled(isInParty);
@@ -463,12 +496,15 @@ public class PartyScreen extends Screen {
     }
 
     private void updatePreviewEntity() {
-        if (filteredMobs.isEmpty() || selectedMobIndex >= filteredMobs.size()) {
+        if (previewEntity != null) {
+            previewEntity.discard();
             previewEntity = null;
+        }
+        EnduranceQuestRegistry.MobQuestConfig config = getSelectedMobConfig();
+        if (config == null) {
             return;
         }
 
-        EnduranceQuestRegistry.MobQuestConfig config = filteredMobs.get(selectedMobIndex);
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null) {
             try {
@@ -524,7 +560,7 @@ public class PartyScreen extends Screen {
         LOGGER.info("[PartyScreen] Sending invite to: {}", playerName);
         PacketDistributor.sendToServer(Objects.requireNonNull(NamedInvitePayload.create(playerName, questType)));
         box.setValue("");
-        UIConstants.Sound.success();
+        DesignTokens.Sound.success();
     }
 
     private void onReadyClicked() {
@@ -532,19 +568,19 @@ public class PartyScreen extends Screen {
         ClientPartyCache.setLocalPlayerReady(isReady);
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.toggleReady()));
         updateButtonStates();
-        UIConstants.Sound.toggleOn();
+        DesignTokens.Sound.toggleOn();
     }
 
     private void onLeaveClicked() {
         LOGGER.info("[PartyScreen] Leaving party");
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.leaveParty()));
         onClose();
-        UIConstants.Sound.click();
+        DesignTokens.Sound.click();
     }
 
     private void onStartClicked() {
         if (!canStartQuest()) {
-            UIConstants.Sound.error();
+            DesignTokens.Sound.error();
             return;
         }
 
@@ -552,14 +588,14 @@ public class PartyScreen extends Screen {
                 members.size(), getSelectedMobId());
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.startQuest()));
         onClose();
-        UIConstants.Sound.success();
+        DesignTokens.Sound.success();
     }
 
     private void onDisbandClicked() {
         LOGGER.info("[PartyScreen] Disbanding party");
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.disbandParty()));
         onClose();
-        UIConstants.Sound.warning();
+        DesignTokens.Sound.warning();
     }
 
     private void onCreatePartyClicked() {
@@ -568,12 +604,15 @@ public class PartyScreen extends Screen {
         isInParty = true;
         isLeader = true;
         updateButtonStates();
-        UIConstants.Sound.success();
+        DesignTokens.Sound.success();
     }
 
     @Nullable
     private ResourceLocation getSelectedMobId() {
-        if (filteredMobs.isEmpty() || selectedMobIndex >= filteredMobs.size()) return null;
+        if (selectedMobId != null) {
+            return selectedMobId;
+        }
+        if (selectedMobIndex < 0 || selectedMobIndex >= filteredMobs.size()) return null;
         return filteredMobs.get(selectedMobIndex).mobId;
     }
 
@@ -584,7 +623,7 @@ public class PartyScreen extends Screen {
             questType = QuestType.values()[hoveredQuestTab];
             ClientPartyCache.setQuestType(questType);
             PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.setQuestType(questType)));
-            UIConstants.Sound.click();
+            DesignTokens.Sound.click();
             updateButtonStates();
             return true;
         }
@@ -600,7 +639,7 @@ public class PartyScreen extends Screen {
                 mouseY >= nsFilterY && mouseY < nsFilterY + 12) {
                 selectedNamespace = null;
                 filterMobs();
-                UIConstants.Sound.click();
+                DesignTokens.Sound.click();
                 return true;
             }
             nsBtnX += allW + 2;
@@ -611,7 +650,7 @@ public class PartyScreen extends Screen {
                 mouseY >= nsFilterY && mouseY < nsFilterY + 12) {
                 selectedNamespace = "minecraft".equals(selectedNamespace) ? null : "minecraft";
                 filterMobs();
-                UIConstants.Sound.click();
+                DesignTokens.Sound.click();
                 return true;
             }
         }
@@ -627,7 +666,7 @@ public class PartyScreen extends Screen {
                     mouseY >= filterY && mouseY < filterY + 14) {
                     selectedTierFilter = (tier == selectedTierFilter) ? null : tier;
                     filterMobs();
-                    UIConstants.Sound.click();
+                    DesignTokens.Sound.click();
                     return true;
                 }
                 btnX += btnW + 2;
@@ -637,12 +676,13 @@ public class PartyScreen extends Screen {
         // Mob list clicks
         if (isInParty && isLeader && hoveredMobIndex >= 0 && hoveredMobIndex < filteredMobs.size()) {
             selectedMobIndex = hoveredMobIndex;
+            selectedMobId = filteredMobs.get(selectedMobIndex).mobId;
             updatePreviewEntity();
             ResourceLocation mobId = getSelectedMobId();
             if (mobId != null) {
                 PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.setMobType(mobId)));
             }
-            UIConstants.Sound.click();
+            DesignTokens.Sound.click();
             return true;
         }
 
@@ -686,7 +726,7 @@ public class PartyScreen extends Screen {
             PartySyncPayload.PartyMemberInfo member = members.get(hoveredMemberIndex);
             if (!member.playerId().equals(leaderId)) {
                 PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.kickMember(member.playerId())));
-                UIConstants.Sound.warning();
+                DesignTokens.Sound.warning();
                 return true;
             }
         }
@@ -751,7 +791,7 @@ public class PartyScreen extends Screen {
             var localInviteBtn = inviteButton;
             var localInviteBounds = inviteButtonBounds;
             if (localInviteBtn != null && localInviteBounds != null) {
-                localInviteBtn.enabled(isInParty);
+                localInviteBtn.enabled(isInParty && isLeader);
                 localInviteBtn.render(graphics, localInviteBounds.x, localInviteBounds.y,
                     localInviteBounds.width, localInviteBounds.height, mouseX, mouseY);
             }
@@ -843,4 +883,16 @@ public class PartyScreen extends Screen {
     }
 
     private record ButtonArea(int x, int y, int width, int height) { }
+
+    private int findMobIndex(@Nullable ResourceLocation mobId, List<EnduranceQuestRegistry.MobQuestConfig> list) {
+        if (mobId == null) {
+            return -1;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).mobId.equals(mobId)) {
+                return i;
+            }
+        }
+        return -1;
+    }
 }

@@ -392,16 +392,19 @@ public class InstanceSystemGameTests {
             helper.getLevel().getServer().getLevel(dimKey),
             "Instance level should exist");
 
-        // Bedrock layer (void preset) al livello 0
-        BlockPos bedrockPos = new BlockPos(0, 0, 0);
+        // Bedrock layer (void preset) al livello minimo della dimensione
+        int minY = level.getMinBuildHeight();
+        BlockPos bedrockPos = new BlockPos(0, minY, 0);
         helper.assertTrue(level.getBlockState(bedrockPos).is(Objects.requireNonNull(Blocks.BEDROCK)),
-            "Bedrock layer should exist at y=0");
+            "Bedrock layer should exist at min build height (" + minY + ")");
 
         // Chunk centrale deve essere caricato e contenere la piattaforma
         BlockPos platformPos = new BlockPos(0, 64, 0);
         helper.assertTrue(level.getChunkAt(platformPos) != null, "Center chunk should be loaded");
-        helper.assertTrue(level.getBlockState(platformPos).is(Objects.requireNonNull(Blocks.STONE_BRICKS)),
-            "Platform should place stone bricks at center");
+        var platformState = level.getBlockState(platformPos);
+        boolean isPlatformBlock = platformState.is(Objects.requireNonNull(Blocks.STONE_BRICKS))
+            || platformState.is(Objects.requireNonNull(Blocks.CHISELED_STONE_BRICKS));
+        helper.assertTrue(isPlatformBlock, "Platform should place stone brick family at center");
 
         boolean destroyed = DynamicDimensionManager.INSTANCE.destroyDimensionSync(instanceId);
         helper.assertTrue(destroyed, "Dimension should be destroyed cleanly");

@@ -24,7 +24,8 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.input.KeyInputHandler;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
 
@@ -36,20 +37,20 @@ public class OnboardingOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "onboarding_hud");
 
-    // Colors
-    private static final int BG_COLOR = 0xEE1A1A2E;
-    private static final int BORDER_COLOR = 0xFF4CAF50;
-    private static final int TITLE_COLOR = 0xFF81C784;
-    private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int HINT_COLOR = 0xFFFFD54F;
-    private static final int MUTED_COLOR = 0xFF888888;
-    private static final int PROGRESS_BG = 0xFF333333;
-    private static final int PROGRESS_FILL = 0xFF4CAF50;
+    // Colors (delegating to OverlayTheme)
+    private static final int BG_COLOR = OverlayTheme.Panel.BG_HEAVY;
+    private static final int BORDER_COLOR = OverlayTheme.Border.SUCCESS;
+    private static final int TITLE_COLOR = OverlayTheme.Help.TITLE;  // Light green (0xFF81C784)
+    private static final int TEXT_COLOR = OverlayTheme.Text.PRIMARY;
+    private static final int HINT_COLOR = OverlayTheme.Text.GOLD;
+    private static final int MUTED_COLOR = OverlayTheme.Text.HINT;
+    private static final int PROGRESS_BG = OverlayTheme.Progress.BG;
+    private static final int PROGRESS_FILL = OverlayTheme.Progress.FILL_GREEN;
 
     // Layout
     private static final int PANEL_WIDTH = 300;
-    private static final int PANEL_PADDING = 12;
-    private static final int LINE_HEIGHT = 14;
+    private static final int PANEL_PADDING = OverlayTheme.Dimension.PADDING_COMFORTABLE;
+    private static final int LINE_HEIGHT = OverlayTheme.Dimension.LINE_HEIGHT_READABLE;
 
     // State
     private static boolean active = false;
@@ -161,7 +162,7 @@ public class OnboardingOverlay {
 
         // Draw panel background with pulse effect
         float pulse = (float) (Math.sin(pulseAnimation) * 0.5 + 0.5);
-        int borderPulse = UIConstants.lerp(BORDER_COLOR, 0xFFFFFFFF, pulse * 0.3f);
+        int borderPulse = DesignTokens.lerp(BORDER_COLOR, OverlayTheme.Utility.WHITE, pulse * 0.3f);
 
         graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + panelHeight + 2, borderPulse);
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + panelHeight, BG_COLOR);
@@ -225,7 +226,7 @@ public class OnboardingOverlay {
         // Draw instruction with highlight
         int highlightAlpha = (int) (150 + pulse * 100);
         int highlightColor = (highlightAlpha << 24) | (HINT_COLOR & 0x00FFFFFF);
-        graphics.fill(contentX - 4, y - 2, contentX + contentWidth + 4, y + LINE_HEIGHT + 2, 0x40000000);
+        graphics.fill(contentX - 4, y - 2, contentX + contentWidth + 4, y + LINE_HEIGHT + 2, OverlayTheme.Utility.SHADOW);
         graphics.drawString(font, displayInstruction, contentX, y, highlightColor, false);
         y += LINE_HEIGHT + 10;
 

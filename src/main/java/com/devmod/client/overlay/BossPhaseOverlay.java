@@ -21,6 +21,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.telemetry.boss.BossPhaseService;
 import com.devmod.telemetry.boss.UnifiedBossDetector;
 
@@ -31,15 +32,15 @@ public class BossPhaseOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "boss_phase");
 
-    // === UI Colors (consistent with ImpactHudOverlay) ===
-    private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
-    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue
-    private static final int TEXT_TITLE = 0xFF00FFFF;         // Cyan
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // White
-    private static final int TEXT_VALUE = 0xFF00FF00;         // Green
-    private static final int TEXT_WARNING = 0xFFFFFF00;       // Yellow
-    private static final int TEXT_DANGER = 0xFFFF4444;        // Red
-    private static final int TEXT_MUTED = 0xFFAAAAAA;         // Gray
+    // === UI Colors (delegating to OverlayTheme) ===
+    private static final int PANEL_BG = OverlayTheme.Panel.BG_STANDARD;
+    private static final int PANEL_BORDER = OverlayTheme.Combat.IMPACT;
+    private static final int TEXT_TITLE = OverlayTheme.Text.TITLE;
+    private static final int TEXT_NORMAL = OverlayTheme.Text.PRIMARY;
+    private static final int TEXT_VALUE = OverlayTheme.Text.VALUE;
+    private static final int TEXT_WARNING = OverlayTheme.Text.WARNING;
+    private static final int TEXT_DANGER = OverlayTheme.Text.DANGER;
+    private static final int TEXT_MUTED = OverlayTheme.Text.MUTED;
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 200;
@@ -151,7 +152,7 @@ public class BossPhaseOverlay {
         textY += LINE_HEIGHT + 2;
 
         // Separator
-        graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1, PANEL_BORDER & 0x55FFFFFF);
+        graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1, OverlayTheme.Border.divider(PANEL_BORDER));
         textY += 4;
 
         // Boss name
@@ -165,7 +166,7 @@ public class BossPhaseOverlay {
         int barY = textY;
 
         // Background
-        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF333333);
+        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, OverlayTheme.Progress.BG);
 
         // HP fill
         int fillWidth = (int) (barWidth * cachedBossHpPercent);
@@ -173,7 +174,7 @@ public class BossPhaseOverlay {
         graphics.fill(barX, barY, barX + fillWidth, barY + barHeight, hpColor);
 
         // Border
-        drawBorder(graphics, barX, barY, barWidth, barHeight, 0xFF555555);
+        drawBorder(graphics, barX, barY, barWidth, barHeight, OverlayTheme.Border.MUTED);
         textY += barHeight + 4;
 
         // HP percentage
@@ -213,11 +214,11 @@ public class BossPhaseOverlay {
 
     private static int getHpColor(float percent) {
         if (percent > 0.5f) {
-            return 0xFF00FF00; // Green
+            return TEXT_VALUE;
         } else if (percent > 0.25f) {
-            return 0xFFFFFF00; // Yellow
+            return TEXT_WARNING;
         } else {
-            return 0xFFFF4444; // Red
+            return TEXT_DANGER;
         }
     }
 

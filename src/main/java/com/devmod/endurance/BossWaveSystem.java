@@ -11,8 +11,6 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.Nonnull;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +48,8 @@ public class BossWaveSystem {
 
     public static final BossWaveSystem INSTANCE = new BossWaveSystem();
 
-    private static <T> @Nonnull T requireNonNull(T value, String name) {
+    @javax.annotation.Nonnull
+    private static <T> T requireNonNull(T value, String name) {
         return Objects.requireNonNull(value, name);
     }
 

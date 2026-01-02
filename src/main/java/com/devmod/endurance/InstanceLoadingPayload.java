@@ -1,5 +1,6 @@
 package com.devmod.endurance;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -7,10 +8,12 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 public record InstanceLoadingPayload(
     boolean show,
     String status
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<InstanceLoadingPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "instance_loading"))
@@ -29,6 +32,13 @@ public record InstanceLoadingPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = 1; // show
+        size += estimatedUtfSize(status);
+        return size;
+    }
+
     // Factory methods for common states - use i18n keys that get translated on client
     public static InstanceLoadingPayload showCreating() {
         return new InstanceLoadingPayload(true, "devmod.loading.creating_dimension");
@@ -44,5 +54,23 @@ public record InstanceLoadingPayload(
 
     public static InstanceLoadingPayload hide() {
         return new InstanceLoadingPayload(false, "");
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

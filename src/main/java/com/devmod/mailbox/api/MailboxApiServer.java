@@ -7,13 +7,13 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.mailbox.MailboxConfig;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
 import io.javalin.json.JavalinJackson;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.devmod.mailbox.MailboxConfig;
 
 /**
  * Embedded HTTP server for the mailbox admin panel API.
@@ -235,6 +235,12 @@ public final class MailboxApiServer {
         app.get(API_PREFIX + "/stats",
             com.devmod.mailbox.api.controllers.ConfigController::getStats);
 
+        // Security metrics routes (P0: payload size rejection metrics)
+        app.get(API_PREFIX + "/security/metrics",
+            com.devmod.mailbox.api.controllers.ConfigController::getSecurityMetrics);
+        app.post(API_PREFIX + "/security/metrics/reset",
+            com.devmod.mailbox.api.controllers.ConfigController::resetSecurityMetrics);
+
         // Analytics routes (advanced metrics)
         app.get(API_PREFIX + "/analytics/dashboard",
             com.devmod.mailbox.api.controllers.AnalyticsController::getDashboardMetrics);
@@ -284,6 +290,14 @@ public final class MailboxApiServer {
             com.devmod.mailbox.api.controllers.TicketController::assignTicket);
         app.post(API_PREFIX + "/tickets/{id}/comments",
             com.devmod.mailbox.api.controllers.TicketController::addComment);
+
+        // Ticket auto-transition routes
+        app.get(API_PREFIX + "/tickets/auto-transition/config",
+            com.devmod.mailbox.api.controllers.ConfigController::getAutoTransitionConfig);
+        app.put(API_PREFIX + "/tickets/auto-transition/config",
+            com.devmod.mailbox.api.controllers.ConfigController::updateAutoTransitionConfig);
+        app.get(API_PREFIX + "/tickets/auto-transition/metrics",
+            com.devmod.mailbox.api.controllers.ConfigController::getAutoTransitionMetrics);
     }
 
     // Response DTOs

@@ -37,6 +37,9 @@ public class TemplateValidator {
     private HazardValidator.HazardTelemetry hazardTelemetry;
     @Nullable
     private java.util.Set<String> registeredCustomHazards;
+    // P1: Block and entity whitelist validation
+    @Nullable
+    private BlockEntityWhitelist blockEntityWhitelist;
     private static final int EXPECTED_SCHEMA_VERSION = 1;
     private static final List<String> ALLOWED_PARTICLE_AREAS = List.of("bounds", "chunks");
 
@@ -143,6 +146,21 @@ public class TemplateValidator {
         this.mode = mode;
     }
 
+    /**
+     * P1: Set the block and entity whitelist for material validation.
+     */
+    public void setBlockEntityWhitelist(@Nullable BlockEntityWhitelist whitelist) {
+        this.blockEntityWhitelist = whitelist;
+    }
+
+    /**
+     * P1: Fluent setter for block/entity whitelist.
+     */
+    public TemplateValidator withBlockEntityWhitelist(BlockEntityWhitelist whitelist) {
+        this.blockEntityWhitelist = whitelist;
+        return this;
+    }
+
     public ValidationResult validate(ArenaTemplate template) {
         List<String> errors = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
@@ -157,6 +175,7 @@ public class TemplateValidator {
         }
 
         validateRequiredFields(template, errors);
+        validateArenaShape(template, errors, warnings);
 
         int maxDim = computeMaxDim(template);
         Integer sizeXVal = template.sizeX();
@@ -169,6 +188,10 @@ public class TemplateValidator {
         validateWalls(template.walls(), errors);
         validateCeiling(template.ceiling(), errors);
         validateUnderfloor(template.underfloor(), errors);
+
+        // P1: Block and entity whitelist validation
+        validateBlockEntityWhitelist(template, errors, warnings);
+
         validateBoundsClosure(template, errors, warnings);
         validatePalette(template.palette(), errors);
         validateBiome(template.biome(), errors);
@@ -264,6 +287,36 @@ public class TemplateValidator {
         }
         if (ceiling.enabled() && (ceiling.material() == null || ceiling.material().isBlank())) {
             errors.add("ceiling.material is required when enabled");
+        }
+    }
+
+    /**
+     * P1: Validate block materials and entity types against whitelist.
+     */
+    private void validateBlockEntityWhitelist(ArenaTemplate template, List<String> errors, List<String> warnings) {
+        BlockEntityWhitelist whitelist = this.blockEntityWhitelist;
+        if (whitelist == null || !whitelist.isEnabled()) {
+            return;
+        }
+
+        // Validate block materials
+        List<BlockEntityWhitelist.ValidationResult> blockResults = whitelist.validateTemplateBlocks(template);
+        for (BlockEntityWhitelist.ValidationResult result : blockResults) {
+            if (result.isError()) {
+                errors.add("Block whitelist: " + result.message());
+            } else if (result.isWarning()) {
+                warnings.add("Block whitelist: " + result.message());
+            }
+        }
+
+        // Validate entity types in spawn slots
+        List<BlockEntityWhitelist.ValidationResult> entityResults = whitelist.validateTemplateEntities(template);
+        for (BlockEntityWhitelist.ValidationResult result : entityResults) {
+            if (result.isError()) {
+                errors.add("Entity whitelist: " + result.message());
+            } else if (result.isWarning()) {
+                warnings.add("Entity whitelist: " + result.message());
+            }
         }
     }
 
@@ -443,6 +496,53 @@ public class TemplateValidator {
         }
     }
 
+    private void validateArenaShape(ArenaTemplate template, List<String> errors, List<String> warnings) {
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            // Default to RECTANGULAR, no error needed
+            return;
+        }
+
+        Integer sizeXVal = template.sizeX();
+        Integer sizeZVal = template.sizeZ();
+        int sizeX = sizeXVal != null ? sizeXVal : template.size();
+        int sizeZ = sizeZVal != null ? sizeZVal : template.size();
+        int radius = Math.max(sizeX, sizeZ) / 2;
+
+        switch (shape) {
+            case CIRCULAR -> {
+                // Warn if not square (circular should use equal dimensions)
+                if (sizeX != sizeZ) {
+                    warnings.add("arenaShape=CIRCULAR with non-square size (%dx%d); will use radius=%d".formatted(sizeX, sizeZ, radius));
+                }
+            }
+            case RING -> {
+                // Warn if not square
+                if (sizeX != sizeZ) {
+                    warnings.add("arenaShape=RING with non-square size (%dx%d); will use radius=%d".formatted(sizeX, sizeZ, radius));
+                }
+                // Validate ringInnerRadius
+                Integer innerRadiusVal = template.ringInnerRadius();
+                if (innerRadiusVal != null) {
+                    int innerRadius = innerRadiusVal;
+                    if (innerRadius < 0) {
+                        errors.add("ringInnerRadius must be >= 0");
+                    }
+                    if (innerRadius >= radius) {
+                        errors.add("ringInnerRadius (%d) must be < outer radius (%d)".formatted(innerRadius, radius));
+                    }
+                    // Warn if inner radius is very small (less than 10% of outer)
+                    if (innerRadius > 0 && innerRadius < radius / 10) {
+                        warnings.add("ringInnerRadius (%d) is very small compared to radius (%d)".formatted(innerRadius, radius));
+                    }
+                }
+            }
+            case RECTANGULAR -> {
+                // No special validation needed for rectangular
+            }
+        }
+    }
+
     private void validateSizeBounds(int maxDim, List<String> errors) {
         if (maxDim < MIN_SIZE || maxDim > MAX_SIZE) {
             errors.add("size/sizeX/sizeZ must be between %d and %d".formatted(MIN_SIZE, MAX_SIZE));
@@ -538,6 +638,9 @@ public class TemplateValidator {
         if (structure == null) return;
 
         StructureNbtLoader loader = new StructureNbtLoader();
+        final StructureManifest manifest = structureManifest;
+        final StructureDataProvider dataProvider = structureDataProvider;
+        final StructureFallbackConfig fallbackConfig = structureFallbackConfig;
         if (structure.path() == null || structure.path().isBlank()) {
             errors.add("structureNbt.path is required");
         } else if (!loader.isValidPath(structure.path())) {
@@ -559,15 +662,15 @@ public class TemplateValidator {
         }
 
         // Deep validation against manifest/data if provided
-        if (structureManifest != null && structureDataProvider != null && structure.path() != null) {
+        if (manifest != null && dataProvider != null && structure.path() != null) {
             try {
-                byte[] data = structureDataProvider.load(structure.path());
+                byte[] data = dataProvider.load(structure.path());
                 if (data == null) {
                     warnings.add("structureNbt data not found for path: " + structure.path());
                     emitStructureRejected(structure.path(), "DATA_NOT_FOUND");
                     return;
                 }
-                StructureNbtLoader.LoadResult result = loader.load(structure.path(), () -> data, structureManifest);
+                StructureNbtLoader.LoadResult result = loader.load(structure.path(), () -> data, manifest);
                 if (!result.ok()) {
                     errors.add("structureNbt validation failed: " + result.errorCode() + " - " + result.message());
                     emitStructureRejected(structure.path(), result.errorCode());
@@ -580,28 +683,28 @@ public class TemplateValidator {
             }
         } else {
             // Fallback path: validation without manifest (dev-friendly)
-            if (structureDataProvider == null || structure.path() == null) {
+            if (dataProvider == null || structure.path() == null) {
                 errors.add("structureNbt present but manifest/provider not configured");
                 emitStructureRejected(structure != null ? structure.path() : "unknown", "NO_MANIFEST");
                 return;
             }
-            if (structureFallbackConfig == null) {
+            if (fallbackConfig == null) {
                 errors.add("structureNbt fallback config missing");
                 emitStructureRejected(structure.path(), "NO_FALLBACK_CONFIG");
                 return;
             }
             try {
-                byte[] data = structureDataProvider.load(structure.path());
+                byte[] data = dataProvider.load(structure.path());
                 if (data == null) {
                     warnings.add("structureNbt fallback: data not found for path " + structure.path());
                     emitStructureRejected(structure.path(), "DATA_NOT_FOUND");
                     return;
                 }
                 StructureNbtLoader.FallbackLimits limits = new StructureNbtLoader.FallbackLimits(
-                    structureFallbackConfig.allowedNamespaces(),
-                    structureFallbackConfig.maxFileSizeBytes(),
-                    structureFallbackConfig.maxBlockCount(),
-                    structureFallbackConfig.maxEntityCount()
+                    fallbackConfig.allowedNamespaces(),
+                    fallbackConfig.maxFileSizeBytes(),
+                    fallbackConfig.maxBlockCount(),
+                    fallbackConfig.maxEntityCount()
                 );
                 var result = loader.loadWithLimits(structure.path(), () -> data, limits);
                 if (!result.ok()) {
@@ -650,23 +753,26 @@ public class TemplateValidator {
     }
 
     private void emitStructureLoaded(String path, int blockCount, int entityCount) {
-        if (structureTelemetry != null) {
-            structureTelemetry.loaded(path, blockCount, entityCount);
+        final StructureTelemetry telemetry = structureTelemetry;
+        if (telemetry != null) {
+            telemetry.loaded(path, blockCount, entityCount);
         }
     }
 
     private void emitStructureRejected(String path, String reason) {
-        if (structureTelemetry != null) {
-            structureTelemetry.rejected(path, reason);
+        final StructureTelemetry telemetry = structureTelemetry;
+        if (telemetry != null) {
+            telemetry.rejected(path, reason);
             if ("CHECKSUM_MISMATCH".equals(reason)) {
-                structureTelemetry.rejected(path, "CHECKSUM_MISMATCH");
+                telemetry.rejected(path, "CHECKSUM_MISMATCH");
             }
         }
     }
 
     private void emitStructureFallback(String path, String reason) {
-        if (structureTelemetry != null) {
-            structureTelemetry.fallbackUsed(path, reason);
+        final StructureTelemetry telemetry = structureTelemetry;
+        if (telemetry != null) {
+            telemetry.fallbackUsed(path, reason);
         }
     }
 

@@ -301,6 +301,23 @@ public class EnduranceEventHandler {
         // Trigger player attribute snapshot on quest end
         PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "quest_end");
 
+        // === PARTY STATE TRANSITION ===
+        // Finish party quest if this was a party quest and party is still in IN_QUEST state
+        UUID partyId = session.getPartyId();
+        if (partyId != null) {
+            var party = com.devmod.party.PartyManager.INSTANCE.getParty(partyId);
+            if (party != null && party.getState() == com.devmod.party.PartyData.PartyState.IN_QUEST) {
+                com.devmod.party.PartyManager.INSTANCE.finishQuest(partyId);
+                LOGGER.info("[EnduranceQuest] Party {} transitioned from IN_QUEST to FORMING", partyId);
+
+                // Sync party state to all members so clients see the updated state
+                var server = player.getServer();
+                if (server != null) {
+                    com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, partyId);
+                }
+            }
+        }
+
         LOGGER.info("[EnduranceQuest] Quest ended for {} - Completed: {}, Style Rank: {}",
             player.getName().getString(), completed,
             comboSession != null ? comboSession.getHighestRank().displayName : "N/A");
@@ -744,8 +761,10 @@ public class EnduranceEventHandler {
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            UUID playerId = player.getUUID();
+
             // Notify QuestStartSequence about disconnect (cancels sequence if needed)
-            QuestStartSequence.INSTANCE.onPlayerDisconnect(player.getUUID());
+            QuestStartSequence.INSTANCE.onPlayerDisconnect(playerId);
 
             Optional<EnduranceQuestManager.ActiveQuestSession> sessionOpt =
                 EnduranceQuestManager.INSTANCE.getActiveSession(player);
@@ -758,9 +777,33 @@ public class EnduranceEventHandler {
                 EnduranceQuestManager.INSTANCE.abandonQuest(player);
             }
 
+            // Handle party disconnect - transfer leadership or leave party
+            var party = com.devmod.party.PartyManager.INSTANCE.getPlayerParty(playerId);
+            if (party != null) {
+                UUID partyId = party.getPartyId();
+                boolean wasLeader = party.isLeader(playerId);
+
+                // This will transfer leadership if player was leader, or just remove from party
+                com.devmod.party.PartyManager.INSTANCE.handlePlayerDisconnect(playerId);
+
+                // Sync party state to remaining members
+                var server = player.getServer();
+                if (server != null) {
+                    // Party may have been disbanded if this was the only member
+                    var remainingParty = com.devmod.party.PartyManager.INSTANCE.getParty(partyId);
+                    if (remainingParty != null) {
+                        com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, partyId);
+                        if (wasLeader) {
+                            LOGGER.info("[Party] Leadership transferred due to disconnect, new leader: {}",
+                                remainingParty.getLeaderName());
+                        }
+                    }
+                }
+            }
+
             // Flush and cleanup telemetry aggregator for this player
             if (AggregationConfig.AGGREGATION_ENABLED) {
-                TelemetryAggregatorRegistry.INSTANCE.onPlayerLeave(player.getUUID());
+                TelemetryAggregatorRegistry.INSTANCE.onPlayerLeave(playerId);
             }
         }
     }

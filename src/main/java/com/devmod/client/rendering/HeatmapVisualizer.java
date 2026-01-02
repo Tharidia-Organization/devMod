@@ -20,25 +20,11 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.rendering.HeatmapType;
 
 public class HeatmapVisualizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(HeatmapVisualizer.class);
     public static final HeatmapVisualizer INSTANCE = new HeatmapVisualizer();
-
-    // Tipi di heatmap supportati
-    public enum HeatmapType {
-        DEATH(0xFFFF0000),      // Rosso
-        MOVEMENT(0xFF00FF00),   // Verde
-        CAMPING(0xFFFFFF00),    // Giallo
-        STUCK(0xFFFF8000),      // Arancione
-        AGGRO_DROP(0xFF8000FF), // Viola
-        KITING(0xFF00FFFF),     // Ciano
-        LIGHT_SPAWNABLE(0xFFFF0000), // Red (can spawn)
-        LIGHT_DARK(0xFFFF8800); // Arancione (buio ma non spawn)
-
-        final int baseColor;
-        HeatmapType(int color) { this.baseColor = color; }
-    }
 
     // Data for each heatmap type
     private final Map<HeatmapType, Map<BlockPos, Integer>> heatmapData = new ConcurrentHashMap<>();
@@ -294,7 +280,7 @@ public class HeatmapVisualizer {
     private int getGradientColor(float intensity, HeatmapType type) {
         // Per LIGHT_SPAWNABLE e LIGHT_DARK usa colori fissi
         if (type == HeatmapType.LIGHT_SPAWNABLE || type == HeatmapType.LIGHT_DARK) {
-            return type.baseColor;
+            return type.getBaseColor();
         }
 
         // Gradiente blu → ciano → verde → giallo → rosso

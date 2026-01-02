@@ -12,6 +12,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class HeadshotFlashVFX {
@@ -21,7 +22,7 @@ public class HeadshotFlashVFX {
 
     private static long flashStartTime = 0;
     private static final long FLASH_DURATION_MS = 300;
-    private static final int FLASH_COLOR_BASE = 0xFF0000; // Red
+    private static final int FLASH_COLOR_BASE = OverlayTheme.Flash.HEADSHOT;
 
     /**
      * Activates the flash effect. Call when headshot is detected.

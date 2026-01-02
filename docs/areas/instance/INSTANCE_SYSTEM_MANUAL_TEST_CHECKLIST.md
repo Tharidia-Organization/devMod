@@ -3,6 +3,7 @@
 > Last updated: 2025-12-26
 > Status: ARCHIVED (replaced by automated validations)
 > Replaced by:
+>
 > - `docs/DOCS_BEHAVIOR_MATRIX.md`
 > - `docs/areas/instance/INSTANCE_SYSTEM_TEST_STRATEGY.md`
 

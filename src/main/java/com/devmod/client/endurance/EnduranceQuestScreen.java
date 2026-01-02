@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -25,8 +24,9 @@ import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.BaseDevModScreen;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.KitManager;
@@ -37,37 +37,44 @@ import com.devmod.endurance.StartQuestPayload;
 import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
-public class EnduranceQuestScreen extends Screen {
+public class EnduranceQuestScreen extends BaseDevModScreen {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestScreen.class);
+    private static final String SCREEN_ID = "endurance_quest";
 
-    // Layout constants - using UIConstants for consistency
-    private static final int SIDEBAR_WIDTH = UIConstants.Size.SIDEBAR_WIDTH_NARROW;  // Slightly narrower for more content space
+    // Layout constants - using DesignTokens for consistency
+    private static final int SIDEBAR_WIDTH = 140;  // Compact sidebar for quest list
     private static final int HEADER_HEIGHT = 50;   // Taller for better separation
     private static final int RIGHT_PANEL_WIDTH = 260;  // Wider for settings
     private static final int QUEST_CARD_HEIGHT = 72;   // Compact cards
     private static final int QUEST_CARD_MARGIN = 6;
 
-    // Colors - standardized to UIConstants
-    private static final int COLOR_BG = UIConstants.Background.PANEL();
-    private static final int COLOR_SIDEBAR_BG = UIConstants.Background.HEADER();
-    private static final int COLOR_CARD_BG = UIConstants.Background.INPUT();
-    private static final int COLOR_CARD_HOVER = UIConstants.Background.HOVER();
-    private static final int COLOR_CARD_SELECTED = UIConstants.Background.ACTIVE();
-    private static final int COLOR_ACCENT = UIConstants.Border.DEFAULT();  // Blue instead of pink
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
-    private static final int COLOR_WARNING = UIConstants.Accent.GOLD();
-    private static final int COLOR_DANGER = UIConstants.Accent.RED();
+    // Colors - standardized to DesignTokens
+    private static final int COLOR_BG = DesignTokens.Bg.LEVEL_0;
+    private static final int COLOR_SIDEBAR_BG = DesignTokens.Bg.LEVEL_1;
+    private static final int COLOR_CARD_BG = DesignTokens.Surface.LEVEL_0;
+    private static final int COLOR_CARD_HOVER = DesignTokens.Surface.LEVEL_1;
+    private static final int COLOR_CARD_SELECTED = DesignTokens.Surface.LEVEL_2;
+    private static final int COLOR_ACCENT = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_SUCCESS = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_WARNING = DesignTokens.Semantic.WARNING;
+    private static final int COLOR_DANGER = DesignTokens.Semantic.ERROR;
 
-    // Tier colors - using UIConstants where applicable
+    // Tier colors - using DesignTokens where applicable
+    private static final int COLOR_TIER_TRIVIAL = DesignTokens.Text.MUTED;
+    private static final int COLOR_TIER_EASY = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_TIER_MEDIUM = DesignTokens.Semantic.WARNING;
+    private static final int COLOR_TIER_HARD = 0xFFFF8C00;  // Orange - no direct token
+    private static final int COLOR_TIER_ELITE = 0xFFA371F7; // Purple - no direct token
+    private static final int COLOR_TIER_BOSS = DesignTokens.Semantic.ERROR;
     private static final Map<EnduranceQuestRegistry.MobTier, Integer> TIER_COLORS = Map.of(
-        EnduranceQuestRegistry.MobTier.TRIVIAL, UIConstants.Text.MUTED(),
-        EnduranceQuestRegistry.MobTier.EASY, UIConstants.Accent.GREEN(),
-        EnduranceQuestRegistry.MobTier.MEDIUM, UIConstants.Accent.GOLD(),
-        EnduranceQuestRegistry.MobTier.HARD, UIConstants.Accent.ORANGE(),
-        EnduranceQuestRegistry.MobTier.ELITE, UIConstants.Accent.PURPLE(),
-        EnduranceQuestRegistry.MobTier.BOSS, UIConstants.Accent.RED()
+        EnduranceQuestRegistry.MobTier.TRIVIAL, COLOR_TIER_TRIVIAL,
+        EnduranceQuestRegistry.MobTier.EASY, COLOR_TIER_EASY,
+        EnduranceQuestRegistry.MobTier.MEDIUM, COLOR_TIER_MEDIUM,
+        EnduranceQuestRegistry.MobTier.HARD, COLOR_TIER_HARD,
+        EnduranceQuestRegistry.MobTier.ELITE, COLOR_TIER_ELITE,
+        EnduranceQuestRegistry.MobTier.BOSS, COLOR_TIER_BOSS
     );
 
     // State
@@ -141,12 +148,12 @@ public class EnduranceQuestScreen extends Screen {
 
     // Error feedback for no selection
     @Nullable
-    private String errorMessage = null;
-    private long errorMessageTime = 0;
+    private String questErrorMessage = null;
+    private long questErrorMessageTime = 0;
     private static final long ERROR_DISPLAY_DURATION = 3000; // 3 seconds
 
     public EnduranceQuestScreen() {
-        super(I18n.screenTitle("endurance_quests"));
+        super(I18n.screenTitle("endurance_quests"), SCREEN_ID, "endurance");
     }
 
     /**
@@ -156,7 +163,7 @@ public class EnduranceQuestScreen extends Screen {
      * @param waves Number of waves (0 for endless)
      */
     public EnduranceQuestScreen(@javax.annotation.Nullable net.minecraft.resources.ResourceLocation mobId, int waves) {
-        super(I18n.screenTitle("endurance_quests"));
+        super(I18n.screenTitle("endurance_quests"), SCREEN_ID, "endurance");
         this.preselectedMob = mobId;
         this.questWaves = waves > 0 ? waves : 10;
         this.endlessMode = waves <= 0;
@@ -164,9 +171,7 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     @Override
-    protected void init() {
-        super.init();
-
+    protected void initContent() {
         // Notify onboarding overlay that Endurance Quest was opened
         com.devmod.client.overlay.OnboardingOverlay.onEnduranceQuestOpened();
 
@@ -206,7 +211,7 @@ public class EnduranceQuestScreen extends Screen {
 
         shopButton = EditorButton.builder("open-shop", I18n.ui("shop").getString())
             .style(EditorButton.Style.PRIMARY)
-            .accent(UIConstants.Accent.GOLD())
+            .accent(DesignTokens.Semantic.WARNING)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::openShop)
             .build();
@@ -348,6 +353,11 @@ public class EnduranceQuestScreen extends Screen {
             .sorted(Comparator.comparing(q -> q.displayName))
             .collect(Collectors.toList());
 
+        // Clear selection if it no longer matches the filtered list
+        if (selectedQuest != null && !filteredQuests.contains(selectedQuest)) {
+            selectedQuest = null;
+        }
+
         scrollOffset = 0;
         calculateMaxScroll();
     }
@@ -359,7 +369,7 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     @Override
-    public void render(@javax.annotation.Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
         graphics.fill(0, 0, width, height, COLOR_BG);
 
@@ -384,11 +394,9 @@ public class EnduranceQuestScreen extends Screen {
         // Custom action buttons (rendered after panels to be on top)
         renderActionButtons(graphics, mouseX, mouseY);
 
-        super.render(graphics, mouseX, mouseY, partialTick);
-
         // Error message feedback (rendered on top of buttons)
-        if (errorMessage != null) {
-            long elapsed = System.currentTimeMillis() - errorMessageTime;
+        if (questErrorMessage != null) {
+            long elapsed = System.currentTimeMillis() - questErrorMessageTime;
             if (elapsed < ERROR_DISPLAY_DURATION) {
                 // Fade out effect
                 float alpha = 1.0f - (elapsed / (float) ERROR_DISPLAY_DURATION);
@@ -396,7 +404,7 @@ public class EnduranceQuestScreen extends Screen {
 
                 // Draw error message near the Start Quest button
                 var safeFont = Objects.requireNonNull(font);
-                int msgWidth = safeFont.width(Objects.requireNonNull(errorMessage));
+                int msgWidth = safeFont.width(Objects.requireNonNull(questErrorMessage));
                 int msgX;
                 int msgY;
                 var startBtn = startButton;
@@ -410,15 +418,15 @@ public class EnduranceQuestScreen extends Screen {
                 }
 
                 // Background (darker version of danger color)
-                int bgColor = UIConstants.setAlpha(COLOR_DANGER, alphaInt / 3);
+                int bgColor = DesignTokens.withAlpha(COLOR_DANGER, alphaInt / 3);
                 graphics.fill(msgX - 6, msgY - 3, msgX + msgWidth + 6, msgY + 12, bgColor);
                 // Border (full danger color with alpha)
-                int borderColor = UIConstants.setAlpha(COLOR_DANGER, alphaInt);
+                int borderColor = DesignTokens.withAlpha(COLOR_DANGER, alphaInt);
                 graphics.fill(msgX - 6, msgY - 3, msgX + msgWidth + 6, msgY - 2, borderColor);
                 // Text
-                graphics.drawString(safeFont, Objects.requireNonNull(errorMessage), msgX, msgY, (alphaInt << 24) | 0xFFFFFF);
+                graphics.drawString(safeFont, Objects.requireNonNull(questErrorMessage), msgX, msgY, (alphaInt << 24) | 0xFFFFFF);
             } else {
-                errorMessage = null;
+                questErrorMessage = null;
             }
         }
     }
@@ -436,7 +444,7 @@ public class EnduranceQuestScreen extends Screen {
 
         // Panel background
         graphics.fill(panelX - 2, panelY - 2, panelX + panelW + 2, panelY + panelH + 2, COLOR_ACCENT);
-        graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, UIConstants.Background.PANEL_SOLID());
+        graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, DesignTokens.Bg.LEVEL_1);
 
         int y = panelY + 15;
         int centerX = panelX + panelW / 2;
@@ -447,7 +455,7 @@ public class EnduranceQuestScreen extends Screen {
         y += 25;
 
         // Separator
-        graphics.fill(panelX + 20, y, panelX + panelW - 20, y + 1, UIConstants.Border.SEPARATOR());
+        graphics.fill(panelX + 20, y, panelX + panelW - 20, y + 1, DesignTokens.Stroke.MUTED);
         y += 15;
 
         // Description
@@ -460,9 +468,9 @@ public class EnduranceQuestScreen extends Screen {
 
         // Button area
         y = panelY + panelH - 40;
-        int btnW = UIConstants.Size.BUTTON_WIDTH_SMALL + 20;
+        int btnW = 100;  // Intro dismiss button width
         int btnX = centerX - btnW / 2;
-        int btnH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int btnH = DesignTokens.Component.BUTTON_HEIGHT_LG;
         if (introDismissButton != null) {
             introDismissButton.render(graphics, btnX, y, btnW, btnH, mouseX, mouseY);
         }
@@ -503,7 +511,7 @@ public class EnduranceQuestScreen extends Screen {
         y += 20;
 
         // Divider
-        graphics.fill(8, y, SIDEBAR_WIDTH - 10, y + 1, UIConstants.Border.SEPARATOR());
+        graphics.fill(8, y, SIDEBAR_WIDTH - 10, y + 1, DesignTokens.Stroke.MUTED);
         y += 8;
 
         // Calculate layout bounds
@@ -552,7 +560,7 @@ public class EnduranceQuestScreen extends Screen {
             if (isSelected) {
                 graphics.fill(8, modY - 1, SIDEBAR_WIDTH - 14, modY + 12, COLOR_ACCENT);
             } else if (isHovered) {
-                graphics.fill(8, modY - 1, SIDEBAR_WIDTH - 14, modY + 12, UIConstants.Background.HOVER());
+                graphics.fill(8, modY - 1, SIDEBAR_WIDTH - 14, modY + 12, DesignTokens.Surface.LEVEL_1);
             }
 
             String displayName = ns.equals(ALL_NAMESPACE)
@@ -580,7 +588,7 @@ public class EnduranceQuestScreen extends Screen {
             int scrollbarX = SIDEBAR_WIDTH - 6;
             int scrollbarH = Math.max(15, (int) ((float) modsViewportHeight / modsContentHeight * modsViewportHeight));
             int scrollbarY = clipTop + (int) ((float) sidebarScrollOffset / sidebarMaxScroll * (modsViewportHeight - scrollbarH));
-            graphics.fill(scrollbarX, clipTop, scrollbarX + 3, clipBottom, UIConstants.Background.INPUT());
+            graphics.fill(scrollbarX, clipTop, scrollbarX + 3, clipBottom, DesignTokens.Surface.LEVEL_0);
             graphics.fill(scrollbarX, scrollbarY, scrollbarX + 3, scrollbarY + scrollbarH, COLOR_ACCENT);
         }
 
@@ -596,7 +604,7 @@ public class EnduranceQuestScreen extends Screen {
         if (allTiersSelected) {
             graphics.fill(8, y - 1, SIDEBAR_WIDTH - 14, y + 12, COLOR_ACCENT);
         } else if (allTiersHovered) {
-            graphics.fill(8, y - 1, SIDEBAR_WIDTH - 14, y + 12, UIConstants.Background.HOVER());
+            graphics.fill(8, y - 1, SIDEBAR_WIDTH - 14, y + 12, DesignTokens.Surface.LEVEL_1);
         }
         graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.filters.all").getString(),
             12, y, allTiersSelected ? 0xFFFFFFFF : COLOR_TEXT);
@@ -610,7 +618,7 @@ public class EnduranceQuestScreen extends Screen {
             if (isSelected) {
                 graphics.fill(8, y - 1, SIDEBAR_WIDTH - 14, y + 12, tierColor);
             } else if (isHovered) {
-                graphics.fill(8, y - 1, SIDEBAR_WIDTH - 14, y + 12, UIConstants.Background.HOVER());
+                graphics.fill(8, y - 1, SIDEBAR_WIDTH - 14, y + 12, DesignTokens.Surface.LEVEL_1);
             }
 
             long count = allQuests.stream().filter(q -> q.tier == tier).count();
@@ -708,7 +716,7 @@ public class EnduranceQuestScreen extends Screen {
         if (hasScrollbar) {
             int scrollbarHeight = (int) ((float) listHeight / (listHeight + maxScroll) * listHeight);
             int scrollbarY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - scrollbarHeight));
-            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR());
+            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, DesignTokens.Stroke.MUTED);
             graphics.fill(listX + listWidth - 5, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, COLOR_ACCENT);
         }
     }
@@ -815,7 +823,7 @@ public class EnduranceQuestScreen extends Screen {
             y += 18;
 
             // Divider
-            graphics.fill(contentX, y, contentX + contentW, y + 1, UIConstants.Border.SEPARATOR());
+            graphics.fill(contentX, y, contentX + contentW, y + 1, DesignTokens.Stroke.MUTED);
             y += 8;
 
             // Mob stats in compact grid format
@@ -858,7 +866,7 @@ public class EnduranceQuestScreen extends Screen {
 
         // === SECTION 2: QUEST SETTINGS ===
         // Section header with background
-        graphics.fill(contentX - 4, y, contentX + contentW + 4, y + 18, UIConstants.Background.INPUT());
+        graphics.fill(contentX - 4, y, contentX + contentW + 4, y + 18, DesignTokens.Surface.LEVEL_0);
         graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.section.settings").getString(),
             contentX, y + 5, COLOR_ACCENT);
         // Config button position (rendered in renderActionButtons)
@@ -877,7 +885,7 @@ public class EnduranceQuestScreen extends Screen {
         int barX = contentX + 75;
         int barW = contentW - 85;
         int barH = 8;
-        graphics.fill(barX, y + 2, barX + barW, y + 2 + barH, UIConstants.Background.INPUT());
+        graphics.fill(barX, y + 2, barX + barW, y + 2 + barH, DesignTokens.Surface.LEVEL_0);
         if (!endlessMode) {
             int fillW = (int) ((questWaves / 50.0f) * barW);
             int barColor = questWaves <= 10 ? COLOR_SUCCESS : (questWaves <= 25 ? COLOR_WARNING : COLOR_DANGER);
@@ -897,7 +905,7 @@ public class EnduranceQuestScreen extends Screen {
         y += 30;
 
         // Divider
-        graphics.fill(contentX, y, contentX + contentW, y + 1, UIConstants.Border.SEPARATOR());
+        graphics.fill(contentX, y, contentX + contentW, y + 1, DesignTokens.Stroke.MUTED);
         y += 10;
 
         // === SECTION 3: KIT SELECTION ===
@@ -912,7 +920,7 @@ public class EnduranceQuestScreen extends Screen {
         if (usingCustomKit && customKitName != null) {
             kitName = customKitName;
             kitDesc = I18n.translate("devmod.endurance.quest.kit.custom_desc", I18n.ui("edit").getString()).getString();
-            kitColor = UIConstants.Accent.GOLD();
+            kitColor = DesignTokens.Semantic.WARNING;
         } else {
             kitName = selectedKit.getDisplayName();
             kitDesc = selectedKit.getDescription();
@@ -937,7 +945,7 @@ public class EnduranceQuestScreen extends Screen {
             for (int i = 0; i < itemCount; i++) {
                 var item = Objects.requireNonNull(previewItems.get(i));
                 // Draw item background
-                graphics.fill(itemX - 1, y - 1, itemX + 17, y + 17, UIConstants.Background.INPUT());
+                graphics.fill(itemX - 1, y - 1, itemX + 17, y + 17, DesignTokens.Surface.LEVEL_0);
                 graphics.renderItem(item, itemX, y);
                 itemX += 20;
                 if (i == 3) {
@@ -984,11 +992,15 @@ public class EnduranceQuestScreen extends Screen {
 
         // === WAVE CONTROL BUTTONS ===
         int waveBtnSize = 22;
-        if (decreaseWaveButton != null) {
-            decreaseWaveButton.render(graphics, controlX, waveControlY, waveBtnSize, waveBtnSize, mouseX, mouseY);
+        var decBtn = decreaseWaveButton;
+        if (decBtn != null) {
+            decBtn.enabled(!endlessMode);
+            decBtn.render(graphics, controlX, waveControlY, waveBtnSize, waveBtnSize, mouseX, mouseY);
         }
-        if (increaseWaveButton != null) {
-            increaseWaveButton.render(graphics, controlX + waveBtnSize + 8, waveControlY, waveBtnSize, waveBtnSize, mouseX, mouseY);
+        var incBtn = increaseWaveButton;
+        if (incBtn != null) {
+            incBtn.enabled(!endlessMode);
+            incBtn.render(graphics, controlX + waveBtnSize + 8, waveControlY, waveBtnSize, waveBtnSize, mouseX, mouseY);
         }
 
         // === ENDLESS TOGGLE ===
@@ -1041,7 +1053,7 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    protected boolean handleMouseClick(double mouseX, double mouseY, int button) {
         int my = (int) mouseY;
 
         if (showIntroOverlay) {
@@ -1071,7 +1083,7 @@ public class EnduranceQuestScreen extends Screen {
             int searchY = height - 28;
             if (mouseY >= searchY && mouseY <= searchY + 18 && mouseX >= 10 && mouseX <= SIDEBAR_WIDTH - 10) {
                 // Let super handle it so the EditBox can receive focus
-                return super.mouseClicked(mouseX, mouseY, button);
+                return false;
             }
             handleSidebarClick(my);
             return true;
@@ -1092,7 +1104,7 @@ public class EnduranceQuestScreen extends Screen {
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
     }
 
     @Override
@@ -1175,7 +1187,7 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    protected boolean handleMouseScroll(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (showIntroOverlay) {
             return true;
         }
@@ -1211,6 +1223,9 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     private void adjustWaves(int delta) {
+        if (endlessMode) {
+            return;
+        }
         questWaves = Math.max(1, Math.min(50, questWaves + delta));
     }
 
@@ -1255,8 +1270,8 @@ public class EnduranceQuestScreen extends Screen {
         var currentQuest = selectedQuest;
         if (currentQuest == null) {
             // Show error feedback
-            errorMessage = I18n.translate("devmod.endurance.quest.error.select_mob").getString();
-            errorMessageTime = System.currentTimeMillis();
+            questErrorMessage = I18n.translate("devmod.endurance.quest.error.select_mob").getString();
+            questErrorMessageTime = System.currentTimeMillis();
 
             // Play error sound
             if (minecraft != null) {
@@ -1273,12 +1288,13 @@ public class EnduranceQuestScreen extends Screen {
             ? "TEMPORARY"
             : selectedKit.name();
 
+        int wavesToSend = endlessMode ? 0 : questWaves;
         LOGGER.info("[EnduranceQuest] Starting quest: {} with {} waves, endless={}, kit={}",
-            currentQuest.displayName, questWaves, endlessMode, kitId);
+            currentQuest.displayName, wavesToSend, endlessMode, kitId);
 
         StartQuestPayload payload = new StartQuestPayload(
             currentQuest.mobId.toString(),
-            questWaves,
+            wavesToSend,
             endlessMode,
             kitId
         );

@@ -11,6 +11,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.javalin.http.Context;
+
 import com.devmod.mailbox.MessageType;
 import com.devmod.mailbox.search.MailboxSearchEngine;
 import com.devmod.mailbox.search.MailboxSearchEngine.ReadStatus;
@@ -19,8 +21,6 @@ import com.devmod.mailbox.search.MailboxSearchEngine.SearchQuery;
 import com.devmod.mailbox.search.MailboxSearchEngine.SearchResult;
 import com.devmod.mailbox.search.MailboxSearchEngine.SearchStats;
 import com.devmod.mailbox.search.MailboxSearchEngine.SortBy;
-
-import io.javalin.http.Context;
 
 /**
  * REST API controller for mailbox search functionality.

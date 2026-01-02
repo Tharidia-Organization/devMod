@@ -5,13 +5,15 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
-public record WaveDirectiveSelectionPayload(String directiveId, int waveNumber) implements CustomPacketPayload {
+public record WaveDirectiveSelectionPayload(String directiveId, int waveNumber) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_STRING_LENGTH = 128;
 
@@ -52,5 +54,11 @@ public record WaveDirectiveSelectionPayload(String directiveId, int waveNumber) 
 
     public boolean isSkip() {
         return directiveId == null || directiveId.isEmpty();
+    }
+
+    @Override
+    public int estimatedSize() {
+        // 4 bytes for waveNumber int + 4 bytes for length int + string bytes
+        return 8 + (directiveId != null ? directiveId.length() : 0);
     }
 }

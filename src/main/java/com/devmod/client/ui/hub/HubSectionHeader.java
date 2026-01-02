@@ -5,7 +5,7 @@ import java.util.Objects;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public final class HubSectionHeader {
     private HubSectionHeader() {}
@@ -18,7 +18,7 @@ public final class HubSectionHeader {
         GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
         Font safeFont = Objects.requireNonNull(font, "font");
         String safeTitle = Objects.requireNonNull(title, "title");
-        safeGraphics.drawString(safeFont, safeTitle, x, y + textOffsetY, UIConstants.Text.TITLE(), false);
+        safeGraphics.drawString(safeFont, safeTitle, x, y + textOffsetY, DesignTokens.Text.TITLE(), false);
         return y + height;
     }
 }

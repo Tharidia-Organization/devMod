@@ -1,15 +1,16 @@
 package com.devmod.network;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+
+import io.netty.buffer.ByteBuf;
 
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-import io.netty.buffer.ByteBuf;
 
 public record MobConfigConfirmPayload(
     boolean success,
@@ -17,7 +18,7 @@ public record MobConfigConfirmPayload(
     @Nonnull String mobTypeName,
     int affectedCount,
     @Nonnull String message
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<MobConfigConfirmPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "mob_config_confirm"))
@@ -43,6 +44,35 @@ public record MobConfigConfirmPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += 1; // success
+        size += 1; // isGlobal
+        size += estimatedUtfSize(mobTypeName);
+        size += varIntSize(affectedCount);
+        size += estimatedUtfSize(message);
+        return size;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 
     /**

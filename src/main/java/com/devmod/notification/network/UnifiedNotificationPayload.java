@@ -1,9 +1,12 @@
 package com.devmod.notification.network;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+
+import javax.annotation.Nonnull;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -11,6 +14,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadValidation;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationParamsCodec;
@@ -32,7 +36,7 @@ public record UnifiedNotificationPayload(
         String actionDataJson,
         int displayDurationMs,
         long createdAtEpochMs
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     // Security limits
     private static final int MAX_STRING_LENGTH = 512;
@@ -45,7 +49,7 @@ public record UnifiedNotificationPayload(
     public static final StreamCodec<FriendlyByteBuf, UnifiedNotificationPayload> STREAM_CODEC =
             new StreamCodec<>() {
                 @Override
-                public UnifiedNotificationPayload decode(FriendlyByteBuf buf) {
+                public UnifiedNotificationPayload decode(@Nonnull FriendlyByteBuf buf) {
                     UUID id = new UUID(buf.readLong(), buf.readLong());
                     int categoryOrdinal = buf.readVarInt();
                     int priorityOrdinal = buf.readVarInt();
@@ -67,31 +71,53 @@ public record UnifiedNotificationPayload(
                 }
 
                 @Override
-                public void encode(FriendlyByteBuf buf, UnifiedNotificationPayload payload) {
-                    buf.writeLong(payload.notificationId().getMostSignificantBits());
-                    buf.writeLong(payload.notificationId().getLeastSignificantBits());
-                    buf.writeVarInt(payload.categoryOrdinal());
-                    buf.writeVarInt(payload.priorityOrdinal());
-                    buf.writeUtf(truncate(payload.titleKey(), MAX_STRING_LENGTH));
-                    buf.writeUtf(truncate(payload.messageKey(), MAX_STRING_LENGTH));
-                    buf.writeUtf(truncate(payload.paramsJson(), MAX_PARAMS_LENGTH));
-                    buf.writeUtf(truncate(payload.iconId(), MAX_STRING_LENGTH));
-                    buf.writeUtf(truncate(payload.soundId(), MAX_STRING_LENGTH));
-                    buf.writeUtf(truncate(payload.actionId(), MAX_STRING_LENGTH));
-                    buf.writeUtf(truncate(payload.actionDataJson(), MAX_PARAMS_LENGTH));
-                    buf.writeVarInt(payload.displayDurationMs());
-                    buf.writeLong(payload.createdAtEpochMs());
+                public void encode(@Nonnull FriendlyByteBuf buf, @Nonnull UnifiedNotificationPayload payload) {
+                    final FriendlyByteBuf safeBuf = Objects.requireNonNull(buf);
+                    final UnifiedNotificationPayload safePayload = Objects.requireNonNull(payload);
+                    safeBuf.writeLong(safePayload.notificationId().getMostSignificantBits());
+                    safeBuf.writeLong(safePayload.notificationId().getLeastSignificantBits());
+                    safeBuf.writeVarInt(safePayload.categoryOrdinal());
+                    safeBuf.writeVarInt(safePayload.priorityOrdinal());
+                    safeBuf.writeUtf(Objects.requireNonNull(truncate(safePayload.titleKey(), MAX_STRING_LENGTH)));
+                    safeBuf.writeUtf(Objects.requireNonNull(truncate(safePayload.messageKey(), MAX_STRING_LENGTH)));
+                    safeBuf.writeUtf(Objects.requireNonNull(truncate(safePayload.paramsJson(), MAX_PARAMS_LENGTH)));
+                    safeBuf.writeUtf(Objects.requireNonNull(truncate(safePayload.iconId(), MAX_STRING_LENGTH)));
+                    safeBuf.writeUtf(Objects.requireNonNull(truncate(safePayload.soundId(), MAX_STRING_LENGTH)));
+                    safeBuf.writeUtf(Objects.requireNonNull(truncate(safePayload.actionId(), MAX_STRING_LENGTH)));
+                    safeBuf.writeUtf(Objects.requireNonNull(truncate(safePayload.actionDataJson(), MAX_PARAMS_LENGTH)));
+                    safeBuf.writeVarInt(safePayload.displayDurationMs());
+                    safeBuf.writeLong(safePayload.createdAtEpochMs());
                 }
 
+                @Nonnull
                 private String truncate(String s, int maxLen) {
                     if (s == null) return "";
-                    return s.length() > maxLen ? s.substring(0, maxLen) : s;
+                    String result = s.length() > maxLen ? s.substring(0, maxLen) : s;
+                    return Objects.requireNonNull(result);
                 }
             };
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += 16; // UUID
+        size += varIntSize(categoryOrdinal);
+        size += varIntSize(priorityOrdinal);
+        size += estimatedUtfSize(titleKey);
+        size += estimatedUtfSize(messageKey);
+        size += estimatedUtfSize(paramsJson);
+        size += estimatedUtfSize(iconId);
+        size += estimatedUtfSize(soundId);
+        size += estimatedUtfSize(actionId);
+        size += estimatedUtfSize(actionDataJson);
+        size += varIntSize(displayDurationMs);
+        size += 8; // createdAtEpochMs
+        return size;
     }
 
     /**
@@ -156,5 +182,23 @@ public record UnifiedNotificationPayload(
      */
     public Map<String, String> getParams() {
         return NotificationParamsCodec.fromJson(paramsJson);
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

@@ -12,6 +12,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.bridge.ClientUiBridge;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
+import com.devmod.client.ui.editor.debug.DebugOverlay;
 import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
@@ -31,7 +32,8 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void openSettings() {
-        mc().setScreen(new com.devmod.client.ui.unified.UnifiedSettingsScreen(null));
+        Minecraft mc = mc();
+        mc.setScreen(new com.devmod.client.ui.unified.UnifiedSettingsScreen(mc.screen));
     }
 
     @Override
@@ -102,8 +104,7 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void toggleDebugOverlay() {
-        // Debug overlay mode cycling not implemented
-        // TODO: Implement via com.devmod.client.ui.editor.debug.DebugOverlay when needed
+        DebugOverlay.toggle();
     }
 
     @Override

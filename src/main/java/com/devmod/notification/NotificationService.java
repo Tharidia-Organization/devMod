@@ -2,8 +2,8 @@ package com.devmod.notification;
 
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -14,21 +14,21 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.chat.Component;
 
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
-import com.devmod.mailbox.MailboxManager;
-import com.devmod.mailbox.MailboxMessage;
-import com.devmod.mailbox.news.NewsArticle;
-import com.devmod.mailbox.template.MessageTemplateRegistry;
 import com.devmod.actions.ActionIds;
 import com.devmod.endurance.PrestigeMilestone;
 import com.devmod.endurance.QuestType;
 import com.devmod.endurance.RewardSystem;
+import com.devmod.mailbox.MailboxManager;
+import com.devmod.mailbox.MailboxMessage;
+import com.devmod.mailbox.news.NewsArticle;
+import com.devmod.mailbox.template.MessageTemplateRegistry;
 import com.devmod.notification.network.UnifiedNotificationPayload;
 import com.devmod.notification.persistence.NotificationHistoryRepository;
 import com.devmod.util.I18n;
@@ -382,6 +382,7 @@ public class NotificationService {
                 .priority(NotificationPriority.HIGH)
                 .soundId("season.tierup")
                 .iconId("season.tier")
+                .actionId(ActionIds.UI_SEASON_PASS_OPEN)
                 .persistToMailbox(true)
                 .build();
 
@@ -827,7 +828,17 @@ public class NotificationService {
         NotificationRouter.RoutingDecision decision = router.route(playerUuid, notification);
 
         if (decision.hasAnyDelivery()) {
-            NotificationHistoryRepository.INSTANCE.save(playerUuid, notification);
+            CompletableFuture<?> future = NotificationHistoryRepository.INSTANCE.save(playerUuid, notification)
+                .handle((result, ex) -> {
+                    if (ex != null) {
+                        LOGGER.warn("[NotificationService] Failed to save notification history for {}: {}",
+                            playerUuid, ex.getMessage());
+                    }
+                    return null;
+                });
+            if (future.isDone() && LOGGER.isTraceEnabled()) {
+                LOGGER.trace("[NotificationService] History saved immediately for {}", playerUuid);
+            }
         }
 
         // Send overlay if player is online and overlay is enabled
@@ -1017,7 +1028,8 @@ public class NotificationService {
         }
     }
 
-    private String firstNonBlank(String... values) {
+    @Nullable
+    private String firstNonBlank(@Nullable String... values) {
         if (values == null) {
             return null;
         }
@@ -1153,12 +1165,26 @@ public class NotificationService {
      * Fire-and-forget notification sending.
      * Logs any errors but doesn't propagate them.
      */
-    private CompletableFuture<Void> notifyAsync(UUID playerUuid, Notification notification) {
-        return notify(playerUuid, notification).exceptionally(ex -> {
-            LOGGER.warn("[NotificationService] Async notification failed for {}: {}",
-                    playerUuid, ex.getMessage());
+    private void notifyAsync(UUID playerUuid, Notification notification) {
+        fireAndForget(notify(playerUuid, notification), playerUuid);
+    }
+
+    /**
+     * Explicitly consume a future for fire-and-forget operations.
+     * Logs errors but doesn't block on completion.
+     */
+    private void fireAndForget(CompletableFuture<?> future, UUID context) {
+        CompletableFuture<?> handled = Objects.requireNonNull(future).handle((result, ex) -> {
+            if (ex != null) {
+                LOGGER.warn("[NotificationService] Async operation failed for {}: {}",
+                        context, ex.getMessage());
+            }
             return null;
         });
+        // Explicitly consume to indicate fire-and-forget intention
+        if (handled.isDone() && LOGGER.isTraceEnabled()) {
+            LOGGER.trace("[NotificationService] Immediate completion for {}", context);
+        }
     }
 
     private NotificationPriority getPriorityForBadgeRarity(String rarity) {

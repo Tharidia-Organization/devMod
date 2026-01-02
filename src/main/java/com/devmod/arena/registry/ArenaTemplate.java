@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
+import com.devmod.arena.zone.ZoneLayout;
+
 public record ArenaTemplate(
     String id,
     @Nullable String extendsTemplate,
@@ -20,6 +22,8 @@ public record ArenaTemplate(
     int size,
     @Nullable Integer sizeX,
     @Nullable Integer sizeZ,
+    ArenaShape arenaShape,
+    @Nullable Integer ringInnerRadius,
     Floor floor,
     Walls walls,
     Ceiling ceiling,
@@ -38,6 +42,7 @@ public record ArenaTemplate(
     @Nullable StructureNbt structureNbt,
     Limits limits,
     BuildSettings buildSettings,
+    @Nullable ZoneSettings zoneSettings,
     List<String> tags
 ) {
     public static Builder builder(String id) {
@@ -107,6 +112,7 @@ public record ArenaTemplate(
             .structureNbt(null)
             .limits(new Limits(5000, 50000, 100))
             .buildSettings(new BuildSettings(BuildSettings.Priority.SYNC, BuildSettings.Order.FLOOR_FIRST))
+            .zoneSettings(null)
             .tags(List.of("default", "flat"))
             .build();
     }
@@ -130,6 +136,8 @@ public record ArenaTemplate(
             base.size(),
             base.sizeX(),
             base.sizeZ(),
+            base.arenaShape(),
+            base.ringInnerRadius(),
             base.floor(),
             base.walls(),
             base.ceiling(),
@@ -148,6 +156,7 @@ public record ArenaTemplate(
             base.structureNbt(),
             base.limits(),
             base.buildSettings(),
+            base.zoneSettings(),
             List.of("default", "flat", "smoke")
         );
     }
@@ -166,8 +175,9 @@ public record ArenaTemplate(
             .templateType(TemplateType.FlatTemplate.defaults())
             .origin(new Origin(OriginMode.CENTER, 0, 64, 0))
             .size(80)
+            .arenaShape(ArenaShape.CIRCULAR)
             .floor(new Floor(64, 1, "minecraft:stone_bricks", "solid", "minecraft:polished_andesite", 0))
-            .walls(new Walls(true, "minecraft:barrier", 13, 1, 64, "solid"))
+            .walls(new Walls(true, "minecraft:barrier", 12, 1, 64, "solid"))
             .ceiling(new Ceiling(true, "minecraft:barrier", 76, 1))
             .underfloor(new Underfloor("minecraft:bedrock", 3, false))
             .palette(new Palette("minecraft:polished_andesite", "minecraft:glowstone", "minecraft:magma_block"))
@@ -177,10 +187,20 @@ public record ArenaTemplate(
             )))
             .spawnSlots(List.of(
                 new SpawnSlot(new int[]{0, 1, 0}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("center", "player"), new SpawnSlot.Validation(true, 2, 1)),
-                new SpawnSlot(new int[]{-30, 1, 0}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("melee", "mob"), new SpawnSlot.Validation(true, 2, 1)),
-                new SpawnSlot(new int[]{30, 1, 0}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new SpawnSlot.Validation(true, 2, 1)),
-                new SpawnSlot(new int[]{35, 1, 35}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"), new SpawnSlot.Validation(true, 2, 1)),
-                new SpawnSlot(new int[]{0, 1, 30}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("boss", "mob"), new SpawnSlot.Validation(true, 2, 2))
+                new SpawnSlot(new int[]{-25, 1, 0}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("melee", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{25, 1, 0}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{0, 1, -25}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("melee", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{20, 1, 20}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{-20, 1, 20}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{20, 1, -20}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{-20, 1, -20}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{22, 1, 12}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("melee", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{-22, 1, 12}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("melee", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{22, 1, -12}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{-22, 1, -12}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{12, 1, 22}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{-12, 1, 22}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{0, 1, 25}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("boss", "mob"), new SpawnSlot.Validation(true, 2, 2))
             ))
             .playerSpawnOffset(new ArenaTemplate.Offset(0, 0, 0))
             .mobSpawnStrategy(MobSpawnStrategy.RING)
@@ -198,6 +218,7 @@ public record ArenaTemplate(
             .structureNbt(null)
             .limits(new Limits(8000, 75000, 150))
             .buildSettings(new BuildSettings(BuildSettings.Priority.SYNC, BuildSettings.Order.FLOOR_FIRST))
+            .zoneSettings(null)
             .tags(List.of("boss", "ring", "hazard"))
             .build();
     }
@@ -222,7 +243,29 @@ public record ArenaTemplate(
         public enum ApplyTo { BOUNDS, CHUNKS }
     }
 
+    /**
+     * Lighting configuration for an arena template.
+     *
+     * @param skyLight     Target sky light level (0-15)
+     * @param blockLight   Target block light level (0-15), used for ambient grid lighting spacing
+     * @param ambientLight Whether to place ambient grid lighting automatically
+     * @param lightSources Explicit light source positions to place
+     */
     public record Lighting(int skyLight, int blockLight, boolean ambientLight, List<LightSource> lightSources) {
+        /**
+         * Defines an explicit light source position and block type.
+         *
+         * <p>Position coordinates (pos) are interpreted as follows:
+         * <ul>
+         *   <li>pos[0] (X): Relative to arena center (origin)</li>
+         *   <li>pos[1] (Y): <b>Floor-relative</b> when template has a floor defined,
+         *       otherwise absolute. For example, pos[1]=2 means 2 blocks above floor.</li>
+         *   <li>pos[2] (Z): Relative to arena center (origin)</li>
+         * </ul>
+         *
+         * @param pos   3-element array [x, y, z] for position
+         * @param block Block ID for the light source (e.g., "minecraft:lantern")
+         */
         public record LightSource(int[] pos, String block) {}
     }
 
@@ -256,12 +299,49 @@ public record ArenaTemplate(
         public enum Order { FLOOR_FIRST, WALLS_FIRST, STRUCTURE_FIRST }
     }
 
+    /**
+     * Zone configuration for multi-environment arenas.
+     * Allows defining multiple zones with different biomes, floors, and lighting.
+     */
+    public record ZoneSettings(
+        boolean enabled,
+        boolean autoGenerate,
+        ZoneLayout.LayoutStrategy preferredStrategy,
+        List<ZoneDefinition> zones
+    ) {
+        public static final ZoneSettings DISABLED = new ZoneSettings(false, false, ZoneLayout.LayoutStrategy.SINGLE, List.of());
+        public static final ZoneSettings AUTO = new ZoneSettings(true, true, ZoneLayout.LayoutStrategy.SINGLE, List.of());
+
+        public record ZoneDefinition(
+            String name,
+            @Nullable String biome,
+            @Nullable String floorMaterial,
+            @Nullable Integer skyLight,
+            @Nullable Integer blockLight,
+            @Nullable String time,
+            List<String> mobTags
+        ) {}
+    }
+
     public record Offset(int x, int y, int z) {}
 
     public enum MobSpawnStrategy {
         DISTRIBUTED,
         CLUSTERED,
         CORNERS,
+        RING
+    }
+
+    /**
+     * Physical shape of the arena playable area.
+     * Controls floor generation, boundary checks, and spawn slot placement.
+     */
+    public enum ArenaShape {
+        /** Standard rectangular/square arena (default). */
+        RECTANGULAR,
+        /** Circular arena using radius = max(sizeX, sizeZ) / 2. */
+        CIRCULAR,
+        /** Ring/donut shaped arena with inner and outer radius. */
         RING
     }
 
@@ -287,6 +367,9 @@ public record ArenaTemplate(
         private Integer sizeX;
         @Nullable
         private Integer sizeZ;
+        private ArenaShape arenaShape = ArenaShape.RECTANGULAR;
+        @Nullable
+        private Integer ringInnerRadius;
         private Floor floor = new Floor(64, 1, "minecraft:stone_bricks", "solid", "minecraft:polished_andesite", 0);
         private Walls walls = new Walls(true, "minecraft:barrier", 10, 1, 64, "solid");
         private Ceiling ceiling = new Ceiling(true, "minecraft:barrier", 74, 1);
@@ -306,6 +389,8 @@ public record ArenaTemplate(
         private StructureNbt structureNbt;
         private Limits limits = new Limits(5000, 50000, 100);
         private BuildSettings buildSettings = new BuildSettings(BuildSettings.Priority.SYNC, BuildSettings.Order.FLOOR_FIRST);
+        @Nullable
+        private ZoneSettings zoneSettings;
         private List<String> tags = List.of();
 
         public Builder(String id) {
@@ -324,6 +409,8 @@ public record ArenaTemplate(
         public Builder size(int size) { this.size = size; return this; }
         public Builder sizeX(@Nullable Integer sizeX) { this.sizeX = sizeX; return this; }
         public Builder sizeZ(@Nullable Integer sizeZ) { this.sizeZ = sizeZ; return this; }
+        public Builder arenaShape(ArenaShape arenaShape) { this.arenaShape = arenaShape; return this; }
+        public Builder ringInnerRadius(@Nullable Integer ringInnerRadius) { this.ringInnerRadius = ringInnerRadius; return this; }
         public Builder floor(Floor floor) { this.floor = floor; return this; }
         public Builder walls(Walls walls) { this.walls = walls; return this; }
         public Builder ceiling(Ceiling ceiling) { this.ceiling = ceiling; return this; }
@@ -342,6 +429,7 @@ public record ArenaTemplate(
         public Builder structureNbt(@Nullable StructureNbt structureNbt) { this.structureNbt = structureNbt; return this; }
         public Builder limits(Limits limits) { this.limits = limits; return this; }
         public Builder buildSettings(BuildSettings buildSettings) { this.buildSettings = buildSettings; return this; }
+        public Builder zoneSettings(@Nullable ZoneSettings zoneSettings) { this.zoneSettings = zoneSettings; return this; }
         public Builder tags(List<String> tags) { this.tags = tags; return this; }
 
         public ArenaTemplate build() {
@@ -359,6 +447,8 @@ public record ArenaTemplate(
                 size,
                 sizeX,
                 sizeZ,
+                Objects.requireNonNull(arenaShape, "arenaShape"),
+                ringInnerRadius,
                 Objects.requireNonNull(floor, "floor"),
                 Objects.requireNonNull(walls, "walls"),
                 Objects.requireNonNull(ceiling, "ceiling"),
@@ -377,6 +467,7 @@ public record ArenaTemplate(
                 structureNbt,
                 Objects.requireNonNull(limits, "limits"),
                 Objects.requireNonNull(buildSettings, "buildSettings"),
+                zoneSettings,
                 List.copyOf(Objects.requireNonNull(tags, "tags"))
             );
         }

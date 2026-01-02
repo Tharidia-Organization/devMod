@@ -24,6 +24,8 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
+
 @OnlyIn(Dist.CLIENT)
 public class SpawnabilityOverlay {
     public static final SpawnabilityOverlay INSTANCE = new SpawnabilityOverlay();
@@ -284,16 +286,16 @@ public class SpawnabilityOverlay {
             double dz = data.pos().getZ() + 0.5 - cameraPos.z;
             if (dx * dx + dz * dz > numberRadiusSqr) continue;
 
-            // Color based on category
+            // Color based on category (delegating to OverlayTheme.Debug)
             int textColor;
             String displayText;
             switch (data.category()) {
                 case HOSTILE_SPAWN -> {
-                    textColor = 0xFFFF0000; // Red
+                    textColor = OverlayTheme.Debug.SPAWN_YES;
                     displayText = "!" + data.lightLevel();
                 }
                 case CONDITIONAL_SPAWN -> {
-                    textColor = 0xFFFF8800; // Orange
+                    textColor = OverlayTheme.Debug.SPAWN_CONDITIONAL;
                     displayText = "?" + data.lightLevel();
                 }
                 default -> {

@@ -40,7 +40,6 @@ public class NotificationHistoryRepository {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationHistoryRepository.class);
     /** Schema version for future migrations - reserved for use. */
-    @SuppressWarnings("unused")
     public static final NotificationHistoryRepository INSTANCE = new NotificationHistoryRepository();
 
     @Nullable
@@ -132,18 +131,17 @@ public class NotificationHistoryRepository {
             ON notification_history (player_uuid, category)
             """;
 
-        try (Connection conn = manager.getConnection()) {
-            try (PreparedStatement stmt = conn.prepareStatement(createTableSql)) {
-                stmt.execute();
-            }
-            try (PreparedStatement stmt = conn.prepareStatement(createIndexSql)) {
-                stmt.execute();
-            }
-            try (PreparedStatement stmt = conn.prepareStatement(createCategoryIndexSql)) {
-                stmt.execute();
-            }
-            LOGGER.debug("[NotificationHistory] Schema created/verified");
+        Connection conn = manager.getConnectionUnchecked();
+        try (PreparedStatement stmt = conn.prepareStatement(createTableSql)) {
+            stmt.execute();
         }
+        try (PreparedStatement stmt = conn.prepareStatement(createIndexSql)) {
+            stmt.execute();
+        }
+        try (PreparedStatement stmt = conn.prepareStatement(createCategoryIndexSql)) {
+            stmt.execute();
+        }
+        LOGGER.debug("[NotificationHistory] Schema created/verified");
     }
 
     // ============================================================================
@@ -169,8 +167,8 @@ public class NotificationHistoryRepository {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-            try (Connection conn = manager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = manager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, notification.id().toString());
                 stmt.setString(2, playerUuid.toString());
@@ -219,8 +217,8 @@ public class NotificationHistoryRepository {
                 """;
 
             List<Notification> results = new ArrayList<>();
-            try (Connection conn = manager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = manager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, playerUuid.toString());
                 stmt.setInt(2, limit);
@@ -261,8 +259,8 @@ public class NotificationHistoryRepository {
                 """;
 
             List<Notification> results = new ArrayList<>();
-            try (Connection conn = manager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = manager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, playerUuid.toString());
                 stmt.setString(2, category.getId());
@@ -296,8 +294,8 @@ public class NotificationHistoryRepository {
         return CompletableFuture.runAsync(() -> {
             String sql = "UPDATE notification_history SET read_at = ? WHERE id = ?";
 
-            try (Connection conn = manager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = manager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setTimestamp(1, Timestamp.from(Instant.now()));
                 stmt.setString(2, notificationId.toString());
@@ -324,8 +322,8 @@ public class NotificationHistoryRepository {
                 WHERE player_uuid = ? AND read_at IS NULL
                 """;
 
-            try (Connection conn = manager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = manager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setString(1, playerUuid.toString());
                 try (ResultSet rs = stmt.executeQuery()) {
@@ -353,8 +351,8 @@ public class NotificationHistoryRepository {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "DELETE FROM notification_history WHERE created_at < ?";
 
-            try (Connection conn = manager.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Connection conn = manager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
                 stmt.setTimestamp(1, Timestamp.from(cutoff));
                 int deleted = stmt.executeUpdate();

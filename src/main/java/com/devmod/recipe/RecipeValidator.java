@@ -204,19 +204,22 @@ public final class RecipeValidator {
         }
 
         if (recipe.smithingType() == SmithingType.TRANSFORM) {
-            if (recipe.result() == null || recipe.result().isEmpty()) {
+            ResultData result = recipe.result();
+            if (result == null || result.isEmpty()) {
                 errors.add("Smithing transform recipe must have a result");
             } else {
-                validateResult(recipe.result(), errors);
+                validateResult(result, errors);
             }
         }
 
-        if (recipe.template() != null && !recipe.template().isEmpty()) {
-            validateIngredient(recipe.template(), errors, warnings);
+        IngredientData template = recipe.template();
+        if (template != null && !template.isEmpty()) {
+            validateIngredient(template, errors, warnings);
         }
 
-        if (recipe.addition() != null && !recipe.addition().isEmpty()) {
-            validateIngredient(recipe.addition(), errors, warnings);
+        IngredientData addition = recipe.addition();
+        if (addition != null && !addition.isEmpty()) {
+            validateIngredient(addition, errors, warnings);
         }
 
         return new ValidationResult(errors.isEmpty(), errors, warnings);

@@ -22,7 +22,7 @@ import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.pages.CombatSettingsPage;
 import com.devmod.client.ui.unified.pages.DebugOverlaysPage;
 import com.devmod.client.ui.unified.pages.EditorSettingsPage;
@@ -38,11 +38,11 @@ import com.devmod.util.I18n;
 public class UnifiedSettingsScreen extends Screen {
 
     // === Layout Constants ===
-    private static final int SIDEBAR_WIDTH = UIConstants.Size.SIDEBAR_WIDTH_COMPACT;
+    private static final int SIDEBAR_WIDTH = DesignTokens.Size.SIDEBAR_WIDTH_COMPACT;
     private static final int HEADER_HEIGHT = 32;
     private static final int FOOTER_HEIGHT = 40;
     private static final int SIDEBAR_ITEM_HEIGHT = 28;
-    private static final int PADDING = UIConstants.Spacing.PANEL_PADDING;
+    private static final int PADDING = DesignTokens.Spacing.PANEL_PADDING;
 
     // === State ===
     private SettingsCategory currentCategory = SettingsCategory.GENERAL;
@@ -61,7 +61,7 @@ public class UnifiedSettingsScreen extends Screen {
     private final EditorButton footerResetProgressBtn = new EditorButton("footer-reset-progress", "Reset Progress");
     private final EditorButton footerFactoryResetBtn = new EditorButton("footer-factory-reset", "Factory Reset").style(EditorButton.Style.DANGER);
     private final EditorButton footerCloseBtn = new EditorButton("footer-close", "Close");
-    private final EditorButton footerApplyBtn = new EditorButton("footer-apply", "Apply").style(EditorButton.Style.PRIMARY);
+    private final EditorButton footerApplyBtn = new EditorButton("footer-apply", "Save").style(EditorButton.Style.PRIMARY);
 
     // Search functionality
     private String searchQuery = "";
@@ -75,6 +75,12 @@ public class UnifiedSettingsScreen extends Screen {
     private String tooltipText = "";
     private long tooltipShowTime = 0;
     private static final long TOOLTIP_DELAY_MS = 500;
+
+    // Footer status (e.g., save confirmation)
+    @Nullable
+    private String footerStatus = null;
+    private long footerStatusTime = 0;
+    private static final long FOOTER_STATUS_DURATION_MS = 2000;
 
     // Blur control
     private int originalBlurValue = 0;
@@ -190,7 +196,7 @@ public class UnifiedSettingsScreen extends Screen {
         this.mouseY = mouseY;
 
         // Dark background
-        safeGraphics.fill(0, 0, width, height, UIConstants.Background.SCREEN());
+        safeGraphics.fill(0, 0, width, height, DesignTokens.Background.SCREEN());
 
         // Header
         renderHeader(safeGraphics);
@@ -200,7 +206,7 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Vertical separator
         int separatorX = SIDEBAR_WIDTH;
-        safeGraphics.fill(separatorX, HEADER_HEIGHT, separatorX + 1, height - FOOTER_HEIGHT, UIConstants.Border.DEFAULT());
+        safeGraphics.fill(separatorX, HEADER_HEIGHT, separatorX + 1, height - FOOTER_HEIGHT, DesignTokens.Border.DEFAULT());
 
         // Content area
         renderContent(safeGraphics, mouseX, mouseY);
@@ -243,9 +249,9 @@ public class UnifiedSettingsScreen extends Screen {
                         int tipX = Math.min(mouseX + 10, width - tipWidth - 5);
                         int tipY = mouseY - tipHeight - 5;
 
-                        graphics.fill(tipX, tipY, tipX + tipWidth, tipY + tipHeight, UIConstants.Background.PANEL());
-                        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, tipHeight, UIConstants.Border.DEFAULT());
-                        graphics.drawString(safeFont, safeTooltipText, tipX + 4, tipY + 3, UIConstants.Text.PRIMARY(), false);
+                        graphics.fill(tipX, tipY, tipX + tipWidth, tipY + tipHeight, DesignTokens.Background.PANEL());
+                        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, tipHeight, DesignTokens.Border.DEFAULT());
+                        graphics.drawString(safeFont, safeTooltipText, tipX + 4, tipY + 3, DesignTokens.Text.PRIMARY(), false);
                     }
                     return;
                 }
@@ -340,11 +346,11 @@ public class UnifiedSettingsScreen extends Screen {
     private void renderHeader(GuiGraphics graphics) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         // Background header
-        graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER());
-        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, UIConstants.Border.DEFAULT());
+        graphics.fill(0, 0, width, HEADER_HEIGHT, DesignTokens.Background.HEADER());
+        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, DesignTokens.Border.DEFAULT());
 
         // Title
-        graphics.drawString(safeFont, "VOXEL-LAB Settings", PADDING, (HEADER_HEIGHT - 9) / 2, UIConstants.Text.TITLE(), false);
+        graphics.drawString(safeFont, "VOXEL-LAB Settings", PADDING, (HEADER_HEIGHT - 9) / 2, DesignTokens.Text.TITLE(), false);
 
         // Breadcrumb on the right
         String breadcrumb = Objects.requireNonNull(currentCategory.getLabel(), "breadcrumb");
@@ -356,7 +362,7 @@ public class UnifiedSettingsScreen extends Screen {
         int closeX = width - 20;
         int closeY = (HEADER_HEIGHT - 12) / 2;
         boolean closeHovered = mouseX >= closeX && mouseX < closeX + 12 && mouseY >= closeY && mouseY < closeY + 12;
-        int closeColor = closeHovered ? UIConstants.Status.ERROR() : UIConstants.Text.MUTED();
+        int closeColor = closeHovered ? DesignTokens.Status.ERROR() : DesignTokens.Text.MUTED();
         graphics.drawString(safeFont, "X", closeX, closeY, closeColor, false);
     }
 
@@ -389,18 +395,18 @@ public class UnifiedSettingsScreen extends Screen {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         String safeSearchQuery = Objects.requireNonNullElse(searchQuery, "");
         // Background
-        int bgColor = searchFocused ? UIConstants.Background.INPUT() : UIConstants.Background.PANEL();
+        int bgColor = searchFocused ? DesignTokens.Background.INPUT() : DesignTokens.Background.PANEL();
         graphics.fill(x, y, x + boxWidth, y + SEARCH_HEIGHT, bgColor);
 
         // Border
-        int borderColor = searchFocused ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
+        int borderColor = searchFocused ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, x, y, boxWidth, SEARCH_HEIGHT, borderColor);
 
         // Search icon or text
         if (safeSearchQuery.isEmpty() && !searchFocused) {
-            graphics.drawString(safeFont, "Search...", x + 6, y + 6, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "Search...", x + 6, y + 6, DesignTokens.Text.MUTED(), false);
         } else {
-            graphics.drawString(safeFont, safeSearchQuery + (searchFocused ? "_" : ""), x + 6, y + 6, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, safeSearchQuery + (searchFocused ? "_" : ""), x + 6, y + 6, DesignTokens.Text.PRIMARY(), false);
         }
 
         // Clear button if has text (larger hit area for better usability)
@@ -408,7 +414,7 @@ public class UnifiedSettingsScreen extends Screen {
             int clearX = x + boxWidth - 16;
             int clearHitWidth = 16; // Larger hit area than visual "x"
             boolean clearHovered = mouseX >= clearX && mouseX < clearX + clearHitWidth && mouseY >= y && mouseY < y + SEARCH_HEIGHT;
-            graphics.drawString(safeFont, "x", clearX + 3, y + 6, clearHovered ? UIConstants.Status.ERROR() : UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "x", clearX + 3, y + 6, clearHovered ? DesignTokens.Status.ERROR() : DesignTokens.Text.MUTED(), false);
         }
     }
 
@@ -434,18 +440,18 @@ public class UnifiedSettingsScreen extends Screen {
             graphics.fill(0, y - 2, 3, y + SIDEBAR_ITEM_HEIGHT - 6, category.getAccentColor());
         } else if (hovered && hasPage) {
             graphics.fill(x - 2, y - 2, x + itemWidth + 2, y + SIDEBAR_ITEM_HEIGHT - 6,
-                UIConstants.Background.HOVER());
+                DesignTokens.Background.HOVER());
         }
 
         // Icon
         int iconColor = selected ? category.getAccentColor() :
-            (hasPage ? UIConstants.Text.SECONDARY() : UIConstants.Text.DISABLED());
+            (hasPage ? DesignTokens.Text.SECONDARY() : DesignTokens.Text.DISABLED());
         String icon = Objects.requireNonNullElse(category.getIcon(), "");
         graphics.drawString(safeFont, "[" + icon + "]", x, y + 4, iconColor, false);
 
         // Label
-        int labelColor = selected ? UIConstants.Text.PRIMARY() :
-            (hasPage ? UIConstants.Text.SECONDARY() : UIConstants.Text.DISABLED());
+        int labelColor = selected ? DesignTokens.Text.PRIMARY() :
+            (hasPage ? DesignTokens.Text.SECONDARY() : DesignTokens.Text.DISABLED());
         String label = Objects.requireNonNullElse(category.getLabel(), "");
         graphics.drawString(safeFont, label, x + 28, y + 4, labelColor, false);
 
@@ -454,7 +460,7 @@ public class UnifiedSettingsScreen extends Screen {
             String soon = "soon";
             int soonWidth = safeFont.width(soon);
             graphics.drawString(safeFont, soon, SIDEBAR_WIDTH - soonWidth - PADDING, y + 4,
-                UIConstants.Text.DISABLED(), false);
+                DesignTokens.Text.DISABLED(), false);
         }
     }
 
@@ -486,18 +492,18 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Animate title with fade
         int titleAlpha = (int) (255 * categoryTransitionProgress);
-        int titleColor = (titleAlpha << 24) | (UIConstants.Text.PRIMARY() & 0x00FFFFFF);
+        int titleColor = (titleAlpha << 24) | (DesignTokens.Text.PRIMARY() & 0x00FFFFFF);
         graphics.drawString(safeFont, pageTitle, contentX + animOffset, contentY, titleColor, false);
 
         // Description (animated)
         int descAlpha = (int) (255 * categoryTransitionProgress * 0.7f);
-        int descColor = (descAlpha << 24) | (UIConstants.Text.MUTED() & 0x00FFFFFF);
+        int descColor = (descAlpha << 24) | (DesignTokens.Text.MUTED() & 0x00FFFFFF);
         String description = Objects.requireNonNullElse(currentCategory.getDescription(), "");
         graphics.drawString(safeFont, description, contentX + animOffset, contentY + 12, descColor, false);
 
         // Separator
         int sepY = contentY + 28;
-        graphics.fill(contentX, sepY, contentX + contentWidth, sepY + 1, UIConstants.Border.SEPARATOR());
+        graphics.fill(contentX, sepY, contentX + contentWidth, sepY + 1, DesignTokens.Border.SEPARATOR());
 
         // Page content
         int pageY = sepY + PADDING;
@@ -515,7 +521,7 @@ public class UnifiedSettingsScreen extends Screen {
             graphics.drawString(safeFont, placeholder,
                 contentX + (contentWidth - placeholderWidth) / 2,
                 pageY + pageHeight / 2,
-                UIConstants.Text.DISABLED(), false);
+                DesignTokens.Text.DISABLED(), false);
         }
     }
 
@@ -530,11 +536,11 @@ public class UnifiedSettingsScreen extends Screen {
         int footerY = height - FOOTER_HEIGHT;
 
         // Background
-        graphics.fill(0, footerY, width, height, UIConstants.Background.HEADER());
-        graphics.fill(0, footerY, width, footerY + 1, UIConstants.Border.DEFAULT());
+        graphics.fill(0, footerY, width, height, DesignTokens.Background.HEADER());
+        graphics.fill(0, footerY, width, footerY + 1, DesignTokens.Border.DEFAULT());
 
         // Left buttons
-        int buttonY = footerY + (FOOTER_HEIGHT - UIConstants.Size.BUTTON_HEIGHT) / 2;
+        int buttonY = footerY + (FOOTER_HEIGHT - DesignTokens.Size.BUTTON_HEIGHT) / 2;
         int buttonX = PADDING;
 
         // Reset Page button
@@ -546,21 +552,21 @@ public class UnifiedSettingsScreen extends Screen {
                     List.of("This will reset " + currentCategory.getLabel() + " to defaults.")
                 ).show();
             });
-        footerResetPageBtn.render(graphics, buttonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        footerResetPageBtn.render(graphics, buttonX, buttonY, 80, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Reset Progress button (orange - warning action)
         buttonX += 90;
         footerResetProgressBtn
             .style(EditorButton.Style.DANGER)
             .onClick(progressResetDialog::show);
-        footerResetProgressBtn.render(graphics, buttonX, buttonY, 105, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        footerResetProgressBtn.render(graphics, buttonX, buttonY, 105, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Factory Reset button (dangerous action - red color)
         buttonX += 115;
         footerFactoryResetBtn
             .style(EditorButton.Style.DANGER)
             .onClick(factoryResetDialog::show);
-        footerFactoryResetBtn.render(graphics, buttonX, buttonY, 100, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        footerFactoryResetBtn.render(graphics, buttonX, buttonY, 100, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Right buttons
         int rightButtonX = width - PADDING - 80;
@@ -569,29 +575,36 @@ public class UnifiedSettingsScreen extends Screen {
         footerCloseBtn
             .style(EditorButton.Style.NORMAL)
             .onClick(this::onClose);
-        footerCloseBtn.render(graphics, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        footerCloseBtn.render(graphics, rightButtonX, buttonY, 80, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
-        // Apply button
-        rightButtonX -= 90;
-        footerApplyBtn
-            .style(EditorButton.Style.PRIMARY)
-            .enabled(true)
-            .onClick(this::applyChanges);
-        footerApplyBtn.render(graphics, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
-
-        // Hint at center
+        // Save button
         SettingsPage currentPage = pages.get(currentCategory);
         boolean currentDirty = currentPage != null && currentPage.hasUnsavedChanges();
         boolean otherDirty = hasUnsavedChangesInOtherPages();
-        String hint = "ESC/K to close";
-        if (currentDirty) {
-            hint = "Unsaved changes - " + hint;
-        } else if (otherDirty) {
-            hint = "Unsaved changes in other pages - " + hint;
+        boolean anyDirty = currentDirty || otherDirty || SettingsManager.INSTANCE.isDirty();
+        rightButtonX -= 90;
+        footerApplyBtn
+            .style(EditorButton.Style.PRIMARY)
+            .enabled(anyDirty)
+            .onClick(this::applyChanges);
+        footerApplyBtn.render(graphics, rightButtonX, buttonY, 80, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
+
+        // Hint / status at center
+        boolean showStatus = !anyDirty && footerStatus != null
+            && (System.currentTimeMillis() - footerStatusTime) < FOOTER_STATUS_DURATION_MS;
+        if (showStatus) {
+            String status = Objects.requireNonNull(footerStatus, "footerStatus");
+            int statusWidth = safeFont.width(status);
+            graphics.drawString(safeFont, status, (width - statusWidth) / 2, buttonY + 5,
+                DesignTokens.Status.SUCCESS(), false);
+        } else {
+            String hint = (currentDirty || otherDirty)
+                ? "Unsaved changes | Save writes to disk | ESC/K to close"
+                : "Save writes to disk | ESC/K to close";
+            int hintWidth = safeFont.width(hint);
+            int hintColor = (currentDirty || otherDirty) ? DesignTokens.Text.WARNING() : DesignTokens.Text.MUTED();
+            graphics.drawString(safeFont, hint, (width - hintWidth) / 2, buttonY + 5, hintColor, false);
         }
-        int hintWidth = safeFont.width(hint);
-        int hintColor = (currentDirty || otherDirty) ? UIConstants.Text.WARNING() : UIConstants.Text.MUTED();
-        graphics.drawString(safeFont, hint, (width - hintWidth) / 2, buttonY + 5, hintColor, false);
     }
 
     // === Input Handling ===
@@ -870,9 +883,17 @@ public class UnifiedSettingsScreen extends Screen {
     }
 
     private void applyChanges() {
-        SettingsPage page = pages.get(currentCategory);
-        if (page != null) {
-            page.saveChanges();
+        boolean hadChanges = false;
+        for (SettingsPage page : pages.values()) {
+            if (page != null && page.hasUnsavedChanges()) {
+                page.saveChanges();
+                hadChanges = true;
+            }
+        }
+        if (hadChanges || SettingsManager.INSTANCE.isDirty()) {
+            SettingsManager.INSTANCE.save();
+            footerStatus = "Saved";
+            footerStatusTime = System.currentTimeMillis();
         }
     }
 
@@ -923,7 +944,7 @@ public class UnifiedSettingsScreen extends Screen {
     public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Override to disable the default blurred background completely
         // Just fill with solid color, no blur
-        graphics.fill(0, 0, this.width, this.height, UIConstants.Background.SCREEN());
+        graphics.fill(0, 0, this.width, this.height, DesignTokens.Background.SCREEN());
     }
 
     @Override
@@ -934,7 +955,7 @@ public class UnifiedSettingsScreen extends Screen {
     @Override
     protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
         // Just solid background, no dimming or blur
-        graphics.fill(0, 0, this.width, this.height, UIConstants.Background.SCREEN());
+        graphics.fill(0, 0, this.width, this.height, DesignTokens.Background.SCREEN());
     }
 
     // === Utility ===

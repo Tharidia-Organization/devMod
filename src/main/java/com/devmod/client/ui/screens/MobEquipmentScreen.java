@@ -23,7 +23,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.network.EquipMobPayload;
 import com.devmod.util.I18n;
 
@@ -34,6 +34,8 @@ public class MobEquipmentScreen extends Screen {
     private static final int PANEL_HEIGHT = 300;
     private static final int ROW_HEIGHT = 28;
     private static final int INPUT_WIDTH = 140;
+    private static final int DIALOG_WIDTH = 240;
+    private static final int DIALOG_HEIGHT = 90;
 
     private final Mob mob;
     private final Screen parentScreen;
@@ -51,6 +53,13 @@ public class MobEquipmentScreen extends Screen {
     @Nullable
     private EditBox feet;
 
+    private String originalMainHand = "";
+    private String originalOffHand = "";
+    private String originalHead = "";
+    private String originalChest = "";
+    private String originalLegs = "";
+    private String originalFeet = "";
+
     // Blur control
     private int originalBlurValue = 0;
 
@@ -62,6 +71,9 @@ public class MobEquipmentScreen extends Screen {
     private EditBox errorField = null;
     private final EditorButton applyButton = new EditorButton("mob-equip-apply", "Apply").style(EditorButton.Style.PRIMARY);
     private final EditorButton backButton = new EditorButton("mob-equip-back", "Back").style(EditorButton.Style.NORMAL);
+    private final EditorButton discardButton = new EditorButton("mob-equip-discard", "Discard").style(EditorButton.Style.DANGER);
+    private final EditorButton cancelDiscardButton = new EditorButton("mob-equip-cancel", "Cancel").style(EditorButton.Style.NORMAL);
+    private boolean showingConfirmDialog = false;
 
     public MobEquipmentScreen(Mob mob, Screen parentScreen) {
         super(I18n.translate("devmod.screen.mob_equipment", mob.getName().getString()));
@@ -82,33 +94,48 @@ public class MobEquipmentScreen extends Screen {
         if (font == null) return;
 
         applyButton.onClick(this::save);
-        backButton.onClick(this::onClose);
+        backButton.onClick(this::requestClose);
+        discardButton.onClick(this::discardAndClose);
+        cancelDiscardButton.onClick(() -> showingConfirmDialog = false);
 
         int panelX = (this.width - PANEL_WIDTH) / 2;
         int panelY = (this.height - PANEL_HEIGHT) / 2;
-        int inputX = panelX + PANEL_WIDTH - UIConstants.Spacing.PANEL_PADDING - INPUT_WIDTH;
+        int inputX = panelX + PANEL_WIDTH - DesignTokens.Spacing.PANEL_PADDING - INPUT_WIDTH;
 
         // Start after header
-        int fieldY = panelY + UIConstants.Spacing.HEADER_HEIGHT + UIConstants.Spacing.PANEL_PADDING + 20;
+        int fieldY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.PANEL_PADDING + 20;
 
         // Weapons section fields
-        mainHand = createInputField(inputX, fieldY, getItemName(EquipmentSlot.MAINHAND));
+        String mainHandValue = getItemName(EquipmentSlot.MAINHAND);
+        originalMainHand = normalize(mainHandValue);
+        mainHand = createInputField(inputX, fieldY, mainHandValue);
         fieldY += ROW_HEIGHT;
 
-        offHand = createInputField(inputX, fieldY, getItemName(EquipmentSlot.OFFHAND));
-        fieldY += ROW_HEIGHT + UIConstants.Spacing.GAP_LARGE + 16; // separator + section header
+        String offHandValue = getItemName(EquipmentSlot.OFFHAND);
+        originalOffHand = normalize(offHandValue);
+        offHand = createInputField(inputX, fieldY, offHandValue);
+        fieldY += ROW_HEIGHT + DesignTokens.Spacing.GAP_LARGE + 16; // separator + section header
 
         // Armor section fields
-        head = createInputField(inputX, fieldY, getItemName(EquipmentSlot.HEAD));
+        String headValue = getItemName(EquipmentSlot.HEAD);
+        originalHead = normalize(headValue);
+        head = createInputField(inputX, fieldY, headValue);
         fieldY += ROW_HEIGHT;
 
-        chest = createInputField(inputX, fieldY, getItemName(EquipmentSlot.CHEST));
+        String chestValue = getItemName(EquipmentSlot.CHEST);
+        originalChest = normalize(chestValue);
+        chest = createInputField(inputX, fieldY, chestValue);
         fieldY += ROW_HEIGHT;
 
-        legs = createInputField(inputX, fieldY, getItemName(EquipmentSlot.LEGS));
+        String legsValue = getItemName(EquipmentSlot.LEGS);
+        originalLegs = normalize(legsValue);
+        legs = createInputField(inputX, fieldY, legsValue);
         fieldY += ROW_HEIGHT;
 
-        feet = createInputField(inputX, fieldY, getItemName(EquipmentSlot.FEET));
+        String feetValue = getItemName(EquipmentSlot.FEET);
+        originalFeet = normalize(feetValue);
+        feet = createInputField(inputX, fieldY, feetValue);
+        updateButtonStates();
     }
 
     private EditBox createInputField(int x, int y, String value) {
@@ -117,6 +144,10 @@ public class MobEquipmentScreen extends Screen {
         if (value == null) value = "";
         field.setValue(value);
         field.setMaxLength(64);
+        field.setResponder(text -> {
+            clearError();
+            updateButtonStates();
+        });
         this.addRenderableWidget(field);
         return field;
     }
@@ -130,6 +161,18 @@ public class MobEquipmentScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (!mob.isAlive()) {
+            var mc = minecraft;
+            var player = mc != null ? mc.player : null;
+            if (player != null) {
+                player.displayClientMessage(
+                    I18n.translate("devmod.mobconfig.target_died"),
+                    false
+                );
+            }
+            closeNow();
+            return;
+        }
         // Dark background
         AxiomRenderer.drawScreenBackground(graphics, this.width, this.height);
 
@@ -140,60 +183,61 @@ public class MobEquipmentScreen extends Screen {
         var safeFont = Objects.requireNonNull(font);
         AxiomRenderer.drawPanel(graphics, safeFont, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT,
             "Equipment: " + mob.getName().getString());
+        updateButtonStates();
 
-        int contentX = panelX + UIConstants.Spacing.PANEL_PADDING;
-        int contentY = panelY + UIConstants.Spacing.HEADER_HEIGHT + UIConstants.Spacing.PANEL_PADDING;
-        int contentWidth = PANEL_WIDTH - UIConstants.Spacing.PANEL_PADDING * 2;
+        int contentX = panelX + DesignTokens.Spacing.PANEL_PADDING;
+        int contentY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.PANEL_PADDING;
+        int contentWidth = PANEL_WIDTH - DesignTokens.Spacing.PANEL_PADDING * 2;
 
         // Weapons section header
         AxiomRenderer.drawSectionHeader(graphics, safeFont, contentX, contentY, "Weapons");
         contentY += 16;
 
         // Weapon slots
-        drawEquipmentLabel(graphics, contentX, contentY, "Main Hand:", UIConstants.Accent.RED(),
+        drawEquipmentLabel(graphics, contentX, contentY, "Main Hand:", DesignTokens.Accent.RED(),
             mob.getItemBySlot(EquipmentSlot.MAINHAND));
         contentY += ROW_HEIGHT;
 
-        drawEquipmentLabel(graphics, contentX, contentY, "Off Hand:", UIConstants.Accent.BLUE(),
+        drawEquipmentLabel(graphics, contentX, contentY, "Off Hand:", DesignTokens.Accent.BLUE(),
             mob.getItemBySlot(EquipmentSlot.OFFHAND));
         contentY += ROW_HEIGHT;
 
         // Separator
         AxiomRenderer.drawSeparator(graphics, contentX, contentY, contentWidth);
-        contentY += UIConstants.Spacing.GAP_LARGE;
+        contentY += DesignTokens.Spacing.GAP_LARGE;
 
         // Armor section header
         AxiomRenderer.drawSectionHeader(graphics, safeFont, contentX, contentY, "Armor");
         contentY += 16;
 
         // Armor slots
-        drawEquipmentLabel(graphics, contentX, contentY, "Head:", UIConstants.BodyPart.HEAD,
+        drawEquipmentLabel(graphics, contentX, contentY, "Head:", DesignTokens.Accent.CYAN,
             mob.getItemBySlot(EquipmentSlot.HEAD));
         contentY += ROW_HEIGHT;
 
-        drawEquipmentLabel(graphics, contentX, contentY, "Chest:", UIConstants.BodyPart.BODY,
+        drawEquipmentLabel(graphics, contentX, contentY, "Chest:", DesignTokens.Accent.GREEN,
             mob.getItemBySlot(EquipmentSlot.CHEST));
         contentY += ROW_HEIGHT;
 
-        drawEquipmentLabel(graphics, contentX, contentY, "Legs:", UIConstants.BodyPart.LEGS,
+        drawEquipmentLabel(graphics, contentX, contentY, "Legs:", DesignTokens.Accent.RED,
             mob.getItemBySlot(EquipmentSlot.LEGS));
         contentY += ROW_HEIGHT;
 
-        drawEquipmentLabel(graphics, contentX, contentY, "Feet:", UIConstants.Accent.PURPLE(),
+        drawEquipmentLabel(graphics, contentX, contentY, "Feet:", DesignTokens.Accent.PURPLE(),
             mob.getItemBySlot(EquipmentSlot.FEET));
-        contentY += ROW_HEIGHT + UIConstants.Spacing.GAP_LARGE;
+        contentY += ROW_HEIGHT + DesignTokens.Spacing.GAP_LARGE;
 
         // Separator
         AxiomRenderer.drawSeparator(graphics, contentX, contentY, contentWidth);
-        contentY += UIConstants.Spacing.GAP_LARGE;
+        contentY += DesignTokens.Spacing.GAP_LARGE;
 
         // Action buttons
         int buttonWidth = 100;
         int buttonGap = 10;
         int buttonsX = panelX + (PANEL_WIDTH - buttonWidth * 2 - buttonGap) / 2;
         int backX = buttonsX + buttonWidth + buttonGap;
-        applyButton.render(graphics, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
-        backButton.render(graphics, backX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        applyButton.render(graphics, buttonsX, contentY, buttonWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        backButton.render(graphics, backX, contentY, buttonWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Render widgets (EditBoxes)
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -205,16 +249,16 @@ public class MobEquipmentScreen extends Screen {
             int fw = errorField.getWidth() + 2;
             int fh = errorField.getHeight() + 2;
             // Draw red border
-            graphics.fill(fx, fy, fx + fw, fy + 1, UIConstants.Accent.RED()); // top
-            graphics.fill(fx, fy + fh - 1, fx + fw, fy + fh, UIConstants.Accent.RED()); // bottom
-            graphics.fill(fx, fy, fx + 1, fy + fh, UIConstants.Accent.RED()); // left
-            graphics.fill(fx + fw - 1, fy, fx + fw, fy + fh, UIConstants.Accent.RED()); // right
+            graphics.fill(fx, fy, fx + fw, fy + 1, DesignTokens.Accent.RED()); // top
+            graphics.fill(fx, fy + fh - 1, fx + fw, fy + fh, DesignTokens.Accent.RED()); // bottom
+            graphics.fill(fx, fy, fx + 1, fy + fh, DesignTokens.Accent.RED()); // left
+            graphics.fill(fx + fw - 1, fy, fx + fw, fy + fh, DesignTokens.Accent.RED()); // right
 
             // Show error message
             String msg = errorMessage != null ? errorMessage : "";
             int textWidth = safeFont.width(msg);
             int errorX = (this.width - textWidth) / 2;
-            graphics.drawString(safeFont, msg, errorX, panelY + PANEL_HEIGHT + 8, UIConstants.Accent.RED(), false);
+            graphics.drawString(safeFont, msg, errorX, panelY + PANEL_HEIGHT + 8, DesignTokens.Accent.RED(), false);
 
             errorDisplayTicks--;
             if (errorDisplayTicks <= 0) {
@@ -225,7 +269,11 @@ public class MobEquipmentScreen extends Screen {
 
         // Footer hint
         int footerY = panelY + PANEL_HEIGHT + (errorMessage != null ? 24 : 8);
-        AxiomRenderer.drawHint(graphics, safeFont, panelX, footerY, "Enter item IDs (e.g., minecraft:diamond_sword)");
+        AxiomRenderer.drawHint(graphics, safeFont, panelX, footerY, "Enter item IDs (e.g., minecraft:diamond_sword). Leave blank to clear.");
+
+        if (showingConfirmDialog) {
+            renderConfirmDialog(graphics, mouseX, mouseY);
+        }
     }
 
     private void drawEquipmentLabel(GuiGraphics graphics, int x, int y, String label, int accentColor, ItemStack currentItem) {
@@ -233,7 +281,7 @@ public class MobEquipmentScreen extends Screen {
         graphics.fill(x, y + 4, x + 3, y + 14, accentColor);
 
         // Label
-        graphics.drawString(Objects.requireNonNull(font), label, x + 8, y + 5, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(Objects.requireNonNull(font), label, x + 8, y + 5, DesignTokens.Text.PRIMARY(), false);
 
         // Current item preview (if any)
         if (!currentItem.isEmpty()) {
@@ -243,6 +291,19 @@ public class MobEquipmentScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (showingConfirmDialog) {
+            if (button != 0) return true;
+            boolean handled = discardButton.mouseClicked(mouseX, mouseY, button) ||
+                cancelDiscardButton.mouseClicked(mouseX, mouseY, button);
+            if (!handled) {
+                int dx = (this.width - DIALOG_WIDTH) / 2;
+                int dy = (this.height - DIALOG_HEIGHT) / 2;
+                if (!AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, dx, dy, DIALOG_WIDTH, DIALOG_HEIGHT)) {
+                    showingConfirmDialog = false;
+                }
+            }
+            return true;
+        }
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
         if (applyButton.mouseClicked(mouseX, mouseY, button)) return true;
@@ -253,6 +314,11 @@ public class MobEquipmentScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (showingConfirmDialog) {
+            discardButton.mouseReleased(mouseX, mouseY, button);
+            cancelDiscardButton.mouseReleased(mouseX, mouseY, button);
+            return true;
+        }
         boolean handled = applyButton.mouseReleased(mouseX, mouseY, button) ||
                           backButton.mouseReleased(mouseX, mouseY, button);
         return handled || super.mouseReleased(mouseX, mouseY, button);
@@ -301,6 +367,8 @@ public class MobEquipmentScreen extends Screen {
                 true
             );
         }
+        syncOriginalValues();
+        updateButtonStates();
     }
 
     /**
@@ -317,6 +385,27 @@ public class MobEquipmentScreen extends Screen {
 
     @Override
     public void onClose() {
+        requestClose();
+    }
+
+    private void requestClose() {
+        if (showingConfirmDialog) {
+            showingConfirmDialog = false;
+            return;
+        }
+        if (hasUnsavedChanges()) {
+            showingConfirmDialog = true;
+            return;
+        }
+        closeNow();
+    }
+
+    private void discardAndClose() {
+        showingConfirmDialog = false;
+        closeNow();
+    }
+
+    private void closeNow() {
         // Restore original blur setting
         Minecraft mc = Minecraft.getInstance();
         if (mc.options != null) {
@@ -345,5 +434,89 @@ public class MobEquipmentScreen extends Screen {
     @Override
     protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
         graphics.fill(0, 0, this.width, this.height, 0xC0101010);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (showingConfirmDialog) {
+            if (keyCode == 256) {
+                showingConfirmDialog = false;
+                return true;
+            }
+            return true;
+        }
+        if (keyCode == 256) {
+            requestClose();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    private void updateButtonStates() {
+        applyButton.enabled(hasUnsavedChanges());
+    }
+
+    private boolean hasUnsavedChanges() {
+        if (mainHand == null || offHand == null || head == null ||
+            chest == null || legs == null || feet == null) {
+            return false;
+        }
+        return !normalize(mainHand.getValue()).equals(originalMainHand) ||
+            !normalize(offHand.getValue()).equals(originalOffHand) ||
+            !normalize(head.getValue()).equals(originalHead) ||
+            !normalize(chest.getValue()).equals(originalChest) ||
+            !normalize(legs.getValue()).equals(originalLegs) ||
+            !normalize(feet.getValue()).equals(originalFeet);
+    }
+
+    private void syncOriginalValues() {
+        if (mainHand == null || offHand == null || head == null ||
+            chest == null || legs == null || feet == null) {
+            return;
+        }
+        originalMainHand = normalize(mainHand.getValue());
+        originalOffHand = normalize(offHand.getValue());
+        originalHead = normalize(head.getValue());
+        originalChest = normalize(chest.getValue());
+        originalLegs = normalize(legs.getValue());
+        originalFeet = normalize(feet.getValue());
+    }
+
+    private static String normalize(@Nullable String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private void clearError() {
+        errorMessage = null;
+        errorField = null;
+        errorDisplayTicks = 0;
+    }
+
+    private void renderConfirmDialog(GuiGraphics graphics, int mouseX, int mouseY) {
+        graphics.fill(0, 0, this.width, this.height, 0xA0000000);
+
+        int dx = (this.width - DIALOG_WIDTH) / 2;
+        int dy = (this.height - DIALOG_HEIGHT) / 2;
+
+        graphics.fill(dx, dy, dx + DIALOG_WIDTH, dy + DIALOG_HEIGHT, DesignTokens.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, dx, dy, DIALOG_WIDTH, DIALOG_HEIGHT, DesignTokens.Accent.ORANGE());
+
+        var safeFont = Objects.requireNonNull(font);
+        String title = "Unsaved Changes";
+        int titleX = dx + (DIALOG_WIDTH - safeFont.width(title)) / 2;
+        graphics.drawString(safeFont, title, titleX, dy + 10, DesignTokens.Text.PRIMARY(), false);
+
+        String msg1 = "Discard equipment edits?";
+        int msgX = dx + (DIALOG_WIDTH - safeFont.width(msg1)) / 2;
+        graphics.drawString(safeFont, msg1, msgX, dy + 28, DesignTokens.Text.SECONDARY(), false);
+
+        int btnW = 90;
+        int btnH = DesignTokens.Size.BUTTON_HEIGHT;
+        int btnGap = 10;
+        int btnX = dx + (DIALOG_WIDTH - (btnW * 2 + btnGap)) / 2;
+        int btnY = dy + DIALOG_HEIGHT - 26;
+
+        discardButton.render(graphics, btnX, btnY, btnW, btnH, mouseX, mouseY);
+        cancelDiscardButton.render(graphics, btnX + btnW + btnGap, btnY, btnW, btnH, mouseX, mouseY);
     }
 }

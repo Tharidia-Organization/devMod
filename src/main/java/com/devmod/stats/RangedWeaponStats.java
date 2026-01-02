@@ -2,6 +2,9 @@ package com.devmod.stats;
 
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BowItem;
@@ -66,6 +69,17 @@ public class RangedWeaponStats {
     }
 
     /**
+     * Helper to ensure DataComponentType is non-null for Eclipse null checker.
+     */
+    @Nonnull
+    private static <T> DataComponentType<T> requireComponent(DataComponentType<T> type) {
+        if (type == null) {
+            throw new IllegalStateException("DataComponentType cannot be null");
+        }
+        return type;
+    }
+
+    /**
      * Gets stats from an ItemStack, reading from components and CustomData.
      */
     public static RangedWeaponStats getStats(ItemStack item) {
@@ -121,12 +135,13 @@ public class RangedWeaponStats {
         }
 
         // Read from CustomData component if present
-        if (item.has(DataComponents.CUSTOM_DATA)) {
-            CustomData customData = item.get(DataComponents.CUSTOM_DATA);
+        DataComponentType<CustomData> customDataType = requireComponent(DataComponents.CUSTOM_DATA);
+        if (item.has(customDataType)) {
+            CustomData customData = item.get(customDataType);
             if (customData != null) {
                 var tag = customData.copyTag();
-                if (tag.contains("devmod:ranged")) {
-                    var rangedTag = tag.getCompound("devmod:ranged");
+                if (tag.contains("RangedStats")) {
+                    var rangedTag = tag.getCompound("RangedStats");
                     if (rangedTag.contains("drawSpeed")) stats.drawSpeed = rangedTag.getFloat("drawSpeed");
                     if (rangedTag.contains("chargeTime")) stats.chargeTime = rangedTag.getFloat("chargeTime");
                     if (rangedTag.contains("accuracy")) stats.accuracy = rangedTag.getFloat("accuracy");

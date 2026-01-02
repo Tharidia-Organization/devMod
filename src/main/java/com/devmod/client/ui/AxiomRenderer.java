@@ -5,7 +5,7 @@ import javax.annotation.Nonnull;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public final class AxiomRenderer {
 
@@ -20,7 +20,7 @@ public final class AxiomRenderer {
      */
     public static void drawPanelWithHeader(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height,
                                            @Nonnull String title, int bgColor, int headerColor, int borderColor, int textColor) {
-        int headerHeight = UIConstants.Spacing.HEADER_HEIGHT;
+        int headerHeight = DesignTokens.Spacing.HEADER_HEIGHT;
 
         // Header
         graphics.fill(x, y, x + width, y + headerHeight, headerColor);
@@ -33,7 +33,7 @@ public final class AxiomRenderer {
         graphics.fill(x, y + headerHeight, x + width, y + headerHeight + 1, borderColor);
 
         // Title
-        graphics.drawString(font, title, x + UIConstants.Spacing.PANEL_PADDING, y + 6, textColor, false);
+        graphics.drawString(font, title, x + DesignTokens.Spacing.PANEL_PADDING, y + 6, textColor, false);
     }
 
     /**
@@ -41,23 +41,23 @@ public final class AxiomRenderer {
      */
     public static void drawPanel(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, @Nonnull String title) {
         drawPanelWithHeader(graphics, font, x, y, width, height, title,
-            UIConstants.Background.PANEL(), UIConstants.Background.HEADER(),
-            UIConstants.Border.DEFAULT(), UIConstants.Text.PRIMARY());
+            DesignTokens.Background.PANEL, DesignTokens.Background.HEADER,
+            DesignTokens.Border.DEFAULT, DesignTokens.Text.PRIMARY);
     }
 
     /**
      * Draw a simple panel without header
      */
     public static void drawSimplePanel(GuiGraphics graphics, int x, int y, int width, int height) {
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL());
-        drawBorder(graphics, x, y, width, height, UIConstants.Border.DEFAULT());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.PANEL);
+        drawBorder(graphics, x, y, width, height, DesignTokens.Border.DEFAULT);
     }
 
     /**
      * Draw full-screen dark background
      */
     public static void drawScreenBackground(GuiGraphics graphics, int width, int height) {
-        graphics.fill(0, 0, width, height, UIConstants.Background.SCREEN());
+        graphics.fill(0, 0, width, height, DesignTokens.Background.SCREEN);
     }
 
     /**
@@ -65,10 +65,10 @@ public final class AxiomRenderer {
      */
     public static void drawTab(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height,
                                @Nonnull String text, boolean selected, boolean hovered) {
-        int bgColor = selected ? UIConstants.Background.ACTIVE() :
-                      (hovered ? UIConstants.Background.HOVER() : UIConstants.Background.HEADER());
-        int textColor = selected ? UIConstants.Text.ACCENT() : UIConstants.Text.PRIMARY();
-        int borderColor = selected ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
+        int bgColor = selected ? DesignTokens.Background.ACTIVE :
+                      (hovered ? DesignTokens.Background.HOVER : DesignTokens.Background.HEADER);
+        int textColor = selected ? DesignTokens.Text.ACCENT : DesignTokens.Text.PRIMARY;
+        int borderColor = selected ? DesignTokens.Border.ACCENT : DesignTokens.Border.DEFAULT;
 
         // Background
         graphics.fill(x, y, x + width, y + height, bgColor);
@@ -92,20 +92,20 @@ public final class AxiomRenderer {
                                   boolean enabled, boolean hovered) {
         int bgColor;
         if (enabled) {
-            bgColor = hovered ? UIConstants.Toggle.ON_HOVER() : UIConstants.Toggle.ON();
+            bgColor = hovered ? DesignTokens.Toggle.ON_HOVER : DesignTokens.Toggle.ON;
         } else {
-            bgColor = hovered ? UIConstants.Toggle.OFF_HOVER() : UIConstants.Toggle.OFF();
+            bgColor = hovered ? DesignTokens.Toggle.OFF_HOVER : DesignTokens.Toggle.OFF;
         }
 
         // Background
         graphics.fill(x, y, x + width, y + height, bgColor);
 
         // Border
-        drawBorder(graphics, x, y, width, height, UIConstants.Border.DEFAULT());
+        drawBorder(graphics, x, y, width, height, DesignTokens.Border.DEFAULT);
 
         // Text
         String text = enabled ? "ON" : "OFF";
-        int textColor = enabled ? UIConstants.Text.WHITE() : UIConstants.Text.MUTED();
+        int textColor = enabled ? DesignTokens.Text.WHITE : DesignTokens.Text.MUTED;
         int textWidth = font.width(text);
         int textX = x + (width - textWidth) / 2;
         int textY = y + (height - 8) / 2;
@@ -120,7 +120,7 @@ public final class AxiomRenderer {
      * Draw a label (replaces disabled Button anti-pattern)
      */
     public static void drawLabel(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
-        graphics.drawString(font, text, x, y, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(font, text, x, y, DesignTokens.Text.PRIMARY, false);
     }
 
     /**
@@ -134,14 +134,14 @@ public final class AxiomRenderer {
      * Draw a section header
      */
     public static void drawSectionHeader(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
-        graphics.drawString(font, text, x, y, UIConstants.Text.TITLE(), false);
+        graphics.drawString(font, text, x, y, DesignTokens.Text.TITLE, false);
     }
 
     /**
      * Draw a muted/hint text
      */
     public static void drawHint(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
-        graphics.drawString(font, text, x, y, UIConstants.Text.MUTED(), false);
+        graphics.drawString(font, text, x, y, DesignTokens.Text.MUTED, false);
     }
 
     /**
@@ -150,7 +150,7 @@ public final class AxiomRenderer {
     public static void drawCenteredTitle(GuiGraphics graphics, @Nonnull Font font, int screenWidth, int y, @Nonnull String title) {
         int textWidth = font.width(title);
         int x = (screenWidth - textWidth) / 2;
-        graphics.drawString(font, title, x, y, UIConstants.Text.WHITE(), false);
+        graphics.drawString(font, title, x, y, DesignTokens.Text.WHITE, false);
     }
 
     /**
@@ -158,9 +158,9 @@ public final class AxiomRenderer {
      */
     public static void drawLabelValue(GuiGraphics graphics, @Nonnull Font font, int x, int y,
                                       @Nonnull String label, @Nonnull String value) {
-        graphics.drawString(font, label, x, y, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(font, label, x, y, DesignTokens.Text.SECONDARY, false);
         int labelWidth = font.width(label);
-        graphics.drawString(font, value, x + labelWidth, y, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(font, value, x + labelWidth, y, DesignTokens.Text.PRIMARY, false);
     }
 
     /**
@@ -168,7 +168,7 @@ public final class AxiomRenderer {
      */
     public static void drawLabelValue(GuiGraphics graphics, @Nonnull Font font, int x, int y,
                                       @Nonnull String label, @Nonnull String value, int valueColor) {
-        graphics.drawString(font, label, x, y, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(font, label, x, y, DesignTokens.Text.SECONDARY, false);
         int labelWidth = font.width(label);
         graphics.drawString(font, value, x + labelWidth, y, valueColor, false);
     }
@@ -181,8 +181,8 @@ public final class AxiomRenderer {
      * Draw input field background (to be used alongside EditBox)
      */
     public static void drawInputBackground(GuiGraphics graphics, int x, int y, int width, int height, boolean focused) {
-        int bgColor = UIConstants.Background.INPUT();
-        int borderColor = focused ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
+        int bgColor = DesignTokens.Background.INPUT;
+        int borderColor = focused ? DesignTokens.Border.ACCENT : DesignTokens.Border.DEFAULT;
 
         graphics.fill(x - 1, y - 1, x + width + 1, y + height + 1, borderColor);
         graphics.fill(x, y, x + width, y + height, bgColor);
@@ -198,12 +198,12 @@ public final class AxiomRenderer {
     public static void drawToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                      @Nonnull String label, boolean enabled, boolean hovered) {
         // Label on left
-        graphics.drawString(font, label, x, y + 4, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
 
         // Toggle on right
-        int toggleWidth = UIConstants.Size.TOGGLE_WIDTH;
+        int toggleWidth = DesignTokens.Size.TOGGLE_WIDTH;
         int toggleX = x + width - toggleWidth;
-        drawToggle(graphics, font, toggleX, y, toggleWidth, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
+        drawToggle(graphics, font, toggleX, y, toggleWidth, DesignTokens.Size.TOGGLE_HEIGHT, enabled, hovered);
     }
 
     /**
@@ -211,7 +211,7 @@ public final class AxiomRenderer {
      */
     public static void drawStatRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                    @Nonnull String label, @Nonnull String value, int valueColor) {
-        graphics.drawString(font, label, x, y, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(font, label, x, y, DesignTokens.Text.SECONDARY, false);
         int valueWidth = font.width(value);
         graphics.drawString(font, value, x + width - valueWidth, y, valueColor, false);
     }
@@ -224,7 +224,7 @@ public final class AxiomRenderer {
      * Draw a separator line
      */
     public static void drawSeparator(GuiGraphics graphics, int x, int y, int width) {
-        graphics.fill(x, y, x + width, y + 1, UIConstants.Border.SEPARATOR());
+        graphics.fill(x, y, x + width, y + 1, DesignTokens.Border.SEPARATOR);
     }
 
     /**
@@ -242,10 +242,10 @@ public final class AxiomRenderer {
      */
     public static void drawHealthBar(GuiGraphics graphics, int x, int y, int width, int height,
                                      float healthPercent) {
-        int healthColor = UIConstants.getHealthColor(healthPercent);
+        int healthColor = DesignTokens.getHealthColor(healthPercent);
 
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.INPUT());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.INPUT);
 
         // Fill
         int filledWidth = (int) (width * (healthPercent / 100f));
@@ -254,7 +254,7 @@ public final class AxiomRenderer {
         }
 
         // Border
-        drawBorder(graphics, x, y, width, height, UIConstants.Border.DEFAULT());
+        drawBorder(graphics, x, y, width, height, DesignTokens.Border.DEFAULT);
     }
 
     /**
@@ -263,7 +263,7 @@ public final class AxiomRenderer {
     public static void drawProgressBar(GuiGraphics graphics, int x, int y, int width, int height,
                                        float progress, int fillColor) {
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.INPUT());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.INPUT);
 
         // Fill
         int filledWidth = (int) (width * Math.max(0f, Math.min(1f, progress)));
@@ -272,7 +272,7 @@ public final class AxiomRenderer {
         }
 
         // Border
-        drawBorder(graphics, x, y, width, height, UIConstants.Border.DEFAULT());
+        drawBorder(graphics, x, y, width, height, DesignTokens.Border.DEFAULT);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -289,13 +289,13 @@ public final class AxiomRenderer {
         int height = 12 + padding * 2;
 
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.TOOLTIP());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.TOOLTIP);
 
         // Border
-        drawBorder(graphics, x, y, width, height, UIConstants.Border.LIGHT());
+        drawBorder(graphics, x, y, width, height, DesignTokens.Border.LIGHT);
 
         // Text
-        graphics.drawString(font, text, x + padding, y + padding + 2, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(font, text, x + padding, y + padding + 2, DesignTokens.Text.PRIMARY, false);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

@@ -28,12 +28,13 @@ class GoldenReferenceTest {
         assertEquals(ref.floorBounds(), new Bounds(minX, template.floor().y(), minZ, maxX, template.floor().y(), maxZ, originX, originZ));
         assertEquals(ref.ceilingBounds(), new Bounds(minX, template.ceiling().y(), minZ, maxX, template.ceiling().y(), maxZ, originX, originZ));
 
-        assertEquals(22748, ref.totalBlocks());
         assertEquals(4096, ref.floorBlocks());
         assertEquals(2268, ref.wallBlocks());
         assertEquals(4096, ref.ceilingBlocks());
         assertEquals(12288, ref.underfloorBlocks());
         assertEquals(0, ref.hazardBlocks());
+        assertEquals(25, ref.lightingBlocks()); // 5x5 ambient grid
+        assertEquals(22773, ref.totalBlocks()); // includes lighting
 
         assertEquals(15, ref.spawnSlots().size());
         assertArrayEquals(new int[]{0, 65, 0}, ref.spawnSlots().get(0));
@@ -77,14 +78,25 @@ class GoldenReferenceTest {
         assertEquals(ref.ceilingBlocks(), dryRun.ceilingBlocks());
         assertEquals(ref.underfloorBlocks(), dryRun.underfloorBlocks());
         assertEquals(ref.hazardBlocks(), dryRun.hazardBlocks());
+        assertEquals(ref.lightingBlocks(), dryRun.lightingBlocks());
         assertEquals(ref.totalBlocks(), dryRun.totalBlocks());
 
-        assertEquals(5, ref.spawnSlots().size());
-        assertArrayEquals(new int[]{0, 65, 0}, ref.spawnSlots().get(0));
-        assertArrayEquals(new int[]{-30, 65, 0}, ref.spawnSlots().get(1));
-        assertArrayEquals(new int[]{30, 65, 0}, ref.spawnSlots().get(2));
-        assertArrayEquals(new int[]{35, 65, 35}, ref.spawnSlots().get(3));
-        assertArrayEquals(new int[]{0, 65, 30}, ref.spawnSlots().get(4));
+        assertEquals(15, ref.spawnSlots().size());
+        assertArrayEquals(new int[]{0, 65, 0}, ref.spawnSlots().get(0));       // center, player
+        assertArrayEquals(new int[]{-25, 65, 0}, ref.spawnSlots().get(1));     // melee
+        assertArrayEquals(new int[]{25, 65, 0}, ref.spawnSlots().get(2));      // ranged
+        assertArrayEquals(new int[]{0, 65, -25}, ref.spawnSlots().get(3));     // melee
+        assertArrayEquals(new int[]{20, 65, 20}, ref.spawnSlots().get(4));     // corner
+        assertArrayEquals(new int[]{-20, 65, 20}, ref.spawnSlots().get(5));    // corner
+        assertArrayEquals(new int[]{20, 65, -20}, ref.spawnSlots().get(6));    // corner
+        assertArrayEquals(new int[]{-20, 65, -20}, ref.spawnSlots().get(7));   // corner
+        assertArrayEquals(new int[]{22, 65, 12}, ref.spawnSlots().get(8));     // melee
+        assertArrayEquals(new int[]{-22, 65, 12}, ref.spawnSlots().get(9));    // melee
+        assertArrayEquals(new int[]{22, 65, -12}, ref.spawnSlots().get(10));   // ranged
+        assertArrayEquals(new int[]{-22, 65, -12}, ref.spawnSlots().get(11));  // ranged
+        assertArrayEquals(new int[]{12, 65, 22}, ref.spawnSlots().get(12));    // ranged
+        assertArrayEquals(new int[]{-12, 65, 22}, ref.spawnSlots().get(13));   // ranged
+        assertArrayEquals(new int[]{0, 65, 25}, ref.spawnSlots().get(14));     // boss
     }
 
     private static int resolveSize(Integer primary, Integer fallback, String label) {

@@ -15,6 +15,8 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
+
 public class Impact3DRenderer {
 
     // Singleton instance
@@ -25,9 +27,9 @@ public class Impact3DRenderer {
     private static final float PANEL_OFFSET_SIDE = 4.5f;  // Lateral offset from impact point (to the right)
     private static final float PANEL_OFFSET_UP = 1.0f;    // Vertical offset (above the point)
 
-    // === UI colors (reference image style) ===
-    private static final int PANEL_BG = 0xDD1A1A2E;           // Dark blue 87% opacity
-    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue
+    // === UI colors (delegating to OverlayTheme) ===
+    private static final int PANEL_BG = OverlayTheme.Panel.BG_HEAVY;
+    private static final int PANEL_BORDER = OverlayTheme.Impact.CORE_PRIMARY;
 
     // === Internal dimensions (in font pixels, 1:1 scale with Minecraft font) ===
     private static final float PANEL_WIDTH_PX = 320f;   // Panel width in font pixels
@@ -145,6 +147,19 @@ public class Impact3DRenderer {
                 textY += LINE_HEIGHT + SECTION_SPACING;
             }
             textY = renderSection(poseStack, bufferSource, font, sections.get(i), textX, textY, alpha);
+        }
+
+        // === DPS DISPLAY (in DETAILED/ANALYSIS mode) ===
+        ImpactDisplayMode mode = ImpactHudController.INSTANCE.getDisplayMode();
+        if (mode == ImpactDisplayMode.DETAILED || mode == ImpactDisplayMode.ANALYSIS) {
+            float currentDps = ImpactDpsTracker.getCurrentDps(data.attackerUUID);
+            if (currentDps > 0.1f) {
+                textY += LINE_HEIGHT;
+                String dpsText = String.format("DPS: %.1f/s", currentDps);
+                int dpsColor = 0xFF44FF44; // Green
+                renderText3D(poseStack, bufferSource, font, dpsText, textX, textY,
+                    applyAlpha(dpsColor, alpha), alpha);
+            }
         }
 
         poseStack.popPose();

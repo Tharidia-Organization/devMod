@@ -20,7 +20,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.config.MobPresetManager;
 import com.devmod.util.I18n;
 
@@ -93,7 +93,7 @@ public class MobConfigScreen extends Screen {
         renderer.drawTabs(graphics, panelX, panelY, mouseX, mouseY);
 
         // Content area
-        int contentY = panelY + UIConstants.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8;
+        int contentY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8;
 
         // Left side: Mob preview
         int previewX = panelX + 15;
@@ -281,10 +281,13 @@ public class MobConfigScreen extends Screen {
     private boolean handleTabClick(int mx, int my, int panelX, int panelY) {
         MobConfigScreenState state = requireState();
         int tabsX = panelX + 10;
-        int tabsY = panelY + UIConstants.Spacing.HEADER_HEIGHT;
+        int tabsY = panelY + DesignTokens.Spacing.HEADER_HEIGHT;
         for (int i = 0; i < 3; i++) {
             int tx = tabsX + i * (MobConfigScreenRenderer.TAB_WIDTH + 4);
             if (AxiomRenderer.isMouseOver(mx, my, tx, tabsY, MobConfigScreenRenderer.TAB_WIDTH, MobConfigScreenRenderer.TAB_HEIGHT)) {
+                if (state.editingSlider >= 0) {
+                    state.commitNumericInput();
+                }
                 state.selectedTab = i;
                 return true;
             }
@@ -295,7 +298,7 @@ public class MobConfigScreen extends Screen {
     private boolean handlePreviewClick(int mx, int my, int panelX, int panelY) {
         MobConfigScreenState state = requireState();
         int previewX = panelX + 15;
-        int previewY = panelY + UIConstants.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 10;
+        int previewY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 10;
         if (AxiomRenderer.isMouseOver(mx, my, previewX, previewY, MobConfigScreenRenderer.PREVIEW_SIZE, MobConfigScreenRenderer.PREVIEW_SIZE + 20)) {
             state.isDraggingPreview = true;
             state.dragStartX = mx;
@@ -310,7 +313,7 @@ public class MobConfigScreen extends Screen {
     private boolean handleSliderClick(int mx, int my, int panelX, int panelY) {
         MobConfigScreenState state = requireState();
         int slidersX = panelX + MobConfigScreenRenderer.PREVIEW_SIZE + 40;
-        int contentY = panelY + UIConstants.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 5;
+        int contentY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 5;
         int numSliders = state.selectedTab == 2 ? 1 : 3;
 
         for (int i = 0; i < numSliders; i++) {
@@ -352,17 +355,23 @@ public class MobConfigScreen extends Screen {
         int btnW = 70;
         int btnH = 22;
         int btnGap = 8;
+        boolean hasStatChanges = state.hasStatChanges();
+        boolean hasUnsavedChanges = state.hasUnsavedChanges();
 
         int resetX = panelX + 15;
         if (AxiomRenderer.isMouseOver(mx, my, resetX, btnY, 55, btnH)) {
-            state.resetToOriginal();
+            if (hasStatChanges) {
+                state.resetToOriginal();
+            }
             return true;
         }
 
         int applyX = panelX + MobConfigScreenRenderer.PANEL_WIDTH - btnW - btnGap - btnW - 15;
         if (AxiomRenderer.isMouseOver(mx, my, applyX, btnY, btnW, btnH)) {
-            state.save();
-            this.onClose();
+            if (hasUnsavedChanges) {
+                state.save();
+                this.onClose();
+            }
             return true;
         }
 
@@ -473,7 +482,7 @@ public class MobConfigScreen extends Screen {
         int panelX = (this.width - MobConfigScreenRenderer.PANEL_WIDTH) / 2;
         int panelY = (this.height - MobConfigScreenRenderer.PANEL_HEIGHT) / 2;
         int previewX = panelX + 15;
-        int previewY = panelY + 50;
+        int previewY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 10;
 
         if (mouseX >= previewX && mouseX < previewX + MobConfigScreenRenderer.PREVIEW_SIZE &&
             mouseY >= previewY && mouseY < previewY + MobConfigScreenRenderer.PREVIEW_SIZE) {

@@ -15,7 +15,7 @@ import com.devmod.client.ui.editor.components.HeaderComponent;
 import com.devmod.client.ui.editor.components.LeftColumnComponent;
 import com.devmod.client.ui.editor.components.ModeBadge;
 import com.devmod.client.ui.editor.components.ScrollableContentArea;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.debug.DebugOverlay;
 import com.devmod.client.ui.editor.systems.CraftingInfoPanel;
 import com.devmod.client.ui.editor.systems.DebugPanel;
@@ -92,7 +92,7 @@ public final class InputRouter {
             }
         }
         if (context.showDevPanel() && context.debugPanel() != null && context.debugPanel().handleClick(mouseX, mouseY)) {
-            context.showStatus("Copied debug log", UIConstants.Accent.BLUE());
+            context.showStatus("Copied debug log", DesignTokens.Semantic.INFO);
             return true;
         }
         if (context.overlayController().isHistoryVisible() && context.handleHistoryClick(mouseX, mouseY)) {
@@ -249,7 +249,7 @@ public final class InputRouter {
                 if (context.multiEditPanel() != null) {
                     context.multiEditPanel().setExpanded(true);
                 }
-                context.showStatus("MultiEdit refreshed", UIConstants.Accent.BLUE());
+                context.showStatus("MultiEdit refreshed", DesignTokens.Semantic.INFO);
             } else {
                 context.toggleMultiEditPanel();
                 if (context.showMultiEditPanel()) {
@@ -303,11 +303,11 @@ public final class InputRouter {
         // Ctrl+Enter quick apply
         if (keyCode == GLFW.GLFW_KEY_ENTER && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
             if (context.isPreviewMode()) {
-                context.showStatus("Preview mode: cannot apply", UIConstants.Accent.ORANGE());
+                context.showStatus("Preview mode: cannot apply", DesignTokens.Semantic.WARNING);
             } else if (module != null && module.hasUnsavedChanges()) {
                 context.applyChanges();
             } else {
-                context.showStatus("No changes to apply", UIConstants.Accent.ORANGE());
+                context.showStatus("No changes to apply", DesignTokens.Semantic.WARNING);
             }
             return true;
         }
@@ -317,9 +317,9 @@ public final class InputRouter {
             if (context.multiEditManager() != null && context.multiEditManager().hasSnapshot()) {
                 var result = context.multiEditManager().restoreSnapshot();
                 if (result.failureCount() == 0) {
-                    context.showStatus("Batch undo: " + result.successCount() + " items restored", UIConstants.Accent.GREEN());
+                    context.showStatus("Batch undo: " + result.successCount() + " items restored", DesignTokens.Semantic.SUCCESS);
                 } else {
-                    context.showStatus("Batch undo: " + result.successCount() + " ok, " + result.failureCount() + " failed", UIConstants.Accent.ORANGE());
+                    context.showStatus("Batch undo: " + result.successCount() + " ok, " + result.failureCount() + " failed", DesignTokens.Semantic.WARNING);
                 }
                 return true;
             }
@@ -356,16 +356,16 @@ public final class InputRouter {
                 try {
                     var path = context.debugPanel().exportRecentToTempFile(10);
                     context.debugPanel().log("Exported recent to: " + path.toString());
-                    context.showStatus("Exported debug recent", UIConstants.Accent.BLUE());
+                    context.showStatus("Exported debug recent", DesignTokens.Semantic.INFO);
                 } catch (Exception e) {
                     context.debugPanel().log("Export failed: " + e.getMessage());
-                    context.showStatus("Export failed", UIConstants.Accent.ORANGE());
+                    context.showStatus("Export failed", DesignTokens.Semantic.WARNING);
                 }
                 return true;
             }
             if (keyCode == GLFW.GLFW_KEY_L && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
                 context.debugPanel().clear();
-                context.showStatus("Debug log cleared", UIConstants.Accent.BLUE());
+                context.showStatus("Debug log cleared", DesignTokens.Semantic.INFO);
                 return true;
             }
         }
@@ -445,12 +445,12 @@ public final class InputRouter {
         int fail = result.failureCount();
 
         if (fail == 0) {
-            context.showStatus("Applied preset to " + succ + " items", UIConstants.Accent.GREEN());
+            context.showStatus("Applied preset to " + succ + " items", DesignTokens.Semantic.SUCCESS);
             if (context.debugPanel() != null) {
                 context.debugPanel().log("MultiEdit apply: " + succ + " successes");
             }
         } else {
-            context.showStatus("Applied: " + succ + " successes, " + fail + " failures", UIConstants.Accent.ORANGE());
+            context.showStatus("Applied: " + succ + " successes, " + fail + " failures", DesignTokens.Semantic.WARNING);
             try {
                 var failures = result.failures();
                 StringBuilder sb = new StringBuilder();
@@ -463,7 +463,7 @@ public final class InputRouter {
                     sb.append(" (+").append(failures.size() - limit).append(" more)");
                 }
                 DevMod.LOGGER.warn("MultiEdit apply failures: {}", failures);
-                context.showStatus("Failures: " + sb, UIConstants.Accent.RED());
+                context.showStatus("Failures: " + sb, DesignTokens.Semantic.ERROR);
                 if (context.debugPanel() != null) {
                     String first = failures.isEmpty() ? "" : failures.get(0);
                     context.debugPanel().log("MultiEdit apply: " + succ + " successes, " + fail + " failures - first: " + first);

@@ -17,7 +17,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.config.MobPresetManager;
 import com.devmod.network.UpdateMobStatsPayload;
 
@@ -51,12 +51,12 @@ public class MobConfigScreenState {
     public record PresetColors(int background, int border) {}
 
     public static final List<PresetColors> PRESET_COLORS = List.of(
-        new PresetColors(UIConstants.Accent.CYAN(), UIConstants.Accent.BLUE()),
-        new PresetColors(UIConstants.Accent.RED(), UIConstants.Accent.ORANGE()),
-        new PresetColors(UIConstants.Accent.GREEN(), UIConstants.Accent.YELLOW()),
+        new PresetColors(DesignTokens.Accent.CYAN(), DesignTokens.Accent.BLUE()),
+        new PresetColors(DesignTokens.Accent.RED(), DesignTokens.Accent.ORANGE()),
+        new PresetColors(DesignTokens.Accent.GREEN(), DesignTokens.Accent.YELLOW()),
         new PresetColors(0xFFAAAAAA, 0xFF888888),
-        new PresetColors(UIConstants.Accent.PURPLE(), UIConstants.Accent.GOLD()),
-        new PresetColors(UIConstants.Border.DEFAULT(), UIConstants.Border.LIGHT())
+        new PresetColors(DesignTokens.Accent.PURPLE(), DesignTokens.Accent.GOLD()),
+        new PresetColors(DesignTokens.Border.DEFAULT(), DesignTokens.Border.LIGHT())
     );
 
     private final Mob mob;
@@ -71,6 +71,7 @@ public class MobConfigScreenState {
 
     // Mode
     public boolean isGlobalMode = lastGlobalMode;
+    public final boolean origGlobalMode;
 
     // UI State
     public int selectedTab = 0;
@@ -111,6 +112,7 @@ public class MobConfigScreenState {
 
     public MobConfigScreenState(Mob mob) {
         this.mob = mob;
+        this.origGlobalMode = isGlobalMode;
 
         // Store original values
         this.origHealth = getVal(Objects.requireNonNull(Attributes.MAX_HEALTH));
@@ -445,6 +447,10 @@ public class MobConfigScreenState {
     }
 
     public boolean hasUnsavedChanges() {
+        return hasStatChanges() || isGlobalMode != origGlobalMode;
+    }
+
+    public boolean hasStatChanges() {
         final double EPSILON = 0.01;
         return Math.abs(health - origHealth) > EPSILON ||
                Math.abs(armor - origArmor) > EPSILON ||

@@ -16,6 +16,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import com.devmod.client.ClientVFXProxy;
 import com.devmod.combat.HitHelper;
 import com.devmod.damage.DamageBreakdown;
+import com.devmod.integration.ModIntegrationManager;
 
 public final class ImpactHudService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ImpactHudService.class);
@@ -45,6 +46,10 @@ public final class ImpactHudService {
         );
         ImpactData.store(impactData);
         ImpactHistory.record(impactData);
+
+        // Route through controller for context-aware display
+        ImpactHudController.INSTANCE.onImpact(impactData);
+
         return impactData;
     }
 
@@ -58,7 +63,15 @@ public final class ImpactHudService {
             boolean isRanged,
             @Nullable Vec3 hitPoint,
             @Nullable Vec3 slashDirection) {
-        return createAndStoreImpactData(
+        // Auto-detect Epic Fight state from attacker
+        String epicFightAnim = null;
+        boolean epicFightActive = false;
+        if (ModIntegrationManager.isEpicFightLoaded()) {
+            epicFightActive = ModIntegrationManager.isEpicFightCombatActive(attacker);
+            epicFightAnim = ModIntegrationManager.getEpicFightAnimationName(attacker);
+        }
+
+        ImpactData impactData = new ImpactData(
             attacker.getUUID(),
             victim,
             part,
@@ -67,8 +80,17 @@ public final class ImpactHudService {
             attackSource,
             isRanged,
             hitPoint,
-            slashDirection
+            slashDirection,
+            epicFightAnim,
+            epicFightActive
         );
+        ImpactData.store(impactData);
+        ImpactHistory.record(impactData);
+
+        // Route through controller for context-aware display
+        ImpactHudController.INSTANCE.onImpact(impactData);
+
+        return impactData;
     }
 
     public static void triggerImpactVfx(ImpactData impactData, @Nullable Vec3 hitPoint,

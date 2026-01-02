@@ -47,6 +47,7 @@ public final class ActionIds {
     public static final String UI_WELCOME_OPEN = "devmod.ui.welcome.open";
     public static final String UI_ONBOARDING_START = "devmod.ui.onboarding.start";
     public static final String UI_ONBOARDING_SKIP = "devmod.ui.onboarding.skip";
+    public static final String UI_SEASON_PASS_OPEN = "devmod.ui.season_pass.open";
 
     // Debug / HUD toggles
     public static final String DEBUG_OVERLAY_TOGGLE = "devmod.debug.overlay.toggle";
@@ -102,6 +103,11 @@ public final class ActionIds {
     public static final String HUD_QUICK_HELP_TOGGLE = "devmod.hud.quick_help.toggle";
     public static final String HUD_IMPACT_TOGGLE = "devmod.hud.impact.toggle";
     public static final String HUD_IMPACT_3D_TOGGLE = "devmod.hud.impact_3d.toggle";
+    public static final String HUD_IMPACT_DISPLAY_MODE_CYCLE = "devmod.hud.impact.display_mode.cycle";
+    public static final String HUD_IMPACT_PRESET_MINIMAL = "devmod.hud.impact.preset.minimal";
+    public static final String HUD_IMPACT_PRESET_DETAILED = "devmod.hud.impact.preset.detailed";
+    public static final String HUD_IMPACT_PRESET_TRAINING = "devmod.hud.impact.preset.training";
+    public static final String HUD_IMPACT_SHOW_RECAP = "devmod.hud.impact.show_recap";
     public static final String HUD_QUEST_TOGGLE = "devmod.hud.quest.toggle";
     public static final String HUD_ENDURANCE_TOGGLE = "devmod.endurance.hud.toggle";
     public static final String HUD_ENDURANCE_DETAILS_TOGGLE = "devmod.endurance.hud.details_toggle";
@@ -164,6 +170,7 @@ public final class ActionIds {
     public static final String ARENA_TEMPLATE_LIST = "devmod.arena.template.list";
     public static final String ARENA_TEMPLATE_INFO = "devmod.arena.template.info";
     public static final String ARENA_TEMPLATE_RELOAD = "devmod.arena.template.reload";
+    public static final String ARENA_TEMPLATE_STATUS = "devmod.arena.template.status";
     public static final String ARENA_AUTOSMOKE_RUN = "devmod.arena.autosmoke.run";
     public static final String ARENA_AUTOSMOKE_STATUS = "devmod.arena.autosmoke.status";
     public static final String ARENA_AUTOSMOKE_SCHEDULE_STATUS = "devmod.arena.autosmoke.schedule_status";
@@ -296,4 +303,13 @@ public final class ActionIds {
     public static final String NEWS_COMMAND_CREATE = "devmod.news.command.create";
     public static final String NEWS_COMMAND_DELETE = "devmod.news.command.delete";
     public static final String NEWS_COMMAND_PUBLISH = "devmod.news.command.publish";
+
+    // Leaderboard commands
+    public static final String LEADERBOARD_HELP = "devmod.leaderboard.help";
+    public static final String LEADERBOARD_LIST = "devmod.leaderboard.list";
+    public static final String LEADERBOARD_TOP = "devmod.leaderboard.top";
+    public static final String LEADERBOARD_ME = "devmod.leaderboard.me";
+    public static final String LEADERBOARD_PLAYER = "devmod.leaderboard.player";
+    public static final String LEADERBOARD_WEEKLY = "devmod.leaderboard.weekly";
+    public static final String LEADERBOARD_ARENA = "devmod.leaderboard.arena";
 }

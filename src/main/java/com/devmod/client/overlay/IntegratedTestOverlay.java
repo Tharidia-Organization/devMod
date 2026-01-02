@@ -18,6 +18,8 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.testing.IntegratedTestSession;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.testing.TestCase;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -26,20 +28,20 @@ public class IntegratedTestOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "integrated_test_hud");
 
-    // === UI Colors ===
-    private static final int PANEL_BG = 0xCC1A1A2E;
-    private static final int PANEL_BORDER = 0xFF4A5ADE;
-    private static final int TEXT_TITLE = 0xFF00FFFF;
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;
-    private static final int TEXT_VALUE = 0xFF00FF00;
-    private static final int TEXT_MUTED = 0xFFAAAAAA;
-    private static final int PROGRESS_BG = 0xFF333333;
-    private static final int PROGRESS_FILL = 0xFF00DD88;
+    // === UI Colors (delegating to OverlayTheme) ===
+    private static final int PANEL_BG = OverlayTheme.Panel.BG_STANDARD;
+    private static final int PANEL_BORDER = OverlayTheme.Border.ACCENT;
+    private static final int TEXT_TITLE = OverlayTheme.Text.TITLE;
+    private static final int TEXT_NORMAL = OverlayTheme.Text.PRIMARY;
+    private static final int TEXT_VALUE = OverlayTheme.Text.VALUE;
+    private static final int TEXT_MUTED = OverlayTheme.Text.MUTED;
+    private static final int PROGRESS_BG = OverlayTheme.Progress.BG;
+    private static final int PROGRESS_FILL = OverlayTheme.Progress.FILL;
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 180;
-    private static final int PANEL_PADDING = 6;
-    private static final int LINE_HEIGHT = 11;
+    private static final int PANEL_PADDING = OverlayTheme.Dimension.PADDING_TIGHT;
+    private static final int LINE_HEIGHT = OverlayTheme.Dimension.LINE_HEIGHT;
 
     // === State ===
     private static boolean enabled = true;
@@ -154,10 +156,10 @@ public class IntegratedTestOverlay {
             float pulse = (float) (Math.sin(time / 500.0) + 1) / 2;
             int pulseWidth = (int) (barWidth * 0.3f * pulse);
             int pulseX = barX + (int) ((barWidth - pulseWidth) * ((time / 20) % barWidth) / (float) barWidth);
-            graphics.fill(pulseX, barY, Math.min(pulseX + pulseWidth, barX + barWidth), barY + barHeight, 0xFF4488FF);
+            graphics.fill(pulseX, barY, Math.min(pulseX + pulseWidth, barX + barWidth), barY + barHeight, DesignTokens.TestingMode.PULSE);
         }
 
-        drawBorder(graphics, barX, barY, barWidth, barHeight, 0xFF555555);
+        drawBorder(graphics, barX, barY, barWidth, barHeight, DesignTokens.TestingMode.PROGRESS_BORDER);
         textY += barHeight + 4;
 
         // Stats: Kills
@@ -221,12 +223,12 @@ public class IntegratedTestOverlay {
         if (currentType == null) return PANEL_BORDER;
 
         return switch (currentType) {
-            case COMBAT_BASIC, COMBAT_ADVANCED -> 0xFFFF6644;
-            case BOSS_FIGHT -> 0xFFAA44FF;
-            case SURVIVAL_WAVES -> 0xFF44FF88;
-            case DAMAGE_VALIDATION -> 0xFFFFAA00;
-            case PERFORMANCE_STRESS -> 0xFF4488FF;
-            case CUSTOM -> 0xFF888888;
+            case COMBAT_BASIC, COMBAT_ADVANCED -> DesignTokens.TestingMode.COMBAT;
+            case BOSS_FIGHT -> DesignTokens.TestingMode.BOSS_FIGHT;
+            case SURVIVAL_WAVES -> DesignTokens.TestingMode.SURVIVAL;
+            case DAMAGE_VALIDATION -> DesignTokens.TestingMode.DAMAGE_VALIDATION;
+            case PERFORMANCE_STRESS -> DesignTokens.TestingMode.PERFORMANCE;
+            case CUSTOM -> DesignTokens.TestingMode.CUSTOM;
         };
     }
 

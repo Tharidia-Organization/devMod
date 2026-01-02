@@ -1,16 +1,20 @@
 package com.devmod.mailbox.network.payload;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+
+import com.devmod.network.PayloadValidation;
 
 /**
  * Payload to sync the full mailbox state from server to client.
@@ -20,7 +24,7 @@ public record MailboxSyncPayload(
     List<MailboxMessageData> messages,
     int unreadCount,
     int maxMessages
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     // Security limits
     private static final int MAX_MESSAGES = 200;
@@ -118,6 +122,50 @@ public record MailboxSyncPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(messages.size());
+        for (MailboxMessageData msg : messages) {
+            size += estimateMessageSize(msg);
+        }
+        size += varIntSize(unreadCount);
+        size += varIntSize(maxMessages);
+        return size;
+    }
+
+    private static int estimateMessageSize(MailboxMessageData msg) {
+        int size = 16; // UUID
+        size += estimatedUtfSize(msg.senderName);
+        size += estimatedUtfSize(msg.subject);
+        size += estimatedUtfSize(msg.body);
+        size += varIntSize(msg.messageTypeOrdinal);
+        size += 8; // createdAtMillis
+        size += 1; // isRead
+        size += 8; // expiresAtMillis
+        size += 1; // hasAttachment
+        size += 1; // attachmentClaimed
+        size += estimatedUtfSize(msg.attachmentData);
+        return size;
+    }
+
+    private static int estimatedUtfSize(@Nullable String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
+    }
+
     /**
      * Create an empty sync payload.
      */
@@ -129,9 +177,9 @@ public record MailboxSyncPayload(
      * Data structure for a single message in the sync.
      */
     public record MailboxMessageData(
-        UUID id,
+        @Nonnull UUID id,
         @Nullable String senderName,
-        String subject,
+        @Nonnull String subject,
         @Nullable String body,
         int messageTypeOrdinal,
         long createdAtMillis,

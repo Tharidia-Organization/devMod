@@ -9,12 +9,12 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.StringBuilderCache;
 import com.devmod.client.ui.editor.core.Typography;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class ItemInfoPanel {
 
@@ -61,7 +61,7 @@ public class ItemInfoPanel {
      */
     public record StatLine(String label, String value, int valueColor) {
         public StatLine(String label, String value) {
-            this(label, value, UIConstants.Text.VALUE());
+            this(label, value, DesignTokens.Text.VALUE());
         }
     }
 
@@ -103,8 +103,8 @@ public class ItemInfoPanel {
 
     public ItemInfoPanel addStat(String label, float value, String format) {
         String formatted = String.format(format, value);
-        int color = value > 0 ? UIConstants.Accent.GREEN() :
-                   (value < 0 ? UIConstants.Accent.RED() : UIConstants.Text.VALUE());
+        int color = value > 0 ? DesignTokens.Accent.GREEN() :
+                   (value < 0 ? DesignTokens.Accent.RED() : DesignTokens.Text.VALUE());
         String prefix = value > 0 ? "+" : "";
         this.stats.add(new StatLine(label, prefix + formatted, color));
         return this;
@@ -141,10 +141,10 @@ public class ItemInfoPanel {
         this.bounds = new ResponsiveLayout.Rect(x, y, width, panelHeight);
 
         // Background
-        graphics.fill(x, y, x + width, y + panelHeight, UIConstants.Background.INPUT());
+        graphics.fill(x, y, x + width, y + panelHeight, DesignTokens.Background.INPUT());
 
         // Border
-        AxiomRenderer.drawBorder(graphics, x, y, width, panelHeight, UIConstants.Border.DEFAULT());
+        AxiomRenderer.drawBorder(graphics, x, y, width, panelHeight, DesignTokens.Border.DEFAULT());
 
         int contentX = x + padding;
         int contentWidth = width - padding * 2;
@@ -155,7 +155,7 @@ public class ItemInfoPanel {
             // Truncate if too long
             String displayName = truncateText(font, itemName, contentWidth);
             int nameHeight = Math.round(font.lineHeight * nameScale);
-            Typography.drawText(graphics, font, displayName, contentX, currentY, UIConstants.Text.TITLE(), nameScale);
+            Typography.drawText(graphics, font, displayName, contentX, currentY, DesignTokens.Text.TITLE(), nameScale);
             currentY += Math.max(lineHeight, nameHeight);
         }
 
@@ -171,7 +171,7 @@ public class ItemInfoPanel {
 
         // Dirty indicator at bottom
         renderDirtyIndicator(graphics, font, x,
-            y + panelHeight - lineHeight - ScaledCoord.scaleDim(UIConstants.Spacing.SM),
+            y + panelHeight - lineHeight - ScaledCoord.scaleDim(DesignTokens.Spacing.SM),
             width, dirtyScale);
 
         return panelHeight;
@@ -182,7 +182,7 @@ public class ItemInfoPanel {
         // Label on left
         String label = Objects.requireNonNull(stat.label(), "stat label cannot be null");
         Typography.drawText(graphics, Objects.requireNonNull(font, "font cannot be null"),
-            label + LABEL_SEPARATOR, x, y, UIConstants.Text.SECONDARY(), scale);
+            label + LABEL_SEPARATOR, x, y, DesignTokens.Text.SECONDARY(), scale);
 
         // Value on right
         String value = stat.value();
@@ -200,12 +200,12 @@ public class ItemInfoPanel {
 
         if (pendingChanges > 0) {
             text = UNSAVED_CHANGES_PREFIX + pendingChanges + UNSAVED_CHANGES_SUFFIX;
-            color = UIConstants.Accent.ORANGE();
+            color = DesignTokens.Accent.ORANGE();
         } else if (lastSaveTimestamp > 0) {
             long ago = System.currentTimeMillis() - lastSaveTimestamp;
             String timeText = formatTimeAgo(ago);
             text = SAVED_PREFIX + timeText;
-            color = UIConstants.Accent.GREEN();
+            color = DesignTokens.Accent.GREEN();
         } else {
             // No indicator needed
             return;

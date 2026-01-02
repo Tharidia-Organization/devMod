@@ -201,7 +201,12 @@ public class ArenaCommands {
                     // /arena template reload
                     .then(Commands.literal("reload")
                         .requires(src -> permissions.hasPermission(src, CommandCategory.TEMPLATE_MANAGE))
-                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_TEMPLATE_RELOAD, ctx))))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_TEMPLATE_RELOAD, ctx)))
+
+                    // /arena template status
+                    .then(Commands.literal("status")
+                        .requires(src -> permissions.hasPermission(src, CommandCategory.INFO))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_TEMPLATE_STATUS, ctx))))
 
                 // /arena autosmoke ...
                 .then(Commands.literal("autosmoke")
@@ -287,6 +292,7 @@ public class ArenaCommands {
         ArenaActionBridge.register(ActionIds.ARENA_TEMPLATE_LIST, this::listTemplates);
         ArenaActionBridge.register(ActionIds.ARENA_TEMPLATE_INFO, this::templateInfo);
         ArenaActionBridge.register(ActionIds.ARENA_TEMPLATE_RELOAD, this::reloadTemplates);
+        ArenaActionBridge.register(ActionIds.ARENA_TEMPLATE_STATUS, this::templateStatus);
         ArenaActionBridge.register(ActionIds.ARENA_AUTOSMOKE_RUN, this::runAutosmoke);
         ArenaActionBridge.register(ActionIds.ARENA_AUTOSMOKE_STATUS, this::autosmokeStatus);
         ArenaActionBridge.register(ActionIds.ARENA_AUTOSMOKE_SCHEDULE_STATUS, this::autosmokeScheduleStatus);
@@ -597,6 +603,12 @@ public class ArenaCommands {
 
         logCommand(src, "template reload", null);
 
+        // Guard: prevent concurrent reloads
+        if (bootstrap != null && bootstrap.isReloadInProgress()) {
+            src.sendFailure(Component.literal("§cReload already in progress. Please wait..."));
+            return 0;
+        }
+
         src.sendSuccess(() -> Component.literal("§7Reloading templates..."), false);
 
         try {
@@ -629,6 +641,68 @@ public class ArenaCommands {
             src.sendFailure(Component.literal("§cReload failed: " + e.getMessage()));
             return 0;
         }
+    }
+
+    private int templateStatus(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+
+        logCommand(src, "template status", null);
+
+        src.sendSuccess(() -> Component.literal("§e=== Template System Status ==="), false);
+
+        // Registry info
+        src.sendSuccess(() -> Component.literal(
+            String.format("§7Templates loaded: §f%d", registry.size())
+        ), false);
+        src.sendSuccess(() -> Component.literal(
+            String.format("§7Registry generation: §f%d", registry.getGeneration())
+        ), false);
+
+        // Bootstrap status
+        if (bootstrap != null) {
+            // Watcher status
+            boolean watcherActive = bootstrap.isWatcherActive();
+            String watcherStatus = watcherActive ? "§aActive" : "§7Inactive";
+            src.sendSuccess(() -> Component.literal("§7Hot-reload watcher: " + watcherStatus), false);
+
+            // Reload status
+            boolean reloadInProgress = bootstrap.isReloadInProgress();
+            if (reloadInProgress) {
+                src.sendSuccess(() -> Component.literal("§e⟳ Reload in progress..."), false);
+            }
+
+            // Last load result
+            var lastResult = bootstrap.getLastLoadResult();
+            if (lastResult != null) {
+                String resultStatus = lastResult.success() ? "§aSuccess" : "§cFailed";
+                src.sendSuccess(() -> Component.literal(
+                    String.format("§7Last load: %s §7(%d templates, %d errors)",
+                        resultStatus, lastResult.templates().size(), lastResult.errors().size())
+                ), false);
+
+                // Show errors if any
+                if (!lastResult.errors().isEmpty()) {
+                    src.sendSuccess(() -> Component.literal("§cErrors:"), false);
+                    for (String error : lastResult.errors()) {
+                        src.sendSuccess(() -> Component.literal("§c  • " + error), false);
+                    }
+                }
+            } else {
+                src.sendSuccess(() -> Component.literal("§7Last load: §8Not initialized"), false);
+            }
+
+            // Directory info
+            src.sendSuccess(() -> Component.literal(
+                "§7Directory: §f" + bootstrap.templateDirectory()
+            ), false);
+            src.sendSuccess(() -> Component.literal(
+                "§7Validation mode: §f" + bootstrap.validationMode()
+            ), false);
+        } else {
+            src.sendSuccess(() -> Component.literal("§7Bootstrap: §cNot configured"), false);
+        }
+
+        return 1;
     }
 
     @Nullable

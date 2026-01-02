@@ -84,7 +84,7 @@ cd devmod
 ./gradlew runClient
 
 # Run tests
-./gradlew test
+./gradlew test --no-build-cache
 ```
 
 ## Project Structure
@@ -157,11 +157,11 @@ The mod includes **2172 automated tests** covering all major systems:
 
 ```bash
 # Run all tests
-./gradlew test
+./gradlew test --no-build-cache
 
 # Run specific test suites
-./gradlew test --tests "com.devmod.endurance.*"
-./gradlew test --tests "com.devmod.party.*"
+./gradlew test --no-build-cache --tests "com.devmod.endurance.*"
+./gradlew test --no-build-cache --tests "com.devmod.party.*"
 ```
 
 ### Test Coverage by System

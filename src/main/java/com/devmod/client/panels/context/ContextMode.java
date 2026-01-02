@@ -1,6 +1,6 @@
 package com.devmod.client.panels.context;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public enum ContextMode {
 
@@ -8,25 +8,25 @@ public enum ContextMode {
      * Combat mode: activated when the player is in combat.
      * Shows: CombatPanel, EntityInfoPanel for target
      */
-    COMBAT("Combat", UIConstants.Status.ERROR(), true, false, true),
+    COMBAT("Combat", DesignTokens.Semantic.ERROR, true, false, true),
 
     /**
      * Explore mode: default when not in combat or testing.
      * Shows: EntityInfoPanel on hover (legacy tool status panel removed)
      */
-    EXPLORE("Explore", UIConstants.Status.INFO(), true, true, false),
+    EXPLORE("Explore", DesignTokens.Semantic.INFO, true, true, false),
 
     /**
      * Testing mode: activated during a test session.
      * Shows: testing indicators (legacy progress/tool panels removed)
      */
-    TEST("Test", UIConstants.Status.SUCCESS(), true, true, true),
+    TEST("Test", DesignTokens.Semantic.SUCCESS, true, true, true),
 
     /**
      * Custom mode: user manually controls all panels.
      * No automatic panels.
      */
-    CUSTOM("Custom", UIConstants.Text.MUTED(), false, false, false);
+    CUSTOM("Custom", DesignTokens.Text.MUTED, false, false, false);
 
     private final String displayName;
     private final int color;

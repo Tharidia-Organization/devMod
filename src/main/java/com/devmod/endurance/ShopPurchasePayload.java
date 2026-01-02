@@ -4,13 +4,15 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
-public record ShopPurchasePayload(String itemId) implements CustomPacketPayload {
+public record ShopPurchasePayload(String itemId) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     // Security limits to prevent DoS attacks
     private static final int MAX_STRING_LENGTH = 256;
@@ -42,5 +44,11 @@ public record ShopPurchasePayload(String itemId) implements CustomPacketPayload 
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        // 4 bytes for length int + string bytes
+        return 4 + (itemId != null ? itemId.length() : 0);
     }
 }

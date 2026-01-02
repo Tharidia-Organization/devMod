@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 
@@ -20,6 +22,50 @@ import com.devmod.telemetry.TelemetryService;
 
 public final class ActionRegistry {
     private static final Map<String, RadialAction> ACTIONS = new ConcurrentHashMap<>();
+
+    /**
+     * P1: Whitelist of action IDs that can be safely invoked from untrusted (network) contexts.
+     * Actions not in this list will be rejected when origin is NETWORK or UNKNOWN.
+     * This provides defense-in-depth against arbitrary action invocation attacks.
+     */
+    private static final Set<String> CLIENT_SAFE_ACTIONS = Set.of(
+        // Endurance quest actions - safe, server validates quest state
+        ActionIds.ENDURANCE_QUEST_START,
+        ActionIds.ENDURANCE_QUEST_CONTINUE,
+        ActionIds.ENDURANCE_QUEST_EXIT,
+        ActionIds.QUEST_TASK_COMPLETE,
+
+        // Ability actions - safe, server validates cooldowns
+        ActionIds.ABILITY_DASH,
+        ActionIds.ABILITY_DODGE,
+
+        // UI open actions - safe, client-side only
+        ActionIds.UI_RADIAL_OPEN,
+        ActionIds.UI_SETTINGS_OPEN,
+        ActionIds.UI_ENDURANCE_SCREEN_OPEN,
+        ActionIds.UI_ENDURANCE_SHOP_OPEN,
+        ActionIds.UI_PARTY_OPEN,
+        ActionIds.UI_NOTIFICATION_CENTER_OPEN,
+        ActionIds.UI_MAILBOX_OPEN,
+        ActionIds.UI_QUEST_DEATH_OPEN,
+        ActionIds.UI_PERK_SELECTION_OPEN,
+        ActionIds.UI_QUEST_COMPLETION_OPEN,
+        ActionIds.UI_WAVE_CHECKPOINT_OPEN,
+        ActionIds.UI_SEASON_PASS_OPEN,
+
+        // HUD toggles - safe, client-side state
+        ActionIds.HUD_IMPACT_TOGGLE,
+        ActionIds.HUD_QUEST_TOGGLE,
+        ActionIds.HUD_ENDURANCE_TOGGLE,
+        ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE,
+
+        // Onboarding - safe, client preference
+        ActionIds.UI_ONBOARDING_START,
+        ActionIds.UI_ONBOARDING_SKIP
+    );
+
+    /** Metrics: count of rejected untrusted action attempts */
+    private static final AtomicLong untrustedActionRejections = new AtomicLong(0);
 
     private ActionRegistry() {}
 
@@ -56,6 +102,17 @@ public final class ActionRegistry {
         Objects.requireNonNull(context, "context");
 
         long startTime = System.currentTimeMillis();
+
+        // P1: Validate untrusted origins against whitelist
+        ActionOrigin origin = context.getOrigin();
+        if (!origin.isTrusted() && !CLIENT_SAFE_ACTIONS.contains(id)) {
+            untrustedActionRejections.incrementAndGet();
+            DevMod.LOGGER.warn("[SECURITY] Untrusted action blocked: id={}, origin={}", id, origin);
+            ActionResult result = ActionResult.blocked(ActionResult.ERROR_UNTRUSTED_ACTION,
+                "Action not allowed from untrusted origin");
+            logInvocationExtended(id, null, context, result);
+            return result;
+        }
 
         RadialAction action = ACTIONS.get(id);
         if (action == null) {
@@ -176,5 +233,39 @@ public final class ActionRegistry {
         sb.append("\"durationMs\":").append(result.durationMs()).append("}");
 
         TelemetryService.INSTANCE.appendActionLine(sb.toString());
+    }
+
+    // =========================================================================
+    // P1: Client Action ID Whitelist - Metrics and Utilities
+    // =========================================================================
+
+    /**
+     * Returns the total count of untrusted action rejections.
+     * Useful for admin dashboards and security monitoring.
+     */
+    public static long getUntrustedActionRejections() {
+        return untrustedActionRejections.get();
+    }
+
+    /**
+     * Checks if an action ID is in the client-safe whitelist.
+     * Actions in this whitelist can be invoked from untrusted (NETWORK) origins.
+     */
+    public static boolean isClientSafeAction(String actionId) {
+        return CLIENT_SAFE_ACTIONS.contains(actionId);
+    }
+
+    /**
+     * Returns the number of registered actions.
+     */
+    public static int getRegisteredActionCount() {
+        return ACTIONS.size();
+    }
+
+    /**
+     * Returns the number of client-safe whitelisted actions.
+     */
+    public static int getClientSafeActionCount() {
+        return CLIENT_SAFE_ACTIONS.size();
     }
 }

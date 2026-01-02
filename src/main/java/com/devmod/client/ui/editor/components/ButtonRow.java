@@ -5,8 +5,8 @@ import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorSpacing;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class ButtonRow {
 
@@ -115,7 +115,7 @@ public class ButtonRow {
     public void render(GuiGraphics graphics, int x, int y, int availableWidth, int mouseX, int mouseY) {
         if (buttons.isEmpty()) return;
 
-        int defaultWidth = UIConstants.Size.BUTTON_WIDTH;
+        int defaultWidth = DesignTokens.Size.BUTTON_WIDTH;
         int width = buttonWidth > 0 ? buttonWidth : defaultWidth;
         int totalWidth = calculateTotalWidth(defaultWidth);
 

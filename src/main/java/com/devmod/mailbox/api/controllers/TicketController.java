@@ -6,6 +6,9 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import io.javalin.http.Context;
+
+import com.devmod.mailbox.api.AuthMiddleware;
 import com.devmod.mailbox.ticket.Ticket;
 import com.devmod.mailbox.ticket.TicketCategory;
 import com.devmod.mailbox.ticket.TicketComment;
@@ -13,8 +16,6 @@ import com.devmod.mailbox.ticket.TicketManager;
 import com.devmod.mailbox.ticket.TicketPriority;
 import com.devmod.mailbox.ticket.TicketRepository;
 import com.devmod.mailbox.ticket.TicketStatus;
-
-import io.javalin.http.Context;
 
 /**
  * REST API controller for support ticket management.
@@ -163,9 +164,8 @@ public final class TicketController {
         UUID ticketId = parseUuidOrThrow(ctx.pathParam("id"));
         UpdateTicketRequest request = ctx.bodyAsClass(UpdateTicketRequest.class);
 
-        // Get admin name from auth context (simplified)
-        String actorName = ctx.attribute("adminName");
-        if (actorName == null) actorName = "Admin";
+        AuthMiddleware.AuthenticatedUser user = AuthMiddleware.getUser(ctx);
+        String actorName = user != null ? user.username() : "Admin";
 
         Ticket updated = null;
 
@@ -253,20 +253,20 @@ public final class TicketController {
             return;
         }
         String authorUuidStr = request.authorUuid();
-        if (authorUuidStr == null || authorUuidStr.isBlank()) {
-            ctx.status(400).json(new ErrorResponse("error", "authorUuid is required"));
-            return;
+        UUID authorUuid = null;
+        if (authorUuidStr != null && !authorUuidStr.isBlank()) {
+            authorUuid = parseUuidOrThrow(authorUuidStr);
         }
-
-        UUID authorUuid = parseUuidOrThrow(authorUuidStr);
-        String authorName = nonBlankOrDefault(request.authorName(), "Admin");
+        AuthMiddleware.AuthenticatedUser user = AuthMiddleware.getUser(ctx);
+        String fallbackName = user != null ? user.username() : "Admin";
+        String authorName = nonBlankOrDefault(request.authorName(), fallbackName);
         boolean isInternal = Boolean.TRUE.equals(request.isInternal());
 
         TicketComment comment = TicketManager.INSTANCE.addComment(
             ticketId,
             authorUuid,
             authorName,
-            request.content(),
+            content,
             isInternal
         ).join();
 

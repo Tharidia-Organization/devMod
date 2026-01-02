@@ -11,7 +11,7 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.Mob;
 
 import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.config.MobPresetManager;
 
 public class MobConfigScreenRenderer {
@@ -44,34 +44,34 @@ public class MobConfigScreenRenderer {
         Mob mob = state.getMob();
 
         // Panel background with subtle gradient
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, UIConstants.Background.PANEL_SOLID());
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, DesignTokens.Background.PANEL_SOLID());
 
         // Gradient header
-        int headerH = UIConstants.Spacing.HEADER_HEIGHT;
+        int headerH = DesignTokens.Spacing.HEADER_HEIGHT;
         for (int i = 0; i < headerH; i++) {
             float t = (float) i / headerH;
-            int color = UIConstants.lerp(0xFF2A2A42, UIConstants.Background.HEADER(), t);
+            int color = DesignTokens.lerp(0xFF2A2A42, DesignTokens.Background.HEADER(), t);
             graphics.fill(panelX, panelY + i, panelX + PANEL_WIDTH, panelY + i + 1, color);
         }
 
         // Border with glow effect
-        int glowColor = UIConstants.setAlpha(UIConstants.Border.DEFAULT(), 80);
+        int glowColor = DesignTokens.withAlpha(DesignTokens.Border.DEFAULT(), 80);
         graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY, glowColor);
         graphics.fill(panelX - 2, panelY + PANEL_HEIGHT, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, glowColor);
         graphics.fill(panelX - 2, panelY, panelX, panelY + PANEL_HEIGHT, glowColor);
         graphics.fill(panelX + PANEL_WIDTH, panelY, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT, glowColor);
 
-        AxiomRenderer.drawBorder(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, UIConstants.Border.DEFAULT());
+        AxiomRenderer.drawBorder(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, DesignTokens.Border.DEFAULT());
 
         // Title with mob name
         String title = Objects.requireNonNull("§l" + mob.getName().getString());
         var safeFont = Objects.requireNonNull(font);
-        graphics.drawString(safeFont, title, panelX + 12, panelY + 6, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, title, panelX + 12, panelY + 6, DesignTokens.Text.PRIMARY(), false);
 
         // Mob type (smaller, muted)
         String type = mob.getType().getDescriptionId().replace("entity.minecraft.", "").replace("_", " ");
         type = Objects.requireNonNull(Character.toUpperCase(type.charAt(0)) + type.substring(1));
-        graphics.drawString(safeFont, "(" + type + ")", panelX + 14 + safeFont.width(title), panelY + 6, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, "(" + type + ")", panelX + 14 + safeFont.width(title), panelY + 6, DesignTokens.Text.MUTED(), false);
 
         // Health indicator in header
         float healthPercent = mob.getHealth() / mob.getMaxHealth();
@@ -81,14 +81,14 @@ public class MobConfigScreenRenderer {
     }
 
     private void drawMiniHealthBar(GuiGraphics graphics, int x, int y, int w, int h, float percent) {
-        graphics.fill(x, y, x + w, y + h, UIConstants.Background.INPUT());
+        graphics.fill(x, y, x + w, y + h, DesignTokens.Background.INPUT());
         int fillW = (int) (w * percent);
-        int color = percent > 0.5f ? UIConstants.Accent.GREEN() :
-                    (percent > 0.25f ? UIConstants.Accent.YELLOW() : UIConstants.Accent.RED());
+        int color = percent > 0.5f ? DesignTokens.Accent.GREEN() :
+                    (percent > 0.25f ? DesignTokens.Accent.YELLOW() : DesignTokens.Accent.RED());
         if (fillW > 0) {
             graphics.fill(x, y, x + fillW, y + h, color);
         }
-        AxiomRenderer.drawBorder(graphics, x, y, w, h, UIConstants.Border.MUTED());
+        AxiomRenderer.drawBorder(graphics, x, y, w, h, DesignTokens.Border.MUTED());
         graphics.drawString(Objects.requireNonNull(font), "§c❤", x + 2, y + 1, 0xFFFFFFFF, false);
     }
 
@@ -99,22 +99,22 @@ public class MobConfigScreenRenderer {
     public void drawTabs(GuiGraphics graphics, int panelX, int panelY, int mouseX, int mouseY) {
         String[] tabs = {"Stats", "Combat", "AI"};
         int tabsX = panelX + 10;
-        int tabsY = panelY + UIConstants.Spacing.HEADER_HEIGHT;
+        int tabsY = panelY + DesignTokens.Spacing.HEADER_HEIGHT;
 
         for (int i = 0; i < tabs.length; i++) {
             int tx = tabsX + i * (TAB_WIDTH + 4);
             boolean selected = (state.selectedTab == i);
             boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, tx, tabsY, TAB_WIDTH, TAB_HEIGHT);
 
-            int bgColor = selected ? UIConstants.Background.ACTIVE() :
-                          (hovered ? UIConstants.Background.HOVER() : UIConstants.Background.HEADER());
+            int bgColor = selected ? DesignTokens.Background.ACTIVE() :
+                          (hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.HEADER());
             graphics.fill(tx, tabsY, tx + TAB_WIDTH, tabsY + TAB_HEIGHT, bgColor);
 
             if (selected) {
-                graphics.fill(tx, tabsY + TAB_HEIGHT - 2, tx + TAB_WIDTH, tabsY + TAB_HEIGHT, UIConstants.Border.ACCENT());
+                graphics.fill(tx, tabsY + TAB_HEIGHT - 2, tx + TAB_WIDTH, tabsY + TAB_HEIGHT, DesignTokens.Border.ACCENT());
             }
 
-            int textColor = selected ? UIConstants.Text.ACCENT() : UIConstants.Text.PRIMARY();
+            int textColor = selected ? DesignTokens.Text.ACCENT() : DesignTokens.Text.PRIMARY();
             var safeFont = Objects.requireNonNull(font);
             String tabName = Objects.requireNonNull(tabs[i]);
             int textW = safeFont.width(tabName);
@@ -136,15 +136,15 @@ public class MobConfigScreenRenderer {
         // Background gradient
         for (int i = 0; i < boxH; i++) {
             float t = (float) i / boxH;
-            int color = UIConstants.lerp(0xFF151525, 0xFF1A1A2E, t);
+            int color = DesignTokens.lerp(0xFF151525, 0xFF1A1A2E, t);
             graphics.fill(x, y + i, x + boxW, y + i + 1, color);
         }
 
-        AxiomRenderer.drawBorder(graphics, x, y, boxW, boxH, UIConstants.Border.MUTED());
+        AxiomRenderer.drawBorder(graphics, x, y, boxW, boxH, DesignTokens.Border.MUTED());
 
         // Corner accents
         int accentLen = 10;
-        int accentColor = UIConstants.Border.ACCENT();
+        int accentColor = DesignTokens.Border.ACCENT();
         graphics.fill(x, y, x + accentLen, y + 2, accentColor);
         graphics.fill(x, y, x + 2, y + accentLen, accentColor);
         graphics.fill(x + boxW - accentLen, y, x + boxW, y + 2, accentColor);
@@ -174,19 +174,19 @@ public class MobConfigScreenRenderer {
                 new Vector3f(0, 0, 0), rotation, null, mob
             );
         } catch (Exception e) {
-            graphics.drawString(safeFont, "Preview", centerX - 20, centerY - 40, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "Preview", centerX - 20, centerY - 40, DesignTokens.Text.MUTED(), false);
         }
 
         boolean hovering = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, boxW, boxH);
         if (hovering && !state.isDraggingPreview) {
-            graphics.drawString(safeFont, "§8Drag: rotate | Scroll: zoom", x + 4, y + boxH - 12, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "§8Drag: rotate | Scroll: zoom", x + 4, y + boxH - 12, DesignTokens.Text.MUTED(), false);
         } else if (state.isDraggingPreview) {
-            graphics.drawString(safeFont, "§a↻ Rotating...", x + 4, y + boxH - 12, UIConstants.Accent.GREEN(), false);
+            graphics.drawString(safeFont, "§a↻ Rotating...", x + 4, y + boxH - 12, DesignTokens.Accent.GREEN(), false);
         }
 
         if (Math.abs(state.previewZoom - 1.0f) > 0.05f) {
             String zoomText = Objects.requireNonNull(String.format("%.0f%%", state.previewZoom * 100));
-            graphics.drawString(safeFont, zoomText, x + boxW - safeFont.width(zoomText) - 4, y + 4, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, zoomText, x + boxW - safeFont.width(zoomText) - 4, y + 4, DesignTokens.Text.MUTED(), false);
         }
     }
 
@@ -207,21 +207,21 @@ public class MobConfigScreenRenderer {
                 values = new double[]{state.health, state.armor, state.speed * 100};
                 originals = new double[]{state.origHealth, state.origArmor, state.origSpeed * 100};
                 maxValues = new double[]{MobConfigScreenState.MAX_HEALTH, MobConfigScreenState.MAX_ARMOR, MobConfigScreenState.MAX_SPEED * 100};
-                colors = new int[]{UIConstants.Accent.RED(), UIConstants.Accent.CYAN(), UIConstants.Accent.GREEN()};
+                colors = new int[]{DesignTokens.Accent.RED(), DesignTokens.Accent.CYAN(), DesignTokens.Accent.GREEN()};
             }
             case 1 -> { // Combat
                 labels = new String[]{"Attack Damage", "Attack Reach", "Knockback Resist"};
                 values = new double[]{state.damage, state.attackRange, state.knockbackResist * 100};
                 originals = new double[]{state.origDamage, state.origAttackRange, state.origKnockbackResist * 100};
                 maxValues = new double[]{MobConfigScreenState.MAX_DAMAGE, MobConfigScreenState.MAX_ATTACK_RANGE, MobConfigScreenState.MAX_KNOCKBACK_RES * 100};
-                colors = new int[]{UIConstants.Accent.ORANGE(), UIConstants.Accent.YELLOW(), UIConstants.Accent.PURPLE()};
+                colors = new int[]{DesignTokens.Accent.ORANGE(), DesignTokens.Accent.YELLOW(), DesignTokens.Accent.PURPLE()};
             }
             case 2 -> { // AI
                 labels = new String[]{"Follow Range"};
                 values = new double[]{state.followRange};
                 originals = new double[]{state.origFollowRange};
                 maxValues = new double[]{MobConfigScreenState.MAX_FOLLOW_RANGE};
-                colors = new int[]{UIConstants.Accent.BLUE()};
+                colors = new int[]{DesignTokens.Accent.BLUE()};
             }
             default -> { return; }
         }
@@ -236,41 +236,41 @@ public class MobConfigScreenRenderer {
     private void drawSliderRow(GuiGraphics graphics, int x, int y, String label, double value,
                                double original, double maxVal, int accentColor, int sliderId, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
-        graphics.drawString(safeFont, label, x, y, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, label, x, y, DesignTokens.Text.PRIMARY(), false);
 
         int valueX = x + SLIDER_WIDTH + 10;
         int valueW = 35;
         int valueH = 12;
 
         if (state.editingSlider == sliderId) {
-            graphics.fill(valueX - 2, y - 2, valueX + valueW + 2, y + valueH, UIConstants.Background.INPUT());
-            AxiomRenderer.drawBorder(graphics, valueX - 2, y - 2, valueW + 4, valueH + 2, UIConstants.Accent.GOLD());
+            graphics.fill(valueX - 2, y - 2, valueX + valueW + 2, y + valueH, DesignTokens.Background.INPUT());
+            AxiomRenderer.drawBorder(graphics, valueX - 2, y - 2, valueW + 4, valueH + 2, DesignTokens.Accent.GOLD());
 
             String inputText = state.inputBuffer.toString();
             if (inputText == null) inputText = "";
-            graphics.drawString(safeFont, inputText, valueX, y, UIConstants.Text.WHITE(), false);
+            graphics.drawString(safeFont, inputText, valueX, y, DesignTokens.Text.WHITE(), false);
 
             if ((System.currentTimeMillis() - state.inputCursorBlink) % 1000 < 500) {
                 int cursorX = valueX + safeFont.width(inputText);
-                graphics.fill(cursorX, y, cursorX + 1, y + 9, UIConstants.Text.WHITE());
+                graphics.fill(cursorX, y, cursorX + 1, y + 9, DesignTokens.Text.WHITE());
             }
         } else {
             String valueStr = String.format("%.1f", value);
             boolean valueHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, valueX - 2, y - 2, valueW + 4, valueH + 2);
 
             if (valueHovered) {
-                graphics.fill(valueX - 2, y - 2, valueX + valueW + 2, y + valueH, UIConstants.Background.HOVER());
-                AxiomRenderer.drawBorder(graphics, valueX - 2, y - 2, valueW + 4, valueH + 2, UIConstants.Border.LIGHT());
+                graphics.fill(valueX - 2, y - 2, valueX + valueW + 2, y + valueH, DesignTokens.Background.HOVER());
+                AxiomRenderer.drawBorder(graphics, valueX - 2, y - 2, valueW + 4, valueH + 2, DesignTokens.Border.LIGHT());
             }
 
-            int valueColor = Math.abs(value - original) > 0.01 ? UIConstants.Accent.GOLD() : UIConstants.Text.SECONDARY();
+            int valueColor = Math.abs(value - original) > 0.01 ? DesignTokens.Accent.GOLD() : DesignTokens.Text.SECONDARY();
             graphics.drawString(safeFont, valueStr, valueX, y, valueColor, false);
         }
 
         if (Math.abs(value - original) > 0.01) {
             double change = value - original;
             String changeStr = Objects.requireNonNull(String.format("%+.1f", change));
-            int changeColor = change > 0 ? UIConstants.Accent.GREEN() : UIConstants.Accent.RED();
+            int changeColor = change > 0 ? DesignTokens.Accent.GREEN() : DesignTokens.Accent.RED();
             graphics.drawString(safeFont, changeStr, x + SLIDER_WIDTH + 50, y, changeColor, false);
         }
 
@@ -279,7 +279,7 @@ public class MobConfigScreenRenderer {
         int trackW = SLIDER_WIDTH;
         int trackH = SLIDER_HEIGHT;
 
-        graphics.fill(trackX, sliderY, trackX + trackW, sliderY + trackH, UIConstants.Background.INPUT());
+        graphics.fill(trackX, sliderY, trackX + trackW, sliderY + trackH, DesignTokens.Background.INPUT());
 
         float origPercent = maxVal > 0 ? (float) (original / maxVal) : 0f;
         int origMarkerX = trackX + (int) (trackW * Math.min(1, origPercent));
@@ -290,7 +290,7 @@ public class MobConfigScreenRenderer {
         if (fillW > 0 && trackW > 0) {
             for (int i = 0; i < fillW; i++) {
                 float t = (float) i / trackW;
-                int color = UIConstants.lerp(UIConstants.darken(accentColor, 0.3f), accentColor, t);
+                int color = DesignTokens.lerp(DesignTokens.darken(accentColor, 0.3f), accentColor, t);
                 graphics.fill(trackX + i, sliderY, trackX + i + 1, sliderY + trackH, color);
             }
         }
@@ -307,13 +307,13 @@ public class MobConfigScreenRenderer {
             int glowAlpha = 80 + (int) (pulseAnim * 100);
             graphics.fill(handleX - 2 - pulseExpand, sliderY - 2 - pulseExpand,
                 handleX + handleW + 2 + pulseExpand, sliderY + trackH + 2 + pulseExpand,
-                UIConstants.setAlpha(accentColor, glowAlpha));
+                DesignTokens.withAlpha(accentColor, glowAlpha));
         }
 
         graphics.fill(handleX, sliderY - 1, handleX + handleW, sliderY + trackH + 1, accentColor);
-        graphics.fill(handleX + 1, sliderY, handleX + handleW - 1, sliderY + trackH, UIConstants.lighten(accentColor, 0.3f));
+        graphics.fill(handleX + 1, sliderY, handleX + handleW - 1, sliderY + trackH, DesignTokens.lighten(accentColor, 0.3f));
 
-        AxiomRenderer.drawBorder(graphics, trackX, sliderY, trackW, trackH, UIConstants.Border.MUTED());
+        AxiomRenderer.drawBorder(graphics, trackX, sliderY, trackW, trackH, DesignTokens.Border.MUTED());
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -321,22 +321,22 @@ public class MobConfigScreenRenderer {
     // ═══════════════════════════════════════════════════════════════
 
     public void drawBottomSection(GuiGraphics graphics, int panelX, int y, int mouseX, int mouseY) {
-        graphics.fill(panelX + 10, y - 8, panelX + PANEL_WIDTH - 10, y - 7, UIConstants.Border.SEPARATOR());
+        graphics.fill(panelX + 10, y - 8, panelX + PANEL_WIDTH - 10, y - 7, DesignTokens.Border.SEPARATOR());
 
         int modeX = panelX + 15;
         boolean modeHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, modeX, y, 120, 22);
 
-        int modeBg = modeHovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
+        int modeBg = modeHovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT();
         graphics.fill(modeX, y, modeX + 120, y + 22, modeBg);
-        AxiomRenderer.drawBorder(graphics, modeX, y, 120, 22, UIConstants.Border.MUTED());
+        AxiomRenderer.drawBorder(graphics, modeX, y, 120, 22, DesignTokens.Border.MUTED());
 
-        int modeAccent = state.isGlobalMode ? UIConstants.Accent.ORANGE() : UIConstants.Accent.BLUE();
+        int modeAccent = state.isGlobalMode ? DesignTokens.Accent.ORANGE() : DesignTokens.Accent.BLUE();
         graphics.fill(modeX, y, modeX + 3, y + 22, modeAccent);
 
         var safeFont = Objects.requireNonNull(font);
-        graphics.drawString(safeFont, "Mode:", modeX + 8, y + 3, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, "Mode:", modeX + 8, y + 3, DesignTokens.Text.SECONDARY(), false);
         String modeText = state.isGlobalMode ? "GLOBAL" : "SPECIFIC";
-        int modeColor = state.isGlobalMode ? UIConstants.Accent.ORANGE() : UIConstants.Text.PRIMARY();
+        int modeColor = state.isGlobalMode ? DesignTokens.Accent.ORANGE() : DesignTokens.Text.PRIMARY();
         graphics.drawString(safeFont, modeText, modeX + 8, y + 12, modeColor, false);
 
         drawPresets(graphics, panelX + 150, y - 3, mouseX, mouseY);
@@ -347,21 +347,23 @@ public class MobConfigScreenRenderer {
         int btnGap = 8;
 
         int resetX = panelX + 15;
-        boolean resetHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, resetX, btnY, 55, btnH);
-        drawStyledButton(graphics, resetX, btnY, 55, btnH, "Reset", resetHovered, UIConstants.Accent.RED());
+        boolean resetEnabled = state.hasStatChanges();
+        boolean resetHovered = resetEnabled && AxiomRenderer.isMouseOver(mouseX, mouseY, resetX, btnY, 55, btnH);
+        drawStyledButton(graphics, resetX, btnY, 55, btnH, "Reset", resetHovered, DesignTokens.Accent.RED(), resetEnabled);
 
         int applyX = panelX + PANEL_WIDTH - btnW - btnGap - btnW - 15;
-        boolean applyHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, applyX, btnY, btnW, btnH);
-        drawStyledButton(graphics, applyX, btnY, btnW, btnH, "Apply", applyHovered, UIConstants.Accent.GREEN());
+        boolean applyEnabled = state.hasUnsavedChanges();
+        boolean applyHovered = applyEnabled && AxiomRenderer.isMouseOver(mouseX, mouseY, applyX, btnY, btnW, btnH);
+        drawStyledButton(graphics, applyX, btnY, btnW, btnH, "Apply", applyHovered, DesignTokens.Accent.GREEN(), applyEnabled);
 
         int equipX = applyX + btnW + btnGap;
         boolean equipHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, equipX, btnY, btnW, btnH);
-        drawStyledButton(graphics, equipX, btnY, btnW, btnH, "Equip...", equipHovered, UIConstants.Accent.BLUE());
+        drawStyledButton(graphics, equipX, btnY, btnW, btnH, "Equip...", equipHovered, DesignTokens.Accent.BLUE(), true);
     }
 
     private void drawPresets(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
-        graphics.drawString(safeFont, "Presets:", x, y, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, "Presets:", x, y, DesignTokens.Text.SECONDARY(), false);
 
         int presetY = y + 12;
         int presetW = 55;
@@ -385,18 +387,18 @@ public class MobConfigScreenRenderer {
             }
 
             MobConfigScreenState.PresetColors colors = MobConfigScreenState.PRESET_COLORS.get(i);
-            int bgColor = selected ? colors.background() : (hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
+            int bgColor = selected ? colors.background() : (hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT());
             if (selected) {
-                bgColor = UIConstants.setAlpha(bgColor, 180);
+                bgColor = DesignTokens.withAlpha(bgColor, 180);
             }
             graphics.fill(px, py, px + presetW, py + presetH, bgColor);
 
-            int borderColor = selected ? colors.border() : UIConstants.Border.MUTED();
+            int borderColor = selected ? colors.border() : DesignTokens.Border.MUTED();
             AxiomRenderer.drawBorder(graphics, px, py, presetW, presetH, borderColor);
 
             String name = MobConfigScreenState.PRESET_NAMES.get(i);
             int textW = safeFont.width(name);
-            int textColor = selected ? UIConstants.Text.WHITE() : UIConstants.Text.SECONDARY();
+            int textColor = selected ? DesignTokens.Text.WHITE() : DesignTokens.Text.SECONDARY();
             graphics.drawString(safeFont, name, px + (presetW - textW) / 2, py + 4, textColor, false);
         }
 
@@ -405,12 +407,12 @@ public class MobConfigScreenRenderer {
         if (userPresetNames.length > 0 || MobPresetManager.canAddPreset()) {
             int userY = presetY + 2 * (presetH + gap) + 6;
 
-            graphics.drawString(safeFont, "§7My:", x, userY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "§7My:", x, userY, DesignTokens.Text.MUTED(), false);
 
             int saveBtnX = x + 20;
             boolean saveHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, saveBtnX, userY - 1, 12, 10);
             if (MobPresetManager.canAddPreset()) {
-                int saveColor = saveHovered ? UIConstants.Accent.GREEN() : UIConstants.Text.MUTED();
+                int saveColor = saveHovered ? DesignTokens.Accent.GREEN() : DesignTokens.Text.MUTED();
                 graphics.drawString(safeFont, "[+]", saveBtnX, userY, saveColor, false);
             }
 
@@ -428,10 +430,10 @@ public class MobConfigScreenRenderer {
                     state.hoveredUserPreset = i;
                 }
 
-                int bgColor = hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
+                int bgColor = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT();
                 graphics.fill(px, py, px + userPresetW, py + userPresetH, bgColor);
 
-                int borderColor = hovered ? UIConstants.Accent.GOLD() : UIConstants.Border.MUTED();
+                int borderColor = hovered ? DesignTokens.Accent.GOLD() : DesignTokens.Border.MUTED();
                 AxiomRenderer.drawBorder(graphics, px, py, userPresetW, userPresetH, borderColor);
 
                 String name = userPresetNames[i];
@@ -444,23 +446,37 @@ public class MobConfigScreenRenderer {
                     }
                     name = name + ellipsis;
                 }
-                graphics.drawString(safeFont, name, px + 2, py + 3, UIConstants.Text.SECONDARY(), false);
+                graphics.drawString(safeFont, name, px + 2, py + 3, DesignTokens.Text.SECONDARY(), false);
             }
 
             if (userPresetNames.length > maxVisible) {
                 int moreX = userStartX + maxVisible * (userPresetW + 2);
-                graphics.drawString(safeFont, "+" + (userPresetNames.length - maxVisible), moreX, userY, UIConstants.Text.MUTED(), false);
+                graphics.drawString(safeFont, "+" + (userPresetNames.length - maxVisible), moreX, userY, DesignTokens.Text.MUTED(), false);
             }
         }
     }
 
-    public void drawStyledButton(GuiGraphics graphics, int x, int y, int w, int h, String text, boolean hovered, int accentColor) {
-        int bgColor = hovered ? UIConstants.setAlpha(accentColor, 60) : UIConstants.Background.PANEL();
+    public void drawStyledButton(GuiGraphics graphics, int x, int y, int w, int h, String text,
+                                 boolean hovered, int accentColor, boolean enabled) {
+        int bgColor;
+        int accent = accentColor;
+        int borderColor;
+        int textColor;
+
+        if (!enabled) {
+            bgColor = DesignTokens.Background.INPUT();
+            accent = DesignTokens.Border.MUTED();
+            borderColor = DesignTokens.Border.MUTED();
+            textColor = DesignTokens.Text.MUTED();
+        } else {
+            bgColor = hovered ? DesignTokens.withAlpha(accentColor, 60) : DesignTokens.Background.PANEL();
+            borderColor = hovered ? accentColor : DesignTokens.Border.MUTED();
+            textColor = hovered ? DesignTokens.Text.WHITE() : DesignTokens.Text.PRIMARY();
+        }
         graphics.fill(x, y, x + w, y + h, bgColor);
 
-        graphics.fill(x, y, x + 3, y + h, accentColor);
+        graphics.fill(x, y, x + 3, y + h, accent);
 
-        int borderColor = hovered ? accentColor : UIConstants.Border.MUTED();
         AxiomRenderer.drawBorder(graphics, x, y, w, h, borderColor);
 
         var safeFont = Objects.requireNonNull(font);
@@ -469,7 +485,7 @@ public class MobConfigScreenRenderer {
         int textW = safeFont.width(safeText);
         int textX = x + (w - textW) / 2;
         int textY = y + (h - 8) / 2;
-        graphics.drawString(safeFont, safeText, textX, textY, hovered ? UIConstants.Text.WHITE() : UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, safeText, textX, textY, textColor, false);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -480,9 +496,9 @@ public class MobConfigScreenRenderer {
         int bannerWidth = PANEL_WIDTH;
         int bannerHeight = 24;
 
-        int bgColor = UIConstants.setAlpha(UIConstants.Accent.ORANGE(), 0xEE);
-        int borderColor = UIConstants.Accent.ORANGE();
-        int textColor = UIConstants.Accent.GOLD();
+        int bgColor = DesignTokens.withAlpha(DesignTokens.Accent.ORANGE(), 0xEE);
+        int borderColor = DesignTokens.Accent.ORANGE();
+        int textColor = DesignTokens.Accent.GOLD();
 
         long time = System.currentTimeMillis();
         float pulse = (float) (0.8 + 0.2 * Math.sin(time / 300.0));
@@ -545,18 +561,18 @@ public class MobConfigScreenRenderer {
         int dx = (screenWidth - DIALOG_WIDTH) / 2;
         int dy = (screenHeight - DIALOG_HEIGHT) / 2;
 
-        graphics.fill(dx, dy, dx + DIALOG_WIDTH, dy + DIALOG_HEIGHT, UIConstants.Background.PANEL_SOLID());
-        AxiomRenderer.drawBorder(graphics, dx, dy, DIALOG_WIDTH, DIALOG_HEIGHT, UIConstants.Accent.ORANGE());
+        graphics.fill(dx, dy, dx + DIALOG_WIDTH, dy + DIALOG_HEIGHT, DesignTokens.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, dx, dy, DIALOG_WIDTH, DIALOG_HEIGHT, DesignTokens.Accent.ORANGE());
 
         var safeFont = Objects.requireNonNull(font);
         String title = "§e\u26A0 Unsaved Changes";
         int titleW = safeFont.width(title);
-        graphics.drawString(safeFont, title, dx + (DIALOG_WIDTH - titleW) / 2, dy + 10, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, title, dx + (DIALOG_WIDTH - titleW) / 2, dy + 10, DesignTokens.Text.PRIMARY(), false);
 
         String msg1 = "You have unsaved changes.";
         String msg2 = "Do you want to discard them?";
-        graphics.drawString(safeFont, msg1, dx + (DIALOG_WIDTH - safeFont.width(msg1)) / 2, dy + 28, UIConstants.Text.SECONDARY(), false);
-        graphics.drawString(safeFont, msg2, dx + (DIALOG_WIDTH - safeFont.width(msg2)) / 2, dy + 40, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, msg1, dx + (DIALOG_WIDTH - safeFont.width(msg1)) / 2, dy + 28, DesignTokens.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, msg2, dx + (DIALOG_WIDTH - safeFont.width(msg2)) / 2, dy + 40, DesignTokens.Text.SECONDARY(), false);
 
         int btnW = 80;
         int btnH = 22;
@@ -565,11 +581,11 @@ public class MobConfigScreenRenderer {
         int btnsY = dy + DIALOG_HEIGHT - 35;
 
         boolean discardHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, btnsX, btnsY, btnW, btnH);
-        drawStyledButton(graphics, btnsX, btnsY, btnW, btnH, "Discard", discardHovered, UIConstants.Accent.RED());
+        drawStyledButton(graphics, btnsX, btnsY, btnW, btnH, "Discard", discardHovered, DesignTokens.Accent.RED(), true);
 
         int cancelX = btnsX + btnW + btnGap;
         boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, btnsY, btnW, btnH);
-        drawStyledButton(graphics, cancelX, btnsY, btnW, btnH, "Cancel", cancelHovered, UIConstants.Accent.BLUE());
+        drawStyledButton(graphics, cancelX, btnsY, btnW, btnH, "Cancel", cancelHovered, DesignTokens.Accent.BLUE(), true);
     }
 
     public void drawSavePresetDialog(GuiGraphics graphics, int screenWidth, int screenHeight, int mouseX, int mouseY) {
@@ -580,32 +596,32 @@ public class MobConfigScreenRenderer {
         int dx = (screenWidth - dw) / 2;
         int dy = (screenHeight - dh) / 2;
 
-        graphics.fill(dx, dy, dx + dw, dy + dh, UIConstants.Background.PANEL_SOLID());
-        AxiomRenderer.drawBorder(graphics, dx, dy, dw, dh, UIConstants.Accent.GOLD());
+        graphics.fill(dx, dy, dx + dw, dy + dh, DesignTokens.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, dx, dy, dw, dh, DesignTokens.Accent.GOLD());
 
         var safeFont = Objects.requireNonNull(font);
         String title = "Save Preset";
-        graphics.drawString(safeFont, title, dx + (dw - safeFont.width(title)) / 2, dy + 8, UIConstants.Accent.GOLD(), false);
+        graphics.drawString(safeFont, title, dx + (dw - safeFont.width(title)) / 2, dy + 8, DesignTokens.Accent.GOLD(), false);
 
         int inputX = dx + 10;
         int inputY = dy + 28;
         int inputW = dw - 20;
         int inputH = 16;
 
-        graphics.fill(inputX, inputY, inputX + inputW, inputY + inputH, UIConstants.Background.INPUT());
-        AxiomRenderer.drawBorder(graphics, inputX, inputY, inputW, inputH, UIConstants.Border.LIGHT());
+        graphics.fill(inputX, inputY, inputX + inputW, inputY + inputH, DesignTokens.Background.INPUT());
+        AxiomRenderer.drawBorder(graphics, inputX, inputY, inputW, inputH, DesignTokens.Border.LIGHT());
 
         String inputText = state.presetNameInput.toString();
         if (inputText == null) inputText = "";
-        graphics.drawString(safeFont, inputText, inputX + 4, inputY + 4, UIConstants.Text.WHITE(), false);
+        graphics.drawString(safeFont, inputText, inputX + 4, inputY + 4, DesignTokens.Text.WHITE(), false);
 
         if ((System.currentTimeMillis() / 500) % 2 == 0) {
             int cursorX = inputX + 4 + safeFont.width(inputText);
-            graphics.fill(cursorX, inputY + 3, cursorX + 1, inputY + 13, UIConstants.Text.WHITE());
+            graphics.fill(cursorX, inputY + 3, cursorX + 1, inputY + 13, DesignTokens.Text.WHITE());
         }
 
         if (inputText.isEmpty()) {
-            graphics.drawString(safeFont, "§7Enter preset name...", inputX + 4, inputY + 4, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "§7Enter preset name...", inputX + 4, inputY + 4, DesignTokens.Text.MUTED(), false);
         }
 
         int btnW = 60;
@@ -617,11 +633,11 @@ public class MobConfigScreenRenderer {
         boolean saveHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, btnsX, btnsY, btnW, btnH);
         boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, btnsX + btnW + btnGap, btnsY, btnW, btnH);
 
-        drawStyledButton(graphics, btnsX, btnsY, btnW, btnH, "Save", saveHovered, UIConstants.Accent.GREEN());
-        drawStyledButton(graphics, btnsX + btnW + btnGap, btnsY, btnW, btnH, "Cancel", cancelHovered, UIConstants.Accent.RED());
+        drawStyledButton(graphics, btnsX, btnsY, btnW, btnH, "Save", saveHovered, DesignTokens.Accent.GREEN(), true);
+        drawStyledButton(graphics, btnsX + btnW + btnGap, btnsY, btnW, btnH, "Cancel", cancelHovered, DesignTokens.Accent.RED(), true);
 
         int remaining = 10 - MobPresetManager.getPresetCount();
-        graphics.drawString(safeFont, "§7" + remaining + " slots left", dx + dw - 50, dy + dh - 10, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, "§7" + remaining + " slots left", dx + dw - 50, dy + dh - 10, DesignTokens.Text.MUTED(), false);
     }
 
     public void drawDeletePresetDialog(GuiGraphics graphics, int screenWidth, int screenHeight, int mouseX, int mouseY) {
@@ -632,15 +648,15 @@ public class MobConfigScreenRenderer {
         int dx = (screenWidth - dw) / 2;
         int dy = (screenHeight - dh) / 2;
 
-        graphics.fill(dx, dy, dx + dw, dy + dh, UIConstants.Background.PANEL_SOLID());
-        AxiomRenderer.drawBorder(graphics, dx, dy, dw, dh, UIConstants.Accent.RED());
+        graphics.fill(dx, dy, dx + dw, dy + dh, DesignTokens.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, dx, dy, dw, dh, DesignTokens.Accent.RED());
 
         var safeFont = Objects.requireNonNull(font);
         String title = "§cDelete Preset?";
-        graphics.drawString(safeFont, title, dx + (dw - safeFont.width(title)) / 2, dy + 8, UIConstants.Accent.RED(), false);
+        graphics.drawString(safeFont, title, dx + (dw - safeFont.width(title)) / 2, dy + 8, DesignTokens.Accent.RED(), false);
 
         String msg = "Delete \"" + state.deleteConfirmPreset + "\"?";
-        graphics.drawString(safeFont, msg, dx + (dw - safeFont.width(msg)) / 2, dy + 28, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, msg, dx + (dw - safeFont.width(msg)) / 2, dy + 28, DesignTokens.Text.SECONDARY(), false);
 
         int btnW = 60;
         int btnH = 18;
@@ -651,7 +667,7 @@ public class MobConfigScreenRenderer {
         boolean deleteHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, btnsX, btnsY, btnW, btnH);
         boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, btnsX + btnW + btnGap, btnsY, btnW, btnH);
 
-        drawStyledButton(graphics, btnsX, btnsY, btnW, btnH, "Delete", deleteHovered, UIConstants.Accent.RED());
-        drawStyledButton(graphics, btnsX + btnW + btnGap, btnsY, btnW, btnH, "Cancel", cancelHovered, UIConstants.Accent.BLUE());
+        drawStyledButton(graphics, btnsX, btnsY, btnW, btnH, "Delete", deleteHovered, DesignTokens.Accent.RED(), true);
+        drawStyledButton(graphics, btnsX + btnW + btnGap, btnsY, btnW, btnH, "Cancel", cancelHovered, DesignTokens.Accent.BLUE(), true);
     }
 }

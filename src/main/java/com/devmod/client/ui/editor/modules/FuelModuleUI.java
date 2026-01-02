@@ -13,7 +13,7 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
@@ -77,7 +77,7 @@ public class FuelModuleUI {
             .step(10)
             .format("%.0f")
             .suffix(" ticks")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Burn time in ticks. Coal = 1600, Stick = 100, Coal Block = 16000. 20 ticks = 1 second.")
@@ -91,7 +91,7 @@ public class FuelModuleUI {
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
             .info("Multiplier for burn time. 1.0 = normal, 2.0 = double burn time, 0.5 = half.")
@@ -134,7 +134,7 @@ public class FuelModuleUI {
             .step(10)
             .format("%.0f")
             .suffix(" ticks")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("Cook time in standard furnace. Default = 200 ticks (10 seconds).")
@@ -144,7 +144,7 @@ public class FuelModuleUI {
             .step(10)
             .format("%.0f")
             .suffix(" ticks")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("Cook time in blast furnace. Default = 100 ticks (5 seconds, 2x faster).")
@@ -154,7 +154,7 @@ public class FuelModuleUI {
             .step(10)
             .format("%.0f")
             .suffix(" ticks")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("Cook time in smoker. Default = 100 ticks (5 seconds, 2x faster for food).")
@@ -164,7 +164,7 @@ public class FuelModuleUI {
             .step(20)
             .format("%.0f")
             .suffix(" ticks")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("Cook time on campfire. Default = 600 ticks (30 seconds).")

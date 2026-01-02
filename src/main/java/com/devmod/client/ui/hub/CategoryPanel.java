@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component;
 
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
 
@@ -88,10 +88,10 @@ public class CategoryPanel implements HubPanel {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.PANEL());
 
         // Right separator border
-        graphics.fill(x + width - 1, y, x + width, y + height, UIConstants.Border.SEPARATOR());
+        graphics.fill(x + width - 1, y, x + width, y + height, DesignTokens.Border.SEPARATOR());
 
         int contentY = y + PADDING;
 
@@ -133,20 +133,20 @@ public class CategoryPanel implements HubPanel {
             int boxSize = 10;
 
             // Checkbox background
-            int boxColor = active ? status.getColor() : UIConstants.Background.INPUT();
+            int boxColor = active ? status.getColor() : DesignTokens.Background.INPUT();
             graphics.fill(filterX, filterY + 2, filterX + boxSize, filterY + 2 + boxSize, boxColor);
-            AxiomRenderer.drawBorder(graphics, filterX, filterY + 2, boxSize, boxSize, UIConstants.Border.DEFAULT());
+            AxiomRenderer.drawBorder(graphics, filterX, filterY + 2, boxSize, boxSize, DesignTokens.Border.DEFAULT());
 
             // Checkmark
             if (active) {
-                graphics.drawString(safeFont, "v", filterX + 2, filterY + 2, UIConstants.Text.WHITE(), false);
+                graphics.drawString(safeFont, "v", filterX + 2, filterY + 2, DesignTokens.Text.WHITE(), false);
             }
 
             // Abbreviated label
             @Nonnull String label = Objects.requireNonNull(
                 Objects.requireNonNull(status.name(), "statusName").substring(0, 1),
                 "label");
-            graphics.drawString(safeFont, label, filterX + boxSize + 3, filterY + 3, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, label, filterX + boxSize + 3, filterY + 3, DesignTokens.Text.MUTED(), false);
 
             filterX += boxSize + safeFont.width(label) + 10;
         }
@@ -211,22 +211,22 @@ public class CategoryPanel implements HubPanel {
         @Nonnull Font safeFont = safeFont();
         // Background hover
         if (hovered) {
-            graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + CATEGORY_ROW_HEIGHT - 2, UIConstants.Background.HOVER());
+            graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + CATEGORY_ROW_HEIGHT - 2, DesignTokens.Background.HOVER());
         }
 
         // Expand icon
         @Nonnull String icon = expanded ? "v" : ">";
-        graphics.drawString(safeFont, icon, rx, ry + 6, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, icon, rx, ry + 6, DesignTokens.Text.MUTED(), false);
 
         // Category name
         @Nonnull String safeCategory = Objects.requireNonNull(category, "category");
-        graphics.drawString(safeFont, safeCategory, rx + 12, ry + 6, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, safeCategory, rx + 12, ry + 6, DesignTokens.Text.PRIMARY(), false);
 
         // Count badge
         long passed = tests.stream().filter(t -> t.getStatus() == TestCase.TestStatus.PASSED).count();
         long total = tests.size();
         @Nonnull String count = Objects.requireNonNull(String.format("%d/%d", passed, total), "count");
-        int countColor = passed == total ? UIConstants.Status.SUCCESS() : UIConstants.Text.MUTED();
+        int countColor = passed == total ? DesignTokens.Semantic.SUCCESS : DesignTokens.Text.MUTED();
         int countWidth = safeFont.width(count);
         graphics.drawString(safeFont, count, rx + rwidth - countWidth, ry + 6, countColor, false);
     }
@@ -236,9 +236,9 @@ public class CategoryPanel implements HubPanel {
         @Nonnull Font safeFont = safeFont();
         // Background
         if (selected) {
-            graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + TEST_ROW_HEIGHT - 2, UIConstants.Background.ACTIVE());
+            graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + TEST_ROW_HEIGHT - 2, DesignTokens.Background.ACTIVE());
         } else if (hovered) {
-            graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + TEST_ROW_HEIGHT - 2, UIConstants.Background.HOVER());
+            graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + TEST_ROW_HEIGHT - 2, DesignTokens.Background.HOVER());
         }
 
         // Status dot
@@ -259,13 +259,13 @@ public class CategoryPanel implements HubPanel {
             name += ellipsis;
         }
 
-        int textColor = selected ? UIConstants.Text.ACCENT() : UIConstants.Text.SECONDARY();
+        int textColor = selected ? DesignTokens.Text.ACCENT() : DesignTokens.Text.SECONDARY();
         graphics.drawString(safeFont, name, rx + 10, ry + 4, textColor, false);
     }
 
     private void renderScrollbar(GuiGraphics graphics, int sx, int sy, int swidth, int sheight) {
         // Track
-        graphics.fill(sx, sy, sx + swidth, sy + sheight, UIConstants.Background.INPUT());
+        graphics.fill(sx, sy, sx + swidth, sy + sheight, DesignTokens.Background.INPUT());
 
         // Thumb
         float viewRatio = (float) sheight / (sheight + maxScroll);
@@ -273,7 +273,7 @@ public class CategoryPanel implements HubPanel {
         float scrollRatio = (float) scrollOffset / maxScroll;
         int thumbY = sy + (int)((sheight - thumbHeight) * scrollRatio);
 
-        graphics.fill(sx, thumbY, sx + swidth, thumbY + thumbHeight, UIConstants.Border.DEFAULT());
+        graphics.fill(sx, thumbY, sx + swidth, thumbY + thumbHeight, DesignTokens.Border.DEFAULT());
     }
 
     private Map<String, List<TestCase>> getFilteredCategories() {

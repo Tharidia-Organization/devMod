@@ -5,13 +5,15 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
-public record PerkSelectionPayload(String perkId) implements CustomPacketPayload {
+public record PerkSelectionPayload(String perkId) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_STRING_LENGTH = 128;
 
@@ -53,5 +55,11 @@ public record PerkSelectionPayload(String perkId) implements CustomPacketPayload
      */
     public boolean isSkip() {
         return perkId == null || perkId.isEmpty();
+    }
+
+    @Override
+    public int estimatedSize() {
+        // 4 bytes for length int + string bytes
+        return 4 + (perkId != null ? perkId.length() : 0);
     }
 }

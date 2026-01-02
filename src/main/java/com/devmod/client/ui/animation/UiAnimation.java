@@ -434,4 +434,162 @@ public class UiAnimation {
 
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
+
+    /**
+     * Clamps a value to [0, 1] range.
+     *
+     * @param t value to clamp
+     * @return clamped value
+     */
+    public static float clamp01(float t) {
+        return Math.max(0f, Math.min(1f, t));
+    }
+
+    /**
+     * Inverse lerp: finds progress given a value between start and end.
+     *
+     * @param start start value
+     * @param end   end value
+     * @param value current value
+     * @return progress (0-1)
+     */
+    public static float inverseLerp(float start, float end, float value) {
+        if (Math.abs(end - start) < 0.0001f) return 0f;
+        return (value - start) / (end - start);
+    }
+
+    /**
+     * Smooth step: Hermite interpolation for natural transitions.
+     *
+     * @param t progress (0-1)
+     * @return smoothed value
+     */
+    public static float smoothStep(float t) {
+        return t * t * (3 - 2 * t);
+    }
+
+    /**
+     * Smoother step: Ken Perlin's improved interpolation.
+     *
+     * @param t progress (0-1)
+     * @return smoothed value
+     */
+    public static float smootherStep(float t) {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+    }
+
+    // =========================================================================
+    // STATIC EASING FUNCTIONS
+    // These provide direct access to easing calculations without creating
+    // animation instances. Use for external animation systems.
+    // =========================================================================
+
+    /**
+     * Linear interpolation - no easing.
+     */
+    public static float linear(float t) {
+        return t;
+    }
+
+    /**
+     * Quadratic ease-in: starts slow, accelerates.
+     */
+    public static float easeInQuad(float t) {
+        return t * t;
+    }
+
+    /**
+     * Quadratic ease-out: starts fast, decelerates.
+     * Most commonly used for UI animations.
+     */
+    public static float easeOutQuad(float t) {
+        return 1 - (1 - t) * (1 - t);
+    }
+
+    /**
+     * Quadratic ease-in-out: slow at both ends.
+     */
+    public static float easeInOutQuad(float t) {
+        return t < 0.5f
+            ? 2 * t * t
+            : 1 - (float) Math.pow(-2 * t + 2, 2) / 2;
+    }
+
+    /**
+     * Cubic ease-in: starts slow, accelerates more aggressively.
+     */
+    public static float easeInCubic(float t) {
+        return t * t * t;
+    }
+
+    /**
+     * Cubic ease-out: starts fast, decelerates more aggressively.
+     */
+    public static float easeOutCubic(float t) {
+        return 1 - (float) Math.pow(1 - t, 3);
+    }
+
+    /**
+     * Cubic ease-in-out: slow at both ends, fast in middle.
+     */
+    public static float easeInOutCubic(float t) {
+        return t < 0.5f
+            ? 4 * t * t * t
+            : 1 - (float) Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    /**
+     * Quartic ease-out: very smooth deceleration.
+     */
+    public static float easeOutQuart(float t) {
+        return 1 - (float) Math.pow(1 - t, 4);
+    }
+
+    /**
+     * Exponential ease-out: very quick start, very slow end.
+     */
+    public static float easeOutExpo(float t) {
+        return t == 1 ? 1 : 1 - (float) Math.pow(2, -10 * t);
+    }
+
+    /**
+     * Back ease-out: overshoots slightly then returns.
+     * Subtle "pop" effect.
+     */
+    public static float easeOutBack(float t) {
+        float c1 = 1.70158f;
+        float c3 = c1 + 1;
+        return 1 + c3 * (float) Math.pow(t - 1, 3) + c1 * (float) Math.pow(t - 1, 2);
+    }
+
+    /**
+     * Elastic ease-out: overshoots then settles (like a spring).
+     * Good for "bounce" or "pop" effects.
+     */
+    public static float easeOutElastic(float t) {
+        if (t == 0 || t == 1) return t;
+        float c4 = (float) (2 * Math.PI) / 3;
+        return (float) Math.pow(2, -10 * t) * (float) Math.sin((t * 10 - 0.75) * c4) + 1;
+    }
+
+    /**
+     * Bounce ease-out: bounces at the end like a ball.
+     */
+    public static float easeOutBounce(float t) {
+        float n1 = 7.5625f;
+        float d1 = 2.75f;
+
+        if (t < 1 / d1) {
+            return n1 * t * t;
+        } else if (t < 2 / d1) {
+            t -= 1.5f / d1;
+            return n1 * t * t + 0.75f;
+        } else if (t < 2.5 / d1) {
+            t -= 2.25f / d1;
+            return n1 * t * t + 0.9375f;
+        } else {
+            t -= 2.625f / d1;
+            return n1 * t * t + 0.984375f;
+        }
+    }
 }

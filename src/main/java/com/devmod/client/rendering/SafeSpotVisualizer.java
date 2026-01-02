@@ -18,6 +18,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.telemetry.spatial.HeatmapService;
 
 public class SafeSpotVisualizer {
@@ -248,7 +249,7 @@ public class SafeSpotVisualizer {
         Vec3 labelPos = new Vec3(x + 0.5, maxY + 0.5, z + 0.5);
         String label = String.format("SAFE SPOT\n%d hits\n%.1fs",
                 spot.hitCount, spot.durationMs / 1000.0);
-        DebugRenderer.INSTANCE.addLabel(labelPos, label, 0xFFFF4444, 50);
+        DebugRenderer.INSTANCE.addLabel(labelPos, label, OverlayTheme.Debug.SAFE_SPOT_LABEL, 50);
     }
 
     private void line(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,

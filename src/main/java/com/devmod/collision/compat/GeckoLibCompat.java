@@ -2,6 +2,7 @@ package com.devmod.collision.compat;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
@@ -38,9 +39,11 @@ public final class GeckoLibCompat {
      */
     public static boolean isGeckoLibPresent() {
         if (geckoLibPresent == null) {
-            geckoLibPresent = detectGeckoLib();
+            geckoLibPresent = Boolean.valueOf(detectGeckoLib());
         }
-        return geckoLibPresent;
+        // Local final helps null analyzer track the non-null state after assignment
+        final Boolean present = geckoLibPresent;
+        return present != null && present.booleanValue();
     }
 
     /**
@@ -52,9 +55,10 @@ public final class GeckoLibCompat {
             geoAnimatableClass = Class.forName("software.bernie.geckolib.animatable.GeoAnimatable");
             geoBoneClass = Class.forName("software.bernie.geckolib.cache.object.GeoBone");
 
-            // Get methods for bone data extraction
-            getBoneRotationMethod = geoBoneClass.getMethod("getRotation");
-            getBonePositionMethod = geoBoneClass.getMethod("getPosition");
+            // Get methods for bone data extraction (requireNonNull for null analyzer - Class.forName never returns null)
+            final Class<?> boneClass = Objects.requireNonNull(geoBoneClass);
+            getBoneRotationMethod = boneClass.getMethod("getRotation");
+            getBonePositionMethod = boneClass.getMethod("getPosition");
 
             LOGGER.info("[DevMod] GeckoLib detected - OBB compatibility enabled for GeoAnimatable entities");
             return true;
@@ -65,8 +69,9 @@ public final class GeckoLibCompat {
                 geoAnimatableClass = Class.forName("software.bernie.geckolib3.core.IAnimatable");
                 geoBoneClass = Class.forName("software.bernie.geckolib3.geo.render.built.GeoBone");
 
-                getBoneRotationMethod = geoBoneClass.getMethod("getRotationX");
-                getBonePositionMethod = geoBoneClass.getMethod("getPivotX");
+                final Class<?> boneClass3 = Objects.requireNonNull(geoBoneClass);
+                getBoneRotationMethod = boneClass3.getMethod("getRotationX");
+                getBonePositionMethod = boneClass3.getMethod("getPivotX");
 
                 LOGGER.info("[DevMod] GeckoLib 3.x detected - OBB compatibility enabled");
                 return true;
@@ -91,10 +96,15 @@ public final class GeckoLibCompat {
      * @return true if entity implements GeoAnimatable
      */
     public static boolean isGeckoLibEntity(@Nonnull LivingEntity entity) {
-        if (!isGeckoLibPresent() || geoAnimatableClass == null) {
+        if (!isGeckoLibPresent()) {
             return false;
         }
-        return geoAnimatableClass.isInstance(entity);
+        // Local final for null analyzer (already guarded by isGeckoLibPresent which caches after detectGeckoLib)
+        final Class<?> animatableClass = geoAnimatableClass;
+        if (animatableClass == null) {
+            return false;
+        }
+        return animatableClass.isInstance(entity);
     }
 
     // ==================== Transform Extraction ====================

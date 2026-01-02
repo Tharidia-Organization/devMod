@@ -35,7 +35,7 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
 import com.devmod.util.ConfigPaths;
@@ -46,15 +46,15 @@ public class RoomBoundsEditorScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomBoundsEditorScreen.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    // === UI Colors - Standardized to UIConstants ===
-    private static final int PANEL_BG = UIConstants.Background.PANEL_SOLID();
-    private static final int PANEL_BORDER = UIConstants.Border.DEFAULT();  // Blue instead of green
-    private static final int TEXT_TITLE = UIConstants.Text.TITLE();  // Cyan
-    private static final int TEXT_NORMAL = UIConstants.Text.PRIMARY();
-    private static final int TEXT_DIM = UIConstants.Text.SECONDARY();
-    private static final int TEXT_ACCENT = UIConstants.Accent.BLUE();  // Blue instead of green
-    private static final int TEXT_WARNING = UIConstants.Accent.ORANGE();
-    private static final int TEXT_ERROR = UIConstants.Accent.RED();
+    // === UI Colors - Standardized to DesignTokens ===
+    private static final int PANEL_BG = DesignTokens.Background.PANEL_SOLID();
+    private static final int PANEL_BORDER = DesignTokens.Border.DEFAULT();  // Blue instead of green
+    private static final int TEXT_TITLE = DesignTokens.Text.TITLE();  // Cyan
+    private static final int TEXT_NORMAL = DesignTokens.Text.PRIMARY();
+    private static final int TEXT_DIM = DesignTokens.Text.SECONDARY();
+    private static final int TEXT_ACCENT = DesignTokens.Accent.BLUE();  // Blue instead of green
+    private static final int TEXT_WARNING = DesignTokens.Accent.ORANGE();
+    private static final int TEXT_ERROR = DesignTokens.Accent.RED();
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 320;

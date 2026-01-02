@@ -1,20 +1,25 @@
 package com.devmod.mailbox.network.payload;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 /**
  * Payload for structured mailbox status feedback (send/claim/delete).
  */
 public record MailboxStatusPayload(
-    Action action,
-    Status status,
-    String message
-) implements CustomPacketPayload {
+    @Nonnull Action action,
+    @Nonnull Status status,
+    @Nonnull String message
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_MESSAGE_LENGTH = 256;
 
@@ -53,6 +58,29 @@ public record MailboxStatusPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(action.ordinal());
+        size += varIntSize(status.ordinal());
+        size += estimatedUtfSize(message);
+        return size;
+    }
+
+    private static int estimatedUtfSize(@Nonnull String value) {
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 
     public enum Action {

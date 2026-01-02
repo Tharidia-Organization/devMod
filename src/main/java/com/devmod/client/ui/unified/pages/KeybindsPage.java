@@ -15,7 +15,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.input.KeybindConflictDetector;
 import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.scroll.Scrollbar;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 
@@ -43,8 +44,10 @@ public class KeybindsPage implements SettingsPage {
     private int visibleHeight = 0;
     private int totalContentHeight = 0;
     private boolean isDraggingScrollbar = false;
+    private boolean showScrollbar = false;
 
     // Cached dimensions for scroll calculations
+    private int lastContentX, lastContentWidth;
     private int lastContentY, lastContentHeight;
 
     @Override
@@ -159,22 +162,24 @@ public class KeybindsPage implements SettingsPage {
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         // Cache dimensions for scroll calculations
+        lastContentX = x;
         lastContentY = y;
-        lastContentHeight = height;
+        lastContentWidth = width;
+        visibleHeight = height - HINT_HEIGHT; // Reserve space for hint
+        lastContentHeight = visibleHeight;
 
         // Calculate scroll bounds
-        visibleHeight = height - HINT_HEIGHT; // Reserve space for hint
         totalContentHeight = calculateTotalContentHeight();
         maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
+        showScrollbar = totalContentHeight > visibleHeight;
 
         // Clamp scroll offset
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
 
         // Determine effective content width (accounting for scrollbar)
         int effectiveWidth = width;
-        boolean needsScrollbar = totalContentHeight > visibleHeight;
-        if (needsScrollbar) {
-            effectiveWidth = width - SCROLLBAR_WIDTH - 4;
+        if (showScrollbar) {
+            effectiveWidth = Math.max(0, width - SCROLLBAR_WIDTH - 4);
         }
 
         // Enable scissoring to clip content
@@ -196,7 +201,7 @@ public class KeybindsPage implements SettingsPage {
 
             // Section header
             if (currentY >= y - ROW_HEIGHT) {
-                graphics.drawString(font, section.title, x, currentY + 2, UIConstants.Text.PRIMARY(), false);
+                graphics.drawString(font, section.title, x, currentY + 2, DesignTokens.Text.PRIMARY, false);
             }
             currentY += ROW_HEIGHT;
 
@@ -215,44 +220,30 @@ public class KeybindsPage implements SettingsPage {
         graphics.disableScissor();
 
         // Render scrollbar if needed
-        if (needsScrollbar) {
+        if (showScrollbar) {
             renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, visibleHeight);
         }
 
         // Hint at bottom - fixed position below scrollable content
         int hintY = y + height - HINT_HEIGHT + 4;
         // Draw background for better visibility
-        graphics.fill(x - 4, hintY - 4, x + width + 4, hintY + 14, UIConstants.Background.HEADER());
-        graphics.drawString(font, "ℹ To rebind keys: ESC → Options → Controls → DevMod", x, hintY, UIConstants.Text.SECONDARY(), false);
+        graphics.fill(x - 4, hintY - 4, x + width + 4, hintY + 14, DesignTokens.Bg.LEVEL_1);
+        graphics.drawString(font, "ℹ To rebind keys: ESC → Options → Controls → DevMod", x, hintY, DesignTokens.Text.SECONDARY, false);
     }
 
     /**
      * Render the scrollbar track and thumb.
      */
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
-        // Track background
-        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT());
-
-        // Calculate thumb size and position
-        float visibleRatio = (float) visibleHeight / totalContentHeight;
-        int thumbHeight = Math.max(20, (int) (height * visibleRatio));
-
-        int thumbY;
-        if (maxScrollOffset > 0) {
-            float scrollRatio = (float) scrollOffset / maxScrollOffset;
-            thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
-        } else {
-            thumbY = y;
-        }
-
-        // Thumb
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
-        graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
+        // Delegate to unified Scrollbar helper
+        Scrollbar.render(graphics, x, y, barWidth, height,
+            scrollOffset, totalContentHeight, visibleHeight,
+            false, isDraggingScrollbar);
     }
 
     private void renderKeybindRow(GuiGraphics graphics, Font font, int x, int y, int width,
                                    KeybindEntry entry, int mouseX, int mouseY) {
-        int rowWidth = width - 10;
+        int rowWidth = Math.max(0, width - 10);
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
         // Check for conflicts
@@ -261,7 +252,7 @@ public class KeybindsPage implements SettingsPage {
 
         // Hover background (tinted red if conflict)
         if (hovered) {
-            int bgColor = hasConflict ? 0x30FF4444 : UIConstants.Background.HOVER();
+            int bgColor = hasConflict ? 0x30FF4444 : DesignTokens.Surface.LEVEL_1;
             graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, bgColor);
         } else if (hasConflict) {
             graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, 0x18FF4444);
@@ -274,12 +265,12 @@ public class KeybindsPage implements SettingsPage {
         int textWidth = font.width(entry.key);
         int actualBadgeWidth = Math.max(KEY_BADGE_WIDTH, textWidth + 8);
 
-        int badgeBorderColor = hasConflict ? 0xFFFF6666 : UIConstants.Border.ACCENT();
-        graphics.fill(badgeX, badgeY, badgeX + actualBadgeWidth, badgeY + badgeHeight, UIConstants.Background.INPUT());
+        int badgeBorderColor = hasConflict ? 0xFFFF6666 : DesignTokens.Accent.PRIMARY;
+        graphics.fill(badgeX, badgeY, badgeX + actualBadgeWidth, badgeY + badgeHeight, DesignTokens.Bg.LEVEL_0);
         AxiomRenderer.drawBorder(graphics, badgeX, badgeY, actualBadgeWidth, badgeHeight, badgeBorderColor);
 
         int keyTextX = badgeX + (actualBadgeWidth - textWidth) / 2;
-        int keyTextColor = hasConflict ? 0xFFFF8888 : UIConstants.Text.TITLE();
+        int keyTextColor = hasConflict ? 0xFFFF8888 : DesignTokens.Accent.PRIMARY;
         graphics.drawString(font, entry.key, keyTextX, badgeY + (badgeHeight - 8) / 2, keyTextColor, false);
 
         // Conflict warning icon
@@ -290,7 +281,7 @@ public class KeybindsPage implements SettingsPage {
         }
 
         // Action name
-        graphics.drawString(font, entry.name, nameX, y + 2, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(font, entry.name, nameX, y + 2, DesignTokens.Text.PRIMARY, false);
 
         // Description (muted, to the right) - only if space allows
         int descX = nameX + font.width(entry.name) + 16;
@@ -306,7 +297,7 @@ public class KeybindsPage implements SettingsPage {
                 }
                 desc = desc + ellipsis;
             }
-            graphics.drawString(font, desc, descX, y + 2, UIConstants.Text.MUTED(), false);
+            graphics.drawString(font, desc, descX, y + 2, DesignTokens.Text.MUTED, false);
         }
     }
 
@@ -325,21 +316,19 @@ public class KeybindsPage implements SettingsPage {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
-        // Check if click is within content area
-        if (mouseX < contentX || mouseX > contentX + contentWidth ||
-            mouseY < contentY || mouseY > contentY + lastContentHeight) {
+        if (button != 0 || !isMouseOverContent(mouseX, mouseY)) {
             return false;
         }
 
         // Check scrollbar click
-        if (totalContentHeight > visibleHeight) {
+        if (showScrollbar) {
             int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
             if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2) {
                 isDraggingScrollbar = true;
                 // Calculate thumb dimensions for accurate click position
                 float visibleRatio = (float) visibleHeight / totalContentHeight;
-                int thumbHeight = Math.max(20, (int) (visibleHeight * visibleRatio));
-                int trackHeight = visibleHeight - thumbHeight;
+                int thumbHeight = Math.max(20, (int) (lastContentHeight * visibleRatio));
+                int trackHeight = lastContentHeight - thumbHeight;
 
                 // Jump to clicked position (centering thumb on click)
                 if (trackHeight > 0) {
@@ -356,6 +345,9 @@ public class KeybindsPage implements SettingsPage {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (!showScrollbar || maxScrollOffset <= 0 || !isMouseOverContent(mouseX, mouseY)) {
+            return false;
+        }
         scrollOffset -= (int) (scrollY * 20);
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
         return true;
@@ -372,11 +364,11 @@ public class KeybindsPage implements SettingsPage {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (isDraggingScrollbar && maxScrollOffset > 0) {
+        if (button == 0 && isDraggingScrollbar && maxScrollOffset > 0) {
             // Calculate thumb dimensions for accurate drag
             float visibleRatio = (float) visibleHeight / totalContentHeight;
-            int thumbHeight = Math.max(20, (int) (visibleHeight * visibleRatio));
-            int trackHeight = visibleHeight - thumbHeight;
+            int thumbHeight = Math.max(20, (int) (lastContentHeight * visibleRatio));
+            int trackHeight = lastContentHeight - thumbHeight;
 
             if (trackHeight > 0) {
                 // Center thumb on mouse position
@@ -392,5 +384,10 @@ public class KeybindsPage implements SettingsPage {
     @Override
     public int getContentHeight() {
         return calculateTotalContentHeight() + HINT_HEIGHT;
+    }
+
+    private boolean isMouseOverContent(double mouseX, double mouseY) {
+        return mouseX >= lastContentX && mouseX <= lastContentX + lastContentWidth
+            && mouseY >= lastContentY && mouseY <= lastContentY + lastContentHeight;
     }
 }

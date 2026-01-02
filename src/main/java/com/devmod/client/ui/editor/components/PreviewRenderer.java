@@ -19,10 +19,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class PreviewRenderer {
 
@@ -44,7 +44,7 @@ public class PreviewRenderer {
     private static final float BASE_CENTER_Y_RATIO = 0.72f;
     private static final float INVENTORY_RENDER_SCALE = 0.0625f;
     private static final float ENTITY_ROTATION_OFFSET = 0.5f;
-    private static final float ITEM_PREVIEW_Z = 100f;
+    private static final float ITEM_PREVIEW_Z = DesignTokens.ZOrder.PANEL;
     private static final float ITEM_PREVIEW_SCALE = 4f;
     private static final float ITEM_PREVIEW_OFFSET = 8f;
     private static final float ROTATION_DRAG_SPEED = 0.5f;
@@ -188,11 +188,11 @@ public class PreviewRenderer {
 
         // Hint text below preview
         if (showHint && hintText != null) {
-            int hintY = y + size + ScaledCoord.scaleDim(UIConstants.Spacing.XS);
+            int hintY = y + size + ScaledCoord.scaleDim(DesignTokens.Spacing.XS);
             String safeHintText = Objects.requireNonNull(hintText, "hintText cannot be null");
             int hintWidth = font.width(safeHintText);
             int hintX = x + (size - hintWidth) / 2;
-            graphics.drawString(font, safeHintText, hintX, hintY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(font, safeHintText, hintX, hintY, DesignTokens.Text.MUTED(), false);
         }
 
         // Render carried stack (from vanilla "carried" slot) following the cursor
@@ -200,8 +200,8 @@ public class PreviewRenderer {
         if (player != null) {
             ItemStack carried = player.containerMenu.getCarried();
             if (!carried.isEmpty()) {
-                graphics.renderItem(carried, mouseX - ScaledCoord.scaleDim(UIConstants.Spacing.SM),
-                    mouseY - ScaledCoord.scaleDim(UIConstants.Spacing.LG));
+                graphics.renderItem(carried, mouseX - ScaledCoord.scaleDim(DesignTokens.Spacing.SM),
+                    mouseY - ScaledCoord.scaleDim(DesignTokens.Spacing.LG));
             }
         }
 
@@ -267,7 +267,7 @@ public class PreviewRenderer {
         };
 
         int slotSize = ScaledCoord.scaleDim(SLOT_BOX_SIZE);
-        int gap = ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int gap = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
         int leftX = x + ScaledCoord.scaleDim(SLOT_BOX_PADDING);
         int rightX = x + size - slotSize - ScaledCoord.scaleDim(SLOT_BOX_PADDING);
         int startY = y + ScaledCoord.scaleDim(SLOT_BOX_PADDING);
@@ -286,10 +286,10 @@ public class PreviewRenderer {
             boolean hovered = rect.contains(mouseX, mouseY);
             boolean selected = slot == this.slot;
 
-            int bg = selected ? SELECTED_SLOT_BG : (hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
+            int bg = selected ? SELECTED_SLOT_BG : (hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT());
             graphics.fill(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height(), bg);
 
-            int border = selected ? UIConstants.Accent.CYAN() : (hovered ? UIConstants.Border.HOVER() : UIConstants.Border.DEFAULT());
+            int border = selected ? DesignTokens.Accent.CYAN() : (hovered ? DesignTokens.Border.HOVER() : DesignTokens.Border.DEFAULT());
             AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), border);
 
             ItemStack stack = ItemStack.EMPTY;
@@ -298,20 +298,20 @@ public class PreviewRenderer {
             }
 
             if (!stack.isEmpty()) {
-                int pad = ScaledCoord.scaleDim(UIConstants.Spacing.SM);
+                int pad = ScaledCoord.scaleDim(DesignTokens.Spacing.SM);
                 ItemStack safeStack = Objects.requireNonNull(stack, "stack cannot be null");
                 graphics.renderItem(safeStack, rect.x() + pad, rect.y() + pad);
                 // Tooltip-like name
                 if (hovered) {
                     String name = safeStack.getHoverName().getString();
                     graphics.drawString(Objects.requireNonNull(font, "font cannot be null"), name,
-                        rect.x() + rect.width() + ScaledCoord.scaleDim(UIConstants.Spacing.SM),
-                        rect.y(), UIConstants.Text.PRIMARY(), false);
+                        rect.x() + rect.width() + ScaledCoord.scaleDim(DesignTokens.Spacing.SM),
+                        rect.y(), DesignTokens.Text.PRIMARY(), false);
                 }
             } else {
                 String glyph = Objects.requireNonNull(placeholderFor(slot), "placeholder cannot be null");
                 var safeFont = Objects.requireNonNull(font, "font cannot be null");
-                int textColor = selected ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
+                int textColor = selected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
                 int textX = rect.x() + (slotSize - safeFont.width(glyph)) / 2;
                 int textY = rect.y() + (slotSize - safeFont.lineHeight) / 2;
                 graphics.drawString(safeFont, glyph, textX, textY, textColor, false);
@@ -326,7 +326,7 @@ public class PreviewRenderer {
             String placeholder = "?";
             int textX = x + (size - font.width(placeholder)) / 2;
             int textY = y + (size - font.lineHeight) / 2;
-            graphics.drawString(font, placeholder, textX, textY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(font, placeholder, textX, textY, DesignTokens.Text.MUTED(), false);
             return;
         }
 

@@ -1,10 +1,12 @@
 package com.devmod.mailbox.network.payload;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -13,13 +15,14 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.mailbox.task.TestTask;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Payload to sync tasks from server to client.
  */
 public record TaskSyncPayload(
     List<TaskData> tasks
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_TASKS = 100;
     private static final int MAX_TITLE_LENGTH = 256;
@@ -101,6 +104,47 @@ public record TaskSyncPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = varIntSize(tasks.size());
+        for (TaskData task : tasks) {
+            size += estimateTaskSize(task);
+        }
+        return size;
+    }
+
+    private static int estimateTaskSize(TaskData task) {
+        int size = 16; // UUID
+        size += estimatedUtfSize(task.title);
+        size += estimatedUtfSize(task.description);
+        size += estimatedUtfSize(task.assignedByName);
+        size += varIntSize(task.priority);
+        size += estimatedUtfSize(task.statusId);
+        size += 8; // createdAt
+        size += 8; // dueAt
+        size += 8; // completedAt
+        size += estimatedUtfSize(task.notes);
+        return size;
+    }
+
+    private static int estimatedUtfSize(@Nullable String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
+    }
+
     /**
      * Create an empty sync payload.
      */
@@ -154,15 +198,21 @@ public record TaskSyncPayload(
      * Data structure for a single task in the sync.
      */
     public record TaskData(
-        UUID id,
-        String title,
+        @Nonnull UUID id,
+        @Nonnull String title,
         @Nullable String description,
         @Nullable String assignedByName,
         int priority,
-        String statusId,
+        @Nonnull String statusId,
         long createdAt,
         @Nullable Long dueAt,
         @Nullable Long completedAt,
         @Nullable String notes
-    ) {}
+    ) {
+        public TaskData {
+            Objects.requireNonNull(id, "id");
+            Objects.requireNonNull(title, "title");
+            Objects.requireNonNull(statusId, "statusId");
+        }
+    }
 }

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -141,7 +143,8 @@ public final class TicketNetworkHandler extends NetworkHandlerBase {
         ).thenAccept(updated -> sendTicketSync(player));
     }
 
-    private static TicketStatus parseStatus(String statusId) {
+    @Nullable
+    private static TicketStatus parseStatus(@Nullable String statusId) {
         if (statusId == null || statusId.isBlank()) {
             return null;
         }

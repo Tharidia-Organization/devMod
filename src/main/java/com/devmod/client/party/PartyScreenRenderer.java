@@ -16,7 +16,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobDifficultyPreset;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
@@ -26,18 +26,40 @@ import com.devmod.party.PartySyncPayload;
 
 public class PartyScreenRenderer {
 
-    // Colors
-    private static final int COLOR_BG_DARK = 0xF0080810;
-    private static final int COLOR_HEADER_GRADIENT_TOP = 0xFF1A1A35;
-    private static final int COLOR_HEADER_GRADIENT_BOT = 0xFF0D0D1A;
-    private static final int COLOR_GLOW_BLUE = 0xFF3D5AFE;
-    private static final int COLOR_GLOW_CYAN = 0xFF00FFFF;
-    private static final int COLOR_TEXT_WHITE = 0xFFFFFFFF;
-    private static final int COLOR_TEXT_GRAY = 0xFFAABBCC;
-    private static final int COLOR_TEXT_DIM = 0xFF667788;
-    private static final int COLOR_READY = 0xFF00FF88;
-    private static final int COLOR_NOT_READY = 0xFFFF6677;
-    private static final int COLOR_LEADER_GOLD = 0xFFFFD700;
+    // Colors (using DesignTokens for consistency)
+    private static final int COLOR_BG_DARK = DesignTokens.Bg.LEVEL_0;
+    private static final int COLOR_HEADER_GRADIENT_TOP = DesignTokens.Surface.LEVEL_2;
+    private static final int COLOR_HEADER_GRADIENT_BOT = DesignTokens.Surface.LEVEL_0;
+    private static final int COLOR_GLOW_BLUE = DesignTokens.Accent.SECONDARY;
+    private static final int COLOR_GLOW_CYAN = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_TEXT_WHITE = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_GRAY = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.MUTED;
+    private static final int COLOR_READY = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_NOT_READY = DesignTokens.Semantic.ERROR;
+    private static final int COLOR_LEADER_GOLD = DesignTokens.Semantic.WARNING;
+
+    // Additional UI colors
+    private static final int COLOR_PANEL_BG = DesignTokens.Bg.LEVEL_1;
+    private static final int COLOR_PANEL_HEADER = DesignTokens.Surface.LEVEL_1;
+    private static final int COLOR_BORDER_SUBTLE = DesignTokens.Stroke.MUTED;
+    private static final int COLOR_INPUT_BG = DesignTokens.Surface.LEVEL_0;
+    private static final int COLOR_TAB_ACTIVE = 0xFF1A2A4A;
+    private static final int COLOR_TAB_HOVER = DesignTokens.Surface.LEVEL_1;
+    private static final int COLOR_TAB_DEFAULT = DesignTokens.Surface.LEVEL_0;
+    private static final int COLOR_ROW_HOVER = 0x40FFFFFF;
+    private static final int COLOR_ROW_DEFAULT = 0x20FFFFFF;
+    private static final int COLOR_HINT_TEXT = 0x60FFFFFF;
+
+    // Stat colors
+    private static final int COLOR_STAT_HP = 0xFFFF6666;
+    private static final int COLOR_STAT_DMG = 0xFFFFAA00;
+    private static final int COLOR_STAT_POINTS = 0xFFFFFF00;
+    private static final int COLOR_STAT_DIFFICULTY = 0xFFAA66FF;
+
+    // Status glow colors
+    private static final int COLOR_READY_GLOW = 0x4000FF88;
+    private static final int COLOR_NOT_READY_GLOW = 0x40FF4466;
 
     private static final int MAX_VISIBLE_MOBS = 6;
     private static final int MAX_PREVIEW_WAVE = 20;
@@ -73,7 +95,7 @@ public class PartyScreenRenderer {
         // Header gradient
         for (int i = 0; i < 40; i++) {
             float t = i / 40f;
-            int color = UIConstants.lerp(COLOR_HEADER_GRADIENT_TOP, COLOR_HEADER_GRADIENT_BOT, t);
+            int color = DesignTokens.lerp(COLOR_HEADER_GRADIENT_TOP, COLOR_HEADER_GRADIENT_BOT, t);
             graphics.fill(panelX, panelY + i, panelX + panelWidth, panelY + i + 1, color);
         }
 
@@ -159,7 +181,7 @@ public class PartyScreenRenderer {
             if (isHovered) hoveredQuestTab = i;
 
             // Tab background
-            int bgColor = isActive ? 0xFF1A2A4A : (isHovered ? 0xFF151525 : 0xFF0A0A15);
+            int bgColor = isActive ? COLOR_TAB_ACTIVE : (isHovered ? COLOR_TAB_HOVER : COLOR_TAB_DEFAULT);
             graphics.fill(tabX, tabY, tabX + tabWidth - 4, tabY + tabHeight, bgColor);
 
             // Active indicator
@@ -171,7 +193,7 @@ public class PartyScreenRenderer {
             }
 
             // Border
-            int borderColor = isActive ? COLOR_GLOW_BLUE : (isHovered ? 0xFF3D5AFE : 0xFF2A2A4A);
+            int borderColor = isActive ? COLOR_GLOW_BLUE : (isHovered ? COLOR_GLOW_BLUE : COLOR_BORDER_SUBTLE);
             AxiomRenderer.drawBorder(graphics, tabX, tabY, tabWidth - 4, tabHeight, borderColor);
 
             // Icon + Name
@@ -212,11 +234,11 @@ public class PartyScreenRenderer {
         net.minecraft.client.gui.Font f = getFont();
 
         // Panel background
-        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, 0xCC0A0A18);
-        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, 0xFF2A3A5A);
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, COLOR_PANEL_BG);
+        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, COLOR_BORDER_SUBTLE);
 
         // Header
-        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, 0xFF151528);
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, COLOR_PANEL_HEADER);
         graphics.drawString(f, "PARTY MEMBERS", panelLeft + 8, panelTop + 7, COLOR_GLOW_CYAN, false);
 
         int hoveredMemberIndex = -1;
@@ -226,8 +248,8 @@ public class PartyScreenRenderer {
             PartySyncPayload.PartyMemberInfo member = members.get(i);
             float anim = memberAnimations[i];
 
-            int rowY = memberY + i * 28;
-            int rowH = 26;
+            int rowY = memberY + i * 32;  // ROW_HEIGHT_STANDARD
+            int rowH = 32;  // ROW_HEIGHT_STANDARD
 
             // Slide-in animation
             int offsetX = (int) ((1f - anim) * -50);
@@ -239,7 +261,7 @@ public class PartyScreenRenderer {
             if (isHovered) hoveredMemberIndex = i;
 
             // Row background
-            int rowBg = isHovered ? 0x40FFFFFF : 0x20FFFFFF;
+            int rowBg = isHovered ? COLOR_ROW_HOVER : COLOR_ROW_DEFAULT;
             graphics.fill(rowX, rowY, rowX + rowW, rowY + rowH, (int)(rowBg * anim));
 
             boolean isMemberLeader = member.playerId().equals(leaderId);
@@ -247,7 +269,7 @@ public class PartyScreenRenderer {
             // Ready/status indicator with glow
             int statusX = rowX + 5;
             int statusColor = member.isReady() ? COLOR_READY : COLOR_NOT_READY;
-            int statusGlow = member.isReady() ? 0x4000FF88 : 0x40FF4466;
+            int statusGlow = member.isReady() ? COLOR_READY_GLOW : COLOR_NOT_READY_GLOW;
 
             // Status glow
             graphics.fill(statusX - 2, rowY + 5, statusX + 10, rowY + rowH - 5, statusGlow);
@@ -288,8 +310,8 @@ public class PartyScreenRenderer {
         graphics.drawString(f, "> INVITE PLAYER", panelLeft + 5, inviteSectionY, COLOR_TEXT_DIM, false);
 
         // Input background
-        graphics.fill(panelLeft + 5, inviteSectionY + 12, panelLeft + 145, inviteSectionY + 32, 0xFF0A0A15);
-        AxiomRenderer.drawBorder(graphics, panelLeft + 5, inviteSectionY + 12, 140, 20, 0xFF2A3A5A);
+        graphics.fill(panelLeft + 5, inviteSectionY + 12, panelLeft + 145, inviteSectionY + 32, COLOR_INPUT_BG);
+        AxiomRenderer.drawBorder(graphics, panelLeft + 5, inviteSectionY + 12, 140, 20, COLOR_BORDER_SUBTLE);
 
         return hoveredMemberIndex;
     }
@@ -311,17 +333,17 @@ public class PartyScreenRenderer {
         net.minecraft.client.gui.Font f = getFont();
 
         // Panel background
-        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, 0xCC0A0A18);
-        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, 0xFF2A3A5A);
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, COLOR_PANEL_BG);
+        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, COLOR_BORDER_SUBTLE);
 
         // Header
-        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, 0xFF151528);
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, COLOR_PANEL_HEADER);
         graphics.drawString(f, "SELECT ENEMY", panelLeft + 8, panelTop + 7, COLOR_GLOW_CYAN, false);
 
         // Search background
         int searchY = panelTop + 28;
-        graphics.fill(panelLeft + 5, searchY, panelLeft + panelW - 5, searchY + 20, 0xFF0A0A15);
-        AxiomRenderer.drawBorder(graphics, panelLeft + 5, searchY, panelW - 10, 20, 0xFF2A3A5A);
+        graphics.fill(panelLeft + 5, searchY, panelLeft + panelW - 5, searchY + 20, COLOR_INPUT_BG);
+        AxiomRenderer.drawBorder(graphics, panelLeft + 5, searchY, panelW - 10, 20, COLOR_BORDER_SUBTLE);
 
         // Namespace filter buttons (All / MC / Mods)
         int nsFilterY = searchY + 25;
@@ -330,24 +352,24 @@ public class PartyScreenRenderer {
         // "All" button
         boolean allActive = selectedNamespace == null;
         int allW = 28;
-        int allColor = allActive ? 0xFF3D5AFE : 0xFF1A1A2A;
+        int allColor = allActive ? COLOR_GLOW_BLUE : COLOR_TAB_DEFAULT;
         boolean allHovered = mouseX >= nsBtnX && mouseX < nsBtnX + allW &&
                             mouseY >= nsFilterY && mouseY < nsFilterY + 12;
-        if (allHovered) allColor = UIConstants.lighten(allColor, 0.2f);
+        if (allHovered) allColor = DesignTokens.lighten(allColor, 0.2f);
         graphics.fill(nsBtnX, nsFilterY, nsBtnX + allW, nsFilterY + 12, allColor);
-        AxiomRenderer.drawBorder(graphics, nsBtnX, nsFilterY, allW, 12, allActive ? 0xFF3D5AFE : 0xFF3A3A5A);
+        AxiomRenderer.drawBorder(graphics, nsBtnX, nsFilterY, allW, 12, allActive ? COLOR_GLOW_BLUE : COLOR_BORDER_SUBTLE);
         graphics.drawCenteredString(f, "All", nsBtnX + allW / 2, nsFilterY + 2, COLOR_TEXT_WHITE);
         nsBtnX += allW + 2;
 
         // "MC" button
         boolean mcActive = "minecraft".equals(selectedNamespace);
         int mcW = 24;
-        int mcColor = mcActive ? 0xFF44AA44 : 0xFF1A1A2A;
+        int mcColor = mcActive ? COLOR_READY : COLOR_TAB_DEFAULT;
         boolean mcHovered = mouseX >= nsBtnX && mouseX < nsBtnX + mcW &&
                            mouseY >= nsFilterY && mouseY < nsFilterY + 12;
-        if (mcHovered) mcColor = UIConstants.lighten(mcColor, 0.2f);
+        if (mcHovered) mcColor = DesignTokens.lighten(mcColor, 0.2f);
         graphics.fill(nsBtnX, nsFilterY, nsBtnX + mcW, nsFilterY + 12, mcColor);
-        AxiomRenderer.drawBorder(graphics, nsBtnX, nsFilterY, mcW, 12, mcActive ? 0xFF44AA44 : 0xFF3A3A5A);
+        AxiomRenderer.drawBorder(graphics, nsBtnX, nsFilterY, mcW, 12, mcActive ? COLOR_READY : COLOR_BORDER_SUBTLE);
         graphics.drawCenteredString(f, "MC", nsBtnX + mcW / 2, nsFilterY + 2, COLOR_TEXT_WHITE);
         nsBtnX += mcW + 2;
 
@@ -364,15 +386,15 @@ public class PartyScreenRenderer {
 
         for (MobTier tier : MobTier.values()) {
             boolean active = tier == selectedTierFilter;
-            int color = active ? getTierColor(tier) : 0xFF1A1A2A;
+            int color = active ? getTierColor(tier) : COLOR_TAB_DEFAULT;
             boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
                              mouseY >= filterY && mouseY < filterY + 14;
 
-            if (hovered) color = UIConstants.lighten(color, 0.2f);
+            if (hovered) color = DesignTokens.lighten(color, 0.2f);
 
             graphics.fill(btnX, filterY, btnX + btnW, filterY + 14, color);
             AxiomRenderer.drawBorder(graphics, btnX, filterY, btnW, 14,
-                active ? getTierColor(tier) : 0xFF3A3A5A);
+                active ? getTierColor(tier) : COLOR_BORDER_SUBTLE);
 
             String initial = Objects.requireNonNull(tier.name().substring(0, 1));
             graphics.drawCenteredString(f, initial, btnX + btnW / 2, filterY + 3, COLOR_TEXT_WHITE);
@@ -389,8 +411,8 @@ public class PartyScreenRenderer {
             if (mobIndex >= filteredMobs.size()) break;
 
             EnduranceQuestRegistry.MobQuestConfig config = filteredMobs.get(mobIndex);
-            int rowY = listY + i * 26;
-            int rowH = 24;
+            int rowY = listY + i * 24;  // ROW_HEIGHT_COMPACT
+            int rowH = 24;  // ROW_HEIGHT_COMPACT
 
             boolean isSelected = mobIndex == selectedMobIndex;
             boolean isHovered = mouseX >= panelLeft + 5 && mouseX < panelLeft + panelW - 5 &&
@@ -403,9 +425,9 @@ public class PartyScreenRenderer {
                 int selectGlow = (int) (100 + glowPulse * 50);
                 graphics.fill(panelLeft + 5, rowY, panelLeft + panelW - 5, rowY + rowH,
                     (selectGlow << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF));
-                graphics.fill(panelLeft + 6, rowY + 1, panelLeft + panelW - 6, rowY + rowH - 1, 0xFF1A2A4A);
+                graphics.fill(panelLeft + 6, rowY + 1, panelLeft + panelW - 6, rowY + rowH - 1, COLOR_TAB_ACTIVE);
             } else if (isHovered) {
-                graphics.fill(panelLeft + 5, rowY, panelLeft + panelW - 5, rowY + rowH, 0x30FFFFFF);
+                graphics.fill(panelLeft + 5, rowY, panelLeft + panelW - 5, rowY + rowH, COLOR_ROW_DEFAULT);
             }
 
             // Tier color bar
@@ -443,8 +465,8 @@ public class PartyScreenRenderer {
         int panelX = screen.getPanelX();
         int panelY = screen.getPanelY();
         float glowPulse = screen.getGlowPulse();
-        List<EnduranceQuestRegistry.MobQuestConfig> filteredMobs = screen.getFilteredMobs();
-        int selectedMobIndex = screen.getSelectedMobIndex();
+        EnduranceQuestRegistry.MobQuestConfig selectedConfig = screen.getSelectedMobConfig();
+        boolean selectionFilteredOut = screen.isSelectedMobFilteredOut();
         List<PartySyncPayload.PartyMemberInfo> members = screen.getMembers();
         QuestType questType = screen.getQuestType();
         LivingEntity previewEntity = screen.getPreviewEntity();
@@ -457,11 +479,11 @@ public class PartyScreenRenderer {
         net.minecraft.client.gui.Font f = getFont();
 
         // Panel background
-        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, 0xCC0A0A18);
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, COLOR_PANEL_BG);
 
         // Inner preview area
         int previewArea = panelTop + 22;
-        graphics.fill(panelLeft + 5, previewArea, panelLeft + panelW - 5, previewArea + 120, 0xFF050510);
+        graphics.fill(panelLeft + 5, previewArea, panelLeft + panelW - 5, previewArea + 120, COLOR_BG_DARK);
 
         // Platform
         int centerX = panelLeft + panelW / 2;
@@ -477,11 +499,15 @@ public class PartyScreenRenderer {
 
         graphics.fill(centerX - platformRadius + 5, platformY - 1, centerX + platformRadius - 5, platformY, COLOR_GLOW_BLUE);
 
-        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, 0xFF2A3A5A);
+        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, COLOR_BORDER_SUBTLE);
 
         // Header
-        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, 0xFF151528);
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, COLOR_PANEL_HEADER);
         graphics.drawString(f, "PREVIEW", panelLeft + 8, panelTop + 7, COLOR_GLOW_CYAN, false);
+        if (selectionFilteredOut) {
+            String filteredLabel = "Filtered out";
+            graphics.drawString(f, filteredLabel, panelLeft + panelW - f.width(filteredLabel) - 8, panelTop + 7, COLOR_TEXT_DIM, false);
+        }
 
         // Smooth rotation
         float mobRotationY = screen.getMobRotationY();
@@ -489,7 +515,7 @@ public class PartyScreenRenderer {
         float mobRotationX = screen.getMobRotationX();
         screen.setMobRotationY(Mth.lerp(0.15f, mobRotationY, targetMobRotationY));
 
-        if (previewEntity != null && !filteredMobs.isEmpty() && selectedMobIndex < filteredMobs.size()) {
+        if (previewEntity != null && selectedConfig != null) {
             int entityCenterY = previewArea + 85;
 
             float mobHeight = previewEntity.getBbHeight();
@@ -511,7 +537,7 @@ public class PartyScreenRenderer {
                 graphics.drawCenteredString(f, "[Preview Error]", centerX, entityCenterY - 20, COLOR_TEXT_DIM);
             }
 
-            EnduranceQuestRegistry.MobQuestConfig config = filteredMobs.get(selectedMobIndex);
+            EnduranceQuestRegistry.MobQuestConfig config = selectedConfig;
 
             // Stats section
             int statsY = previewArea + 125;
@@ -526,10 +552,10 @@ public class PartyScreenRenderer {
             int col1 = panelLeft + 15;
             int col2 = panelLeft + panelW / 2 + 5;
 
-            graphics.drawString(f, "HP", col1, statY, 0xFFFF6666, false);
+            graphics.drawString(f, "HP", col1, statY, COLOR_STAT_HP, false);
             graphics.drawString(f, String.format("%.0f", config.baseHealth), col1 + 25, statY, COLOR_TEXT_WHITE, false);
 
-            graphics.drawString(f, "DMG", col2, statY, 0xFFFFAA00, false);
+            graphics.drawString(f, "DMG", col2, statY, COLOR_STAT_DMG, false);
             graphics.drawString(f, String.format("%.0f", config.baseDamage), col2 + 30, statY, COLOR_TEXT_WHITE, false);
 
             statY += 14;
@@ -539,27 +565,27 @@ public class PartyScreenRenderer {
 
             graphics.drawString(f, "Scaled", col1, statY, COLOR_TEXT_DIM, false);
             graphics.drawString(f, String.format("%.0f", scaledHP), col1 + 40, statY, COLOR_READY, false);
-            graphics.drawString(f, String.format("%.0f", scaledDMG), col2 + 30, statY, 0xFFFFFF00, false);
+            graphics.drawString(f, String.format("%.0f", scaledDMG), col2 + 30, statY, COLOR_STAT_POINTS, false);
 
             statY += 14;
             graphics.drawString(f, "Points/Kill: " + config.pointsPerKill, col1, statY, COLOR_TEXT_GRAY, false);
 
         } else {
-            graphics.drawCenteredString(f, "Select an enemy", centerX, previewArea + 60, COLOR_TEXT_DIM);
+            String emptyText = selectedConfig == null ? "Select an enemy" : "Preview unavailable";
+            graphics.drawCenteredString(f, emptyText, centerX, previewArea + 60, COLOR_TEXT_DIM);
         }
 
         // Drag hint
         boolean hovering = mouseX >= panelLeft + 5 && mouseX < panelLeft + panelW - 5 &&
                 mouseY >= previewArea && mouseY < previewArea + 120;
         if (hovering && !isDraggingPreview) {
-            graphics.drawString(f, "[Drag to rotate]", panelLeft + 8, previewArea + 4, 0x60FFFFFF, false);
+            graphics.drawString(f, "[Drag to rotate]", panelLeft + 8, previewArea + 4, COLOR_HINT_TEXT, false);
         }
     }
 
     public void renderWaveStatsBar(GuiGraphics graphics, int mouseX, int mouseY) {
-        List<EnduranceQuestRegistry.MobQuestConfig> filteredMobs = screen.getFilteredMobs();
-        int selectedMobIndex = screen.getSelectedMobIndex();
-        if (filteredMobs.isEmpty() || selectedMobIndex >= filteredMobs.size()) return;
+        EnduranceQuestRegistry.MobQuestConfig config = screen.getSelectedMobConfig();
+        if (config == null) return;
 
         int panelX = screen.getPanelX();
         int panelY = screen.getPanelY();
@@ -575,7 +601,7 @@ public class PartyScreenRenderer {
         net.minecraft.client.gui.Font f = getFont();
 
         // Separator
-        graphics.fill(barX, barY - 5, barX + barW, barY - 3, 0xFF2A3A5A);
+        graphics.fill(barX, barY - 5, barX + barW, barY - 3, COLOR_BORDER_SUBTLE);
 
         // Wave slider section
         graphics.drawString(f, "> WAVE PREVIEW", barX, barY, COLOR_TEXT_DIM, false);
@@ -585,8 +611,8 @@ public class PartyScreenRenderer {
         int sliderW = 150;
         int sliderY = barY;
 
-        graphics.fill(sliderX, sliderY + 2, sliderX + sliderW, sliderY + 10, 0xFF151525);
-        AxiomRenderer.drawBorder(graphics, sliderX, sliderY + 2, sliderW, 8, 0xFF2A3A5A);
+        graphics.fill(sliderX, sliderY + 2, sliderX + sliderW, sliderY + 10, COLOR_TAB_HOVER);
+        AxiomRenderer.drawBorder(graphics, sliderX, sliderY + 2, sliderW, 8, COLOR_BORDER_SUBTLE);
 
         float progress = (previewWaveNumber - 1) / (float) (MAX_PREVIEW_WAVE - 1);
         int fillW = (int) (sliderW * progress);
@@ -596,7 +622,6 @@ public class PartyScreenRenderer {
 
         // Stats row
         int statsY = barY + 16;
-        EnduranceQuestRegistry.MobQuestConfig config = filteredMobs.get(selectedMobIndex);
         int playerCount = Math.max(1, members.size());
 
         int mobCount = config.getMobCountForWave(previewWaveNumber, playerCount, questType);
@@ -607,13 +632,13 @@ public class PartyScreenRenderer {
         int col = barX;
         graphics.drawString(f, "Mobs: " + mobCount, col, statsY, COLOR_TEXT_WHITE, false);
         col += 80;
-        graphics.drawString(f, String.format("HP: %.0f", scaledHP * waveMultiplier), col, statsY, 0xFFFF6666, false);
+        graphics.drawString(f, String.format("HP: %.0f", scaledHP * waveMultiplier), col, statsY, COLOR_STAT_HP, false);
         col += 90;
-        graphics.drawString(f, String.format("DMG: %.0f", scaledDMG * waveMultiplier), col, statsY, 0xFFFFAA00, false);
+        graphics.drawString(f, String.format("DMG: %.0f", scaledDMG * waveMultiplier), col, statsY, COLOR_STAT_DMG, false);
         col += 90;
-        graphics.drawString(f, String.format("Points: %d", mobCount * config.pointsPerKill), col, statsY, 0xFFFFFF00, false);
+        graphics.drawString(f, String.format("Points: %d", mobCount * config.pointsPerKill), col, statsY, COLOR_STAT_POINTS, false);
         col += 100;
-        graphics.drawString(f, String.format("Difficulty: %.1fx", questType.difficultyMultiplier * waveMultiplier), col, statsY, 0xFFAA66FF, false);
+        graphics.drawString(f, String.format("Difficulty: %.1fx", questType.difficultyMultiplier * waveMultiplier), col, statsY, COLOR_STAT_DIFFICULTY, false);
     }
 
     public void renderNoPartyState(GuiGraphics graphics) {
@@ -639,7 +664,7 @@ public class PartyScreenRenderer {
         graphics.drawCenteredString(f, "then invite other players to join you.", centerX, centerY - 30, COLOR_TEXT_GRAY);
 
         int lineW = 140;
-        graphics.fill(centerX - lineW, centerY - 15, centerX + lineW, centerY - 14, 0xFF2A3A5A);
+        graphics.fill(centerX - lineW, centerY - 15, centerX + lineW, centerY - 14, COLOR_BORDER_SUBTLE);
         graphics.fill(centerX - 40, centerY - 15, centerX + 40, centerY - 14, COLOR_GLOW_BLUE);
 
         graphics.drawCenteredString(f, "- OR -", centerX, centerY, COLOR_TEXT_DIM);

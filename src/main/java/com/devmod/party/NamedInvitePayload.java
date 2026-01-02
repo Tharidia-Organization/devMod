@@ -10,11 +10,12 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
+import com.devmod.network.PayloadValidation;
 
 public record NamedInvitePayload(
     String targetPlayerName,
     int questTypeOrdinal
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<NamedInvitePayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "named_invite"))
@@ -60,5 +61,12 @@ public record NamedInvitePayload(
      */
     public static NamedInvitePayload create(String targetPlayerName, QuestType questType) {
         return new NamedInvitePayload(targetPlayerName, questType.ordinal());
+    }
+
+    @Override
+    public int estimatedSize() {
+        // VarInt length prefix + UTF-8 bytes for name, plus VarInt for quest type
+        int nameBytes = targetPlayerName != null ? targetPlayerName.length() : 0;
+        return 1 + nameBytes + 1; // varint(len) + name bytes + varint(questType)
     }
 }

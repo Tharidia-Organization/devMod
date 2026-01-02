@@ -15,7 +15,7 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
@@ -84,7 +84,7 @@ public class UsableModuleUI {
             .step(1)
             .format("%.0f")
             .suffix(" ticks")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("Time in ticks to complete item use. 0 = instant, 32 = default food, 20 ticks = 1 second.")
@@ -94,7 +94,7 @@ public class UsableModuleUI {
             .step(1)
             .format("%.0f")
             .suffix(" ticks")
-            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
             .info("Cooldown time after use in ticks. 20 ticks = 1 second, 600 ticks = 30 seconds (ender pearl default).")
@@ -126,7 +126,7 @@ public class UsableModuleUI {
         projectileSpeedSlider = new EditorSlider("projSpeed", "Projectile Speed", 0.5f, 5.0f, 1.5f)
             .step(0.1f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(dataSource)
             .info("Base velocity of thrown projectile. 1.5 = snowball, 3.0 = arrow.")
@@ -135,7 +135,7 @@ public class UsableModuleUI {
         projectileGravitySlider = new EditorSlider("projGrav", "Projectile Gravity", 0.0f, 0.1f, 0.03f)
             .step(0.005f)
             .format("%.3f")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(dataSource)
             .info("Gravity factor affecting projectile arc. 0.03 = default, 0 = no drop.")
@@ -144,7 +144,7 @@ public class UsableModuleUI {
         projectileInaccuracySlider = new EditorSlider("projInacc", "Inaccuracy", 0.0f, 5.0f, 1.0f)
             .step(0.1f)
             .format("%.1f")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(dataSource)
             .info("Spread/inaccuracy of projectile. 0 = perfectly accurate, 1 = default.")
@@ -153,7 +153,7 @@ public class UsableModuleUI {
         projectileDamageSlider = new EditorSlider("projDmg", "Direct Damage", 0, 20, 0)
             .step(1)
             .format("%.0f")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
             .info("Damage dealt on direct hit. Snowballs deal 0, eggs deal 0, ender pearls deal 5.")

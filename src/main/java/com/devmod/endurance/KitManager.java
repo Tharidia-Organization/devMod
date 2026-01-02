@@ -169,8 +169,8 @@ public final class KitManager {
         // Clear current inventory
         player.getInventory().clearContent();
 
-        // Get kit items
-        List<ItemStack> items = kit.toItemStacks();
+        // Get kit items with full data restoration (attributes, durability, NBT, etc.)
+        List<ItemStack> items = kit.toItemStacks(player.registryAccess());
 
         // Equip armor first
         List<ItemStack> nonArmorItems = new ArrayList<>();

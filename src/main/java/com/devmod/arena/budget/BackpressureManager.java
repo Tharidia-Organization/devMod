@@ -3,6 +3,8 @@ package com.devmod.arena.budget;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.compat.mods.c2me.C2MECompat;
+
 public class BackpressureManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BackpressureManager.class);
@@ -36,6 +38,23 @@ public class BackpressureManager {
         this.msptThreshold = msptThreshold;
         this.baseBlocksPerTick = baseBlocksPerTick;
         this.currentBlocksPerTick = baseBlocksPerTick;
+    }
+
+    /**
+     * Creates a BackpressureManager with C2ME-optimized defaults if available.
+     * When C2ME is present, uses higher thresholds and more aggressive block rates.
+     *
+     * @return optimized BackpressureManager instance
+     */
+    public static BackpressureManager createOptimized() {
+        if (C2MECompat.isAvailable()) {
+            double threshold = C2MECompat.getRecommendedMsptThreshold();
+            int blocksPerTick = C2MECompat.getRecommendedBlocksPerTick();
+            LOGGER.info("[BackpressureManager] C2ME detected: threshold={}ms, blocks/tick={}",
+                threshold, blocksPerTick);
+            return new BackpressureManager(threshold, blocksPerTick);
+        }
+        return new BackpressureManager();
     }
 
     /**

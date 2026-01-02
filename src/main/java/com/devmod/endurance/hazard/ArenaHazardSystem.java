@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -364,21 +365,21 @@ public class ArenaHazardSystem {
 
         RandomSource random = level.random;
         int crumbleCount = 5 + random.nextInt(5);
-        BlockPos arenaCenter = session.arenaCenter;
+        BlockPos arenaCenter = Objects.requireNonNull(session.arenaCenter, "session.arenaCenter");
 
         for (int i = 0; i < crumbleCount; i++) {
             int dx = random.nextInt(session.arenaRadius * 2) - session.arenaRadius;
             int dz = random.nextInt(session.arenaRadius * 2) - session.arenaRadius;
-            BlockPos pos = arenaCenter.offset(dx, -1, dz);
+            BlockPos pos = Objects.requireNonNull(arenaCenter.offset(dx, -1, dz));
 
             // Find ground level
             BlockState state = level.getBlockState(pos);
-            while (state != null && state.isAir() && pos.getY() > arenaCenter.getY() - 10) {
-                pos = pos.below();
+            while (state.isAir() && pos.getY() > arenaCenter.getY() - 10) {
+                pos = Objects.requireNonNull(pos.below());
                 state = level.getBlockState(pos);
             }
 
-            if (state != null && !state.isAir()) {
+            if (!state.isAir()) {
                 hazard.affectedBlocks.add(pos);
             }
         }

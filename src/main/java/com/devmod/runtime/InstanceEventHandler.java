@@ -166,8 +166,12 @@ public class InstanceEventHandler {
                     if (instance.getDimensionKey() != null) {
                         // Check if player is teleporting TO the instance dimension (legitimate teleport)
                         if (event.getTo().equals(instance.getDimensionKey())) {
-                            LOGGER.debug("[InstanceEvents] Player {} teleporting TO instance dimension, ignoring",
+                            LOGGER.debug("[InstanceEvents] Player {} teleporting TO instance dimension, syncing environment",
                                 player.getName().getString());
+                            // Re-sync environment (time override, biome) when entering/re-entering arena
+                            // This handles respawn, rejoining, and any other dimension change to the arena
+                            com.devmod.runtime.environment.DimensionEnvironmentManager.INSTANCE
+                                .syncEnvironmentToPlayer(player, instance.getDimensionKey());
                             return;
                         }
 

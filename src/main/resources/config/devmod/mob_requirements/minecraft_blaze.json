@@ -1,0 +1,35 @@
+{
+  "mobId": "minecraft:blaze",
+  "biome": {
+    "preferred": "minecraft:nether_wastes",
+    "validBiomes": ["minecraft:nether_wastes", "minecraft:soul_sand_valley", "minecraft:basalt_deltas"],
+    "required": false
+  },
+  "light": {
+    "min": 0,
+    "max": 15,
+    "prefersDark": false,
+    "prefersLight": false
+  },
+  "floor": {
+    "blocks": ["minecraft:netherrack", "minecraft:nether_bricks", "minecraft:blackstone"],
+    "requiresSolid": true,
+    "canSpawnOnLiquid": false,
+    "canSpawnInAir": true,
+    "preferred": "minecraft:netherrack"
+  },
+  "space": {
+    "width": 0.6,
+    "height": 1.8,
+    "clearanceAbove": 3.0,
+    "clearanceAround": 2.0
+  },
+  "time": "ANY",
+  "boss": {
+    "isBoss": false,
+    "minPlayers": 1,
+    "requiresActivation": false,
+    "activationItem": null,
+    "activationStructure": null
+  }
+}

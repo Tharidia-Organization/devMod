@@ -277,7 +277,7 @@ public class ResponsiveLayout {
             editorX,
             editorY,
             editorWidth,
-            ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT)
+            ScaledCoord.scaleDim(DesignTokens.Size.HEADER_HEIGHT)
         );
     }
 
@@ -287,9 +287,9 @@ public class ResponsiveLayout {
     public Rect getTabBarArea() {
         return new Rect(
             editorX,
-            editorY + ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT),
+            editorY + ScaledCoord.scaleDim(DesignTokens.Size.HEADER_HEIGHT),
             editorWidth,
-            ScaledCoord.scaleDim(UIConstants.Size.TAB_HEIGHT + UIConstants.Size.TAB_GAP)
+            ScaledCoord.scaleDim(DesignTokens.Size.TAB_HEIGHT + DesignTokens.Size.TAB_GAP)
         );
     }
 
@@ -297,8 +297,8 @@ public class ResponsiveLayout {
      * Get content area bounds.
      */
     public Rect getContentArea() {
-        int topOffset = ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT + UIConstants.Size.TAB_HEIGHT + UIConstants.Spacing.MD);
-        int bottomOffset = ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT + UIConstants.Spacing.MD);
+        int topOffset = ScaledCoord.scaleDim(DesignTokens.Size.HEADER_HEIGHT + DesignTokens.Size.TAB_HEIGHT + DesignTokens.Spacing.MD);
+        int bottomOffset = ScaledCoord.scaleDim(DesignTokens.Size.FOOTER_HEIGHT + DesignTokens.Spacing.MD);
         return new Rect(
             editorX + contentPadding,
             editorY + topOffset,
@@ -313,9 +313,9 @@ public class ResponsiveLayout {
     public Rect getFooterArea() {
         return new Rect(
             editorX + contentPadding,
-            editorY + editorHeight - ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT + UIConstants.Spacing.SM),
+            editorY + editorHeight - ScaledCoord.scaleDim(DesignTokens.Size.FOOTER_HEIGHT + DesignTokens.Spacing.SM),
             editorWidth - contentPadding * 2,
-            ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT)
+            ScaledCoord.scaleDim(DesignTokens.Size.FOOTER_HEIGHT)
         );
     }
 
@@ -377,7 +377,7 @@ public class ResponsiveLayout {
      */
     public int getVisibleTabCount() {
         int availableWidth = editorWidth - contentPadding * 2;
-        return Math.max(3, availableWidth / (tabWidth + ScaledCoord.scaleDim(UIConstants.Size.TAB_GAP)));
+        return Math.max(3, availableWidth / (tabWidth + ScaledCoord.scaleDim(DesignTokens.Size.TAB_GAP)));
     }
 
     /**

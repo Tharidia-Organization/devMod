@@ -1,7 +1,7 @@
 package com.devmod.client.ui.editor.core;
 
 /**
- * Dark theme implementation matching current UIConstants colors.
+ * Dark theme implementation matching current DesignTokens colors.
  * This is the default theme.
  */
 public class DarkTheme implements Theme {

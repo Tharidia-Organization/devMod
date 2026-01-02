@@ -20,24 +20,24 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
 public class QuestDeathScreen extends Screen {
 
-    // === Colors - Thematic death screen (red theme) ===
-    private static final int COLOR_BG = 0xEE0a0a14;           // Dark red-tinted background
-    private static final int COLOR_PANEL_BG = 0xDD1a0a0a;     // Dark panel
-    private static final int COLOR_BORDER = UIConstants.Accent.RED();
-    private static final int COLOR_BORDER_GLOW = UIConstants.setAlpha(UIConstants.Accent.RED(), 0x44);
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
-    private static final int COLOR_DEATH = UIConstants.Accent.RED();
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
-    private static final int COLOR_WARNING = UIConstants.Accent.ORANGE();
-    private static final int COLOR_GOLD = UIConstants.Accent.GOLD();
+    // === Colors - Thematic death screen (red theme, using DesignTokens) ===
+    private static final int COLOR_BG = 0xEE0a0a14;           // Dark red-tinted background (death-specific)
+    private static final int COLOR_PANEL_BG = 0xDD1a0a0a;     // Dark panel (death-specific)
+    private static final int COLOR_BORDER = DesignTokens.Semantic.ERROR;
+    private static final int COLOR_BORDER_GLOW = DesignTokens.withAlpha(DesignTokens.Semantic.ERROR, 0x44);
+    private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_DEATH = DesignTokens.Semantic.ERROR;
+    private static final int COLOR_SUCCESS = DesignTokens.Semantic.SUCCESS;
+    private static final int COLOR_WARNING = DesignTokens.Semantic.WARNING;
+    private static final int COLOR_GOLD = DesignTokens.Semantic.WARNING;  // Gold/orange for points
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 340;
@@ -129,7 +129,7 @@ public class QuestDeathScreen extends Screen {
         // Keybind hints
         if (fadeProgress > 0.8f) {
             float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
-            int hintColor = applyAlpha(UIConstants.Text.MUTED(), hintAlpha);
+            int hintColor = applyAlpha(DesignTokens.Text.MUTED, hintAlpha);
             graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.death.keybind_hint").getString()), centerX, panelY + PANEL_HEIGHT + 5, hintColor);
         }
 
@@ -204,7 +204,7 @@ public class QuestDeathScreen extends Screen {
         y += 30;
 
         // Separator
-        int sepColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
+        int sepColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
         g.fill(panelX + 30, y, panelX + PANEL_WIDTH - 30, y + 1, sepColor);
         y += 15;
 
@@ -237,15 +237,15 @@ public class QuestDeathScreen extends Screen {
         int centerY = height / 2;
         int panelX = centerX - PANEL_WIDTH / 2;
         int panelY = centerY - PANEL_HEIGHT / 2;
-        int buttonWidth = PANEL_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 5;
+        int buttonWidth = PANEL_WIDTH - DesignTokens.Space.PANEL_PADDING * 5;
         int respawnY = panelY + PANEL_HEIGHT - 70;
         int giveUpY = panelY + PANEL_HEIGHT - 40;
 
         if (respawnButton != null) {
-            respawnButton.render(graphics, panelX + 20, respawnY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT, mouseX, mouseY);
+            respawnButton.render(graphics, panelX + 20, respawnY, buttonWidth, DesignTokens.Component.BUTTON_HEIGHT_LG, mouseX, mouseY);
         }
         if (giveUpButton != null) {
-            giveUpButton.render(graphics, panelX + 20, giveUpY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT, mouseX, mouseY);
+            giveUpButton.render(graphics, panelX + 20, giveUpY, buttonWidth, DesignTokens.Component.BUTTON_HEIGHT_LG, mouseX, mouseY);
         }
     }
 

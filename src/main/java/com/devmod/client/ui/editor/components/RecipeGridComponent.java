@@ -13,8 +13,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.recipe.CraftingRecipeData;
 import com.devmod.recipe.CraftingType;
 import com.devmod.recipe.IngredientData;
@@ -89,7 +89,7 @@ public class RecipeGridComponent {
         graphics.fill(
             x - bgPad, y - bgPad,
             x + totalGridSize + bgPad, y + totalGridSize + bgPad,
-            UIConstants.Background.INPUT()
+            DesignTokens.Background.INPUT()
         );
 
         // Render each slot
@@ -106,7 +106,7 @@ public class RecipeGridComponent {
         // Render dragged item (follows mouse)
         if (isDragging && !draggedItem.isEmpty()) {
             graphics.pose().pushPose();
-            graphics.pose().translate(0, 0, 200); // Above everything
+            graphics.pose().translate(0, 0, DesignTokens.ZOrder.OVERLAY); // Dragged item layer
             graphics.renderItem(Objects.requireNonNull(draggedItem, "draggedItem"), mouseX - 8, mouseY - 8);
             graphics.pose().popPose();
         }
@@ -120,22 +120,22 @@ public class RecipeGridComponent {
         // === Background ===
         int bgColor;
         if (index == selectedSlot) {
-            bgColor = UIConstants.Background.ACTIVE();
+            bgColor = DesignTokens.Background.ACTIVE();
         } else if (index == hoveredSlot) {
-            bgColor = UIConstants.Background.HOVER();
+            bgColor = DesignTokens.Background.HOVER();
         } else {
-            bgColor = UIConstants.Background.PANEL();
+            bgColor = DesignTokens.Background.PANEL();
         }
         g.fill(x, y, x + scaledCellSize, y + scaledCellSize, bgColor);
 
         // === Border ===
         int borderColor;
         if (index == selectedSlot) {
-            borderColor = UIConstants.Border.ACCENT();
+            borderColor = DesignTokens.Border.ACCENT();
         } else if (index == hoveredSlot) {
-            borderColor = UIConstants.Border.HOVER();
+            borderColor = DesignTokens.Border.HOVER();
         } else {
-            borderColor = UIConstants.Border.MUTED();
+            borderColor = DesignTokens.Border.MUTED();
         }
         drawBorder(g, x, y, scaledCellSize, scaledCellSize, borderColor);
 
@@ -174,7 +174,7 @@ public class RecipeGridComponent {
             int centerY = y + scaledCellSize / 2;
             int dotSize = 2;
             g.fill(centerX - dotSize, centerY - dotSize, centerX + dotSize, centerY + dotSize,
-                UIConstants.Border.MUTED());
+                DesignTokens.Border.MUTED());
         }
     }
 

@@ -8,8 +8,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadValidation;
 
-public record StaminaSyncPayload(float currentStamina, float maxStamina) implements CustomPacketPayload {
+public record StaminaSyncPayload(float currentStamina, float maxStamina)
+        implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final CustomPacketPayload.Type<StaminaSyncPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(
@@ -30,5 +32,10 @@ public record StaminaSyncPayload(float currentStamina, float maxStamina) impleme
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 8;
     }
 }

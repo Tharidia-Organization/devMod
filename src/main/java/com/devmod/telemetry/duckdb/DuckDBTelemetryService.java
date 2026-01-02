@@ -282,6 +282,14 @@ public class DuckDBTelemetryService {
     }
 
     /**
+     * P2: Get the connection manager for health metrics.
+     * Used by the dashboard to expose connection acquisition statistics.
+     */
+    public @Nullable DuckDBConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
+
+    /**
      * Get statistics about the batch writer.
      */
     public String getStats() {
@@ -292,6 +300,30 @@ public class DuckDBTelemetryService {
             writer.getTotalBatches(),
             writer.getPendingInserts(),
             writer.getDroppedInserts());
+    }
+
+    /**
+     * P2: Get write latency statistics with P99 percentiles.
+     *
+     * @return LatencyStats snapshot, or null if not initialized
+     */
+    public @Nullable LatencyTracker.LatencyStats getWriteLatencyStats() {
+        DuckDBBatchWriter writer = batchWriter;
+        if (writer == null) return null;
+        return writer.getWriteLatencyStats();
+    }
+
+    /**
+     * P2: Get a detailed stats string including latency percentiles.
+     */
+    public String getDetailedStats() {
+        DuckDBBatchWriter writer = batchWriter;
+        if (writer == null) return "Not initialized";
+
+        var latencyStats = writer.getWriteLatencyStats();
+        return String.format("%s | Latency: %s",
+            writer.getDetailedStats(),
+            latencyStats.toLogString());
     }
 
     /**
@@ -612,6 +644,29 @@ public class DuckDBTelemetryService {
     }
 
     /**
+     * Log a special action (perfect dodge, parry, counter, etc.).
+     */
+    public void logSpecialAction(UUID playerId, UUID sessionId, @Nullable String actionType,
+                                 int pointsEarned, int styleEarned, int currentCombo) {
+        logSpecialAction(playerId, sessionId, actionType, pointsEarned, styleEarned, currentCombo,
+            null, null, null, null, null);
+    }
+
+    public void logSpecialAction(UUID playerId, UUID sessionId, @Nullable String actionType,
+                                 int pointsEarned, int styleEarned, int currentCombo,
+                                 @Nullable String templateId, @Nullable Integer templateVersion,
+                                 @Nullable String policyId, @Nullable Integer policyVersion,
+                                 @Nullable UUID arenaId) {
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
+
+        writer.queueEnduranceCombo(Instant.now(), playerId, sessionId,
+            templateId, templateVersion, policyId, policyVersion, arenaId,
+            "special_action", null, null, null, currentCombo,
+            null, null, null, actionType, pointsEarned, styleEarned);
+    }
+
+    /**
      * Log a perk selection.
      */
     public void logPerkSelected(UUID playerId, UUID sessionId, @Nullable String perkId,
@@ -721,6 +776,20 @@ public class DuckDBTelemetryService {
             templateId, templateVersion, policyId, policyVersion, arenaId,
             "achievement_unlocked", rewardCurrency, rewardAmount, null,
             null, null, null, achievementId, achievementName, null, null);
+    }
+
+    /**
+     * Log a shop purchase.
+     */
+    public void logShopPurchase(UUID playerId, @Nullable String itemId,
+                                @Nullable String currency, int price, int purchaseCount) {
+        DuckDBBatchWriter writer = batchWriter;
+        if (!enabled || writer == null) return;
+
+        writer.queueEnduranceReward(Instant.now(), playerId, null,
+            null, null, null, null, null,
+            "shop_purchase", currency, null, null,
+            itemId, null, null, null, null, price, purchaseCount);
     }
 
     // ============================================

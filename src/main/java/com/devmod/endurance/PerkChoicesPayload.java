@@ -7,17 +7,19 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
 public record PerkChoicesPayload(
     int waveNumber,
     long expiresAt,
     List<PerkChoice> choices
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_CHOICES = 5;
     private static final int MAX_STRING_LENGTH = 256;
@@ -204,5 +206,51 @@ public record PerkChoicesPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += 4; // waveNumber
+        size += 8; // expiresAt
+        int count = Math.min(choices.size(), MAX_CHOICES);
+        size += 4; // choice count
+        for (int i = 0; i < count; i++) {
+            size += estimateChoiceSize(choices.get(i));
+        }
+        return size;
+    }
+
+    private static int estimateChoiceSize(PerkChoice choice) {
+        if (choice == null) {
+            return 0;
+        }
+        int size = 0;
+        size += estimatedFixedUtfSize(choice.id);
+        size += estimatedFixedUtfSize(choice.name);
+        size += estimatedFixedUtfSize(choice.description);
+        size += estimatedFixedUtfSize(choice.tierName);
+        size += 4; // tierColor
+        size += estimatedFixedUtfSize(choice.categoryName);
+        size += 4; // categoryColor
+        size += 1; // stackable
+        size += 4; // currentStacks
+        size += 4; // maxStacks
+        size += 1; // suggested
+        size += 1; // required
+        size += 4; // synergyScore
+        size += estimatedFixedUtfSize(choice.synergyHint);
+        size += 4; // newSynergyCount
+        size += 4; // potentialCount
+        size += 1; // isRecommended
+        return size;
+    }
+
+    private static int estimatedFixedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return 4;
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return 4 + bytes.length;
     }
 }

@@ -26,6 +26,7 @@ import com.devmod.config.gamedesign.GameDesignConfigManager;
 public class WeaponTraitRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeaponTraitRegistry.class);
+    @Nonnull
     private static final String MOD_ID = requireNonNull(DevMod.MODID, "DevMod.MODID");
 
     public static final WeaponTraitRegistry INSTANCE = new WeaponTraitRegistry();
@@ -36,7 +37,7 @@ public class WeaponTraitRegistry {
     // ========== Predefined Traits ==========
 
     public static final WeaponTrait EXECUTIONER = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "executioner"))
+            modLoc("executioner"))
         .adjective("Executioner's")
         .requiredStat(SoulImprint.ImprintStat.HEADSHOTS)
         .effect(WeaponTrait.TraitEffectType.HEADSHOT_BONUS, 0.15f) // +15% headshot damage
@@ -44,7 +45,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait TYRANT_SLAYER = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "tyrant_slayer"))
+            modLoc("tyrant_slayer"))
         .adjective("Tyrant-Slaying")
         .requiredStat(SoulImprint.ImprintStat.BOSS_KILLS)
         .effect(WeaponTrait.TraitEffectType.BOSS_DAMAGE, 0.30f) // +30% vs bosses
@@ -52,7 +53,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait STYLISH = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "stylish"))
+            modLoc("stylish"))
         .adjective("Stylish")
         .requiredStat(SoulImprint.ImprintStat.SSS_WAVES)
         .effect(WeaponTrait.TraitEffectType.STYLE_GAIN, 0.20f) // +20% style gain
@@ -60,7 +61,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait BLOODTHIRSTY = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "bloodthirsty"))
+            modLoc("bloodthirsty"))
         .adjective("Bloodthirsty")
         .requiredStat(SoulImprint.ImprintStat.TOTAL_KILLS)
         .effect(WeaponTrait.TraitEffectType.LIFESTEAL, 0.005f) // 0.5% lifesteal
@@ -68,7 +69,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait HARMONIC = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "harmonic"))
+            modLoc("harmonic"))
         .adjective("Harmonic")
         .requiredStat(SoulImprint.ImprintStat.PERFECT_RESONANCES)
         .effect(WeaponTrait.TraitEffectType.RESONANCE_BONUS, 0.50f) // +50% resonance damage
@@ -76,7 +77,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait PRECISION = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "precision"))
+            modLoc("precision"))
         .adjective("Precise")
         .requiredStat(SoulImprint.ImprintStat.CRITICAL_HITS)
         .effect(WeaponTrait.TraitEffectType.CRIT_CHANCE, 0.10f) // +10% crit chance
@@ -84,7 +85,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait RELENTLESS = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "relentless"))
+            modLoc("relentless"))
         .adjective("Relentless")
         .requiredStat(SoulImprint.ImprintStat.HIGH_COMBOS)
         .effect(WeaponTrait.TraitEffectType.COMBO_DECAY, 0.20f) // -20% combo decay
@@ -92,7 +93,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait GUARDIAN = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "guardian"))
+            modLoc("guardian"))
         .adjective("Guardian's")
         .requiredStat(SoulImprint.ImprintStat.NO_HIT_WAVES)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_REDUCTION, 0.05f) // +5% damage reduction
@@ -100,7 +101,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait DEVASTATING = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "devastating"))
+            modLoc("devastating"))
         .adjective("Devastating")
         .requiredStat(SoulImprint.ImprintStat.TOTAL_DAMAGE)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.05f) // +5% all damage
@@ -108,7 +109,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait FINISHER = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "finisher"))
+            modLoc("finisher"))
         .adjective("Finishing")
         .requiredStat(SoulImprint.ImprintStat.EXECUTE_KILLS)
         .effect(WeaponTrait.TraitEffectType.EXECUTE_THRESHOLD, 0.10f) // Execute below 10% HP
@@ -116,7 +117,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait CLEAVING = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "cleaving"))
+            modLoc("cleaving"))
         .adjective("Cleaving")
         .requiredStat(SoulImprint.ImprintStat.MULTI_KILLS)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.03f) // +3% damage (area focus)
@@ -124,7 +125,7 @@ public class WeaponTraitRegistry {
         .build();
 
     public static final WeaponTrait RETALIATING = WeaponTrait.builder(
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "retaliating"))
+            modLoc("retaliating"))
         .adjective("Retaliating")
         .requiredStat(SoulImprint.ImprintStat.PARRY_KILLS)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.08f) // +8% damage (counter-attack focus)
@@ -303,5 +304,15 @@ public class WeaponTraitRegistry {
     @Nonnull
     private static <T> T requireNonNull(@Nullable T value, String label) {
         return Objects.requireNonNull(value, label);
+    }
+
+    /**
+     * Helper to create ResourceLocation with MOD_ID namespace.
+     * Wraps MOD_ID with requireNonNull to satisfy null analyzer for @Nonnull parameter.
+     */
+    @Nonnull
+    private static ResourceLocation modLoc(@Nonnull String path) {
+        // fromNamespaceAndPath never returns null but isn't annotated @Nonnull
+        return Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(Objects.requireNonNull(MOD_ID), path));
     }
 }

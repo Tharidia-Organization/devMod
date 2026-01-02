@@ -383,6 +383,8 @@ public class SeasonPassSystem {
     }
 
     private void notifyTierUp(UUID playerId, PlayerSeasonProgress progress, int newTier) {
+        // progress available for future enhanced notifications
+        Objects.requireNonNull(progress, "progress");
         // Get reward names for display
         SeasonReward freeReward = freeTrackRewards.get(newTier);
         SeasonReward premiumReward = premiumTrackRewards.get(newTier);

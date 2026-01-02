@@ -24,6 +24,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
@@ -32,14 +33,14 @@ public class EntityDensityOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "entity_density");
 
-    // === UI Colors (consistent with ImpactHudOverlay) ===
-    private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
-    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue
-    private static final int TEXT_TITLE = 0xFF00FFFF;         // Cyan
-    private static final int TEXT_VALUE = 0xFF00FF00;         // Green
-    private static final int TEXT_WARNING = 0xFFFFFF00;       // Yellow
-    private static final int TEXT_DANGER = 0xFFFF4444;        // Red
-    private static final int TEXT_MUTED = 0xFFAAAAAA;         // Gray
+    // === UI Colors (delegating to OverlayTheme) ===
+    private static final int PANEL_BG = OverlayTheme.Panel.BG_STANDARD;
+    private static final int PANEL_BORDER = OverlayTheme.Border.ACCENT;
+    private static final int TEXT_TITLE = OverlayTheme.Text.TITLE;
+    private static final int TEXT_VALUE = OverlayTheme.Text.VALUE;
+    private static final int TEXT_WARNING = OverlayTheme.Text.WARNING;
+    private static final int TEXT_DANGER = OverlayTheme.Text.DANGER;
+    private static final int TEXT_MUTED = OverlayTheme.Text.MUTED;
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 180;

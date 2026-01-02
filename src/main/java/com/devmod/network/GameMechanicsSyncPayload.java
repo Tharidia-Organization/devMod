@@ -17,11 +17,20 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.config.GameMechanicsConfig;
 
+/**
+ * Network payload for syncing game mechanics configuration.
+ * Sent server-to-client on login and when config changes.
+ *
+ * <p><b>CRITICAL:</b> The record field order MUST match the encode/decode method order.
+ * Uses custom encode/decode methods - update both if fields change.</p>
+ *
+ * <p>Field order: mechanicsConfig, questId (optional), questOverrides (optional)</p>
+ */
 public record GameMechanicsSyncPayload(
     CompoundTag mechanicsConfig,
     @Nullable UUID questId,
     @Nullable CompoundTag questOverrides
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<GameMechanicsSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "game_mechanics_sync"))
@@ -33,36 +42,40 @@ public record GameMechanicsSyncPayload(
     );
 
     private static void encode(RegistryFriendlyByteBuf buffer, GameMechanicsSyncPayload payload) {
-        ByteBufCodecs.COMPOUND_TAG.encode(buffer, Objects.requireNonNull(payload.mechanicsConfig()));
+        RegistryFriendlyByteBuf buf = Objects.requireNonNull(buffer, "buffer");
+        ByteBufCodecs.COMPOUND_TAG.encode(buf, Objects.requireNonNull(payload.mechanicsConfig()));
 
         // Write optional questId
-        boolean hasQuestId = payload.questId() != null;
-        buffer.writeBoolean(hasQuestId);
+        UUID questId = payload.questId();
+        boolean hasQuestId = questId != null;
+        buf.writeBoolean(hasQuestId);
         if (hasQuestId) {
-            buffer.writeUUID(payload.questId());
+            buf.writeUUID(Objects.requireNonNull(questId, "questId"));
         }
 
         // Write optional questOverrides
-        boolean hasOverrides = payload.questOverrides() != null;
-        buffer.writeBoolean(hasOverrides);
+        CompoundTag overrides = payload.questOverrides();
+        boolean hasOverrides = overrides != null;
+        buf.writeBoolean(hasOverrides);
         if (hasOverrides) {
-            ByteBufCodecs.COMPOUND_TAG.encode(buffer, payload.questOverrides());
+            ByteBufCodecs.COMPOUND_TAG.encode(buf, Objects.requireNonNull(overrides, "questOverrides"));
         }
     }
 
     private static GameMechanicsSyncPayload decode(RegistryFriendlyByteBuf buffer) {
-        CompoundTag mechanicsConfig = Objects.requireNonNull(ByteBufCodecs.COMPOUND_TAG.decode(buffer));
+        RegistryFriendlyByteBuf buf = Objects.requireNonNull(buffer, "buffer");
+        CompoundTag mechanicsConfig = Objects.requireNonNull(ByteBufCodecs.COMPOUND_TAG.decode(buf));
 
         // Read optional questId
         UUID questId = null;
-        if (buffer.readBoolean()) {
-            questId = buffer.readUUID();
+        if (buf.readBoolean()) {
+            questId = buf.readUUID();
         }
 
         // Read optional questOverrides
         CompoundTag questOverrides = null;
-        if (buffer.readBoolean()) {
-            questOverrides = ByteBufCodecs.COMPOUND_TAG.decode(buffer);
+        if (buf.readBoolean()) {
+            questOverrides = ByteBufCodecs.COMPOUND_TAG.decode(buf);
         }
 
         return new GameMechanicsSyncPayload(mechanicsConfig, questId, questOverrides);
@@ -71,6 +84,20 @@ public record GameMechanicsSyncPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = mechanicsConfig != null ? mechanicsConfig.sizeInBytes() : 0;
+        size += 1; // hasQuestId
+        if (questId != null) {
+            size += 16; // UUID
+        }
+        size += 1; // hasOverrides
+        if (questOverrides != null) {
+            size += questOverrides.sizeInBytes();
+        }
+        return size;
     }
 
     // ============================================================================

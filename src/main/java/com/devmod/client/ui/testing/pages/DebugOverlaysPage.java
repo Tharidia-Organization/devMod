@@ -29,6 +29,7 @@ import com.devmod.client.ui.testing.panel.SliderPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.rendering.HeatmapType;
 import com.devmod.util.I18n;
 
 public class DebugOverlaysPage extends AbstractVoxelLabPage {
@@ -242,7 +243,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
 
         // Heatmap buttons
         List<EditorButton> heatmapButtons = new ArrayList<>();
-        for (HeatmapVisualizer.HeatmapType type : HeatmapVisualizer.HeatmapType.values()) {
+        for (HeatmapType type : HeatmapType.values()) {
             EditorButton btn = new EditorButton("heatmap-" + type.name().toLowerCase(Locale.ROOT), heatmapLabel(type))
                 .toggleable(true)
                 .toggled(HeatmapVisualizer.INSTANCE.isEnabled(type))
@@ -326,7 +327,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
 
         // Sync heatmap buttons
         int i = 0;
-        for (HeatmapVisualizer.HeatmapType type : HeatmapVisualizer.HeatmapType.values()) {
+        for (HeatmapType type : HeatmapType.values()) {
             if (i < heatmapButtons.size()) {
                 heatmapButtons.get(i).toggled(HeatmapVisualizer.INSTANCE.isEnabled(type));
             }
@@ -341,7 +342,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
         ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
     }
 
-    private void invokeHeatmapAction(HeatmapVisualizer.HeatmapType type, boolean desired) {
+    private void invokeHeatmapAction(HeatmapType type, boolean desired) {
         String actionId = resolveHeatmapAction(type);
         if (actionId == null) {
             return;
@@ -353,7 +354,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
         ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
     }
 
-    private static String resolveHeatmapAction(HeatmapVisualizer.HeatmapType type) {
+    private static String resolveHeatmapAction(HeatmapType type) {
         return switch (type) {
             case DEATH -> ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE;
             case MOVEMENT -> ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE;
@@ -366,7 +367,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
         };
     }
 
-    private static String heatmapLabel(HeatmapVisualizer.HeatmapType type) {
+    private static String heatmapLabel(HeatmapType type) {
         String key = switch (type) {
             case DEATH -> "death";
             case MOVEMENT -> "movement";

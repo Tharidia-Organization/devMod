@@ -22,8 +22,8 @@ import net.minecraft.world.item.Items;
 
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class ItemPickerOverlay extends BaseOverlay {
 
@@ -214,25 +214,25 @@ public class ItemPickerOverlay extends BaseOverlay {
         int innerW = width - padding * 2;
 
         // === Title ===
-        safeGraphics.drawString(safeFont, "Select Item", innerX, innerY, UIConstants.Text.TITLE(), false);
+        safeGraphics.drawString(safeFont, "Select Item", innerX, innerY, DesignTokens.Text.TITLE(), false);
         innerY += ScaledCoord.scaleDim(14);
 
         // === Search box ===
         int searchH = ScaledCoord.scaleDim(18);
-        int searchBg = searchFocused ? UIConstants.Background.ACTIVE() : UIConstants.Background.INPUT();
+        int searchBg = searchFocused ? DesignTokens.Background.ACTIVE() : DesignTokens.Background.INPUT();
         safeGraphics.fill(innerX, innerY, innerX + innerW, innerY + searchH, searchBg);
         AxiomRenderer.drawBorder(safeGraphics, innerX, innerY, innerW, searchH,
-            searchFocused ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT());
+            searchFocused ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT());
 
         // Search text
         String displayText = safeQueryRender.isEmpty() && !searchFocused ? "Search items..." : safeQueryRender;
-        int textColor = safeQueryRender.isEmpty() && !searchFocused ? UIConstants.Text.MUTED() : UIConstants.Text.PRIMARY();
+        int textColor = safeQueryRender.isEmpty() && !searchFocused ? DesignTokens.Text.MUTED() : DesignTokens.Text.PRIMARY();
         safeGraphics.drawString(safeFont, displayText, innerX + 4, innerY + 5, textColor, false);
 
         // Cursor
         if (searchFocused && (cursorBlink / 15) % 2 == 0) {
             int cursorX = innerX + 4 + safeFont.width(safeQueryRender);
-            safeGraphics.fill(cursorX, innerY + 3, cursorX + 1, innerY + searchH - 3, UIConstants.Text.PRIMARY());
+            safeGraphics.fill(cursorX, innerY + 3, cursorX + 1, innerY + searchH - 3, DesignTokens.Text.PRIMARY());
         }
 
         innerY += searchH + ScaledCoord.scaleDim(6);
@@ -244,20 +244,20 @@ public class ItemPickerOverlay extends BaseOverlay {
         // Items tab
         boolean itemsHover = mouseX >= innerX && mouseX < innerX + tabW &&
                             mouseY >= innerY && mouseY < innerY + tabH;
-        int itemsBg = currentTab == 0 ? UIConstants.Background.ACTIVE() :
-                     (itemsHover ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL());
+        int itemsBg = currentTab == 0 ? DesignTokens.Background.ACTIVE() :
+                     (itemsHover ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL());
         safeGraphics.fill(innerX, innerY, innerX + tabW, innerY + tabH, itemsBg);
         safeGraphics.drawCenteredString(safeFont, "Items", innerX + tabW / 2, innerY + (tabH - 8) / 2,
-            currentTab == 0 ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY());
+            currentTab == 0 ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY());
 
         // Tags tab
         boolean tagsHover = mouseX >= innerX + tabW && mouseX < innerX + innerW &&
                            mouseY >= innerY && mouseY < innerY + tabH;
-        int tagsBg = currentTab == 1 ? UIConstants.Background.ACTIVE() :
-                    (tagsHover ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL());
+        int tagsBg = currentTab == 1 ? DesignTokens.Background.ACTIVE() :
+                    (tagsHover ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL());
         safeGraphics.fill(innerX + tabW, innerY, innerX + innerW, innerY + tabH, tagsBg);
         safeGraphics.drawCenteredString(safeFont, "Tags", innerX + tabW + tabW / 2, innerY + (tabH - 8) / 2,
-            currentTab == 1 ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY());
+            currentTab == 1 ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY());
 
         innerY += tabH + ScaledCoord.scaleDim(4);
 
@@ -282,7 +282,7 @@ public class ItemPickerOverlay extends BaseOverlay {
         int count = currentTab == 0 ? filteredItems.size() : filteredTags.size();
         String info = count + (currentTab == 0 ? " items" : " tags");
         safeGraphics.drawString(safeFont, info, x + width - padding - safeFont.width(info),
-            y + height - padding - 8, UIConstants.Text.MUTED(), false);
+            y + height - padding - 8, DesignTokens.Text.MUTED(), false);
     }
 
     private void renderItemsGrid(GuiGraphics graphics, Font font,
@@ -313,7 +313,7 @@ public class ItemPickerOverlay extends BaseOverlay {
                 if (hovered) {
                     hoveredIndex = index;
                     safeGraphics.fill(cellX, cellY, cellX + itemSize, cellY + itemSize,
-                        UIConstants.Background.HOVER());
+                        DesignTokens.Background.HOVER());
                 }
 
                 // Render item
@@ -336,8 +336,8 @@ public class ItemPickerOverlay extends BaseOverlay {
             int thumbH = Math.max(20, scrollbarH * visibleRows / totalRows);
             int thumbY = y + (int) ((scrollbarH - thumbH) * scrollProgress);
 
-            safeGraphics.fill(scrollbarX, y, scrollbarX + 3, y + scrollbarH, UIConstants.Background.INPUT());
-            safeGraphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbH, UIConstants.Border.ACCENT());
+            safeGraphics.fill(scrollbarX, y, scrollbarX + 3, y + scrollbarH, DesignTokens.Background.INPUT());
+            safeGraphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbH, DesignTokens.Border.ACCENT());
         }
     }
 
@@ -363,12 +363,12 @@ public class ItemPickerOverlay extends BaseOverlay {
                              mouseY >= rowY && mouseY < rowY + rowHeight;
             if (hovered) {
                 hoveredIndex = index;
-                safeGraphics.fill(x, rowY, x + w - 6, rowY + rowHeight, UIConstants.Background.HOVER());
+                safeGraphics.fill(x, rowY, x + w - 6, rowY + rowHeight, DesignTokens.Background.HOVER());
             }
 
             // Tag icon (# symbol)
             safeGraphics.drawString(safeFont, "#", x + 4, rowY + (rowHeight - 8) / 2,
-                UIConstants.Accent.ORANGE(), false);
+                DesignTokens.Accent.ORANGE(), false);
 
             // Tag name
             String tagName = tag.location().toString();
@@ -376,13 +376,13 @@ public class ItemPickerOverlay extends BaseOverlay {
                 tagName = tagName.substring("minecraft:".length());
             }
             safeGraphics.drawString(safeFont, tagName, x + 14, rowY + (rowHeight - 8) / 2,
-                UIConstants.Text.PRIMARY(), false);
+                DesignTokens.Text.PRIMARY(), false);
 
             // Item count
             int itemCount = getTagItemCount(tag);
             String countStr = "(" + itemCount + ")";
             safeGraphics.drawString(safeFont, countStr, x + w - 10 - safeFont.width(countStr),
-                rowY + (rowHeight - 8) / 2, UIConstants.Text.MUTED(), false);
+                rowY + (rowHeight - 8) / 2, DesignTokens.Text.MUTED(), false);
         }
 
         // Tooltip for hovered tag
@@ -416,8 +416,8 @@ public class ItemPickerOverlay extends BaseOverlay {
             int thumbH = Math.max(20, scrollbarH * maxVisible / filteredTags.size());
             int thumbY = y + (int) ((scrollbarH - thumbH) * scrollProgress);
 
-            safeGraphics.fill(scrollbarX, y, scrollbarX + 3, y + scrollbarH, UIConstants.Background.INPUT());
-            safeGraphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbH, UIConstants.Border.ACCENT());
+            safeGraphics.fill(scrollbarX, y, scrollbarX + 3, y + scrollbarH, DesignTokens.Background.INPUT());
+            safeGraphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbH, DesignTokens.Border.ACCENT());
         }
     }
 

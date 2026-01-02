@@ -26,9 +26,9 @@ import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorTextField;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.debug.DebugInfoSection;
 import com.devmod.client.ui.editor.debug.ItemDebugInfo;
 import com.devmod.client.ui.editor.debug.ValueComparison;
@@ -45,7 +45,7 @@ public class RangedModule extends AbstractEditorModule {
     private RangedWeaponModule.RangedStats stats = new RangedWeaponModule.RangedStats();
     private RangedWeaponModule.RangedStats originalStats = new RangedWeaponModule.RangedStats();
     private @Nullable RangedWeaponModule.SourcedStats sourcedStats;
-    private static final int TOGGLE_SECTION_HEIGHT = EditorDimensions.TOGGLE_HEIGHT + UIConstants.Spacing.SM;
+    private static final int TOGGLE_SECTION_HEIGHT = EditorDimensions.TOGGLE_HEIGHT + DesignTokens.Spacing.SM;
 
     // UI components
     private @Nullable EditorSlider drawSpeedSlider;
@@ -156,7 +156,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("Multiplier for bow draw/crossbow reload speed. 1.0 = normal, 2.0 = twice as fast, 0.5 = twice as slow.")
@@ -166,7 +166,7 @@ public class RangedModule extends AbstractEditorModule {
                 .step(0.05f)
                 .format("%.2f")
                 .suffix("x")
-                .trackColor(UIConstants.SliderColors.SPEED)
+                .trackColor(DesignTokens.SliderColors.SPEED)
                 .showInput(true)
                 .source(source)
                 .info("Time to fully charge the crossbow. 1.0 = normal, higher = slower charge.")
@@ -177,7 +177,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.01f)
             .format("%.2f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("Shot precision. 1.0 = perfect accuracy, <1.0 = more spread, >1.0 = tighter grouping.")
@@ -187,7 +187,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("Maximum effective range multiplier. Affects how far projectiles travel before losing damage.")
@@ -201,7 +201,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("How fast the projectile travels. Higher = flatter trajectory, more damage. 1.0 = vanilla arrow speed.")
@@ -211,7 +211,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.005f)
             .format("%.3f")
             .suffix(" g/t")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(source)
             .info("Downward acceleration per tick. 0.05 = normal arrow, 0 = no drop (laser-like), 0.2 = very heavy.")
@@ -221,7 +221,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.05f)
             .format("%.2f")
             .suffix("°")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .source(source)
             .info("Random deviation added to each shot. 0 = perfectly straight, 3 = very inaccurate spread.")
@@ -231,7 +231,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.1f)
             .format("%.1f")
             .suffix(" HP")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
             .info("Base damage before Power enchant and velocity bonuses. Vanilla arrow = 2.0, Power V adds +12.5.")
@@ -246,7 +246,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(1f)
             .format("%.0f")
             .suffix(" targets")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
             .info("Number of entities the projectile can pass through. Like Piercing enchant. 0 = stops on first hit.")
@@ -256,7 +256,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(1f)
             .format("%.0f")
             .suffix(" arrows")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
             .info("Number of projectiles fired when Multishot is enabled. Vanilla Multishot = 3. All consume only 1 ammo.")
@@ -284,7 +284,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.01f)
             .format("%.2f")
             .suffix("%")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
             .info("Chance for projectile to deal critical damage (0-1). Vanilla arrows crit at full velocity. This adds bonus crit chance.")
@@ -294,7 +294,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
             .info("Damage multiplier on critical hit. 1.5x = 50% bonus damage. Stacks with Power enchant.")
@@ -307,7 +307,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("How fast the trident returns to the player. Higher = faster return. 0 = no return (requires pickup).")
@@ -316,7 +316,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(1f)
             .format("%.0f")
             .suffix(" blocks")
-            .trackColor(UIConstants.SliderColors.SPEED)
+            .trackColor(DesignTokens.SliderColors.SPEED)
             .showInput(true)
             .source(source)
             .info("Maximum distance the player can travel when using Riptide in water/rain. 0 = disabled.")
@@ -429,37 +429,37 @@ public class RangedModule extends AbstractEditorModule {
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
             var font = Objects.requireNonNull(Minecraft.getInstance().font);
-            int x = bounds.x() + UIConstants.Spacing.SM;
-            int y = bounds.y() + UIConstants.Spacing.SM;
+            int x = bounds.x() + DesignTokens.Spacing.SM;
+            int y = bounds.y() + DesignTokens.Spacing.SM;
             String header = ammoMatches.isEmpty() ? "No items match this tag" : "Matching ammo (" + ammoMatches.size() + "):";
-            graphics.drawString(font, header, x, y, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(font, header, x, y, DesignTokens.Text.SECONDARY(), false);
             y += ENTRY_LINE_HEIGHT;
             int shown = 0;
             for (String entry : ammoMatches) {
                 if (shown >= MAX_MATCHES_SHOWN) break;
-                graphics.drawString(font, "- " + entry, x, y, UIConstants.Text.PRIMARY(), false);
+                graphics.drawString(font, "- " + entry, x, y, DesignTokens.Text.PRIMARY(), false);
                 y += ENTRY_LINE_HEIGHT;
                 shown++;
             }
 
             // Suggestions + clear
             y += SUGGESTION_TITLE_GAP;
-            graphics.drawString(font, "Suggestions:", x, y, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(font, "Suggestions:", x, y, DesignTokens.Text.SECONDARY(), false);
             y += SUGGESTION_TITLE_LINE_HEIGHT;
             suggestionRects.clear();
             int btnHeight = SUGGESTION_ROW_HEIGHT;
-            int btnWidth = bounds.width() - UIConstants.Spacing.SM * 2;
+            int btnWidth = bounds.width() - DesignTokens.Spacing.SM * 2;
             // Clear button
             int clearX = x;
-            graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, UIConstants.Background.INPUT());
+            graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, DesignTokens.Background.INPUT());
             graphics.drawString(font, "Clear filter", clearX + BUTTON_TEXT_OFFSET_X,
-                y + BUTTON_TEXT_OFFSET_Y, UIConstants.Text.PRIMARY(), false);
+                y + BUTTON_TEXT_OFFSET_Y, DesignTokens.Text.PRIMARY(), false);
             suggestionRects.add(new ResponsiveLayout.Rect(clearX, y, btnWidth, btnHeight));
             y += btnHeight + BUTTON_GAP;
             for (Suggestion sugg : ammoSuggestions) {
-                graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, UIConstants.Background.PANEL());
+                graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, DesignTokens.Background.PANEL());
                 graphics.drawString(font, sugg.label(), clearX + BUTTON_TEXT_OFFSET_X,
-                    y + BUTTON_TEXT_OFFSET_Y, UIConstants.Text.PRIMARY(), false);
+                    y + BUTTON_TEXT_OFFSET_Y, DesignTokens.Text.PRIMARY(), false);
                 suggestionRects.add(new ResponsiveLayout.Rect(clearX, y, btnWidth, btnHeight));
                 y += btnHeight + BUTTON_GAP;
             }

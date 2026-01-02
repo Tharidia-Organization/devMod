@@ -38,10 +38,13 @@ class PlayerInstanceSnapshotDirectTest {
         assertEquals(18.0f, loaded.getOriginalHealth(), 0.0001f);
         assertEquals(20.0f, loaded.getOriginalMaxHealth(), 0.0001f);
 
-        assertNotNull(loaded.getInventoryNBT());
-        assertEquals("inv", loaded.getInventoryNBT().getString("marker"));
-        assertNotNull(loaded.getPotionEffectsNBT());
-        assertEquals("speed", loaded.getPotionEffectsNBT().getString("effect"));
+        CompoundTag inventoryNBT = loaded.getInventoryNBT();
+        assertNotNull(inventoryNBT);
+        assertEquals("inv", inventoryNBT.getString("marker"));
+
+        CompoundTag potionEffectsNBT = loaded.getPotionEffectsNBT();
+        assertNotNull(potionEffectsNBT);
+        assertEquals("speed", potionEffectsNBT.getString("effect"));
 
         assertEquals(fixture.leaderId, loaded.getPartyLeaderId());
         assertEquals(2, loaded.getPartyMembers().size());

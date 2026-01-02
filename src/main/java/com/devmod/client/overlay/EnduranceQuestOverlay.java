@@ -30,6 +30,8 @@ import com.devmod.client.endurance.PerkSelectionScreen;
 import com.devmod.client.endurance.WaveCheckpointScreen;
 import com.devmod.client.endurance.WaveDirectiveScreen;
 import com.devmod.client.telemetry.ClientLVCCache;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestState;
 import com.devmod.endurance.FlowStateTracker;
@@ -47,24 +49,45 @@ public class EnduranceQuestOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "endurance_quest_hud");
 
-    // === UI Colors ===
-    private static final int PANEL_BG = 0xDD1A1A2E;           // Dark blue 87% opacity
-    private static final int PANEL_BORDER = 0xFFFF5722;       // Orange (endurance)
-    private static final int PANEL_BORDER_GLOW = 0x44FF5722;  // Glow border
+    // === UI Colors (delegating to OverlayTheme) ===
+    private static final int PANEL_BG = DesignTokens.Bg.LEVEL_1;
+    private static final int PANEL_BORDER = OverlayTheme.Border.ENDURANCE;
+    private static final int PANEL_BORDER_GLOW = OverlayTheme.Border.glow(OverlayTheme.Border.ENDURANCE);
 
-    private static final int TEXT_TITLE = 0xFFFFAB91;         // Light orange (wave)
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // White
-    private static final int TEXT_ACCENT = 0xFFFF5722;        // Orange (highlight)
-    private static final int TEXT_DIM = 0xFFAAAAAA;           // Gray (secondary)
-    private static final int TEXT_DANGER = 0xFFFF5252;        // Red (damage taken)
-    private static final int TEXT_SUCCESS = 0xFF4CAF50;       // Green (kills)
+    private static final int TEXT_TITLE = OverlayTheme.Endurance.LIGHT;
+    private static final int TEXT_NORMAL = OverlayTheme.Text.PRIMARY;
+    private static final int TEXT_ACCENT = OverlayTheme.Endurance.PRIMARY;
+    private static final int TEXT_DIM = OverlayTheme.Text.MUTED;
+    private static final int TEXT_DANGER = OverlayTheme.Text.DANGER;
+    private static final int TEXT_SUCCESS = OverlayTheme.Border.SUCCESS;
 
-    private static final int PROGRESS_BG = 0xFF333333;        // Progress bar background
-    private static final int PROGRESS_FILL = 0xFFFF5722;      // Orange (fill)
+    private static final int PROGRESS_BG = OverlayTheme.Progress.BG;
+    private static final int PROGRESS_FILL = OverlayTheme.Progress.FILL_ORANGE;
+
+    // === Momentum State Colors (from OverlayTheme.Momentum) ===
+    private static final int COLOR_MOMENTUM_STAGNANT = OverlayTheme.Momentum.STAGNANT;
+    private static final int COLOR_MOMENTUM_HEATED = OverlayTheme.Momentum.HEATED;
+    private static final int COLOR_MOMENTUM_OVERDRIVE = OverlayTheme.Momentum.OVERDRIVE;
+    private static final int COLOR_MOMENTUM_NORMAL = OverlayTheme.Momentum.NORMAL;
+
+    // === Affix Colors (from OverlayTheme.Affix) ===
+    private static final int COLOR_AFFIX_SWIFT = OverlayTheme.Affix.SWIFT;
+    private static final int COLOR_AFFIX_EMPOWERED = OverlayTheme.Affix.EMPOWERED;
+    private static final int COLOR_AFFIX_FORTIFIED = OverlayTheme.Affix.FORTIFIED;
+    private static final int COLOR_AFFIX_ARMORED = OverlayTheme.Affix.ARMORED;
+    private static final int COLOR_AFFIX_BLAZING = OverlayTheme.Affix.BLAZING;
+    private static final int COLOR_AFFIX_PHANTOM = OverlayTheme.Affix.PHANTOM;
+    private static final int COLOR_AFFIX_REGENERATING = OverlayTheme.Affix.REGENERATING;
+    private static final int COLOR_AFFIX_HORDE = OverlayTheme.Affix.HORDE;
+
+    // === Misc Colors (from OverlayTheme) ===
+    private static final int COLOR_BORDER_DIM = OverlayTheme.Border.MUTED;
+    private static final int COLOR_BOSS_ALERT = OverlayTheme.Endurance.BOSS_ALERT;
+    private static final int COLOR_SURVIVE_GREEN = OverlayTheme.Border.SUCCESS;
 
     // === Dimensions ===
-    private static final int PANEL_PADDING = 8;
-    private static final int LINE_HEIGHT = 11;
+    private static final int PANEL_PADDING = OverlayTheme.Dimension.PADDING;
+    private static final int LINE_HEIGHT = OverlayTheme.Dimension.LINE_HEIGHT;
     private static final int PANEL_WIDTH = 200;
     private static final int MARGIN_LEFT = 10;
     private static final int MARGIN_TOP = 100; // Sotto FpsTracker (5,5)-(145,90)
@@ -82,8 +105,8 @@ public class EnduranceQuestOverlay {
 
     // === Wave Counter Banner ===
     private static final int WAVE_BANNER_HEIGHT = 32;
-    private static final int WAVE_BANNER_BG = 0xBB1A1A2E;     // Semi-transparent
-    private static final int WAVE_NUMBER_COLOR = 0xFFFF5722;   // Bright orange
+    private static final int WAVE_BANNER_BG = OverlayTheme.Endurance.BG;
+    private static final int WAVE_NUMBER_COLOR = PANEL_BORDER;
 
     // === State Watcher for Checkpoint Screen ===
     private static boolean checkpointScreenShown = false;
@@ -283,14 +306,14 @@ public class EnduranceQuestOverlay {
                 g.fill(barX, textY + 2, barX + barWidth, textY + 2 + barHeight, PROGRESS_BG);
                 // Fill (golden for virtuoso progress)
                 int fillWidth = (int) (barWidth * data.virtuosoProgress());
-                g.fill(barX, textY + 2, barX + fillWidth, textY + 2 + barHeight, 0xFFFFAA00);
+                g.fill(barX, textY + 2, barX + fillWidth, textY + 2 + barHeight, COLOR_MOMENTUM_HEATED);
                 textY += LINE_HEIGHT;
             }
 
             // Show stale risk warning
             if (data.staleRisk() >= 0.66f && flowState != FlowStateTracker.FlowState.STALE) {
                 String warning = "⚠ Vary attacks!";
-                g.drawString(font, warning, textX, textY, 0xFFFFAA00, false);
+                g.drawString(font, warning, textX, textY, COLOR_MOMENTUM_HEATED, false);
                 textY += LINE_HEIGHT;
             }
 
@@ -313,10 +336,10 @@ public class EnduranceQuestOverlay {
 
         // Fill color based on state
         int fillColor = switch (momentumState) {
-            case STAGNANT -> 0xFFFF4444;  // Red
-            case HEATED -> 0xFFFFAA00;    // Orange
-            case OVERDRIVE -> 0xFFFF00FF; // Magenta
-            default -> 0xFF66FF66;        // Green
+            case STAGNANT -> COLOR_MOMENTUM_STAGNANT;
+            case HEATED -> COLOR_MOMENTUM_HEATED;
+            case OVERDRIVE -> COLOR_MOMENTUM_OVERDRIVE;
+            default -> COLOR_MOMENTUM_NORMAL;
         };
 
         int fillWidth = (int) (barWidth * (momentumPercent / 100f));
@@ -340,7 +363,7 @@ public class EnduranceQuestOverlay {
             textY += LINE_HEIGHT;
             long seconds = data.overdriveRemaining() / 1000;
             String timerText = "⚡ OVERDRIVE: " + seconds + "s";
-            g.drawString(font, timerText, textX, textY, 0xFFFF00FF, false);
+            g.drawString(font, timerText, textX, textY, COLOR_MOMENTUM_OVERDRIVE, false);
         }
 
         textY += LINE_HEIGHT + 2;
@@ -448,7 +471,7 @@ public class EnduranceQuestOverlay {
                         if (dashCount > 0 || dodgeCount > 0) abilityText.append(" ");
                         abilityText.append("\u2605").append(perfectCount); // Perfect icon
                     }
-                    g.drawString(font, abilityText.toString(), textX, textY, 0xFF64B5F6, false); // Light blue
+                    g.drawString(font, abilityText.toString(), textX, textY, COLOR_AFFIX_SWIFT, false);
                     textY += LINE_HEIGHT;
                 }
 
@@ -458,7 +481,7 @@ public class EnduranceQuestOverlay {
                 if (damageNegated > 0 || staminaSpent > 10) {
                     String defenseText = String.format("\u2764 %.0f blocked | \u269B %.0f stamina",
                         damageNegated, staminaSpent); // Blocked and stamina icons
-                    g.drawString(font, defenseText, textX, textY, 0xFF4CAF50, false); // Green
+                    g.drawString(font, defenseText, textX, textY, COLOR_SURVIVE_GREEN, false);
                     textY += LINE_HEIGHT;
                 }
 
@@ -467,7 +490,7 @@ public class EnduranceQuestOverlay {
                 if (topWeapons != null && !topWeapons.isEmpty()) {
                     String weaponsDisplay = formatTopWeapons(topWeapons);
                     if (!weaponsDisplay.isEmpty()) {
-                        g.drawString(font, "\u2694 " + weaponsDisplay, textX, textY, 0xFFFFAB91, false); // Light orange
+                        g.drawString(font, "\u2694 " + weaponsDisplay, textX, textY, TEXT_TITLE, false);
                         textY += LINE_HEIGHT;
                     }
                 }
@@ -477,7 +500,7 @@ public class EnduranceQuestOverlay {
         // === Keybind Hint ===
         textY += 2;
         String hint = "F11: Continue | F12: Exit";
-        g.drawString(font, hint, textX, textY, 0xFF555555, false);
+        g.drawString(font, hint, textX, textY, COLOR_BORDER_DIM, false);
     }
 
     /**
@@ -509,8 +532,8 @@ public class EnduranceQuestOverlay {
         g.fill(x, y, x + fillWidth, y + height, PROGRESS_FILL);
 
         // Border
-        g.fill(x, y, x + width, y + 1, 0xFF555555);
-        g.fill(x, y + height - 1, x + width, y + height, 0xFF555555);
+        g.fill(x, y, x + width, y + 1, COLOR_BORDER_DIM);
+        g.fill(x, y + height - 1, x + width, y + height, COLOR_BORDER_DIM);
     }
 
     /**
@@ -529,8 +552,8 @@ public class EnduranceQuestOverlay {
         int bannerY = 5;
 
         // Choose colors based on objective type
-        int borderColor = isTimedObjective ? 0xFF4CAF50 : PANEL_BORDER; // Green for survive, orange for kill
-        int bgColor = isTimedObjective ? 0xBB1A2E1A : WAVE_BANNER_BG;   // Greenish tint for survive
+        int borderColor = isTimedObjective ? COLOR_SURVIVE_GREEN : PANEL_BORDER; // Green for survive, orange for kill
+        int bgColor = isTimedObjective ? OverlayTheme.Endurance.BG_SURVIVE : WAVE_BANNER_BG;
 
         // Semi-transparent background
         g.fill(bannerX, bannerY, bannerX + bannerWidth, bannerY + bannerHeight, bgColor);
@@ -548,7 +571,7 @@ public class EnduranceQuestOverlay {
                 ? "\u23F1 SURVIVE" : "\u2B55 HOLD ZONE";  // ⏱ SURVIVE or ⭕ HOLD ZONE
             int labelWidth = safeFont.width(objectiveLabel);
             g.drawString(font, objectiveLabel, bannerX + bannerWidth / 2 - labelWidth / 2,
-                        bannerY + 4, 0xFF4CAF50, true); // Green
+                        bannerY + 4, COLOR_SURVIVE_GREEN, true);
 
             // Calculate remaining time
             int progress = data.objectiveProgress();
@@ -566,7 +589,7 @@ public class EnduranceQuestOverlay {
             g.pose().translate(-timerWidth / 2.0f, 0, 0);
 
             // Pulse effect when time is low
-            int timerColor = remaining <= 5 ? 0xFFFF5252 : 0xFFFFFFFF; // Red when <= 5s
+            int timerColor = remaining <= 5 ? COLOR_AFFIX_EMPOWERED : TEXT_NORMAL; // Red when <= 5s
             g.drawString(font, timerText, 0, 0, timerColor, true);
             g.pose().popPose();
 
@@ -822,15 +845,15 @@ public class EnduranceQuestOverlay {
      */
     private static int getModifierColor(String modName) {
         return switch (modName.toLowerCase(Locale.ROOT)) {
-            case "swift" -> 0xFF64B5F6;       // Light blue
-            case "empowered" -> 0xFFFF5252;   // Red
-            case "fortified" -> 0xFF4CAF50;   // Green
-            case "armored" -> 0xFF9E9E9E;     // Gray
-            case "blazing" -> 0xFFFF9800;     // Orange
-            case "phantom" -> 0xFF7C4DFF;     // Purple
-            case "regenerating" -> 0xFFE91E63;// Pink
-            case "horde" -> 0xFFFFEB3B;       // Yellow
-            default -> 0xFFFFFFFF;            // White
+            case "swift" -> COLOR_AFFIX_SWIFT;
+            case "empowered" -> COLOR_AFFIX_EMPOWERED;
+            case "fortified" -> COLOR_AFFIX_FORTIFIED;
+            case "armored" -> COLOR_AFFIX_ARMORED;
+            case "blazing" -> COLOR_AFFIX_BLAZING;
+            case "phantom" -> COLOR_AFFIX_PHANTOM;
+            case "regenerating" -> COLOR_AFFIX_REGENERATING;
+            case "horde" -> COLOR_AFFIX_HORDE;
+            default -> TEXT_NORMAL;
         };
     }
 
@@ -1040,7 +1063,7 @@ public class EnduranceQuestOverlay {
         // Screen edge glow red
         int edgeHeight = 15;
         int glowAlpha = (int) (pulse * 180);
-        int glowColor = (glowAlpha << 24) | 0xFF0000;
+        int glowColor = (glowAlpha << 24) | (COLOR_BOSS_ALERT & 0x00FFFFFF);
 
         // Top edge
         g.fill(0, 0, screenWidth, edgeHeight, glowColor);
@@ -1065,19 +1088,19 @@ public class EnduranceQuestOverlay {
         g.fill(boxX, boxY, boxX + textWidth + boxPadding * 2, boxY + 32, 0xCC000000);
 
         // Border
-        int borderColor = applyAlpha(0xFFFF4444, pulse);
-        g.fill(boxX, boxY, boxX + textWidth + boxPadding * 2, boxY + 1, borderColor);
-        g.fill(boxX, boxY + 31, boxX + textWidth + boxPadding * 2, boxY + 32, borderColor);
-        g.fill(boxX, boxY, boxX + 1, boxY + 32, borderColor);
-        g.fill(boxX + textWidth + boxPadding * 2 - 1, boxY, boxX + textWidth + boxPadding * 2, boxY + 32, borderColor);
+        int borderColorAlert = applyAlpha(COLOR_BOSS_ALERT, pulse);
+        g.fill(boxX, boxY, boxX + textWidth + boxPadding * 2, boxY + 1, borderColorAlert);
+        g.fill(boxX, boxY + 31, boxX + textWidth + boxPadding * 2, boxY + 32, borderColorAlert);
+        g.fill(boxX, boxY, boxX + 1, boxY + 32, borderColorAlert);
+        g.fill(boxX + textWidth + boxPadding * 2 - 1, boxY, boxX + textWidth + boxPadding * 2, boxY + 32, borderColorAlert);
 
         // Text pulsating
         int textAlpha = (int) (pulse * 255);
-        int textColor = (textAlpha << 24) | 0xFF4444;
+        int textColor = (textAlpha << 24) | (COLOR_BOSS_ALERT & 0x00FFFFFF);
         g.drawCenteredString(font, warningText, centerX, boxY + 6, textColor);
 
         // Boss type below
-        g.drawCenteredString(font, Objects.requireNonNull(bossAlertType.toUpperCase(Locale.ROOT)), centerX, boxY + 18, 0xFFAAAAAA);
+        g.drawCenteredString(font, Objects.requireNonNull(bossAlertType.toUpperCase(Locale.ROOT)), centerX, boxY + 18, TEXT_DIM);
 
         // Sound every second (first 100ms of each second)
         Minecraft mc = Minecraft.getInstance();

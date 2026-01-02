@@ -6,6 +6,9 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
+
 import com.devmod.DevMod;
 import com.devmod.mailbox.MailboxConfig;
 import com.devmod.mailbox.MailboxManager;
@@ -13,9 +16,7 @@ import com.devmod.mailbox.api.AuthMiddleware;
 import com.devmod.mailbox.moderation.AdminAuditLog;
 import com.devmod.mailbox.news.NewsManager;
 import com.devmod.mailbox.task.TestTaskManager;
-
-import io.javalin.http.Context;
-import io.javalin.http.HttpStatus;
+import com.devmod.mailbox.ticket.AutoTransitionService;
 
 /**
  * REST API controller for configuration and statistics.
@@ -57,6 +58,7 @@ public final class ConfigController {
             config.getMessageRetentionDays(),
             config.isHardDeleteOnUserDelete(),
             config.isMaintenanceMode(),
+            config.isUseOpLevelForRoles(),
             config.isContentFilterEnabled(),
             config.getContentFilterAction(),
             config.getContentFilterWords(),
@@ -98,6 +100,7 @@ public final class ConfigController {
         recordChange(changes, "messageRetentionDays", config.getMessageRetentionDays(), request.messageRetentionDays());
         recordChange(changes, "hardDeleteOnUserDelete", config.isHardDeleteOnUserDelete(), request.hardDeleteOnUserDelete());
         recordChange(changes, "maintenanceMode", config.isMaintenanceMode(), request.maintenanceMode());
+        recordChange(changes, "useOpLevelForRoles", config.isUseOpLevelForRoles(), request.useOpLevelForRoles());
         recordChange(changes, "contentFilterEnabled", config.isContentFilterEnabled(), request.contentFilterEnabled());
         recordChange(changes, "contentFilterAction", config.getContentFilterAction(), request.contentFilterAction());
         recordChange(changes, "contentFilterWords", config.getContentFilterWords(), request.contentFilterWords());
@@ -182,6 +185,9 @@ public final class ConfigController {
         if (request.maintenanceMode() != null) {
             config.setMaintenanceMode(request.maintenanceMode());
         }
+        if (request.useOpLevelForRoles() != null) {
+            config.setUseOpLevelForRoles(request.useOpLevelForRoles());
+        }
         if (request.contentFilterEnabled() != null) {
             config.setContentFilterEnabled(request.contentFilterEnabled());
         }
@@ -215,6 +221,72 @@ public final class ConfigController {
                     return null;
                 });
         }
+    }
+
+    /**
+     * GET /api/security/metrics
+     * Get security and rate limiting metrics for admin monitoring.
+     */
+    public static void getSecurityMetrics(Context ctx) {
+        AuthMiddleware.requireAdmin(ctx);
+
+        // Payload validation metrics
+        com.devmod.network.PayloadValidation.PayloadMetrics payloadMetrics =
+            com.devmod.network.PayloadValidation.getMetrics();
+
+        // IP rate limiter stats
+        com.devmod.network.IpRateLimiter.Stats ipStats =
+            com.devmod.network.IpRateLimiter.INSTANCE.getStats();
+
+        // Packet validator stats
+        com.devmod.network.PacketValidator validator = com.devmod.network.PacketValidator.INSTANCE;
+
+        ctx.json(new SecurityMetricsDto(
+            // Payload metrics
+            payloadMetrics.totalProcessed(),
+            payloadMetrics.sizeRejections(),
+            payloadMetrics.rateLimitRejections(),
+            payloadMetrics.ipRateLimitRejections(),
+            payloadMetrics.totalRejections(),
+            payloadMetrics.rejectionRate(),
+            // IP limiter metrics
+            ipStats.totalRequests(),
+            ipStats.rateLimitedRequests(),
+            ipStats.blockedRequests(),
+            ipStats.trackedIps(),
+            ipStats.blockedIps(),
+            // Packet validator metrics
+            validator.getTotalRejections(),
+            validator.getTotalRateLimitHits(),
+            validator.getTotalIpRateLimitHits(),
+            System.currentTimeMillis()
+        ));
+    }
+
+    /**
+     * POST /api/security/metrics/reset
+     * Reset security metrics (for testing/debugging).
+     */
+    public static void resetSecurityMetrics(Context ctx) {
+        AuthMiddleware.requireAdmin(ctx);
+
+        com.devmod.network.PayloadValidation.resetMetrics();
+        com.devmod.network.IpRateLimiter.INSTANCE.reset();
+        com.devmod.network.PacketValidator.INSTANCE.resetTelemetry();
+
+        ctx.json(new SuccessResponse("Security metrics reset"));
+
+        AdminAuditLog.INSTANCE.log(AdminAuditLog.AuditEntry.builder()
+                .action(AdminAuditLog.Action.CONFIG_CHANGE)
+                .actorUuid(null)
+                .actorName(resolveActorName(ctx))
+                .targetType("security_metrics")
+                .details("Reset all security metrics")
+                .build())
+            .exceptionally(error -> {
+                DevMod.LOGGER.warn("[Mailbox API] Failed to persist security metrics reset audit log", error);
+                return null;
+            });
     }
 
     /**
@@ -263,6 +335,92 @@ public final class ConfigController {
             ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(e.getMessage()));
             return null;
         });
+    }
+
+    // ========================================================================
+    // TICKET AUTO-TRANSITION API
+    // ========================================================================
+
+    /**
+     * GET /api/tickets/auto-transition/config
+     * Get ticket auto-transition configuration.
+     */
+    public static void getAutoTransitionConfig(Context ctx) {
+        AuthMiddleware.requireAdmin(ctx);
+
+        AutoTransitionService service = AutoTransitionService.INSTANCE;
+        ctx.json(new AutoTransitionConfigDto(
+            service.isRunning(),
+            service.isAutoCloseEnabled(),
+            service.getAutoCloseDuration().toDays(),
+            service.isSlaEscalationEnabled(),
+            service.isAutoAssignEnabled()
+        ));
+    }
+
+    /**
+     * PUT /api/tickets/auto-transition/config
+     * Update ticket auto-transition configuration.
+     */
+    public static void updateAutoTransitionConfig(Context ctx) {
+        AuthMiddleware.requireAdmin(ctx);
+
+        UpdateAutoTransitionRequest request = ctx.bodyAsClass(UpdateAutoTransitionRequest.class);
+        AutoTransitionService service = AutoTransitionService.INSTANCE;
+        List<String> changes = new ArrayList<>();
+
+        recordChange(changes, "autoCloseEnabled", service.isAutoCloseEnabled(), request.autoCloseEnabled());
+        recordChange(changes, "autoCloseDays", service.getAutoCloseDuration().toDays(), request.autoCloseDays());
+        recordChange(changes, "slaEscalationEnabled", service.isSlaEscalationEnabled(), request.slaEscalationEnabled());
+        recordChange(changes, "autoAssignEnabled", service.isAutoAssignEnabled(), request.autoAssignEnabled());
+
+        if (request.autoCloseEnabled() != null) {
+            service.setAutoCloseEnabled(request.autoCloseEnabled());
+        }
+        if (request.autoCloseDays() != null) {
+            service.setAutoCloseDuration(Duration.ofDays(request.autoCloseDays()));
+        }
+        if (request.slaEscalationEnabled() != null) {
+            service.setSlaEscalationEnabled(request.slaEscalationEnabled());
+        }
+        if (request.autoAssignEnabled() != null) {
+            service.setAutoAssignEnabled(request.autoAssignEnabled());
+        }
+
+        getAutoTransitionConfig(ctx);
+
+        if (!changes.isEmpty()) {
+            AdminAuditLog.INSTANCE.log(AdminAuditLog.AuditEntry.builder()
+                    .action(AdminAuditLog.Action.CONFIG_CHANGE)
+                    .actorUuid(null)
+                    .actorName(resolveActorName(ctx))
+                    .targetType("auto_transition_config")
+                    .details(String.join("; ", changes))
+                    .build())
+                .exceptionally(error -> {
+                    DevMod.LOGGER.warn("[Mailbox API] Failed to persist auto-transition config audit log", error);
+                    return null;
+                });
+        }
+    }
+
+    /**
+     * GET /api/tickets/auto-transition/metrics
+     * Get ticket auto-transition metrics.
+     */
+    public static void getAutoTransitionMetrics(Context ctx) {
+        AuthMiddleware.requireAdmin(ctx);
+
+        AutoTransitionService.AutoTransitionMetrics metrics = AutoTransitionService.INSTANCE.getMetrics();
+        java.time.Instant lastRun = metrics.lastRunTime();
+        ctx.json(new AutoTransitionMetricsDto(
+            metrics.autoClosedCount(),
+            metrics.escalatedCount(),
+            metrics.autoAssignedCount(),
+            metrics.totalRunCount(),
+            lastRun != null ? lastRun.toEpochMilli() : null,
+            metrics.running()
+        ));
     }
 
     // ========================================================================
@@ -320,6 +478,7 @@ public final class ConfigController {
         int messageRetentionDays,
         boolean hardDeleteOnUserDelete,
         boolean maintenanceMode,
+        boolean useOpLevelForRoles,
         boolean contentFilterEnabled,
         String contentFilterAction,
         List<String> contentFilterWords,
@@ -353,6 +512,7 @@ public final class ConfigController {
         Integer messageRetentionDays,
         Boolean hardDeleteOnUserDelete,
         Boolean maintenanceMode,
+        Boolean useOpLevelForRoles,
         Boolean contentFilterEnabled,
         String contentFilterAction,
         List<String> contentFilterWords,
@@ -372,5 +532,29 @@ public final class ConfigController {
         long freeMemoryBytes,
         long totalMemoryBytes,
         long timestampMillis
+    ) {}
+
+    public record AutoTransitionConfigDto(
+        boolean running,
+        boolean autoCloseEnabled,
+        long autoCloseDays,
+        boolean slaEscalationEnabled,
+        boolean autoAssignEnabled
+    ) {}
+
+    public record UpdateAutoTransitionRequest(
+        Boolean autoCloseEnabled,
+        Long autoCloseDays,
+        Boolean slaEscalationEnabled,
+        Boolean autoAssignEnabled
+    ) {}
+
+    public record AutoTransitionMetricsDto(
+        long autoClosedCount,
+        long escalatedCount,
+        long autoAssignedCount,
+        long totalRunCount,
+        @Nullable Long lastRunTimeMillis,
+        boolean running
     ) {}
 }

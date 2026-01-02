@@ -45,7 +45,7 @@ import com.devmod.arena.builder.TemplateArenaBuilder;
 import com.devmod.arena.command.ArenaCommands;
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
-import com.devmod.arena.integration.MinecraftBlockPlacer;
+import com.devmod.arena.integration.BatchBlockPlacer;
 import com.devmod.arena.integration.MinecraftEntitySpawner;
 import com.devmod.arena.logging.DuckDbDestination;
 import com.devmod.arena.logging.LogAggregationPipeline;
@@ -315,7 +315,7 @@ public final class ArenaCommandEvents {
         Objects.requireNonNull(level, "level");
 
         ArenaTelemetry telemetry = new ArenaTelemetry();
-        MinecraftBlockPlacer blockPlacer = new MinecraftBlockPlacer(level);
+        BatchBlockPlacer blockPlacer = new BatchBlockPlacer(level);
         MinecraftEntitySpawner entitySpawner = new MinecraftEntitySpawner(level);
         ChunkStatus fullStatus = Objects.requireNonNull(ChunkStatus.FULL, "ChunkStatus.FULL");
 

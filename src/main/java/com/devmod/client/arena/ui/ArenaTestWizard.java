@@ -26,7 +26,7 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 @OnlyIn(Dist.CLIENT)
 public class ArenaTestWizard extends Screen {
@@ -83,8 +83,8 @@ public class ArenaTestWizard extends Screen {
 
         var safeFont = Objects.requireNonNull(font);
 
-        // Search box
-        searchBox = new EditBox(
+        // Search box - use local variable to avoid null warning on @Nullable field
+        EditBox search = new EditBox(
             safeFont,
             panelX + PADDING,
             panelY + 40,
@@ -92,9 +92,10 @@ public class ArenaTestWizard extends Screen {
             18,
             Objects.requireNonNull(Component.literal("Search..."))
         );
-        searchBox.setHint(Objects.requireNonNull(Component.literal("Search templates...")));
-        searchBox.setResponder(this::onSearchChanged);
-        addRenderableWidget(searchBox);
+        search.setHint(Objects.requireNonNull(Component.literal("Search templates...")));
+        search.setResponder(this::onSearchChanged);
+        addRenderableWidget(search);
+        searchBox = search;
 
         // Buttons at bottom
         int buttonY = panelY + PANEL_HEIGHT - PADDING - BUTTON_HEIGHT;
@@ -190,14 +191,14 @@ public class ArenaTestWizard extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Panel background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, UIConstants.Background.PANEL());
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, DesignTokens.Background.PANEL());
 
         // Border
-        graphics.renderOutline(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, UIConstants.Border.DEFAULT());
+        graphics.renderOutline(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, DesignTokens.Border.DEFAULT());
 
         // Header
         graphics.drawCenteredString(Objects.requireNonNull(font), "Quick Test Wizard",
-            panelX + PANEL_WIDTH / 2, panelY + PADDING, UIConstants.Text.TITLE());
+            panelX + PANEL_WIDTH / 2, panelY + PADDING, DesignTokens.Text.TITLE());
 
         // Template list
         renderTemplateList(graphics, mouseX, mouseY);
@@ -219,7 +220,7 @@ public class ArenaTestWizard extends Screen {
 
         // List background
         graphics.fill(listX, listY, listX + listWidth, listY + listHeight,
-            UIConstants.setAlpha(UIConstants.Background.INPUT(), 0x88));
+            DesignTokens.setAlpha(DesignTokens.Background.INPUT(), 0x88));
 
         // Calculate visible rows
         maxVisibleRows = listHeight / ROW_HEIGHT;
@@ -233,36 +234,36 @@ public class ArenaTestWizard extends Screen {
             // Selection highlight
             if (index == selectedIndex) {
                 graphics.fill(listX, rowY, listX + listWidth, rowY + ROW_HEIGHT - 1,
-                    UIConstants.setAlpha(UIConstants.Accent.CYAN(), 0x33));
+                    DesignTokens.setAlpha(DesignTokens.Accent.CYAN(), 0x33));
             }
 
             // Hover highlight
             if (mouseX >= listX && mouseX < listX + listWidth &&
                 mouseY >= rowY && mouseY < rowY + ROW_HEIGHT) {
                 graphics.fill(listX, rowY, listX + listWidth, rowY + ROW_HEIGHT - 1,
-                    UIConstants.setAlpha(UIConstants.Background.HOVER(), 0x55));
+                    DesignTokens.setAlpha(DesignTokens.Background.HOVER(), 0x55));
             }
 
             // Template name
             String prefix = entry.isRecent() ? "\u2605 " : "";
-            int textColor = index == selectedIndex ? UIConstants.Accent.CYAN() : UIConstants.Text.PRIMARY();
+            int textColor = index == selectedIndex ? DesignTokens.Accent.CYAN() : DesignTokens.Text.PRIMARY();
             graphics.drawString(safeFont, prefix + entry.template().id(), listX + 4, rowY + 6, textColor);
 
             // Version
             String version = "v" + entry.template().version();
             int versionWidth = safeFont.width(version);
             graphics.drawString(safeFont, version, listX + listWidth - versionWidth - 4, rowY + 6,
-                UIConstants.Text.MUTED());
+                DesignTokens.Text.MUTED());
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
             graphics.drawCenteredString(safeFont, "\u25B2", listX + listWidth / 2, listY - 8,
-                UIConstants.Text.MUTED());
+                DesignTokens.Text.MUTED());
         }
         if (scrollOffset + maxVisibleRows < filteredTemplates.size()) {
             graphics.drawCenteredString(safeFont, "\u25BC", listX + listWidth / 2, listY + listHeight + 2,
-                UIConstants.Text.MUTED());
+                DesignTokens.Text.MUTED());
         }
     }
 
@@ -277,12 +278,12 @@ public class ArenaTestWizard extends Screen {
             int sizeX = Objects.requireNonNullElse(t.sizeX(), t.size());
             int sizeZ = Objects.requireNonNullElse(t.sizeZ(), t.size());
             graphics.drawString(safeFont, "Size: " + sizeX + " x " + sizeZ,
-                panelX + PADDING, infoY, UIConstants.Text.PRIMARY());
+                panelX + PADDING, infoY, DesignTokens.Text.PRIMARY());
 
             // Spawn slots
             int slots = t.spawnSlots() != null ? t.spawnSlots().size() : 0;
             graphics.drawString(safeFont, "Spawn Slots: " + slots,
-                panelX + PADDING + 150, infoY, UIConstants.Text.PRIMARY());
+                panelX + PADDING + 150, infoY, DesignTokens.Text.PRIMARY());
 
             // Palette preview (DD35: floor/walls/ceiling materials)
             infoY += 14;
@@ -293,18 +294,18 @@ public class ArenaTestWizard extends Screen {
             if (t.tags() != null && !t.tags().isEmpty()) {
                 String tags = "Tags: " + String.join(", ", t.tags());
                 if (tags.length() > 50) tags = tags.substring(0, 47) + "...";
-                graphics.drawString(safeFont, tags, panelX + PADDING, infoY, UIConstants.Text.MUTED());
+                graphics.drawString(safeFont, tags, panelX + PADDING, infoY, DesignTokens.Text.MUTED());
             }
 
             // Deprecated warning
             if (t.deprecated()) {
                 infoY += 14;
                 graphics.drawString(safeFont, "\u26A0 DEPRECATED", panelX + PADDING, infoY,
-                    UIConstants.Accent.RED());
+                    DesignTokens.Accent.RED());
             }
         } else {
             graphics.drawString(safeFont, "Select a template to test", panelX + PADDING, infoY,
-                UIConstants.Text.MUTED());
+                DesignTokens.Text.MUTED());
         }
     }
 
@@ -315,7 +316,7 @@ public class ArenaTestWizard extends Screen {
         var safeFont = Objects.requireNonNull(font);
         int x = panelX + PADDING;
 
-        graphics.drawString(safeFont, "Palette:", x, y, UIConstants.Text.MUTED());
+        graphics.drawString(safeFont, "Palette:", x, y, DesignTokens.Text.MUTED());
         x += 50;
 
         // Floor material
@@ -323,7 +324,7 @@ public class ArenaTestWizard extends Screen {
             String floorMat = shortenMaterial(t.floor().material());
             int floorColor = getMaterialColor(t.floor().material());
             graphics.fill(x, y, x + 10, y + 10, floorColor);
-            graphics.drawString(safeFont, floorMat, x + 14, y, UIConstants.Text.PRIMARY());
+            graphics.drawString(safeFont, floorMat, x + 14, y, DesignTokens.Text.PRIMARY());
             x += 80;
         }
 
@@ -332,7 +333,7 @@ public class ArenaTestWizard extends Screen {
             String wallMat = shortenMaterial(t.walls().material());
             int wallColor = getMaterialColor(t.walls().material());
             graphics.fill(x, y, x + 10, y + 10, wallColor);
-            graphics.drawString(safeFont, wallMat, x + 14, y, UIConstants.Text.PRIMARY());
+            graphics.drawString(safeFont, wallMat, x + 14, y, DesignTokens.Text.PRIMARY());
             x += 80;
         }
 
@@ -341,7 +342,7 @@ public class ArenaTestWizard extends Screen {
             String ceilMat = shortenMaterial(t.ceiling().material());
             int ceilColor = getMaterialColor(t.ceiling().material());
             graphics.fill(x, y, x + 10, y + 10, ceilColor);
-            graphics.drawString(safeFont, ceilMat, x + 14, y, UIConstants.Text.PRIMARY());
+            graphics.drawString(safeFont, ceilMat, x + 14, y, DesignTokens.Text.PRIMARY());
         }
     }
 
@@ -477,7 +478,7 @@ public class ArenaTestWizard extends Screen {
 
     @Override
     public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(0, 0, width, height, UIConstants.setAlpha(UIConstants.Background.SCREEN(), 0x66));
+        graphics.fill(0, 0, width, height, DesignTokens.setAlpha(DesignTokens.Background.SCREEN(), 0x66));
     }
 
     private void startTest() {

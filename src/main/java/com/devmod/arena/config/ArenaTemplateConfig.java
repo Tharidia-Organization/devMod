@@ -37,6 +37,8 @@ public class ArenaTemplateConfig {
     private static final int DEFAULT_STRUCTURE_MAX_ENTITIES = 50;
     private static final List<String> DEFAULT_STRUCTURE_NAMESPACES = List.of("devmod");
     private static final List<String> DEFAULT_CUSTOM_HAZARD_BUILDERS = List.of();
+    private static final String DEFAULT_WHITELIST_PATH = "config/devmod/block_entity_whitelist.json";
+    private static final String DEFAULT_WHITELIST_MODE = "WARN";
     private static final double DEFAULT_WARN_FAILURE_RATE = 0.05;
     private static final double DEFAULT_ERROR_FAILURE_RATE = 0.15;
     private static final double DEFAULT_WARN_ROLLBACK_RATE = 0.02;
@@ -69,6 +71,8 @@ public class ArenaTemplateConfig {
     private int structureMaxEntityCount = DEFAULT_STRUCTURE_MAX_ENTITIES;
     private List<String> structureAllowedNamespaces = DEFAULT_STRUCTURE_NAMESPACES;
     private List<String> customHazardBuilders = DEFAULT_CUSTOM_HAZARD_BUILDERS;
+    private String whitelistPath = DEFAULT_WHITELIST_PATH;
+    private String whitelistMode = DEFAULT_WHITELIST_MODE;
 
     // DD6: Policy resolver lock settings
     private long lockTimeoutMs = DEFAULT_LOCK_TIMEOUT_MS;
@@ -179,6 +183,8 @@ public class ArenaTemplateConfig {
         cfg.lockTimeoutMs = getLong("devmod.arena.lockTimeoutMs", "DEVMOD_ARENA_LOCK_TIMEOUT_MS", DEFAULT_LOCK_TIMEOUT_MS);
         cfg.lockCleanupIntervalMs = getLong("devmod.arena.lockCleanupIntervalMs", "DEVMOD_ARENA_LOCK_CLEANUP_INTERVAL_MS", DEFAULT_LOCK_CLEANUP_INTERVAL_MS);
         cfg.lockStaleThresholdMs = getLong("devmod.arena.lockStaleThresholdMs", "DEVMOD_ARENA_LOCK_STALE_THRESHOLD_MS", DEFAULT_LOCK_STALE_THRESHOLD_MS);
+        cfg.whitelistPath = getString("devmod.arena.whitelistPath", "DEVMOD_ARENA_WHITELIST_PATH", DEFAULT_WHITELIST_PATH);
+        cfg.whitelistMode = getString("devmod.arena.whitelistMode", "DEVMOD_ARENA_WHITELIST_MODE", DEFAULT_WHITELIST_MODE);
         return cfg;
     }
 
@@ -222,6 +228,9 @@ public class ArenaTemplateConfig {
         if (!isValidValidationMode(policySchemaValidationMode)) {
             warnings.add("policySchemaValidationMode should be strict|permissive|lenient (got: " + policySchemaValidationMode + ")");
         }
+        if (!isValidWhitelistMode(whitelistMode)) {
+            warnings.add("whitelistMode should be strict|warn|skip (got: " + whitelistMode + ")");
+        }
 
         return new ValidationResult(errors.isEmpty(), errors, warnings);
     }
@@ -252,7 +261,9 @@ public class ArenaTemplateConfig {
             customHazardBuilders,
             lockTimeoutMs,
             lockCleanupIntervalMs,
-            lockStaleThresholdMs
+            lockStaleThresholdMs,
+            whitelistPath,
+            whitelistMode
         );
     }
 
@@ -281,7 +292,9 @@ public class ArenaTemplateConfig {
         List<String> customHazardBuilders,
         long lockTimeoutMs,
         long lockCleanupIntervalMs,
-        long lockStaleThresholdMs
+        long lockStaleThresholdMs,
+        String whitelistPath,
+        String whitelistMode
     ) {}
 
     public String schemaValidationMode() { return schemaValidationMode; }
@@ -308,6 +321,12 @@ public class ArenaTemplateConfig {
         if (mode == null) return false;
         String normalized = mode.trim().toLowerCase(Locale.ROOT);
         return "strict".equals(normalized) || "permissive".equals(normalized) || "lenient".equals(normalized);
+    }
+
+    private static boolean isValidWhitelistMode(String mode) {
+        if (mode == null) return false;
+        String normalized = mode.trim().toLowerCase(Locale.ROOT);
+        return "strict".equals(normalized) || "warn".equals(normalized) || "skip".equals(normalized);
     }
 
     private static int getInt(String sys, String env, int def) {
@@ -394,6 +413,8 @@ public class ArenaTemplateConfig {
     public long lockTimeoutMs() { return lockTimeoutMs; }
     public long lockCleanupIntervalMs() { return lockCleanupIntervalMs; }
     public long lockStaleThresholdMs() { return lockStaleThresholdMs; }
+    public String whitelistPath() { return whitelistPath; }
+    public String whitelistMode() { return whitelistMode; }
 
     private static List<String> parseCsv(String csv, List<String> def) {
         if (csv == null || csv.isBlank()) return def;

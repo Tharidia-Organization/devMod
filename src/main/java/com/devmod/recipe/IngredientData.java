@@ -82,7 +82,8 @@ public record IngredientData(
     // ═══════════════════════════════════════════════════════════════
 
     public boolean isEmpty() {
-        return item == null && tag == null && (alternatives == null || alternatives.isEmpty());
+        List<ResourceLocation> localAlts = alternatives;
+        return item == null && tag == null && (localAlts == null || localAlts.isEmpty());
     }
 
     public boolean isItem() {
@@ -161,12 +162,13 @@ public record IngredientData(
             return new JsonPrimitive("#" + tag.location());
         }
 
-        if (alternatives != null && !alternatives.isEmpty()) {
-            if (alternatives.size() == 1) {
-                return new JsonPrimitive(alternatives.getFirst().toString());
+        List<ResourceLocation> localAlts = alternatives;
+        if (localAlts != null && !localAlts.isEmpty()) {
+            if (localAlts.size() == 1) {
+                return new JsonPrimitive(localAlts.getFirst().toString());
             }
             JsonArray arr = new JsonArray();
-            for (ResourceLocation alt : alternatives) {
+            for (ResourceLocation alt : localAlts) {
                 arr.add(alt.toString());
             }
             return arr;
@@ -190,10 +192,11 @@ public record IngredientData(
         if (tag != null) {
             return "#" + tag.location();
         }
-        if (alternatives != null && !alternatives.isEmpty()) {
-            String first = alternatives.getFirst().getPath();
-            if (alternatives.size() > 1) {
-                return first + " (+" + (alternatives.size() - 1) + ")";
+        List<ResourceLocation> localAlts = alternatives;
+        if (localAlts != null && !localAlts.isEmpty()) {
+            String first = localAlts.getFirst().getPath();
+            if (localAlts.size() > 1) {
+                return first + " (+" + (localAlts.size() - 1) + ")";
             }
             return first;
         }
@@ -221,9 +224,10 @@ public record IngredientData(
             }
         }
 
-        if (alternatives != null && !alternatives.isEmpty()) {
-            int index = (int) ((tick / 20) % alternatives.size());
-            Item i = BuiltInRegistries.ITEM.get(alternatives.get(index));
+        List<ResourceLocation> localAlts = alternatives;
+        if (localAlts != null && !localAlts.isEmpty()) {
+            int index = (int) ((tick / 20) % localAlts.size());
+            Item i = BuiltInRegistries.ITEM.get(localAlts.get(index));
             return i != null && i != Items.AIR ? new ItemStack(Objects.requireNonNull(i)) : ItemStack.EMPTY;
         }
 
@@ -260,9 +264,10 @@ public record IngredientData(
             return stack.is(Objects.requireNonNull(tag));
         }
 
-        if (alternatives != null) {
+        List<ResourceLocation> localAlts = alternatives;
+        if (localAlts != null) {
             ResourceLocation stackId = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stackItem));
-            return alternatives.contains(stackId);
+            return localAlts.contains(stackId);
         }
 
         return false;

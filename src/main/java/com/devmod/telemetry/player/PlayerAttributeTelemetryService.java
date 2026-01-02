@@ -21,6 +21,7 @@ import com.devmod.abilities.StaminaSystem;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.MutatorSystem;
 import com.devmod.endurance.PerkSystem;
+import com.devmod.integration.ModIntegrationManager;
 import com.devmod.integration.PehkuiIntegration;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
@@ -158,6 +159,15 @@ public class PlayerAttributeTelemetryService {
         json.append("\"hitboxHeight\":"); appendFloat2(json, snapshot.hitboxHeight); json.append(",");
         json.append("\"pehkuiScale\":"); appendNullableFloat2(json, snapshot.pehkuiScale); json.append(",");
         json.append("\"pehkuiHitboxScale\":"); appendNullableFloat2(json, snapshot.pehkuiHitboxScale);
+        json.append("},");
+
+        // Epic Fight section
+        json.append("\"epicFight\":{");
+        json.append("\"available\":").append(ModIntegrationManager.isEpicFightLoaded()).append(",");
+        json.append("\"battleMode\":").append(snapshot.epicFightBattleMode).append(",");
+        json.append("\"stamina\":"); appendFloat2(json, snapshot.epicFightStamina); json.append(",");
+        json.append("\"maxStamina\":"); appendFloat2(json, snapshot.epicFightMaxStamina); json.append(",");
+        json.append("\"inAction\":").append(snapshot.epicFightInAction);
         json.append("},");
 
         // Special abilities section - PERFORMANCE: Use bit-packed flags for booleans
@@ -359,6 +369,14 @@ public class PlayerAttributeTelemetryService {
             snapshot.pehkuiHitboxScale = PehkuiIntegration.getHitboxScale(player);
         }
 
+        // Epic Fight integration
+        if (ModIntegrationManager.isEpicFightLoaded()) {
+            snapshot.epicFightBattleMode = ModIntegrationManager.isInEpicFightBattleMode(player);
+            snapshot.epicFightStamina = ModIntegrationManager.getEpicFightStamina(player);
+            snapshot.epicFightMaxStamina = ModIntegrationManager.getEpicFightMaxStamina(player);
+            snapshot.epicFightInAction = ModIntegrationManager.isInEpicFightAction(player);
+        }
+
         // Get perk/mutator modifiers if in quest
         populatePerkModifiers(player, snapshot);
         populateMutatorModifiers(player, snapshot);
@@ -474,9 +492,10 @@ public class PlayerAttributeTelemetryService {
      * PERFORMANCE: Uses static cached field instead of repeated lookups.
      */
     private float getExhaustion(net.minecraft.world.food.FoodData foodData) {
-        if (EXHAUSTION_FIELD == null) return 0.0f;
+        java.lang.reflect.Field field = EXHAUSTION_FIELD;
+        if (field == null) return 0.0f;
         try {
-            return EXHAUSTION_FIELD.getFloat(foodData);
+            return field.getFloat(foodData);
         } catch (IllegalAccessException e) {
             return 0.0f;
         }
@@ -603,6 +622,12 @@ public class PlayerAttributeTelemetryService {
         public float hitboxHeight;
         public @Nullable Float pehkuiScale;
         public @Nullable Float pehkuiHitboxScale;
+
+        // Epic Fight integration
+        public boolean epicFightBattleMode;
+        public float epicFightStamina = -1f;
+        public float epicFightMaxStamina = -1f;
+        public boolean epicFightInAction;
 
         // Abilities (from StaminaSystem, DashAbilitySystem, DodgeAbilitySystem)
         public float stamina;

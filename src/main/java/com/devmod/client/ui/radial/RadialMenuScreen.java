@@ -36,7 +36,9 @@ import com.devmod.client.overlay.OnboardingOverlay;
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.radial.animation.RadialAnimator;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.VisibilitySupplierRegistry;
 import com.devmod.client.ui.radial.input.RadialSearchHandler;
+import com.devmod.client.ui.radial.RadialMenuRuntimeRegistry;
 import com.devmod.client.ui.radial.model.MacroCategory;
 import com.devmod.client.ui.radial.render.RadialCategoryRenderer;
 import com.devmod.client.ui.radial.render.RadialGeometry;
@@ -270,9 +272,18 @@ public final class RadialMenuScreen extends Screen {
      * TOOLS: Settings, Testing, Mob tools, Item editors, Commands
      */
     private void initializeCategories() {
-        // Build categories from registry with mob editor supplier for context-dependent items
-        Map<MacroCategory, List<RadialCategory>> registryCategories =
-            RadialMenuRegistry.createDefaultCategories(this::createMobEditorItem);
+        // Ensure visibility suppliers are registered for dynamic item visibility
+        VisibilitySupplierRegistry.registerDefaults();
+
+        // Initialize runtime registry if needed, then get categories
+        Map<MacroCategory, List<RadialCategory>> registryCategories;
+        if (RadialMenuRuntimeRegistry.isInitialized()) {
+            registryCategories = RadialMenuRuntimeRegistry.getAllCategories();
+        } else {
+            // Fallback: initialize with mob editor supplier and get categories
+            RadialMenuRuntimeRegistry.initialize(this::createMobEditorItem);
+            registryCategories = RadialMenuRuntimeRegistry.getAllCategories();
+        }
 
         // Copy to our internal map and rootCategories
         macroCategoryMap.putAll(registryCategories);

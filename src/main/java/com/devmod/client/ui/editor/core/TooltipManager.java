@@ -200,10 +200,10 @@ public final class TooltipManager {
         // Draw background
         graphics.fill(tooltipX, tooltipY,
                       tooltipX + tooltipWidth, tooltipY + tooltipHeight,
-                      UIConstants.Background.PANEL_SOLID());
+                      DesignTokens.Background.PANEL_SOLID());
         AxiomRenderer.drawBorder(graphics, tooltipX, tooltipY,
                                   tooltipWidth, tooltipHeight,
-                                  UIConstants.Border.ACCENT());
+                                  DesignTokens.Border.ACCENT());
 
         // Draw text lines
         float textScale = Typography.withUiScale(Typography.BODY);
@@ -211,7 +211,7 @@ public final class TooltipManager {
         for (String line : lines) {
             Typography.drawText(graphics, font, Objects.requireNonNull(line, "line cannot be null"),
                                tooltipX + padding, textY,
-                               UIConstants.Text.PRIMARY(), textScale);
+                               DesignTokens.Text.PRIMARY(), textScale);
             textY += lineH;
         }
     }

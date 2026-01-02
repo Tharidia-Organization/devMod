@@ -20,14 +20,41 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
 
 import net.minecraft.server.level.ServerPlayer;
 
 public class LeaderboardSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LeaderboardSystem.class);
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder()
+        .setPrettyPrinting()
+        .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
+        .create();
+
+    private static class InstantTypeAdapter extends TypeAdapter<Instant> {
+        @Override
+        public void write(JsonWriter out, Instant value) throws IOException {
+            if (value == null) {
+                out.nullValue();
+            } else {
+                out.value(value.toEpochMilli());
+            }
+        }
+
+        @Override
+        public Instant read(JsonReader in) throws IOException {
+            if (in.peek() == JsonToken.NULL) {
+                in.nextNull();
+                return null;
+            }
+            return Instant.ofEpochMilli(in.nextLong());
+        }
+    }
 
     public static final LeaderboardSystem INSTANCE = new LeaderboardSystem();
 
@@ -177,6 +204,9 @@ public class LeaderboardSystem {
 
         LeaderboardEntry entry = new LeaderboardEntry(playerId, playerName, score, arenaId, timestamp, metadata);
 
+        // Track old rank for telemetry
+        int oldGlobalRank = getPlayerRank(category, playerId, null);
+
         // Update arena-specific board
         if (arenaId != null) {
             Map<String, List<LeaderboardEntry>> arenaBoards = boards.get(category);
@@ -192,6 +222,14 @@ public class LeaderboardSystem {
         checkWeeklyReset();
         List<LeaderboardEntry> weeklyBoard = weeklyBoards.get(category);
         updateBoard(weeklyBoard, entry, category.higherIsBetter);
+
+        // Emit telemetry if rank changed
+        int newGlobalRank = getPlayerRank(category, playerId, null);
+        if (newGlobalRank > 0 && (oldGlobalRank <= 0 || newGlobalRank != oldGlobalRank)) {
+            com.devmod.telemetry.endurance.EnduranceTelemetryService.INSTANCE.recordLeaderboardChange(
+                playerId, category.name(), oldGlobalRank, newGlobalRank, (int) score
+            );
+        }
 
         LOGGER.debug("[LeaderboardSystem] Submitted score {} for {} in category {} (arena: {})",
             score, playerName, category.name(), arenaId);
@@ -408,6 +446,8 @@ public class LeaderboardSystem {
         Map<String, List<LeaderboardEntry>> weeklyBoards = new HashMap<>();
         long weeklyResetTimestamp;
 
+        /** Required by Gson for deserialization via reflection. */
+        @SuppressWarnings("unused")
         LeaderboardData() {}
 
         LeaderboardData(LeaderboardSystem system) {

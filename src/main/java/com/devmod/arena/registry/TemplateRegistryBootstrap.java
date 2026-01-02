@@ -25,6 +25,7 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
     private Path templateDirectory;
     private TemplateValidator.ValidationMode validationMode;
     private final ArenaTemplateRegistry registry;
+    private final ArenaTelemetry telemetry;
     private final FeatureFlagManager featureFlagManager;
     private ArenaTemplateConfig config;
     private ArenaTemplateConfig.ConfigSnapshot configSnapshot;
@@ -40,6 +41,7 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
                                       TemplateValidator.ValidationMode validationMode,
                                       ArenaTemplateConfig config,
                                       ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
+        this.telemetry = telemetry;
         this.templateDirectory = templateDirectory;
         this.validationMode = validationMode;
         this.config = config;
@@ -85,14 +87,29 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
      */
     public TemplateLoader.LoadResult initialize() {
         LOGGER.info("Loading arena templates from {} (mode={})", templateDirectory, validationMode);
-        lastLoadResult = registry.loadFromDirectory(templateDirectory, validationMode);
-        if (!lastLoadResult.success()) {
-            LOGGER.error("Loaded {} templates with {} errors", lastLoadResult.templates().size(), lastLoadResult.errors().size());
-            lastLoadResult.errors().forEach(err -> LOGGER.error("Template load error: {}", err));
+        long startTime = System.currentTimeMillis();
+        final TemplateLoader.LoadResult result = registry.loadFromDirectory(templateDirectory, validationMode);
+        lastLoadResult = result;
+        long durationMs = System.currentTimeMillis() - startTime;
+
+        if (!result.success()) {
+            LOGGER.error("Loaded {} templates with {} errors", result.templates().size(), result.errors().size());
+            result.errors().forEach(err -> LOGGER.error("Template load error: {}", err));
         } else {
-            LOGGER.info("Loaded {} templates successfully", lastLoadResult.templates().size());
+            LOGGER.info("Loaded {} templates successfully", result.templates().size());
         }
-        return lastLoadResult;
+
+        // Emit telemetry
+        telemetry.emit("arena.bootstrap.initialize", Map.of(
+            "success", result.success(),
+            "templateCount", result.templates().size(),
+            "errorCount", result.errors().size(),
+            "durationMs", durationMs,
+            "directory", templateDirectory.toString(),
+            "validationMode", validationMode.name()
+        ));
+
+        return result;
     }
 
     /**
@@ -117,6 +134,7 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
      * before performing a template hot-reload.
      */
     public ArenaTemplateRegistry.ReloadResult reloadWithConfig() {
+        long startTime = System.currentTimeMillis();
         ArenaTemplateConfig newConfig = ArenaTemplateConfig.load();
         ArenaTemplateConfig.ValidationResult validation = newConfig.validate();
         if (!validation.valid()) {
@@ -125,7 +143,20 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
         validation.warnings().forEach(w -> LOGGER.warn("ArenaTemplateConfig warning: {}", w));
 
         applyConfig(newConfig);
-        return registry.reloadFromDirectoryAtomic(templateDirectory);
+        ArenaTemplateRegistry.ReloadResult result = registry.reloadFromDirectoryAtomic(templateDirectory);
+        long durationMs = System.currentTimeMillis() - startTime;
+
+        // Emit telemetry
+        telemetry.emit("arena.bootstrap.reload", Map.of(
+            "success", result.success(),
+            "loadedCount", result.loadedCount(),
+            "errorCount", result.errors().size(),
+            "durationMs", durationMs,
+            "configValid", validation.valid(),
+            "source", "command"
+        ));
+
+        return result;
     }
 
     public TemplateValidator.ValidationMode validationMode() {
@@ -186,6 +217,35 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
         return lastLoadResult != null ? lastLoadResult.errors() : List.of();
     }
 
+    /**
+     * Returns the full result of the last template load operation.
+     * Provides access to templates, errors, and success status.
+     * @return the last LoadResult, or null if initialize() has not been called
+     */
+    @Nullable
+    public TemplateLoader.LoadResult getLastLoadResult() {
+        return lastLoadResult;
+    }
+
+    /**
+     * Returns whether the directory watcher is currently active and monitoring for changes.
+     * The watcher is enabled via system property {@code devmod.template.watch=true}
+     * or environment variable {@code DEVMOD_TEMPLATE_WATCH=true}.
+     * @return true if watcher is running, false otherwise
+     */
+    public boolean isWatcherActive() {
+        return watcher != null;
+    }
+
+    /**
+     * Returns whether a watcher-triggered reload is currently in progress.
+     * Useful for diagnostics and avoiding concurrent reload operations.
+     * @return true if reload is in progress
+     */
+    public boolean isReloadInProgress() {
+        return watcherReloadInProgress.get();
+    }
+
     @Override
     public void close() {
         closeWatcher();
@@ -215,14 +275,37 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
 
     private void reloadFromWatcher() {
         if (!watcherReloadInProgress.compareAndSet(false, true)) {
+            LOGGER.debug("Watcher reload already in progress, skipping");
             return;
         }
         try {
             LOGGER.info("Template directory change detected, running hot reload");
-            reloadWithConfig();
+            long startTime = System.currentTimeMillis();
+            ArenaTemplateRegistry.ReloadResult result = reloadFromWatcherInternal();
+            long durationMs = System.currentTimeMillis() - startTime;
+
+            // Emit watcher-specific telemetry
+            telemetry.emit("arena.bootstrap.reload", Map.of(
+                "success", result.success(),
+                "loadedCount", result.loadedCount(),
+                "errorCount", result.errors().size(),
+                "durationMs", durationMs,
+                "source", "watcher"
+            ));
         } finally {
             watcherReloadInProgress.set(false);
         }
+    }
+
+    private ArenaTemplateRegistry.ReloadResult reloadFromWatcherInternal() {
+        ArenaTemplateConfig newConfig = ArenaTemplateConfig.load();
+        ArenaTemplateConfig.ValidationResult validation = newConfig.validate();
+        if (!validation.valid()) {
+            validation.errors().forEach(err -> LOGGER.error("ArenaTemplateConfig error: {}", err));
+        }
+        validation.warnings().forEach(w -> LOGGER.warn("ArenaTemplateConfig warning: {}", w));
+        applyConfig(newConfig);
+        return registry.reloadFromDirectoryAtomic(templateDirectory);
     }
 
     private void closeWatcher() {

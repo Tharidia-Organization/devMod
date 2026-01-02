@@ -15,6 +15,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.abilities.ClientStaminaCache;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
@@ -28,14 +29,14 @@ public class StaminaHudOverlay {
     private static final int BAR_HEIGHT = 5;
     private static final int BAR_BORDER = 1;
 
-    // Colors
-    private static final int COLOR_BACKGROUND = 0xFF1A1A1A;
-    private static final int COLOR_BORDER = 0xFF3A3A3A;
-    private static final int COLOR_STAMINA_FULL = 0xFF4CAF50; // Green
-    private static final int COLOR_STAMINA_MEDIUM = 0xFFFFEB3B; // Yellow
-    private static final int COLOR_STAMINA_LOW = 0xFFFF5722; // Orange
-    private static final int COLOR_STAMINA_EXHAUSTED = 0xFFF44336; // Red
-    private static final int COLOR_STAMINA_REGEN = 0xFF81C784; // Light green pulse
+    // Colors (delegating to OverlayTheme.Stamina)
+    private static final int COLOR_BACKGROUND = OverlayTheme.Stamina.BG;
+    private static final int COLOR_BORDER = OverlayTheme.Stamina.BORDER;
+    private static final int COLOR_STAMINA_FULL = OverlayTheme.Stamina.FULL;
+    private static final int COLOR_STAMINA_MEDIUM = OverlayTheme.Stamina.MEDIUM;
+    private static final int COLOR_STAMINA_LOW = OverlayTheme.Stamina.LOW;
+    private static final int COLOR_STAMINA_EXHAUSTED = OverlayTheme.Stamina.EXHAUSTED;
+    private static final int COLOR_STAMINA_REGEN = OverlayTheme.Stamina.REGEN;
 
     // Visibility control
     private static boolean enabled = true;
@@ -185,8 +186,8 @@ public class StaminaHudOverlay {
         int dashX = barX + BAR_WIDTH / 3 - indicatorSize / 2;
         int dodgeX = barX + 2 * BAR_WIDTH / 3 - indicatorSize / 2;
 
-        int readyColor = applyAlpha(0xFF4CAF50, alpha);
-        int borderCol = applyAlpha(0xFF2A2A2A, alpha);
+        int readyColor = applyAlpha(COLOR_STAMINA_FULL, alpha);
+        int borderCol = applyAlpha(COLOR_BACKGROUND, alpha);
 
         // Dash indicator (left)
         graphics.fill(dashX - 1, indicatorY - 1, dashX + indicatorSize + 1, indicatorY + indicatorSize + 1, borderCol);

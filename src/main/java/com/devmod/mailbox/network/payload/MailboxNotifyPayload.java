@@ -1,8 +1,10 @@
 package com.devmod.mailbox.network.payload;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -10,18 +12,25 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 /**
  * Payload to notify client of a new message arrival.
  * Sent in real-time when a new message is received.
  */
 public record MailboxNotifyPayload(
-    UUID messageId,
+    @Nonnull UUID messageId,
     @Nullable String senderName,
-    String subject,
+    @Nonnull String subject,
     int messageTypeOrdinal,
     boolean hasAttachment,
     int totalUnread
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
+
+    public MailboxNotifyPayload {
+        Objects.requireNonNull(messageId, "messageId");
+        Objects.requireNonNull(subject, "subject");
+    }
 
     // Security limits
     private static final int MAX_SUBJECT_LENGTH = 128;
@@ -62,6 +71,35 @@ public record MailboxNotifyPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 16; // UUID
+        size += estimatedUtfSize(senderName);
+        size += estimatedUtfSize(subject);
+        size += varIntSize(messageTypeOrdinal);
+        size += 1; // hasAttachment
+        size += varIntSize(totalUnread);
+        return size;
+    }
+
+    private static int estimatedUtfSize(@Nullable String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 
     /**

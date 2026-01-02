@@ -18,11 +18,11 @@ import com.devmod.client.overlay.BossPhaseOverlay;
 import com.devmod.client.overlay.EntityDensityOverlay;
 import com.devmod.client.rendering.DebugRenderer;
 import com.devmod.client.rendering.HeatmapVisualizer;
-import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
 import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.LineOfSightVisualizer;
 import com.devmod.client.rendering.PathfindingDebugger;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
+import com.devmod.rendering.HeatmapType;
 import com.devmod.util.ConfigPaths;
 
 public class SettingsManager {

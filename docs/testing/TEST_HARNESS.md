@@ -23,10 +23,10 @@
 
 ```bash
 # JUnit suite
-./gradlew test
+./gradlew test --no-build-cache
 
 # Direct tests (pure logic)
-./gradlew test --tests 'com.devmod.*DirectTest'
+./gradlew test --no-build-cache --tests 'com.devmod.*DirectTest'
 
 # GameTests (headless server)
 ./gradlew runGameTestServer

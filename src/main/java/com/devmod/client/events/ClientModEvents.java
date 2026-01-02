@@ -33,8 +33,8 @@ import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.notification.ClientNotificationManager;
+import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.testing.QAEventTracker;
 import com.devmod.client.testing.QANotificationSystem;
 import com.devmod.client.testing.TestingSession;
@@ -70,6 +70,7 @@ public class ClientModEvents {
         event.registerAboveAll(Objects.requireNonNull(QA_NOTIFICATIONS_ID), new QANotificationsLayer());
         event.registerAboveAll(Objects.requireNonNull(RESONANCE_HUD_ID), Objects.requireNonNull(com.devmod.client.overlay.ResonanceHudOverlay.INSTANCE));
         event.registerAboveAll(Objects.requireNonNull(CONTRACT_HUD_ID), Objects.requireNonNull(com.devmod.client.overlay.ContractHudOverlay.INSTANCE));
+        com.devmod.client.overlay.CombatFlowHudOverlay.registerGuiLayers(event);
 
         // Register profile listener for notifications (once)
         if (!profileListenerRegistered) {
@@ -277,12 +278,15 @@ public class ClientModEvents {
 
         // Clear notifications
         QANotificationSystem.INSTANCE.clear();
+        ClientNotificationManager.INSTANCE.clear();
 
         // Reset QA event tracker state for next world load
         QAEventTracker.resetWorldState();
 
         // Clear Endurance Quest client caches
         com.devmod.client.endurance.ClientQuestCache.clear();
+        com.devmod.client.endurance.ClientChallengeCache.INSTANCE.clear();
+        com.devmod.client.endurance.ClientCombatFlowCache.INSTANCE.clear();
         com.devmod.endurance.ClientShopCache.clear();
         com.devmod.client.overlay.EnduranceQuestOverlay.resetStateWatcher();
 
@@ -305,6 +309,9 @@ public class ClientModEvents {
         com.devmod.client.collision.transform.ModelPartTransformCapture.clearAll();
         com.devmod.client.collision.transform.ModelPartTransformExtractor.clearAllCaches();
         com.devmod.collision.transform.TransformProviderRegistry.clearAllCaches();
+
+        // Clear environment overrides (frozen time, biome) to prevent stale state on reconnect
+        com.devmod.client.environment.ClientEnvironmentCache.clearAll();
 
         LOGGER.debug("Caches cleared successfully");
     }

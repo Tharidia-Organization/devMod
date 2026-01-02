@@ -12,11 +12,12 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadValidation;
 
 public record TelemetryBatchPayload(
     long batchTimestamp,
     List<CompressedEvent> events
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final int MAX_EVENTS_PER_BATCH = 50;
     public static final int MAX_EVENT_DATA_SIZE = 2048;
@@ -76,6 +77,31 @@ public record TelemetryBatchPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int count = Math.min(events.size(), MAX_EVENTS_PER_BATCH);
+        int size = Long.BYTES + varIntSize(count);
+        for (int i = 0; i < count; i++) {
+            CompressedEvent event = events.get(i);
+            int dataLength = Math.min(event.data().length, MAX_EVENT_DATA_SIZE);
+            size += 1; // typeId
+            size += varIntSize(event.deltaMs());
+            size += varIntSize(dataLength);
+            size += dataLength;
+        }
+        return size;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 
     /**

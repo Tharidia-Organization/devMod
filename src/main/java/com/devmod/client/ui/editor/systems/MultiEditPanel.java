@@ -18,8 +18,8 @@ import com.devmod.DevMod;
 import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class MultiEditPanel {
     private final MultiEditManager manager;
@@ -50,7 +50,7 @@ public class MultiEditPanel {
     private static final int ACTION_BUTTON_HEIGHT = 16;
     private static final int CLEAR_BUTTON_WIDTH = 80;
     private static final int APPLY_BUTTON_WIDTH = 96;
-    private static final int APPLY_BUTTON_OFFSET_X = APPLY_BUTTON_WIDTH + UIConstants.Spacing.SM;
+    private static final int APPLY_BUTTON_OFFSET_X = APPLY_BUTTON_WIDTH + DesignTokens.Spacing.SM;
     private static final int SUMMARY_HEIGHT = 18;
     private static final int MAX_VISIBLE_FAILURES = 20;
     private static final int DEFAULT_VISIBLE_FAILURES = 6;
@@ -283,7 +283,7 @@ public class MultiEditPanel {
         // Selection count
         String countText = count + " item" + (count != 1 ? "s" : "") + " selected";
         int countColor = count == 0 ? TEXT_MUTED_COLOR : TEXT_PRIMARY_COLOR;
-        graphics.drawString(safeFont, countText, x + UIConstants.Spacing.SM, y + HEADER_TEXT_Y, countColor, false);
+        graphics.drawString(safeFont, countText, x + DesignTokens.Spacing.SM, y + HEADER_TEXT_Y, countColor, false);
 
         // Expand/collapse button
         String expandIcon = expanded ? "▼" : "▶";
@@ -326,14 +326,14 @@ public class MultiEditPanel {
 
         // Preset selector area (dropdown)
         int presetHeight = PRESET_ROW_HEIGHT;
-        presetRect = new ResponsiveLayout.Rect(x + UIConstants.Spacing.SM, listY,
-            width - UIConstants.Spacing.MD, presetHeight);
+        presetRect = new ResponsiveLayout.Rect(x + DesignTokens.Spacing.SM, listY,
+            width - DesignTokens.Spacing.MD, presetHeight);
         int presetBg = presetDropdownOpen ? PRESET_BG_OPEN : PRESET_BG_CLOSED;
         graphics.fill(presetRect.x(), presetRect.y(), presetRect.right(), presetRect.bottom(), presetBg);
         String itemType = activeItemTypeSupplier.get();
         if (itemType == null || itemType.isBlank()) itemType = "item";
         String scopeLabel = "Preset (" + itemType + ")";
-        graphics.drawString(safeFont, scopeLabel, presetRect.x() + TEXT_INSET, listY + UIConstants.Spacing.SM,
+        graphics.drawString(safeFont, scopeLabel, presetRect.x() + TEXT_INSET, listY + DesignTokens.Spacing.SM,
             TEXT_SECONDARY_COLOR, false);
 
         String presetLabel = "(no presets)";
@@ -346,9 +346,9 @@ public class MultiEditPanel {
         }
         int labelColor = presets.isEmpty() ? TEXT_FAINT_COLOR : PRESET_LABEL_COLOR_ACTIVE;
         graphics.drawString(safeFont, presetLabel, presetRect.x() + PRESET_LABEL_OFFSET_X,
-            listY + UIConstants.Spacing.SM, labelColor, false);
+            listY + DesignTokens.Spacing.SM, labelColor, false);
         graphics.drawString(safeFont, presetDropdownOpen ? "▲" : "▼",
-            presetRect.right() - UIConstants.Spacing.LG, listY + UIConstants.Spacing.SM, TEXT_MUTED_COLOR, false);
+            presetRect.right() - DesignTokens.Spacing.LG, listY + DesignTokens.Spacing.SM, TEXT_MUTED_COLOR, false);
 
         if (presetDropdownOpen && !presets.isEmpty()) {
             int optionHeight = PRESET_DROPDOWN_ROW_HEIGHT;
@@ -387,16 +387,16 @@ public class MultiEditPanel {
             }
             if (hoveredPresetFullName != null) {
                 String hoverLine = "↳ " + hoveredPresetFullName;
-                if (safeFont.width(hoverLine) > presetDropdownArea.width() - UIConstants.Spacing.MD) {
+                if (safeFont.width(hoverLine) > presetDropdownArea.width() - DesignTokens.Spacing.MD) {
                     hoverLine = hoverLine.substring(0, Math.max(0, Math.min(hoverLine.length(), HOVER_LABEL_MAX_LENGTH)))
                         + ELLIPSIS;
                 }
                 graphics.drawString(safeFont, hoverLine, presetDropdownArea.x() + TEXT_INSET,
                     presetDropdownArea.bottom() - PRESET_HINT_OFFSET_Y, DROPDOWN_HOVER_COLOR, false);
             }
-            listY += presetHeight + dropdownHeight + UIConstants.Spacing.SM;
+            listY += presetHeight + dropdownHeight + DesignTokens.Spacing.SM;
         } else {
-            listY += presetHeight + UIConstants.Spacing.SM;
+            listY += presetHeight + DesignTokens.Spacing.SM;
         }
 
         // Virtualized item list with scrolling
@@ -421,48 +421,48 @@ public class MultiEditPanel {
             graphics.fill(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height(), bg);
 
             // Item icon placeholder
-            graphics.drawString(safeFont, "▪", x + UIConstants.Spacing.SM,
-                listY + UIConstants.Spacing.SM, TEXT_DIM_COLOR, false);
+            graphics.drawString(safeFont, "▪", x + DesignTokens.Spacing.SM,
+                listY + DesignTokens.Spacing.SM, TEXT_DIM_COLOR, false);
 
             String name = item.getHoverName().getString();
             if (name.length() > ITEM_NAME_MAX_LENGTH) {
                 name = name.substring(0, ITEM_NAME_TRUNCATE_LENGTH) + ELLIPSIS;
             }
-            graphics.drawString(safeFont, name, x + UIConstants.Spacing.XL,
-                listY + UIConstants.Spacing.SM, TEXT_PRIMARY_COLOR, false);
+            graphics.drawString(safeFont, name, x + DesignTokens.Spacing.XL,
+                listY + DesignTokens.Spacing.SM, TEXT_PRIMARY_COLOR, false);
 
             // Remove button
             int removeX = x + width - ITEM_REMOVE_OFFSET_X;
-            graphics.drawString(safeFont, "✗", removeX, listY + UIConstants.Spacing.SM,
+            graphics.drawString(safeFont, "✗", removeX, listY + DesignTokens.Spacing.SM,
                 hovered ? ITEM_REMOVE_HOVER_COLOR : TEXT_FAINT_COLOR, false);
 
             listY += itemHeight;
         }
 
-        listY += UIConstants.Spacing.SM;
+        listY += DesignTokens.Spacing.SM;
         if (!persistAllowed) {
             graphics.drawString(safeFont, "Preview mode: switch to Apply to persist", x + TEXT_INSET, listY, PREVIEW_MODE_COLOR, false);
-            listY += UIConstants.Spacing.LG;
+            listY += DesignTokens.Spacing.LG;
         }
 
         // Preview toggle row
         int toggleH = PREVIEW_TOGGLE_HEIGHT;
-        previewToggleRect = new ResponsiveLayout.Rect(x + UIConstants.Spacing.SM, listY, PREVIEW_TOGGLE_WIDTH, toggleH);
+        previewToggleRect = new ResponsiveLayout.Rect(x + DesignTokens.Spacing.SM, listY, PREVIEW_TOGGLE_WIDTH, toggleH);
         previewToggleButton.toggled(previewOnlyMode);
         previewToggleButton.render(graphics, previewToggleRect.x(), previewToggleRect.y(), previewToggleRect.width(), toggleH, mouseX, mouseY);
         if (previewOnlyMode) {
             graphics.drawString(safeFont, "(will not persist)", x + PREVIEW_HINT_OFFSET_X,
-                listY + UIConstants.Spacing.SM, PREVIEW_MODE_COLOR, false);
+                listY + DesignTokens.Spacing.SM, PREVIEW_MODE_COLOR, false);
         }
-        listY += toggleH + UIConstants.Spacing.SM;
+        listY += toggleH + DesignTokens.Spacing.SM;
 
         // Action buttons area using EditorButton components
-        graphics.fill(x, listY, x + width, listY + UIConstants.Spacing.XXL, ACTION_ROW_BG);
+        graphics.fill(x, listY, x + width, listY + DesignTokens.Spacing.XXL, ACTION_ROW_BG);
 
         int btnH = ACTION_BUTTON_HEIGHT;
-        clearRect = new ResponsiveLayout.Rect(x + UIConstants.Spacing.SM, listY + UIConstants.Spacing.SM, CLEAR_BUTTON_WIDTH, btnH);
+        clearRect = new ResponsiveLayout.Rect(x + DesignTokens.Spacing.SM, listY + DesignTokens.Spacing.SM, CLEAR_BUTTON_WIDTH, btnH);
         applyRect = new ResponsiveLayout.Rect(x + width - APPLY_BUTTON_OFFSET_X,
-            listY + UIConstants.Spacing.SM, APPLY_BUTTON_WIDTH, btnH);
+            listY + DesignTokens.Spacing.SM, APPLY_BUTTON_WIDTH, btnH);
 
         clearButton.setEnabled(clearEnabled);
         applyButton.setEnabled(applyEnabled);
@@ -470,14 +470,14 @@ public class MultiEditPanel {
         clearButton.render(graphics, clearRect.x(), clearRect.y(), clearRect.width(), btnH, mouseX, mouseY);
         applyButton.render(graphics, applyRect.x(), applyRect.y(), applyRect.width(), btnH, mouseX, mouseY);
 
-        listY += UIConstants.Spacing.XXL;
+        listY += DesignTokens.Spacing.XXL;
 
         // Progress bar during batch apply operation
         if (applyProgress >= 0 && applyTotal > 0) {
             int progressBarHeight = PROGRESS_BAR_HEIGHT;
             int progressBarY = listY;
-            int progressBarWidth = width - UIConstants.Spacing.MD * 2;
-            int progressBarX = x + UIConstants.Spacing.MD;
+            int progressBarWidth = width - DesignTokens.Spacing.MD * 2;
+            int progressBarX = x + DesignTokens.Spacing.MD;
 
             // Background
             graphics.fill(progressBarX, progressBarY, progressBarX + progressBarWidth, progressBarY + progressBarHeight, PROGRESS_BAR_BG);
@@ -494,7 +494,7 @@ public class MultiEditPanel {
             int textX = progressBarX + (progressBarWidth - textWidth) / 2;
             graphics.drawString(safeFont, safeProgressText, textX, progressBarY + PROGRESS_TEXT_OFFSET_Y, TEXT_PRIMARY_COLOR, false);
 
-            listY += progressBarHeight + UIConstants.Spacing.SM;
+            listY += progressBarHeight + DesignTokens.Spacing.SM;
         }
 
         if (lastResult != null) {
@@ -516,7 +516,7 @@ public class MultiEditPanel {
                 summary += " (" + lastApplyTiming + ")";
             }
             int summaryColor = lastResult.failureCount() == 0 ? RESULT_SUCCESS_COLOR : RESULT_WARNING_COLOR;
-            graphics.drawString(safeFont, summary, x + TEXT_INSET, listY + UIConstants.Spacing.SM, summaryColor, false);
+            graphics.drawString(safeFont, summary, x + TEXT_INSET, listY + DesignTokens.Spacing.SM, summaryColor, false);
 
             if (lastResult.failureCount() > 0) {
                 int failBtnH = FAILURE_BUTTON_HEIGHT;
@@ -559,12 +559,12 @@ public class MultiEditPanel {
                     if (line.length() > FAILURE_LINE_MAX_LENGTH) {
                         line = line.substring(0, FAILURE_LINE_TRUNCATE_LENGTH) + ELLIPSIS;
                     }
-                    graphics.drawString(safeFont, "• " + line, x + UIConstants.Spacing.MD,
+                    graphics.drawString(safeFont, "• " + line, x + DesignTokens.Spacing.MD,
                         detailY + (i - startIdx) * FAILURE_DETAIL_LINE_HEIGHT, FAILURE_TEXT_COLOR, false);
                 }
                 if (details.size() > endIdx) {
                     String moreText = "(+" + (details.size() - endIdx) + " more)";
-                    moreFailuresRect = new ResponsiveLayout.Rect(x + UIConstants.Spacing.MD,
+                    moreFailuresRect = new ResponsiveLayout.Rect(x + DesignTokens.Spacing.MD,
                         detailY + (endIdx - startIdx) * FAILURE_DETAIL_LINE_HEIGHT,
                         safeFont.width(moreText) + FAILURE_MORE_WIDTH_PADDING, FAILURE_MORE_HEIGHT);
                     graphics.drawString(safeFont, moreText, moreFailuresRect.x(), moreFailuresRect.y(), MORE_FAILURES_COLOR, false);
@@ -573,7 +573,7 @@ public class MultiEditPanel {
                 }
             }
 
-            listY += panelHeight + UIConstants.Spacing.SM;
+            listY += panelHeight + DesignTokens.Spacing.SM;
         }
 
         return listY - y;

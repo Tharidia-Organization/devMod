@@ -76,6 +76,7 @@ public class PacketValidator {
     // Telemetry counters for security monitoring
     private final Map<String, AtomicLong> rejectionCounters = new ConcurrentHashMap<>();
     private final Map<String, AtomicLong> rateLimitCounters = new ConcurrentHashMap<>();
+    private final Map<String, AtomicLong> ipRateLimitCounters = new ConcurrentHashMap<>();
 
     // Rate limiting for failed operator checks (to prevent log spam)
     private static final long OP_FAIL_LOG_INTERVAL_MS = 60_000; // Log at most once per minute per player
@@ -110,6 +111,14 @@ public class PacketValidator {
             return ValidationResult.fail("Invalid player context");
         }
 
+        // P0: Per-IP rate limit check (catches multi-account abuse)
+        if (!IpRateLimiter.INSTANCE.checkRateLimit(player, packetType)) {
+            ipRateLimitCounters.computeIfAbsent(packetType, k -> new AtomicLong(0)).incrementAndGet();
+            LOGGER.warn("IP rate limit exceeded for {} on packet type: {}",
+                player.getName().getString(), packetType);
+            return ValidationResult.fail("Rate limit exceeded. Please wait before retrying.");
+        }
+
         // Permission check
         if (requiresOp && !isOperator(player)) {
             // Rate-limit logging to prevent log spam from malicious clients
@@ -124,9 +133,9 @@ public class PacketValidator {
             return ValidationResult.fail("Operation requires operator permissions");
         }
 
-        // Rate limit check
+        // Per-player UUID rate limit check
         if (!checkRateLimit(player.getUUID(), packetType)) {
-            LOGGER.warn("Rate limit exceeded for {} on packet type: {}",
+            LOGGER.warn("Player rate limit exceeded for {} on packet type: {}",
                 player.getName().getString(), packetType);
             return ValidationResult.fail("Rate limit exceeded. Please wait before retrying.");
         }
@@ -448,11 +457,27 @@ public class PacketValidator {
     }
 
     /**
+     * Get IP rate limit hit count for a packet type (for monitoring).
+     */
+    public long getIpRateLimitCount(String packetType) {
+        AtomicLong counter = ipRateLimitCounters.get(packetType);
+        return counter != null ? counter.get() : 0;
+    }
+
+    /**
+     * Get total IP rate limit hits across all packet types.
+     */
+    public long getTotalIpRateLimitHits() {
+        return ipRateLimitCounters.values().stream().mapToLong(AtomicLong::get).sum();
+    }
+
+    /**
      * Reset all telemetry counters (for testing or periodic reset).
      */
     public void resetTelemetry() {
         rejectionCounters.clear();
         rateLimitCounters.clear();
+        ipRateLimitCounters.clear();
     }
 
     /**
@@ -462,7 +487,13 @@ public class PacketValidator {
         StringBuilder sb = new StringBuilder();
         sb.append("=== Security Telemetry ===\n");
         sb.append(String.format("Total rejections: %d%n", getTotalRejections()));
-        sb.append(String.format("Total rate limit hits: %d%n", getTotalRateLimitHits()));
+        sb.append(String.format("Total player rate limit hits: %d%n", getTotalRateLimitHits()));
+        sb.append(String.format("Total IP rate limit hits: %d%n", getTotalIpRateLimitHits()));
+
+        // IP rate limiter stats
+        IpRateLimiter.Stats ipStats = IpRateLimiter.INSTANCE.getStats();
+        sb.append(String.format("IP limiter - tracked: %d, blocked: %d%n",
+            ipStats.trackedIps(), ipStats.blockedIps()));
 
         if (!rejectionCounters.isEmpty()) {
             sb.append("Rejections by type:\n");
@@ -471,8 +502,14 @@ public class PacketValidator {
         }
 
         if (!rateLimitCounters.isEmpty()) {
-            sb.append("Rate limits by type:\n");
+            sb.append("Player rate limits by type:\n");
             rateLimitCounters.forEach((type, count) ->
+                sb.append(String.format("  %s: %d%n", type, count.get())));
+        }
+
+        if (!ipRateLimitCounters.isEmpty()) {
+            sb.append("IP rate limits by type:\n");
+            ipRateLimitCounters.forEach((type, count) ->
                 sb.append(String.format("  %s: %d%n", type, count.get())));
         }
 

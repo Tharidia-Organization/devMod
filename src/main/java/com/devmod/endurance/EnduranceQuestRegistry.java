@@ -162,7 +162,7 @@ public class EnduranceQuestRegistry {
             this.namespace = mobId.getNamespace();
 
             // Generate display name from ID
-            String path = mobId.getPath();
+            String path = Objects.requireNonNull(mobId.getPath(), "mobId.path");
             this.displayName = UNDERSCORE_SPLITTER.splitToList(path).stream()
                 .map(s -> s.isEmpty() ? s : s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1))
                 .collect(Collectors.joining(" "));
@@ -663,7 +663,9 @@ public class EnduranceQuestRegistry {
             path.contains("item_frame") || path.contains("leash") || path.contains("ender_pearl") ||
             path.contains("egg") || path.contains("snowball") || path.contains("potion") ||
             path.contains("trident") || path.contains("shulker_bullet") || path.contains("llama_spit") ||
-            path.contains("evoker_fangs") || path.contains("eye_of_ender")) {
+            path.contains("evoker_fangs") || path.contains("eye_of_ender") ||
+            path.endsWith("_attack") || path.contains("_projectile") || path.contains("spell_") ||
+            path.contains("_spell") || path.contains("breath_") || path.contains("_breath")) {
             return false;
         }
 

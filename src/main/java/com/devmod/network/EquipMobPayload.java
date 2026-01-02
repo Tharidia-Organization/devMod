@@ -2,13 +2,22 @@ package com.devmod.network;
 
 import java.util.Objects;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
-
+/**
+ * Network payload for equipping mobs with items.
+ * Sent from client to server when a player modifies mob equipment.
+ *
+ * <p><b>CRITICAL:</b> The record field order MUST match the encode/decode order in STREAM_CODEC.
+ * If fields are reordered, added, or removed, update the codec accordingly.</p>
+ *
+ * <p>Field order: entityId, mainHand, offHand, head, chest, legs, feet</p>
+ */
 public record EquipMobPayload(
         int entityId,       // Monster ID
         String mainHand,    // Main Hand (Right)

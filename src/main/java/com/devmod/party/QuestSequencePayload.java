@@ -1,5 +1,6 @@
 package com.devmod.party;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -12,6 +13,8 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 public record QuestSequencePayload(
     UUID partyId,
     Phase phase,
@@ -21,7 +24,7 @@ public record QuestSequencePayload(
     String title,
     String subtitle,
     List<String> infoLines
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<QuestSequencePayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "quest_sequence"))
@@ -103,6 +106,41 @@ public record QuestSequencePayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 16; // partyId
+        size += varIntSize(phase.ordinal());
+        size += varIntSize(secondsRemaining);
+        size += varIntSize(totalMembers);
+        size += varIntSize(arrivedMembers.size());
+        size += arrivedMembers.size() * 16;
+        size += estimatedUtfSize(title);
+        size += estimatedUtfSize(subtitle);
+        size += varIntSize(infoLines.size());
+        for (String line : infoLines) {
+            size += estimatedUtfSize(line);
+        }
+        return size;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 
     /**

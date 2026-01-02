@@ -18,7 +18,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.GamificationManager.BadgeRarity;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
@@ -144,18 +144,18 @@ public class BadgeTestScreen extends Screen {
         Component titleComponent = getTitleComponent();
 
         // Title
-        graphics.drawCenteredString(font, titleComponent, this.width / 2, 20, UIConstants.Text.PRIMARY());
+        graphics.drawCenteredString(font, titleComponent, this.width / 2, 20, DesignTokens.Text.PRIMARY);
 
         // Subtitle
         graphics.drawCenteredString(font,
             "Click a button to test badge popup",
-            this.width / 2, 40, UIConstants.Text.MUTED());
+            this.width / 2, 40, DesignTokens.Text.MUTED);
 
         // Queue status
         int unreadCount = ClientNotificationManager.INSTANCE.getUnreadCount();
         String queueText = "Unread: " + unreadCount;
         graphics.drawCenteredString(font, queueText, this.width / 2, this.height - 30,
-            unreadCount > 0 ? 0xFF00FF00 : UIConstants.Text.MUTED());
+            unreadCount > 0 ? 0xFF00FF00 : DesignTokens.Text.MUTED);
 
         // Render widgets
         for (PositionedButton pb : buttons) {

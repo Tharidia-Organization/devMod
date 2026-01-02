@@ -16,7 +16,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
 import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.integration.MinecraftBlockPlacer;
+import com.devmod.arena.integration.BatchBlockPlacer;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 
 public class AsyncArenaBuildCoordinator {
@@ -55,7 +55,7 @@ public class AsyncArenaBuildCoordinator {
 
     private AsyncArenaBuilder createBuilder(ServerLevel level) {
         ArenaTelemetry telemetry = new ArenaTelemetry();
-        MinecraftBlockPlacer blockPlacer = new MinecraftBlockPlacer(level);
+        BatchBlockPlacer blockPlacer = new BatchBlockPlacer(level);
         Supplier<Double> msptSupplier = () -> {
             MinecraftServer server = Objects.requireNonNull(level.getServer(), "server");
             return server.getAverageTickTimeNanos() / 1_000_000.0;

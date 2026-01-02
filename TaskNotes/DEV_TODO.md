@@ -39,41 +39,73 @@ Deadline: 24:00 local
 - [x] Add whitelist for client action IDs in ActionRegistry
 
 ## P2 - Performance
-- [ ] Batch block placement in ArenaBuilder (chunk section writes)
-- [ ] Add async build backpressure (queue depth + cancel)
-- [ ] Precompute radial menu labels and cache per locale
-- [ ] Reduce reflection in AmmoFilter (cache method lookup)
-- [ ] Add pooled allocators for frequent small objects
+- [x] Batch block placement in ArenaBuilder (chunk section writes)
+- [x] Add async build backpressure (queue depth + cancel)
+- [x] Precompute radial menu labels and cache per locale
+- [x] Reduce reflection in AmmoFilter (cache method lookup)
+- [x] Add pooled allocators for frequent small objects
 
 ## P2 - Architecture Cleanup
-- [ ] Split NetworkHandler into per-domain registrars
-- [ ] Split WaveManager into lifecycle/spawn/modifier/zone services
-- [ ] Split RadialMenuRegistry into builder + data-driven config
-- [ ] Convert MailboxConfig into modular records per section
-- [ ] Replace global singletons with injected services where possible
+- [x] Split NetworkHandler into per-domain registrars (PayloadRegistrar pattern)
+  - AbilityNetworkHandler, ShieldNetworkHandler, ConfigNetworkHandler migrated
+  - EnduranceNetworkHandler, PartyNetworkHandler, MobItemNetworkHandler migrated
+- [x] Split WaveManager into lifecycle/spawn/modifier/zone services
+  - WaveModifierService extracted (wave/WaveModifierService.java)
+  - SpawnContext and SpawnPools made public with zone support
+- [x] Split RadialMenuRegistry into builder + data-driven config
+  - VisibilitySupplierRegistry: registry for dynamic visibility suppliers (10 built-in)
+  - ColorTokenResolver: reflection-based DesignTokens.Radial resolution
+  - RadialMenuDefinitionConfig: JSON data records for config loading
+  - RadialMenuDefinitionLoader: JSON parsing with validation
+  - RadialMenuRuntimeRegistry: central registry with JSON + programmatic categories
+  - RadialMenuBuilder: fluent API for mod integration
+  - RadialMenuScreen updated to use RuntimeRegistry with fallback
+- [x] Convert MailboxConfig into modular records per section
+  - MailboxConfigSections.java with 9 section records
+- [x] Replace global singletons with injected services where possible
+  - ServiceRegistry.java: thread-safe DI container with lazy init + overrides
+  - Services.java: type-safe accessors for core services (party, waves, telemetry, etc.)
+  - Backward compatible: existing INSTANCE singletons still work, registry enables testing
 
 ## P2 - UX/UI
-- [ ] Radial menu search bar + filter
-- [ ] Favorites persistence (config + sync)
-- [ ] Keyboard navigation and shortcuts
-- [ ] Recent actions ring
-- [ ] Context hints per action
+- [x] Radial menu search bar + filter (already implemented: / or F to toggle, type to search)
+- [x] Favorites persistence (config + sync) (already implemented: loadFavorites/persistConfig)
+- [x] Keyboard navigation and shortcuts (already implemented: 1-6 macro, 7-0 categories, arrows)
+- [x] Recent actions ring (already implemented: usageStats tracking + ranking)
+- [x] Context hints per action (already implemented: renderHelpText + tooltips)
 
 ## P2 - Telemetry
-- [ ] Add P99 latency and error counters for DuckDB writes
-- [ ] Add telemetry health endpoint for admin panel
-- [ ] Add sampling controls per event category
+- [x] Add P99 latency and error counters for DuckDB writes
+- [x] Add telemetry health endpoint for admin panel
+- [x] Add sampling controls per event category
 
 ## P3 - Testing / CI / Release
-- [ ] Add unit tests for payload validation
-- [ ] Add integration tests for arena build/validate
-- [ ] Add fuzz tests for mailbox inputs
-- [ ] Add load tests for party/endurance flows
-- [ ] Add CI job for static analysis (SpotBugs/ErrorProne)
-- [ ] Add release checklist automation (version bump + tag)
+- [x] Add unit tests for payload validation
+  - PayloadValidationTest.java: 35 tests covering rate limiting, metrics, cleanup
+- [x] Add integration tests for arena build/validate
+  - ArenaBuilderIntegrationTest.java: 21 tests covering validation modes, dry run, transactions
+- [x] Add fuzz tests for mailbox inputs
+  - ContentFilterFuzzTest.java, SpamDetectorFuzzTest.java, AttachmentValidatorFuzzTest.java
+  - 107 fuzz tests covering boundary strings, control chars, ReDoS, Unicode
+- [x] Add load tests for party/endurance flows
+  - PartyManagerLoadTest.java: concurrent party creation, invites, member ops, cleanup
+  - EnduranceLoadTest.java: quest lifecycle, wave states, scoring, objectives, tension
+- [x] Add CI job for static analysis (SpotBugs/ErrorProne)
+  - SpotBugs plugin added to build.gradle
+  - config/spotbugs/exclude.xml with Minecraft-specific exclusions
+- [x] Add release checklist automation (version bump + tag)
+  - scripts/release.sh: automated version bump, changelog, git tag
+  - docs/RELEASE_CHECKLIST.md: manual checklist and procedures
 
 ## P3 - Docs
-- [ ] Update architecture map with current module boundaries
-- [ ] Document network payload limits and policies
-- [ ] Document mailbox moderation workflow
-- [ ] Add README for arena template schema + examples
+- [x] Update architecture map with current module boundaries
+  - Added Radial Menu System (data-driven) class diagram
+  - Added Network Handlers (domain split) table
+  - Added Payload Validation flow diagram
+  - Added Service Registry pattern section
+- [x] Document network payload limits and policies
+  - docs/network/PAYLOAD_LIMITS.md
+- [x] Document mailbox moderation workflow
+  - docs/mailbox/MODERATION.md
+- [x] Add README for arena template schema + examples
+  - docs/arena/TEMPLATE_SCHEMA.md

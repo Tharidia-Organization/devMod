@@ -265,18 +265,20 @@ public record CraftingRecipeData(
      * @return Ingredient at position, or empty
      */
     public IngredientData getIngredientAt(int row, int col) {
-        if (craftingType != CraftingType.SHAPED || pattern == null || keyMap == null) {
+        String[] localPattern = pattern;
+        Map<Character, IngredientData> localKeyMap = keyMap;
+        if (craftingType != CraftingType.SHAPED || localPattern == null || localKeyMap == null) {
             return IngredientData.empty();
         }
 
-        if (row < 0 || row >= pattern.length) return IngredientData.empty();
-        String rowStr = pattern[row];
+        if (row < 0 || row >= localPattern.length) return IngredientData.empty();
+        String rowStr = localPattern[row];
         if (rowStr == null || col < 0 || col >= rowStr.length()) return IngredientData.empty();
 
         char c = rowStr.charAt(col);
         if (c == ' ') return IngredientData.empty();
 
-        return keyMap.getOrDefault(c, IngredientData.empty());
+        return localKeyMap.getOrDefault(c, IngredientData.empty());
     }
 
     /**
@@ -288,14 +290,16 @@ public record CraftingRecipeData(
             grid.add(IngredientData.empty());
         }
 
-        if (craftingType == CraftingType.SHAPED && pattern != null && keyMap != null) {
-            for (int row = 0; row < Math.min(pattern.length, 3); row++) {
-                String rowStr = pattern[row];
+        String[] localPattern = pattern;
+        Map<Character, IngredientData> localKeyMap = keyMap;
+        if (craftingType == CraftingType.SHAPED && localPattern != null && localKeyMap != null) {
+            for (int row = 0; row < Math.min(localPattern.length, 3); row++) {
+                String rowStr = localPattern[row];
                 if (rowStr == null) continue;
                 for (int col = 0; col < Math.min(rowStr.length(), 3); col++) {
                     char c = rowStr.charAt(col);
-                    if (c != ' ' && keyMap.containsKey(c)) {
-                        grid.set(row * 3 + col, keyMap.get(c));
+                    if (c != ' ' && localKeyMap.containsKey(c)) {
+                        grid.set(row * 3 + col, localKeyMap.get(c));
                     }
                 }
             }

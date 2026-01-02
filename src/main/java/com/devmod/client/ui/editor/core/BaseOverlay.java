@@ -115,7 +115,7 @@ public abstract class BaseOverlay implements EditorOverlay {
      * Subclasses can override to customize.
      */
     protected void renderBackdrop(GuiGraphics graphics, int screenWidth, int screenHeight) {
-        int backdropColor = animation.applyToBackdrop(UIConstants.Background.OVERLAY());
+        int backdropColor = animation.applyToBackdrop(DesignTokens.Background.OVERLAY());
         graphics.fill(0, 0, screenWidth, screenHeight, backdropColor);
     }
 
@@ -124,8 +124,8 @@ public abstract class BaseOverlay implements EditorOverlay {
      * Subclasses can override to customize.
      */
     protected void renderPanel(GuiGraphics graphics, int x, int y, int width, int height) {
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL_SOLID());
-        AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.DEFAULT());
+        graphics.fill(x, y, x + width, y + height, DesignTokens.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, x, y, width, height, DesignTokens.Border.DEFAULT());
     }
 
     /**

@@ -23,12 +23,11 @@ public class EmiCompat implements CompatModule {
     private static boolean apiAvailable = false;
 
     // Cached reflection references
-    private static Class<?> emiApiClass;
-    private static Class<?> emiStackClass;
-    private static Method getStackFromItemStackMethod;
-    private static Method viewRecipesMethod;
-    private static Method viewUsesMethod;
-    private static Method isCheatModeMethod;
+    @Nullable private static Class<?> emiApiClass;
+    @Nullable private static Method getStackFromItemStackMethod;
+    @Nullable private static Method viewRecipesMethod;
+    @Nullable private static Method viewUsesMethod;
+    @Nullable private static Method isCheatModeMethod;
 
     @Override
     public String modId() {
@@ -81,19 +80,20 @@ public class EmiCompat implements CompatModule {
     private void tryLoadClientApi() {
         try {
             // EMI API classes
-            emiApiClass = Class.forName("dev.emi.emi.api.EmiApi");
-            emiStackClass = Class.forName("dev.emi.emi.api.stack.EmiStack");
+            final Class<?> apiClass = Class.forName("dev.emi.emi.api.EmiApi");
+            final Class<?> stackClass = Class.forName("dev.emi.emi.api.stack.EmiStack");
+            emiApiClass = apiClass;
 
             // Get EmiStack.of(ItemStack) method
-            getStackFromItemStackMethod = emiStackClass.getMethod("of", ItemStack.class);
+            getStackFromItemStackMethod = stackClass.getMethod("of", ItemStack.class);
 
             // Get EmiApi methods
-            viewRecipesMethod = emiApiClass.getMethod("displayRecipes", emiStackClass);
-            viewUsesMethod = emiApiClass.getMethod("displayUses", emiStackClass);
+            viewRecipesMethod = apiClass.getMethod("displayRecipes", stackClass);
+            viewUsesMethod = apiClass.getMethod("displayUses", stackClass);
 
             // Try to get cheat mode check
             try {
-                isCheatModeMethod = emiApiClass.getMethod("isCheatMode");
+                isCheatModeMethod = apiClass.getMethod("isCheatMode");
             } catch (NoSuchMethodException e) {
                 LOGGER.trace("[Compat:emi] Cheat mode method not available", e);
             }
@@ -137,12 +137,13 @@ public class EmiCompat implements CompatModule {
      */
     @Nullable
     public static Object toEmiStack(ItemStack stack) {
-        if (!apiAvailable || stack == null || stack.isEmpty() || getStackFromItemStackMethod == null) {
+        final Method stackMethod = getStackFromItemStackMethod;
+        if (!apiAvailable || stack == null || stack.isEmpty() || stackMethod == null) {
             return null;
         }
 
         try {
-            return getStackFromItemStackMethod.invoke(null, stack);
+            return stackMethod.invoke(null, stack);
         } catch (Exception e) {
             LOGGER.debug("[Compat:emi] Failed to convert to EmiStack: {}", e.getMessage());
             return null;
@@ -157,7 +158,8 @@ public class EmiCompat implements CompatModule {
      * @return true if the recipe view was opened
      */
     public static boolean showRecipes(ItemStack stack) {
-        if (!apiAvailable || viewRecipesMethod == null) {
+        final Method recipesMethod = viewRecipesMethod;
+        if (!apiAvailable || recipesMethod == null) {
             return false;
         }
 
@@ -167,7 +169,7 @@ public class EmiCompat implements CompatModule {
         }
 
         try {
-            Object result = viewRecipesMethod.invoke(null, emiStack);
+            Object result = recipesMethod.invoke(null, emiStack);
             if (result instanceof Boolean) {
                 boolean opened = (Boolean) result;
                 if (opened) {
@@ -190,7 +192,8 @@ public class EmiCompat implements CompatModule {
      * @return true if the usage view was opened
      */
     public static boolean showUses(ItemStack stack) {
-        if (!apiAvailable || viewUsesMethod == null) {
+        final Method usesMethod = viewUsesMethod;
+        if (!apiAvailable || usesMethod == null) {
             return false;
         }
 
@@ -200,7 +203,7 @@ public class EmiCompat implements CompatModule {
         }
 
         try {
-            Object result = viewUsesMethod.invoke(null, emiStack);
+            Object result = usesMethod.invoke(null, emiStack);
             if (result instanceof Boolean) {
                 boolean opened = (Boolean) result;
                 if (opened) {
@@ -221,12 +224,13 @@ public class EmiCompat implements CompatModule {
      * @return true if cheat mode is enabled
      */
     public static boolean isCheatModeEnabled() {
-        if (!apiAvailable || isCheatModeMethod == null) {
+        final Method cheatMethod = isCheatModeMethod;
+        if (!apiAvailable || cheatMethod == null) {
             return false;
         }
 
         try {
-            Object result = isCheatModeMethod.invoke(null);
+            Object result = cheatMethod.invoke(null);
             return result instanceof Boolean && (Boolean) result;
         } catch (Exception e) {
             return false;
@@ -257,13 +261,14 @@ public class EmiCompat implements CompatModule {
      * @return true if search was initiated
      */
     public static boolean searchItems(String query) {
-        if (!apiAvailable || query == null) {
+        final Class<?> apiClass = emiApiClass;
+        if (!apiAvailable || query == null || apiClass == null) {
             return false;
         }
 
         try {
             // Try to set search text
-            Method setSearchTextMethod = emiApiClass.getMethod("setSearchText", String.class);
+            Method setSearchTextMethod = apiClass.getMethod("setSearchText", String.class);
             setSearchTextMethod.invoke(null, query);
             LOGGER.debug("[Compat:emi] Set search to: {}", query);
             return true;

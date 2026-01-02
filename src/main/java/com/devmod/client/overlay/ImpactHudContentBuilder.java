@@ -8,11 +8,21 @@ import java.util.Optional;
 
 import net.minecraft.network.chat.Component;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.config.Config;
 import com.devmod.damage.DamageBreakdown;
 import com.devmod.util.I18n;
+import com.devmod.util.ThreadLocalPool;
 
 public final class ImpactHudContentBuilder {
+
+    // P2: Thread-local pools for ArrayList reuse in render loop
+    private static final ThreadLocalPool<ArrayList<HudSection>> SECTION_LIST_POOL =
+        ThreadLocalPool.ofList(ArrayList::new, 4);
+    private static final ThreadLocalPool<ArrayList<HudLine>> LINE_LIST_POOL =
+        ThreadLocalPool.ofList(ArrayList::new, 8);
+
     private ImpactHudContentBuilder() {}
 
     public enum LineType {
@@ -41,16 +51,16 @@ public final class ImpactHudContentBuilder {
     }
 
     public static final class Colors {
-        public static final int TITLE = 0xFF00FFFF; // Cyan
-        public static final int NORMAL = 0xFFFFFFFF; // White
-        public static final int VALUE = 0xFF00FF00; // Green
-        public static final int FORMULA = 0xFFFFD700; // Gold
-        public static final int MUTED = 0xFFAAAAAA; // Gray
-        public static final int HIGHLIGHT = 0xFFFF4444; // Red
-        public static final int REDUCTION = 0xFFFF8888; // Light red
-        public static final int AMPLIFIED = 0xFF88FF88; // Light green
-        public static final int HIGHLIGHT_SHADOW = 0xFF550000; // Dark red
-        public static final int CALCULATED_SHADOW = 0xFF005500; // Dark green
+        public static final int TITLE = DesignTokens.Accent.PRIMARY;           // Cyan
+        public static final int NORMAL = DesignTokens.Text.PRIMARY;            // White
+        public static final int VALUE = DesignTokens.Semantic.SUCCESS;         // Green
+        public static final int FORMULA = DesignTokens.Semantic.WARNING;       // Gold
+        public static final int MUTED = DesignTokens.Text.MUTED;               // Gray
+        public static final int HIGHLIGHT = DesignTokens.Semantic.ERROR;       // Red
+        public static final int REDUCTION = DesignTokens.Semantic.ERROR_MUTED; // Light red
+        public static final int AMPLIFIED = DesignTokens.Semantic.SUCCESS_MUTED; // Light green
+        public static final int HIGHLIGHT_SHADOW = OverlayTheme.Impact.HIGHLIGHT_SHADOW;
+        public static final int CALCULATED_SHADOW = OverlayTheme.Impact.CALCULATED_SHADOW;
 
         private Colors() {}
     }
@@ -85,10 +95,15 @@ public final class ImpactHudContentBuilder {
     }
 
     public static List<HudSection> buildContent(ImpactData data, NumberFormat format) {
-        List<HudSection> sections = new ArrayList<>();
-        sections.add(buildMainSection(data, format));
-        buildModSection(data, format).ifPresent(sections::add);
-        return sections;
+        // P2: Use pooled list, caller receives copy since HudSection uses List.copyOf internally
+        ArrayList<HudSection> sections = SECTION_LIST_POOL.acquire();
+        try {
+            sections.add(buildMainSection(data, format));
+            buildModSection(data, format).ifPresent(sections::add);
+            return List.copyOf(sections);
+        } finally {
+            SECTION_LIST_POOL.release(sections);
+        }
     }
 
     public static Optional<HudSection> buildHistorySection(ImpactData data, NumberFormat format) {
@@ -170,7 +185,16 @@ public final class ImpactHudContentBuilder {
     }
 
     public static HudSection buildMainSection(ImpactData data, NumberFormat format) {
-        List<HudLine> lines = new ArrayList<>();
+        // P2: Use pooled list - HudSection constructor calls List.copyOf so this is safe
+        ArrayList<HudLine> lines = LINE_LIST_POOL.acquire();
+        try {
+            return buildMainSectionImpl(data, format, lines);
+        } finally {
+            LINE_LIST_POOL.release(lines);
+        }
+    }
+
+    private static HudSection buildMainSectionImpl(ImpactData data, NumberFormat format, List<HudLine> lines) {
 
         Component partHit = Objects.requireNonNull(I18n.translate("devmod.hud.part_hit"), "partHitLabel")
             .append(Objects.requireNonNull(I18n.literal(": "), "partHitSeparator"))
@@ -197,40 +221,14 @@ public final class ImpactHudContentBuilder {
         ));
 
         DamageBreakdown bd = data.breakdown;
-        List<HudLine> breakdownLines = new ArrayList<>();
-        breakdownLines.add(new HudLine(
-            I18n.translate("devmod.hud.base_weapon_damage", format.formatValue(bd.baseWeaponDamage)),
-            Colors.NORMAL,
-            LineType.NORMAL,
-            Spacing.NONE
-        ));
-
-        for (DamageBreakdown.EnchantBonus eb : bd.enchantBonuses) {
-            if (eb.bonus() > 0) {
-                breakdownLines.add(new HudLine(
-                    I18n.translate("devmod.hud.enchant", eb.name(), format.formatValue(eb.bonus())),
-                    Colors.VALUE,
-                    LineType.VALUE,
-                    Spacing.NONE
-                ));
-            }
+        // P2: Use pooled list for breakdown lines
+        ArrayList<HudLine> breakdownLines = LINE_LIST_POOL.acquire();
+        try {
+            buildBreakdownLines(breakdownLines, bd, format);
+            lines.addAll(breakdownLines);
+        } finally {
+            LINE_LIST_POOL.release(breakdownLines);
         }
-
-        if (bd.pehkuiSizeBonus > 0) {
-            breakdownLines.add(new HudLine(
-                I18n.translate("devmod.hud.pehkui_size_bonus", format.formatValue(bd.pehkuiSizeBonus)),
-                Colors.VALUE,
-                LineType.VALUE,
-                Spacing.NONE
-            ));
-        }
-
-        if (!breakdownLines.isEmpty()) {
-            int lastIndex = breakdownLines.size() - 1;
-            HudLine last = breakdownLines.get(lastIndex);
-            breakdownLines.set(lastIndex, last.withSpacing(Spacing.SECTION));
-        }
-        lines.addAll(breakdownLines);
 
         lines.add(new HudLine(
             I18n.translate("devmod.hud.formula", bd.getFormulaString()),
@@ -299,19 +297,29 @@ public final class ImpactHudContentBuilder {
     }
 
     public static Optional<HudSection> buildModSection(ImpactData data, NumberFormat format) {
-        if (!data.hasPehkuiModification() && !data.isBetterCombatAttack()) {
+        if (!data.hasPehkuiModification() && !data.isEpicFightCombat()) {
             return Optional.empty();
         }
 
         List<HudLine> lines = new ArrayList<>();
 
-        if (data.isBetterCombatAttack()) {
-            lines.add(new HudLine(
-                I18n.translate("devmod.hud.better_combat_arc"),
-                Colors.MUTED,
-                LineType.MUTED,
-                Spacing.NONE
-            ));
+        if (data.isEpicFightCombat()) {
+            String animName = data.getEpicFightAnimationName();
+            if (animName != null && !animName.isEmpty()) {
+                lines.add(new HudLine(
+                    I18n.translate("devmod.hud.epic_fight_animation", animName),
+                    Colors.MUTED,
+                    LineType.MUTED,
+                    Spacing.NONE
+                ));
+            } else {
+                lines.add(new HudLine(
+                    I18n.translate("devmod.hud.epic_fight_combat"),
+                    Colors.MUTED,
+                    LineType.MUTED,
+                    Spacing.NONE
+                ));
+            }
         }
 
         if (data.hasPehkuiModification()) {
@@ -335,6 +343,44 @@ public final class ImpactHudContentBuilder {
             false,
             Spacing.LARGE
         ));
+    }
+
+    /**
+     * P2: Helper to build damage breakdown lines into a pooled list.
+     */
+    private static void buildBreakdownLines(List<HudLine> breakdownLines, DamageBreakdown bd, NumberFormat format) {
+        breakdownLines.add(new HudLine(
+            I18n.translate("devmod.hud.base_weapon_damage", format.formatValue(bd.baseWeaponDamage)),
+            Colors.NORMAL,
+            LineType.NORMAL,
+            Spacing.NONE
+        ));
+
+        for (DamageBreakdown.EnchantBonus eb : bd.enchantBonuses) {
+            if (eb.bonus() > 0) {
+                breakdownLines.add(new HudLine(
+                    I18n.translate("devmod.hud.enchant", eb.name(), format.formatValue(eb.bonus())),
+                    Colors.VALUE,
+                    LineType.VALUE,
+                    Spacing.NONE
+                ));
+            }
+        }
+
+        if (bd.pehkuiSizeBonus > 0) {
+            breakdownLines.add(new HudLine(
+                I18n.translate("devmod.hud.pehkui_size_bonus", format.formatValue(bd.pehkuiSizeBonus)),
+                Colors.VALUE,
+                LineType.VALUE,
+                Spacing.NONE
+            ));
+        }
+
+        if (!breakdownLines.isEmpty()) {
+            int lastIndex = breakdownLines.size() - 1;
+            HudLine last = breakdownLines.get(lastIndex);
+            breakdownLines.set(lastIndex, last.withSpacing(Spacing.SECTION));
+        }
     }
 
     /**

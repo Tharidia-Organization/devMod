@@ -15,6 +15,7 @@ import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.fml.loading.FMLEnvironment;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.combat.HitHelper.BodyPart;
 import com.devmod.damage.DamageBreakdown;
 import com.devmod.integration.ModIntegrationManager;
@@ -60,8 +61,9 @@ public class ImpactData {
     @Nullable public final Float pehkuiVisualScale;
     @Nullable public final Float pehkuiHitboxScale;
 
-    // === Better Combat Data (nullable if not present) ===
-    @Nullable public final String betterCombatAttackName;
+    // === Epic Fight Data (nullable if not present) ===
+    @Nullable public final String epicFightAnimationName;
+    public final boolean epicFightCombatActive;
 
     // === Actual Damage (updated post-armor/enchants) ===
     private volatile float actualDamageDealt = -1f;  // -1 = not yet available
@@ -83,7 +85,7 @@ public class ImpactData {
     public ImpactData(UUID attackerUUID, LivingEntity target, BodyPart part, float multiplier,
                       DamageBreakdown breakdown, String attackSource, boolean isRanged,
                       @Nullable Vec3 hitPoint, @Nullable Vec3 slashDirection,
-                      @Nullable String bcAttackName) {
+                      @Nullable String epicFightAnimation, boolean epicFightActive) {
         this.timestamp = System.currentTimeMillis();
         this.attackerUUID = attackerUUID;
         this.targetRef = new WeakReference<>(target);
@@ -102,25 +104,26 @@ public class ImpactData {
         this.pehkuiVisualScale = ModIntegrationManager.getPehkuiScale(target);
         this.pehkuiHitboxScale = ModIntegrationManager.getPehkuiHitboxScale(target);
 
-        // Better Combat
-        this.betterCombatAttackName = bcAttackName;
+        // Epic Fight integration
+        this.epicFightAnimationName = epicFightAnimation;
+        this.epicFightCombatActive = epicFightActive;
     }
 
     /**
-     * Constructor with hit point (without BC).
+     * Constructor with hit point (without Epic Fight data).
      */
     public ImpactData(UUID attackerUUID, LivingEntity target, BodyPart part, float multiplier,
                       DamageBreakdown breakdown, String attackSource, boolean isRanged,
                       @Nullable Vec3 hitPoint, @Nullable Vec3 slashDirection) {
-        this(attackerUUID, target, part, multiplier, breakdown, attackSource, isRanged, hitPoint, slashDirection, null);
+        this(attackerUUID, target, part, multiplier, breakdown, attackSource, isRanged, hitPoint, slashDirection, null, false);
     }
 
     /**
-     * Simplified constructor (without position and BC).
+     * Simplified constructor (without position and Epic Fight data).
      */
     public ImpactData(UUID attackerUUID, LivingEntity target, BodyPart part, float multiplier,
                       DamageBreakdown breakdown, String attackSource, boolean isRanged) {
-        this(attackerUUID, target, part, multiplier, breakdown, attackSource, isRanged, null, null, null);
+        this(attackerUUID, target, part, multiplier, breakdown, attackSource, isRanged, null, null, null, false);
     }
 
     // === Static methods for global access (multiplayer-safe) ===
@@ -344,18 +347,26 @@ public class ImpactData {
     }
 
     /**
-     * Checks if the attack comes from Better Combat.
+     * Checks if the attack comes from Epic Fight combat.
      */
-    public boolean isBetterCombatAttack() {
-        return betterCombatAttackName != null && !betterCombatAttackName.isEmpty();
+    public boolean isEpicFightCombat() {
+        return epicFightCombatActive;
+    }
+
+    /**
+     * Gets the Epic Fight animation name if available.
+     */
+    @Nullable
+    public String getEpicFightAnimationName() {
+        return epicFightAnimationName;
     }
 
     /**
      * Gets a formatted description of the attack.
      */
     public String getFormattedAttackSource() {
-        if (isBetterCombatAttack()) {
-            return "Better Combat '" + betterCombatAttackName + "'";
+        if (isEpicFightCombat() && epicFightAnimationName != null) {
+            return "Epic Fight '" + epicFightAnimationName + "'";
         }
         return attackSource;
     }
@@ -364,8 +375,8 @@ public class ImpactData {
      * Gets a formatted description of the attack as a component.
      */
     public Component getFormattedAttackSourceComponent() {
-        if (isBetterCombatAttack()) {
-            return I18n.translate("devmod.hud.attack_source.better_combat", betterCombatAttackName);
+        if (isEpicFightCombat() && epicFightAnimationName != null) {
+            return I18n.translate("devmod.hud.attack_source.epic_fight", epicFightAnimationName);
         }
 
         if (attackSource.startsWith("devmod.hud.attack_source.")) {
@@ -377,13 +388,14 @@ public class ImpactData {
 
     /**
      * Gets the body part color for the UI.
+     * Uses centralized OverlayTheme.BodyPart tokens.
      */
     public int getBodyPartColor() {
         return switch (bodyPart) {
-            case HEAD -> 0xFF00FFFF;  // Cyan
-            case BODY -> 0xFF00FF00;  // Green
-            case ARMS -> 0xFFFFFF00;  // Yellow
-            case LEGS -> 0xFFFF0000;  // Red
+            case HEAD -> OverlayTheme.BodyPart.HEAD;
+            case BODY -> OverlayTheme.BodyPart.BODY;
+            case ARMS -> OverlayTheme.BodyPart.ARMS;
+            case LEGS -> OverlayTheme.BodyPart.LEGS;
         };
     }
 

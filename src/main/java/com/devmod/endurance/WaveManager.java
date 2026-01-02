@@ -240,6 +240,47 @@ public class WaveManager {
             externalRespawnCount += allowed;
             return allowed;
         }
+
+        /**
+         * Gets the zone layout for this wave, if available.
+         */
+        public @javax.annotation.Nullable com.devmod.arena.zone.ZoneLayout getZoneLayout() {
+            final SpawnContext ctx = spawnContext;
+            return ctx != null ? ctx.zoneLayout : null;
+        }
+
+        /**
+         * Checks if this wave has multi-zone layout.
+         */
+        public boolean hasZones() {
+            final SpawnContext ctx = spawnContext;
+            return ctx != null && ctx.hasZones();
+        }
+
+        /**
+         * Sets the total spawn count (used when adjusting for spawn failures).
+         */
+        public void setTotalToSpawn(int newTotal) {
+            totalToSpawn = Math.max(1, newTotal);
+        }
+
+        /**
+         * Removes the affix mapping for a mob.
+         */
+        public void removeAffixForMob(UUID mobId) {
+            if (mobId != null) {
+                spawnAffixes.remove(mobId);
+            }
+        }
+
+        /**
+         * Sets the affix for a mob.
+         */
+        public void setAffixForMob(UUID mobId, SpawnAffix affix) {
+            if (mobId != null && affix != null) {
+                spawnAffixes.put(mobId, affix);
+            }
+        }
     }
 
     /**
@@ -872,33 +913,58 @@ public class WaveManager {
         return null;
     }
 
-    static class SpawnContext {
-        final List<BlockPos> positions;
-        final Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap;
-        final @javax.annotation.Nullable ArenaTemplate template;
-        final @javax.annotation.Nullable TemplateSpawnValidator runtimeValidator;
-        final SpawnPools pools;
+    public static class SpawnContext {
+        public final List<BlockPos> positions;
+        public final Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap;
+        public final @javax.annotation.Nullable ArenaTemplate template;
+        public final @javax.annotation.Nullable TemplateSpawnValidator runtimeValidator;
+        public final SpawnPools pools;
+        public final @javax.annotation.Nullable com.devmod.arena.zone.ZoneLayout zoneLayout;
+        public final @javax.annotation.Nullable com.devmod.arena.zone.ZoneSpawnSlotAllocator zoneAllocator;
+        public final int maxEntities;
 
-        SpawnContext(List<BlockPos> positions,
+        public SpawnContext(List<BlockPos> positions,
                      Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap,
                      @javax.annotation.Nullable ArenaTemplate template,
                      @javax.annotation.Nullable TemplateSpawnValidator runtimeValidator,
                      SpawnPools pools) {
+            this(positions, slotMap, template, runtimeValidator, pools, null, null, 0);
+        }
+
+        public SpawnContext(List<BlockPos> positions,
+                     Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap,
+                     @javax.annotation.Nullable ArenaTemplate template,
+                     @javax.annotation.Nullable TemplateSpawnValidator runtimeValidator,
+                     SpawnPools pools,
+                     @javax.annotation.Nullable com.devmod.arena.zone.ZoneLayout zoneLayout,
+                     @javax.annotation.Nullable com.devmod.arena.zone.ZoneSpawnSlotAllocator zoneAllocator,
+                     int maxEntities) {
             this.positions = positions;
             this.slotMap = slotMap;
             this.template = template;
             this.runtimeValidator = runtimeValidator;
             this.pools = pools;
+            this.zoneLayout = zoneLayout;
+            this.zoneAllocator = zoneAllocator;
+            this.maxEntities = maxEntities;
+        }
+
+        public boolean hasZones() {
+            return zoneLayout != null && zoneLayout.isMultiZone();
+        }
+
+        public boolean canSpawnMore(int currentCount) {
+            return maxEntities <= 0 || currentCount < maxEntities;
         }
     }
 
-    private static class SpawnPools {
-        final List<BlockPos> all;
-        final List<BlockPos> melee;
-        final List<BlockPos> ranged;
-        final List<BlockPos> corner;
+    public static class SpawnPools {
+        public final List<BlockPos> all;
+        public final List<BlockPos> melee;
+        public final List<BlockPos> ranged;
+        public final List<BlockPos> corner;
 
-        SpawnPools(List<BlockPos> all, List<BlockPos> melee, List<BlockPos> ranged, List<BlockPos> corner) {
+        public SpawnPools(List<BlockPos> all, List<BlockPos> melee, List<BlockPos> ranged, List<BlockPos> corner) {
             this.all = all;
             this.melee = melee;
             this.ranged = ranged;

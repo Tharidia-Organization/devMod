@@ -7,11 +7,13 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import io.netty.buffer.ByteBuf;
+import com.devmod.network.PayloadValidation;
 
 public record QuestCompletionPayload(
     // Quest info
@@ -54,7 +56,7 @@ public record QuestCompletionPayload(
 
     // Achievements (names)
     List<String> achievementNames
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_STRING_LENGTH = 256;
     private static final int MAX_ACHIEVEMENTS = 10;
@@ -182,6 +184,45 @@ public record QuestCompletionPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += estimatedFixedUtfSize(questName);
+        size += 4; // finalWave
+        size += 4; // totalWaves
+        size += 1; // endlessMode
+        size += 8; // durationMs
+        size += estimatedFixedUtfSize(templateId);
+        size += 4; // templateVersion
+        size += estimatedFixedUtfSize(policyId);
+        size += 4; // policyVersion
+        size += estimatedFixedUtfSize(instanceId);
+        size += estimatedFixedUtfSize(arenaId);
+        size += estimatedFixedUtfSize(difficultyLabel);
+        size += estimatedFixedUtfSize(questTypeLabel);
+        size += 4; // tokensEarned
+        size += 4; // baseTokens
+        size += 4; // prestigeEarned
+        size += 4; // bloodGemsEarned
+        size += 4; // styleMultiplier
+        size += 4; // mutatorMultiplier
+        size += 1; // noHitBonus
+        size += 1; // speedBonus
+        size += 4; // styleRankOrdinal
+        size += 4; // activeMutators
+        size += 4; // totalKills
+        size += 4; // totalDamageDealt
+        size += 4; // totalDamageTaken
+        size += 4; // deaths
+        size += 4; // maxCombo
+        int count = Math.min(achievementNames.size(), MAX_ACHIEVEMENTS);
+        size += 4; // achievement count
+        for (int i = 0; i < count; i++) {
+            size += estimatedFixedUtfSize(achievementNames.get(i));
+        }
+        return size;
+    }
+
     /**
      * Get style rank enum from ordinal.
      */
@@ -201,5 +242,13 @@ public record QuestCompletionPayload(
         long minutes = seconds / 60;
         seconds = seconds % 60;
         return String.format("%d:%02d", minutes, seconds);
+    }
+
+    private static int estimatedFixedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return 4;
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return 4 + bytes.length;
     }
 }

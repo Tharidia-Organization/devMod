@@ -15,9 +15,9 @@ import com.devmod.client.ui.editor.EditorModule;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.WeaponTypeDetector;
 import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorSpacing;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.modules.RangedModule;
 import com.devmod.client.ui.editor.modules.WeaponModule;
 import com.devmod.config.EditorClientConfig;
@@ -176,7 +176,7 @@ public final class LowConfidenceDetector extends BaseOverlay {
 
         // Title
         graphics.drawString(safeFont, "Low Confidence Detection", x + PADDING, y + PADDING,
-            UIConstants.Text.TITLE(), false);
+            DesignTokens.Text.TITLE(), false);
 
         // Item info
         var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(currentItem.getItem()));
@@ -186,30 +186,30 @@ public final class LowConfidenceDetector extends BaseOverlay {
         int textY = y + TEXT_START_Y;
 
         graphics.drawString(safeFont, "Item: " + itemId, textX, textY,
-            UIConstants.Text.SECONDARY(), false);
+            DesignTokens.Text.SECONDARY(), false);
         textY += TEXT_LINE_STEP;
 
         graphics.drawString(safeFont,
             "Detected: " + pendingDetection.type() + " via " + pendingDetection.method(),
-            textX, textY, UIConstants.Text.SECONDARY(), false);
+            textX, textY, DesignTokens.Text.SECONDARY(), false);
         textY += TEXT_LINE_STEP;
 
         graphics.drawString(safeFont,
             "Confidence: " + String.format("%.0f%%", pendingDetection.confidence() * 100),
-            textX, textY, UIConstants.Text.SECONDARY(), false);
+            textX, textY, DesignTokens.Text.SECONDARY(), false);
 
         // Hints
         textY = y + HINT_START_Y;
         graphics.drawString(safeFont, "Add to whitelist/tag to skip this warning next time.",
-            textX, textY, UIConstants.Text.MUTED(), false);
+            textX, textY, DesignTokens.Text.MUTED(), false);
         textY += TEXT_LINE_STEP;
         graphics.drawString(safeFont, "Config: config/devmod/weapon_whitelist.json",
-            textX, textY, UIConstants.Text.MUTED(), false);
+            textX, textY, DesignTokens.Text.MUTED(), false);
 
         // Status message
         if (statusMessage != null) {
             graphics.drawString(safeFont, statusMessage, textX, y + height - STATUS_OFFSET_Y,
-                UIConstants.Accent.ORANGE(), false);
+                DesignTokens.Accent.ORANGE(), false);
         }
 
         // Buttons
@@ -226,19 +226,19 @@ public final class LowConfidenceDetector extends BaseOverlay {
 
         // Draw button backgrounds
         graphics.fill(btnContinueX, btnY, btnContinueX + btnW, btnY + btnH,
-            UIConstants.Background.INPUT());
+            DesignTokens.Background.INPUT());
         graphics.fill(btnWhitelistX, btnY, btnWhitelistX + btnW, btnY + btnH,
-            UIConstants.Background.INPUT());
+            DesignTokens.Background.INPUT());
         graphics.fill(btnCancelX, btnY, btnCancelX + btnW, btnY + btnH,
-            UIConstants.Background.INPUT());
+            DesignTokens.Background.INPUT());
 
         // Draw button labels
         graphics.drawString(safeFont, "Continue", btnContinueX + BTN_TEXT_CONTINUE_X,
-            btnY + BTN_TEXT_Y, UIConstants.Text.PRIMARY(), false);
+            btnY + BTN_TEXT_Y, DesignTokens.Text.PRIMARY(), false);
         graphics.drawString(safeFont, "Whitelist", btnWhitelistX + BTN_TEXT_WHITELIST_X,
-            btnY + BTN_TEXT_Y, UIConstants.Text.PRIMARY(), false);
+            btnY + BTN_TEXT_Y, DesignTokens.Text.PRIMARY(), false);
         graphics.drawString(safeFont, "Cancel", btnCancelX + BTN_TEXT_CANCEL_X,
-            btnY + BTN_TEXT_Y, UIConstants.Text.PRIMARY(), false);
+            btnY + BTN_TEXT_Y, DesignTokens.Text.PRIMARY(), false);
 
         // Cache button bounds for click handling
         continueBounds = new ResponsiveLayout.Rect(btnContinueX, btnY, btnW, btnH);
@@ -287,7 +287,7 @@ public final class LowConfidenceDetector extends BaseOverlay {
                 if (statusConsumer != null) {
                     var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(safeItem.getItem()));
                     String label = id == null ? "<unknown>" : id.toString();
-                    statusConsumer.accept("Whitelisted " + label, UIConstants.Accent.GREEN());
+                    statusConsumer.accept("Whitelisted " + label, DesignTokens.Accent.GREEN());
                 }
                 reset();
             }

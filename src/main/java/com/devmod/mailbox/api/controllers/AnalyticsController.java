@@ -4,6 +4,8 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import io.javalin.http.Context;
+
 import com.devmod.mailbox.analytics.MailboxAnalyticsEngine;
 import com.devmod.mailbox.analytics.MailboxAnalyticsEngine.AnomalyAlert;
 import com.devmod.mailbox.analytics.MailboxAnalyticsEngine.DashboardMetrics;
@@ -13,8 +15,6 @@ import com.devmod.mailbox.broadcast.BroadcastQueueWorker;
 import com.devmod.mailbox.digest.DigestManager;
 import com.devmod.mailbox.persistence.DbPerformanceMonitor;
 import com.devmod.mailbox.scheduler.MessageScheduler;
-
-import io.javalin.http.Context;
 
 /**
  * REST API controller for advanced analytics and system monitoring.

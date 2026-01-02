@@ -17,7 +17,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.party.ClientPartyCache;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartySyncPayload;
 
@@ -28,26 +28,26 @@ public class PartyHudOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "party_hud");
 
-    // === Colors ===
-    private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
-    private static final int PANEL_BORDER = UIConstants.Border.DEFAULT();
-    private static final int TEXT_PRIMARY = UIConstants.Text.PRIMARY();
-    private static final int TEXT_SECONDARY = UIConstants.Text.SECONDARY();
-    private static final int COLOR_LEADER = UIConstants.Accent.GOLD();
-    private static final int COLOR_READY = UIConstants.Accent.GREEN();
-    private static final int COLOR_NOT_READY = UIConstants.Accent.RED();
-    private static final int COLOR_OFFLINE = UIConstants.Text.DISABLED();
+    // === Colors (using DesignTokens for consistency) ===
+    private static final int PANEL_BG = DesignTokens.Bg.LEVEL_1;              // Standard 0xE0 alpha
+    private static final int PANEL_BORDER = DesignTokens.Stroke.DEFAULT;
+    private static final int TEXT_PRIMARY = DesignTokens.Text.PRIMARY;
+    private static final int TEXT_SECONDARY = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_LEADER = DesignTokens.Semantic.WARNING;     // Gold for leader
+    private static final int COLOR_OFFLINE = DesignTokens.Text.MUTED;
 
-    private static final int HEALTH_BG = 0xFF333333;
-    private static final int HEALTH_HIGH = UIConstants.Accent.GREEN();
-    private static final int HEALTH_MED = UIConstants.Accent.GOLD();
-    private static final int HEALTH_LOW = UIConstants.Accent.RED();
+    private static final int STATUS_BAR_BG = DesignTokens.Surface.LEVEL_0;
+    private static final int STATUS_READY = DesignTokens.Semantic.SUCCESS;
+    private static final int STATUS_WAITING = DesignTokens.Semantic.WARNING;
+    private static final int STATUS_OFFLINE = DesignTokens.Semantic.ERROR;
 
-    // === Dimensions ===
+    // === Dimensions (using DesignTokens grid) ===
     private static final int PANEL_WIDTH = 120;
-    private static final int MEMBER_HEIGHT = 20;
-    private static final int HEALTH_BAR_HEIGHT = 3;
+    private static final int MEMBER_HEIGHT = DesignTokens.Component.ROW_HEIGHT_COMPACT; // 24px
+    private static final int STATUS_BAR_HEIGHT = 3;
     private static final int PADDING = 6;
+    private static final int HEADER_HEIGHT = 12;
+    private static final int MAX_VISIBLE_MEMBERS = 8;
     private static final int MARGIN_LEFT = 10;
     private static final int MARGIN_TOP = 300; // Below EnduranceQuestOverlay
 
@@ -81,11 +81,21 @@ public class PartyHudOverlay {
 
         Font font = mc.font;
 
+        int totalMembers = members.size();
+        int visibleCount = Math.min(totalMembers, MAX_VISIBLE_MEMBERS);
+        boolean hasOverflow = totalMembers > MAX_VISIBLE_MEMBERS;
+
         // Calculate panel size
-        int panelHeight = PADDING * 2 + members.size() * MEMBER_HEIGHT;
+        int panelHeight = PADDING + HEADER_HEIGHT + visibleCount * MEMBER_HEIGHT + PADDING;
+        if (hasOverflow) {
+            panelHeight += MEMBER_HEIGHT;
+        }
 
         int x = MARGIN_LEFT;
-        int y = MARGIN_TOP;
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
+        int maxY = screenHeight - panelHeight - 10;
+        int y = Math.min(MARGIN_TOP, maxY);
+        y = Math.max(10, y);
 
         // Panel background
         graphics.fill(x, y, x + PANEL_WIDTH, y + panelHeight, PANEL_BG);
@@ -97,10 +107,16 @@ public class PartyHudOverlay {
         graphics.drawString(safeFont, header, x + PADDING, y + PADDING - 2, TEXT_SECONDARY);
 
         // Member list
-        int memberY = y + PADDING + 12;
-        for (PartySyncPayload.PartyMemberInfo member : members) {
+        int memberY = y + PADDING + HEADER_HEIGHT;
+        for (int i = 0; i < visibleCount; i++) {
+            PartySyncPayload.PartyMemberInfo member = members.get(i);
             renderMember(graphics, font, member, x + PADDING, memberY);
             memberY += MEMBER_HEIGHT;
+        }
+
+        if (hasOverflow) {
+            String moreText = "+" + (totalMembers - visibleCount) + " more";
+            graphics.drawString(safeFont, moreText, x + PADDING, memberY + 4, TEXT_SECONDARY);
         }
     }
 
@@ -111,7 +127,7 @@ public class PartyHudOverlay {
         int statusColor = getStatusColor(member);
         graphics.fill(x, y + 2, x + 4, y + 6, statusColor);
 
-        // Leader star or ready indicator
+        // Leader star
         String prefix = member.isLeader() ? "\u2605 " : "";
         int nameColor = member.isLeader() ? COLOR_LEADER :
                        (member.isOnline() ? TEXT_PRIMARY : COLOR_OFFLINE);
@@ -120,33 +136,44 @@ public class PartyHudOverlay {
         String name = prefix + truncateName(member.playerName(), 10);
         graphics.drawString(Objects.requireNonNull(font), name, x + 8, y, nameColor);
 
-        // Health bar (placeholder - actual health would come from server sync)
-        // For now, show ready status as "health"
+        // Status label
+        String statusLabel = getStatusLabel(member);
+        int statusWidth = font.width(statusLabel);
+        int statusX = x + (PANEL_WIDTH - PADDING * 2) - statusWidth;
+        graphics.drawString(Objects.requireNonNull(font), statusLabel, statusX, y, statusColor);
+
+        // Status bar (represents readiness/offline state)
         int barX = x;
         int barY = y + 10;
         int barWidth = PANEL_WIDTH - PADDING * 2 - 8;
 
-        graphics.fill(barX, barY, barX + barWidth, barY + HEALTH_BAR_HEIGHT, HEALTH_BG);
+        graphics.fill(barX, barY, barX + barWidth, barY + STATUS_BAR_HEIGHT, STATUS_BAR_BG);
 
         if (member.isOnline()) {
             int fillWidth = barWidth;
-            int fillColor = HEALTH_HIGH;
+            int fillColor = STATUS_READY;
             if (!member.isReady()) {
                 fillWidth = barWidth / 3;
-                fillColor = HEALTH_MED;
+                fillColor = STATUS_WAITING;
             }
-            graphics.fill(barX, barY, barX + fillWidth, barY + HEALTH_BAR_HEIGHT, fillColor);
+            graphics.fill(barX, barY, barX + fillWidth, barY + STATUS_BAR_HEIGHT, fillColor);
         } else {
             // Offline members: short red bar to signal unavailable
             int fillWidth = barWidth / 4;
-            graphics.fill(barX, barY, barX + fillWidth, barY + HEALTH_BAR_HEIGHT, HEALTH_LOW);
+            graphics.fill(barX, barY, barX + fillWidth, barY + STATUS_BAR_HEIGHT, STATUS_OFFLINE);
         }
     }
 
     private static int getStatusColor(PartySyncPayload.PartyMemberInfo member) {
-        if (!member.isOnline()) return COLOR_OFFLINE;
-        if (member.isReady()) return COLOR_READY;
-        return COLOR_NOT_READY;
+        if (!member.isOnline()) return STATUS_OFFLINE;
+        if (member.isReady()) return STATUS_READY;
+        return STATUS_WAITING;
+    }
+
+    private static String getStatusLabel(PartySyncPayload.PartyMemberInfo member) {
+        if (!member.isOnline()) return "OFF";
+        if (member.isReady()) return "RDY";
+        return "WAIT";
     }
 
     private static String truncateName(String name, int maxLen) {

@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import com.devmod.endurance.BossAlertPayload;
@@ -38,17 +39,178 @@ import com.devmod.endurance.TensionUpdatePayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
+import com.devmod.network.ChannelId;
 import com.devmod.network.NetworkHandler;
 import com.devmod.network.PacketValidator;
 import com.devmod.network.PacketValidator.ValidationResult;
+import com.devmod.network.PayloadValidation.PayloadLimits;
 import com.devmod.util.I18n;
 
-public final class EnduranceNetworkHandler extends NetworkHandlerBase {
+import static com.devmod.network.PayloadValidation.validated;
+
+/**
+ * P2: Domain-specific network handler for endurance quest system payloads.
+ * Handles quest lifecycle, perks, shop, and wave directives.
+ */
+public final class EnduranceNetworkHandler extends NetworkHandlerBase implements PayloadRegistrar {
+
+    public static final EnduranceNetworkHandler INSTANCE = new EnduranceNetworkHandler();
 
     private EnduranceNetworkHandler() {}
 
     private static final long PERK_SELECTION_TIMEOUT_MS = 20_000L;
     private static final long DIRECTIVE_SELECTION_TIMEOUT_MS = 15_000L;
+
+    // =================================================================================
+    // PAYLOAD REGISTRATION (P2: Domain-specific registration)
+    // =================================================================================
+
+    @Override
+    public String getDomainName() {
+        return "endurance";
+    }
+
+    @Override
+    public void registerPayloads(RegisterPayloadHandlersEvent event) {
+        // START_QUEST: Client -> Server quest start request
+        event.registrar(ChannelId.START_QUEST.asString()).playToServer(
+            nn(StartQuestPayload.TYPE),
+            nn(StartQuestPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleStartEnduranceQuest, PayloadLimits.SMALL)
+        );
+
+        // QUEST_ACTION: Client -> Server quest actions (respawn, checkpoint, abandon)
+        event.registrar(ChannelId.QUEST_ACTION.asString()).playToServer(
+            nn(QuestActionPayload.TYPE),
+            nn(QuestActionPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleQuestAction, PayloadLimits.QUEST_ACTION)
+        );
+
+        // QUEST_SYNC: Server -> Client quest state sync
+        event.registrar(ChannelId.QUEST_SYNC.asString()).playToClient(
+            nn(QuestSyncPayload.TYPE),
+            nn(QuestSyncPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleQuestSync, PayloadLimits.LARGE)
+        );
+
+        // SHOP_PURCHASE: Client -> Server shop purchase request
+        event.registrar(ChannelId.SHOP_PURCHASE.asString()).playToServer(
+            nn(ShopPurchasePayload.TYPE),
+            nn(ShopPurchasePayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleShopPurchase, PayloadLimits.SMALL)
+        );
+
+        // SHOP_SYNC: Server -> Client shop state sync
+        event.registrar(ChannelId.SHOP_SYNC.asString()).playToClient(
+            nn(ShopSyncPayload.TYPE),
+            nn(ShopSyncPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleShopSync, PayloadLimits.SYNC_MEDIUM)
+        );
+
+        // REQUEST_SHOP_SYNC: Client -> Server request for shop sync
+        event.registrar(ChannelId.REQUEST_SHOP_SYNC.asString()).playToServer(
+            nn(RequestShopSyncPayload.TYPE),
+            nn(RequestShopSyncPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleRequestShopSync, PayloadLimits.SMALL)
+        );
+
+        // QUEST_DEATH: Server -> Client death screen
+        event.registrar(ChannelId.QUEST_DEATH.asString()).playToClient(
+            nn(QuestDeathPayload.TYPE),
+            nn(QuestDeathPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleQuestDeath, PayloadLimits.SMALL)
+        );
+
+        // PERK_CHOICES: Server -> Client perk selection options
+        event.registrar(ChannelId.PERK_CHOICES.asString()).playToClient(
+            nn(PerkChoicesPayload.TYPE),
+            nn(PerkChoicesPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handlePerkChoices, PayloadLimits.SMALL)
+        );
+
+        // PERK_SELECTION: Client -> Server perk selection
+        event.registrar(ChannelId.PERK_SELECTION.asString()).playToServer(
+            nn(PerkSelectionPayload.TYPE),
+            nn(PerkSelectionPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handlePerkSelection, PayloadLimits.SMALL)
+        );
+
+        // QUEST_COMPLETION: Server -> Client completion screen
+        event.registrar(ChannelId.QUEST_COMPLETION.asString()).playToClient(
+            nn(QuestCompletionPayload.TYPE),
+            nn(QuestCompletionPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleQuestCompletion, PayloadLimits.MEDIUM)
+        );
+
+        // PERSONAL_RECORDS_SYNC: Server -> Client personal records
+        event.registrar(ChannelId.PERSONAL_RECORDS_SYNC.asString()).playToClient(
+            nn(PersonalRecordsSyncPayload.TYPE),
+            nn(PersonalRecordsSyncPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handlePersonalRecordsSync, PayloadLimits.MEDIUM)
+        );
+
+        // REQUEST_PERSONAL_RECORDS: Client -> Server request for records
+        event.registrar(ChannelId.REQUEST_PERSONAL_RECORDS.asString()).playToServer(
+            nn(RequestPersonalRecordsPayload.TYPE),
+            nn(RequestPersonalRecordsPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleRequestPersonalRecords, PayloadLimits.SMALL)
+        );
+
+        // BOSS_ALERT: Server -> Client boss wave alert
+        event.registrar(ChannelId.BOSS_ALERT.asString()).playToClient(
+            nn(BossAlertPayload.TYPE),
+            nn(BossAlertPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleBossAlert, PayloadLimits.SMALL)
+        );
+
+        // TENSION_UPDATE: Server -> Client tension system update
+        event.registrar(ChannelId.TENSION_UPDATE.asString()).playToClient(
+            nn(TensionUpdatePayload.TYPE),
+            nn(TensionUpdatePayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleTensionUpdate, PayloadLimits.SMALL)
+        );
+
+        // INSTANCE_LOADING: Server -> Client loading overlay
+        event.registrar(ChannelId.INSTANCE_LOADING.asString()).playToClient(
+            nn(InstanceLoadingPayload.TYPE),
+            nn(InstanceLoadingPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleInstanceLoading, PayloadLimits.SMALL)
+        );
+
+        // WAVE_DIRECTIVE_CHOICES: Server -> Client wave directive options
+        event.registrar(ChannelId.WAVE_DIRECTIVE_CHOICES.asString()).playToClient(
+            nn(WaveDirectiveChoicesPayload.TYPE),
+            nn(WaveDirectiveChoicesPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleWaveDirectiveChoices, PayloadLimits.SMALL)
+        );
+
+        // WAVE_DIRECTIVE_SELECTION: Client -> Server directive selection
+        event.registrar(ChannelId.WAVE_DIRECTIVE_SELECTION.asString()).playToServer(
+            nn(WaveDirectiveSelectionPayload.TYPE),
+            nn(WaveDirectiveSelectionPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleWaveDirectiveSelection, PayloadLimits.SMALL)
+        );
+    }
+
+    // =================================================================================
+    // BOSS ALERT (client-side)
+    // =================================================================================
+    public static void handleBossAlert(BossAlertPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleBossAlert(payload))), "boss alert");
+        }
+    }
+
+    // =================================================================================
+    // TENSION UPDATE (client-side)
+    // =================================================================================
+    public static void handleTensionUpdate(TensionUpdatePayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            observeFuture(context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleTensionUpdate(payload))), "tension update");
+        }
+    }
 
     // =================================================================================
     // START ENDURANCE QUEST

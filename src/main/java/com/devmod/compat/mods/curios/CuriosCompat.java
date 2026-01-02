@@ -8,40 +8,24 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
+import com.devmod.compat.BaseCompatModule;
 
 /**
  * Compatibility module for Curios API 9.x (NeoForge 1.21.1)
  *
- * Uses the new CuriosApi.getCuriosInventory() pattern instead of the
+ * <p>Uses the new CuriosApi.getCuriosInventory() pattern instead of the
  * deprecated ICuriosHelper methods.
+ *
+ * <p>Migrated to extend BaseCompatModule for standardized initialization,
+ * reflection caching, and error handling.
  */
-public class CuriosCompat implements CompatModule {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CuriosCompat.class);
+public class CuriosCompat extends BaseCompatModule {
+
     public static final String MOD_ID = "curios";
-
-    private static boolean available = false;
-    private static boolean initialized = false;
-
-    // Cached reflection references
-    private static Class<?> curiosApiClass;
-    private static Class<?> curiosItemHandlerClass;
-    private static Class<?> slotStacksHandlerClass;
-    private static Class<?> dynamicStackHandlerClass;
-
-    private static Method getCuriosInventoryMethod;
-    private static Method getStacksHandlerMethod;
-    private static Method getCuriosMethod;
-    private static Method getStacksMethod;
-    private static Method getSlotsMethod;
 
     // Slot type constants
     public static final String SLOT_HEAD = "head";
@@ -54,98 +38,103 @@ public class CuriosCompat implements CompatModule {
     public static final String SLOT_CHARM = "charm";
     public static final String SLOT_CURIO = "curio"; // Generic slot
 
-    @Override
-    public String modId() {
-        return MOD_ID;
+    // Class names for reflection
+    private static final String CURIOS_API_CLASS = "top.theillusivec4.curios.api.CuriosApi";
+    private static final String CURIOS_ITEM_HANDLER_CLASS = "top.theillusivec4.curios.api.type.capability.ICuriosItemHandler";
+    private static final String SLOT_STACKS_HANDLER_CLASS = "top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler";
+    private static final String SLOT_STACKS_HANDLER_CLASS_ALT = "top.theillusivec4.curios.api.type.capability.ICurioStacksHandler";
+    private static final String DYNAMIC_STACK_HANDLER_CLASS = "top.theillusivec4.curios.api.type.inventory.IDynamicStackHandler";
+
+    // Method cache keys
+    private static final String KEY_GET_CURIOS_INVENTORY = "getCuriosInventory";
+    private static final String KEY_GET_STACKS_HANDLER = "getStacksHandler";
+    private static final String KEY_GET_CURIOS = "getCurios";
+    private static final String KEY_GET_STACKS = "getStacks";
+    private static final String KEY_GET_SLOTS = "getSlots";
+    private static final String KEY_GET_STACK_IN_SLOT = "getStackInSlot";
+    private static final String KEY_GET_DYNAMIC_SLOTS = "getDynamicSlots";
+
+    // Singleton instance
+    private static CuriosCompat instance;
+
+    public CuriosCompat() {
+        super(MOD_ID, "Curios API", 20); // Medium-high priority - equipment API
+        instance = this;
     }
 
     @Override
-    public String displayName() {
-        return "Curios API";
-    }
+    protected void doInitCommon() throws Exception {
+        // Load CuriosApi class
+        Class<?> curiosApiClass = loadRequiredClass(CURIOS_API_CLASS);
 
-    @Override
-    public int priority() {
-        // Medium-high priority - equipment API
-        return 20;
-    }
+        // Load ICuriosItemHandler
+        Class<?> curiosItemHandlerClass = loadRequiredClass(CURIOS_ITEM_HANDLER_CLASS);
 
-    @Override
-    public void initCommon() {
-        if (initialized) return;
-        initialized = true;
-
-        try {
-            // Load Curios API 9.x classes via reflection
-            curiosApiClass = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            curiosItemHandlerClass = Class.forName("top.theillusivec4.curios.api.type.capability.ICuriosItemHandler");
-
-            // Try to load slot handler classes
-            try {
-                slotStacksHandlerClass = Class.forName("top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler");
-            } catch (ClassNotFoundException e) {
-                // Try alternative class name
-                slotStacksHandlerClass = Class.forName("top.theillusivec4.curios.api.type.capability.ICurioStacksHandler");
-            }
-
-            try {
-                dynamicStackHandlerClass = Class.forName("top.theillusivec4.curios.api.type.inventory.IDynamicStackHandler");
-            } catch (ClassNotFoundException e) {
-                // May not exist in all versions
-                dynamicStackHandlerClass = null;
-            }
-
-            // Get CuriosApi.getCuriosInventory(LivingEntity) - returns Optional<ICuriosItemHandler>
-            getCuriosInventoryMethod = curiosApiClass.getMethod("getCuriosInventory", LivingEntity.class);
-
-            // Get ICuriosItemHandler methods
-            // getStacksHandler(String identifier) - returns Optional<ICurioStacksHandler>
-            try {
-                getStacksHandlerMethod = curiosItemHandlerClass.getMethod("getStacksHandler", String.class);
-            } catch (NoSuchMethodException e) {
-                LOGGER.debug("[Compat:curios] getStacksHandler method not found, trying alternatives");
-            }
-
-            // getCurios() - returns Map<String, ICurioStacksHandler>
-            try {
-                getCuriosMethod = curiosItemHandlerClass.getMethod("getCurios");
-            } catch (NoSuchMethodException e) {
-                LOGGER.debug("[Compat:curios] getCurios method not found");
-            }
-
-            // Get slot handler methods for getting stacks
-            if (slotStacksHandlerClass != null) {
-                try {
-                    getStacksMethod = slotStacksHandlerClass.getMethod("getStacks");
-                } catch (NoSuchMethodException e) {
-                    LOGGER.debug("[Compat:curios] getStacks method not found on slot handler");
-                }
-                try {
-                    getSlotsMethod = slotStacksHandlerClass.getMethod("getSlots");
-                } catch (NoSuchMethodException e) {
-                    LOGGER.debug("[Compat:curios] getSlots method not found on slot handler");
-                }
-            }
-
-            available = true;
-            LOGGER.info("[Compat:curios] Curios API 9.x detected and available");
-            LOGGER.debug("[Compat:curios] Version: {}", Compat.getVersion(MOD_ID));
-        } catch (ClassNotFoundException e) {
-            available = false;
-            LOGGER.debug("[Compat:curios] Curios classes not found - integration disabled");
-        } catch (NoSuchMethodException e) {
-            available = false;
-            LOGGER.warn("[Compat:curios] Curios API method not found: {}", e.getMessage());
-        } catch (Exception e) {
-            available = false;
-            LOGGER.warn("[Compat:curios] Error initializing: {}", e.getMessage());
+        // Load slot handler class (try both names)
+        Class<?> slotStacksHandlerClass = loadClassFromAny(
+            SLOT_STACKS_HANDLER_CLASS,
+            SLOT_STACKS_HANDLER_CLASS_ALT
+        );
+        if (slotStacksHandlerClass == null) {
+            throw new ClassNotFoundException("Could not find ICurioStacksHandler class");
         }
+
+        // Cache main methods
+        Method getCuriosInventoryMethod = getMethod(curiosApiClass, "getCuriosInventory", LivingEntity.class);
+        if (getCuriosInventoryMethod == null) {
+            throw new NoSuchMethodException("getCuriosInventory(LivingEntity) not found");
+        }
+        methodCache.put(KEY_GET_CURIOS_INVENTORY, getCuriosInventoryMethod);
+
+        // Cache optional methods on ICuriosItemHandler
+        Method getStacksHandlerMethod = getMethod(curiosItemHandlerClass, "getStacksHandler", String.class);
+        if (getStacksHandlerMethod != null) {
+            methodCache.put(KEY_GET_STACKS_HANDLER, getStacksHandlerMethod);
+        } else {
+            debug("getStacksHandler method not found, trying alternatives");
+        }
+
+        Method getCuriosMethod = getMethod(curiosItemHandlerClass, "getCurios");
+        if (getCuriosMethod != null) {
+            methodCache.put(KEY_GET_CURIOS, getCuriosMethod);
+        } else {
+            debug("getCurios method not found");
+        }
+
+        // Cache slot handler methods
+        Method getStacksMethod = getMethod(slotStacksHandlerClass, "getStacks");
+        if (getStacksMethod != null) {
+            methodCache.put(KEY_GET_STACKS, getStacksMethod);
+        }
+
+        Method getSlotsMethod = getMethod(slotStacksHandlerClass, "getSlots");
+        if (getSlotsMethod != null) {
+            methodCache.put(KEY_GET_SLOTS, getSlotsMethod);
+        }
+
+        // Load IDynamicStackHandler for efficient stack access
+        Class<?> dynamicStackHandlerClass = loadOptionalClass(DYNAMIC_STACK_HANDLER_CLASS);
+        if (dynamicStackHandlerClass != null) {
+            Method getStackInSlotMethod = getMethod(dynamicStackHandlerClass, "getStackInSlot", int.class);
+            Method getDynamicSlotsMethod = getMethod(dynamicStackHandlerClass, "getSlots");
+
+            if (getStackInSlotMethod != null) {
+                methodCache.put(KEY_GET_STACK_IN_SLOT, getStackInSlotMethod);
+            }
+            if (getDynamicSlotsMethod != null) {
+                methodCache.put(KEY_GET_DYNAMIC_SLOTS, getDynamicSlotsMethod);
+            }
+            debug("IDynamicStackHandler methods cached");
+        } else {
+            debug("IDynamicStackHandler not found, will use runtime reflection");
+        }
+
+        info("Curios API 9.x detected and available");
     }
 
     @Override
-    public void initClient() {
-        if (!available) return;
-        LOGGER.debug("[Compat:curios] Client initialization complete");
+    protected void doInitClient() {
+        debug("Client initialization complete");
     }
 
     @Override
@@ -153,11 +142,15 @@ public class CuriosCompat implements CompatModule {
         return "Equipment slot detection, curio attributes in HUD, item editor support";
     }
 
+    // ============================================================================
+    // STATIC API
+    // ============================================================================
+
     /**
-     * Check if Curios is available.
+     * Check if Curios is loaded and available.
      */
-    public static boolean isAvailable() {
-        return available;
+    public static boolean isCuriosLoaded() {
+        return instance != null && instance.available;
     }
 
     /**
@@ -168,17 +161,22 @@ public class CuriosCompat implements CompatModule {
      */
     @SuppressWarnings("unchecked")
     private static Optional<Object> getCuriosInventory(LivingEntity entity) {
-        if (!available || entity == null || getCuriosInventoryMethod == null) {
+        if (instance == null || !instance.available || entity == null) {
+            return Optional.empty();
+        }
+
+        Method method = instance.methodCache.get(KEY_GET_CURIOS_INVENTORY);
+        if (method == null) {
             return Optional.empty();
         }
 
         try {
-            Object result = getCuriosInventoryMethod.invoke(null, entity);
+            Object result = method.invoke(null, entity);
             if (result instanceof Optional<?>) {
                 return (Optional<Object>) result;
             }
         } catch (Exception e) {
-            LOGGER.debug("[Compat:curios] Failed to get curios inventory: {}", e.getMessage());
+            instance.debug("Failed to get curios inventory: {}", e.getMessage());
         }
 
         return Optional.empty();
@@ -193,19 +191,22 @@ public class CuriosCompat implements CompatModule {
      */
     @SuppressWarnings("unchecked")
     private static Optional<Object> getSlotHandler(Object handler, String slotType) {
-        if (handler == null || slotType == null) {
+        if (instance == null || handler == null || slotType == null) {
+            return Optional.empty();
+        }
+
+        Method method = instance.methodCache.get(KEY_GET_STACKS_HANDLER);
+        if (method == null) {
             return Optional.empty();
         }
 
         try {
-            if (getStacksHandlerMethod != null) {
-                Object result = getStacksHandlerMethod.invoke(handler, slotType);
-                if (result instanceof Optional<?>) {
-                    return (Optional<Object>) result;
-                }
+            Object result = method.invoke(handler, slotType);
+            if (result instanceof Optional<?>) {
+                return (Optional<Object>) result;
             }
         } catch (Exception e) {
-            LOGGER.debug("[Compat:curios] Failed to get slot handler for {}: {}", slotType, e.getMessage());
+            instance.debug("Failed to get slot handler for {}: {}", slotType, e.getMessage());
         }
 
         return Optional.empty();
@@ -220,17 +221,22 @@ public class CuriosCompat implements CompatModule {
     @SuppressWarnings("unchecked")
     @Nullable
     private static Map<String, Object> getAllCuriosHandlers(Object handler) {
-        if (handler == null || getCuriosMethod == null) {
+        if (instance == null || handler == null) {
+            return null;
+        }
+
+        Method method = instance.methodCache.get(KEY_GET_CURIOS);
+        if (method == null) {
             return null;
         }
 
         try {
-            Object result = getCuriosMethod.invoke(handler);
+            Object result = method.invoke(handler);
             if (result instanceof Map) {
                 return (Map<String, Object>) result;
             }
         } catch (Exception e) {
-            LOGGER.debug("[Compat:curios] Failed to get all curios handlers: {}", e.getMessage());
+            instance.debug("Failed to get all curios handlers: {}", e.getMessage());
         }
 
         return null;
@@ -244,33 +250,50 @@ public class CuriosCompat implements CompatModule {
      */
     private static List<ItemStack> getStacksFromHandler(Object slotHandler) {
         List<ItemStack> stacks = new ArrayList<>();
-        if (slotHandler == null) {
+        if (instance == null || slotHandler == null) {
             return stacks;
         }
 
         try {
-            // Try getStacks() method which returns IDynamicStackHandler
-            if (getStacksMethod != null) {
-                Object stackHandler = getStacksMethod.invoke(slotHandler);
-                if (stackHandler != null) {
-                    // Get slots count and iterate
-                    if (getSlotsMethod != null) {
-                        Object slotsObj = getSlotsMethod.invoke(slotHandler);
-                        int slots = (slotsObj instanceof Number) ? ((Number) slotsObj).intValue() : 0;
+            Method getStacksMethod = instance.methodCache.get(KEY_GET_STACKS);
+            if (getStacksMethod == null) {
+                return stacks;
+            }
 
-                        // Try to get getStackInSlot method
-                        Method getStackInSlotMethod = stackHandler.getClass().getMethod("getStackInSlot", int.class);
-                        for (int i = 0; i < slots; i++) {
-                            Object stack = getStackInSlotMethod.invoke(stackHandler, i);
-                            if (stack instanceof ItemStack itemStack && !itemStack.isEmpty()) {
-                                stacks.add(itemStack);
-                            }
-                        }
-                    }
+            Object stackHandler = getStacksMethod.invoke(slotHandler);
+            if (stackHandler == null) {
+                return stacks;
+            }
+
+            // Get slot count - prefer IDynamicStackHandler.getSlots() if cached
+            int slots = 0;
+            Method getDynamicSlotsMethod = instance.methodCache.get(KEY_GET_DYNAMIC_SLOTS);
+            Method getSlotsMethod = instance.methodCache.get(KEY_GET_SLOTS);
+
+            if (getDynamicSlotsMethod != null) {
+                Object slotsObj = getDynamicSlotsMethod.invoke(stackHandler);
+                slots = (slotsObj instanceof Number) ? ((Number) slotsObj).intValue() : 0;
+            } else if (getSlotsMethod != null) {
+                // Fallback to ICurioStacksHandler.getSlots()
+                Object slotsObj = getSlotsMethod.invoke(slotHandler);
+                slots = (slotsObj instanceof Number) ? ((Number) slotsObj).intValue() : 0;
+            }
+
+            // Get stacks using cached method or fallback to runtime reflection
+            Method stackMethod = instance.methodCache.get(KEY_GET_STACK_IN_SLOT);
+            if (stackMethod == null) {
+                // Fallback: get method from runtime class (less efficient)
+                stackMethod = stackHandler.getClass().getMethod("getStackInSlot", int.class);
+            }
+
+            for (int i = 0; i < slots; i++) {
+                Object stack = stackMethod.invoke(stackHandler, i);
+                if (stack instanceof ItemStack itemStack && !itemStack.isEmpty()) {
+                    stacks.add(itemStack);
                 }
             }
         } catch (Exception e) {
-            LOGGER.debug("[Compat:curios] Failed to get stacks from handler: {}", e.getMessage());
+            instance.debug("Failed to get stacks from handler: {}", e.getMessage());
         }
 
         return stacks;
@@ -285,7 +308,7 @@ public class CuriosCompat implements CompatModule {
      */
     public static List<ItemStack> findCurios(LivingEntity entity, String slotType) {
         List<ItemStack> results = new ArrayList<>();
-        if (!available || entity == null || slotType == null) {
+        if (!isCuriosLoaded() || entity == null || slotType == null) {
             return results;
         }
 
@@ -323,7 +346,7 @@ public class CuriosCompat implements CompatModule {
      */
     public static List<ItemStack> getAllEquippedCurios(LivingEntity entity) {
         List<ItemStack> result = new ArrayList<>();
-        if (!available || entity == null) {
+        if (!isCuriosLoaded() || entity == null) {
             return result;
         }
 

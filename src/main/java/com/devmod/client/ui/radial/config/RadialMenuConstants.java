@@ -91,20 +91,8 @@ public final class RadialMenuConstants {
     /** Border width for selected segments/items */
     public static final int BORDER_WIDTH_SELECTED = 3;
 
-    /** Macro icon texture size (pixels) */
-    public static final int MACRO_ICON_SIZE = 18;
-
-    /** Macro icon texture vertical offset (pixels) */
-    public static final int MACRO_ICON_TEXTURE_OFFSET_Y = -2;
-
     /** Macro icon text vertical offset (pixels) */
     public static final int MACRO_ICON_TEXT_OFFSET_Y = -4;
-
-    /** Center icon texture scale multiplier */
-    public static final float CENTER_ICON_SCALE = 1.2f;
-
-    /** Center icon texture vertical offset (pixels) */
-    public static final int CENTER_ICON_TEXTURE_OFFSET_Y = -2;
 
     /** Center icon text vertical offset (pixels) */
     public static final int CENTER_ICON_TEXT_OFFSET_Y = -3;
@@ -355,9 +343,6 @@ public final class RadialMenuConstants {
     /** Number of macro-categories */
     public static final int MACRO_COUNT = 6;
 
-    /** Total category capacity (MACRO_COUNT * CATEGORIES_PER_MACRO) */
-    public static final int TOTAL_CATEGORIES = MACRO_COUNT * CATEGORIES_PER_MACRO;
-
     // ================================================================
     // SEARCH SCORING WEIGHTS
     // ================================================================
@@ -414,9 +399,6 @@ public final class RadialMenuConstants {
     /** Center icon color for back indicator */
     public static final int COLOR_CENTER_ICON_BACK = 0xFF80AAFF;
 
-    /** Center icon color for search indicator */
-    public static final int COLOR_CENTER_ICON_SEARCH = 0xFF8080FF;
-
     /** Text primary color */
     public static final int COLOR_TEXT_PRIMARY = 0xFFFFFFFF;
 
@@ -435,9 +417,6 @@ public final class RadialMenuConstants {
 
     /** Quarter circle (90 degrees) in radians */
     public static final double HALF_PI = Math.PI / 2;
-
-    /** Eighth of circle (45 degrees) in radians */
-    public static final double QUARTER_PI = Math.PI / 4;
 
     /** Starting angle offset for category ring (top of screen) */
     public static final double CATEGORY_START_OFFSET = -HALF_PI;

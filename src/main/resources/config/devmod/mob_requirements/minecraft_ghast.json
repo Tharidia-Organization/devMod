@@ -1,0 +1,35 @@
+{
+  "mobId": "minecraft:ghast",
+  "biome": {
+    "preferred": "minecraft:nether_wastes",
+    "validBiomes": ["minecraft:nether_wastes", "minecraft:soul_sand_valley", "minecraft:basalt_deltas"],
+    "required": false
+  },
+  "light": {
+    "min": 0,
+    "max": 15,
+    "prefersDark": false,
+    "prefersLight": false
+  },
+  "floor": {
+    "blocks": [],
+    "requiresSolid": false,
+    "canSpawnOnLiquid": false,
+    "canSpawnInAir": true,
+    "preferred": null
+  },
+  "space": {
+    "width": 4.0,
+    "height": 4.0,
+    "clearanceAbove": 8.0,
+    "clearanceAround": 8.0
+  },
+  "time": "ANY",
+  "boss": {
+    "isBoss": false,
+    "minPlayers": 1,
+    "requiresActivation": false,
+    "activationItem": null,
+    "activationStructure": null
+  }
+}

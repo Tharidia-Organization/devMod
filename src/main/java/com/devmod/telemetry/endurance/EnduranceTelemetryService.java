@@ -212,6 +212,79 @@ public class EnduranceTelemetryService {
         TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
     }
 
+    /**
+     * Record zone allocation metrics for a wave spawn batch.
+     * Tracks how many spawns used zone allocation vs falling back to pool-based selection.
+     *
+     * @param questId The quest ID
+     * @param waveNumber The current wave number
+     * @param zoneAllocSuccess Number of spawns that successfully used zone allocation
+     * @param zoneAllocFallback Number of spawns that fell back to pool-based selection
+     * @param totalSpawns Total number of spawns attempted
+     * @param templateId The arena template ID (may be null)
+     */
+    public void recordZoneAllocationMetrics(UUID questId, int waveNumber,
+                                             int zoneAllocSuccess, int zoneAllocFallback, int totalSpawns,
+                                             @javax.annotation.Nullable String templateId) {
+        if (totalSpawns <= 0) return; // Skip empty batches
+
+        float successRate = (float) zoneAllocSuccess / totalSpawns;
+
+        StringBuilder json = new StringBuilder(250);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"zone_allocation\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"wave\":").append(waveNumber).append(",");
+        json.append("\"zoneAllocSuccess\":").append(zoneAllocSuccess).append(",");
+        json.append("\"zoneAllocFallback\":").append(zoneAllocFallback).append(",");
+        json.append("\"totalSpawns\":").append(totalSpawns).append(",");
+        json.append("\"successRate\":"); appendFloat2(json, successRate);
+        json.append(",\"templateId\":\"").append(escape(templateId != null ? templateId : "")).append("\"");
+        json.append("}");
+
+        TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
+
+        if (zoneAllocSuccess > 0) {
+            LOGGER.debug("[Endurance] Zone allocation: {}/{} ({:.1f}%) used zone-aware spawning",
+                zoneAllocSuccess, totalSpawns, successRate * 100);
+        }
+    }
+
+    /**
+     * P1: Record when entity budget is exceeded during spawn.
+     *
+     * @param questId The quest session ID
+     * @param waveNumber The current wave number
+     * @param currentEntities Current entity count
+     * @param maxEntities Maximum allowed entities (from template)
+     * @param skippedSpawns Number of spawns skipped due to budget
+     */
+    public void recordEntityBudgetExceeded(UUID questId, int waveNumber,
+                                            int currentEntities, int maxEntities, int skippedSpawns) {
+        QuestSessionStats stats = questStats.get(questId);
+
+        StringBuilder json = new StringBuilder(280);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"entity_budget_exceeded\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"wave\":").append(waveNumber).append(",");
+        json.append("\"currentEntities\":").append(currentEntities).append(",");
+        json.append("\"maxEntities\":").append(maxEntities).append(",");
+        json.append("\"skippedSpawns\":").append(skippedSpawns);
+        appendContext(json, stats);
+        json.append("}");
+
+        // NDJSON: Fallback only
+        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
+        } else {
+            logNdjsonSkip();
+        }
+
+        LOGGER.warn("[Endurance] Entity budget exceeded in wave {}: {}/{} entities, {} spawns skipped",
+            waveNumber, currentEntities, maxEntities, skippedSpawns);
+    }
+
     public void recordSpawnHeatmap(UUID questId, ArenaHandle handle, BlockPos pos) {
         recordArenaSpatialEvent("spawn", questId, handle, pos, null);
     }
@@ -382,7 +455,16 @@ public class EnduranceTelemetryService {
         appendContext(json, stats);
         json.append("}");
 
-        // NDJSON: Fallback only (no DuckDB mapping for special_action yet)
+        // DuckDB: Primary storage
+        DuckDBTelemetryService.INSTANCE.logSpecialAction(playerId, questId, action.name(),
+            pointsEarned, styleEarned, currentCombo,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
+
+        // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
@@ -457,9 +539,9 @@ public class EnduranceTelemetryService {
      */
     public void recordPerkSelected(UUID playerId, UUID questId, String perkId, String perkName,
                                     PerkSystem.PerkTier tier, PerkSystem.PerkCategory category,
-                                    int stackCount, int totalPerks) {
+                                    int stackCount, int totalPerks, int waveNumber) {
         QuestSessionStats stats = questId != null ? questStats.get(questId) : null;
-        StringBuilder json = new StringBuilder(240);
+        StringBuilder json = new StringBuilder(260);
         json.append("{\"ts\":\"").append(Instant.now()).append("\",");
         json.append("\"type\":\"perk_selected\",");
         json.append("\"player\":\"").append(playerId).append("\",");
@@ -469,14 +551,14 @@ public class EnduranceTelemetryService {
         json.append("\"tier\":\"").append(tier.name()).append("\",");
         json.append("\"category\":\"").append(category.name()).append("\",");
         json.append("\"stackCount\":").append(stackCount).append(",");
-        json.append("\"totalPerks\":").append(totalPerks);
+        json.append("\"totalPerks\":").append(totalPerks).append(",");
+        json.append("\"waveNumber\":").append(waveNumber);
         appendContext(json, stats);
         json.append("}");
 
         // DuckDB: Primary storage
-        // Note: waveNumber not available here, passing 0 as placeholder
         DuckDBTelemetryService.INSTANCE.logPerkSelected(playerId, questId, perkId, perkName,
-            tier.name(), category.name(), stackCount, totalPerks, 0,
+            tier.name(), category.name(), stackCount, totalPerks, waveNumber,
             stats != null ? stats.templateId : null,
             stats != null ? stats.templateVersion : null,
             stats != null ? stats.policyId : null,
@@ -488,7 +570,8 @@ public class EnduranceTelemetryService {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
-        LOGGER.debug("[Endurance] Perk selected: {} ({}) - stack {}", perkName, tier.displayName, stackCount);
+        LOGGER.debug("[Endurance] Perk selected: {} ({}) - stack {} on wave {}",
+            perkName, tier.displayName, stackCount, waveNumber);
 
         getOrCreateStats(questId).perkSelected(tier);
     }
@@ -503,8 +586,8 @@ public class EnduranceTelemetryService {
         for (int i = 0; i < choices.size(); i++) {
             PerkSystem.Perk perk = choices.get(i);
             if (i > 0) choicesJson.append(",");
-            choicesJson.append(String.format("{\"id\":\"%s\",\"tier\":\"%s\"}",
-                escape(perk.id), perk.tier.name()));
+            choicesJson.append("{\"id\":\"").append(escape(perk.id))
+                       .append("\",\"tier\":\"").append(perk.tier.name()).append("\"}");
         }
         choicesJson.append("]");
 
@@ -544,8 +627,8 @@ public class EnduranceTelemetryService {
         for (int i = 0; i < mutators.size(); i++) {
             MutatorSystem.Mutator m = mutators.get(i);
             if (i > 0) mutatorJson.append(",");
-            mutatorJson.append(String.format("{\"id\":\"%s\",\"category\":\"%s\"}",
-                escape(m.id), m.category.name()));
+            mutatorJson.append("{\"id\":\"").append(escape(m.id))
+                       .append("\",\"category\":\"").append(m.category.name()).append("\"}");
         }
         mutatorJson.append("]");
 
@@ -711,13 +794,21 @@ public class EnduranceTelemetryService {
      */
     public void recordShopPurchase(UUID playerId, String itemId, RewardSystem.Currency currency,
                                     int price, int purchaseCount) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"shop_purchase\",\"player\":\"%s\"," +
-            "\"itemId\":\"%s\",\"currency\":\"%s\",\"price\":%d,\"purchaseCount\":%d}",
-            Instant.now(), playerId, escape(itemId), currency.name(), price, purchaseCount
-        );
+        StringBuilder json = new StringBuilder(180);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"shop_purchase\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"itemId\":\"").append(escape(itemId)).append("\",");
+        json.append("\"currency\":\"").append(currency.name()).append("\",");
+        json.append("\"price\":").append(price).append(",");
+        json.append("\"purchaseCount\":").append(purchaseCount);
+        json.append("}");
 
-        // NDJSON: Fallback only (no DuckDB mapping for shop_purchase yet)
+        // DuckDB: Primary storage
+        DuckDBTelemetryService.INSTANCE.logShopPurchase(playerId, itemId,
+            currency.name(), price, purchaseCount);
+
+        // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
@@ -1039,6 +1130,35 @@ public class EnduranceTelemetryService {
     }
 
     /**
+     * P0-005: Record mob tracking leak detection (mobs died outside hooks).
+     * This tracks when the periodic validation finds stale mob entries.
+     */
+    public void recordMobTrackingLeak(UUID questId, int waveNumber, int staleMobCount) {
+        if (questId == null || staleMobCount <= 0) {
+            return;
+        }
+        QuestSessionStats stats = getOrCreateStats(questId);
+        stats.mobTrackingLeakDetected(staleMobCount);
+
+        // Log to NDJSON for tracking
+        StringBuilder json = new StringBuilder(180);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"mob_tracking_leak\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"wave\":").append(waveNumber).append(",");
+        json.append("\"staleMobCount\":").append(staleMobCount);
+        appendContext(json, stats);
+        json.append("}");
+
+        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
+        }
+
+        LOGGER.warn("[Endurance] Mob tracking leak detected: {} stale mobs in wave {} (quest {})",
+            staleMobCount, waveNumber, questId);
+    }
+
+    /**
      * Record end-of-quest performance summary (TTK/KPS/DTPS).
      */
     public void recordQuestPerformance(UUID questId, UUID playerId, QuestType questType,
@@ -1313,6 +1433,12 @@ public class EnduranceTelemetryService {
 
         void waveBlockedDetected() {
             waveBlockedDetected++;
+        }
+
+        void mobTrackingLeakDetected(int staleMobCount) {
+            // Aggregate mob tracking leaks per session for debugging
+            // Could add a field if needed for final stats
+            LOGGER.debug("[EnduranceStats] Mob tracking leak: {} stale mobs", staleMobCount);
         }
     }
 

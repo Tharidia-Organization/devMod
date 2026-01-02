@@ -20,11 +20,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.components.CountdownTimer;
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.QuestType;
+import com.devmod.notification.PartyInviteActionData;
 import com.devmod.party.InviteResponsePayload;
 import com.devmod.party.PartyInvite;
-import com.devmod.notification.PartyInviteActionData;
 import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
@@ -39,12 +39,12 @@ public class InvitePopupScreen extends Screen {
     private static final int BUTTON_GAP = 20;
 
     // Colors
-    private static final int COLOR_BG = UIConstants.Background.PANEL_SOLID();
-    private static final int COLOR_HEADER = UIConstants.Background.HEADER();
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
-    private static final int COLOR_ACCENT = UIConstants.Accent.CYAN();
-    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT();
+    private static final int COLOR_BG = DesignTokens.Background.PANEL_SOLID;
+    private static final int COLOR_HEADER = DesignTokens.Background.HEADER;
+    private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
+    private static final int COLOR_ACCENT = DesignTokens.Accent.PRIMARY;
+    private static final int COLOR_BORDER = DesignTokens.Stroke.DEFAULT;
 
     // Invite data
     private final UUID inviteId;
@@ -121,7 +121,7 @@ public class InvitePopupScreen extends Screen {
         // Border with glow effect
         graphics.renderOutline(popupX, popupY, POPUP_WIDTH, POPUP_HEIGHT, COLOR_BORDER);
         graphics.renderOutline(popupX - 1, popupY - 1, POPUP_WIDTH + 2, POPUP_HEIGHT + 2,
-                UIConstants.setAlpha(COLOR_BORDER, 0x44));
+                DesignTokens.withAlpha(COLOR_BORDER, 0x44));
 
         // Header
         graphics.fill(popupX, popupY, popupX + POPUP_WIDTH, popupY + 25, COLOR_HEADER);
@@ -164,7 +164,7 @@ public class InvitePopupScreen extends Screen {
         int barHeight = 4;
 
         // Background
-        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, UIConstants.Background.INPUT());
+        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, DesignTokens.Background.INPUT);
 
         // Progress
         float progress = Math.max(0, Math.min(1, remainingMs / (float) PartyInvite.TIMEOUT_MS));
@@ -176,9 +176,9 @@ public class InvitePopupScreen extends Screen {
 
     private int getQuestTypeColor(QuestType type) {
         return switch (type) {
-            case PVE_COOP -> UIConstants.Accent.GREEN();
-            case RAID_BOSS -> UIConstants.Accent.ORANGE();
-            case EVENT -> UIConstants.Accent.PURPLE();
+            case PVE_COOP -> DesignTokens.Semantic.SUCCESS;
+            case RAID_BOSS -> DesignTokens.Accent.ORANGE;
+            case EVENT -> DesignTokens.Accent.PURPLE;
         };
     }
 
@@ -226,7 +226,7 @@ public class InvitePopupScreen extends Screen {
         // Send accept response to server
         PacketDistributor.sendToServer(new InviteResponsePayload(inviteId, true));
 
-        UIConstants.Sound.success();
+        DesignTokens.Sound.success();
         onClose();
     }
 
@@ -239,7 +239,7 @@ public class InvitePopupScreen extends Screen {
         // Send decline response to server
         PacketDistributor.sendToServer(new InviteResponsePayload(inviteId, false));
 
-        UIConstants.Sound.click();
+        DesignTokens.Sound.click();
         onClose();
     }
 

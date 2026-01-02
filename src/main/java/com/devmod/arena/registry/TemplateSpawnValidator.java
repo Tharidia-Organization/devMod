@@ -182,7 +182,21 @@ public class TemplateSpawnValidator {
         if (hazard == null || hazard.params() == null) return false;
         Map<String, Object> params = hazard.params();
         switch (hazard.type()) {
-            case "lava_ring", "lava_pool", "void_pit" -> {
+            case "lava_ring" -> {
+                int[] center = listToPos(params.get("center"));
+                int cx = center != null ? center[0] : 0;
+                int cz = center != null ? center[2] : 0;
+                Number innerR = (Number) params.get("innerRadius");
+                Number outerR = (Number) params.get("outerRadius");
+                if (innerR == null || outerR == null) return false;
+                int inner = innerR.intValue();
+                int outer = outerR.intValue();
+                int dx = x - cx;
+                int dz = z - cz;
+                int distSq = dx * dx + dz * dz;
+                return distSq >= inner * inner && distSq <= outer * outer;
+            }
+            case "lava_pool", "void_pit" -> {
                 int[] center = listToPos(params.get("center"));
                 Number rNum = (Number) params.getOrDefault("radius", 0);
                 if (center == null || rNum == null) return false;

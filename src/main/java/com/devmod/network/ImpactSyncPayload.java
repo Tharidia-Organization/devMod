@@ -1,5 +1,6 @@
 package com.devmod.network;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -40,7 +41,7 @@ public record ImpactSyncPayload(
     double slashZ,
     // Actual damage dealt
     float actualDamage
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<ImpactSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "impact_sync"))
@@ -121,6 +122,32 @@ public record ImpactSyncPayload(
         return Objects.requireNonNull(TYPE, "payload type");
     }
 
+    @Override
+    public int estimatedSize() {
+        int size = 0;
+        size += varIntSize(victimEntityId);
+        size += varIntSize(bodyPartOrdinal);
+        size += 4; // multiplier
+        size += 4; // baseWeaponDamage
+        size += 4; // enchantBonus
+        size += 4; // pehkuiBonus
+        size += 4; // bodyPartMultiplier
+        size += 4; // armorPenBonus
+        size += 4; // finalDamage
+        size += estimatedUtfSize(attackSource);
+        size += 1; // isRanged
+        size += 1; // hasHitPoint
+        if (hasHitPoint) {
+            size += 8 * 3;
+        }
+        size += 1; // hasSlashDir
+        if (hasSlashDir) {
+            size += 8 * 3;
+        }
+        size += 4; // actualDamage
+        return size;
+    }
+
     /**
      * Creates an ImpactSyncPayload from damage event data.
      */
@@ -178,5 +205,23 @@ public record ImpactSyncPayload(
     @Nullable
     public net.minecraft.world.phys.Vec3 getSlashDirection() {
         return hasSlashDir ? new net.minecraft.world.phys.Vec3(slashX, slashY, slashZ) : null;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

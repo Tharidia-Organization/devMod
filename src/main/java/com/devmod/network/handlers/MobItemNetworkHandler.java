@@ -37,6 +37,7 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import com.devmod.DevMod;
@@ -47,15 +48,22 @@ import com.devmod.config.FuelConfigManager;
 import com.devmod.config.MobConfigManager;
 import com.devmod.config.UsableConfigManager;
 import com.devmod.config.WeaponConfigManager;
+import com.devmod.network.ArmorStatsPayload;
+import com.devmod.network.ChannelId;
 import com.devmod.network.EquipMobPayload;
+import com.devmod.network.FoodStatsPayload;
+import com.devmod.network.FuelStatsPayload;
 import com.devmod.network.MobConfigConfirmPayload;
 import com.devmod.network.ModifyItemPayload;
 import com.devmod.network.PacketValidator;
 import com.devmod.network.PacketValidator.ValidationResult;
+import com.devmod.network.PayloadValidation.PayloadLimits;
 import com.devmod.network.RangedWeaponStatsPayload;
 import com.devmod.network.UpdateArmorPayload;
 import com.devmod.network.UpdateMobStatsPayload;
 import com.devmod.network.UpdateWeaponPayload;
+import com.devmod.network.UsableStatsPayload;
+import com.devmod.network.WeaponStatsPayload;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.FoodStats;
 import com.devmod.stats.FuelStats;
@@ -63,14 +71,111 @@ import com.devmod.stats.UsableStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.I18n;
 
-public final class MobItemNetworkHandler extends NetworkHandlerBase {
+import static com.devmod.network.PayloadValidation.validated;
+
+/**
+ * P2: Domain-specific network handler for mob and item editor payloads.
+ * Handles mob stats, weapon/armor/ranged/usable/food/fuel modifications.
+ */
+public final class MobItemNetworkHandler extends NetworkHandlerBase implements PayloadRegistrar {
+
+    public static final MobItemNetworkHandler INSTANCE = new MobItemNetworkHandler();
 
     private static final Splitter COLON_SPLITTER = Splitter.on(':');
 
     private MobItemNetworkHandler() {}
 
+    // =================================================================================
+    // PAYLOAD REGISTRATION (P2: Domain-specific registration)
+    // =================================================================================
+
+    @Override
+    public String getDomainName() {
+        return "mob_item";
+    }
+
+    @Override
+    public void registerPayloads(RegisterPayloadHandlersEvent event) {
+        // MOB_STATS: Client -> Server mob stat modifications
+        event.registrar(ChannelId.MOB_STATS.asString()).playToServer(
+            nn(UpdateMobStatsPayload.TYPE),
+            nn(UpdateMobStatsPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleMobData, PayloadLimits.EDITOR)
+        );
+
+        // WEAPON_LEGACY: Client -> Server legacy weapon updates
+        event.registrar(ChannelId.WEAPON_LEGACY.asString()).playToServer(
+            nn(UpdateWeaponPayload.TYPE),
+            nn(UpdateWeaponPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleWeaponData, PayloadLimits.EDITOR)
+        );
+
+        // EQUIP_MOB: Client -> Server mob equipment changes
+        event.registrar(ChannelId.EQUIP_MOB.asString()).playToServer(
+            nn(EquipMobPayload.TYPE),
+            nn(EquipMobPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleEquipData, PayloadLimits.EDITOR)
+        );
+
+        // MODIFY_ITEM: Client -> Server item modifications (enchants, attributes)
+        event.registrar(ChannelId.MODIFY_ITEM.asString()).playToServer(
+            nn(ModifyItemPayload.TYPE),
+            nn(ModifyItemPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleItemModification, PayloadLimits.EDITOR)
+        );
+
+        // UPDATE_ARMOR: Client -> Server armor stat updates
+        event.registrar(ChannelId.UPDATE_ARMOR.asString()).playToServer(
+            nn(UpdateArmorPayload.TYPE),
+            nn(UpdateArmorPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleArmorData, PayloadLimits.EDITOR)
+        );
+
+        // RANGED_WEAPON_STATS: Client -> Server ranged weapon modifications
+        event.registrar(ChannelId.RANGED_WEAPON_STATS.asString()).playToServer(
+            nn(RangedWeaponStatsPayload.TYPE),
+            nn(RangedWeaponStatsPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleRangedWeaponData, PayloadLimits.EDITOR)
+        );
+
+        // ARMOR_STATS: Client -> Server armor stats V2
+        event.registrar(ChannelId.ARMOR_STATS.asString()).playToServer(
+            nn(ArmorStatsPayload.TYPE),
+            nn(ArmorStatsPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleArmorStatsDataV2, PayloadLimits.EDITOR)
+        );
+
+        // USABLE_STATS: Client -> Server usable item stats
+        event.registrar(ChannelId.USABLE_STATS.asString()).playToServer(
+            nn(UsableStatsPayload.TYPE),
+            nn(UsableStatsPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleUsableStatsData, PayloadLimits.EDITOR)
+        );
+
+        // FOOD_STATS: Client -> Server food item stats
+        event.registrar(ChannelId.FOOD_STATS.asString()).playToServer(
+            nn(FoodStatsPayload.TYPE),
+            nn(FoodStatsPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleFoodStatsData, PayloadLimits.EDITOR)
+        );
+
+        // FUEL_STATS: Client -> Server fuel item stats
+        event.registrar(ChannelId.FUEL_STATS.asString()).playToServer(
+            nn(FuelStatsPayload.TYPE),
+            nn(FuelStatsPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleFuelStatsData, PayloadLimits.EDITOR)
+        );
+
+        // WEAPON_STATS_V2: Client -> Server weapon stats V2
+        event.registrar(ChannelId.WEAPON_STATS_V2.asString()).playToServer(
+            nn(WeaponStatsPayload.TYPE),
+            nn(WeaponStatsPayload.STREAM_CODEC),
+            validated(MobItemNetworkHandler::handleWeaponStatsDataV2, PayloadLimits.EDITOR)
+        );
+    }
+
     private static void enqueueWork(IPayloadContext context, Runnable work) {
-        observeFuture(context.enqueueWork(work), "mob item update");
+        observeFuture(context.enqueueWork(Objects.requireNonNull(work, "work")), "mob item update");
     }
 
     // =================================================================================
@@ -983,7 +1088,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
         List<String> failedEnchants = new ArrayList<>();
 
         for (String change : changes) {
-            List<String> parts = COLON_SPLITTER.splitToList(change);
+            List<String> parts = COLON_SPLITTER.splitToList(Objects.requireNonNull(change, "change"));
             if (parts.size() < 2) {
                 failCount++;
                 failedEnchants.add(change + " (invalid format)");
@@ -1055,7 +1160,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
         List<String> failedAttrs = new ArrayList<>();
 
         for (String change : changes) {
-            List<String> parts = COLON_SPLITTER.splitToList(change);
+            List<String> parts = COLON_SPLITTER.splitToList(Objects.requireNonNull(change, "change"));
             if (parts.size() < 3) {
                 failCount++;
                 failedAttrs.add(change + " (invalid format)");
@@ -1088,7 +1193,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
                 var registry = player.server.registryAccess().registryOrThrow(nn(Registries.ATTRIBUTE));
                 var attrHolder = registry.getHolder(nn(attrLoc));
                 if (attrHolder.isEmpty()) {
-                    var mapped = com.devmod.integration.PufferfishCompat.map(attrLoc, registry);
+                    var mapped = com.devmod.integration.PufferfishIntegration.map(attrLoc, registry);
                     if (mapped != null) {
                         attrHolder = java.util.Optional.of(mapped);
                     }

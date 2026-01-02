@@ -222,11 +222,26 @@ public final class ActionContext {
         }
     }
 
+    /**
+     * Executes a command with security validation.
+     * P0-003: Added command safety validation to prevent injection attacks.
+     *
+     * @param command The command to execute
+     * @return true if command was executed, false otherwise
+     */
     public boolean executeCommand(String command) {
         String trimmed = normalizeCommand(command);
         if (trimmed.isEmpty()) {
             return false;
         }
+
+        // P0-003: Validate command safety before execution
+        if (!CommandSanitizer.isCommandSafe(trimmed)) {
+            org.slf4j.LoggerFactory.getLogger(ActionContext.class)
+                .warn("[SECURITY] Unsafe command blocked: {}", CommandSanitizer.sanitizeForLog(trimmed));
+            return false;
+        }
+
         if (commandInvoker != null) {
             commandInvoker.accept(trimmed);
             return true;

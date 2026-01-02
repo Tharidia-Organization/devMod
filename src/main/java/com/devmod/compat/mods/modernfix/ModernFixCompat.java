@@ -8,6 +8,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,9 +25,9 @@ public class ModernFixCompat implements CompatModule {
     private static boolean apiAvailable = false;
 
     // Cached reflection references
-    private static Class<?> modernFixClass;
-    private static Class<?> configClass;
-    private static Object configInstance;
+    @Nullable private static Class<?> modernFixClass;
+    @Nullable private static Class<?> configClass;
+    @Nullable private static Object configInstance;
 
     @Override
     public String modId() {
@@ -91,17 +93,18 @@ public class ModernFixCompat implements CompatModule {
 
             for (String className : configClasses) {
                 try {
-                    configClass = Class.forName(className);
+                    final Class<?> foundConfigClass = Class.forName(className);
+                    configClass = foundConfigClass;
                     LOGGER.debug("[Compat:modernfix] Found config at {}", className);
 
                     // Try to get config instance
                     try {
-                        Field instanceField = configClass.getField("INSTANCE");
+                        Field instanceField = foundConfigClass.getField("INSTANCE");
                         configInstance = instanceField.get(null);
                     } catch (NoSuchFieldException e) {
                         LOGGER.trace("[Compat:modernfix] INSTANCE field missing on {}", className, e);
                         try {
-                            Method getMethod = configClass.getMethod("get");
+                            Method getMethod = foundConfigClass.getMethod("get");
                             configInstance = getMethod.invoke(null);
                         } catch (NoSuchMethodException e2) {
                             LOGGER.trace("[Compat:modernfix] get() method missing on {}", className, e2);
@@ -157,12 +160,13 @@ public class ModernFixCompat implements CompatModule {
     public static Set<String> getEnabledFeatures() {
         Set<String> features = new LinkedHashSet<>();
 
-        if (!apiAvailable || configInstance == null) {
+        final Object instance = configInstance;
+        if (!apiAvailable || instance == null) {
             return features;
         }
 
         try {
-            Class<?> configCls = configInstance.getClass();
+            Class<?> configCls = instance.getClass();
 
             // Common ModernFix features to check
             String[] featureFields = {
@@ -174,7 +178,7 @@ public class ModernFixCompat implements CompatModule {
             for (String fieldName : featureFields) {
                 try {
                     Field field = configCls.getField(fieldName);
-                    Object value = field.get(configInstance);
+                    Object value = field.get(instance);
                     if (value instanceof Boolean && (Boolean) value) {
                         features.add(fieldName);
                     }

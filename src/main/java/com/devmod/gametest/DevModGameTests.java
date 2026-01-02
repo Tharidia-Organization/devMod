@@ -2,6 +2,9 @@ package com.devmod.gametest;
 
 import java.util.Objects;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.AfterBatch;
 import net.minecraft.gametest.framework.BeforeBatch;
@@ -24,9 +27,6 @@ import com.devmod.config.WeaponConfigManager;
 import com.devmod.network.UpdateMobStatsPayload;
 import com.devmod.network.UpdateWeaponPayload;
 import com.devmod.stats.WeaponStats;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 @GameTestHolder(DevMod.MODID)
 @PrefixGameTestTemplate(false)

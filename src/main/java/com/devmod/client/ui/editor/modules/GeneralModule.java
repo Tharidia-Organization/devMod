@@ -32,7 +32,7 @@ import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ModuleTab;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.sections.AttributeListSection;
 import com.devmod.client.ui.editor.sections.EnchantmentListSection;
 import com.devmod.client.ui.editor.sections.InfoListSection;
@@ -294,7 +294,7 @@ public class GeneralModule extends AbstractEditorModule {
             .step(1)
             .format("%.0f")
             .suffix(" items")
-            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .trackColor(DesignTokens.SliderColors.NEUTRAL)
             .showInput(true)
             .info("Maximum items per inventory slot. Vanilla default: " + vanillaStackSize + ". Most items cap at 64, but modded items can go higher.")
             .onChange(value -> markDirty("stack size"));
@@ -311,7 +311,7 @@ public class GeneralModule extends AbstractEditorModule {
                 .step(1)
                 .format("%.0f")
                 .suffix(" pts")
-                .trackColor(UIConstants.SliderColors.DURABILITY)
+                .trackColor(DesignTokens.SliderColors.DURABILITY)
                 .showInput(true)
                 .info("Current durability points remaining. 0 = broken. Max: " + maxDurability + ". Unbreaking enchant gives chance to not consume durability.")
                 .onChange(value -> markDirty("durability"));
@@ -320,7 +320,7 @@ public class GeneralModule extends AbstractEditorModule {
                 .step(1)
                 .format("%.0f")
                 .suffix(" XP levels")
-                .trackColor(UIConstants.SliderColors.NEUTRAL)
+                .trackColor(DesignTokens.SliderColors.NEUTRAL)
                 .showInput(true)
                 .info("XP level cost to repair/rename in anvil. Increases each repair. Max 39 before 'Too Expensive'. Can be reset by renaming.")
                 .onChange(value -> markDirty("repair cost"));
@@ -378,10 +378,10 @@ public class GeneralModule extends AbstractEditorModule {
         }
 
         return ModuleSummarySection.builder("summary-weapon", "Weapon Stats")
-            .accentColor(UIConstants.Accent.RED())
-            .addStat("Base Damage", damage, "%.1f", UIConstants.Accent.RED(), "VAN")
-            .addStat("Attack Speed", 4.0 + speed, "%.2f/s", UIConstants.Text.PRIMARY(), "VAN")
-            .addStat("DPS", damage * (4.0 + speed), "%.1f", UIConstants.Accent.ORANGE(), null)
+            .accentColor(DesignTokens.Accent.RED())
+            .addStat("Base Damage", damage, "%.1f", DesignTokens.Accent.RED(), "VAN")
+            .addStat("Attack Speed", 4.0 + speed, "%.2f/s", DesignTokens.Text.PRIMARY(), "VAN")
+            .addStat("DPS", damage * (4.0 + speed), "%.1f", DesignTokens.Accent.ORANGE(), null)
             .build();
     }
 
@@ -395,25 +395,25 @@ public class GeneralModule extends AbstractEditorModule {
         }
 
         return ModuleSummarySection.builder("summary-armor", "Armor Stats")
-            .accentColor(UIConstants.Accent.BLUE())
-            .addStat("Defense", defense, "%.0f", UIConstants.Accent.BLUE(), "VAN")
-            .addStat("Toughness", toughness, "%.1f", UIConstants.Text.PRIMARY(), "VAN")
+            .accentColor(DesignTokens.Accent.BLUE())
+            .addStat("Defense", defense, "%.0f", DesignTokens.Accent.BLUE(), "VAN")
+            .addStat("Toughness", toughness, "%.1f", DesignTokens.Text.PRIMARY(), "VAN")
             .build();
     }
 
     private ModuleSummarySection buildGeneralSummary() {
         ModuleSummarySection.Builder builder = ModuleSummarySection.builder("summary-general", "Item Properties")
-            .accentColor(UIConstants.Accent.INFO());
+            .accentColor(DesignTokens.Accent.INFO());
 
-        builder.addStat("Max Stack", item.getMaxStackSize(), "%.0f", UIConstants.Text.PRIMARY(), null);
+        builder.addStat("Max Stack", item.getMaxStackSize(), "%.0f", DesignTokens.Text.PRIMARY(), null);
 
         if (item.isDamageableItem()) {
             int current = item.getMaxDamage() - item.getDamageValue();
             int max = item.getMaxDamage();
             double percent = (double) current / max * 100;
-            int durabilityColor = percent > 50 ? UIConstants.Accent.GREEN()
-                                : percent > 20 ? UIConstants.Accent.ORANGE()
-                                : UIConstants.Accent.RED();
+            int durabilityColor = percent > 50 ? DesignTokens.Accent.GREEN()
+                                : percent > 20 ? DesignTokens.Accent.ORANGE()
+                                : DesignTokens.Accent.RED();
             builder.addStat("Durability", percent, "%.0f%%", durabilityColor, null);
         }
 

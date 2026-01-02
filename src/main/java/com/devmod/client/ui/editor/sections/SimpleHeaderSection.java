@@ -7,8 +7,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class SimpleHeaderSection implements EditorSection.HeaderSection {
     private static final int DEFAULT_HEIGHT = 20;
@@ -50,7 +50,7 @@ public final class SimpleHeaderSection implements EditorSection.HeaderSection {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
         int textY = bounds.y() + textOffsetY;
         graphics.drawString(font, Objects.requireNonNull(label, "label"),
-            bounds.x() + textInsetX, textY, UIConstants.Text.TITLE(), false);
+            bounds.x() + textInsetX, textY, DesignTokens.Text.TITLE(), false);
     }
 
     @Override

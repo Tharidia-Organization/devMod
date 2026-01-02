@@ -7,7 +7,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 @OnlyIn(Dist.CLIENT)
 public final class CountdownTimer {
@@ -66,9 +66,9 @@ public final class CountdownTimer {
 
     public int getColor() {
         return switch (getUrgency()) {
-            case URGENT -> UIConstants.Accent.RED();
-            case WARN -> UIConstants.Accent.GOLD();
-            case NORMAL -> UIConstants.Accent.GREEN();
+            case URGENT -> DesignTokens.Accent.RED();
+            case WARN -> DesignTokens.Accent.GOLD();
+            case NORMAL -> DesignTokens.Accent.GREEN();
         };
     }
 

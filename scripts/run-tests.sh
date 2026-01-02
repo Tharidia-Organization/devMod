@@ -24,6 +24,7 @@ NC='\033[0m' # No Color
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG_FILE="${PROJECT_DIR}/run/logs/gametest.log"
 TIMEOUT=300
+GRADLE_FLAGS=(--no-build-cache)
 
 # Parse arguments
 VERBOSE=false
@@ -61,7 +62,7 @@ echo ""
 # Step 1: Compile (unless skipped)
 if [ "$SKIP_COMPILE" = false ]; then
     echo -e "${YELLOW}[1/3] Compiling Java...${NC}"
-    if ./gradlew compileJava --quiet 2>&1; then
+    if ./gradlew "${GRADLE_FLAGS[@]}" compileJava --quiet 2>&1; then
         echo -e "${GREEN}      Compilation successful${NC}"
     else
         echo -e "${RED}      Compilation FAILED${NC}"
@@ -78,7 +79,7 @@ echo -e "${YELLOW}[2/3] Running GameTests...${NC}"
 echo ""
 
 # Run tests and capture output
-TEST_OUTPUT=$(./gradlew runGameTestServer 2>&1)
+TEST_OUTPUT=$(./gradlew "${GRADLE_FLAGS[@]}" runGameTestServer 2>&1)
 EXIT_CODE=$?
 
 # Extract key information

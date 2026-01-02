@@ -3,6 +3,7 @@ package com.devmod.mailbox.network.payload;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -10,16 +11,18 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadValidation;
+
 /**
  * Payload for sending a message from client to server.
  */
 public record MailboxSendPayload(
-    UUID recipientUuid,
+    @Nonnull UUID recipientUuid,
     @Nullable String recipientName,
-    String subject,
+    @Nonnull String subject,
     @Nullable String body,
     @Nullable String attachmentData
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     // Security limits
     private static final int MAX_SUBJECT_LENGTH = 256;
@@ -42,9 +45,9 @@ public record MailboxSendPayload(
     }
 
     private static void encode(RegistryFriendlyByteBuf buf, MailboxSendPayload payload) {
-        buf.writeUUID(payload.recipientUuid);
+        buf.writeUUID(Objects.requireNonNull(payload.recipientUuid));
         writeOptionalUtf(buf, payload.recipientName);
-        buf.writeUtf(payload.subject);
+        buf.writeUtf(Objects.requireNonNull(payload.subject));
         writeOptionalUtf(buf, payload.body);
         writeOptionalUtf(buf, payload.attachmentData);
     }
@@ -72,5 +75,33 @@ public record MailboxSendPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 16; // UUID
+        size += estimatedUtfSize(recipientName);
+        size += estimatedUtfSize(subject);
+        size += estimatedUtfSize(body);
+        size += estimatedUtfSize(attachmentData);
+        return size;
+    }
+
+    private static int estimatedUtfSize(@Nullable String value) {
+        if (value == null) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 }

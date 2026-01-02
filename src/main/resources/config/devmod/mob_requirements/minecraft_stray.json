@@ -1,0 +1,35 @@
+{
+  "mobId": "minecraft:stray",
+  "biome": {
+    "preferred": "minecraft:snowy_plains",
+    "validBiomes": ["minecraft:snowy_plains", "minecraft:snowy_taiga", "minecraft:ice_spikes", "minecraft:frozen_river"],
+    "required": false
+  },
+  "light": {
+    "min": 0,
+    "max": 7,
+    "prefersDark": true,
+    "prefersLight": false
+  },
+  "floor": {
+    "blocks": ["minecraft:snow_block", "minecraft:packed_ice", "minecraft:blue_ice", "minecraft:powder_snow"],
+    "requiresSolid": true,
+    "canSpawnOnLiquid": false,
+    "canSpawnInAir": false,
+    "preferred": "minecraft:packed_ice"
+  },
+  "space": {
+    "width": 0.6,
+    "height": 1.99,
+    "clearanceAbove": 2.0,
+    "clearanceAround": 1.5
+  },
+  "time": "NIGHT",
+  "boss": {
+    "isBoss": false,
+    "minPlayers": 1,
+    "requiresActivation": false,
+    "activationItem": null,
+    "activationStructure": null
+  }
+}

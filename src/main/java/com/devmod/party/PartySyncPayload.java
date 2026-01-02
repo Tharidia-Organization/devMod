@@ -1,5 +1,6 @@
 package com.devmod.party;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -11,6 +12,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
+import com.devmod.network.PayloadValidation;
 
 public record PartySyncPayload(
     boolean hasParty,
@@ -21,7 +23,7 @@ public record PartySyncPayload(
     int stateOrdinal,
     UUID instanceId,         // null (zero UUID) if not in quest
     String selectedMobId     // ResourceLocation as string (e.g., "minecraft:zombie"), empty if not set
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     // Security limits
     private static final int MAX_MEMBERS = 20;
@@ -98,6 +100,47 @@ public record PartySyncPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int size = 1; // hasParty
+        size += 16; // partyId
+        size += 16; // leaderId
+        size += varIntSize(members.size());
+        for (PartyMemberInfo member : members) {
+            size += estimateMemberSize(member);
+        }
+        size += varIntSize(questTypeOrdinal);
+        size += varIntSize(stateOrdinal);
+        size += 16; // instanceId
+        size += estimatedUtfSize(selectedMobId);
+        return size;
+    }
+
+    private static int estimateMemberSize(PartyMemberInfo member) {
+        int size = 16; // UUID
+        size += estimatedUtfSize(member.playerName);
+        size += 3; // isReady, isLeader, isOnline
+        return size;
+    }
+
+    private static int estimatedUtfSize(String value) {
+        if (value == null || value.isEmpty()) {
+            return varIntSize(0);
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return varIntSize(bytes.length) + bytes.length;
+    }
+
+    private static int varIntSize(int value) {
+        int v = value;
+        int size = 1;
+        while ((v & ~0x7F) != 0) {
+            v >>>= 7;
+            size++;
+        }
+        return size;
     }
 
     /**

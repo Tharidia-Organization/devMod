@@ -150,18 +150,21 @@ public record SmithingRecipeData(
 
         json.addProperty("type", getMinecraftType());
 
-        if (template != null && !template.isEmpty()) {
-            json.add("template", template.toJson());
+        IngredientData localTemplate = template;
+        if (localTemplate != null && !localTemplate.isEmpty()) {
+            json.add("template", localTemplate.toJson());
         }
 
         json.add("base", base.toJson());
 
-        if (addition != null && !addition.isEmpty()) {
-            json.add("addition", addition.toJson());
+        IngredientData localAddition = addition;
+        if (localAddition != null && !localAddition.isEmpty()) {
+            json.add("addition", localAddition.toJson());
         }
 
-        if (smithingType == SmithingType.TRANSFORM && result != null && !result.isEmpty()) {
-            json.add("result", result.toJson());
+        ResultData localResult = result;
+        if (smithingType == SmithingType.TRANSFORM && localResult != null && !localResult.isEmpty()) {
+            json.add("result", localResult.toJson());
         }
 
         return json;

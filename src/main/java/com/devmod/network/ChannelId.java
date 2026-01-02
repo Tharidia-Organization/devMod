@@ -72,6 +72,7 @@ public enum ChannelId {
     // ID 50 reserved (WEAPON_STATS_NBT removed - uses same payload as V2)
     TENSION_UPDATE(51, Direction.SERVER_TO_CLIENT, "TensionUpdatePayload"),
     GAME_MECHANICS_SYNC(52, Direction.SERVER_TO_CLIENT, "GameMechanicsSyncPayload"),
+    COMBAT_FLOW_SYNC(54, Direction.SERVER_TO_CLIENT, "CombatFlowSyncPayload"),
 
     // ============================================================================
     // SHIELD CHANNELS (56-65)
@@ -92,12 +93,14 @@ public enum ChannelId {
     // ARENA CHANNELS (76-85)
     // ============================================================================
     BUILD_PROGRESS(76, Direction.SERVER_TO_CLIENT, "BuildProgressPayload"),
+    ENVIRONMENT_SYNC(77, Direction.SERVER_TO_CLIENT, "EnvironmentSyncPayload"),
+    ZONE_DEBUG(78, Direction.SERVER_TO_CLIENT, "ZoneDebugPayload"),
 
     // ============================================================================
     // CHALLENGES CHANNELS (86-89)
     // ============================================================================
     CHALLENGE_SYNC(86, Direction.SERVER_TO_CLIENT, "ChallengeSyncPayload"),
-    CHALLENGE_COMPLETE(87, Direction.SERVER_TO_CLIENT, "ChallengeCompletePayload"),
+    // ID 87 reserved for future ChallengeCompletePayload
 
     // ============================================================================
     // DEBUG CHANNELS (90-91)
@@ -111,8 +114,7 @@ public enum ChannelId {
     MAILBOX_SYNC(100, Direction.SERVER_TO_CLIENT, "MailboxSyncPayload"),
     MAILBOX_SEND(101, Direction.CLIENT_TO_SERVER, "MailboxSendPayload"),
     MAILBOX_READ(102, Direction.CLIENT_TO_SERVER, "MailboxReadPayload"),
-    MAILBOX_DELETE(103, Direction.CLIENT_TO_SERVER, "MailboxDeletePayload"),
-    MAILBOX_CLAIM(104, Direction.CLIENT_TO_SERVER, "MailboxClaimPayload"),
+    // ID 103-104 reserved for MailboxDeletePayload/MailboxClaimPayload
     MAILBOX_NOTIFY(105, Direction.SERVER_TO_CLIENT, "MailboxNotifyPayload"),
     NEWS_SYNC(106, Direction.SERVER_TO_CLIENT, "NewsSyncPayload"),
     NEWS_READ(107, Direction.CLIENT_TO_SERVER, "NewsReadPayload"),
@@ -130,7 +132,15 @@ public enum ChannelId {
     // ============================================================================
     UNIFIED_NOTIFICATION(120, Direction.SERVER_TO_CLIENT, "UnifiedNotificationPayload"),
     NOTIFICATION_PREFS_SYNC(121, Direction.SERVER_TO_CLIENT, "NotificationPreferencesSyncPayload"),
-    NOTIFICATION_PREFS_UPDATE(122, Direction.CLIENT_TO_SERVER, "NotificationPreferencesUpdatePayload");
+    NOTIFICATION_PREFS_UPDATE(122, Direction.CLIENT_TO_SERVER, "NotificationPreferencesUpdatePayload"),
+    SEASON_PASS_SYNC(123, Direction.SERVER_TO_CLIENT, "SeasonPassPayload"),
+    REQUEST_SEASON_PASS(124, Direction.CLIENT_TO_SERVER, "RequestSeasonPassPayload"),
+
+    // ============================================================================
+    // COMPAT MODULE CHANNELS (130-139)
+    // Reserved for future compat module network channels
+    // ============================================================================
+    ;
 
     // ============================================================================
     // ENUM INFRASTRUCTURE

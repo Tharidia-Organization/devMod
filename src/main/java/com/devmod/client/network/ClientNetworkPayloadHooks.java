@@ -7,6 +7,8 @@ import com.devmod.abilities.StaminaSyncPayload;
 import com.devmod.arena.network.BuildProgressPayload;
 import com.devmod.client.arena.hud.BuildProgressHud;
 import com.devmod.client.config.ClientMechanicsCache;
+import com.devmod.client.debug.ZoneDebugRenderer;
+import com.devmod.client.environment.ClientEnvironmentCache;
 import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.InstanceLoadingPayload;
 import com.devmod.endurance.PerkChoicesPayload;
@@ -15,10 +17,13 @@ import com.devmod.endurance.QuestCompletionPayload;
 import com.devmod.endurance.QuestDeathPayload;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.ShopSyncPayload;
+import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.endurance.TensionUpdatePayload;
+import com.devmod.client.endurance.ClientCombatFlowCache;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
+import com.devmod.mailbox.network.payload.TicketSyncPayload;
 import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.network.GlobalConfigSyncPayload;
@@ -28,10 +33,11 @@ import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.network.ShieldStatePayload;
+import com.devmod.network.ZoneDebugPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
+import com.devmod.runtime.environment.EnvironmentSyncPayload;
 import com.devmod.telemetry.network.LVCSyncPayload;
-import com.devmod.mailbox.network.payload.TicketSyncPayload;
 
 @OnlyIn(Dist.CLIENT)
 public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPayloadHooks {
@@ -54,6 +60,7 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
         } else {
             cache.applyQuestSync(payload.questId(),
                 payload.questOverrides() != null ? payload.questOverrides() : payload.mechanicsConfig());
+            cache.setActiveQuest(payload.questId());
         }
     }
 
@@ -165,6 +172,11 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     }
 
     @Override
+    public void handleCombatFlowSync(CombatFlowSyncPayload payload) {
+        ClientCombatFlowCache.INSTANCE.update(payload);
+    }
+
+    @Override
     public void handleStaminaSync(StaminaSyncPayload payload) {
         ClientOverlayHandlers.handleStaminaSync(payload.currentStamina(), payload.maxStamina());
     }
@@ -194,6 +206,7 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     @Override
     public void handleMailboxNotify(com.devmod.mailbox.network.payload.MailboxNotifyPayload payload) {
         com.devmod.mailbox.client.ClientMailboxCache.handleNotification(payload);
+        com.devmod.client.notification.ClientNotificationManager.INSTANCE.handleMailboxNotify(payload);
     }
 
     @Override
@@ -249,5 +262,38 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     @Override
     public void handleNotificationPreferencesSync(com.devmod.notification.network.NotificationPreferencesSyncPayload payload) {
         com.devmod.client.notification.ClientNotificationPreferences.INSTANCE.applySyncPayload(payload);
+    }
+
+    // ==================== Environment Sync ====================
+
+    @Override
+    public void handleEnvironmentSync(EnvironmentSyncPayload payload) {
+        if (payload.isTimeFrozen()) {
+            ClientEnvironmentCache.setOverride(payload.dimensionKey(), payload.frozenTime(), payload.biomeId());
+        } else {
+            ClientEnvironmentCache.clearOverride(payload.dimensionKey());
+        }
+    }
+
+    // ==================== Zone Debug ====================
+
+    @Override
+    public void handleZoneDebug(ZoneDebugPayload payload) {
+        if (payload.enabled()) {
+            ZoneDebugRenderer.setEnabled(true);
+            ZoneDebugRenderer.setZoneLayout(payload.toZoneLayout(), payload.baseY());
+        } else {
+            ZoneDebugRenderer.setEnabled(false);
+            ZoneDebugRenderer.clearZoneLayout();
+        }
+    }
+
+    // ==================== Season Pass ====================
+
+    @Override
+    public void handleSeasonPassSync(com.devmod.endurance.season.SeasonPassPayload payload) {
+        if (payload != null) {
+            com.devmod.client.season.ClientSeasonPassCache.INSTANCE.update(payload);
+        }
     }
 }

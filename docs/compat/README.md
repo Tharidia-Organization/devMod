@@ -1,6 +1,6 @@
 # DevMod Compatibility Layer
 
-> Last updated: 2025-12-26
+> Last updated: 2025-12-30
 > Status: CURRENT (verified against code)
 
 This directory documents the compatibility modules that integrate DevMod with optional third-party mods.
@@ -22,8 +22,12 @@ This directory documents the compatibility modules that integrate DevMod with op
 ## Quick Reference
 
 - `docs/compat/MOD_INVENTORY.md` (authoritative list of modules in code)
+- `docs/compat/apothic_attributes.md`
+- `docs/compat/c2me.md`
 - `docs/compat/clothconfig.md`
 - `docs/compat/curios.md`
+- `docs/compat/geckolib.md`
+- `docs/compat/epicfight.md`
 - `docs/compat/irons_spellbooks.md`
 - `docs/compat/ranged_weapon_api.md`
 - `docs/compat/spark.md`

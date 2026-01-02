@@ -79,54 +79,54 @@ public final class TicketRepository {
         if (connMgr == null) {
             throw new SQLException("ConnectionManager not initialized");
         }
-        try (Connection conn = connMgr.getConnection()) {
-            // Create tickets table
-            conn.createStatement().execute("""
-                CREATE TABLE IF NOT EXISTS tickets (
-                    id VARCHAR PRIMARY KEY,
-                    reporter_uuid VARCHAR NOT NULL,
-                    reporter_name VARCHAR,
-                    reported_uuid VARCHAR,
-                    reported_name VARCHAR,
-                    category VARCHAR NOT NULL,
-                    priority VARCHAR DEFAULT 'NORMAL',
-                    status VARCHAR DEFAULT 'OPEN',
-                    subject VARCHAR NOT NULL,
-                    description VARCHAR,
-                    assigned_to VARCHAR,
-                    assigned_to_name VARCHAR,
-                    created_at TIMESTAMP NOT NULL,
-                    updated_at TIMESTAMP,
-                    resolved_at TIMESTAMP,
-                    resolution_notes VARCHAR
-                )
-                """);
+        Connection conn = connMgr.getConnectionUnchecked();
 
-            // Create ticket_comments table
-            conn.createStatement().execute("""
-                CREATE TABLE IF NOT EXISTS ticket_comments (
-                    id VARCHAR PRIMARY KEY,
-                    ticket_id VARCHAR NOT NULL,
-                    author_uuid VARCHAR,
-                    author_name VARCHAR,
-                    content VARCHAR NOT NULL,
-                    is_internal BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMP NOT NULL
-                )
-                """);
+        // Create tickets table
+        conn.createStatement().execute("""
+            CREATE TABLE IF NOT EXISTS tickets (
+                id VARCHAR PRIMARY KEY,
+                reporter_uuid VARCHAR NOT NULL,
+                reporter_name VARCHAR,
+                reported_uuid VARCHAR,
+                reported_name VARCHAR,
+                category VARCHAR NOT NULL,
+                priority VARCHAR DEFAULT 'NORMAL',
+                status VARCHAR DEFAULT 'OPEN',
+                subject VARCHAR NOT NULL,
+                description VARCHAR,
+                assigned_to VARCHAR,
+                assigned_to_name VARCHAR,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP,
+                resolved_at TIMESTAMP,
+                resolution_notes VARCHAR
+            )
+            """);
 
-            // Create indexes
-            conn.createStatement().execute(
-                "CREATE INDEX IF NOT EXISTS idx_tickets_reporter ON tickets(reporter_uuid)");
-            conn.createStatement().execute(
-                "CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)");
-            conn.createStatement().execute(
-                "CREATE INDEX IF NOT EXISTS idx_tickets_assigned ON tickets(assigned_to)");
-            conn.createStatement().execute(
-                "CREATE INDEX IF NOT EXISTS idx_comments_ticket ON ticket_comments(ticket_id)");
+        // Create ticket_comments table
+        conn.createStatement().execute("""
+            CREATE TABLE IF NOT EXISTS ticket_comments (
+                id VARCHAR PRIMARY KEY,
+                ticket_id VARCHAR NOT NULL,
+                author_uuid VARCHAR,
+                author_name VARCHAR,
+                content VARCHAR NOT NULL,
+                is_internal BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP NOT NULL
+            )
+            """);
 
-            LOGGER.info("[TicketRepo] Schema initialized");
-        }
+        // Create indexes
+        conn.createStatement().execute(
+            "CREATE INDEX IF NOT EXISTS idx_tickets_reporter ON tickets(reporter_uuid)");
+        conn.createStatement().execute(
+            "CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)");
+        conn.createStatement().execute(
+            "CREATE INDEX IF NOT EXISTS idx_tickets_assigned ON tickets(assigned_to)");
+        conn.createStatement().execute(
+            "CREATE INDEX IF NOT EXISTS idx_comments_ticket ON ticket_comments(ticket_id)");
+
+        LOGGER.info("[TicketRepo] Schema initialized");
     }
 
     public CompletableFuture<Void> shutdown() {
@@ -160,7 +160,7 @@ public final class TicketRepository {
             if (connMgr == null) {
                 throw new IllegalStateException("ConnectionManager not initialized");
             }
-            try (Connection conn = connMgr.getConnection()) {
+            try { Connection conn = connMgr.getConnectionUnchecked();
                 // Delete existing if exists (upsert)
                 try (PreparedStatement delStmt = conn.prepareStatement("DELETE FROM tickets WHERE id = ?")) {
                     delStmt.setString(1, ticket.id().toString());
@@ -217,7 +217,7 @@ public final class TicketRepository {
             if (connMgr == null) {
                 throw new IllegalStateException("ConnectionManager not initialized");
             }
-            try (Connection conn = connMgr.getConnection()) {
+            try { Connection conn = connMgr.getConnectionUnchecked();
                 String sql = "SELECT * FROM tickets WHERE id = ?";
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setString(1, ticketId.toString());
@@ -245,7 +245,7 @@ public final class TicketRepository {
             if (connMgr == null) {
                 throw new IllegalStateException("ConnectionManager not initialized");
             }
-            try (Connection conn = connMgr.getConnection()) {
+            try { Connection conn = connMgr.getConnectionUnchecked();
                 StringBuilder sql = new StringBuilder("SELECT * FROM tickets WHERE 1=1");
                 List<Object> params = new ArrayList<>();
 
@@ -313,7 +313,7 @@ public final class TicketRepository {
             if (connMgr == null) {
                 throw new IllegalStateException("ConnectionManager not initialized");
             }
-            try (Connection conn = connMgr.getConnection()) {
+            try { Connection conn = connMgr.getConnectionUnchecked();
                 StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM tickets WHERE 1=1");
                 List<Object> params = new ArrayList<>();
 
@@ -360,7 +360,7 @@ public final class TicketRepository {
             if (connMgr == null) {
                 throw new IllegalStateException("ConnectionManager not initialized");
             }
-            try (Connection conn = connMgr.getConnection()) {
+            try { Connection conn = connMgr.getConnectionUnchecked();
                 String sql = """
                     INSERT INTO ticket_comments (id, ticket_id, author_uuid, author_name, content, is_internal, created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -398,7 +398,7 @@ public final class TicketRepository {
             if (connMgr == null) {
                 throw new IllegalStateException("ConnectionManager not initialized");
             }
-            try (Connection conn = connMgr.getConnection()) {
+            try { Connection conn = connMgr.getConnectionUnchecked();
                 String sql = includeInternal
                     ? "SELECT * FROM ticket_comments WHERE ticket_id = ? ORDER BY created_at ASC"
                     : "SELECT * FROM ticket_comments WHERE ticket_id = ? AND is_internal = FALSE ORDER BY created_at ASC";
@@ -435,7 +435,7 @@ public final class TicketRepository {
             if (connMgr == null) {
                 throw new IllegalStateException("ConnectionManager not initialized");
             }
-            try (Connection conn = connMgr.getConnection()) {
+            try { Connection conn = connMgr.getConnectionUnchecked();
                 int total = 0, open = 0, assigned = 0, inProgress = 0, resolved = 0, closed = 0;
 
                 try (ResultSet rs = conn.createStatement().executeQuery(

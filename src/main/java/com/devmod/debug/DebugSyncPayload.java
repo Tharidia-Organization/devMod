@@ -5,14 +5,14 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
+import io.netty.buffer.ByteBuf;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-
-import io.netty.buffer.ByteBuf;
 
 public record DebugSyncPayload(String featureId, boolean enabled) implements CustomPacketPayload {
 

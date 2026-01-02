@@ -9,10 +9,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
 
 public class EditorButton {
 
@@ -223,9 +223,9 @@ public class EditorButton {
 
         // Background + impact-style bevel
         graphics.fill(x, y, x + width, y + height, bgColor);
-        int highlight = UIConstants.lighten(bgColor, HIGHLIGHT_LIGHTEN);
-        int mid = UIConstants.darken(bgColor, MID_DARKEN);
-        int shadow = UIConstants.darken(bgColor, SHADOW_DARKEN);
+        int highlight = DesignTokens.lighten(bgColor, HIGHLIGHT_LIGHTEN);
+        int mid = DesignTokens.darken(bgColor, MID_DARKEN);
+        int shadow = DesignTokens.darken(bgColor, SHADOW_DARKEN);
         int gradBand = Math.max(GRADIENT_BAND_HEIGHT, ScaledCoord.scaleDim(GRADIENT_BAND_HEIGHT));
         // top glow
         graphics.fill(x, y, x + width, y + gradBand, highlight);
@@ -238,7 +238,7 @@ public class EditorButton {
         AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
         // Focus/hover ring (impact accent)
         if ((hovered || active) && enabled) {
-            int ringColor = UIConstants.withAlpha(borderColor, RING_ALPHA);
+            int ringColor = DesignTokens.withAlpha(borderColor, RING_ALPHA);
             AxiomRenderer.drawBorder(graphics, x - RING_INSET, y - RING_INSET,
                 width + RING_EXPAND, height + RING_EXPAND, ringColor);
         }
@@ -247,7 +247,7 @@ public class EditorButton {
         int textOffsetY = pressed && hovered ? PRESSED_TEXT_OFFSET : 0;
 
         // Content layout
-        int padding = UIConstants.Spacing.SM;
+        int padding = DesignTokens.Spacing.SM;
         int contentY = y + (height - font.lineHeight) / 2 + textOffsetY;
 
         // Right hotkey hint
@@ -255,7 +255,7 @@ public class EditorButton {
         int hintX = hotkeyHint != null ? x + width - padding - hintWidth : x + width - padding;
 
         if (hotkeyHint != null) {
-            graphics.drawString(font, hotkeyHint, hintX, contentY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(font, hotkeyHint, hintX, contentY, DesignTokens.Text.MUTED(), false);
         }
 
         // Left icon
@@ -266,8 +266,8 @@ public class EditorButton {
         }
 
         // Label, con ellissi se serve
-        int labelStartX = icon != null ? iconX + iconWidth + UIConstants.Spacing.SM : x + padding;
-        int labelAreaRight = hotkeyHint != null ? hintX - UIConstants.Spacing.SM : x + width - padding;
+        int labelStartX = icon != null ? iconX + iconWidth + DesignTokens.Spacing.SM : x + padding;
+        int labelAreaRight = hotkeyHint != null ? hintX - DesignTokens.Spacing.SM : x + width - padding;
         int labelAreaWidth = Math.max(0, labelAreaRight - labelStartX);
         String labelText = Objects.requireNonNull(fitToWidth(label, labelAreaWidth, font), "labelText");
         int textWidth = font.width(labelText);
@@ -282,7 +282,7 @@ public class EditorButton {
      * Render con dimensioni di default.
      */
     public void render(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
-        render(graphics, x, y, UIConstants.Size.BUTTON_WIDTH, size.height, mouseX, mouseY);
+        render(graphics, x, y, DesignTokens.Size.BUTTON_WIDTH, size.height, mouseX, mouseY);
     }
 
     private int pickBackground(Palette palette, boolean active) {
@@ -300,49 +300,49 @@ public class EditorButton {
 
     private int pickText(Palette palette, boolean active) {
         if (!enabled) return palette.disabledText;
-        if (style == Style.GHOST && !hovered && !active) return UIConstants.Text.SECONDARY();
+        if (style == Style.GHOST && !hovered && !active) return DesignTokens.Text.SECONDARY();
         return palette.text;
     }
 
     private Palette paletteFor(Style style, @Nullable Integer accentOverride) {
-        // Palette Impact HUD centralizzata in UIConstants
-        int defaultBase = UIConstants.ImpactButton.DEFAULT_BASE;
-        int ghostBase = UIConstants.ImpactButton.GHOST_BASE;
+        // Palette Impact HUD centralizzata in DesignTokens
+        int defaultBase = DesignTokens.ImpactButton.DEFAULT_BASE;
+        int ghostBase = DesignTokens.ImpactButton.GHOST_BASE;
 
-        int accent = accentOverride != null ? accentOverride : UIConstants.ImpactButton.PRIMARY_BORDER;
-        int primaryBase = accentOverride != null ? UIConstants.darken(accentOverride, ACCENT_OVERRIDE_DARKEN)
-            : UIConstants.ImpactButton.PRIMARY_BASE;
-        int dangerBase = UIConstants.darken(UIConstants.ImpactButton.DANGER_BASE, DANGER_BASE_DARKEN);
-        int successBase = UIConstants.darken(UIConstants.ImpactButton.SUCCESS_BASE, SUCCESS_BASE_DARKEN);
+        int accent = accentOverride != null ? accentOverride : DesignTokens.ImpactButton.PRIMARY_BORDER;
+        int primaryBase = accentOverride != null ? DesignTokens.darken(accentOverride, ACCENT_OVERRIDE_DARKEN)
+            : DesignTokens.ImpactButton.PRIMARY_BASE;
+        int dangerBase = DesignTokens.darken(DesignTokens.ImpactButton.DANGER_BASE, DANGER_BASE_DARKEN);
+        int successBase = DesignTokens.darken(DesignTokens.ImpactButton.SUCCESS_BASE, SUCCESS_BASE_DARKEN);
 
         return switch (style) {
             case PRIMARY -> new Palette(primaryBase,
-                UIConstants.lighten(primaryBase, PRIMARY_HOVER_LIGHTEN),
-                UIConstants.darken(primaryBase, PRIMARY_PRESS_DARKEN),
+                DesignTokens.lighten(primaryBase, PRIMARY_HOVER_LIGHTEN),
+                DesignTokens.darken(primaryBase, PRIMARY_PRESS_DARKEN),
                 accent,
-                UIConstants.Text.PRIMARY());
+                DesignTokens.Text.PRIMARY());
             case DANGER -> new Palette(dangerBase,
-                UIConstants.lighten(dangerBase, DANGER_HOVER_LIGHTEN),
-                UIConstants.darken(dangerBase, DANGER_PRESS_DARKEN),
-                UIConstants.ImpactButton.DANGER_BORDER,
-                UIConstants.Text.PRIMARY());
+                DesignTokens.lighten(dangerBase, DANGER_HOVER_LIGHTEN),
+                DesignTokens.darken(dangerBase, DANGER_PRESS_DARKEN),
+                DesignTokens.ImpactButton.DANGER_BORDER,
+                DesignTokens.Text.PRIMARY());
             case SUCCESS -> new Palette(successBase,
-                UIConstants.lighten(successBase, SUCCESS_HOVER_LIGHTEN),
-                UIConstants.darken(successBase, SUCCESS_PRESS_DARKEN),
-                UIConstants.ImpactButton.SUCCESS_BORDER,
-                UIConstants.Text.PRIMARY());
+                DesignTokens.lighten(successBase, SUCCESS_HOVER_LIGHTEN),
+                DesignTokens.darken(successBase, SUCCESS_PRESS_DARKEN),
+                DesignTokens.ImpactButton.SUCCESS_BORDER,
+                DesignTokens.Text.PRIMARY());
             case GHOST -> new Palette(
                 ghostBase,
-                UIConstants.lighten(ghostBase, GHOST_HOVER_LIGHTEN),
-                UIConstants.darken(ghostBase, GHOST_PRESS_DARKEN),
-                UIConstants.Border.MUTED(),
-                UIConstants.Text.PRIMARY());
+                DesignTokens.lighten(ghostBase, GHOST_HOVER_LIGHTEN),
+                DesignTokens.darken(ghostBase, GHOST_PRESS_DARKEN),
+                DesignTokens.Border.MUTED(),
+                DesignTokens.Text.PRIMARY());
             default -> new Palette(
                 defaultBase,
-                UIConstants.lighten(defaultBase, DEFAULT_HOVER_LIGHTEN),
-                UIConstants.darken(defaultBase, DEFAULT_PRESS_DARKEN),
-                UIConstants.Border.DEFAULT(),
-                UIConstants.Text.PRIMARY());
+                DesignTokens.lighten(defaultBase, DEFAULT_HOVER_LIGHTEN),
+                DesignTokens.darken(defaultBase, DEFAULT_PRESS_DARKEN),
+                DesignTokens.Border.DEFAULT(),
+                DesignTokens.Text.PRIMARY());
         };
     }
 
@@ -409,10 +409,10 @@ public class EditorButton {
             this.press = press;
             this.border = border;
             this.text = text;
-            this.hoverBorder = UIConstants.Border.ACCENT();
-            this.disabledBg = UIConstants.darken(UIConstants.Background.INPUT(), DISABLED_BG_DARKEN);
-            this.disabledBorder = UIConstants.Border.MUTED();
-            this.disabledText = UIConstants.Text.DISABLED();
+            this.hoverBorder = DesignTokens.Border.ACCENT();
+            this.disabledBg = DesignTokens.darken(DesignTokens.Background.INPUT(), DISABLED_BG_DARKEN);
+            this.disabledBorder = DesignTokens.Border.MUTED();
+            this.disabledText = DesignTokens.Text.DISABLED();
         }
     }
 
@@ -571,7 +571,7 @@ public class EditorButton {
      */
     public enum Size {
         SMALL(SMALL_HEIGHT),
-        MEDIUM(UIConstants.Size.BUTTON_HEIGHT),
+        MEDIUM(DesignTokens.Size.BUTTON_HEIGHT),
         LARGE(LARGE_HEIGHT);
 
         final int height;
