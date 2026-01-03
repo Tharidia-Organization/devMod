@@ -260,6 +260,19 @@ public class EnduranceQuest {
     }
 
     /**
+     * Get mob count for current wave with player scaling and session overrides.
+     *
+     * @param playerCount Number of players in the party
+     * @param questType Quest type for difficulty multiplier
+     * @param session Session for config overrides (nullable)
+     * @return Scaled mob count
+     */
+    public int getCurrentWaveMobCount(int playerCount, QuestType questType,
+                                      @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+        return mobConfig.getMobCountForWave(currentWave, playerCount, questType, session);
+    }
+
+    /**
      * Get display name for this quest.
      */
     public String getDisplayName() {

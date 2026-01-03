@@ -1000,10 +1000,10 @@ public class PerkSystem {
             }
         }
 
-        // Doom curse
+        // Doom curse - use generic() to respect armor instead of magic()
         if (session.hasPerk("curse_doom")) {
             if (player.tickCount % 20 == 0) { // Every second
-                player.hurt(requireNonNull(player.damageSources().magic(), "magicDamage"), 1.0f);
+                player.hurt(requireNonNull(player.damageSources().generic(), "genericDamage"), 1.0f);
             }
         }
 

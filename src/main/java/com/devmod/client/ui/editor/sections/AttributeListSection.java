@@ -2,6 +2,7 @@ package com.devmod.client.ui.editor.sections;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -21,6 +22,7 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
+import com.devmod.client.ui.editor.components.EditorTextField;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -31,12 +33,39 @@ public final class AttributeListSection implements EditorSection.CustomSection {
     private static final int ENTRY_HEIGHT = 44; // Slider height + padding
     private static final int TEXT_INSET_X = 8;
     private static final int BOTTOM_PADDING = 8;
+    private static final int SEARCH_TOP_PADDING = 4;
+    private static final int SEARCH_BOTTOM_PADDING = 6;
+    private static final int EMPTY_STATE_HEIGHT = 16;
+    private static final String EMPTY_STATE_TEXT = "No attributes match this filter";
+    private static final int GROUP_HEADER_HEIGHT = 14;
+    private static final AttributeGroup[] GROUP_ORDER = new AttributeGroup[] {
+        AttributeGroup.COMBAT,
+        AttributeGroup.DEFENSE,
+        AttributeGroup.MOVEMENT,
+        AttributeGroup.OTHER
+    };
+
+    private enum AttributeGroup {
+        COMBAT("Combat"),
+        DEFENSE("Defense"),
+        MOVEMENT("Movement"),
+        OTHER("Other");
+
+        private final String label;
+
+        AttributeGroup(String label) {
+            this.label = label;
+        }
+    }
 
     private final String id;
     private final String title;
     private final ItemStack item;
     private final List<AttributeEntry> entries = new ArrayList<>();
+    private final List<AttributeEntry> filteredEntries = new ArrayList<>();
+    private final EditorTextField searchField;
     private final Consumer<String> onModify;
+    private String searchQuery = "";
 
     /**
      * Creates a new attribute list section.
@@ -51,6 +80,10 @@ public final class AttributeListSection implements EditorSection.CustomSection {
         this.title = title;
         this.item = item;
         this.onModify = onModify;
+        this.searchField = new EditorTextField(id + "_search", "Search")
+            .placeholder("Filter attributes")
+            .maxLength(64)
+            .onChange(this::onSearchChanged);
         loadAttributes();
     }
 
@@ -70,6 +103,7 @@ public final class AttributeListSection implements EditorSection.CustomSection {
         addVanillaAttribute(Attributes.KNOCKBACK_RESISTANCE, "Knockback Resistance", 0.0, 0, 1, DesignTokens.SliderColors.NEUTRAL, mods);
         addVanillaAttribute(Attributes.ATTACK_KNOCKBACK, "Attack Knockback", 0.0, 0, 5, DesignTokens.SliderColors.DAMAGE, mods);
         addVanillaAttribute(Attributes.MOVEMENT_SPEED, "Movement Speed", 0.1, 0, 1, DesignTokens.SliderColors.SPEED, mods);
+        updateFilter();
     }
 
     private void addVanillaAttribute(Holder<Attribute> attribute, String displayName, double defaultValue,
@@ -106,6 +140,61 @@ public final class AttributeListSection implements EditorSection.CustomSection {
             });
 
         entries.add(new AttributeEntry(attribute, displayName, slider, hasModifier, defaultValue));
+    }
+
+    private void onSearchChanged(String text) {
+        searchQuery = text == null ? "" : text;
+        updateFilter();
+    }
+
+    private void updateFilter() {
+        filteredEntries.clear();
+        String query = searchQuery.trim().toLowerCase(Locale.ROOT);
+        if (query.isEmpty()) {
+            filteredEntries.addAll(entries);
+            return;
+        }
+        for (AttributeEntry entry : entries) {
+            if (matchesFilter(entry, query)) {
+                filteredEntries.add(entry);
+            }
+        }
+    }
+
+    private boolean matchesFilter(AttributeEntry entry, String query) {
+        String name = entry.displayName.toLowerCase(Locale.ROOT);
+        String key = getAttributeKey(entry.attribute);
+        return name.contains(query) || key.toLowerCase(Locale.ROOT).contains(query);
+    }
+
+    private AttributeGroup getGroupFor(AttributeEntry entry) {
+        String key = getAttributeKey(entry.attribute);
+        if (key.contains("attack_damage") || key.contains("attack_speed") || key.contains("attack_knockback")) {
+            return AttributeGroup.COMBAT;
+        }
+        if (key.contains("armor") || key.contains("knockback_resistance")) {
+            return AttributeGroup.DEFENSE;
+        }
+        if (key.contains("movement_speed")) {
+            return AttributeGroup.MOVEMENT;
+        }
+        return AttributeGroup.OTHER;
+    }
+
+    private int getGroupedHeight() {
+        int height = 0;
+        for (AttributeGroup group : GROUP_ORDER) {
+            int count = 0;
+            for (AttributeEntry entry : filteredEntries) {
+                if (getGroupFor(entry) == group) {
+                    count++;
+                }
+            }
+            if (count > 0) {
+                height += GROUP_HEADER_HEIGHT + count * ENTRY_HEIGHT;
+            }
+        }
+        return height;
     }
 
     private String getAttributeKey(Holder<Attribute> attribute) {
@@ -232,7 +321,9 @@ public final class AttributeListSection implements EditorSection.CustomSection {
 
     @Override
     public int getHeight() {
-        return HEADER_HEIGHT + entries.size() * ENTRY_HEIGHT + BOTTOM_PADDING;
+        int listHeight = filteredEntries.isEmpty() ? EMPTY_STATE_HEIGHT : getGroupedHeight();
+        return HEADER_HEIGHT + SEARCH_TOP_PADDING + searchField.calculateHeight()
+            + SEARCH_BOTTOM_PADDING + listHeight + BOTTOM_PADDING;
     }
 
     @Override
@@ -248,16 +339,47 @@ public final class AttributeListSection implements EditorSection.CustomSection {
             y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.TITLE(), false);
         y += HEADER_HEIGHT;
 
-        // Render each attribute slider
-        for (AttributeEntry entry : entries) {
-            entry.slider.render(graphics, bounds.x() + 4, y + 4, bounds.width() - 8, mouseX, mouseY);
-            y += ENTRY_HEIGHT;
+        y += SEARCH_TOP_PADDING;
+        searchField.render(graphics, bounds.x() + TEXT_INSET_X, y,
+            bounds.width() - TEXT_INSET_X * 2, mouseX, mouseY);
+        y += searchField.calculateHeight() + SEARCH_BOTTOM_PADDING;
+
+        if (filteredEntries.isEmpty()) {
+            graphics.drawString(font, EMPTY_STATE_TEXT, bounds.x() + TEXT_INSET_X, y,
+                DesignTokens.Text.MUTED(), false);
+            return;
+        }
+
+        for (AttributeGroup group : GROUP_ORDER) {
+            boolean hasGroup = false;
+            for (AttributeEntry entry : filteredEntries) {
+                if (getGroupFor(entry) == group) {
+                    hasGroup = true;
+                    break;
+                }
+            }
+            if (!hasGroup) {
+                continue;
+            }
+            graphics.drawString(font, group.label, bounds.x() + TEXT_INSET_X, y,
+                DesignTokens.Text.SECONDARY(), false);
+            y += GROUP_HEADER_HEIGHT;
+            for (AttributeEntry entry : filteredEntries) {
+                if (getGroupFor(entry) != group) {
+                    continue;
+                }
+                entry.slider.render(graphics, bounds.x() + 4, y + 4, bounds.width() - 8, mouseX, mouseY);
+                y += ENTRY_HEIGHT;
+            }
         }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        for (AttributeEntry entry : entries) {
+        if (searchField.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        for (AttributeEntry entry : filteredEntries) {
             if (entry.slider.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
@@ -267,7 +389,7 @@ public final class AttributeListSection implements EditorSection.CustomSection {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        for (AttributeEntry entry : entries) {
+        for (AttributeEntry entry : filteredEntries) {
             if (entry.slider.mouseReleased(mouseX, mouseY, button)) {
                 return true;
             }
@@ -277,7 +399,7 @@ public final class AttributeListSection implements EditorSection.CustomSection {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        for (AttributeEntry entry : entries) {
+        for (AttributeEntry entry : filteredEntries) {
             if (entry.slider.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
                 return true;
             }
@@ -287,7 +409,10 @@ public final class AttributeListSection implements EditorSection.CustomSection {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        for (AttributeEntry entry : entries) {
+        if (searchField.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+        for (AttributeEntry entry : filteredEntries) {
             if (entry.slider.keyPressed(keyCode, scanCode, modifiers)) {
                 return true;
             }
@@ -297,7 +422,10 @@ public final class AttributeListSection implements EditorSection.CustomSection {
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        for (AttributeEntry entry : entries) {
+        if (searchField.charTyped(chr, modifiers)) {
+            return true;
+        }
+        for (AttributeEntry entry : filteredEntries) {
             if (entry.slider.charTyped(chr, modifiers)) {
                 return true;
             }

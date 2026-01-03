@@ -62,6 +62,27 @@ public class ComboSystem {
             return result;
         }
 
+        /**
+         * Get style rank from score using config thresholds.
+         * This method reads thresholds from EnduranceConfigManager for the given quest.
+         */
+        public static StyleRank fromScore(int styleScore, UUID questId) {
+            if (questId == null) {
+                return fromScore(styleScore);
+            }
+
+            EnduranceConfigManager config = EnduranceConfigManager.INSTANCE;
+
+            // Check thresholds from highest to lowest
+            if (styleScore >= config.getStyleRankSSSThreshold(questId)) return SSS;
+            if (styleScore >= config.getStyleRankSSThreshold(questId)) return SS;
+            if (styleScore >= config.getStyleRankSThreshold(questId)) return S;
+            if (styleScore >= config.getStyleRankAThreshold(questId)) return A;
+            if (styleScore >= config.getStyleRankBThreshold(questId)) return B;
+            if (styleScore >= config.getStyleRankCThreshold(questId)) return C;
+            return D;
+        }
+
         public StyleRank getNext() {
             int idx = this.ordinal();
             StyleRank[] values = values();
@@ -268,8 +289,12 @@ public class ComboSystem {
             FlowStateTracker.FlowResult flowResult = flowState.processAction(action);
             lastFlowState = flowResult.state();
 
+            // Get combo config values
+            double comboIncrement = questId != null ? config.getComboMultiplierIncrement(questId) : 0.02;
+            double maxMultiplier = questId != null ? config.getComboMaxMultiplier(questId) : 5.0;
+
             // Calculate points with multipliers (including flow state)
-            float comboMultiplier = 1.0f + (currentCombo * 0.02f); // +2% per combo hit
+            float comboMultiplier = (float) Math.min(1.0 + (currentCombo * comboIncrement), maxMultiplier);
             float varietyMultiplier = 1.0f + (varietyBonus * 0.01f);
             float rankMultiplier = currentRank.multiplier;
             float flowMultiplier = flowResult.styleMultiplier();
@@ -282,8 +307,8 @@ public class ComboSystem {
             totalStyleEarned += styleGain;
             lastStyleGainTime = now;
 
-            // Update rank
-            StyleRank newRank = StyleRank.fromScore(styleScore);
+            // Update rank using config thresholds
+            StyleRank newRank = StyleRank.fromScore(styleScore, questId);
             boolean rankUp = newRank.ordinal() > currentRank.ordinal();
             StyleRank oldRank = currentRank;
             currentRank = newRank;
@@ -372,8 +397,8 @@ public class ComboSystem {
             // Combo penalty
             currentCombo = Math.max(0, currentCombo / 2);
 
-            // Update rank
-            currentRank = StyleRank.fromScore(styleScore);
+            // Update rank using config thresholds
+            currentRank = StyleRank.fromScore(styleScore, questId);
 
             // Set pending notification if significant decay occurred
             int comboLost = previousCombo - currentCombo;
@@ -440,8 +465,8 @@ public class ComboSystem {
                 styleScore = Math.max(0, styleScore - decayAmount);
                 lastStyleGainTime = now - (now - lastStyleGainTime) % decayInterval;
 
-                // Update rank after decay
-                currentRank = StyleRank.fromScore(styleScore);
+                // Update rank after decay using config thresholds
+                currentRank = StyleRank.fromScore(styleScore, questId);
             }
 
             // Clean up old announcements
@@ -462,8 +487,8 @@ public class ComboSystem {
             styleScore += points;
             totalStyleEarned += points;
 
-            // Update rank after bonus
-            StyleRank newRank = StyleRank.fromScore(styleScore);
+            // Update rank after bonus using config thresholds
+            StyleRank newRank = StyleRank.fromScore(styleScore, questId);
             if (newRank.ordinal() > currentRank.ordinal()) {
                 currentRank = newRank;
             }
@@ -516,8 +541,8 @@ public class ComboSystem {
             totalStyleEarned += styleGain;
             lastStyleGainTime = now;
 
-            // Update rank
-            StyleRank newRank = StyleRank.fromScore(styleScore);
+            // Update rank using config thresholds
+            StyleRank newRank = StyleRank.fromScore(styleScore, questId);
             boolean rankUp = newRank.ordinal() > currentRank.ordinal();
             currentRank = newRank;
             if (newRank.ordinal() > highestRank.ordinal()) {

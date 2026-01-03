@@ -6,7 +6,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -18,6 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.combat.CombatColors;
 import com.devmod.combat.signature.SoulImprint;
 import com.devmod.combat.signature.WeaponTrait;
+import com.devmod.shared.SharedColorTokens;
 
 @OnlyIn(Dist.CLIENT)
 public class SignatureWeaponTooltip {
@@ -41,29 +41,29 @@ public class SignatureWeaponTooltip {
         // Owner info
         if (imprint.getOwnerName() != null) {
             lines.add(Component.literal("  Bound to: ")
-                .withStyle(ChatFormatting.GRAY)
+                .withStyle(SharedColorTokens.Chat.GRAY)
                 .append(Component.literal(imprint.getOwnerName())
-                    .withStyle(ChatFormatting.GOLD)));
+                    .withStyle(SharedColorTokens.Chat.GOLD)));
         }
 
         // Evolution stage
         String stageName = getStageName(imprint.getEvolutionStage());
         lines.add(Component.literal("  Stage: ")
-            .withStyle(ChatFormatting.GRAY)
+            .withStyle(SharedColorTokens.Chat.GRAY)
             .append(Component.literal(stageName)
                 .withStyle(Style.EMPTY.withColor(getStageColor(imprint.getEvolutionStage())))));
 
         // Stats summary
         lines.add(Component.literal("  Total Kills: ")
-            .withStyle(ChatFormatting.GRAY)
+            .withStyle(SharedColorTokens.Chat.GRAY)
             .append(Component.literal(String.format("%,d", imprint.getTotalKills()))
-                .withStyle(ChatFormatting.RED)));
+                .withStyle(SharedColorTokens.Chat.RED)));
 
         if (imprint.getTotalDamage() > 0) {
             lines.add(Component.literal("  Total Damage: ")
-                .withStyle(ChatFormatting.GRAY)
+                .withStyle(SharedColorTokens.Chat.GRAY)
                 .append(Component.literal(String.format("%,d", imprint.getTotalDamage()))
-                    .withStyle(ChatFormatting.GOLD)));
+                    .withStyle(SharedColorTokens.Chat.GOLD)));
         }
 
         // Unlocked traits
@@ -71,7 +71,7 @@ public class SignatureWeaponTooltip {
         if (!traits.isEmpty()) {
             lines.add(Component.empty());
             lines.add(Component.literal("  Traits:")
-                .withStyle(ChatFormatting.LIGHT_PURPLE));
+                .withStyle(SharedColorTokens.Chat.LIGHT_PURPLE));
 
             for (WeaponTrait trait : traits) {
                 MutableComponent traitLine = Component.literal("    ");
@@ -80,9 +80,9 @@ public class SignatureWeaponTooltip {
                 traitLine.append(Component.literal(trait.getAdjective())
                     .withStyle(Style.EMPTY.withColor(trait.getColor()).withBold(true)));
                 traitLine.append(Component.literal(" - ")
-                    .withStyle(ChatFormatting.GRAY));
+                    .withStyle(SharedColorTokens.Chat.GRAY));
                 traitLine.append(Component.literal(trait.getEffect().getDescription())
-                    .withStyle(ChatFormatting.WHITE));
+                    .withStyle(SharedColorTokens.Chat.WHITE));
                 lines.add(traitLine);
             }
         }
@@ -123,11 +123,11 @@ public class SignatureWeaponTooltip {
         int percent = (int) (bestProgress * 100);
 
         return Component.literal("  Next: ")
-            .withStyle(ChatFormatting.GRAY)
+            .withStyle(SharedColorTokens.Chat.GRAY)
             .append(Component.literal(bestStat.displayName)
-                .withStyle(ChatFormatting.YELLOW))
+                .withStyle(SharedColorTokens.Chat.YELLOW))
             .append(Component.literal(String.format(" [%d/%d] %d%%", current, required, percent))
-                .withStyle(ChatFormatting.DARK_GRAY));
+                .withStyle(SharedColorTokens.Chat.DARK_GRAY));
     }
 
     /**

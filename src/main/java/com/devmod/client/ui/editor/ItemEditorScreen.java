@@ -61,6 +61,7 @@ import com.devmod.client.ui.editor.core.EditorSpacing;
 import com.devmod.client.ui.editor.core.GridValidator;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.TooltipManager;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.debug.DebugOverlay;
 import com.devmod.client.ui.editor.favorites.FavoritePresetStore;
@@ -149,14 +150,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final String SOURCE_GLOBAL_OVERRIDE = "Global override available (serverconfig/devmod/devmod-items.toml)";
     private static final String SOURCE_GLOBAL = "Global (serverconfig/devmod/devmod-items.toml)";
     private static final String SOURCE_VANILLA = "Vanilla (no overrides)";
-    private static final int TOOLTIP_WIDTH_PADDING = 8;
-    private static final int TOOLTIP_HEIGHT = 14;
-    private static final int TOOLTIP_OFFSET_X = 12;
-    private static final int TOOLTIP_OFFSET_Y = 20;
-    private static final int TOOLTIP_SCREEN_MARGIN = 4;
-    private static final int TOOLTIP_TEXT_OFFSET_X = 4;
-    private static final int TOOLTIP_TEXT_OFFSET_Y = 3;
-    private static final int TOOLTIP_BG = DesignTokens.ItemEditor.TOOLTIP_BG;
     private static final int FAVORITES_TITLE_OFFSET_X = 8;
     private static final int FAVORITES_TITLE_OFFSET_Y = 8;
     private static final int FAVORITES_ROW_HEIGHT = 18;
@@ -188,6 +181,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int HOTBAR_SLOT_SIZE = 20;
     private static final int HOTBAR_SLOT_COUNT = 9;
     private static final int HOTBAR_BOTTOM_OFFSET = 22;
+    private static final int LOCAL_ONLY_BANNER_HEIGHT = 18;
+    private static final int LOCAL_ONLY_BANNER_MARGIN = 6;
+    private static final int LOCAL_ONLY_BANNER_PADDING_X = 8;
+    private static final int LOCAL_ONLY_BANNER_BG = DesignTokens.Semantic.WARNING_MUTED;
+    private static final int LOCAL_ONLY_BANNER_BORDER = DesignTokens.Semantic.WARNING;
+    private static final String LOCAL_ONLY_BANNER_TEXT =
+        "Local kit edit: client-only changes; Apply disabled.";
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -227,12 +227,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private int statusColor = 0;
     private int statusTicks = 0;
 
-    // Tooltip state
-    @Nullable
-    private String tooltipText = null;
-    private int tooltipX = 0;
-    private int tooltipY = 0;
-
     // Dialog state
     @Nullable
     private ConfirmDialog activeDialog = null;
@@ -271,6 +265,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     // Preview error logging flag
     private boolean previewItemErrorLogged = false;
+    private boolean commitEditsOnClose = true;
+    private final boolean localOnlyMode;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -278,16 +274,24 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @SuppressWarnings("this-escape") // Callback registration in constructor is intentional
     public ItemEditorScreen(ItemStack item, EditorStartTab startTab) {
-        this(item, startTab, null, null);
+        this(item, startTab, null, null, false);
     }
 
     @SuppressWarnings("this-escape") // Callback registration in constructor is intentional
     public ItemEditorScreen(ItemStack item, EditorStartTab startTab,
                             @Nullable Screen parentScreen, @Nullable Consumer<ItemStack> onItemEdited) {
+        this(item, startTab, parentScreen, onItemEdited, false);
+    }
+
+    @SuppressWarnings("this-escape") // Callback registration in constructor is intentional
+    public ItemEditorScreen(ItemStack item, EditorStartTab startTab,
+                            @Nullable Screen parentScreen, @Nullable Consumer<ItemStack> onItemEdited,
+                            boolean localOnlyMode) {
         super(java.util.Objects.requireNonNull(Component.literal("Item Editor"), "title"));
         this.editorState = new ItemEditorState(item);
         this.parentScreen = parentScreen;
         this.onItemEdited = onItemEdited;
+        this.localOnlyMode = localOnlyMode;
         this.modeController = new ModeController(editorState)
             .setStatusCallback((msg, color) -> showStatus(msg, color == null ? DesignTokens.Semantic.INFO : color));
         this.overlayController.setOnOverlayChanged(this::onOverlayChanged);
@@ -295,6 +299,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         this.requestedTab = startTab;
         this.layout = new ResponsiveLayout();
         modeController.loadPreference();
+        if (localOnlyMode) {
+            editorState.setPreviewMode(true);
+            editorState.setGlobalMode(false);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -332,7 +340,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         // Configure and check low-confidence detection system
         lowConfidenceDetector.setStatusConsumer((msg, color) -> showStatus(msg, color));
         lowConfidenceDetector.setOnCancelCallback(() -> {
-            onClose();
+            closeEditor(false);
             Minecraft.getInstance().setScreen(null);
         });
         lowConfidenceDetector.checkAndWarn(getEditedItem(), requestedTab, resolvedModule);
@@ -525,6 +533,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             .onScopeChange(scope -> {
                 editorState.setGlobalMode(scope == ModeBadge.Scope.GLOBAL);
             });
+
+        header.getModeBadge().clickable(!localOnlyMode);
+        header.getScopeBadge().clickable(!localOnlyMode);
     }
 
     private void configureLeftColumn() {
@@ -612,6 +623,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void handleModeChange(ModeBadge.Mode mode) {
+        if (localOnlyMode && mode == ModeBadge.Mode.APPLY) {
+            showStatus("Local kit edit only", DesignTokens.Semantic.WARNING);
+            editorState.setPreviewMode(true);
+            header.getModeBadge().setMode(ModeBadge.Mode.PREVIEW);
+            header.getModeBadge().closeDropdown();
+            return;
+        }
         boolean preview = mode == ModeBadge.Mode.PREVIEW;
         if (preview == isPreviewMode()) {
             return;
@@ -663,6 +681,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private void switchToApplyMode() {
+        if (localOnlyMode) {
+            showStatus("Local kit edit only", DesignTokens.Semantic.WARNING);
+            return;
+        }
         editorState.setPreviewMode(false);
         EditorModule module = activeModule;
         if (module != null) {
@@ -793,6 +815,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         perfMonitor.startFrame();
+        TooltipManager.INSTANCE.beginFrame(width, height);
+        boolean blockBaseOverlays = hasBlockingOverlay();
         // Dark overlay background, but leave vanilla hotbar area unobscured
         int hotbarReserve = ScaledCoord.scaleDim(DesignTokens.Space._7);
         graphics.fill(0, 0, width, Math.max(0, height - hotbarReserve), DesignTokens.Bg.LEVEL_0);
@@ -803,9 +827,16 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         var footerBounds = editorLayout.getFooterBounds();
         var leftBounds = editorLayout.getLeftColumnBounds();
         var contentBounds = editorLayout.getContentBounds();
-        int contentY = contentBounds.y();
+        int baseContentY = contentBounds.y();
+        int baseContentHeight = contentBounds.height();
+        int contentY = baseContentY;
         int footerY = footerBounds.y();
-        int contentHeight = contentBounds.height();
+        int contentHeight = baseContentHeight;
+        int bannerOffset = localOnlyMode ? getLocalOnlyBannerOffset() : 0;
+        if (bannerOffset > 0) {
+            contentY += bannerOffset;
+            contentHeight = Math.max(0, contentHeight - bannerOffset);
+        }
 
         // Main panel background
         graphics.fill(panelBounds.x(), panelBounds.y(),
@@ -819,14 +850,20 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         // Header (tabs + badges + close)
         header.render(graphics, headerBounds.x(), headerBounds.y(), headerBounds.width(), mouseX, mouseY);
-        if (header.getModeBadge().isHovered()) {
-            tooltipText = header.getModeBadge().getTooltipText();
-            tooltipX = mouseX;
-            tooltipY = mouseY;
-        } else if (header.getScopeBadge().isHovered()) {
-            tooltipText = header.getScopeBadge().getTooltipText();
-            tooltipX = mouseX;
-            tooltipY = mouseY;
+        if (!blockBaseOverlays) {
+            String modeTip = header.getModeBadge().getTooltipText();
+            if (modeTip != null) {
+                var bounds = header.getModeBadge().getBounds();
+                TooltipManager.INSTANCE.queueTooltip(
+                    modeTip, bounds.x(), bounds.y(), bounds.width(), bounds.height(), TooltipManager.TooltipPosition.AUTO);
+            } else {
+                String scopeTip = header.getScopeBadge().getTooltipText();
+                if (scopeTip != null) {
+                    var bounds = header.getScopeBadge().getBounds();
+                    TooltipManager.INSTANCE.queueTooltip(
+                        scopeTip, bounds.x(), bounds.y(), bounds.width(), bounds.height(), TooltipManager.TooltipPosition.AUTO);
+                }
+            }
         }
 
         // Left column (preview + slots + info)
@@ -837,22 +874,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
         leftColumn.render(graphics, leftBounds.x(), leftBounds.y(), leftBounds.width(), leftBounds.height(), mouseX, mouseY, partialTick);
 
-        // Render multi-edit panel if visible (placed beneath left column area)
-        MultiEditPanel mePanel = multiEditPanel;
-        if (showMultiEditPanel && mePanel != null) {
-            int panelX = leftBounds.x() + DesignTokens.Spacing.MD;
-            int panelY = contentY + DesignTokens.Spacing.MD;
-            int panelW = leftBounds.width() - DesignTokens.Spacing.MD * 2;
-            mePanel.render(graphics, font, panelX, panelY, panelW, mouseX, mouseY);
-        }
-
         // Content area (scrollable)
         int contentX = contentBounds.x() + DesignTokens.Spacing.MD;
         int contentWidth = contentBounds.width() - DesignTokens.Spacing.MD * 2;
-        graphics.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, DesignTokens.Background.CONTENT());
+        graphics.fill(contentX, baseContentY, contentX + contentWidth, baseContentY + baseContentHeight,
+            DesignTokens.Background.CONTENT());
+        if (localOnlyMode) {
+            renderLocalOnlyBanner(graphics, contentX, baseContentY, contentWidth);
+        }
         if (module != null) {
             perfMonitor.startTiming("render_content");
-            int viewportHeight = contentHeight - DesignTokens.Spacing.MD * 2;
+            int viewportHeight = Math.max(0, contentHeight - DesignTokens.Spacing.MD * 2);
             EditorModule renderModule = module; // Capture for lambda
             scrollArea.render(graphics, contentX, contentY, contentWidth, contentHeight,
                 mouseX, mouseY, partialTick, (g, x, y, w, mx, my) -> {
@@ -865,20 +897,30 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             perfMonitor.endTiming("render_content");
         }
 
+        // Render multi-edit panel if visible (placed beneath left column area)
+        MultiEditPanel mePanel = multiEditPanel;
+        if (showMultiEditPanel && mePanel != null) {
+            int panelX = leftBounds.x() + DesignTokens.Spacing.MD;
+            int panelY = contentY + DesignTokens.Spacing.MD;
+            int panelW = leftBounds.width() - DesignTokens.Spacing.MD * 2;
+            mePanel.render(graphics, font, panelX, panelY, panelW, mouseX, mouseY);
+        }
+
         // Footer
         int pending = module != null ? module.getPendingChanges().size() : 0;
         boolean dirty = module != null && (module.hasUnsavedChanges() || pending > 0);
         footer
             .canUndo(module != null && module.canUndo())
             .canRedo(module != null && module.canRedo())
-            .canApply(module != null)
+            .canApply(module != null && !localOnlyMode)
             .isDirty(dirty)
-            .pendingCount(pending);
+            .pendingCount(pending)
+            .applyLabel(localOnlyMode ? "Local Kit" : null);
         footer.render(graphics, panelBounds.x(), footerY, panelBounds.width(), mouseX, mouseY);
 
         // Render side panels if visible
         if (layout.showSidePanels()) {
-            renderSidePanels(graphics, mouseX, mouseY);
+            renderSidePanels(graphics, mouseX, mouseY, !blockBaseOverlays);
         }
 
         // Status message overlay
@@ -886,8 +928,24 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             renderStatusMessage(graphics);
         }
 
+        if (blockBaseOverlays) {
+            header.getModeBadge().closeDropdown();
+            header.getScopeBadge().closeDropdown();
+            TooltipManager.INSTANCE.beginFrame(width, height);
+        }
+
         if (overlayController.isHistoryVisible() && activeModule != null) {
             renderHistoryPanel(graphics);
+        }
+
+        // Dev panel
+        if (showDevPanel) {
+            renderDevPanel(graphics, mouseX, mouseY);
+        }
+
+        if (!blockBaseOverlays) {
+            // Render header dropdown overlays above base content when no modal overlay is active
+            header.renderOverlays(graphics, mouseX, mouseY);
         }
 
         PresetSelectorOverlay psOverlay = presetSelectorOverlay;
@@ -900,19 +958,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
         if (overlayController.isCraftingVisible()) {
             craftingPanel.render(graphics, font, width, height, mouseX, mouseY);
-        }
-
-        // Render header dropdown overlays last so they appear above content
-        header.renderOverlays(graphics, mouseX, mouseY);
-
-        // Tooltip (rendered last, on top)
-        if (tooltipText != null) {
-            renderTooltip(graphics, tooltipText, tooltipX, tooltipY);
-        }
-
-        // Dev panel
-        if (showDevPanel) {
-            renderDevPanel(graphics, mouseX, mouseY);
         }
 
         // Module overlay (e.g., ItemPickerOverlay from RecipeModule)
@@ -948,9 +993,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int sectionCount = activeModule == null ? 0 : activeModule.getSections().size();
         DebugOverlay.render(graphics, font, perfPanelBounds, headerBounds, leftBounds, contentBounds, footerBounds,
             mouseX, mouseY, contentTotalHeight, scrollArea.getScrollOffset(), sectionCount);
+        TooltipManager.INSTANCE.renderAll(graphics);
     }
 
-    private void renderSidePanels(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderSidePanels(GuiGraphics graphics, int mouseX, int mouseY, boolean allowTooltips) {
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
 
         // Left panel (favorites)
@@ -971,19 +1017,18 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             for (int i = 0; i < Math.min(maxRows, favorites.size()); i++) {
                 ItemEditorDataManager.PresetData preset = favorites.get(i);
                 int rowY = startY + i * rowHeight;
+                String label = preset.name == null ? FAVORITES_LABEL_FALLBACK : preset.name;
                 boolean hovered = mouseX >= leftPanel.x() + FAVORITES_ROW_HIT_INSET
                     && mouseX <= leftPanel.right() - FAVORITES_ROW_HIT_INSET
                     && mouseY >= rowY && mouseY <= rowY + rowHeight;
                 if (hovered) {
                     graphics.fill(leftPanel.x() + FAVORITES_ROW_HOVER_INSET, rowY,
                         leftPanel.right() - FAVORITES_ROW_HOVER_INSET, rowY + rowHeight, DesignTokens.Background.HOVER());
-                    if (tooltipText == null) {
-                        tooltipText = preset.name;
-                        tooltipX = mouseX;
-                        tooltipY = mouseY;
+                    if (allowTooltips) {
+                        TooltipManager.INSTANCE.queueTooltip(
+                            label, leftPanel.x(), rowY, leftPanel.width(), rowHeight, TooltipManager.TooltipPosition.AUTO);
                     }
                 }
-                String label = preset.name == null ? FAVORITES_LABEL_FALLBACK : preset.name;
                 graphics.drawString(safeFont, FAVORITES_LABEL_PREFIX + label, leftPanel.x() + FAVORITES_ROW_TEXT_OFFSET_X,
                     rowY + FAVORITES_ROW_TEXT_OFFSET_Y,
                     hovered ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY(), false);
@@ -1166,21 +1211,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         historyScrollOffset = Math.max(0, historyScrollOffset);
     }
 
-    private void renderTooltip(GuiGraphics graphics, String text, int x, int y) {
-        var safeFont = Objects.requireNonNull(font, "font cannot be null");
-        String safeText = Objects.requireNonNull(text, "text cannot be null");
-        int tipWidth = safeFont.width(safeText) + TOOLTIP_WIDTH_PADDING;
-        int tipX = Math.min(x + TOOLTIP_OFFSET_X, width - tipWidth - TOOLTIP_SCREEN_MARGIN);
-        int tipY = Math.max(y - TOOLTIP_OFFSET_Y, TOOLTIP_SCREEN_MARGIN);
-
-        graphics.fill(tipX, tipY, tipX + tipWidth, tipY + TOOLTIP_HEIGHT, TOOLTIP_BG);
-        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, TOOLTIP_HEIGHT, DesignTokens.Stroke.DEFAULT);
-        graphics.drawString(safeFont, safeText, tipX + TOOLTIP_TEXT_OFFSET_X, tipY + TOOLTIP_TEXT_OFFSET_Y,
-            DesignTokens.Text.PRIMARY(), false);
-
-        tooltipText = null;
-    }
-
     private void renderDevPanel(GuiGraphics graphics, int mouseX, int mouseY) {
         ResponsiveLayout.Rect devArea = layout.getDevModePanelArea();
         if (devArea.isEmpty()) {
@@ -1225,6 +1255,44 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         textY += DEV_PANEL_LINE_STEP;
         graphics.drawString(safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
             textY, DesignTokens.Text.SECONDARY(), false);
+    }
+
+    private int getLocalOnlyBannerOffset() {
+        int height = ScaledCoord.scaleDim(LOCAL_ONLY_BANNER_HEIGHT);
+        int margin = ScaledCoord.scaleDim(LOCAL_ONLY_BANNER_MARGIN);
+        return height + margin * 2;
+    }
+
+    private void renderLocalOnlyBanner(GuiGraphics graphics, int x, int y, int width) {
+        var safeFont = Objects.requireNonNull(font, "font cannot be null");
+        int margin = ScaledCoord.scaleDim(LOCAL_ONLY_BANNER_MARGIN);
+        int bannerHeight = ScaledCoord.scaleDim(LOCAL_ONLY_BANNER_HEIGHT);
+        int padX = ScaledCoord.scaleDim(LOCAL_ONLY_BANNER_PADDING_X);
+        int bannerX = x + margin;
+        int bannerY = y + margin;
+        int bannerWidth = Math.max(0, width - margin * 2);
+
+        graphics.fill(bannerX, bannerY, bannerX + bannerWidth, bannerY + bannerHeight, LOCAL_ONLY_BANNER_BG);
+        AxiomRenderer.drawBorder(graphics, bannerX, bannerY, bannerWidth, bannerHeight, LOCAL_ONLY_BANNER_BORDER);
+
+        String text = LOCAL_ONLY_BANNER_TEXT;
+        int textY = bannerY + Math.max(0, (bannerHeight - safeFont.lineHeight) / 2);
+        graphics.drawString(safeFont, text, bannerX + padX, textY, DesignTokens.Text.PRIMARY(), false);
+    }
+
+    private boolean hasBlockingOverlay() {
+        ConfirmDialog dialog = activeDialog;
+        if (dialog != null && dialog.isVisible()) {
+            return true;
+        }
+        if (helpOverlay.isVisible() || lowConfidenceDetector.isVisible()) {
+            return true;
+        }
+        if (overlayController.hasActiveOverlay()) {
+            return true;
+        }
+        EditorModule module = activeModule;
+        return module != null && module.hasActiveOverlay();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -1380,6 +1448,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void applyChanges() {
+        if (localOnlyMode) {
+            showStatus("Local kit edit only", DesignTokens.Semantic.WARNING);
+            return;
+        }
         EditorModule module = activeModule;
         if (module == null) return;
 
@@ -1480,14 +1552,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         if (!isPreviewMode() && module != null && module.hasUnsavedChanges()) {
             ConfirmDialog dialog = ConfirmDialog.unsavedChanges(
                 module.getPendingChanges().size(),
-                this::onClose,
+                () -> closeEditor(false),
                 () -> {}
             );
             activeDialog = dialog;
             dialog.show();
             return;
         }
-        onClose();
+        closeEditor(true);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -2063,7 +2135,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void clearTooltip() {
-        this.tooltipText = null;
+        // Tooltips are managed via TooltipManager per frame.
     }
 
     @Override
@@ -2207,8 +2279,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Invoke callback with edited item if available
-        if (onItemEdited != null) {
-            onItemEdited.accept(getEditedItem());
+        if (onItemEdited != null && commitEditsOnClose) {
+            onItemEdited.accept(resolveEditedItemForCallback());
         }
 
         // Return to parent screen if available, otherwise close normally
@@ -2222,6 +2294,31 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private void closeEditor(boolean commitEdits) {
+        this.commitEditsOnClose = commitEdits;
+        onClose();
+    }
+
+    private ItemStack resolveEditedItemForCallback() {
+        EditorModule module = activeModule;
+        if (module != null) {
+            try {
+                module.applyPreview();
+                ItemStack preview = module.getPreviewItem();
+                if (preview != null && !preview.isEmpty()) {
+                    return preview.copy();
+                }
+                ItemStack moduleItem = module.getItem();
+                if (moduleItem != null && !moduleItem.isEmpty()) {
+                    return moduleItem.copy();
+                }
+            } catch (Exception e) {
+                DevMod.LOGGER.debug("[ItemEditor] Failed to resolve edited item for callback", e);
+            }
+        }
+        return getEditedItem().copy();
     }
 
     private List<String> buildStatSources(ItemStack stack) {

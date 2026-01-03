@@ -409,7 +409,8 @@ public class BossDNAMixer {
         float attackDamage = 1.0f;
 
         // Get player's attack damage if available
-        var damageAttr = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+        var damageAttr = player.getAttribute(
+            java.util.Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
         if (damageAttr != null) {
             attackDamage = (float) damageAttr.getValue();
         }

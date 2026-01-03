@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.endurance.config.EffectiveConfig;
 import com.google.common.base.Splitter;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -372,7 +373,30 @@ public class EnduranceQuestRegistry {
          * @return Scaled mob count
          */
         public int getMobCountForWave(int waveNumber, int playerCount, QuestType questType) {
-            int baseCount = (int)(baseCountPerWave + (waveNumber - 1) * countScalingPerWave);
+            return getMobCountForWave(waveNumber, playerCount, questType, null);
+        }
+
+        /**
+         * Calculate mob count for a specific wave with player scaling and session overrides.
+         * Applies difficulty preset count multiplier.
+         *
+         * @param waveNumber Current wave number (1-based)
+         * @param playerCount Number of players in the party
+         * @param questType Quest type for difficulty multiplier
+         * @param session Optional session for config overrides
+         * @return Scaled mob count
+         */
+        public int getMobCountForWave(int waveNumber, int playerCount, QuestType questType,
+                                      @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+            // Apply global config multiplier (baseline is 5, so configValue/5 gives multiplier)
+            // Uses EffectiveConfig to check session overrides first
+            int configBase = EffectiveConfig.getBaseMobCount(session);
+            float globalMultiplier = configBase / 5.0f;
+
+            // Apply wave scaling from config (with session override support)
+            float waveScaling = (float) EffectiveConfig.getMobScaling(session);
+
+            int baseCount = (int)((baseCountPerWave * globalMultiplier) + (waveNumber - 1) * countScalingPerWave * waveScaling);
             int capped = Math.min(baseCount, maxPerWave);
             // Apply difficulty preset multiplier
             int presetAdjusted = (int) Math.ceil(capped * difficultyPreset.countMultiplier);

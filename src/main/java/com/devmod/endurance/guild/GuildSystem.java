@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,6 +23,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.shared.SharedColorTokens;
 
 public class GuildSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(GuildSystem.class);
@@ -291,7 +291,7 @@ public class GuildSystem {
         Component message = Component.literal(
             "[Guild] Objective completed: " + objective.name()
                 + " (+" + objective.tokenReward() + " tokens, +" + objective.xpReward() + " XP)")
-            .withStyle(ChatFormatting.GOLD);
+            .withStyle(SharedColorTokens.Chat.GOLD);
         notifyGuildMembers(guild, message);
     }
 
@@ -340,10 +340,10 @@ public class GuildSystem {
 
         MutableComponent message = Component.literal(
             "[Guild] " + guild.getName() + " reached level " + newLevel + "!")
-            .withStyle(ChatFormatting.AQUA);
+            .withStyle(SharedColorTokens.Chat.AQUA);
         if (perk != null) {
             message = message.append(Objects.requireNonNull(Component.literal(" Perk unlocked: " + perk.name)
-                .withStyle(ChatFormatting.GOLD)));
+                .withStyle(SharedColorTokens.Chat.GOLD)));
         }
         notifyGuildMembers(guild, message);
     }

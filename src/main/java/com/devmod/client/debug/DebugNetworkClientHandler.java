@@ -1,13 +1,17 @@
 package com.devmod.client.debug;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.rendering.PathfindingDebugger;
 import com.devmod.debug.DebugFeature;
 import com.devmod.debug.DebugSyncPayload;
+import com.devmod.debug.EntityPathingPayload;
 import com.devmod.debug.client.DebugRenderBools;
 
 @OnlyIn(Dist.CLIENT)
@@ -45,5 +49,15 @@ public final class DebugNetworkClientHandler {
         }
 
         LOGGER.debug("[Debug] Client synced {} = {}", feature.getDisplayName(), payload.enabled());
+    }
+
+    /**
+     * Handle entity pathing data from the server.
+     * Updates PathfindingDebugger with server-authoritative path information.
+     */
+    public static void handleEntityPathing(@Nonnull EntityPathingPayload payload) {
+        PathfindingDebugger.INSTANCE.receiveServerPath(payload);
+        LOGGER.debug("[Debug] Received path for entity {} with {} nodes",
+            payload.entityName(), payload.nodes().size());
     }
 }

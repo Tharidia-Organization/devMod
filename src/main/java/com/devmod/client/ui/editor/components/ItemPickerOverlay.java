@@ -21,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.search.ItemSearchQuery;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ScaledCoord;
@@ -106,10 +107,12 @@ public class ItemPickerOverlay extends BaseOverlay {
         filterDirty = false;
 
         String safeQuery = Objects.requireNonNull(searchQuery, "searchQuery");
-        String query = safeQuery.toLowerCase(Locale.ROOT).trim();
+
+        // Parse query with prefix support (@mod, #tag, $tooltip)
+        ItemSearchQuery parsedQuery = ItemSearchQuery.parse(safeQuery);
 
         if (currentTab == 0) {
-            // Filter items
+            // Filter items using advanced search
             filteredItems.clear();
 
             BuiltInRegistries.ITEM.forEach(item -> {
@@ -117,12 +120,8 @@ public class ItemPickerOverlay extends BaseOverlay {
                 if (safeItem == Items.AIR) return;
 
                 ItemStack stack = new ItemStack(safeItem);
-                String name = Objects.requireNonNull(stack.getHoverName(), "hover name")
-                    .getString().toLowerCase(Locale.ROOT);
-                String id = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(safeItem), "item key")
-                    .toString().toLowerCase(Locale.ROOT);
 
-                if (query.isEmpty() || name.contains(query) || id.contains(query)) {
+                if (parsedQuery.matches(stack)) {
                     filteredItems.add(stack);
                 }
             });
@@ -132,15 +131,16 @@ public class ItemPickerOverlay extends BaseOverlay {
                 .compareToIgnoreCase(b.getHoverName().getString()));
 
         } else {
-            // Filter tags
+            // Filter tags (use raw query for simple tag search)
             filteredTags.clear();
+            String tagQuery = safeQuery.toLowerCase(Locale.ROOT).trim();
 
             // Get common item tags
             List<TagKey<Item>> allTags = getCommonItemTags();
 
             for (TagKey<Item> tag : allTags) {
                 String tagId = tag.location().toString().toLowerCase(Locale.ROOT);
-                if (query.isEmpty() || tagId.contains(query)) {
+                if (tagQuery.isEmpty() || tagId.contains(tagQuery)) {
                     filteredTags.add(tag);
                 }
             }
@@ -224,8 +224,9 @@ public class ItemPickerOverlay extends BaseOverlay {
         AxiomRenderer.drawBorder(safeGraphics, innerX, innerY, innerW, searchH,
             searchFocused ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT());
 
-        // Search text
-        String displayText = safeQueryRender.isEmpty() && !searchFocused ? "Search items..." : safeQueryRender;
+        // Search text with hint for search syntax
+        String placeholder = "Search... @mod #tag $tooltip";
+        String displayText = safeQueryRender.isEmpty() && !searchFocused ? placeholder : safeQueryRender;
         int textColor = safeQueryRender.isEmpty() && !searchFocused ? DesignTokens.Text.MUTED() : DesignTokens.Text.PRIMARY();
         safeGraphics.drawString(safeFont, displayText, innerX + 4, innerY + 5, textColor, false);
 
@@ -546,7 +547,9 @@ public class ItemPickerOverlay extends BaseOverlay {
 
     @Override
     protected boolean handleCharTyped(char chr, int modifiers) {
-        if (searchFocused && (Character.isLetterOrDigit(chr) || chr == '_' || chr == ':' || chr == ' ' || chr == '#')) {
+        // Allow: letters, digits, underscore, colon, space, and search prefixes (@, #, $)
+        if (searchFocused && (Character.isLetterOrDigit(chr) || chr == '_' || chr == ':' || chr == ' '
+                || chr == '@' || chr == '#' || chr == '$' || chr == '.' || chr == '-')) {
             searchQuery += chr;
             filterDirty = true;
             return true;

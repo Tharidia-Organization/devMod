@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.radial.model.MacroCategory;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -486,12 +487,12 @@ class RadialMenuMacroCategoryTest {
         @Test
         @DisplayName("L6-05: MacroCategory colors follow visual hierarchy")
         void macroCategoryColorsFollowHierarchy() {
-            // ANALYZE = blue, COMBAT = red, TOOLS = orange, PLAY = green
+            // ANALYZE = blue (INFO), COMBAT = red (ERROR), TOOLS = orange (WARNING), PLAY = amber (SECONDARY)
             Map<MacroCategory, Integer> expectedColors = Map.of(
-                MacroCategory.ANALYZE, 0xFF4488FF, // Blue
-                MacroCategory.COMBAT, 0xFFFF4444,  // Red
-                MacroCategory.TOOLS, 0xFFFFAA00,   // Orange
-                MacroCategory.PLAY, 0xFF44FF88     // Green
+                MacroCategory.ANALYZE, DesignTokens.Radial.MACRO_ANALYZE,
+                MacroCategory.COMBAT, DesignTokens.Radial.MACRO_COMBAT,
+                MacroCategory.TOOLS, DesignTokens.Radial.MACRO_TOOLS,
+                MacroCategory.PLAY, DesignTokens.Radial.MACRO_PLAY
             );
 
             for (Map.Entry<MacroCategory, Integer> entry : expectedColors.entrySet()) {

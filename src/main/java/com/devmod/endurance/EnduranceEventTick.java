@@ -10,7 +10,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,6 +24,7 @@ import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.runtime.environment.DimensionEnvironmentManager;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
 
@@ -319,7 +319,7 @@ public class EnduranceEventTick {
                     player.playSound(Objects.requireNonNull(SoundEvents.NOTE_BLOCK_HAT.value()), 0.7f, pitch);
                 }
                 player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.wave_starting_in", secondsRemaining)
-                    .withStyle(ChatFormatting.YELLOW)));
+                    .withStyle(SharedColorTokens.Chat.YELLOW)));
             }
 
             if (ticksRemaining <= 0) {
@@ -721,7 +721,7 @@ public class EnduranceEventTick {
         ServerPlayer player = serverInstance != null ? serverInstance.getPlayerList().getPlayer(Objects.requireNonNull(playerId)) : null;
         if (player != null) {
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.mobs_respawned", successfulRespawns)
-                .withStyle(ChatFormatting.YELLOW)));
+                .withStyle(SharedColorTokens.Chat.YELLOW)));
         }
     }
 

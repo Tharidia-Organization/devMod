@@ -30,6 +30,7 @@ import com.devmod.DevMod;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.debug.EntityPathingPayload;
 
 public class PathfindingDebugger {
     public static final PathfindingDebugger INSTANCE = new PathfindingDebugger();
@@ -842,6 +843,49 @@ public class PathfindingDebugger {
         } catch (Exception ex) {
             DevMod.LOGGER.debug("[PathfindingDebugger] Failed to set shader uniform {}", name, ex);
         }
+    }
+
+    /**
+     * Receive path data from server via EntityPathingPayload.
+     * This is the authoritative source for multiplayer path debugging.
+     */
+    public void receiveServerPath(@Nonnull EntityPathingPayload payload) {
+        if (!enabled) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        var level = mc.level;
+        if (level == null) return;
+
+        // Find the entity by ID to get its UUID
+        net.minecraft.world.entity.Entity entity = level.getEntity(payload.entityId());
+        if (entity == null) return;
+
+        UUID entityUUID = entity.getUUID();
+        long now = System.currentTimeMillis();
+
+        // Convert PathNode list to Vec3 list
+        List<Vec3> nodes = new ArrayList<>();
+        for (EntityPathingPayload.PathNode node : payload.nodes()) {
+            nodes.add(new Vec3(node.x(), node.y(), node.z()));
+        }
+
+        if (nodes.isEmpty()) {
+            // Clear payload - remove from cache
+            cachedPaths.remove(entityUUID);
+            return;
+        }
+
+        Vec3 target = new Vec3(payload.targetX(), payload.targetY(), payload.targetZ());
+        Vec3 mobPosition = nodes.get(0);
+
+        cachedPaths.put(entityUUID, new CachedPath(
+            payload.entityName(),
+            nodes,
+            target,
+            payload.canReach(),
+            now,
+            mobPosition
+        ));
     }
 
     /**

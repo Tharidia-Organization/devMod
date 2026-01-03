@@ -147,6 +147,10 @@ public class ModeBadge {
         return hovered;
     }
 
+    public ResponsiveLayout.Rect getBounds() {
+        return bounds;
+    }
+
     @Nullable
     public String getTooltipText() {
         if (!hovered) return null;
@@ -462,10 +466,6 @@ public class ModeBadge {
 
     public int getHeight() {
         return ScaledCoord.scaleDim(HEIGHT);
-    }
-
-    public ResponsiveLayout.Rect getBounds() {
-        return bounds;
     }
 
     /**

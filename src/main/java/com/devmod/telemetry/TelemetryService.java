@@ -773,6 +773,13 @@ public class TelemetryService {
     }
 
     /**
+     * Append network telemetry line (payload size/latency, validation outcomes).
+     */
+    public void appendNetworkLine(String line) {
+        appendLine("network.ndjson", line);
+    }
+
+    /**
      * Append player attributes telemetry line (public API for PlayerAttributeTelemetryService).
      * Tracks: player attribute changes, status effects, modifiers.
      */

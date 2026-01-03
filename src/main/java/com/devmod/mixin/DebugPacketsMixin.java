@@ -26,25 +26,73 @@ import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 
 import com.devmod.debug.DebugFeature;
 import com.devmod.debug.DebugManager;
+import com.devmod.debug.EntityPathingPayload;
 
 @Mixin(DebugPackets.class)
 public class DebugPacketsMixin {
 
     /**
      * Send pathfinding debug packets to players with the feature enabled.
+     * Uses custom EntityPathingPayload instead of vanilla PathfindingDebugPayload
+     * which has serialization issues causing IndexOutOfBoundsException.
      */
     @Inject(method = "sendPathFindingPacket", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendPathFindingPacket(Level level, Mob mob, Path path, float maxDistanceToWaypoint, CallbackInfo ci) {
         Objects.requireNonNull(ci, "CallbackInfo required by Mixin");
-        // Cancel vanilla method completely - PathfindingDebugPayload has serialization issues
-        // that cause IndexOutOfBoundsException on client-side deserialization.
-        // The Path.createFromStream() reads more bytes than were written for some paths.
-        // TODO: Implement custom pathfinding debug visualization that doesn't use vanilla packets
+
+        // Cancel vanilla method - use our custom payload instead
         ci.cancel();
+
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        if (path == null || path.getNodeCount() == 0) return;
+
+        // Build path nodes list
+        List<EntityPathingPayload.PathNode> nodes = new ArrayList<>();
+        for (int i = 0; i < path.getNodeCount(); i++) {
+            Node node = path.getNode(i);
+            if (node != null) {
+                // nodeType: 0=normal, 1=open (before current), 2=closed (already visited), 3=target
+                int nodeType = 0;
+                if (i < path.getNextNodeIndex()) {
+                    nodeType = 2; // closed - already passed
+                } else if (i == path.getNodeCount() - 1) {
+                    nodeType = 3; // target
+                }
+                nodes.add(new EntityPathingPayload.PathNode(
+                    node.x + 0.5, // center of block
+                    node.y + 0.1, // slightly above ground
+                    node.z + 0.5,
+                    nodeType,
+                    node.costMalus
+                ));
+            }
+        }
+
+        if (nodes.isEmpty()) return;
+
+        // Get target position
+        BlockPos target = path.getTarget();
+        double targetX = target != null ? target.getX() + 0.5 : nodes.get(nodes.size() - 1).x();
+        double targetY = target != null ? target.getY() + 0.1 : nodes.get(nodes.size() - 1).y();
+        double targetZ = target != null ? target.getZ() + 0.5 : nodes.get(nodes.size() - 1).z();
+
+        EntityPathingPayload payload = new EntityPathingPayload(
+            mob.getId(),
+            Objects.requireNonNull(mob.getName().getString()),
+            nodes,
+            targetX,
+            targetY,
+            targetZ,
+            path.canReach(),
+            maxDistanceToWaypoint
+        );
+
+        sendToPlayers(serverLevel, payload, DebugFeature.ENTITY_PATHING);
     }
 
     /**

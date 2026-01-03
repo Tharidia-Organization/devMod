@@ -102,7 +102,7 @@ public class EnduranceEventCombat {
 
                         // Apply damage multiplier if resonance triggered
                         if (resonanceResult.triggered()) {
-                            // Additional damage is applied as bonus hit
+                            // Additional damage is applied as bonus hit (uses same source to respect armor)
                             float bonusDamage = damage * (resonanceResult.damageMultiplier() - 1.0f);
                             if (bonusDamage > 0) {
                                 target.hurt(source, bonusDamage);
@@ -122,10 +122,10 @@ public class EnduranceEventCombat {
                     if (questId != null) {
                         MutatorSystem.MutatorSession mutatorSession = mutatorSessions.get(questId);
                         if (mutatorSession != null) {
-                            // Mirror damage
+                            // Mirror damage - use generic() to respect armor instead of magic()
                             float mirrorDamage = MutatorSystem.INSTANCE.getMirrorDamage(questId, damage);
                             if (mirrorDamage > 0) {
-                                player.hurt(Objects.requireNonNull(player.damageSources().magic()), mirrorDamage);
+                                player.hurt(Objects.requireNonNull(player.damageSources().generic()), mirrorDamage);
                             }
                         }
                     }

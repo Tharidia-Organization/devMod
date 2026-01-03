@@ -146,7 +146,22 @@ public class EnduranceLoadTest {
     }
 
     private WaveManager.WaveState createTestWaveState(UUID arenaId, EnduranceQuest quest, int waveNumber) {
-        return new WaveManager.WaveState(arenaId, quest, waveNumber);
+        // Use full constructor to avoid config dependency in simplified constructor
+        int totalToSpawn = 10;
+        return new WaveManager.WaveState(
+            arenaId,
+            quest,
+            waveNumber,
+            1,
+            QuestType.PVE_COOP,
+            totalToSpawn,
+            WaveObjectiveState.killAll(totalToSpawn),
+            java.util.List.of(),
+            null,
+            1.0f,
+            null,
+            false
+        );
     }
 
     // ============================================
@@ -310,7 +325,8 @@ public class EnduranceLoadTest {
                 List.of(),
                 null,
                 1.0f,
-                null
+                null,
+                false
             );
 
             // Add spawned mobs
@@ -434,7 +450,8 @@ public class EnduranceLoadTest {
                 List.of(),
                 null,
                 1.0f,
-                null
+                null,
+                false
             );
 
             int respawnLimit = waveState.getExternalRespawnLimit();
@@ -953,7 +970,8 @@ public class EnduranceLoadTest {
                     List.of(),
                     null,
                     1.0f,
-                    null
+                    null,
+                    false
                 );
 
                 for (int j = 0; j < mobsPerWave; j++) {

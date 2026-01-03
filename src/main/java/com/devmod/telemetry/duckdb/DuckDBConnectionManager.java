@@ -194,6 +194,40 @@ public class DuckDBConnectionManager implements AutoCloseable {
     }
 
     /**
+     * Ensure DuckDB native library path is set before driver initialization.
+     * This fixes NPE in NeoForge environment where DuckDB can't determine temp directory.
+     */
+    private void ensureNativeLibraryPath(@Nullable Path preferredDir) {
+        // Only set if not already configured
+        if (System.getProperty("org.duckdb.library_path") != null) {
+            return;
+        }
+
+        try {
+            Path libPath;
+            if (preferredDir != null && Files.exists(preferredDir)) {
+                // Use the database parent directory
+                libPath = preferredDir.resolve("native");
+            } else {
+                // Fallback to system temp directory
+                libPath = Path.of(System.getProperty("java.io.tmpdir"), "duckdb-native");
+            }
+
+            // Ensure the directory exists
+            if (!Files.exists(libPath)) {
+                Files.createDirectories(libPath);
+            }
+
+            // Set the system property for DuckDB native library extraction
+            System.setProperty("org.duckdb.library_path", libPath.toAbsolutePath().toString());
+            LOGGER.info("[DuckDB] Native library path set to: {}", libPath);
+
+        } catch (IOException e) {
+            LOGGER.warn("[DuckDB] Could not set native library path, using defaults", e);
+        }
+    }
+
+    /**
      * Create a new database connection.
      */
     private Connection createConnection() throws SQLException {
@@ -204,6 +238,10 @@ public class DuckDBConnectionManager implements AutoCloseable {
                 Files.createDirectories(parentDir);
                 LOGGER.info("[DuckDB] Created directory: {}", parentDir);
             }
+
+            // P0: Set DuckDB native library extraction path BEFORE loading driver
+            // This prevents NPE when DuckDB can't determine temp directory in NeoForge environment
+            ensureNativeLibraryPath(parentDir);
 
             // Load DuckDB driver explicitly
             Class.forName("org.duckdb.DuckDBDriver");

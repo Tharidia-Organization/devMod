@@ -24,6 +24,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 
 import com.devmod.telemetry.spatial.HeatmapService;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.PathSanitizer;
 
@@ -35,19 +36,15 @@ public class HeatmapExporter {
     private static final int PADDING = 20; // Border padding
     private static final int LEGEND_WIDTH = 100; // Width of legend bar
 
+    private static final Color BG_COLOR = new Color(SharedColorTokens.TelemetryExport.BG, true);
+    private static final Color TITLE_COLOR = new Color(SharedColorTokens.TelemetryExport.TITLE, true);
+    private static final Color SUBTITLE_COLOR = new Color(SharedColorTokens.TelemetryExport.SUBTITLE, true);
+    private static final Color GRID_COLOR = new Color(SharedColorTokens.TelemetryExport.GRID, true);
+    private static final Color BORDER_COLOR = new Color(SharedColorTokens.TelemetryExport.BORDER, true);
+    private static final Color LEGEND_TEXT_COLOR = new Color(SharedColorTokens.TelemetryExport.LEGEND_TEXT, true);
+
     // Color gradient for heatmap (cold to hot)
-    private static final Color[] GRADIENT = {
-        new Color(0, 0, 139),    // Dark blue (cold)
-        new Color(0, 100, 255),  // Blue
-        new Color(0, 200, 200),  // Cyan
-        new Color(0, 255, 0),    // Green
-        new Color(200, 255, 0),  // Yellow-green
-        new Color(255, 255, 0),  // Yellow
-        new Color(255, 165, 0),  // Orange
-        new Color(255, 69, 0),   // Red-orange
-        new Color(255, 0, 0),    // Red (hot)
-        new Color(139, 0, 0)     // Dark red (very hot)
-    };
+    private static final Color[] GRADIENT = buildGradient();
 
     /**
      * Exports all heatmaps to PNG files.
@@ -162,24 +159,24 @@ public class HeatmapExporter {
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         // Background
-        g.setColor(new Color(30, 30, 40));
+        g.setColor(BG_COLOR);
         g.fillRect(0, 0, width, height);
 
         // Title
-        g.setColor(Color.WHITE);
+        g.setColor(TITLE_COLOR);
         g.setFont(new Font("SansSerif", Font.BOLD, 16));
         String title = String.format("Heatmap: %s | Room: %s", name.toUpperCase(Locale.ROOT), room);
         g.drawString(title, PADDING, 25);
 
         // Subtitle with bounds
         g.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        g.setColor(Color.GRAY);
+        g.setColor(SUBTITLE_COLOR);
         String subtitle = String.format("Bounds: X[%d, %d] Z[%d, %d] | Max: %d", minX, maxX, minZ, maxZ, maxCount);
         g.drawString(subtitle, PADDING, 45);
 
         // Draw grid
         int offsetY = 55;
-        g.setColor(new Color(50, 50, 60));
+        g.setColor(GRID_COLOR);
         for (int x = minX; x <= maxX; x += 16) {
             int px = (x - minX) * CELL_SIZE + PADDING;
             g.drawLine(px, offsetY, px, offsetY + (maxZ - minZ + 1) * CELL_SIZE);
@@ -210,7 +207,7 @@ public class HeatmapExporter {
         int legendY = offsetY;
         int legendHeight = Math.min(200, height - offsetY - 40);
 
-        g.setColor(Color.WHITE);
+        g.setColor(LEGEND_TEXT_COLOR);
         g.setFont(new Font("SansSerif", Font.PLAIN, 10));
         g.drawString("Activity", legendX, legendY - 5);
 
@@ -222,12 +219,12 @@ public class HeatmapExporter {
         }
 
         // Legend labels
-        g.setColor(Color.WHITE);
+        g.setColor(LEGEND_TEXT_COLOR);
         g.drawString(String.valueOf(maxCount), legendX + 25, legendY + 10);
         g.drawString("0", legendX + 25, legendY + legendHeight);
 
         // Border
-        g.setColor(new Color(80, 80, 100));
+        g.setColor(BORDER_COLOR);
         g.drawRect(PADDING - 1, offsetY - 1, (maxX - minX + 1) * CELL_SIZE + 2, (maxZ - minZ + 1) * CELL_SIZE + 2);
 
         g.dispose();
@@ -254,7 +251,27 @@ public class HeatmapExporter {
         int g = (int) (c1.getGreen() + frac * (c2.getGreen() - c1.getGreen()));
         int b = (int) (c1.getBlue() + frac * (c2.getBlue() - c1.getBlue()));
 
-        return new Color(r, g, b, 200); // Semi-transparent
+        return new Color(r, g, b, SharedColorTokens.TelemetryExport.CELL_ALPHA);
+    }
+
+    private static Color[] buildGradient() {
+        int[] gradient = {
+            SharedColorTokens.TelemetryExport.GRADIENT_0,
+            SharedColorTokens.TelemetryExport.GRADIENT_1,
+            SharedColorTokens.TelemetryExport.GRADIENT_2,
+            SharedColorTokens.TelemetryExport.GRADIENT_3,
+            SharedColorTokens.TelemetryExport.GRADIENT_4,
+            SharedColorTokens.TelemetryExport.GRADIENT_5,
+            SharedColorTokens.TelemetryExport.GRADIENT_6,
+            SharedColorTokens.TelemetryExport.GRADIENT_7,
+            SharedColorTokens.TelemetryExport.GRADIENT_8,
+            SharedColorTokens.TelemetryExport.GRADIENT_9
+        };
+        Color[] colors = new Color[gradient.length];
+        for (int i = 0; i < gradient.length; i++) {
+            colors[i] = new Color(gradient[i], true);
+        }
+        return colors;
     }
 
     /**

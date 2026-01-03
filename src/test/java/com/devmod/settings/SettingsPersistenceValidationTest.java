@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.persistence.SettingsData;
 import com.devmod.client.ui.unified.persistence.SettingsData.CombatSettings;
 import com.devmod.client.ui.unified.persistence.SettingsData.DebugSettings;
@@ -53,7 +54,7 @@ class SettingsPersistenceValidationTest {
             assertTrue(general.showOverlay, "showOverlay default should be true");
             assertFalse(general.showRender, "showRender default should be false");
             assertFalse(general.renderAsBlocks, "renderAsBlocks default should be false");
-            assertEquals(0xFFFF0000, general.followRangeColor, "followRangeColor default should be red");
+            assertEquals(DesignTokens.Basic.RED, general.followRangeColor, "followRangeColor default should be red");
         }
 
         @Test
@@ -303,7 +304,7 @@ class SettingsPersistenceValidationTest {
 
             assertTrue(settings.general.showOverlay, "showOverlay should be reset to true");
             assertFalse(settings.general.showRender, "showRender should be reset to false");
-            assertEquals(0xFFFF0000, settings.general.followRangeColor,
+            assertEquals(DesignTokens.Basic.RED, settings.general.followRangeColor,
                 "followRangeColor should be reset to red");
         }
 

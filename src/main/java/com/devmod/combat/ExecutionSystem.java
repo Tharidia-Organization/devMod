@@ -319,7 +319,7 @@ public class ExecutionSystem {
         UUID targetId = target.getUUID();
         ExecutionState state = new ExecutionState(
             requireNonNull(playerId, "playerId"),
-            targetId,
+            requireNonNull(targetId, "targetId"),
             durationTicks
         );
         activeExecutions.put(playerId, state);
@@ -442,7 +442,7 @@ public class ExecutionSystem {
 
             // Kill instantly
             DamageSource executionDamage = player.damageSources().playerAttack(player);
-            target.hurt(executionDamage, Float.MAX_VALUE);
+            target.hurt(requireNonNull(executionDamage, "executionDamage"), Float.MAX_VALUE);
         }
 
         // Visual/audio feedback

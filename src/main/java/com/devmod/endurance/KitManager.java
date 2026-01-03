@@ -3,7 +3,10 @@ package com.devmod.endurance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
@@ -12,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.ItemStack;
 
 public final class KitManager {
@@ -22,6 +26,10 @@ public final class KitManager {
     // Currently selected kit for quick-test (on-the-fly selection)
     private List<ItemStack> temporaryKit = null;
     private String temporaryKitName = null;
+
+    // Per-player synced kits for dedicated server usage
+    private final Map<UUID, TemporaryKit> syncedTemporaryKits = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<String, CustomKit>> syncedCustomKits = new ConcurrentHashMap<>();
 
     private KitManager() {
         // Load custom kits on initialization
@@ -55,11 +63,11 @@ public final class KitManager {
         // Get kit items with enchantments
         List<ItemStack> items = kit.getItems(player.level());
 
-        // Equip armor first (check for armor slots)
+        // Equip armor/offhand first (check for equipable slots)
         List<ItemStack> nonArmorItems = new ArrayList<>();
         for (ItemStack stack : items) {
             EquipmentSlot slot = getEquipmentSlot(stack);
-            if (slot != null && slot.isArmor()) {
+            if (slot != null && (slot.isArmor() || slot == EquipmentSlot.OFFHAND)) {
                 player.setItemSlot(slot, java.util.Objects.requireNonNull(stack.copy()));
             } else {
                 nonArmorItems.add(stack);
@@ -86,7 +94,7 @@ public final class KitManager {
     }
 
     /**
-     * Get the equipment slot for an item, if it's armor.
+     * Get the equipment slot for an item, if it's equipable.
      */
     @Nullable
     private EquipmentSlot getEquipmentSlot(ItemStack stack) {
@@ -94,16 +102,9 @@ public final class KitManager {
             return null;
         }
 
-        net.minecraft.world.item.Item item = stack.getItem();
-
-        // Check armor items
-        if (item instanceof net.minecraft.world.item.ArmorItem armorItem) {
-            return armorItem.getEquipmentSlot();
-        }
-
-        // Check shield (offhand)
-        if (item == net.minecraft.world.item.Items.SHIELD) {
-            return EquipmentSlot.OFFHAND;
+        Equipable equipable = Equipable.get(stack);
+        if (equipable != null) {
+            return equipable.getEquipmentSlot();
         }
 
         return null;
@@ -172,11 +173,11 @@ public final class KitManager {
         // Get kit items with full data restoration (attributes, durability, NBT, etc.)
         List<ItemStack> items = kit.toItemStacks(player.registryAccess());
 
-        // Equip armor first
+        // Equip armor/offhand first
         List<ItemStack> nonArmorItems = new ArrayList<>();
         for (ItemStack stack : items) {
             EquipmentSlot slot = getEquipmentSlot(stack);
-            if (slot != null && slot.isArmor()) {
+            if (slot != null && (slot.isArmor() || slot == EquipmentSlot.OFFHAND)) {
                 player.setItemSlot(slot, java.util.Objects.requireNonNull(stack.copy()));
             } else {
                 nonArmorItems.add(stack);
@@ -248,7 +249,7 @@ public final class KitManager {
      * Create a custom kit from player's current inventory.
      */
     public CustomKit createKitFromInventory(ServerPlayer player, String name) {
-        return CustomKit.fromInventory(player.getInventory(), name);
+        return CustomKit.fromInventory(player.getInventory(), name, player.registryAccess());
     }
 
     // ========== Temporary Kit (On-the-fly) Support ==========
@@ -265,6 +266,22 @@ public final class KitManager {
     }
 
     /**
+     * Set a temporary kit for a specific player (dedicated server sync).
+     */
+    public void setTemporaryKit(UUID playerId, List<ItemStack> items, String name) {
+        if (playerId == null) {
+            return;
+        }
+        if (items == null || items.isEmpty()) {
+            syncedTemporaryKits.remove(playerId);
+            return;
+        }
+        syncedTemporaryKits.put(playerId, new TemporaryKit(new ArrayList<>(items), name));
+        LOGGER.info("[KitManager] Synced temporary kit for {}: {} ({} items)",
+            playerId, name, items.size());
+    }
+
+    /**
      * Clear the temporary kit.
      */
     public void clearTemporaryKit() {
@@ -273,10 +290,29 @@ public final class KitManager {
     }
 
     /**
+     * Clear synced kits for a player (logout/cleanup).
+     */
+    public void clearSyncedKits(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        syncedTemporaryKits.remove(playerId);
+        syncedCustomKits.remove(playerId);
+    }
+
+    /**
      * Check if a temporary kit is set.
      */
     public boolean hasTemporaryKit() {
         return temporaryKit != null && !temporaryKit.isEmpty();
+    }
+
+    public boolean hasTemporaryKit(UUID playerId) {
+        if (playerId == null) {
+            return false;
+        }
+        TemporaryKit kit = syncedTemporaryKits.get(playerId);
+        return kit != null && kit.items != null && !kit.items.isEmpty();
     }
 
     /**
@@ -288,24 +324,62 @@ public final class KitManager {
     }
 
     /**
+     * Get the temporary kit items for preview.
+     * Returns an empty list if no temporary kit is set.
+     */
+    public List<ItemStack> getTemporaryKitItems() {
+        if (temporaryKit == null) {
+            return List.of();
+        }
+        return new ArrayList<>(temporaryKit);
+    }
+
+    public Optional<CustomKit> getSyncedCustomKit(UUID playerId, String kitId) {
+        if (playerId == null || kitId == null || kitId.isEmpty()) {
+            return Optional.empty();
+        }
+        Map<String, CustomKit> kits = syncedCustomKits.get(playerId);
+        if (kits == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(kits.get(kitId));
+    }
+
+    public void registerSyncedCustomKit(UUID playerId, CustomKit kit) {
+        if (playerId == null || kit == null) {
+            return;
+        }
+        syncedCustomKits.computeIfAbsent(playerId, id -> new ConcurrentHashMap<>())
+            .put(kit.getId(), kit);
+    }
+
+    /**
      * Apply the temporary kit to a player.
      */
     public boolean applyTemporaryKit(ServerPlayer player) {
-        if (player == null || temporaryKit == null || temporaryKit.isEmpty()) {
+        if (player == null) {
+            return false;
+        }
+
+        TemporaryKit syncedKit = syncedTemporaryKits.get(player.getUUID());
+        List<ItemStack> items = syncedKit != null ? syncedKit.items : temporaryKit;
+        String name = syncedKit != null ? syncedKit.name : temporaryKitName;
+
+        if (items == null || items.isEmpty()) {
             return false;
         }
 
         LOGGER.info("[KitManager] Applying temporary kit '{}' to player {}",
-            temporaryKitName, player.getName().getString());
+            name, player.getName().getString());
 
         // Clear current inventory
         player.getInventory().clearContent();
 
         // Equip armor first
         List<ItemStack> nonArmorItems = new ArrayList<>();
-        for (ItemStack stack : temporaryKit) {
+        for (ItemStack stack : items) {
             EquipmentSlot slot = getEquipmentSlot(stack);
-            if (slot != null && slot.isArmor()) {
+            if (slot != null && (slot.isArmor() || slot == EquipmentSlot.OFFHAND)) {
                 player.setItemSlot(slot, java.util.Objects.requireNonNull(stack.copy()));
             } else {
                 nonArmorItems.add(stack);
@@ -325,8 +399,18 @@ public final class KitManager {
 
         player.getInventory().selected = 0;
 
-        LOGGER.info("[KitManager] Temporary kit applied with {} items", temporaryKit.size());
+        LOGGER.info("[KitManager] Temporary kit applied with {} items", items.size());
         return true;
+    }
+
+    private static final class TemporaryKit {
+        private final List<ItemStack> items;
+        private final String name;
+
+        private TemporaryKit(List<ItemStack> items, String name) {
+            this.items = items;
+            this.name = name;
+        }
     }
 
     /**

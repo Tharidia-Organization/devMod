@@ -440,7 +440,7 @@ public class ArenaHazardSystem {
         // Apply strength to nearby mobs
         if (hazard.ticksRemaining % 40 == 0) {
             AABB playerBounds = player.getBoundingBox();
-            AABB area = playerBounds.inflate(30);
+            AABB area = Objects.requireNonNull(playerBounds.inflate(30), "area");
             List<Mob> mobs = level.getEntitiesOfClass(Mob.class, area);
             Holder<MobEffect> damageBoost = MobEffects.DAMAGE_BOOST;
             Holder<MobEffect> speedBoost = MobEffects.MOVEMENT_SPEED;
@@ -494,7 +494,7 @@ public class ArenaHazardSystem {
         AABB shrinkBounds = hazard.shrinkBounds;
 
         // Check if player is outside bounds
-        Vec3 playerPos = player.position();
+        Vec3 playerPos = Objects.requireNonNull(player.position(), "playerPos");
         if (!shrinkBounds.contains(playerPos)) {
             // Push player toward center
             BlockPos arenaCenter = session.arenaCenter;
@@ -507,11 +507,11 @@ public class ArenaHazardSystem {
                 }
             }
 
-            // Damage for being outside
+            // Damage for being outside - use generic() to respect armor instead of magic()
             if (hazard.ticksRemaining % 20 == 0) {
-                DamageSource magicDamage = player.damageSources().magic();
-                if (magicDamage != null) {
-                    player.hurt(magicDamage, 2.0f);
+                DamageSource hazardDamage = player.damageSources().generic();
+                if (hazardDamage != null) {
+                    player.hurt(hazardDamage, 2.0f);
                 }
                 displayClientMessage(player, "§c§lThe void consumes you!", true);
             }

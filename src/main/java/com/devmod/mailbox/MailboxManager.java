@@ -35,7 +35,7 @@ import net.neoforged.fml.loading.FMLPaths;
 
 import com.devmod.endurance.RewardSystem;
 import com.devmod.mailbox.analytics.MailboxAnalyticsEngine;
-import com.devmod.mailbox.api.MailboxApiServer;
+import com.devmod.mailbox.api.ApiServerLauncher;
 import com.devmod.mailbox.attachment.AttachmentTransactionLog;
 import com.devmod.mailbox.attachment.AttachmentValidator;
 import com.devmod.mailbox.attachment.CurrencyAttachment;
@@ -188,8 +188,11 @@ public class MailboxManager {
             );
 
             MailboxConfig config = MailboxConfig.INSTANCE;
+            LOGGER.info("[Mailbox] API enabled: {}, port: {}", config.isApiEnabled(), config.getApiPort());
             if (config.isApiEnabled()) {
-                MailboxApiServer.start(config.getApiPort());
+                LOGGER.info("[Mailbox] Starting API server...");
+                boolean started = ApiServerLauncher.tryStart(FMLPaths.GAMEDIR.get(), config.getApiPort());
+                LOGGER.info("[Mailbox] API server start result: {}", started);
             }
 
             initialized = true;
@@ -234,7 +237,7 @@ public class MailboxManager {
         WebhookManager.INSTANCE.stop();
         TicketManager.INSTANCE.shutdown().join();
         claimInFlight.clear();
-        MailboxApiServer.stop();
+        ApiServerLauncher.stop();
 
         return repo.shutdown().thenRun(() -> {
             initialized = false;

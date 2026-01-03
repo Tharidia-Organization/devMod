@@ -699,7 +699,9 @@ public class EnduranceEventHandler {
                 EnduranceQuestManager.INSTANCE.getActiveSession(player);
 
             if (session.isPresent()) {
-                float modifiedDamage = EnduranceEventCombat.handleDamagePre(player, event.getOriginalDamage());
+                // IMPORTANT: Use getNewDamage() to respect armor reduction!
+                // getOriginalDamage() returns pre-armor damage which would bypass armor
+                float modifiedDamage = EnduranceEventCombat.handleDamagePre(player, event.getNewDamage());
                 event.setNewDamage(modifiedDamage);
             }
         }
@@ -805,6 +807,9 @@ public class EnduranceEventHandler {
             if (AggregationConfig.AGGREGATION_ENABLED) {
                 TelemetryAggregatorRegistry.INSTANCE.onPlayerLeave(playerId);
             }
+
+            // Clear per-player synced kit data
+            KitManager.INSTANCE.clearSyncedKits(playerId);
         }
     }
 

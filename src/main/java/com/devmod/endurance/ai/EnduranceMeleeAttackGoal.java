@@ -160,11 +160,24 @@ public final class EnduranceMeleeAttackGoal extends Goal {
             int resistanceLevel = resistanceEffect != null ? resistanceEffect.getAmplifier() + 1 : 0;
             int resistanceDuration = resistanceEffect != null ? resistanceEffect.getDuration() : 0;
 
+            // Debug: Check target armor before attack
+            int targetArmor = target.getArmorValue();
+            float targetArmorToughness = 0;
+            if (target instanceof net.minecraft.world.entity.LivingEntity living) {
+                var toughnessHolder = net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS;
+                if (toughnessHolder != null) {
+                    var toughnessAttr = living.getAttribute(toughnessHolder);
+                    if (toughnessAttr != null) {
+                        targetArmorToughness = (float) toughnessAttr.getValue();
+                    }
+                }
+            }
+
             boolean success = this.mob.doHurtTarget(target);
 
             float targetHealthAfter = target.getHealth();
             org.slf4j.LoggerFactory.getLogger("EnduranceMeleeAttackGoal").info(
-                "[Attack] {} -> {} | damage={}, success={}, healthBefore={}, healthAfter={}, diff={}, resistanceLvl={}, resistanceDur={}",
+                "[Attack] {} -> {} | damage={}, success={}, healthBefore={}, healthAfter={}, diff={}, armor={}, toughness={}, resistanceLvl={}, resistanceDur={}",
                 this.mob.getType().toString(),
                 target.getName().getString(),
                 attackDamage,
@@ -172,6 +185,8 @@ public final class EnduranceMeleeAttackGoal extends Goal {
                 targetHealthBefore,
                 targetHealthAfter,
                 targetHealthBefore - targetHealthAfter,
+                targetArmor,
+                targetArmorToughness,
                 resistanceLevel,
                 resistanceDuration
             );

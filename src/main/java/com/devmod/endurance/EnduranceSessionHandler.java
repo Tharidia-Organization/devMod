@@ -18,6 +18,7 @@ import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.runtime.DynamicDimensionManager;
 import com.devmod.runtime.RecoverySystem;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
@@ -57,7 +58,7 @@ public class EnduranceSessionHandler {
                 EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
                     QuestSequencePayload.Phase.CANCELLED, 0);
                 player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Quest cancelled.")
-                    .withStyle(ChatFormatting.YELLOW)));
+                    .withStyle(SharedColorTokens.Chat.YELLOW)));
                 return;
             }
 
@@ -89,7 +90,7 @@ public class EnduranceSessionHandler {
             // Notify player BEFORE teleport (message will still be visible)
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.quest_abandoned",
                 session.getQuest().getCurrentWave(), session.getQuest().getPointsEarnedThisSession())
-                .withStyle(ChatFormatting.YELLOW)));
+                .withStyle(SharedColorTokens.Chat.YELLOW)));
 
             // === NOW do the state restoration and cleanup ===
             restoreAndCleanup(player, session, false, "Quest abandoned");
@@ -139,16 +140,16 @@ public class EnduranceSessionHandler {
 
             // Also send chat messages as fallback
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.death.divider")
-                .withStyle(ChatFormatting.DARK_RED)));
+                .withStyle(SharedColorTokens.Chat.DARK_RED)));
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.you_died_icon")
-                .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)));
+                .withStyle(SharedColorTokens.Chat.RED, ChatFormatting.BOLD)));
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.death.wave_points",
                 session.getQuest().getCurrentWave(), session.getQuest().getPointsEarnedThisSession())
-                .withStyle(ChatFormatting.GRAY)));
+                .withStyle(SharedColorTokens.Chat.GRAY)));
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.death.keybind_hint")
-                .withStyle(ChatFormatting.YELLOW)));
+                .withStyle(SharedColorTokens.Chat.YELLOW)));
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.death.divider")
-                .withStyle(ChatFormatting.DARK_RED)));
+                .withStyle(SharedColorTokens.Chat.DARK_RED)));
 
             LOGGER.info("[EnduranceQuest] Player {} died in quest: {} at wave {}",
                 player.getName().getString(), session.getQuest().getDisplayName(), session.getQuest().getCurrentWave());
@@ -251,7 +252,7 @@ public class EnduranceSessionHandler {
                 player.getName().getString());
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
                 "[DevMod] Respawn failed - arena is unavailable.")
-                .withStyle(ChatFormatting.RED)));
+                .withStyle(SharedColorTokens.Chat.RED)));
             return;
         }
 
@@ -275,7 +276,7 @@ public class EnduranceSessionHandler {
 
         // Notify player of penalty
         player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.respawned_penalty", session.getQuest().getDeathsThisSession())
-            .withStyle(ChatFormatting.RED)));
+            .withStyle(SharedColorTokens.Chat.RED)));
 
         LOGGER.info("[EnduranceQuest] Player {} continuing quest after death at wave {}",
             player.getName().getString(), session.getQuest().getCurrentWave());

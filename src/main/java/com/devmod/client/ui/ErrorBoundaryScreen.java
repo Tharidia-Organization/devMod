@@ -19,6 +19,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.util.ContextLogger;
 
 /**
@@ -195,7 +196,7 @@ public abstract class ErrorBoundaryScreen extends Screen {
 
         // Title
         Component errorTitle = Component.translatable("gui.devmod.error.title")
-            .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
+            .withStyle(SharedColorTokens.Chat.RED, ChatFormatting.BOLD);
         graphics.drawCenteredString(font, errorTitle, centerX, boxY + 15, ERROR_TEXT_COLOR);
 
         // Screen name

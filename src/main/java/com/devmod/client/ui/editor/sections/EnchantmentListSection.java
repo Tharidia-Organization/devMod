@@ -2,6 +2,7 @@ package com.devmod.client.ui.editor.sections;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -25,6 +26,7 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
+import com.devmod.client.ui.editor.components.EditorTextField;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -35,15 +37,46 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
     private static final int ENTRY_HEIGHT = 44;
     private static final int TEXT_INSET_X = 8;
     private static final int BOTTOM_PADDING = 8;
+    private static final int SEARCH_TOP_PADDING = 4;
+    private static final int SEARCH_BOTTOM_PADDING = 6;
+    private static final int EMPTY_STATE_HEIGHT = 16;
+    private static final int GROUP_HEADER_HEIGHT = 14;
     private static final int MAX_ENCHANT_LEVEL = 10; // Allow beyond vanilla max for editing
     private static final Splitter UNDERSCORE_SPLITTER = Splitter.on('_');
+    private static final String EMPTY_STATE_TEXT = "No enchantments match this filter";
+    private static final EnchantGroup[] GROUP_ORDER = new EnchantGroup[] {
+        EnchantGroup.DAMAGE,
+        EnchantGroup.DEFENSE,
+        EnchantGroup.UTILITY,
+        EnchantGroup.DURABILITY,
+        EnchantGroup.SPECIAL,
+        EnchantGroup.OTHER
+    };
+
+    private enum EnchantGroup {
+        DAMAGE("Damage"),
+        DEFENSE("Defense"),
+        UTILITY("Utility"),
+        DURABILITY("Durability"),
+        SPECIAL("Special"),
+        OTHER("Other");
+
+        private final String label;
+
+        EnchantGroup(String label) {
+            this.label = label;
+        }
+    }
 
     private final String id;
     private final String title;
     private final ItemStack item;
     private final List<EnchantmentEntry> entries = new ArrayList<>();
+    private final List<EnchantmentEntry> filteredEntries = new ArrayList<>();
+    private final EditorTextField searchField;
     @Nullable
     private final Consumer<String> onModify;
+    private String searchQuery = "";
 
     /**
      * Creates a new enchantment list section.
@@ -58,6 +91,10 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
         this.title = title;
         this.item = item;
         this.onModify = onModify;
+        this.searchField = new EditorTextField(id + "_search", "Search")
+            .placeholder("Filter enchantments")
+            .maxLength(64)
+            .onChange(this::onSearchChanged);
         loadEnchantments();
     }
 
@@ -78,6 +115,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
         // Add common enchantments that aren't on the item (level 0 = not applied)
         addCommonEnchantments(enchants);
+        updateFilter();
     }
 
     private void addCommonEnchantments(ItemEnchantments existing) {
@@ -146,6 +184,75 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
             });
 
         entries.add(new EnchantmentEntry(holder, displayName, slider, currentLevel));
+    }
+
+    private void onSearchChanged(String text) {
+        searchQuery = text == null ? "" : text;
+        updateFilter();
+    }
+
+    private void updateFilter() {
+        filteredEntries.clear();
+        String query = searchQuery.trim().toLowerCase(Locale.ROOT);
+        if (query.isEmpty()) {
+            filteredEntries.addAll(entries);
+            return;
+        }
+        for (EnchantmentEntry entry : entries) {
+            if (matchesFilter(entry, query)) {
+                filteredEntries.add(entry);
+            }
+        }
+    }
+
+    private boolean matchesFilter(EnchantmentEntry entry, String query) {
+        String name = entry.displayName.toLowerCase(Locale.ROOT);
+        String key = getEnchantmentKey(entry.holder);
+        String fullKey = entry.holder.unwrapKey()
+            .map(k -> k.location().toString())
+            .orElse("");
+        return name.contains(query)
+            || key.toLowerCase(Locale.ROOT).contains(query)
+            || fullKey.toLowerCase(Locale.ROOT).contains(query);
+    }
+
+    private EnchantGroup getGroupFor(EnchantmentEntry entry) {
+        String key = getEnchantmentKey(entry.holder);
+        if (key.contains("sharpness") || key.contains("smite") || key.contains("bane") ||
+            key.contains("power") || key.contains("impaling")) {
+            return EnchantGroup.DAMAGE;
+        }
+        if (key.contains("protection") || key.contains("feather") || key.contains("respiration")) {
+            return EnchantGroup.DEFENSE;
+        }
+        if (key.contains("efficiency") || key.contains("swift") || key.contains("soul_speed") ||
+            key.contains("depth_strider") || key.contains("frost_walker")) {
+            return EnchantGroup.UTILITY;
+        }
+        if (key.contains("unbreaking") || key.contains("mending")) {
+            return EnchantGroup.DURABILITY;
+        }
+        if (key.contains("silk") || key.contains("fortune") || key.contains("looting") ||
+            key.contains("infinity") || key.contains("flame") || key.contains("fire_aspect")) {
+            return EnchantGroup.SPECIAL;
+        }
+        return EnchantGroup.OTHER;
+    }
+
+    private int getGroupedHeight() {
+        int height = 0;
+        for (EnchantGroup group : GROUP_ORDER) {
+            int count = 0;
+            for (EnchantmentEntry entry : filteredEntries) {
+                if (getGroupFor(entry) == group) {
+                    count++;
+                }
+            }
+            if (count > 0) {
+                height += GROUP_HEADER_HEIGHT + count * ENTRY_HEIGHT;
+            }
+        }
+        return height;
     }
 
     private String getEnchantmentName(Holder<Enchantment> holder) {
@@ -269,7 +376,9 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
     @Override
     public int getHeight() {
-        return HEADER_HEIGHT + entries.size() * ENTRY_HEIGHT + BOTTOM_PADDING;
+        int listHeight = filteredEntries.isEmpty() ? EMPTY_STATE_HEIGHT : getGroupedHeight();
+        return HEADER_HEIGHT + SEARCH_TOP_PADDING + searchField.calculateHeight()
+            + SEARCH_BOTTOM_PADDING + listHeight + BOTTOM_PADDING;
     }
 
     @Override
@@ -293,16 +402,47 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
         y += HEADER_HEIGHT;
 
-        // Render each enchantment slider
-        for (EnchantmentEntry entry : entries) {
-            entry.slider.render(graphics, bounds.x() + 4, y + 4, bounds.width() - 8, mouseX, mouseY);
-            y += ENTRY_HEIGHT;
+        y += SEARCH_TOP_PADDING;
+        searchField.render(graphics, bounds.x() + TEXT_INSET_X, y,
+            bounds.width() - TEXT_INSET_X * 2, mouseX, mouseY);
+        y += searchField.calculateHeight() + SEARCH_BOTTOM_PADDING;
+
+        if (filteredEntries.isEmpty()) {
+            graphics.drawString(font, EMPTY_STATE_TEXT, bounds.x() + TEXT_INSET_X, y,
+                DesignTokens.Text.MUTED(), false);
+            return;
+        }
+
+        for (EnchantGroup group : GROUP_ORDER) {
+            boolean hasGroup = false;
+            for (EnchantmentEntry entry : filteredEntries) {
+                if (getGroupFor(entry) == group) {
+                    hasGroup = true;
+                    break;
+                }
+            }
+            if (!hasGroup) {
+                continue;
+            }
+            graphics.drawString(font, group.label, bounds.x() + TEXT_INSET_X, y,
+                DesignTokens.Text.SECONDARY(), false);
+            y += GROUP_HEADER_HEIGHT;
+            for (EnchantmentEntry entry : filteredEntries) {
+                if (getGroupFor(entry) != group) {
+                    continue;
+                }
+                entry.slider.render(graphics, bounds.x() + 4, y + 4, bounds.width() - 8, mouseX, mouseY);
+                y += ENTRY_HEIGHT;
+            }
         }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        for (EnchantmentEntry entry : entries) {
+        if (searchField.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        for (EnchantmentEntry entry : filteredEntries) {
             if (entry.slider.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
@@ -312,7 +452,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        for (EnchantmentEntry entry : entries) {
+        for (EnchantmentEntry entry : filteredEntries) {
             if (entry.slider.mouseReleased(mouseX, mouseY, button)) {
                 return true;
             }
@@ -322,7 +462,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        for (EnchantmentEntry entry : entries) {
+        for (EnchantmentEntry entry : filteredEntries) {
             if (entry.slider.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
                 return true;
             }
@@ -332,7 +472,10 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        for (EnchantmentEntry entry : entries) {
+        if (searchField.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+        for (EnchantmentEntry entry : filteredEntries) {
             if (entry.slider.keyPressed(keyCode, scanCode, modifiers)) {
                 return true;
             }
@@ -342,7 +485,10 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        for (EnchantmentEntry entry : entries) {
+        if (searchField.charTyped(chr, modifiers)) {
+            return true;
+        }
+        for (EnchantmentEntry entry : filteredEntries) {
             if (entry.slider.charTyped(chr, modifiers)) {
                 return true;
             }

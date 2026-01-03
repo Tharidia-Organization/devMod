@@ -6,7 +6,7 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -27,9 +27,9 @@ public record EntityPathingPayload(
     public static final CustomPacketPayload.Type<EntityPathingPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_pathing")));
 
-    public static final StreamCodec<FriendlyByteBuf, EntityPathingPayload> STREAM_CODEC = new StreamCodec<>() {
+    public static final StreamCodec<RegistryFriendlyByteBuf, EntityPathingPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public EntityPathingPayload decode(@Nonnull FriendlyByteBuf buf) {
+        public EntityPathingPayload decode(@Nonnull RegistryFriendlyByteBuf buf) {
             int entityId = buf.readVarInt();
             String entityName = Objects.requireNonNull(buf.readUtf());
             int nodeCount = buf.readVarInt();
@@ -52,7 +52,7 @@ public record EntityPathingPayload(
         }
 
         @Override
-        public void encode(@Nonnull FriendlyByteBuf buf, @Nonnull EntityPathingPayload payload) {
+        public void encode(@Nonnull RegistryFriendlyByteBuf buf, @Nonnull EntityPathingPayload payload) {
             buf.writeVarInt(payload.entityId);
             buf.writeUtf(Objects.requireNonNull(payload.entityName));
             buf.writeVarInt(payload.nodes.size());

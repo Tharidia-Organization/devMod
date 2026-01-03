@@ -13,6 +13,7 @@ import com.devmod.client.environment.ClientEnvironmentCache;
 import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.endurance.InstanceLoadingPayload;
+import com.devmod.endurance.KitSyncConfirmPayload;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PersonalRecordsSyncPayload;
 import com.devmod.endurance.QuestCompletionPayload;
@@ -137,6 +138,11 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     @Override
     public void handleQuestSequence(QuestSequencePayload payload) {
         ClientPartyHandlers.handleQuestSequence(payload);
+    }
+
+    @Override
+    public void handleKitSyncConfirm(KitSyncConfirmPayload payload) {
+        ClientEnduranceHandlers.handleKitSyncConfirm(payload);
     }
 
     @Override

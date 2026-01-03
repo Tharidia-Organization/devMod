@@ -29,6 +29,7 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 
 import com.devmod.DevMod;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.util.ConfigPaths;
 
 public class RecoverySystem {
@@ -233,7 +234,7 @@ public class RecoverySystem {
             // 9. Notify player
             player.sendSystemMessage(
                 Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] " + reason + ". Your state has been restored.")
-                    .withStyle(net.minecraft.ChatFormatting.YELLOW))
+                    .withStyle(SharedColorTokens.Chat.YELLOW))
             );
 
             LOGGER.info("[Recovery] Successfully recovered player {}", player.getName().getString());
@@ -242,7 +243,7 @@ public class RecoverySystem {
             LOGGER.error("[Recovery] Failed to recover player {}", player.getName().getString(), e);
             player.sendSystemMessage(
                 Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Recovery failed! Please contact an admin.")
-                    .withStyle(net.minecraft.ChatFormatting.RED))
+                    .withStyle(SharedColorTokens.Chat.RED))
             );
         }
     }

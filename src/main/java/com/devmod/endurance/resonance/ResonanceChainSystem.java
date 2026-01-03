@@ -292,7 +292,7 @@ public final class ResonanceChainSystem {
 
             // Get player and apply visual/audio feedback
             if (target.level() instanceof ServerLevel serverLevel) {
-                ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(playerId);
+                ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(Objects.requireNonNull(playerId, "playerId"));
                 if (player != null) {
                     // Sound effect
                     float pitch = switch (tier) {
@@ -355,16 +355,17 @@ public final class ResonanceChainSystem {
         float damage = tier == ResonanceTier.APOCALYPSE
             ? config.apocalypseShockwaveDamage : config.trinityShockwaveDamage;
 
-        var bounds = center.getBoundingBox().inflate(radius);
+        var bounds = Objects.requireNonNull(center.getBoundingBox().inflate(radius), "bounds");
         List<LivingEntity> nearby = level.getEntitiesOfClass(
             LivingEntity.class,
             bounds,
             e -> !Objects.equals(e, center) && !(e instanceof ServerPlayer) && e.isAlive()
         );
 
-        DamageSource magicDamage = level.damageSources().magic();
+        // Use generic() to respect mob armor instead of magic()
+        DamageSource shockwaveDamage = Objects.requireNonNull(level.damageSources().generic());
         for (LivingEntity entity : nearby) {
-            entity.hurt(magicDamage, damage);
+            entity.hurt(shockwaveDamage, damage);
 
             // Knockback away from center
             double dx = entity.getX() - center.getX();

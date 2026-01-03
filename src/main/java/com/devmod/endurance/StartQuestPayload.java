@@ -23,7 +23,9 @@ public record StartQuestPayload(
     QuestType questType,
     @Nullable UUID partyId,
     List<UUID> partyMemberIds,
-    String kitId
+    String kitId,
+    @Nullable String forceTemplateId,
+    boolean practiceMode
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<StartQuestPayload> TYPE = new Type<>(
@@ -66,7 +68,16 @@ public record StartQuestPayload(
             // Read kit ID
             String kitId = buf.readUtf(MAX_STRING_LENGTH);
 
-            return new StartQuestPayload(mobId, totalWaves, endlessMode, arenaSize, questType, partyId, partyMemberIds, kitId);
+            // Read force template ID (nullable)
+            String forceTemplateId = null;
+            if (buf.readBoolean()) {
+                forceTemplateId = buf.readUtf(MAX_STRING_LENGTH);
+            }
+
+            // Read practice mode
+            boolean practiceMode = buf.readBoolean();
+
+            return new StartQuestPayload(mobId, totalWaves, endlessMode, arenaSize, questType, partyId, partyMemberIds, kitId, forceTemplateId, practiceMode);
         }
 
         @Override
@@ -93,6 +104,15 @@ public record StartQuestPayload(
 
             // Write kit ID
             buf.writeUtf(payload.kitId != null ? payload.kitId : "STARTER");
+
+            // Write force template ID (nullable)
+            buf.writeBoolean(payload.forceTemplateId != null);
+            if (payload.forceTemplateId != null) {
+                buf.writeUtf(payload.forceTemplateId);
+            }
+
+            // Write practice mode
+            buf.writeBoolean(payload.practiceMode);
         }
     };
 
@@ -100,21 +120,35 @@ public record StartQuestPayload(
      * Create for solo play with default settings.
      */
     public StartQuestPayload(String mobId, int totalWaves, boolean endlessMode) {
-        this(mobId, totalWaves, endlessMode, 64, QuestType.PVE_COOP, null, List.of(), "STARTER");
+        this(mobId, totalWaves, endlessMode, 64, QuestType.PVE_COOP, null, List.of(), "STARTER", null, false);
     }
 
     /**
      * Create for solo play with custom arena size.
      */
     public StartQuestPayload(String mobId, int totalWaves, boolean endlessMode, int arenaSize) {
-        this(mobId, totalWaves, endlessMode, arenaSize, QuestType.PVE_COOP, null, List.of(), "STARTER");
+        this(mobId, totalWaves, endlessMode, arenaSize, QuestType.PVE_COOP, null, List.of(), "STARTER", null, false);
     }
 
     /**
      * Create for solo play with kit selection.
      */
     public StartQuestPayload(String mobId, int totalWaves, boolean endlessMode, String kitId) {
-        this(mobId, totalWaves, endlessMode, 64, QuestType.PVE_COOP, null, List.of(), kitId);
+        this(mobId, totalWaves, endlessMode, 64, QuestType.PVE_COOP, null, List.of(), kitId, null, false);
+    }
+
+    /**
+     * Create for solo play with template override.
+     */
+    public StartQuestPayload(String mobId, int totalWaves, boolean endlessMode, String kitId, @Nullable String forceTemplateId) {
+        this(mobId, totalWaves, endlessMode, 64, QuestType.PVE_COOP, null, List.of(), kitId, forceTemplateId, false);
+    }
+
+    /**
+     * Create for solo play with practice mode.
+     */
+    public StartQuestPayload(String mobId, int totalWaves, boolean endlessMode, String kitId, @Nullable String forceTemplateId, boolean practiceMode) {
+        this(mobId, totalWaves, endlessMode, 64, QuestType.PVE_COOP, null, List.of(), kitId, forceTemplateId, practiceMode);
     }
 
     /**
@@ -160,6 +194,14 @@ public record StartQuestPayload(
         size += partyMemberIds.size() * 16; // UUIDs
         // kitId string
         size += varIntSize(kitId != null ? kitId.length() : 0) + (kitId != null ? kitId.length() : 0);
+        // forceTemplateId (nullable)
+        size += 1; // presence boolean
+        String templateId = forceTemplateId;
+        if (templateId != null) {
+            size += varIntSize(templateId.length()) + templateId.length();
+        }
+        // practiceMode
+        size += 1; // boolean
         return size;
     }
 

@@ -14,6 +14,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 
+import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
+
 public class EndurancePlayerStateManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EndurancePlayerStateManager.class);
 
@@ -69,7 +71,8 @@ public class EndurancePlayerStateManager {
      */
     public void applyKitToPlayer(ServerPlayer player, String kitId) {
         // Check for temporary (on-the-fly) kit first
-        if ("TEMPORARY".equals(kitId) && KitManager.INSTANCE.hasTemporaryKit()) {
+        if ("TEMPORARY".equals(kitId) &&
+            (KitManager.INSTANCE.hasTemporaryKit(player.getUUID()) || KitManager.INSTANCE.hasTemporaryKit())) {
             KitManager.INSTANCE.applyTemporaryKit(player);
             LOGGER.debug("[EnduranceQuest] Applied temporary kit to {}", player.getName().getString());
             return;
@@ -78,6 +81,14 @@ public class EndurancePlayerStateManager {
         // Check for custom kit by ID
         if (kitId != null && kitId.length() == 8) {
             // Custom kit IDs are 8 character UUIDs
+            var syncedKit = KitManager.INSTANCE.getSyncedCustomKit(player.getUUID(), kitId);
+            if (syncedKit.isPresent()) {
+                KitManager.INSTANCE.applyCustomKit(player, syncedKit.get());
+                LOGGER.debug("[EnduranceQuest] Applied synced custom kit {} to {}",
+                    syncedKit.get().getName(), player.getName().getString());
+                return;
+            }
+
             var customKit = KitManager.INSTANCE.getCustomKit(kitId);
             if (customKit.isPresent()) {
                 KitManager.INSTANCE.applyCustomKit(player, customKit.get());
@@ -225,6 +236,12 @@ public class EndurancePlayerStateManager {
             return;
         }
         UUID arenaId = arena.getId();
+
+        // Cleanup practice mode dummies if applicable
+        if (session.isPracticeMode() && DummmmmmyCompat.isAvailable()) {
+            DummmmmmyCompat.removeAllDummies(arena.getLevel());
+            LOGGER.debug("[EnduranceQuest] Cleaned up practice mode dummies");
+        }
 
         // Cleanup WaveManager state (removes tracked mobs, resets wave state)
         WaveManager.INSTANCE.cleanupWave(arenaId, arena.getLevel());

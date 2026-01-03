@@ -18,7 +18,8 @@
     "client.DebugRendererMixin",
     "client.HexereiDynamicRegistriesMixin",
     "client.ClientLevelTimeMixin",
-    "client.LevelAccessorTimeMixin"
+    "client.LevelAccessorTimeMixin",
+    "client.FabricScreenApiFixMixin"
   ],
   "injectors": {
     "defaultRequire": 1

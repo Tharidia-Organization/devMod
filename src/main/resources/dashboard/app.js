@@ -13,14 +13,13 @@ let cachedTableData = {};
 let arenaToken = '';
 
 // Chart.js global configuration
-Chart.defaults.color = '#8892a0';
-Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+Chart.defaults.color = '#B9C3D4';
+Chart.defaults.borderColor = 'rgba(52, 69, 94, 0.6)';
 Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
 
 const CHART_COLORS = [
-    '#4ade80', '#60a5fa', '#f472b6', '#facc15', '#a78bfa',
-    '#fb923c', '#34d399', '#818cf8', '#f87171', '#22d3ee',
-    '#e879f9', '#84cc16', '#14b8a6', '#f59e0b', '#6366f1'
+    '#39CDBE', '#4E9CFF', '#F2A74B', '#45D483', '#F2C14E', '#E06B5B',
+    '#B9C3D4', '#34455E', '#39CDBE', '#4E9CFF', '#F2A74B', '#45D483'
 ];
 
 // ==================== Initialization ====================

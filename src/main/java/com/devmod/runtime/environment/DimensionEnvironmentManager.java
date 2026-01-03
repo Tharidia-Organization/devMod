@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -120,6 +121,12 @@ public class DimensionEnvironmentManager {
                     LOGGER.warn("Failed to resolve optimal biome: {}", optimalBiome);
                 }
             }
+
+            // 3b. Check for biome tags (modded biome support: Terralith, BiomesOPlenty, etc.)
+            Holder<Biome> tagBiome = resolveBiomeFromMobTags(mobIds, biomeRegistry);
+            if (tagBiome != null) {
+                return tagBiome;
+            }
         }
 
         // 4. Default to THE_VOID for minimal interference
@@ -129,6 +136,7 @@ public class DimensionEnvironmentManager {
 
     /**
      * Finds the optimal biome based on mob requirements.
+     * Checks preferredBiome first, then validBiomes, then biomeTag.
      */
     @Nullable
     private ResourceLocation findOptimalBiomeForMobs(List<ResourceLocation> mobIds) {
@@ -136,10 +144,22 @@ public class DimensionEnvironmentManager {
 
         for (ResourceLocation mobId : mobIds) {
             MobRequirements reqs = MobRequirementsRegistry.INSTANCE.getOrDefault(mobId);
-            if (reqs.biome().preferredBiome().isPresent()) {
-                ResourceLocation preferred = reqs.biome().preferredBiome().get();
-                biomeVotes.merge(preferred, 1, (a, b) -> a + b);
+            var biomeReq = reqs.biome();
+
+            // Priority 1: preferredBiome (strongest preference)
+            if (biomeReq.preferredBiome().isPresent()) {
+                ResourceLocation preferred = biomeReq.preferredBiome().get();
+                biomeVotes.merge(preferred, 3, (a, b) -> a + b); // Weight: 3
             }
+
+            // Priority 2: validBiomes (any acceptable biome)
+            for (ResourceLocation validBiome : biomeReq.validBiomes()) {
+                biomeVotes.merge(validBiome, 1, (a, b) -> a + b); // Weight: 1
+            }
+
+            // Priority 3: biomeTag - resolve to first biome in tag
+            // Note: Tag resolution requires registry access, handled at dimension creation
+            // Here we just track that a tag preference exists for logging
         }
 
         if (biomeVotes.isEmpty()) {
@@ -151,6 +171,40 @@ public class DimensionEnvironmentManager {
             .max(Map.Entry.comparingByValue())
             .map(Map.Entry::getKey)
             .orElse(null);
+    }
+
+    /**
+     * Resolves a biome from mob biome tags.
+     * Supports modded biome tags from Terralith, Biomes O' Plenty, etc.
+     *
+     * @param mobIds List of mob IDs to check
+     * @param biomeRegistry The biome registry
+     * @return First matching biome from any mob's biome tag, or null if none found
+     */
+    @Nullable
+    private Holder<Biome> resolveBiomeFromMobTags(
+            List<ResourceLocation> mobIds,
+            Registry<Biome> biomeRegistry
+    ) {
+        for (ResourceLocation mobId : mobIds) {
+            MobRequirements reqs = MobRequirementsRegistry.INSTANCE.getOrDefault(mobId);
+            var biomeTag = reqs.biome().biomeTag();
+
+            if (biomeTag.isPresent()) {
+                var tag = Objects.requireNonNull(biomeTag.get());
+                // Get first biome from the tag
+                var taggedBiomes = biomeRegistry.getTag(tag);
+                if (taggedBiomes.isPresent()) {
+                    var biomeStream = taggedBiomes.get().stream().findFirst();
+                    if (biomeStream.isPresent()) {
+                        LOGGER.debug("Using biome from tag {} for mob {}: {}",
+                            tag.location(), mobId, biomeStream.get().getRegisteredName());
+                        return biomeStream.get();
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**

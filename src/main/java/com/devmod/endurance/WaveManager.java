@@ -31,12 +31,15 @@ import net.minecraft.world.item.Items;
 
 import com.devmod.DevMod;
 import com.devmod.arena.api.ArenaHandle;
+import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
+import com.devmod.endurance.config.EffectiveConfig;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.arena.spawn.SpawnOccupancyTracker;
 import com.devmod.mob.MobRequirements;
 import com.devmod.mob.MobRequirementsRegistry;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 public class WaveManager {
@@ -93,6 +96,12 @@ public class WaveManager {
         private final int playerCount;
         private final QuestType questType;
 
+        // Practice mode (uses training dummies instead of real mobs)
+        private final boolean practiceMode;
+
+        // Session reference for config overrides
+        private final @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session;
+
         public WaveState(UUID arenaId,
                          EnduranceQuest quest,
                          int waveNumber,
@@ -103,7 +112,9 @@ public class WaveManager {
                          List<WaveDirector.SpawnBatch> spawnPlan,
                          @javax.annotation.Nullable SpawnContext spawnContext,
                          float rewardMultiplier,
-                         @javax.annotation.Nullable String directiveId) {
+                         @javax.annotation.Nullable String directiveId,
+                         boolean practiceMode,
+                         @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
             // arenaId parameter intentionally unused - the map key is the authoritative source
             this.quest = quest;
             this.waveNumber = waveNumber;
@@ -115,8 +126,29 @@ public class WaveManager {
             this.spawnContext = spawnContext;
             this.rewardMultiplier = Math.max(0.1f, rewardMultiplier);
             this.directiveId = directiveId;
+            this.practiceMode = practiceMode;
+            this.session = session;
             this.waveStartTime = System.currentTimeMillis();
             this.externalRespawnLimit = Math.max(5, this.totalToSpawn);
+        }
+
+        /**
+         * Legacy constructor without session (for backward compatibility).
+         */
+        public WaveState(UUID arenaId,
+                         EnduranceQuest quest,
+                         int waveNumber,
+                         int playerCount,
+                         QuestType questType,
+                         int totalToSpawn,
+                         WaveObjectiveState objective,
+                         List<WaveDirector.SpawnBatch> spawnPlan,
+                         @javax.annotation.Nullable SpawnContext spawnContext,
+                         float rewardMultiplier,
+                         @javax.annotation.Nullable String directiveId,
+                         boolean practiceMode) {
+            this(arenaId, quest, waveNumber, playerCount, questType, totalToSpawn, objective,
+                 spawnPlan, spawnContext, rewardMultiplier, directiveId, practiceMode, null);
         }
 
         public WaveState(UUID arenaId, EnduranceQuest quest, int waveNumber) {
@@ -131,7 +163,8 @@ public class WaveManager {
                 List.of(),
                 null,
                 1.0f,
-                null
+                null,
+                false
             );
         }
 
@@ -141,6 +174,7 @@ public class WaveManager {
         public WaveObjectiveState getObjective() { return objective; }
         public float getRewardMultiplier() { return rewardMultiplier; }
         public @javax.annotation.Nullable String getDirectiveId() { return directiveId; }
+        public boolean isPracticeMode() { return practiceMode; }
         public int getTotalToSpawn() { return totalToSpawn; }
         public int getSpawned() { return spawned; }
         public int getKilled() { return killed; }
@@ -156,6 +190,7 @@ public class WaveManager {
         public List<WaveDirector.SpawnBatch> getSpawnPlan() { return spawnPlan; }
         public int getNextSpawnIndex() { return nextSpawnIndex; }
         public @javax.annotation.Nullable SpawnContext getSpawnContext() { return spawnContext; }
+        public @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession getSession() { return session; }
 
         public void recordKill(UUID mobId) {
             killed++;
@@ -318,7 +353,9 @@ public class WaveManager {
                     List.of(),
                     null,
                     1.0f,
-                    null
+                    null,
+                    session.isPracticeMode(),
+                    session
                 );
                 waveState.addSpawnedMob(bossFight.getBossEntity().getUUID(), SpawnAffix.ELITE, false);
 
@@ -343,7 +380,8 @@ public class WaveManager {
         }
 
         Set<WaveModifier> modifiers = rollWaveModifiers(waveNumber);
-        int baseCount = quest.getCurrentWaveMobCount(playerCount, questType);
+        // Use session-aware mob count that respects config overrides
+        int baseCount = quest.getCurrentWaveMobCount(playerCount, questType, session);
         if (modifiers.contains(WaveModifier.DOUBLE_SPAWN)) {
             baseCount = Math.max(1, baseCount * 2);
         }
@@ -370,7 +408,9 @@ public class WaveManager {
             plan.batches(),
             spawnContext,
             rewardMultiplier,
-            directiveId
+            directiveId,
+            session.isPracticeMode(),
+            session
         );
         waveState.getModifiers().addAll(modifiers);
 
@@ -447,7 +487,7 @@ public class WaveManager {
         }
         player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
             "[DevMod] Arena configuration missing - quest aborted.")
-            .withStyle(net.minecraft.ChatFormatting.RED)));
+            .withStyle(SharedColorTokens.Chat.RED)));
         EnduranceQuestManager.INSTANCE.abandonQuest(player);
     }
 
@@ -489,6 +529,13 @@ public class WaveManager {
         if (count <= 0 || arena == null) {
             return;
         }
+
+        // Practice mode: spawn training dummies instead of real mobs
+        if (waveState.isPracticeMode() && DummmmmmyCompat.isAvailable()) {
+            spawnPracticeDummies(waveState, arena, count);
+            return;
+        }
+
         SpawnAffix safeAffix = affix != null ? affix : SpawnAffix.BASE;
         SpawnContext spawnContext = waveState.getSpawnContext();
         if (spawnContext == null || spawnContext.positions.isEmpty()) {
@@ -500,6 +547,13 @@ public class WaveManager {
         ServerLevel level = arena.getLevel();
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
         EntityType<?> entityType = mobConfig.entityType;
+
+        // Check if this mob type is enabled in session's mob pool config
+        EnduranceQuestManager.ActiveQuestSession session = waveState.getSession();
+        if (!com.devmod.endurance.config.EffectiveConfig.isMobEnabled(session, mobConfig.mobId)) {
+            LOGGER.info("[EnduranceQuest] Mob {} is disabled by session config, skipping spawn", mobConfig.mobId);
+            return;
+        }
 
         // Get mob requirements for spawn validation
         MobRequirements mobReqs = MobRequirementsRegistry.INSTANCE.get(entityType);
@@ -581,7 +635,7 @@ public class WaveManager {
                 applySpawnAffix(mob, safeAffix);
 
                 SpawnAffix appliedAffix = safeAffix;
-                if (!safeAffix.elite && random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber)) {
+                if (!safeAffix.elite && random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber, waveState.getSession())) {
                     applyEliteBuffs(mob, waveState.waveNumber);
                     appliedAffix = SpawnAffix.ELITE;
                 } else if (safeAffix.elite) {
@@ -640,6 +694,50 @@ public class WaveManager {
 
         LOGGER.info("[EnduranceQuest] Wave {} spawned {}/{} mobs successfully",
             waveState.waveNumber, successfulSpawns, count);
+    }
+
+    /**
+     * Spawn training dummies for practice mode.
+     * Uses DummmmmmyCompat to create practice targets instead of real mobs.
+     */
+    private void spawnPracticeDummies(WaveState waveState, ArenaContext arena, int count) {
+        if (!DummmmmmyCompat.isAvailable()) {
+            LOGGER.warn("[EnduranceQuest] Practice mode requested but Dummmmmmy mod not available");
+            return;
+        }
+
+        SpawnContext spawnContext = waveState.getSpawnContext();
+        if (spawnContext == null || spawnContext.positions.isEmpty()) {
+            LOGGER.error("[EnduranceQuest] No spawn positions available for practice dummies");
+            return;
+        }
+
+        ServerLevel level = arena.getLevel();
+        List<BlockPos> positions = spawnContext.positions;
+
+        // Limit dummies to avoid overwhelming the player
+        int dummyCount = Math.min(count, Math.min(5, positions.size()));
+
+        int successfulSpawns = 0;
+        for (int i = 0; i < dummyCount; i++) {
+            BlockPos pos = positions.get(i % positions.size());
+            String dummyId = String.format("practice_w%d_%d", waveState.getWaveNumber(), i);
+
+            UUID uuid = DummmmmmyCompat.spawnDummy(level, pos, dummyId);
+            if (uuid != null) {
+                waveState.addSpawnedMob(uuid, SpawnAffix.BASE, false);
+                successfulSpawns++;
+            }
+        }
+
+        // Adjust wave target to match spawned dummies
+        if (successfulSpawns > 0) {
+            waveState.totalToSpawn = successfulSpawns;
+            waveState.adjustKillTarget(successfulSpawns);
+        }
+
+        LOGGER.info("[EnduranceQuest] Practice mode: spawned {} dummies for wave {}",
+            successfulSpawns, waveState.getWaveNumber());
     }
 
     public int respawnMissingMobs(EnduranceQuestManager.ActiveQuestSession session,
@@ -1169,9 +1267,15 @@ public class WaveManager {
      */
     private void applyMultiplayerHPScaling(Mob mob, WaveState waveState) {
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
+        EnduranceQuestManager.ActiveQuestSession session = waveState.getSession();
         int playerCount = waveState.getPlayerCount();
         QuestType questType = waveState.getQuestType();
         float waveScale = DifficultyScaler.INSTANCE.getWaveMultiplier(waveState.waveNumber, waveState.quest.getTotalWaves());
+
+        // Get global multipliers from session's mob pool config
+        float globalHealthMult = com.devmod.endurance.config.EffectiveConfig.getGlobalHealthMult(session);
+        float globalDamageMult = com.devmod.endurance.config.EffectiveConfig.getGlobalDamageMult(session);
+        float globalSpeedMult = com.devmod.endurance.config.EffectiveConfig.getGlobalSpeedMult(session);
 
         // Apply HP scaling using MobQuestConfig (includes difficultyPreset.hpMultiplier)
         var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
@@ -1185,12 +1289,12 @@ public class WaveManager {
                 scaledHP = scaledHP * ratio;
             }
 
-            scaledHP *= waveScale;
+            scaledHP *= waveScale * globalHealthMult;
             healthAttr.setBaseValue(scaledHP);
             mob.setHealth(mob.getMaxHealth());
 
-            LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, preset={}, type={}, waveScale={})",
-                baseHP, scaledHP, playerCount, mobConfig.difficultyPreset.displayName, questType, waveScale);
+            LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, preset={}, type={}, waveScale={}, globalMult={})",
+                baseHP, scaledHP, playerCount, mobConfig.difficultyPreset.displayName, questType, waveScale, globalHealthMult);
         }
 
         // Apply damage scaling using MobQuestConfig (includes difficultyPreset.damageMultiplier)
@@ -1205,26 +1309,46 @@ public class WaveManager {
                 scaledDamage = scaledDamage * ratio;
             }
 
-            scaledDamage *= waveScale;
+            scaledDamage *= waveScale * globalDamageMult;
             attackAttr.setBaseValue(scaledDamage);
 
-            LOGGER.debug("[EnduranceQuest] Mob DMG scaled: {} -> {} (players={}, preset={}, waveScale={})",
-                baseDamage, scaledDamage, playerCount, mobConfig.difficultyPreset.displayName, waveScale);
+            LOGGER.debug("[EnduranceQuest] Mob DMG scaled: {} -> {} (players={}, preset={}, waveScale={}, globalMult={})",
+                baseDamage, scaledDamage, playerCount, mobConfig.difficultyPreset.displayName, waveScale, globalDamageMult);
+        }
+
+        // Apply speed multiplier if session has global speed override
+        if (globalSpeedMult != 1.0f) {
+            var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
+            if (speedAttr != null) {
+                float baseSpeed = (float) speedAttr.getBaseValue();
+                float scaledSpeed = baseSpeed * globalSpeedMult;
+                speedAttr.setBaseValue(scaledSpeed);
+                LOGGER.debug("[EnduranceQuest] Mob SPEED scaled: {} -> {} (globalMult={})",
+                    baseSpeed, scaledSpeed, globalSpeedMult);
+            }
         }
     }
 
-    private float getEliteChance(float baseChance, int waveNumber) {
+    private float getEliteChance(float baseChance, int waveNumber,
+                                  @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
         if (baseChance <= 0f || waveNumber < MODIFIER_START_WAVE) {
             return 0f;
         }
+
+        // Get config values for elite chance (with session override support)
+        float configBaseChance = (float) EffectiveConfig.getEliteChanceBase(session);
+        float configScaling = (float) EffectiveConfig.getEliteChanceScaling(session);
+
+        // Calculate ramp chance based on wave number with config scaling
         float rampChance;
         if (waveNumber < 5) {
-            rampChance = MODIFIER_CHANCE_TIER_1;
+            rampChance = configBaseChance;
         } else if (waveNumber < 8) {
-            rampChance = MODIFIER_CHANCE_TIER_2;
+            rampChance = configBaseChance + configScaling * (waveNumber - 4);
         } else {
-            rampChance = MODIFIER_CHANCE_TIER_3;
+            rampChance = configBaseChance + configScaling * 4 + configScaling * 0.5f * (waveNumber - 8);
         }
+
         return Math.min(baseChance, rampChance);
     }
 

@@ -14,7 +14,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 @Mixin(targets = "net.joefoxe.hexerei.Hexerei$DynamicRegistries", remap = false)
 public class HexereiDynamicRegistriesMixin {
     @Inject(method = "get", at = @At("HEAD"), cancellable = true)
-    static void devmod$hexereiClientRegistries(CallbackInfoReturnable<RegistryAccess> cir) {
+    private static void devmod$hexereiClientRegistries(CallbackInfoReturnable<RegistryAccess> cir) {
         if (ServerLifecycleHooks.getCurrentServer() != null) {
             return;
         }

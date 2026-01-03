@@ -25,6 +25,8 @@ import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.InstanceLoadingPayload;
+import com.devmod.endurance.KitSyncConfirmPayload;
+import com.devmod.endurance.KitSyncPayload;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PerkSelectionPayload;
 import com.devmod.endurance.PerkSystem;
@@ -43,6 +45,8 @@ import com.devmod.endurance.TensionUpdatePayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
+import com.devmod.endurance.ArenaSuggestionsPayload;
+import com.devmod.endurance.RequestArenaSuggestionsPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 import com.devmod.mailbox.network.payload.TicketActionPayload;
@@ -88,6 +92,8 @@ import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.IMPACT_SYNC;
 import static com.devmod.network.ChannelId.INSTANCE_LOADING;
 import static com.devmod.network.ChannelId.INVITE_RESPONSE;
+import static com.devmod.network.ChannelId.KIT_SYNC;
+import static com.devmod.network.ChannelId.KIT_SYNC_CONFIRM;
 import static com.devmod.network.ChannelId.LVC_SYNC;
 import static com.devmod.network.ChannelId.MAILBOX_ACCESS;
 import static com.devmod.network.ChannelId.MAILBOX_NOTIFY;
@@ -116,9 +122,11 @@ import static com.devmod.network.ChannelId.QUEST_SYNC;
 import static com.devmod.network.ChannelId.RANGED_WEAPON_STATS;
 import static com.devmod.network.ChannelId.RECIPE_CLIENT_SYNC;
 import static com.devmod.network.ChannelId.RECIPE_SYNC;
+import static com.devmod.network.ChannelId.REQUEST_ARENA_SUGGESTIONS;
 import static com.devmod.network.ChannelId.REQUEST_PERSONAL_RECORDS;
 import static com.devmod.network.ChannelId.REQUEST_SEASON_PASS;
 import static com.devmod.network.ChannelId.REQUEST_SHOP_SYNC;
+import static com.devmod.network.ChannelId.ARENA_SUGGESTIONS;
 import static com.devmod.network.ChannelId.SEASON_PASS_SYNC;
 import static com.devmod.network.ChannelId.SHIELD_IMPACT;
 import static com.devmod.network.ChannelId.SHIELD_SHATTER;
@@ -186,6 +194,8 @@ public class NetworkHandler {
         void handlePartySync(PartySyncPayload payload);
 
         void handleQuestSequence(QuestSequencePayload payload);
+
+        void handleKitSyncConfirm(KitSyncConfirmPayload payload);
 
         void handleShieldState(ShieldStatePayload payload);
 
@@ -413,6 +423,21 @@ public class NetworkHandler {
                 nn(StartQuestPayload.STREAM_CODEC),
                 validated(EnduranceNetworkHandler::handleStartEnduranceQuest, PayloadLimits.SMALL)
         );
+        event.registrar(KIT_SYNC.asString()).playToServer(
+                nn(KitSyncPayload.TYPE),
+                nn(KitSyncPayload.STREAM_CODEC),
+                validated(EnduranceNetworkHandler::handleKitSync, PayloadLimits.XLARGE)
+        );
+        event.registrar(KIT_SYNC_CONFIRM.asString()).playToClient(
+                nn(KitSyncConfirmPayload.TYPE),
+                nn(KitSyncConfirmPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleKitSyncConfirm(payload)));
+                    }
+                }, PayloadLimits.SMALL)
+        );
         event.registrar(QUEST_ACTION.asString()).playToServer(
                 nn(QuestActionPayload.TYPE),
                 nn(QuestActionPayload.STREAM_CODEC),
@@ -487,6 +512,18 @@ public class NetworkHandler {
                             withClientHooks(hooks -> hooks.handleBossAlert(payload)));
                     }
                 }, PayloadLimits.SMALL)
+        );
+        // REQUEST_ARENA_SUGGESTIONS (19): Client -> Server request for arena suggestions
+        event.registrar(REQUEST_ARENA_SUGGESTIONS.asString()).playToServer(
+                nn(RequestArenaSuggestionsPayload.TYPE),
+                nn(RequestArenaSuggestionsPayload.STREAM_CODEC),
+                validated(EnduranceNetworkHandler::handleRequestArenaSuggestions, PayloadLimits.SMALL)
+        );
+        // ARENA_SUGGESTIONS (20): Server -> Client arena suggestions response
+        event.registrar(ARENA_SUGGESTIONS.asString()).playToClient(
+                nn(ArenaSuggestionsPayload.TYPE),
+                nn(ArenaSuggestionsPayload.STREAM_CODEC),
+                validated(EnduranceNetworkHandler::handleArenaSuggestions, PayloadLimits.SYNC_MEDIUM)
         );
         event.registrar(TENSION_UPDATE.asString()).playToClient(
                 nn(TensionUpdatePayload.TYPE),

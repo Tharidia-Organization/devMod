@@ -44,6 +44,8 @@ public class FooterComponent {
     private boolean canApply = false;
     private boolean isDirty = false;
     private int pendingCount = 0;
+    @Nullable
+    private String applyLabelOverride = null;
 
     // Hover states (locally computed during render)
     private boolean applyHovered = false;
@@ -136,6 +138,15 @@ public class FooterComponent {
 
     public FooterComponent onAction(java.util.function.Consumer<String> callback) {
         this.onAction = callback;
+        return this;
+    }
+
+    public FooterComponent applyLabel(@Nullable String label) {
+        if (label == null || label.isBlank()) {
+            this.applyLabelOverride = null;
+        } else {
+            this.applyLabelOverride = label;
+        }
         return this;
     }
 
@@ -361,7 +372,9 @@ public class FooterComponent {
 
         // Text
         String label;
-        if (!canApply) {
+        if (applyLabelOverride != null) {
+            label = applyLabelOverride;
+        } else if (!canApply) {
             label = "Preview Only";
         } else if (!isDirty) {
             label = "No Changes";

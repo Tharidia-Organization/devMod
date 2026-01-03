@@ -163,8 +163,8 @@ public class MailboxConfig {
     /** Port for the admin API server */
     private int apiPort = 8765;
 
-    /** Whether the API server is enabled */
-    private boolean apiEnabled = false;
+    /** Whether the API server is enabled (downloads Javalin on first start) */
+    private boolean apiEnabled = true;
 
     /** API authentication secret key */
     private String apiSecretKey = "";

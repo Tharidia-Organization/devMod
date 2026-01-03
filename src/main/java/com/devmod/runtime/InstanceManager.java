@@ -23,6 +23,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
+import com.devmod.shared.SharedColorTokens;
+
 public class InstanceManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceManager.class);
     public static final InstanceManager INSTANCE = new InstanceManager();
@@ -153,13 +155,13 @@ public class InstanceManager {
 
         // Check if player is already in an instance
         if (InstanceRegistry.INSTANCE.getPlayerInstance(playerId).isPresent()) {
-            player.sendSystemMessage(styledMsg("[DevMod] You are already in an instance!", ChatFormatting.RED));
+            player.sendSystemMessage(styledMsg("[DevMod] You are already in an instance!", SharedColorTokens.Chat.RED));
             return CompletableFuture.completedFuture(null);
         }
 
         // Check if player has a pending teleport
         if (pendingTeleports.containsKey(playerId)) {
-            player.sendSystemMessage(styledMsg("[DevMod] Teleport already in progress!", ChatFormatting.RED));
+            player.sendSystemMessage(styledMsg("[DevMod] Teleport already in progress!", SharedColorTokens.Chat.RED));
             return CompletableFuture.completedFuture(null);
         }
 
@@ -210,9 +212,9 @@ public class InstanceManager {
         // Notify players (different message based on mode)
         for (ServerPlayer p : allPlayers) {
             if (immediate) {
-                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance...", ChatFormatting.GOLD));
+                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance...", SharedColorTokens.Chat.GOLD));
             } else {
-                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance... teleporting in 10 seconds", ChatFormatting.GOLD));
+                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance... teleporting in 10 seconds", SharedColorTokens.Chat.GOLD));
             }
         }
 
@@ -307,7 +309,7 @@ public class InstanceManager {
                 }
             });
 
-            player.sendSystemMessage(styledMsg("[DevMod] Welcome to the arena! Good luck!", ChatFormatting.GREEN));
+            player.sendSystemMessage(styledMsg("[DevMod] Welcome to the arena! Good luck!", SharedColorTokens.Chat.GREEN));
 
             LOGGER.info("[InstanceManager] Player {} successfully teleported to instance {} (immediate)",
                 player.getName().getString(), instanceId);
@@ -383,11 +385,11 @@ public class InstanceManager {
 
             // Send countdown messages at intervals
             if (request.ticksRemaining == 100) { // 5 seconds
-                        player.sendSystemMessage(styledMsg("[DevMod] Teleporting in 5 seconds...", ChatFormatting.YELLOW));
+                        player.sendSystemMessage(styledMsg("[DevMod] Teleporting in 5 seconds...", SharedColorTokens.Chat.YELLOW));
                     } else if (request.ticksRemaining == 60) { // 3 seconds
-                        player.sendSystemMessage(styledMsg("[DevMod] Teleporting in 3 seconds...", ChatFormatting.YELLOW));
+                        player.sendSystemMessage(styledMsg("[DevMod] Teleporting in 3 seconds...", SharedColorTokens.Chat.YELLOW));
                     } else if (request.ticksRemaining == 20) { // 1 second
-                        player.sendSystemMessage(styledMsg("[DevMod] Teleporting in 1 second...", ChatFormatting.YELLOW));
+                        player.sendSystemMessage(styledMsg("[DevMod] Teleporting in 1 second...", SharedColorTokens.Chat.YELLOW));
                     }
 
             // Execute teleport when countdown reaches zero
@@ -418,7 +420,7 @@ public class InstanceManager {
                 }
             });
 
-            player.sendSystemMessage(styledMsg("[DevMod] Welcome to the arena! Good luck!", ChatFormatting.GREEN));
+            player.sendSystemMessage(styledMsg("[DevMod] Welcome to the arena! Good luck!", SharedColorTokens.Chat.GREEN));
 
             LOGGER.info("[InstanceManager] Player {} successfully teleported to instance {}",
                 player.getName().getString(), request.instanceId);
@@ -468,9 +470,9 @@ public class InstanceManager {
 
                     // Notify player
                     if (success) {
-                        player.sendSystemMessage(styledMsg("[DevMod] Quest completed! Returning to overworld...", ChatFormatting.GREEN));
+                        player.sendSystemMessage(styledMsg("[DevMod] Quest completed! Returning to overworld...", SharedColorTokens.Chat.GREEN));
                     } else {
-                        player.sendSystemMessage(styledMsg("[DevMod] " + reason + ". Returning to overworld...", ChatFormatting.RED));
+                        player.sendSystemMessage(styledMsg("[DevMod] " + reason + ". Returning to overworld...", SharedColorTokens.Chat.RED));
                     }
 
                 // Return player to original position

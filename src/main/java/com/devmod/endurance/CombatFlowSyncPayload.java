@@ -57,12 +57,12 @@ public record CombatFlowSyncPayload(
         buf.writeVarInt(payload.combo);
         buf.writeVarInt(payload.maxCombo);
         buf.writeVarInt(payload.styleScore);
-        buf.writeByte(payload.styleRankOrdinal);
-        buf.writeByte(payload.flowStateOrdinal);
+        buf.writeVarInt(payload.styleRankOrdinal);      // VarInt for enum ordinal safety
+        buf.writeVarInt(payload.flowStateOrdinal);      // VarInt for enum ordinal safety
         buf.writeFloat(payload.virtuosoProgress);
         buf.writeFloat(payload.staleRisk);
-        buf.writeByte(payload.momentumPercent);
-        buf.writeByte(payload.momentumStateOrdinal);
+        buf.writeVarInt(payload.momentumPercent);       // VarInt for percent (0-100+)
+        buf.writeVarInt(payload.momentumStateOrdinal);  // VarInt for enum ordinal safety
         buf.writeVarLong(payload.overdriveRemainingMs);
         buf.writeUtf(Objects.requireNonNull(payload.lastActionName), 32);
         buf.writeVarInt(payload.lastActionPoints);
@@ -73,12 +73,12 @@ public record CombatFlowSyncPayload(
             buf.readVarInt(),
             buf.readVarInt(),
             buf.readVarInt(),
-            buf.readByte(),
-            buf.readByte(),
+            buf.readVarInt(),  // styleRankOrdinal
+            buf.readVarInt(),  // flowStateOrdinal
             buf.readFloat(),
             buf.readFloat(),
-            buf.readByte(),
-            buf.readByte(),
+            buf.readVarInt(),  // momentumPercent
+            buf.readVarInt(),  // momentumStateOrdinal
             buf.readVarLong(),
             buf.readUtf(32),
             buf.readVarInt()
@@ -92,8 +92,8 @@ public record CombatFlowSyncPayload(
 
     @Override
     public int estimatedSize() {
-        // VarInts + bytes + floats + VarLong + string + VarInt
-        return 5 + 5 + 5 + 1 + 1 + 4 + 4 + 1 + 1 + 9 + 34 + 5;
+        // 9 VarInts (5 bytes max each) + 2 floats (4 each) + VarLong (9) + string (34) + VarInt (5)
+        return 9 * 5 + 4 + 4 + 9 + 34 + 5;
     }
 
     // === Helper methods for client-side interpretation ===

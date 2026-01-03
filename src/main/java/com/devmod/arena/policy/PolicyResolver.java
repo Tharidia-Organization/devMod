@@ -1,5 +1,6 @@
 package com.devmod.arena.policy;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,7 +27,9 @@ import com.devmod.arena.override.OverrideManager;
 import com.devmod.arena.override.TemplateOverride;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.TemplateType;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.devmod.mob.MobRequirements;
 
 public class PolicyResolver implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolicyResolver.class);
@@ -38,6 +41,9 @@ public class PolicyResolver implements AutoCloseable {
     private static final int WEIGHT_DIFFICULTY = 3;
     private static final int WEIGHT_PLAYER_COUNT = 2;
     private static final int WEIGHT_TAGS = 1;
+    // MobRequirements-based scoring weights
+    private static final int WEIGHT_SPACE_COMPATIBLE = 6;
+    private static final int WEIGHT_BIOME_MATCH = 4;
     private static final double MIN_POLICY_WEIGHT = 0.1;
     private static final double MAX_POLICY_WEIGHT = 10.0;
 
@@ -193,8 +199,25 @@ public class PolicyResolver implements AutoCloseable {
             }
         }
 
-        if (context.forceTemplateId() != null) {
-            Optional<ArenaTemplate> template = templateRegistry.get(context.forceTemplateId());
+        String forcedId = context.forceTemplateId();
+        if (forcedId != null) {
+            // DD-DYNAMIC: Check if this is a dynamic/custom template request
+            MobRequirements mobReqs = context.mobRequirements();
+            if (forcedId.startsWith("custom_") && mobReqs != null) {
+                ArenaTemplate dynamicTemplate = generateDynamicTemplate(mobReqs, context.server());
+                if (loggingEnabled) {
+                    LOGGER.info("[PolicyResolver] Using dynamically generated template '{}' for mob '{}'",
+                        dynamicTemplate.id(), mobReqs.mobId());
+                }
+                return ResolvedArena.create(
+                    dynamicTemplate,
+                    ArenaPolicy.DEFAULT,
+                    Map.of("dynamic_template", 100.0, "custom_fit", 15.0)
+                );
+            }
+
+            // Try to find in registry (static templates)
+            Optional<ArenaTemplate> template = templateRegistry.get(forcedId);
             if (template.isPresent()) {
                 return ResolvedArena.create(
                     template.get(),
@@ -203,7 +226,7 @@ public class PolicyResolver implements AutoCloseable {
                 );
             }
             if (loggingEnabled) {
-                LOGGER.warn("Forced template '{}' not found, continuing with normal resolution", context.forceTemplateId());
+                LOGGER.warn("Forced template '{}' not found, continuing with normal resolution", forcedId);
             }
         }
 
@@ -292,7 +315,29 @@ public class PolicyResolver implements AutoCloseable {
         if (!isPolicyCompatible(policy, template)) {
             return Optional.empty();
         }
-        return Optional.of(scorePolicy(policy, context));
+
+        // Check if template size is sufficient for mob's space requirements
+        MobRequirements mobReqs = context.mobRequirements();
+        if (mobReqs != null) {
+            int minRadius = mobReqs.space().minArenaRadius();
+            int templateRadius = template.size() / 2;
+            if (templateRadius < minRadius) {
+                if (loggingEnabled) {
+                    LOGGER.debug("Template '{}' too small for mob (need radius {}, have {})",
+                        template.id(), minRadius, templateRadius);
+                }
+                telemetry.emit("arena.policy.template_too_small", Map.of(
+                    "policyId", policy.id(),
+                    "templateId", template.id(),
+                    "requiredRadius", minRadius,
+                    "templateRadius", templateRadius,
+                    "mobType", context.mobType() != null ? context.mobType() : "unknown"
+                ));
+                return Optional.empty();
+            }
+        }
+
+        return Optional.of(scorePolicy(policy, template, context));
     }
 
     private ArenaPolicy clampPolicyWeight(ArenaPolicy policy) {
@@ -344,7 +389,7 @@ public class PolicyResolver implements AutoCloseable {
         ));
     }
 
-    private ScoredPolicy scorePolicy(ArenaPolicy policy, ResolveContext context) {
+    private ScoredPolicy scorePolicy(ArenaPolicy policy, ArenaTemplate template, ResolveContext context) {
         Map<String, Double> breakdown = new LinkedHashMap<>();
         double baseScore = 0.0;
 
@@ -401,6 +446,51 @@ public class PolicyResolver implements AutoCloseable {
         if (policy.priority() > 0) {
             breakdown.put("priorityScore", (double) policy.priority());
             baseScore += policy.priority();
+        }
+
+        // MobRequirements-based scoring
+        MobRequirements mobReqs = context.mobRequirements();
+        if (mobReqs != null) {
+            // SPACE_COMPATIBLE (+6) - bonus for template that fits mob's space requirements
+            int minRadius = mobReqs.space().minArenaRadius();
+            int templateRadius = template.size() / 2;
+            if (templateRadius >= minRadius) {
+                // Closer fit = higher score (avoid oversized arenas)
+                double fitRatio = (double) minRadius / templateRadius;
+                double spaceScore = WEIGHT_SPACE_COMPATIBLE * fitRatio;
+                breakdown.put("spaceScore", spaceScore);
+                baseScore += spaceScore;
+            }
+
+            // BIOME_MATCH (+4) - bonus for matching biome preference
+            var biomeReq = mobReqs.biome();
+            if (!biomeReq.isDefault() && template.biome() != null) {
+                String templateBiome = template.biome().id();
+                boolean biomeMatches = false;
+
+                // Check preferred biome
+                if (biomeReq.preferredBiome().isPresent()) {
+                    String preferred = biomeReq.preferredBiome().get().toString();
+                    if (preferred.equals(templateBiome)) {
+                        biomeMatches = true;
+                    }
+                }
+
+                // Check valid biomes list
+                if (!biomeMatches && !biomeReq.validBiomes().isEmpty()) {
+                    for (var validBiome : biomeReq.validBiomes()) {
+                        if (validBiome.toString().equals(templateBiome)) {
+                            biomeMatches = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (biomeMatches) {
+                    breakdown.put("biomeScore", (double) WEIGHT_BIOME_MATCH);
+                    baseScore += WEIGHT_BIOME_MATCH;
+                }
+            }
         }
 
         double total = baseScore;
@@ -591,6 +681,305 @@ public class PolicyResolver implements AutoCloseable {
         if (loggingEnabled) {
             LOGGER.info("PolicyResolver shutdown complete");
         }
+    }
+
+    // ===================
+    // Template Suggestions
+    // ===================
+
+    /**
+     * Calculates template suggestions for a mob based on MobRequirements.
+     * Used by the UI to show available arena templates with compatibility scores.
+     *
+     * @param mobReqs The mob requirements to score against
+     * @return List of template suggestions sorted by score descending
+     */
+    public List<TemplateSuggestion> getTemplateSuggestions(MobRequirements mobReqs) {
+        List<TemplateSuggestion> suggestions = new ArrayList<>();
+        String selectedTemplateId = null;
+        double highestScore = -1;
+
+        // DD-DYNAMIC: Add dynamic/custom template as first option (highest priority)
+        TemplateSuggestion dynamicSuggestion = createDynamicSuggestion(mobReqs);
+        suggestions.add(dynamicSuggestion);
+        highestScore = dynamicSuggestion.compatibilityScore();
+        selectedTemplateId = dynamicSuggestion.templateId();
+
+        for (ArenaTemplate template : templateRegistry.all()) {
+            int minRadius = mobReqs.space().minArenaRadius();
+            int templateRadius = template.size() / 2;
+
+            if (templateRadius < minRadius) {
+                // Template too small - add as incompatible
+                suggestions.add(TemplateSuggestion.incompatible(
+                    template.id(),
+                    template.id(),
+                    template.size(),
+                    template.biome() != null ? template.biome().id() : "unknown",
+                    "Too small (need " + minRadius + " radius)"
+                ));
+                continue;
+            }
+
+            // Calculate score using same logic as scorePolicy
+            Map<String, Double> breakdown = new LinkedHashMap<>();
+            double score = 0;
+
+            // Space score (closer fit = higher)
+            double fitRatio = (double) minRadius / templateRadius;
+            double spaceScore = WEIGHT_SPACE_COMPATIBLE * fitRatio;
+            breakdown.put("spaceScore", spaceScore);
+            score += spaceScore;
+
+            // Biome score
+            var biomeReq = mobReqs.biome();
+            if (!biomeReq.isDefault() && template.biome() != null) {
+                String templateBiome = template.biome().id();
+                boolean biomeMatches = false;
+
+                if (biomeReq.preferredBiome().isPresent()) {
+                    if (biomeReq.preferredBiome().get().toString().equals(templateBiome)) {
+                        biomeMatches = true;
+                    }
+                }
+                if (!biomeMatches) {
+                    for (var validBiome : biomeReq.validBiomes()) {
+                        if (validBiome.toString().equals(templateBiome)) {
+                            biomeMatches = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (biomeMatches) {
+                    breakdown.put("biomeScore", (double) WEIGHT_BIOME_MATCH);
+                    score += WEIGHT_BIOME_MATCH;
+                }
+            }
+
+            if (score > highestScore) {
+                highestScore = score;
+                selectedTemplateId = template.id();
+            }
+
+            suggestions.add(TemplateSuggestion.compatible(
+                template.id(),
+                template.id(),
+                template.size(),
+                template.biome() != null ? template.biome().id() : "unknown",
+                score,
+                breakdown,
+                false // Will be updated after sorting
+            ));
+        }
+
+        // Sort by score descending
+        suggestions.sort((a, b) -> Double.compare(b.compatibilityScore(), a.compatibilityScore()));
+
+        // Mark the top compatible one as selected
+        if (selectedTemplateId != null) {
+            String finalSelectedId = selectedTemplateId;
+            suggestions = suggestions.stream()
+                .map(s -> s.templateId().equals(finalSelectedId) && s.isCompatible()
+                    ? TemplateSuggestion.compatible(s.templateId(), s.templateName(), s.size(),
+                        s.biome(), s.compatibilityScore(), s.scoreBreakdown(), true)
+                    : s)
+                .toList();
+        }
+
+        return suggestions;
+    }
+
+    /**
+     * Gets the auto-selected template ID for a mob.
+     */
+    public String getAutoSelectedTemplateId(MobRequirements mobReqs) {
+        List<TemplateSuggestion> suggestions = getTemplateSuggestions(mobReqs);
+        return suggestions.stream()
+            .filter(s -> s.isSelected())
+            .map(TemplateSuggestion::templateId)
+            .findFirst()
+            .orElse(null);
+    }
+
+    // ===================
+    // Dynamic Template Generation
+    // ===================
+
+    /**
+     * Generates a dynamic ArenaTemplate tailored to the specific mob requirements.
+     * This creates a "custom_[mobId]" template optimized for the mob's needs.
+     *
+     * @param mobReqs The mob requirements to generate a template for
+     * @param server  The server for registry access (may be null for pattern-based fallback)
+     * @return A dynamically generated ArenaTemplate
+     */
+    public ArenaTemplate generateDynamicTemplate(MobRequirements mobReqs, @javax.annotation.Nullable net.minecraft.server.MinecraftServer server) {
+        String mobId = mobReqs.mobId().getPath();
+        String templateId = "custom_" + mobId.replace(":", "_");
+
+        // Calculate optimal size based on mob space requirements
+        int minRadius = mobReqs.space().minArenaRadius();
+        int size = Math.max(64, roundToNearest16(minRadius * 2 + 16)); // Add padding, round to 16
+
+        // Determine biome
+        String biomeId = mobReqs.biome().preferredBiome()
+            .map(r -> r.toString())
+            .orElse("minecraft:plains");
+
+        // Determine floor material dynamically using BiomeFloorMapper
+        // Priority: preferredBlock → biomeTag → registry lookup → pattern fallback
+        String floorMaterial = BiomeFloorMapper.resolveFloorMaterial(mobReqs, server);
+
+        // Calculate lighting based on light requirements
+        int skyLight = mobReqs.light().prefersLight() ? 15 : (mobReqs.light().prefersDark() ? 0 : 15);
+        int blockLight = mobReqs.light().optimalLight();
+
+        // Determine if boss arena needed
+        boolean isBoss = mobReqs.boss().isBoss();
+        ArenaTemplate.ArenaShape shape = isBoss ? ArenaTemplate.ArenaShape.CIRCULAR : ArenaTemplate.ArenaShape.RECTANGULAR;
+
+        // Wall height based on mob height + clearance
+        int wallHeight = (int) Math.ceil(mobReqs.space().height() + mobReqs.space().clearanceAbove()) + 3;
+        wallHeight = Math.max(11, Math.min(wallHeight, 20)); // Clamp between 11-20
+
+        if (loggingEnabled) {
+            LOGGER.info("[PolicyResolver] Generated dynamic template '{}' for mob '{}': size={}, biome={}, floor={}",
+                templateId, mobId, size, biomeId, floorMaterial);
+        }
+
+        return ArenaTemplate.builder(templateId)
+            .version(1)
+            .schemaVersion(1)
+            .breakingChange(false)
+            .deprecated(false)
+            .replacementVersion(null)
+            .minParentVersion(null)
+            .templateType(TemplateType.FlatTemplate.defaults())
+            .origin(new ArenaTemplate.Origin(ArenaTemplate.OriginMode.CENTER, 0, 64, 0))
+            .size(size)
+            .arenaShape(shape)
+            .floor(new ArenaTemplate.Floor(64, 1, floorMaterial, "solid", "minecraft:polished_andesite", 0))
+            .walls(new ArenaTemplate.Walls(true, "minecraft:barrier", wallHeight, 1, 64, "solid"))
+            .ceiling(new ArenaTemplate.Ceiling(true, "minecraft:barrier", 64 + wallHeight, 1))
+            .underfloor(new ArenaTemplate.Underfloor("minecraft:bedrock", 3, false))
+            .palette(new ArenaTemplate.Palette("minecraft:polished_andesite", "minecraft:glowstone", "minecraft:magma_block"))
+            .biome(new ArenaTemplate.Biome(biomeId, ArenaTemplate.Biome.ApplyTo.BOUNDS))
+            .lighting(new ArenaTemplate.Lighting(skyLight, blockLight, true, List.of()))
+            .spawnSlots(generateSpawnSlots(size, isBoss))
+            .playerSpawnOffset(new ArenaTemplate.Offset(0, 0, 0))
+            .mobSpawnStrategy(isBoss ? ArenaTemplate.MobSpawnStrategy.RING : ArenaTemplate.MobSpawnStrategy.DISTRIBUTED)
+            .forbiddenZones(List.of())
+            .hazards(List.of())
+            .environment(new ArenaTemplate.Environment(List.of(), null, new ArenaTemplate.Environment.Fog(false, 0.0f)))
+            .compat(new ArenaTemplate.Compat(1, isBoss ? 6 : 4))
+            .instanceSettings(new ArenaTemplate.InstanceSettings(
+                Math.max(5, (size / 16) + 2), // chunkRadius
+                4,
+                true
+            ))
+            .structureNbt(null)
+            .limits(new ArenaTemplate.Limits(
+                isBoss ? 10000 : 5000,
+                size * size * wallHeight,
+                isBoss ? 150 : 100
+            ))
+            .buildSettings(new ArenaTemplate.BuildSettings(
+                ArenaTemplate.BuildSettings.Priority.SYNC,
+                ArenaTemplate.BuildSettings.Order.FLOOR_FIRST
+            ))
+            .zoneSettings(null)
+            .tags(List.of("dynamic", "custom", mobId))
+            .build();
+    }
+
+    /**
+     * Generates appropriate spawn slots based on arena size and boss flag.
+     */
+    private List<ArenaTemplate.SpawnSlot> generateSpawnSlots(int size, boolean isBoss) {
+        List<ArenaTemplate.SpawnSlot> slots = new ArrayList<>();
+        int radius = size / 2;
+        int innerRadius = radius / 2;
+
+        // Player spawn at center
+        slots.add(new ArenaTemplate.SpawnSlot(
+            new int[]{0, 1, 0},
+            ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR,
+            List.of("center", "player"),
+            new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)
+        ));
+
+        // Cardinal directions - melee spawns
+        int meleeDistance = innerRadius;
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{meleeDistance, 1, 0}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("melee", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{-meleeDistance, 1, 0}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("melee", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{0, 1, meleeDistance}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("melee", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{0, 1, -meleeDistance}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("melee", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+
+        // Corner positions - ranged spawns
+        int cornerDistance = (int) (innerRadius * 0.7);
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{cornerDistance, 1, cornerDistance}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{-cornerDistance, 1, cornerDistance}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{cornerDistance, 1, -cornerDistance}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{-cornerDistance, 1, -cornerDistance}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+
+        // Outer ring - flank spawns
+        int outerDistance = radius - 5;
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{outerDistance, 1, 0}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("flank", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{-outerDistance, 1, 0}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("flank", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{0, 1, outerDistance}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("flank", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+        slots.add(new ArenaTemplate.SpawnSlot(new int[]{0, 1, -outerDistance}, ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("flank", "mob"), new ArenaTemplate.SpawnSlot.Validation(true, 2, 1)));
+
+        // Boss-specific spawn
+        if (isBoss) {
+            slots.add(new ArenaTemplate.SpawnSlot(
+                new int[]{0, 1, innerRadius},
+                ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR,
+                List.of("boss", "mob"),
+                new ArenaTemplate.SpawnSlot.Validation(true, 3, 2)
+            ));
+        }
+
+        return slots;
+    }
+
+    /**
+     * Round to nearest multiple of 16 for chunk alignment.
+     */
+    private int roundToNearest16(int value) {
+        return ((value + 8) / 16) * 16;
+    }
+
+    /**
+     * Creates a TemplateSuggestion for a dynamically generated template.
+     *
+     * @param mobReqs The mob requirements
+     * @param server  Optional server for registry-based biome lookup (may be null)
+     */
+    public TemplateSuggestion createDynamicSuggestion(MobRequirements mobReqs, @javax.annotation.Nullable net.minecraft.server.MinecraftServer server) {
+        ArenaTemplate dynamic = generateDynamicTemplate(mobReqs, server);
+
+        Map<String, Double> breakdown = new LinkedHashMap<>();
+        breakdown.put("dynamicMatch", 10.0); // Perfect match since it's generated for this mob
+        breakdown.put("customFit", 5.0);
+
+        return TemplateSuggestion.compatible(
+            dynamic.id(),
+            "Custom: " + mobReqs.mobId().getPath(),
+            dynamic.size(),
+            dynamic.biome() != null ? dynamic.biome().id() : "minecraft:plains",
+            15.0, // High score for dynamic templates
+            breakdown,
+            false // Will be marked selected if highest
+        );
+    }
+
+    /**
+     * Creates a TemplateSuggestion for a dynamically generated template.
+     * Convenience overload without server (uses pattern-based fallback).
+     */
+    public TemplateSuggestion createDynamicSuggestion(MobRequirements mobReqs) {
+        return createDynamicSuggestion(mobReqs, null);
     }
 
     // ===================

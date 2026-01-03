@@ -23,6 +23,7 @@ import net.minecraft.server.level.ServerPlayer;
 import com.devmod.mailbox.ticket.Ticket;
 import com.devmod.mailbox.ticket.TicketCategory;
 import com.devmod.mailbox.ticket.TicketManager;
+import com.devmod.shared.SharedColorTokens;
 
 /**
  * In-game command for submitting support tickets and player reports.
@@ -105,7 +106,7 @@ public final class ReportCommand {
 
         if (message.length() < 10) {
             player.sendSystemMessage(msg("Please provide a more detailed message (at least 10 characters).",
-                ChatFormatting.RED));
+                SharedColorTokens.Chat.RED));
             return 0;
         }
 
@@ -113,7 +114,7 @@ public final class ReportCommand {
         String subject = message.length() > 50 ? message.substring(0, 47) + "..." : message;
 
         player.sendSystemMessage(msg("Submitting your " + category.getDisplayName().toLowerCase(Locale.ROOT) + "...",
-            ChatFormatting.GRAY));
+            SharedColorTokens.Chat.GRAY));
 
         TicketManager.INSTANCE.createTicket(
             player.getUUID(),
@@ -122,14 +123,14 @@ public final class ReportCommand {
             subject,
             message
         ).thenAccept(ticket -> {
-            player.sendSystemMessage(msg("=================================", ChatFormatting.GREEN));
-            player.sendSystemMessage(msg("Ticket submitted successfully!", ChatFormatting.GREEN, ChatFormatting.BOLD));
-            player.sendSystemMessage(msg("Ticket ID: " + ticket.id().toString().substring(0, 8), ChatFormatting.GRAY));
-            player.sendSystemMessage(msg("Category: " + category.getDisplayName(), ChatFormatting.GRAY));
-            player.sendSystemMessage(msg("You will receive a mailbox notification when reviewed.", ChatFormatting.YELLOW));
-            player.sendSystemMessage(msg("=================================", ChatFormatting.GREEN));
+            player.sendSystemMessage(msg("=================================", SharedColorTokens.Chat.GREEN));
+            player.sendSystemMessage(msg("Ticket submitted successfully!", SharedColorTokens.Chat.GREEN, ChatFormatting.BOLD));
+            player.sendSystemMessage(msg("Ticket ID: " + ticket.id().toString().substring(0, 8), SharedColorTokens.Chat.GRAY));
+            player.sendSystemMessage(msg("Category: " + category.getDisplayName(), SharedColorTokens.Chat.GRAY));
+            player.sendSystemMessage(msg("You will receive a mailbox notification when reviewed.", SharedColorTokens.Chat.YELLOW));
+            player.sendSystemMessage(msg("=================================", SharedColorTokens.Chat.GREEN));
         }).exceptionally(e -> {
-            player.sendSystemMessage(msg("Failed to submit ticket. Please try again later.", ChatFormatting.RED));
+            player.sendSystemMessage(msg("Failed to submit ticket. Please try again later.", SharedColorTokens.Chat.RED));
             return null;
         });
 
@@ -146,16 +147,16 @@ public final class ReportCommand {
 
         // Can't report yourself
         if (reporter.getUUID().equals(target.getUUID())) {
-            reporter.sendSystemMessage(msg("You cannot report yourself.", ChatFormatting.RED));
+            reporter.sendSystemMessage(msg("You cannot report yourself.", SharedColorTokens.Chat.RED));
             return 0;
         }
 
         if (reason.length() < 5) {
-            reporter.sendSystemMessage(msg("Please provide a reason (at least 5 characters).", ChatFormatting.RED));
+            reporter.sendSystemMessage(msg("Please provide a reason (at least 5 characters).", SharedColorTokens.Chat.RED));
             return 0;
         }
 
-        reporter.sendSystemMessage(msg("Submitting player report...", ChatFormatting.GRAY));
+        reporter.sendSystemMessage(msg("Submitting player report...", SharedColorTokens.Chat.GRAY));
 
         TicketManager.INSTANCE.createPlayerReport(
             reporter.getUUID(),
@@ -165,14 +166,14 @@ public final class ReportCommand {
             reason,
             "Reported player: " + target.getName().getString() + "\nReason: " + reason
         ).thenAccept(ticket -> {
-            reporter.sendSystemMessage(msg("=================================", ChatFormatting.GOLD));
-            reporter.sendSystemMessage(msg("Player report submitted!", ChatFormatting.GOLD, ChatFormatting.BOLD));
-            reporter.sendSystemMessage(msg("Reported: " + target.getName().getString(), ChatFormatting.GRAY));
-            reporter.sendSystemMessage(msg("Report ID: " + ticket.id().toString().substring(0, 8), ChatFormatting.GRAY));
-            reporter.sendSystemMessage(msg("Staff will review this report shortly.", ChatFormatting.YELLOW));
-            reporter.sendSystemMessage(msg("=================================", ChatFormatting.GOLD));
+            reporter.sendSystemMessage(msg("=================================", SharedColorTokens.Chat.GOLD));
+            reporter.sendSystemMessage(msg("Player report submitted!", SharedColorTokens.Chat.GOLD, ChatFormatting.BOLD));
+            reporter.sendSystemMessage(msg("Reported: " + target.getName().getString(), SharedColorTokens.Chat.GRAY));
+            reporter.sendSystemMessage(msg("Report ID: " + ticket.id().toString().substring(0, 8), SharedColorTokens.Chat.GRAY));
+            reporter.sendSystemMessage(msg("Staff will review this report shortly.", SharedColorTokens.Chat.YELLOW));
+            reporter.sendSystemMessage(msg("=================================", SharedColorTokens.Chat.GOLD));
         }).exceptionally(e -> {
-            reporter.sendSystemMessage(msg("Failed to submit report. Please try again later.", ChatFormatting.RED));
+            reporter.sendSystemMessage(msg("Failed to submit report. Please try again later.", SharedColorTokens.Chat.RED));
             return null;
         });
 
@@ -183,12 +184,12 @@ public final class ReportCommand {
     private static int listOwnTickets(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
 
-        player.sendSystemMessage(msg("Loading your tickets...", ChatFormatting.GRAY));
+        player.sendSystemMessage(msg("Loading your tickets...", SharedColorTokens.Chat.GRAY));
 
         TicketManager.INSTANCE.getPlayerTickets(player.getUUID())
             .thenAccept(tickets -> sendTicketList(player, tickets))
             .exceptionally(e -> {
-                player.sendSystemMessage(msg("Failed to load tickets.", ChatFormatting.RED));
+                player.sendSystemMessage(msg("Failed to load tickets.", SharedColorTokens.Chat.RED));
                 return null;
             });
 
@@ -197,17 +198,17 @@ public final class ReportCommand {
 
     private static void sendTicketList(ServerPlayer player, List<Ticket> tickets) {
         if (tickets == null || tickets.isEmpty()) {
-            player.sendSystemMessage(msg("You have no submitted tickets.", ChatFormatting.YELLOW));
+            player.sendSystemMessage(msg("You have no submitted tickets.", SharedColorTokens.Chat.YELLOW));
             return;
         }
 
-        player.sendSystemMessage(msg("=== Your Tickets ===", ChatFormatting.GOLD, ChatFormatting.BOLD));
+        player.sendSystemMessage(msg("=== Your Tickets ===", SharedColorTokens.Chat.GOLD, ChatFormatting.BOLD));
 
         for (Ticket ticket : tickets) {
             player.sendSystemMessage(msg(formatTicketLine(ticket), statusColor(ticket)));
         }
 
-        player.sendSystemMessage(msg("Total: " + tickets.size() + " tickets", ChatFormatting.GRAY));
+        player.sendSystemMessage(msg("Total: " + tickets.size() + " tickets", SharedColorTokens.Chat.GRAY));
     }
 
     private static String formatTicketLine(Ticket ticket) {
@@ -220,10 +221,10 @@ public final class ReportCommand {
 
     private static ChatFormatting statusColor(Ticket ticket) {
         return switch (ticket.status()) {
-            case OPEN -> ChatFormatting.WHITE;
-            case ASSIGNED, IN_PROGRESS -> ChatFormatting.YELLOW;
-            case RESOLVED -> ChatFormatting.GREEN;
-            case CLOSED -> ChatFormatting.GRAY;
+            case OPEN -> SharedColorTokens.Chat.WHITE;
+            case ASSIGNED, IN_PROGRESS -> SharedColorTokens.Chat.YELLOW;
+            case RESOLVED -> SharedColorTokens.Chat.GREEN;
+            case CLOSED -> SharedColorTokens.Chat.GRAY;
         };
     }
 }

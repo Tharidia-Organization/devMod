@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
 import net.minecraft.network.chat.Component;
@@ -38,6 +37,7 @@ import com.devmod.client.endurance.QuestCompletionScreen;
 import com.devmod.client.endurance.QuestDeathScreen;
 import com.devmod.client.endurance.QuestExitConfirmScreen;
 import com.devmod.client.endurance.WaveCheckpointScreen;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.notification.ui.NotificationCenterScreen;
 import com.devmod.client.overlay.BossPhaseOverlay;
@@ -1085,7 +1085,7 @@ public final class DevModClientActions {
                     SettingsManager.INSTANCE.markDirty();
                     Component overlayName = I18n.translate("devmod.radial.item.light_levels");
                     Component warning = I18n.translate("devmod.render.overlay_perf_warning", overlayName)
-                        .withStyle(ChatFormatting.GOLD);
+                        .withStyle(SharedColorTokens.Chat.GOLD);
                     context.sendSuccess(warning, true);
                     return;
                 }
@@ -1484,7 +1484,7 @@ public final class DevModClientActions {
                     SettingsManager.INSTANCE.markDirty();
                     Component overlayName = I18n.translate("devmod.radial.item.spawnability");
                     Component warning = I18n.translate("devmod.render.overlay_perf_warning", overlayName)
-                        .withStyle(ChatFormatting.GOLD);
+                        .withStyle(SharedColorTokens.Chat.GOLD);
                     context.sendSuccess(warning, true);
                     return;
                 }

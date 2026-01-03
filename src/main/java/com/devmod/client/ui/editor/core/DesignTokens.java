@@ -1,6 +1,8 @@
 package com.devmod.client.ui.editor.core;
 
-import com.devmod.shared.SharedColorTokens;
+import javax.annotation.Nonnull;
+
+import net.minecraft.ChatFormatting;
 
 /**
  * Centralized Design Tokens following the UI Bible specification.
@@ -52,20 +54,45 @@ public final class DesignTokens {
     }
 
     // ===========================================================================
+    // BASE PALETTE (raw colors)
+    // ===========================================================================
+
+    public static final class Palette {
+        public static final int BACKGROUND = 0xFF0F131A;
+        public static final int SURFACE = 0xFF151B24;
+        public static final int SURFACE_ALT = 0xFF1B2432;
+        public static final int PANEL = 0xFF242F40;
+        public static final int PANEL_ELEVATED = 0xFF2D3A4E;
+        public static final int OUTLINE = 0xFF34455E;
+        public static final int SHADOW = 0xFF000000;
+        public static final int SCRIM = 0xFF080B0F;
+        public static final int TEXT_PRIMARY = 0xFFE7ECF4;
+        public static final int TEXT_SECONDARY = 0xFFB9C3D4;
+        public static final int ACCENT_TEAL = 0xFF39CDBE;
+        public static final int ACCENT_AMBER = 0xFFF2A74B;
+        public static final int ACCENT_BLUE = 0xFF4E9CFF;
+        public static final int SUCCESS = 0xFF45D483;
+        public static final int WARNING = 0xFFF2C14E;
+        public static final int ERROR = 0xFFE06B5B;
+
+        private Palette() {}
+    }
+
+    // ===========================================================================
     // COLOR TOKENS - BACKGROUNDS (5 levels)
     // ===========================================================================
 
     public static final class Bg {
         /* Darkest - scrim/overlay backdrop */
-        public static final int LEVEL_0 = 0xFF050508;
+        public static final int LEVEL_0 = Palette.SCRIM;
         /* Screen background */
-        public static final int LEVEL_1 = 0xFF0A0A0F;
+        public static final int LEVEL_1 = Palette.BACKGROUND;
         /* Panel background */
-        public static final int LEVEL_2 = 0xFF101018;
+        public static final int LEVEL_2 = Palette.SURFACE;
         /* Card/section background */
-        public static final int LEVEL_3 = 0xFF181820;
+        public static final int LEVEL_3 = Palette.SURFACE_ALT;
         /* Elevated element */
-        public static final int LEVEL_4 = 0xFF202028;
+        public static final int LEVEL_4 = Palette.PANEL;
 
         /* Get background by level (0-4) */
         public static int level(int level) {
@@ -88,15 +115,15 @@ public final class DesignTokens {
 
     public static final class Surface {
         /* Input fields, wells */
-        public static final int LEVEL_0 = 0xFF1A1A24;
+        public static final int LEVEL_0 = Palette.SURFACE;
         /* Default surface */
-        public static final int LEVEL_1 = 0xFF242430;
+        public static final int LEVEL_1 = Palette.SURFACE_ALT;
         /* Hover state */
-        public static final int LEVEL_2 = 0xFF2E2E3C;
+        public static final int LEVEL_2 = Palette.PANEL;
         /* Active/pressed */
-        public static final int LEVEL_3 = 0xFF383848;
+        public static final int LEVEL_3 = Palette.PANEL_ELEVATED;
         /* Highlighted */
-        public static final int LEVEL_4 = 0xFF424254;
+        public static final int LEVEL_4 = Palette.OUTLINE;
 
         /* Get surface by level (0-4) */
         public static int level(int level) {
@@ -119,11 +146,11 @@ public final class DesignTokens {
 
     public static final class Stroke {
         /* Subtle borders, dividers */
-        public static final int MUTED = 0xFF2A2A38;
+        public static final int MUTED = Palette.PANEL;
         /* Default borders */
-        public static final int DEFAULT = 0xFF3A3A4C;
+        public static final int DEFAULT = Palette.OUTLINE;
         /* Emphasized borders */
-        public static final int EMPHASIS = 0xFF4A4A60;
+        public static final int EMPHASIS = Palette.ACCENT_BLUE;
 
         private Stroke() {}
     }
@@ -134,13 +161,13 @@ public final class DesignTokens {
 
     public static final class Text {
         /* Main text, titles */
-        public static final int PRIMARY = 0xFFE8E8EC;
+        public static final int PRIMARY = Palette.TEXT_PRIMARY;
         /* Labels, captions */
-        public static final int SECONDARY = 0xFFA8A8B4;
+        public static final int SECONDARY = Palette.TEXT_SECONDARY;
         /* Hints, disabled */
-        public static final int MUTED = 0xFF686878;
+        public static final int MUTED = Palette.TEXT_SECONDARY;
         /* Text on light backgrounds */
-        public static final int INVERSE = 0xFF101018;
+        public static final int INVERSE = Palette.BACKGROUND;
         /* Title text */
         public static final int TITLE = PRIMARY;
         /* Value text */
@@ -154,7 +181,7 @@ public final class DesignTokens {
         /* Warning text */
         public static final int WARNING = Semantic.WARNING;
         /* Pure white text */
-        public static final int WHITE = 0xFFFFFFFF;
+        public static final int WHITE = PRIMARY;
         /* Accent text */
         public static final int ACCENT = DesignTokens.Accent.PRIMARY;
 
@@ -175,16 +202,41 @@ public final class DesignTokens {
     }
 
     // ===========================================================================
+    // CHAT FORMATTING COLORS
+    // ===========================================================================
+
+    public static final class Chat {
+        public static final @Nonnull ChatFormatting BLACK = ChatFormatting.BLACK;
+        public static final @Nonnull ChatFormatting DARK_BLUE = ChatFormatting.DARK_BLUE;
+        public static final @Nonnull ChatFormatting DARK_GREEN = ChatFormatting.DARK_GREEN;
+        public static final @Nonnull ChatFormatting DARK_AQUA = ChatFormatting.DARK_AQUA;
+        public static final @Nonnull ChatFormatting DARK_RED = ChatFormatting.DARK_RED;
+        public static final @Nonnull ChatFormatting DARK_PURPLE = ChatFormatting.DARK_PURPLE;
+        public static final @Nonnull ChatFormatting GOLD = ChatFormatting.GOLD;
+        public static final @Nonnull ChatFormatting GRAY = ChatFormatting.GRAY;
+        public static final @Nonnull ChatFormatting DARK_GRAY = ChatFormatting.DARK_GRAY;
+        public static final @Nonnull ChatFormatting BLUE = ChatFormatting.BLUE;
+        public static final @Nonnull ChatFormatting GREEN = ChatFormatting.GREEN;
+        public static final @Nonnull ChatFormatting AQUA = ChatFormatting.AQUA;
+        public static final @Nonnull ChatFormatting RED = ChatFormatting.RED;
+        public static final @Nonnull ChatFormatting LIGHT_PURPLE = ChatFormatting.LIGHT_PURPLE;
+        public static final @Nonnull ChatFormatting YELLOW = ChatFormatting.YELLOW;
+        public static final @Nonnull ChatFormatting WHITE = ChatFormatting.WHITE;
+
+        private Chat() {}
+    }
+
+    // ===========================================================================
     // COLOR TOKENS - ACCENTS
     // ===========================================================================
 
     public static final class Accent {
         /* Primary accent (cyan) */
-        public static final int PRIMARY = 0xFF00D4FF;
-        /* Secondary accent (magenta) */
-        public static final int SECONDARY = 0xFFFF00AA;
+        public static final int PRIMARY = Palette.ACCENT_TEAL;
+        /* Secondary accent (amber) */
+        public static final int SECONDARY = Palette.ACCENT_AMBER;
         /* Glow effect (25% alpha) */
-        public static final int GLOW = 0x4000D4FF;
+        public static final int GLOW = withAlpha(PRIMARY, 0x40);
         /* Primary accent alias */
         public static final int CYAN = PRIMARY;
         /* Success accent */
@@ -196,11 +248,11 @@ public final class DesignTokens {
         /* Info accent */
         public static final int BLUE = Semantic.INFO;
         /* Special/rare accent */
-        public static final int PURPLE = SECONDARY;
+        public static final int PURPLE = BLUE;
         /* Highlight accent */
         public static final int YELLOW = Semantic.WARNING;
         /* Gold accent */
-        public static final int GOLD = 0xFFFFD700;
+        public static final int GOLD = SECONDARY;
 
         public static final int POSITIVE = GREEN;
         public static final int WARNING = ORANGE;
@@ -228,24 +280,24 @@ public final class DesignTokens {
 
     public static final class Semantic {
         /* Success states */
-        public static final int SUCCESS = 0xFF4ADE80;
+        public static final int SUCCESS = Palette.SUCCESS;
         /* Success background (muted) */
-        public static final int SUCCESS_MUTED = 0x404ADE80;
+        public static final int SUCCESS_MUTED = withAlpha(SUCCESS, 0x40);
 
         /* Warning states */
-        public static final int WARNING = 0xFFFACC15;
+        public static final int WARNING = Palette.WARNING;
         /* Warning background (muted) */
-        public static final int WARNING_MUTED = 0x40FACC15;
+        public static final int WARNING_MUTED = withAlpha(WARNING, 0x40);
 
         /* Error states */
-        public static final int ERROR = 0xFFF87171;
+        public static final int ERROR = Palette.ERROR;
         /* Error background (muted) */
-        public static final int ERROR_MUTED = 0x40F87171;
+        public static final int ERROR_MUTED = withAlpha(ERROR, 0x40);
 
         /* Info states */
-        public static final int INFO = 0xFF60A5FA;
+        public static final int INFO = Palette.ACCENT_BLUE;
         /* Info background (muted) */
-        public static final int INFO_MUTED = 0x4060A5FA;
+        public static final int INFO_MUTED = withAlpha(INFO, 0x40);
 
         private Semantic() {}
     }
@@ -256,137 +308,137 @@ public final class DesignTokens {
 
     public static final class EditorTheme {
         public static final class Shared {
-            public static final int DARKER_BACKGROUND = 0xFF0D0D0D;
-            public static final int TEXT_VALUE = 0xFFB0E0E6;
-            public static final int TEXT_FORMULA = 0xFF98D4A4;
-            public static final int ACCENT_PRIMARY = DesignTokens.Accent.PRIMARY;
-            public static final int ACCENT_SUCCESS = 0xFF4CAF50;
-            public static final int ACCENT_WARNING = 0xFFFF9800;
-            public static final int ACCENT_ERROR = 0xFFE53935;
-            public static final int ACCENT_INFO = 0xFF2196F3;
+            public static final int DARKER_BACKGROUND = Bg.LEVEL_0;
+            public static final int TEXT_VALUE = Accent.PRIMARY;
+            public static final int TEXT_FORMULA = Semantic.SUCCESS;
+            public static final int ACCENT_PRIMARY = Accent.PRIMARY;
+            public static final int ACCENT_SUCCESS = Semantic.SUCCESS;
+            public static final int ACCENT_WARNING = Semantic.WARNING;
+            public static final int ACCENT_ERROR = Semantic.ERROR;
+            public static final int ACCENT_INFO = Semantic.INFO;
 
             private Shared() {}
         }
 
         public static final class Dark {
-            public static final int PANEL_BG = 0xE0181818;
-            public static final int PANEL_BG_SOLID = 0xFF181818;
-            public static final int INPUT_BG = 0xFF252525;
-            public static final int HOVER_BG = 0xFF353535;
-            public static final int ACTIVE_BG = 0xFF454545;
-            public static final int HEADER_BG = 0xFF1A1A1A;
-            public static final int CONTENT_BG = 0xFF202020;
-            public static final int TAB_INACTIVE_BG = 0xFF282828;
-            public static final int TAB_ACTIVE_BG = 0xFF383838;
-            public static final int OVERLAY_BG = 0x80000000;
+            public static final int PANEL_BG = withAlpha(Bg.LEVEL_4, 0xE0);
+            public static final int PANEL_BG_SOLID = Bg.LEVEL_4;
+            public static final int INPUT_BG = Surface.LEVEL_0;
+            public static final int HOVER_BG = Surface.LEVEL_1;
+            public static final int ACTIVE_BG = Surface.LEVEL_2;
+            public static final int HEADER_BG = Bg.LEVEL_4;
+            public static final int CONTENT_BG = Surface.LEVEL_1;
+            public static final int TAB_INACTIVE_BG = Surface.LEVEL_1;
+            public static final int TAB_ACTIVE_BG = Surface.LEVEL_2;
+            public static final int OVERLAY_BG = withAlpha(Palette.SHADOW, 0x80);
 
-            public static final int BORDER_DEFAULT = 0xFF3A3A3A;
-            public static final int BORDER_MUTED = 0xFF2A2A2A;
-            public static final int BORDER_ACCENT = 0xFF00D4FF;
-            public static final int BORDER_SEPARATOR = 0xFF333333;
-            public static final int BORDER_HOVER = 0xFF5A5A5A;
+            public static final int BORDER_DEFAULT = Stroke.DEFAULT;
+            public static final int BORDER_MUTED = Stroke.MUTED;
+            public static final int BORDER_ACCENT = Accent.PRIMARY;
+            public static final int BORDER_SEPARATOR = Stroke.DEFAULT;
+            public static final int BORDER_HOVER = Semantic.INFO;
 
-            public static final int TEXT_PRIMARY = 0xFFE0E0E0;
-            public static final int TEXT_SECONDARY = 0xFFAAAAAA;
-            public static final int TEXT_MUTED = 0xFF666666;
-            public static final int TEXT_TITLE = 0xFFFFFFFF;
-            public static final int TEXT_DISABLED = 0xFF555555;
+            public static final int TEXT_PRIMARY = Text.PRIMARY;
+            public static final int TEXT_SECONDARY = Text.SECONDARY;
+            public static final int TEXT_MUTED = Text.MUTED;
+            public static final int TEXT_TITLE = Text.PRIMARY;
+            public static final int TEXT_DISABLED = Text.MUTED;
 
-            public static final int BUTTON_NORMAL = 0xFF2A2A2A;
-            public static final int BUTTON_HOVER = 0xFF3A3A3A;
-            public static final int BUTTON_PRESSED = 0xFF1A1A1A;
-            public static final int BUTTON_DISABLED = 0xFF1A1A1A;
+            public static final int BUTTON_NORMAL = Surface.LEVEL_1;
+            public static final int BUTTON_HOVER = Surface.LEVEL_2;
+            public static final int BUTTON_PRESSED = Surface.LEVEL_0;
+            public static final int BUTTON_DISABLED = Surface.LEVEL_0;
 
-            public static final int SLIDER_TRACK = 0xFF2A2A2A;
-            public static final int SLIDER_THUMB = 0xFF5A5A5A;
-            public static final int SLIDER_THUMB_HOVER = 0xFF7A7A7A;
+            public static final int SLIDER_TRACK = Surface.LEVEL_1;
+            public static final int SLIDER_THUMB = Stroke.DEFAULT;
+            public static final int SLIDER_THUMB_HOVER = Semantic.INFO;
 
             private Dark() {}
         }
 
         public static final class Light {
-            public static final int PANEL_BG = 0xE0F5F5F5;
-            public static final int PANEL_BG_SOLID = 0xFFF5F5F5;
-            public static final int INPUT_BG = 0xFFFFFFFF;
-            public static final int HOVER_BG = 0xFFE8E8E8;
-            public static final int ACTIVE_BG = 0xFFDDDDDD;
-            public static final int HEADER_BG = 0xFFEEEEEE;
-            public static final int CONTENT_BG = 0xFFF0F0F0;
-            public static final int TAB_INACTIVE_BG = 0xFFE0E0E0;
-            public static final int TAB_ACTIVE_BG = 0xFFD0D0D0;
-            public static final int OVERLAY_BG = 0x60000000;
+            public static final int PANEL_BG = Dark.PANEL_BG;
+            public static final int PANEL_BG_SOLID = Dark.PANEL_BG_SOLID;
+            public static final int INPUT_BG = Dark.INPUT_BG;
+            public static final int HOVER_BG = Dark.HOVER_BG;
+            public static final int ACTIVE_BG = Dark.ACTIVE_BG;
+            public static final int HEADER_BG = Dark.HEADER_BG;
+            public static final int CONTENT_BG = Dark.CONTENT_BG;
+            public static final int TAB_INACTIVE_BG = Dark.TAB_INACTIVE_BG;
+            public static final int TAB_ACTIVE_BG = Dark.TAB_ACTIVE_BG;
+            public static final int OVERLAY_BG = Dark.OVERLAY_BG;
 
-            public static final int BORDER_DEFAULT = 0xFFCCCCCC;
-            public static final int BORDER_MUTED = 0xFFDDDDDD;
-            public static final int BORDER_ACCENT = 0xFF0099CC;
-            public static final int BORDER_SEPARATOR = 0xFFD5D5D5;
-            public static final int BORDER_HOVER = 0xFFAAAAAA;
+            public static final int BORDER_DEFAULT = Dark.BORDER_DEFAULT;
+            public static final int BORDER_MUTED = Dark.BORDER_MUTED;
+            public static final int BORDER_ACCENT = Dark.BORDER_ACCENT;
+            public static final int BORDER_SEPARATOR = Dark.BORDER_SEPARATOR;
+            public static final int BORDER_HOVER = Dark.BORDER_HOVER;
 
-            public static final int TEXT_PRIMARY = 0xFF2A2A2A;
-            public static final int TEXT_SECONDARY = 0xFF555555;
-            public static final int TEXT_MUTED = 0xFF888888;
-            public static final int TEXT_TITLE = 0xFF000000;
-            public static final int TEXT_DISABLED = 0xFFAAAAAA;
+            public static final int TEXT_PRIMARY = Dark.TEXT_PRIMARY;
+            public static final int TEXT_SECONDARY = Dark.TEXT_SECONDARY;
+            public static final int TEXT_MUTED = Dark.TEXT_MUTED;
+            public static final int TEXT_TITLE = Dark.TEXT_TITLE;
+            public static final int TEXT_DISABLED = Dark.TEXT_DISABLED;
 
-            public static final int ACCENT_PRIMARY = 0xFF0099CC;
-            public static final int ACCENT_SUCCESS = 0xFF388E3C;
-            public static final int ACCENT_WARNING = 0xFFE65100;
-            public static final int ACCENT_ERROR = 0xFFC62828;
-            public static final int ACCENT_INFO = 0xFF1565C0;
+            public static final int ACCENT_PRIMARY = Shared.ACCENT_PRIMARY;
+            public static final int ACCENT_SUCCESS = Shared.ACCENT_SUCCESS;
+            public static final int ACCENT_WARNING = Shared.ACCENT_WARNING;
+            public static final int ACCENT_ERROR = Shared.ACCENT_ERROR;
+            public static final int ACCENT_INFO = Shared.ACCENT_INFO;
 
-            public static final int BUTTON_NORMAL = 0xFFE0E0E0;
-            public static final int BUTTON_HOVER = 0xFFD0D0D0;
-            public static final int BUTTON_PRESSED = 0xFFC0C0C0;
-            public static final int BUTTON_DISABLED = 0xFFEEEEEE;
+            public static final int BUTTON_NORMAL = Dark.BUTTON_NORMAL;
+            public static final int BUTTON_HOVER = Dark.BUTTON_HOVER;
+            public static final int BUTTON_PRESSED = Dark.BUTTON_PRESSED;
+            public static final int BUTTON_DISABLED = Dark.BUTTON_DISABLED;
 
-            public static final int SLIDER_TRACK = 0xFFD0D0D0;
-            public static final int SLIDER_THUMB = 0xFF888888;
-            public static final int SLIDER_THUMB_HOVER = 0xFF666666;
+            public static final int SLIDER_TRACK = Dark.SLIDER_TRACK;
+            public static final int SLIDER_THUMB = Dark.SLIDER_THUMB;
+            public static final int SLIDER_THUMB_HOVER = Dark.SLIDER_THUMB_HOVER;
 
             private Light() {}
         }
 
         public static final class HighContrast {
-            public static final int PANEL_BG = 0xFF000000;
-            public static final int PANEL_BG_SOLID = 0xFF000000;
-            public static final int INPUT_BG = 0xFF000000;
-            public static final int HOVER_BG = 0xFF1A1A1A;
-            public static final int ACTIVE_BG = 0xFF333333;
-            public static final int HEADER_BG = 0xFF000000;
-            public static final int CONTENT_BG = 0xFF000000;
-            public static final int TAB_INACTIVE_BG = 0xFF000000;
-            public static final int TAB_ACTIVE_BG = 0xFF1A1A1A;
-            public static final int OVERLAY_BG = 0xE0000000;
-            public static final int DARKER_BACKGROUND = 0xFF000000;
+            public static final int PANEL_BG = Dark.PANEL_BG;
+            public static final int PANEL_BG_SOLID = Dark.PANEL_BG_SOLID;
+            public static final int INPUT_BG = Dark.INPUT_BG;
+            public static final int HOVER_BG = Dark.HOVER_BG;
+            public static final int ACTIVE_BG = Dark.ACTIVE_BG;
+            public static final int HEADER_BG = Dark.HEADER_BG;
+            public static final int CONTENT_BG = Dark.CONTENT_BG;
+            public static final int TAB_INACTIVE_BG = Dark.TAB_INACTIVE_BG;
+            public static final int TAB_ACTIVE_BG = Dark.TAB_ACTIVE_BG;
+            public static final int OVERLAY_BG = Dark.OVERLAY_BG;
+            public static final int DARKER_BACKGROUND = Shared.DARKER_BACKGROUND;
 
-            public static final int BORDER_DEFAULT = 0xFFFFFFFF;
-            public static final int BORDER_MUTED = 0xFFAAAAAA;
-            public static final int BORDER_ACCENT = 0xFFFFFF00;
-            public static final int BORDER_SEPARATOR = 0xFFFFFFFF;
-            public static final int BORDER_HOVER = 0xFFFFFF00;
+            public static final int BORDER_DEFAULT = Dark.BORDER_DEFAULT;
+            public static final int BORDER_MUTED = Dark.BORDER_MUTED;
+            public static final int BORDER_ACCENT = Dark.BORDER_ACCENT;
+            public static final int BORDER_SEPARATOR = Dark.BORDER_SEPARATOR;
+            public static final int BORDER_HOVER = Dark.BORDER_HOVER;
 
-            public static final int TEXT_PRIMARY = 0xFFFFFFFF;
-            public static final int TEXT_SECONDARY = 0xFFFFFFFF;
-            public static final int TEXT_MUTED = 0xFFCCCCCC;
-            public static final int TEXT_TITLE = 0xFFFFFFFF;
-            public static final int TEXT_DISABLED = 0xFF888888;
-            public static final int TEXT_VALUE = 0xFF00FFFF;
-            public static final int TEXT_FORMULA = 0xFF00FF00;
+            public static final int TEXT_PRIMARY = Dark.TEXT_PRIMARY;
+            public static final int TEXT_SECONDARY = Dark.TEXT_SECONDARY;
+            public static final int TEXT_MUTED = Dark.TEXT_MUTED;
+            public static final int TEXT_TITLE = Dark.TEXT_TITLE;
+            public static final int TEXT_DISABLED = Dark.TEXT_DISABLED;
+            public static final int TEXT_VALUE = Shared.TEXT_VALUE;
+            public static final int TEXT_FORMULA = Shared.TEXT_FORMULA;
 
-            public static final int ACCENT_PRIMARY = 0xFF00FFFF;
-            public static final int ACCENT_SUCCESS = 0xFF00FF00;
-            public static final int ACCENT_WARNING = 0xFFFFFF00;
-            public static final int ACCENT_ERROR = 0xFFFF0000;
-            public static final int ACCENT_INFO = 0xFF00AAFF;
+            public static final int ACCENT_PRIMARY = Shared.ACCENT_PRIMARY;
+            public static final int ACCENT_SUCCESS = Shared.ACCENT_SUCCESS;
+            public static final int ACCENT_WARNING = Shared.ACCENT_WARNING;
+            public static final int ACCENT_ERROR = Shared.ACCENT_ERROR;
+            public static final int ACCENT_INFO = Shared.ACCENT_INFO;
 
-            public static final int BUTTON_NORMAL = 0xFF000000;
-            public static final int BUTTON_HOVER = 0xFF222222;
-            public static final int BUTTON_PRESSED = 0xFF444444;
-            public static final int BUTTON_DISABLED = 0xFF111111;
+            public static final int BUTTON_NORMAL = Dark.BUTTON_NORMAL;
+            public static final int BUTTON_HOVER = Dark.BUTTON_HOVER;
+            public static final int BUTTON_PRESSED = Dark.BUTTON_PRESSED;
+            public static final int BUTTON_DISABLED = Dark.BUTTON_DISABLED;
 
-            public static final int SLIDER_TRACK = 0xFF333333;
-            public static final int SLIDER_THUMB = 0xFFFFFFFF;
-            public static final int SLIDER_THUMB_HOVER = 0xFFFFFF00;
+            public static final int SLIDER_TRACK = Dark.SLIDER_TRACK;
+            public static final int SLIDER_THUMB = Dark.SLIDER_THUMB;
+            public static final int SLIDER_THUMB_HOVER = Dark.SLIDER_THUMB_HOVER;
 
             private HighContrast() {}
         }
@@ -402,15 +454,15 @@ public final class DesignTokens {
      * Purple color palette (P100-P900).
      */
     public static final class Purple {
-        public static final int P100 = 0xFFE9D5FF;
-        public static final int P200 = 0xFFD8B4FE;
-        public static final int P300 = 0xFFC084FC;
-        public static final int P400 = 0xFFA855F7;
-        public static final int P500 = 0xFF9333EA;
-        public static final int P600 = 0xFF7E22CE;
-        public static final int P700 = 0xFF6B21A8;
-        public static final int P800 = 0xFF581C87;
-        public static final int P900 = 0xFF3B0764;
+        public static final int P100 = Accent.BLUE;
+        public static final int P200 = Accent.BLUE;
+        public static final int P300 = Accent.BLUE;
+        public static final int P400 = Accent.BLUE;
+        public static final int P500 = Accent.BLUE;
+        public static final int P600 = Accent.BLUE;
+        public static final int P700 = Accent.BLUE;
+        public static final int P800 = Accent.BLUE;
+        public static final int P900 = Accent.BLUE;
 
         private Purple() {}
     }
@@ -419,15 +471,15 @@ public final class DesignTokens {
      * Orange color palette (O100-O900).
      */
     public static final class Orange {
-        public static final int O100 = 0xFFFFEDD5;
-        public static final int O200 = 0xFFFED7AA;
-        public static final int O300 = 0xFFFDBA74;
-        public static final int O400 = 0xFFFB923C;
-        public static final int O500 = 0xFFF97316;
-        public static final int O600 = 0xFFEA580C;
-        public static final int O700 = 0xFFC2410C;
-        public static final int O800 = 0xFF9A3412;
-        public static final int O900 = 0xFF7C2D12;
+        public static final int O100 = Accent.SECONDARY;
+        public static final int O200 = Accent.SECONDARY;
+        public static final int O300 = Accent.SECONDARY;
+        public static final int O400 = Accent.SECONDARY;
+        public static final int O500 = Accent.SECONDARY;
+        public static final int O600 = Accent.SECONDARY;
+        public static final int O700 = Accent.SECONDARY;
+        public static final int O800 = Accent.SECONDARY;
+        public static final int O900 = Accent.SECONDARY;
 
         private Orange() {}
     }
@@ -436,24 +488,24 @@ public final class DesignTokens {
      * Neutral grayscale palette for UI surfaces and text.
      */
     public static final class Neutral {
-        public static final int N950 = 0xFF101010;
-        public static final int N920 = 0xFF111111;
-        public static final int N900 = 0xFF161616;
-        public static final int N880 = 0xFF1A1A1A;
-        public static final int N860 = 0xFF1E1E1E;
-        public static final int N840 = 0xFF222222;
-        public static final int N820 = 0xFF2A2A2A;
-        public static final int N800 = 0xFF2E2E2E;
-        public static final int N780 = 0xFF333333;
-        public static final int N760 = 0xFF3A3A3A;
-        public static final int N740 = 0xFF444444;
-        public static final int N700 = 0xFF555555;
-        public static final int N650 = 0xFF666666;
-        public static final int N600 = 0xFF777777;
-        public static final int N550 = 0xFF888888;
-        public static final int N500 = 0xFFAAAAAA;
-        public static final int N450 = 0xFFCCCCCC;
-        public static final int N400 = 0xFFEFEFEF;
+        public static final int N950 = Bg.LEVEL_0;
+        public static final int N920 = Bg.LEVEL_1;
+        public static final int N900 = Surface.LEVEL_0;
+        public static final int N880 = Surface.LEVEL_1;
+        public static final int N860 = Surface.LEVEL_2;
+        public static final int N840 = Surface.LEVEL_3;
+        public static final int N820 = Surface.LEVEL_4;
+        public static final int N800 = Stroke.MUTED;
+        public static final int N780 = Text.SECONDARY;
+        public static final int N760 = Text.SECONDARY;
+        public static final int N740 = Text.SECONDARY;
+        public static final int N700 = Text.SECONDARY;
+        public static final int N650 = Text.SECONDARY;
+        public static final int N600 = Text.SECONDARY;
+        public static final int N550 = Text.SECONDARY;
+        public static final int N500 = Text.SECONDARY;
+        public static final int N450 = Text.PRIMARY;
+        public static final int N400 = Text.PRIMARY;
 
         private Neutral() {}
     }
@@ -461,7 +513,13 @@ public final class DesignTokens {
     /*
      * Basic RGB primaries for utility palettes.
      */
-    public static final class Basic extends SharedColorTokens.Basic {
+    public static final class Basic {
+        public static final int RED = Palette.ERROR;
+        public static final int YELLOW = Palette.WARNING;
+        public static final int GREEN = Palette.SUCCESS;
+        public static final int CYAN = Palette.ACCENT_TEAL;
+        public static final int BLUE = Palette.ACCENT_BLUE;
+
         private Basic() {}
     }
 
@@ -524,11 +582,11 @@ public final class DesignTokens {
      */
     public static final class Tooltip {
         /* Tooltip background (high opacity) */
-        public static final int BG = 0xF0181820;
+        public static final int BG = withAlpha(Surface.LEVEL_0, 0xF0);
         /* Tooltip border */
         public static final int BORDER = Stroke.DEFAULT;
         /* Tooltip shadow */
-        public static final int SHADOW = 0x80000000;
+        public static final int SHADOW = withAlpha(Palette.SHADOW, 0x80);
 
         private Tooltip() {}
     }
@@ -539,19 +597,19 @@ public final class DesignTokens {
 
     public static final class Radial {
         /* Center hub background */
-        public static final int HUB_BG = 0xFF181820;
+        public static final int HUB_BG = Bg.LEVEL_2;
         /* Center hub border */
-        public static final int HUB_BORDER = 0xFF3A3A4C;
+        public static final int HUB_BORDER = Stroke.DEFAULT;
         /* Segment default background (80% opacity) */
-        public static final int SEGMENT_BG = 0xCC181820;
+        public static final int SEGMENT_BG = withAlpha(Bg.LEVEL_2, 0xCC);
         /* Segment hover background */
-        public static final int SEGMENT_HOVER = 0xCC202028;
+        public static final int SEGMENT_HOVER = withAlpha(Bg.LEVEL_3, 0xCC);
         /* Segment selected background */
-        public static final int SEGMENT_SELECTED = 0xCC2A2A38;
+        public static final int SEGMENT_SELECTED = withAlpha(Bg.LEVEL_4, 0xCC);
         /* Segment border */
-        public static final int SEGMENT_BORDER = 0xFF3A3A4C;
+        public static final int SEGMENT_BORDER = Stroke.DEFAULT;
         /* Segment divider */
-        public static final int SEGMENT_DIVIDER = 0xFF2A2A38;
+        public static final int SEGMENT_DIVIDER = Stroke.MUTED;
         /* Icon default */
         public static final int ICON_DEFAULT = DesignTokens.Text.SECONDARY;
         /* Icon hover */
@@ -564,163 +622,163 @@ public final class DesignTokens {
         // -------------------------------------------------------------------
         // MACRO CATEGORY COLORS (6 primary)
         // -------------------------------------------------------------------
-        /* Category: Analyze (cyan/blue) */
-        public static final int CAT_ANALYZE = 0xFF4488FF;
-        /* Category: Telemetry (purple) */
-        public static final int CAT_TELEMETRY = 0xFFAA55FF;
-        /* Category: Combat (red) */
-        public static final int CAT_COMBAT = 0xFFFF4444;
-        /* Category: Arena (green) */
-        public static final int CAT_ARENA = 0xFF44FF88;
-        /* Category: Tools (orange) */
-        public static final int CAT_TOOLS = 0xFFFFAA00;
-        /* Category: Play (light pink) */
-        public static final int CAT_PLAY = 0xFFFFCCCC;
+        /* Category: Analyze (blue) */
+        public static final int CAT_ANALYZE = Semantic.INFO;
+        /* Category: Telemetry (teal) */
+        public static final int CAT_TELEMETRY = Accent.PRIMARY;
+        /* Category: Combat (error) */
+        public static final int CAT_COMBAT = Semantic.ERROR;
+        /* Category: Arena (success) */
+        public static final int CAT_ARENA = Semantic.SUCCESS;
+        /* Category: Tools (warning) */
+        public static final int CAT_TOOLS = Semantic.WARNING;
+        /* Category: Play (amber) */
+        public static final int CAT_PLAY = Accent.SECONDARY;
 
         /* Macro: Analyze (blue) */
-        public static final int MACRO_ANALYZE = 0xFF4488FF;
-        /* Macro: Telemetry (cyan) */
-        public static final int MACRO_TELEMETRY = 0xFF66CCFF;
-        /* Macro: Combat (red) */
-        public static final int MACRO_COMBAT = 0xFFFF4444;
-        /* Macro: Arena (emerald) */
-        public static final int MACRO_ARENA = 0xFF55DD88;
-        /* Macro: Play (green) */
-        public static final int MACRO_PLAY = 0xFF44FF88;
-        /* Macro: Tools (orange) */
-        public static final int MACRO_TOOLS = 0xFFFFAA00;
+        public static final int MACRO_ANALYZE = CAT_ANALYZE;
+        /* Macro: Telemetry (teal) */
+        public static final int MACRO_TELEMETRY = CAT_TELEMETRY;
+        /* Macro: Combat (error) */
+        public static final int MACRO_COMBAT = CAT_COMBAT;
+        /* Macro: Arena (success) */
+        public static final int MACRO_ARENA = CAT_ARENA;
+        /* Macro: Play (amber) */
+        public static final int MACRO_PLAY = CAT_PLAY;
+        /* Macro: Tools (warning) */
+        public static final int MACRO_TOOLS = CAT_TOOLS;
 
         // -------------------------------------------------------------------
         // ANALYZE SUBCATEGORY COLORS (blue gradient light->dark)
         // -------------------------------------------------------------------
         /* Analyze: Debug tools */
-        public static final int ANALYZE_DEBUG = 0xFF4488FF;
+        public static final int ANALYZE_DEBUG = CAT_ANALYZE;
         /* Analyze: HUD overlays */
-        public static final int ANALYZE_HUD = 0xFF4488FF;
+        public static final int ANALYZE_HUD = CAT_ANALYZE;
         /* Analyze: Spatial/render debug */
-        public static final int ANALYZE_SPATIAL = 0xFF66AAFF;
+        public static final int ANALYZE_SPATIAL = CAT_ANALYZE;
         /* Analyze: Collision debug */
-        public static final int ANALYZE_COLLISION = 0xFF66AAFF;
+        public static final int ANALYZE_COLLISION = CAT_ANALYZE;
         /* Analyze: Performance */
-        public static final int ANALYZE_PERFORMANCE = 0xFF88CCFF;
+        public static final int ANALYZE_PERFORMANCE = CAT_ANALYZE;
         /* Analyze: Mob visualizers */
-        public static final int ANALYZE_MOBS = 0xFF88CCFF;
+        public static final int ANALYZE_MOBS = CAT_ANALYZE;
         /* Analyze: Density visualizers */
-        public static final int ANALYZE_DENSITY = 0xFFAADDFF;
+        public static final int ANALYZE_DENSITY = CAT_ANALYZE;
         /* Analyze: Safe spots */
-        public static final int ANALYZE_SAFE_SPOTS = 0xFFCCEEFF;
+        public static final int ANALYZE_SAFE_SPOTS = CAT_ANALYZE;
         /* Analyze: Light levels */
-        public static final int ANALYZE_LIGHT = 0xFFCCEEFF;
+        public static final int ANALYZE_LIGHT = CAT_ANALYZE;
         /* Analyze: Spawnability */
-        public static final int ANALYZE_SPAWN = 0xFFEEFFFF;
+        public static final int ANALYZE_SPAWN = CAT_ANALYZE;
         /* Analyze: Room bounds */
-        public static final int ANALYZE_ROOM = 0xFFBBDDFF;
+        public static final int ANALYZE_ROOM = CAT_ANALYZE;
 
         // -------------------------------------------------------------------
         // TELEMETRY SUBCATEGORY COLORS (purple gradient)
         // -------------------------------------------------------------------
         /* Telemetry: Operations */
-        public static final int TELEMETRY_OPS = 0xFFAADDFF;
+        public static final int TELEMETRY_OPS = CAT_TELEMETRY;
         /* Telemetry: Dashboard */
-        public static final int TELEMETRY_DASHBOARD = 0xFFAA55FF;
+        public static final int TELEMETRY_DASHBOARD = CAT_TELEMETRY;
         /* Telemetry: Exports */
-        public static final int TELEMETRY_EXPORT = 0xFF8844DD;
+        public static final int TELEMETRY_EXPORT = CAT_TELEMETRY;
 
         // -------------------------------------------------------------------
         // COMBAT SUBCATEGORY COLORS (red gradient)
         // -------------------------------------------------------------------
         /* Combat: Actions */
-        public static final int COMBAT_ACTIONS = 0xFFFF4444;
+        public static final int COMBAT_ACTIONS = CAT_COMBAT;
         /* Combat: Damage/defense stats */
-        public static final int COMBAT_DAMAGE = 0xFFFF8888;
+        public static final int COMBAT_DAMAGE = CAT_COMBAT;
         /* Combat: Defense */
-        public static final int COMBAT_DEFENSE = 0xFFFF8888;
+        public static final int COMBAT_DEFENSE = CAT_COMBAT;
         /* Combat: Weapon editor */
-        public static final int COMBAT_WEAPON = 0xFFFFAAAA;
+        public static final int COMBAT_WEAPON = CAT_COMBAT;
         /* Combat: Shield editor (neutral gray) */
-        public static final int COMBAT_SHIELD = 0xFFDDDDDD;
+        public static final int COMBAT_SHIELD = CAT_COMBAT;
 
         // -------------------------------------------------------------------
         // ARENA SUBCATEGORY COLORS (green gradient)
         // -------------------------------------------------------------------
         /* Arena: Management */
-        public static final int ARENA_MANAGE = 0xFF44FF88;
+        public static final int ARENA_MANAGE = CAT_ARENA;
         /* Arena: Templates */
-        public static final int ARENA_TEMPLATES = 0xFF66FFAA;
+        public static final int ARENA_TEMPLATES = CAT_ARENA;
         /* Arena: Spawning */
-        public static final int ARENA_SPAWNING = 0xFF88FFCC;
+        public static final int ARENA_SPAWNING = CAT_ARENA;
         /* Arena: Hazards */
-        public static final int ARENA_HAZARDS = 0xFFAAFFDD;
+        public static final int ARENA_HAZARDS = CAT_ARENA;
         /* Arena: Rewards */
-        public static final int ARENA_REWARDS = 0xFFCCFFEE;
+        public static final int ARENA_REWARDS = CAT_ARENA;
 
         // -------------------------------------------------------------------
         // TOOLS SUBCATEGORY COLORS (orange/yellow gradient)
         // -------------------------------------------------------------------
         /* Tools: Primary */
-        public static final int TOOLS_PRIMARY = 0xFFFFAA00;
+        public static final int TOOLS_PRIMARY = CAT_TOOLS;
         /* Tools: Editor */
-        public static final int TOOLS_EDITOR = 0xFFFFCC66;
+        public static final int TOOLS_EDITOR = CAT_TOOLS;
         /* Tools: Secondary */
-        public static final int TOOLS_SECONDARY = 0xFFFFDD99;
+        public static final int TOOLS_SECONDARY = CAT_TOOLS;
         /* Tools: Utility */
-        public static final int TOOLS_UTILITY = 0xFFFFEECC;
+        public static final int TOOLS_UTILITY = CAT_TOOLS;
 
         // -------------------------------------------------------------------
         // PLAY SUBCATEGORY COLORS (warm/social)
         // -------------------------------------------------------------------
         /* Play: Party */
-        public static final int PLAY_PARTY = 0xFFFFCCCC;
+        public static final int PLAY_PARTY = CAT_PLAY;
         /* Play: Social */
-        public static final int PLAY_SOCIAL = 0xFFFFFFFF;
+        public static final int PLAY_SOCIAL = CAT_PLAY;
         /* Play: Quests */
-        public static final int PLAY_QUESTS = 0xFFFFEEEE;
+        public static final int PLAY_QUESTS = CAT_PLAY;
         /* Play: Communication */
-        public static final int PLAY_COMMS = 0xFFEEFFFF;
+        public static final int PLAY_COMMS = CAT_PLAY;
         /* Play: Leaderboard */
-        public static final int PLAY_LEADERBOARD = 0xFFFFDD88;
+        public static final int PLAY_LEADERBOARD = CAT_PLAY;
         /* Play: Season Pass */
-        public static final int PLAY_SEASON = 0xFFFFEEAA;
+        public static final int PLAY_SEASON = CAT_PLAY;
 
         // Additional telemetry colors
         /* Telemetry: Spatial analysis */
-        public static final int TELEMETRY_SPATIAL = 0xFF7755DD;
+        public static final int TELEMETRY_SPATIAL = CAT_TELEMETRY;
         /* Telemetry: Data tools */
-        public static final int TELEMETRY_DATA = 0xFFCCEEFF;
+        public static final int TELEMETRY_DATA = CAT_TELEMETRY;
         /* Telemetry: Scan tools */
-        public static final int TELEMETRY_SCAN = 0xFFEEFFFF;
+        public static final int TELEMETRY_SCAN = CAT_TELEMETRY;
         /* Telemetry: Dashboard */
-        public static final int TELEMETRY_DASH = 0xFFBBDDFF;
+        public static final int TELEMETRY_DASH = CAT_TELEMETRY;
 
         // Additional combat colors
         /* Combat: Armor configuration */
-        public static final int COMBAT_ARMOR = 0xFFAABBDD;
+        public static final int COMBAT_ARMOR = CAT_COMBAT;
         /* Combat: Abilities */
-        public static final int COMBAT_ABILITIES = 0xFFFFCC44;
+        public static final int COMBAT_ABILITIES = CAT_COMBAT;
         /* Combat: Debug tools */
-        public static final int COMBAT_DEBUG = 0xFFFF6666;
+        public static final int COMBAT_DEBUG = CAT_COMBAT;
 
         // Additional arena colors
         /* Arena: Endurance mode */
-        public static final int ARENA_ENDURANCE = 0xFF88FF66;
+        public static final int ARENA_ENDURANCE = CAT_ARENA;
         /* Arena: Wave control */
-        public static final int ARENA_WAVES = 0xFFAAFF88;
+        public static final int ARENA_WAVES = CAT_ARENA;
         /* Arena: Party management */
-        public static final int ARENA_PARTY = 0xFFCCFFAA;
+        public static final int ARENA_PARTY = CAT_ARENA;
 
         // Additional tools colors
         /* Tools: Testing */
-        public static final int TOOLS_TESTING = 0xFFFFBB44;
+        public static final int TOOLS_TESTING = CAT_TOOLS;
         /* Tools: Notifications */
-        public static final int TOOLS_NOTIFY = 0xFFFFDD66;
+        public static final int TOOLS_NOTIFY = CAT_TOOLS;
         /* Tools: Mailbox */
-        public static final int TOOLS_MAILBOX = 0xFFFFEE88;
+        public static final int TOOLS_MAILBOX = CAT_TOOLS;
         /* Tools: Settings */
-        public static final int TOOLS_SETTINGS = 0xFFFFFFAA;
+        public static final int TOOLS_SETTINGS = CAT_TOOLS;
         /* Tools: Game design */
         public static final int TOOLS_GAMEDESIGN = CAT_TELEMETRY;
         /* Tools: Commands */
-        public static final int TOOLS_COMMANDS = 0xFFFFFFEE;
+        public static final int TOOLS_COMMANDS = CAT_TOOLS;
 
         private Radial() {}
     }
@@ -731,33 +789,33 @@ public final class DesignTokens {
 
     public static final class Hud {
         /* Default HUD panel background (80% opacity) */
-        public static final int PANEL_BG = 0xCC0A0A0F;
+        public static final int PANEL_BG = withAlpha(Bg.LEVEL_1, 0xCC);
         /* HUD panel border (50% opacity) */
-        public static final int PANEL_BORDER = 0x803A3A4C;
+        public static final int PANEL_BORDER = withAlpha(Stroke.DEFAULT, 0x80);
 
         // Health bar
-        public static final int HEALTH = 0xFFE04040;
-        public static final int HEALTH_BG = 0x40E04040;
+        public static final int HEALTH = Semantic.ERROR;
+        public static final int HEALTH_BG = withAlpha(Semantic.ERROR, 0x40);
 
         // Stamina bar
-        public static final int STAMINA = 0xFF40B060;
-        public static final int STAMINA_BG = 0x4040B060;
+        public static final int STAMINA = Semantic.SUCCESS;
+        public static final int STAMINA_BG = withAlpha(Semantic.SUCCESS, 0x40);
 
         // Mana/energy bar
         public static final int MANA = Semantic.INFO;
-        public static final int MANA_BG = 0x4060A5FA;
+        public static final int MANA_BG = withAlpha(Semantic.INFO, 0x40);
 
         // Experience bar
         public static final int XP = DesignTokens.Accent.PRIMARY;
-        public static final int XP_BG = 0x4000D4FF;
+        public static final int XP_BG = withAlpha(DesignTokens.Accent.PRIMARY, 0x40);
 
         // Boss health
-        public static final int BOSS_HEALTH = DesignTokens.Accent.SECONDARY;
+        public static final int BOSS_HEALTH = Semantic.ERROR;
         public static final int BOSS_PHASE = Semantic.WARNING;
 
         // Wave counter
         public static final int WAVE_TEXT = DesignTokens.Text.WHITE;
-        public static final int WAVE_NUMBER = DesignTokens.Accent.PRIMARY;
+        public static final int WAVE_NUMBER = DesignTokens.Accent.SECONDARY;
 
         // Timer
         public static final int TIMER_NORMAL = DesignTokens.Text.PRIMARY;
@@ -776,22 +834,22 @@ public final class DesignTokens {
      */
     public static final class TestingMode {
         /* Combat test sessions (orange-red) */
-        public static final int COMBAT = 0xFFFF6644;
+        public static final int COMBAT = Semantic.ERROR;
         /* Boss fight test sessions (purple) */
-        public static final int BOSS_FIGHT = 0xFFAA44FF;
+        public static final int BOSS_FIGHT = DesignTokens.Accent.SECONDARY;
         /* Survival waves test sessions (green) */
-        public static final int SURVIVAL = 0xFF44FF88;
+        public static final int SURVIVAL = Semantic.SUCCESS;
         /* Damage validation test sessions (orange) */
-        public static final int DAMAGE_VALIDATION = 0xFFFFAA00;
+        public static final int DAMAGE_VALIDATION = Semantic.WARNING;
         /* Performance stress test sessions (blue) */
-        public static final int PERFORMANCE = 0xFF4488FF;
+        public static final int PERFORMANCE = Semantic.INFO;
         /* Custom test sessions (gray) */
-        public static final int CUSTOM = 0xFF888888;
+        public static final int CUSTOM = DesignTokens.Text.SECONDARY;
 
         /* Endless mode pulse color */
-        public static final int PULSE = 0xFF4488FF;
+        public static final int PULSE = Semantic.INFO;
         /* Progress bar border */
-        public static final int PROGRESS_BORDER = 0xFF555555;
+        public static final int PROGRESS_BORDER = Stroke.DEFAULT;
 
         private TestingMode() {}
     }
@@ -802,73 +860,73 @@ public final class DesignTokens {
 
     public static final class Notification {
         /* Default notification */
-        public static final int DEFAULT_BG = 0xFF202028;
-        public static final int DEFAULT_BORDER = 0xFF3A3A4C;
+        public static final int DEFAULT_BG = Surface.LEVEL_1;
+        public static final int DEFAULT_BORDER = Stroke.DEFAULT;
 
         /* Success notification (90% opacity) */
-        public static final int SUCCESS_BG = 0xE61F6A3F;
+        public static final int SUCCESS_BG = withAlpha(Semantic.SUCCESS, 0xE6);
         public static final int SUCCESS_BORDER = Semantic.SUCCESS;
 
         /* Warning notification (90% opacity) */
-        public static final int WARNING_BG = 0xE6A06000;
+        public static final int WARNING_BG = withAlpha(Semantic.WARNING, 0xE6);
         public static final int WARNING_BORDER = Semantic.WARNING;
 
         /* Error notification (90% opacity) */
-        public static final int ERROR_BG = 0xE67A1A1E;
+        public static final int ERROR_BG = withAlpha(Semantic.ERROR, 0xE6);
         public static final int ERROR_BORDER = Semantic.ERROR;
 
         /* Info notification (90% opacity) */
-        public static final int INFO_BG = 0xE62060C0;
+        public static final int INFO_BG = withAlpha(Semantic.INFO, 0xE6);
         public static final int INFO_BORDER = Semantic.INFO;
 
         // Notification UI palette (warm tones)
-        public static final int RGB_TEXT_PRIMARY = 0xF5F1E8;
-        public static final int RGB_TEXT_SECONDARY = 0xCBBFA8;
-        public static final int RGB_TEXT_MUTED = 0x938877;
-        public static final int RGB_WHITE = DesignTokens.Text.WHITE & Mask.RGB;
+        public static final int RGB_TEXT_PRIMARY = DesignTokens.Text.PRIMARY & Mask.RGB;
+        public static final int RGB_TEXT_SECONDARY = DesignTokens.Text.SECONDARY & Mask.RGB;
+        public static final int RGB_TEXT_MUTED = DesignTokens.Text.MUTED & Mask.RGB;
+        public static final int RGB_WHITE = DesignTokens.Text.PRIMARY & Mask.RGB;
         public static final int RGB_BLACK = Mask.NONE;
 
-        public static final int RGB_PANEL_TOP = 0x2A2319;
-        public static final int RGB_PANEL_BOTTOM = 0x162227;
+        public static final int RGB_PANEL_TOP = Surface.LEVEL_1 & Mask.RGB;
+        public static final int RGB_PANEL_BOTTOM = Surface.LEVEL_2 & Mask.RGB;
         public static final int RGB_BACKDROP_TOP = mix(RGB_PANEL_TOP, RGB_BLACK, 0.45f);
         public static final int RGB_BACKDROP_BOTTOM = mix(RGB_PANEL_BOTTOM, RGB_BLACK, 0.55f);
-        public static final int RGB_PANEL_INNER_TOP = 0x30281E;
-        public static final int RGB_PANEL_INNER_BOTTOM = 0x1B252A;
+        public static final int RGB_PANEL_INNER_TOP = Surface.LEVEL_0 & Mask.RGB;
+        public static final int RGB_PANEL_INNER_BOTTOM = Surface.LEVEL_1 & Mask.RGB;
 
-        public static final int RGB_SURFACE_TOP = 0x2E271D;
-        public static final int RGB_SURFACE_BOTTOM = 0x221C14;
-        public static final int RGB_SURFACE_HOVER_TOP = 0x3A3124;
-        public static final int RGB_SURFACE_HOVER_BOTTOM = 0x2A2218;
-        public static final int RGB_SURFACE_READ = 0x1E1811;
+        public static final int RGB_SURFACE_TOP = Surface.LEVEL_0 & Mask.RGB;
+        public static final int RGB_SURFACE_BOTTOM = Surface.LEVEL_1 & Mask.RGB;
+        public static final int RGB_SURFACE_HOVER_TOP = Surface.LEVEL_2 & Mask.RGB;
+        public static final int RGB_SURFACE_HOVER_BOTTOM = Surface.LEVEL_3 & Mask.RGB;
+        public static final int RGB_SURFACE_READ = Bg.LEVEL_2 & Mask.RGB;
 
-        public static final int RGB_ACCENT = 0xE1A44C;
-        public static final int RGB_ACCENT_SOFT = 0x9B6D2E;
-        public static final int RGB_ACCENT_ALT = 0x2CB5A0;
+        public static final int RGB_ACCENT = DesignTokens.Accent.SECONDARY & Mask.RGB;
+        public static final int RGB_ACCENT_SOFT = DesignTokens.Accent.PRIMARY & Mask.RGB;
+        public static final int RGB_ACCENT_ALT = Semantic.INFO & Mask.RGB;
 
         public static final class Category {
-            public static final int ACHIEVEMENT = 0xE7B84D;
-            public static final int RECORD = 0x34C9C9;
-            public static final int SEASON = 0x4F7BD9;
-            public static final int TOKEN = 0x59B77C;
-            public static final int REWARD = 0xF19A3E;
-            public static final int PARTY = 0x5DA7E3;
-            public static final int QUEST = 0xD86C4D;
-            public static final int COMBAT = 0xE2554F;
-            public static final int RESONANCE = 0x60D1A7;
-            public static final int NEWS = 0x7B9CFF;
-            public static final int ADMIN = 0xE88B3D;
-            public static final int SYSTEM = 0x8E97A6;
-            public static final int MAILBOX = 0x3AA6D0;
+            public static final int ACHIEVEMENT = DesignTokens.Accent.SECONDARY;
+            public static final int RECORD = DesignTokens.Accent.PRIMARY;
+            public static final int SEASON = Semantic.INFO;
+            public static final int TOKEN = DesignTokens.Accent.SECONDARY;
+            public static final int REWARD = Semantic.SUCCESS;
+            public static final int PARTY = DesignTokens.Accent.PRIMARY;
+            public static final int QUEST = Semantic.WARNING;
+            public static final int COMBAT = Semantic.ERROR;
+            public static final int RESONANCE = DesignTokens.Accent.PRIMARY;
+            public static final int NEWS = Semantic.INFO;
+            public static final int ADMIN = Semantic.WARNING;
+            public static final int SYSTEM = DesignTokens.Text.SECONDARY;
+            public static final int MAILBOX = DesignTokens.Accent.PRIMARY;
 
             private Category() {}
         }
 
         public static final class Priority {
-            public static final int LOW = 0x8E97A6;
-            public static final int NORMAL = 0x5DA7E3;
-            public static final int HIGH = RGB_ACCENT;
-            public static final int URGENT = 0xE88B3D;
-            public static final int CRITICAL = 0xE2554F;
+            public static final int LOW = DesignTokens.Text.SECONDARY;
+            public static final int NORMAL = Semantic.INFO;
+            public static final int HIGH = DesignTokens.Accent.SECONDARY;
+            public static final int URGENT = Semantic.WARNING;
+            public static final int CRITICAL = Semantic.ERROR;
 
             private Priority() {}
         }
@@ -889,22 +947,22 @@ public final class DesignTokens {
      * Welcome screen palette (indigo theme).
      */
     public static final class Welcome {
-        public static final int BG_TOP = 0xF0181818;
-        public static final int BG_BOTTOM = 0xF00D0D1A;
-        public static final int BORDER = 0xFF6366F1;
-        public static final int TITLE = 0xFF818CF8;
-        public static final int SUBTITLE = 0xFFA5B4FC;
-        public static final int PARTICLE = 0xFF6366F1;
+        public static final int BG_TOP = withAlpha(Bg.LEVEL_2, 0xF0);
+        public static final int BG_BOTTOM = withAlpha(Bg.LEVEL_1, 0xF0);
+        public static final int BORDER = Accent.PRIMARY;
+        public static final int TITLE = DesignTokens.Text.PRIMARY;
+        public static final int SUBTITLE = DesignTokens.Text.SECONDARY;
+        public static final int PARTICLE = Accent.PRIMARY;
 
-        public static final int FEATURE_MOB = 0xFF4ADE80;
-        public static final int FEATURE_DEBUG = 0xFF60A5FA;
-        public static final int FEATURE_ENDURANCE = 0xFFF472B6;
-        public static final int FEATURE_TESTING = 0xFFFBBF24;
+        public static final int FEATURE_MOB = Semantic.SUCCESS;
+        public static final int FEATURE_DEBUG = Semantic.INFO;
+        public static final int FEATURE_ENDURANCE = Accent.SECONDARY;
+        public static final int FEATURE_TESTING = Semantic.WARNING;
 
-        public static final int HINT = 0xFF444444;
-        public static final int HIGHLIGHT = 0x22FFFFFF;
-        public static final int SUBTLE = 0x11FFFFFF;
-        public static final int SHADOW = 0x44000000;
+        public static final int HINT = DesignTokens.Text.MUTED;
+        public static final int HIGHLIGHT = withAlpha(DesignTokens.Text.PRIMARY, 0x22);
+        public static final int SUBTLE = withAlpha(DesignTokens.Text.PRIMARY, 0x11);
+        public static final int SHADOW = withAlpha(Palette.SHADOW, 0x44);
 
         private Welcome() {}
     }
@@ -914,23 +972,23 @@ public final class DesignTokens {
     // ===========================================================================
 
     public static final class SeasonPass {
-        public static final int BG_TOP = 0xF0181818;
-        public static final int BG_BOTTOM = 0xF00D0D1A;
-        public static final int BORDER = 0xFFD4AF37;
-        public static final int TITLE = 0xFFFFD700;
-        public static final int SUBTITLE = 0xFFDAA520;
-        public static final int FREE_TRACK = 0xFF60A5FA;
-        public static final int PREMIUM_TRACK = 0xFFFFD700;
-        public static final int LOCKED = 0xFF555555;
-        public static final int PROGRESS_BG = 0xFF2A2A2A;
-        public static final int PROGRESS_FILL = 0xFFD4AF37;
-        public static final int CLAIMED = 0xFF22C55E;
-        public static final int BOOST = 0xFF8B5CF6;
-        public static final int BADGE = 0xFFEF4444;
-        public static final int INACTIVE = 0xFF888888;
-        public static final int HIGHLIGHT = 0x22FFFFFF;
-        public static final int ROW_BG = 0x444444;
-        public static final int ROW_BG_ALT = 0x333333;
+        public static final int BG_TOP = withAlpha(Bg.LEVEL_2, 0xF0);
+        public static final int BG_BOTTOM = withAlpha(Bg.LEVEL_1, 0xF0);
+        public static final int BORDER = Accent.SECONDARY;
+        public static final int TITLE = DesignTokens.Text.PRIMARY;
+        public static final int SUBTITLE = DesignTokens.Text.SECONDARY;
+        public static final int FREE_TRACK = Semantic.INFO;
+        public static final int PREMIUM_TRACK = Accent.SECONDARY;
+        public static final int LOCKED = DesignTokens.Text.MUTED;
+        public static final int PROGRESS_BG = Surface.LEVEL_0;
+        public static final int PROGRESS_FILL = Accent.SECONDARY;
+        public static final int CLAIMED = Semantic.SUCCESS;
+        public static final int BOOST = Accent.PRIMARY;
+        public static final int BADGE = Semantic.ERROR;
+        public static final int INACTIVE = DesignTokens.Text.MUTED;
+        public static final int HIGHLIGHT = withAlpha(DesignTokens.Text.PRIMARY, 0x22);
+        public static final int ROW_BG = Surface.LEVEL_1;
+        public static final int ROW_BG_ALT = Surface.LEVEL_2;
 
         private SeasonPass() {}
     }
@@ -940,25 +998,25 @@ public final class DesignTokens {
     // ===========================================================================
 
     public static final class Party {
-        public static final int TAB_ACTIVE = 0xFF1A2A4A;
-        public static final int ROW_HOVER = 0x40FFFFFF;
-        public static final int ROW_DEFAULT = 0x20FFFFFF;
-        public static final int HINT_TEXT = 0x60FFFFFF;
+        public static final int TAB_ACTIVE = Surface.LEVEL_2;
+        public static final int ROW_HOVER = withAlpha(DesignTokens.Text.PRIMARY, 0x40);
+        public static final int ROW_DEFAULT = withAlpha(DesignTokens.Text.PRIMARY, 0x20);
+        public static final int HINT_TEXT = withAlpha(DesignTokens.Text.SECONDARY, 0x60);
 
-        public static final int STAT_HP = 0xFFFF6666;
-        public static final int STAT_DMG = 0xFFFFAA00;
-        public static final int STAT_POINTS = 0xFFFFFF00;
-        public static final int STAT_DIFFICULTY = 0xFFAA66FF;
+        public static final int STAT_HP = Semantic.ERROR;
+        public static final int STAT_DMG = Semantic.WARNING;
+        public static final int STAT_POINTS = Accent.SECONDARY;
+        public static final int STAT_DIFFICULTY = Semantic.INFO;
 
-        public static final int READY_GLOW = 0x4000FF88;
-        public static final int NOT_READY_GLOW = 0x40FF4466;
+        public static final int READY_GLOW = withAlpha(Semantic.SUCCESS, 0x40);
+        public static final int NOT_READY_GLOW = withAlpha(Semantic.ERROR, 0x40);
 
         public static final int DIFFICULTY_TRIVIAL = DesignTokens.Neutral.N650;
-        public static final int DIFFICULTY_EASY = Rarity.UNCOMMON;
-        public static final int DIFFICULTY_MEDIUM = 0xFFFFFF55;
-        public static final int DIFFICULTY_HARD = 0xFFFF8800;
-        public static final int DIFFICULTY_ELITE = 0xFFFF5555;
-        public static final int DIFFICULTY_BOSS = 0xFFAA00FF;
+        public static final int DIFFICULTY_EASY = Semantic.SUCCESS;
+        public static final int DIFFICULTY_MEDIUM = Accent.SECONDARY;
+        public static final int DIFFICULTY_HARD = Semantic.WARNING;
+        public static final int DIFFICULTY_ELITE = Semantic.ERROR;
+        public static final int DIFFICULTY_BOSS = Semantic.ERROR;
 
         private Party() {}
     }
@@ -979,26 +1037,26 @@ public final class DesignTokens {
         public static final int EMPTY_STATE_BG = DesignTokens.Neutral.N900;
         public static final int PRESET_BG_OPEN = DesignTokens.Neutral.N800;
         public static final int PRESET_BG_CLOSED = DesignTokens.Neutral.N860;
-        public static final int PRESET_LABEL_ACTIVE = 0xFF88FF88;
+        public static final int PRESET_LABEL_ACTIVE = Semantic.SUCCESS;
         public static final int DROPDOWN_BG = DesignTokens.Neutral.N920;
-        public static final int DROPDOWN_BG_SELECTED = 0xFF1F4D3A;
+        public static final int DROPDOWN_BG_SELECTED = withAlpha(Accent.PRIMARY, 0x40);
         public static final int DROPDOWN_BG_HOVER = DesignTokens.Neutral.N820;
         public static final int DROPDOWN_BG_DEFAULT = DesignTokens.Neutral.N880;
         public static final int DROPDOWN_TEXT = DesignTokens.Neutral.N400;
         public static final int DROPDOWN_HINT = DesignTokens.Neutral.N550;
-        public static final int DROPDOWN_HOVER = 0xFF99CCFF;
+        public static final int DROPDOWN_HOVER = Semantic.INFO;
         public static final int ITEM_BG_HOVER = DesignTokens.Neutral.N760;
         public static final int ITEM_BG_DEFAULT = DesignTokens.Neutral.N840;
         public static final int ITEM_REMOVE_HOVER = Semantic.ERROR;
-        public static final int PREVIEW_MODE = 0xFFFFB366;
+        public static final int PREVIEW_MODE = Accent.SECONDARY;
         public static final int ACTION_ROW_BG = DesignTokens.Neutral.N880;
         public static final int PROGRESS_BAR_BG = DesignTokens.Neutral.N880;
-        public static final int PROGRESS_BAR_FILL = 0xFF4CAF50;
+        public static final int PROGRESS_BAR_FILL = Semantic.SUCCESS;
         public static final int RESULT_BG = DesignTokens.Neutral.N950;
-        public static final int RESULT_SUCCESS = 0xFF66FF66;
-        public static final int RESULT_WARNING = 0xFFFFC107;
-        public static final int FAILURE_TEXT = 0xFFFF8888;
-        public static final int MORE_FAILURES = 0xFFFFBB66;
+        public static final int RESULT_SUCCESS = Semantic.SUCCESS;
+        public static final int RESULT_WARNING = Semantic.WARNING;
+        public static final int FAILURE_TEXT = Semantic.ERROR;
+        public static final int MORE_FAILURES = Accent.SECONDARY;
 
         private MultiEdit() {}
     }
@@ -1008,11 +1066,11 @@ public final class DesignTokens {
     // ===========================================================================
 
     public static final class Rarity {
-        public static final int COMMON = 0xFF888888;
-        public static final int UNCOMMON = 0xFF55FF55;
-        public static final int RARE = 0xFF5555FF;
-        public static final int EPIC = 0xFFAA00AA;
-        public static final int LEGENDARY = 0xFFFFAA00;
+        public static final int COMMON = DesignTokens.Text.MUTED;
+        public static final int UNCOMMON = Semantic.SUCCESS;
+        public static final int RARE = Semantic.INFO;
+        public static final int EPIC = Accent.PRIMARY;
+        public static final int LEGENDARY = Accent.SECONDARY;
 
         private Rarity() {}
     }
@@ -1022,12 +1080,12 @@ public final class DesignTokens {
     // ===========================================================================
 
     public static final class ErrorScreen {
-        public static final int BG = 0xE0200000;
-        public static final int TITLE = 0xFFFF4444;
+        public static final int BG = withAlpha(Semantic.ERROR, 0xE0);
+        public static final int TITLE = Semantic.ERROR;
         public static final int TEXT = DesignTokens.Neutral.N450;
         public static final int HINT = DesignTokens.Neutral.N550;
-        public static final int STATUS_BG = 0xC0000000;
-        public static final int STATUS_ERROR = 0xFFFF5555;
+        public static final int STATUS_BG = withAlpha(Bg.LEVEL_1, 0xC0);
+        public static final int STATUS_ERROR = Semantic.ERROR;
 
         private ErrorScreen() {}
     }
@@ -1037,12 +1095,12 @@ public final class DesignTokens {
     // ===========================================================================
 
     public static final class ErrorBoundary {
-        public static final int BG = 0xE01A1A2E;
-        public static final int PANEL_BG = 0xFF1A1A2E;
+        public static final int BG = withAlpha(Semantic.ERROR, 0xE0);
+        public static final int PANEL_BG = Bg.LEVEL_2;
         public static final int BORDER = Semantic.ERROR;
         public static final int TEXT = DesignTokens.Text.WHITE;
         public static final int SCRIM = withAlpha(PANEL_BG, DesignTokens.Alpha.A75);
-        public static final int HIGHLIGHT = 0xFFFF5555;
+        public static final int HIGHLIGHT = Semantic.ERROR;
 
         private ErrorBoundary() {}
     }
@@ -1052,13 +1110,13 @@ public final class DesignTokens {
     // ===========================================================================
 
     public static final class ExternalConfirm {
-        public static final int BG = 0xDD000000;
-        public static final int BORDER = DesignTokens.Neutral.N700;
-        public static final int TITLE = DesignTokens.Text.WHITE;
-        public static final int URL = DesignTokens.Neutral.N500;
-        public static final int STATUS_OK = 0x55FF55;
-        public static final int STATUS_WARN = 0xFFAA00;
-        public static final int STATUS_ERROR = 0xFF5555;
+        public static final int BG = withAlpha(Bg.LEVEL_1, 0xDD);
+        public static final int BORDER = Stroke.DEFAULT;
+        public static final int TITLE = DesignTokens.Text.PRIMARY;
+        public static final int URL = DesignTokens.Text.SECONDARY;
+        public static final int STATUS_OK = Semantic.SUCCESS;
+        public static final int STATUS_WARN = Semantic.WARNING;
+        public static final int STATUS_ERROR = Semantic.ERROR;
 
         private ExternalConfirm() {}
     }
@@ -1068,8 +1126,8 @@ public final class DesignTokens {
     // ===========================================================================
 
     public static final class QuickTest {
-        public static final int HEADER_GRADIENT_START = 0xFF2A3A5E;
-        public static final int INFO_BG = 0x40FFAA00;
+        public static final int HEADER_GRADIENT_START = Bg.LEVEL_3;
+        public static final int INFO_BG = withAlpha(Semantic.WARNING, 0x40);
 
         private QuickTest() {}
     }
@@ -1078,7 +1136,95 @@ public final class DesignTokens {
     // TESTING UI COLORS
     // ===========================================================================
 
-    public static final class Testing extends SharedColorTokens.Testing {
+    public static final class Testing {
+        public static final int SEPARATOR = Palette.OUTLINE;
+        public static final int THUMB_NORMAL = Palette.OUTLINE;
+        public static final int THUMB_HOVER = Palette.ACCENT_BLUE;
+        public static final int TRACK = Palette.PANEL;
+        public static final int HEADER_ACCENT = Palette.ACCENT_TEAL;
+        public static final int SUCCESS = Palette.SUCCESS;
+        public static final int ERROR = Palette.ERROR;
+        public static final int CYAN = Palette.ACCENT_TEAL;
+        public static final int TELEMETRY_ACCENT = Palette.ACCENT_BLUE;
+        public static final int WARNING = Palette.WARNING;
+        public static final int ALERT = Palette.ERROR;
+
+        public static final class Status {
+            public static final int PENDING = Palette.TEXT_SECONDARY;
+            public static final int IN_PROGRESS = Palette.ACCENT_BLUE;
+            public static final int PASSED = Palette.SUCCESS;
+            public static final int FAILED = Palette.ERROR;
+            public static final int SKIPPED = Palette.TEXT_SECONDARY;
+
+            private Status() {}
+        }
+
+        public static final class Priority {
+            public static final int CRITICAL = Palette.ERROR;
+            public static final int HIGH = Palette.WARNING;
+            public static final int MEDIUM = Palette.ACCENT_AMBER;
+            public static final int LOW = Palette.TEXT_SECONDARY;
+
+            private Priority() {}
+        }
+
+        public static final class Level {
+            public static final int LEVEL_1 = Palette.TEXT_SECONDARY;
+            public static final int LEVEL_2 = Palette.ACCENT_TEAL;
+            public static final int LEVEL_3 = Palette.ACCENT_BLUE;
+            public static final int LEVEL_4 = Palette.SUCCESS;
+            public static final int LEVEL_5 = Palette.WARNING;
+            public static final int LEVEL_6 = Palette.ACCENT_AMBER;
+            public static final int LEVEL_7 = Palette.ERROR;
+
+            private static final int[] COLORS = {
+                LEVEL_1,
+                LEVEL_2,
+                LEVEL_3,
+                LEVEL_4,
+                LEVEL_5,
+                LEVEL_6,
+                LEVEL_7
+            };
+
+            private Level() {}
+
+            public static int forLevel(int level) {
+                int index = Math.max(1, level) - 1;
+                if (index >= COLORS.length) {
+                    index = COLORS.length - 1;
+                }
+                return COLORS[index];
+            }
+        }
+
+        public static final class AchievementCategory {
+            public static final int COMBAT = Palette.ERROR;
+            public static final int PRECISION = Palette.ACCENT_BLUE;
+            public static final int RANGED = Palette.ACCENT_TEAL;
+            public static final int SURVIVAL = Palette.SUCCESS;
+            public static final int EXPLOSION = Palette.WARNING;
+            public static final int ALCHEMY = Palette.ACCENT_TEAL;
+            public static final int EXPLORER = Palette.ACCENT_BLUE;
+            public static final int DEDICATION = Palette.ACCENT_AMBER;
+            public static final int TESTING = Palette.ACCENT_TEAL;
+            public static final int SPECIAL = Palette.ACCENT_AMBER;
+
+            private AchievementCategory() {}
+        }
+
+        public static final class Badge {
+            public static final int BRONZE_TESTER = Palette.ACCENT_AMBER;
+            public static final int SILVER_TESTER = Palette.TEXT_SECONDARY;
+            public static final int GOLD_TESTER = Palette.ACCENT_AMBER;
+            public static final int DIAMOND_TESTER = Palette.ACCENT_BLUE;
+            public static final int COMBAT_SPECIALIST = Palette.ERROR;
+            public static final int PRECISION_EXPERT = Palette.ACCENT_BLUE;
+            public static final int COMPLETIONIST = Palette.SUCCESS;
+
+            private Badge() {}
+        }
+
         private Testing() {}
     }
 
@@ -1087,18 +1233,18 @@ public final class DesignTokens {
     // ===========================================================================
 
     public static final class DebugOverlay {
-        public static final int GRID = 0x40FFFFFF;
-        public static final int GRID_MAJOR = 0x60FFFFFF;
-        public static final int ZONE_BOUNDARY = 0x80FFFF00;
-        public static final int BBOX = 0x8000FFFF;
-        public static final int BBOX_HOVERED = 0xC000FFFF;
-        public static final int WARNING = 0xFFFF4444;
-        public static final int OVERFLOW = 0x80FF0000;
-        public static final int INFO_BG = 0xE0000000;
-        public static final int INFO_TEXT = 0xFFCCCCCC;
-        public static final int WARNING_TRUNCATED = 0xFFFFAA00;
-        public static final int WARNING_MISALIGNED = 0xFFFF00FF;
-        public static final int WARNING_OUT_OF_VIEW = 0xFF888888;
+        public static final int GRID = withAlpha(Text.PRIMARY, 0x40);
+        public static final int GRID_MAJOR = withAlpha(Text.PRIMARY, 0x60);
+        public static final int ZONE_BOUNDARY = withAlpha(Semantic.WARNING, 0x80);
+        public static final int BBOX = withAlpha(Accent.PRIMARY, 0x80);
+        public static final int BBOX_HOVERED = withAlpha(Accent.PRIMARY, 0xC0);
+        public static final int WARNING = Semantic.ERROR;
+        public static final int OVERFLOW = withAlpha(Semantic.ERROR, 0x80);
+        public static final int INFO_BG = withAlpha(Bg.LEVEL_0, 0xE0);
+        public static final int INFO_TEXT = Text.SECONDARY;
+        public static final int WARNING_TRUNCATED = Semantic.WARNING;
+        public static final int WARNING_MISALIGNED = Semantic.WARNING;
+        public static final int WARNING_OUT_OF_VIEW = Text.MUTED;
 
         private DebugOverlay() {}
     }
@@ -1108,9 +1254,9 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class Preview {
-        public static final int SELECTED_SLOT_BG = 0x4020C0FF;
-        public static final int BG = 0xFF111419;
-        public static final int BASE_SHADOW = 0x10101060;
+        public static final int SELECTED_SLOT_BG = withAlpha(Semantic.INFO, 0x40);
+        public static final int BG = Bg.LEVEL_1;
+        public static final int BASE_SHADOW = withAlpha(Palette.SHADOW, 0x10);
 
         private Preview() {}
     }
@@ -1120,7 +1266,7 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class RecipeGrid {
-        public static final int TAG_INDICATOR = 0xFFFF9800;
+        public static final int TAG_INDICATOR = Accent.SECONDARY;
 
         private RecipeGrid() {}
     }
@@ -1130,10 +1276,10 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class StaminaEditor {
-        public static final int OVERLAY_BG = 0x80000000;
-        public static final int PANEL_BG = 0xFF2D2D30;
+        public static final int OVERLAY_BG = withAlpha(Bg.LEVEL_1, 0x80);
+        public static final int PANEL_BG = Surface.LEVEL_1;
         public static final int TITLE_TEXT = DesignTokens.Text.WHITE;
-        public static final int SELECTED_FIELD = 0xFFFFFF00;
+        public static final int SELECTED_FIELD = Accent.SECONDARY;
         public static final int NORMAL_FIELD = DesignTokens.Neutral.N450;
         public static final int INSTRUCTIONS = DesignTokens.Neutral.N550;
 
@@ -1145,9 +1291,9 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class ItemEditor {
-        public static final int STATUS_MESSAGE_BG = 0xE0000000;
-        public static final int TOOLTIP_BG = 0xF0100010;
-        public static final int DEV_PANEL_BG = 0xE0101020;
+        public static final int STATUS_MESSAGE_BG = withAlpha(Bg.LEVEL_1, 0xE0);
+        public static final int TOOLTIP_BG = withAlpha(Bg.LEVEL_2, 0xF0);
+        public static final int DEV_PANEL_BG = withAlpha(Bg.LEVEL_2, 0xE0);
         public static final int DEV_PANEL_TITLE = DesignTokens.Text.WHITE;
 
         private ItemEditor() {}
@@ -1158,19 +1304,19 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class PresetSelector {
-        public static final int CLOSE_HOVER = 0xFFFF4444;
-        public static final int RENAME_BG = 0xFF1A1A2A;
-        public static final int RENAME_BORDER = 0xFF4488FF;
+        public static final int CLOSE_HOVER = Semantic.ERROR;
+        public static final int RENAME_BG = Surface.LEVEL_0;
+        public static final int RENAME_BORDER = Accent.PRIMARY;
         public static final int SEARCH_BG_FOCUSED = DesignTokens.Neutral.N820;
         public static final int SEARCH_BG_DEFAULT = DesignTokens.Neutral.N860;
         public static final int PREVIEW_BG = DesignTokens.Neutral.N900;
-        public static final int ROW_BG_SELECTED = 0xFF1F4D3A;
+        public static final int ROW_BG_SELECTED = withAlpha(Accent.PRIMARY, 0x33);
         public static final int ROW_BG_HOVER = DesignTokens.Neutral.N820;
         public static final int ROW_BG_DEFAULT = DesignTokens.Neutral.N880;
-        public static final int SCOPE_MODPACK = 0xFFFF9900;
-        public static final int SCOPE_CATEGORY = 0xFF66AAFF;
-        public static final int SCOPE_GLOBAL = 0xFF88FF88;
-        public static final int SCOPE_GLOBAL_USER = 0xFFAAFF88;
+        public static final int SCOPE_MODPACK = Accent.SECONDARY;
+        public static final int SCOPE_CATEGORY = Semantic.INFO;
+        public static final int SCOPE_GLOBAL = Semantic.SUCCESS;
+        public static final int SCOPE_GLOBAL_USER = Semantic.SUCCESS;
 
         private PresetSelector() {}
     }
@@ -1180,11 +1326,11 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class MobConfig {
-        public static final int HEADER_GRADIENT_START = 0xFF2A2A42;
-        public static final int SECTION_GRADIENT_START = 0xFF151525;
-        public static final int SECTION_GRADIENT_END = 0xFF1A1A2E;
-        public static final int MARKER = 0x80FFFFFF;
-        public static final int OVERLAY = 0xA0000000;
+        public static final int HEADER_GRADIENT_START = Bg.LEVEL_3;
+        public static final int SECTION_GRADIENT_START = Bg.LEVEL_2;
+        public static final int SECTION_GRADIENT_END = Bg.LEVEL_3;
+        public static final int MARKER = withAlpha(Text.PRIMARY, 0x80);
+        public static final int OVERLAY = withAlpha(Palette.SHADOW, 0xA0);
 
         private MobConfig() {}
     }
@@ -1194,10 +1340,37 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class TelemetryDashboard {
-        public static final int CONFIRM_HOVER_BG = 0x80FF0000;
-        public static final int SCRIM = 0xC0101010;
+        public static final int CONFIRM_HOVER_BG = withAlpha(Semantic.ERROR, 0x80);
+        public static final int SCRIM = withAlpha(Palette.SHADOW, 0xC0);
 
         private TelemetryDashboard() {}
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TELEMETRY EXPORT COLORS (PNG heatmaps)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    public static final class TelemetryExport {
+        public static final int BG = Palette.BACKGROUND;
+        public static final int TITLE = Palette.TEXT_PRIMARY;
+        public static final int SUBTITLE = Palette.TEXT_SECONDARY;
+        public static final int GRID = Palette.OUTLINE;
+        public static final int BORDER = Palette.OUTLINE;
+        public static final int LEGEND_TEXT = Palette.TEXT_PRIMARY;
+        public static final int CELL_ALPHA = 200;
+
+        public static final int GRADIENT_0 = Palette.ACCENT_BLUE;
+        public static final int GRADIENT_1 = Palette.ACCENT_TEAL;
+        public static final int GRADIENT_2 = Palette.SUCCESS;
+        public static final int GRADIENT_3 = Palette.WARNING;
+        public static final int GRADIENT_4 = Palette.ACCENT_AMBER;
+        public static final int GRADIENT_5 = Palette.ERROR;
+        public static final int GRADIENT_6 = Palette.ERROR;
+        public static final int GRADIENT_7 = Palette.ERROR;
+        public static final int GRADIENT_8 = Palette.ERROR;
+        public static final int GRADIENT_9 = Palette.ERROR;
+
+        private TelemetryExport() {}
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -1205,10 +1378,10 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class Keybinds {
-        public static final int CONFLICT_BG = 0x30FF4444;
-        public static final int CONFLICT_GLOW = 0x18FF4444;
-        public static final int CONFLICT_BORDER = 0xFFFF6666;
-        public static final int CONFLICT_TEXT = 0xFFFF8888;
+        public static final int CONFLICT_BG = withAlpha(Semantic.ERROR, 0x30);
+        public static final int CONFLICT_GLOW = withAlpha(Semantic.ERROR, 0x18);
+        public static final int CONFLICT_BORDER = Semantic.ERROR;
+        public static final int CONFLICT_TEXT = Semantic.ERROR;
 
         private Keybinds() {}
     }
@@ -1218,14 +1391,14 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class Heatmap {
-        public static final int DEATH = Basic.RED;
-        public static final int MOVEMENT = Basic.GREEN;
-        public static final int CAMPING = Basic.YELLOW;
-        public static final int STUCK = 0xFFFF8000;
-        public static final int AGGRO_DROP = 0xFF8000FF;
-        public static final int KITING = Basic.CYAN;
-        public static final int LIGHT_SPAWNABLE = Basic.RED;
-        public static final int LIGHT_DARK = 0xFFFF8800;
+        public static final int DEATH = Palette.ERROR;
+        public static final int MOVEMENT = Palette.ACCENT_TEAL;
+        public static final int CAMPING = Palette.WARNING;
+        public static final int STUCK = Palette.ACCENT_AMBER;
+        public static final int AGGRO_DROP = Palette.ERROR;
+        public static final int KITING = Palette.ACCENT_BLUE;
+        public static final int LIGHT_SPAWNABLE = Palette.SUCCESS;
+        public static final int LIGHT_DARK = Palette.WARNING;
 
         private Heatmap() {}
     }
@@ -1235,11 +1408,11 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class BodyDiagram {
-        public static final int HEAD = 0xFFFF6B6B;
-        public static final int BODY = 0xFF4ECDC4;
-        public static final int ARMS = 0xFFFFE66D;
-        public static final int LEGS = 0xFF95E1D3;
-        public static final int ARMOR_LABEL = 0xFFFF8C00;
+        public static final int HEAD = Semantic.ERROR;
+        public static final int BODY = Semantic.SUCCESS;
+        public static final int ARMS = Semantic.WARNING;
+        public static final int LEGS = Semantic.INFO;
+        public static final int ARMOR_LABEL = Accent.SECONDARY;
 
         private BodyDiagram() {}
     }
@@ -1249,17 +1422,17 @@ public final class DesignTokens {
     // ═══════════════════════════════════════════════════════════════════════════
 
     public static final class DebugPanel {
-        public static final int NBT_TOGGLE = 0x88CCFF;
-        public static final int NBT_SUMMARY = 0xFFCCAA;
-        public static final int HEADER_TEXT = 0xFFFFFF;
-        public static final int ITEM_TEXT = 0xDDDDDD;
-        public static final int ITEM_DETAIL = 0xCCCCCC;
-        public static final int NBT_COUNT = 0x8899AA;
-        public static final int SOURCE_TEXT = 0xCCDDFF;
-        public static final int LOG_TEXT = 0xAAAAAA;
-        public static final int PANEL_BG = 0xE0101020;
-        public static final int DIFF = 0xFFCC66;
-        public static final int MATCH = 0x88FF88;
+        public static final int NBT_TOGGLE = Accent.PRIMARY;
+        public static final int NBT_SUMMARY = Accent.SECONDARY;
+        public static final int HEADER_TEXT = DesignTokens.Text.PRIMARY;
+        public static final int ITEM_TEXT = DesignTokens.Text.PRIMARY;
+        public static final int ITEM_DETAIL = DesignTokens.Text.SECONDARY;
+        public static final int NBT_COUNT = DesignTokens.Text.SECONDARY;
+        public static final int SOURCE_TEXT = Semantic.INFO;
+        public static final int LOG_TEXT = DesignTokens.Text.SECONDARY;
+        public static final int PANEL_BG = withAlpha(Bg.LEVEL_3, 0xE0);
+        public static final int DIFF = Semantic.WARNING;
+        public static final int MATCH = withAlpha(Semantic.SUCCESS, 0x88);
 
         private DebugPanel() {}
     }
@@ -1270,28 +1443,28 @@ public final class DesignTokens {
 
     public static final class ImpactButton {
         /* Default button base */
-        public static final int DEFAULT_BASE = 0xFF101018;
+        public static final int DEFAULT_BASE = Surface.LEVEL_0;
         /* Default button border */
         public static final int DEFAULT_BORDER = Stroke.DEFAULT;
         /* Ghost button base (more transparent) */
-        public static final int GHOST_BASE = 0xFF0A0A10;
+        public static final int GHOST_BASE = Surface.LEVEL_0;
         /* Ghost button border */
         public static final int GHOST_BORDER = Stroke.MUTED;
 
         /* Primary button base (teal) */
-        public static final int PRIMARY_BASE = 0xFF0E5569;
+        public static final int PRIMARY_BASE = darken(Accent.PRIMARY, 0.35f);
         /* Primary button border */
-        public static final int PRIMARY_BORDER = 0xFF1A8BAA;
+        public static final int PRIMARY_BORDER = Accent.PRIMARY;
 
         /* Danger button base (dark red) */
-        public static final int DANGER_BASE = 0xFF7A1A1E;
+        public static final int DANGER_BASE = darken(Semantic.ERROR, 0.35f);
         /* Danger button border */
-        public static final int DANGER_BORDER = 0xFFB23036;
+        public static final int DANGER_BORDER = Semantic.ERROR;
 
         /* Success button base (forest green) */
-        public static final int SUCCESS_BASE = 0xFF1F6A3F;
+        public static final int SUCCESS_BASE = darken(Semantic.SUCCESS, 0.35f);
         /* Success button border */
-        public static final int SUCCESS_BORDER = 0xFF2DA45A;
+        public static final int SUCCESS_BORDER = Semantic.SUCCESS;
 
         private ImpactButton() {}
     }
@@ -1302,17 +1475,17 @@ public final class DesignTokens {
 
     public static final class Utility {
         /* Focus ring color */
-        public static final int FOCUS = 0xFF00D4FF;
+        public static final int FOCUS = DesignTokens.Accent.PRIMARY;
         /* Selection background */
-        public static final int SELECTION = 0x3000D4FF;
+        public static final int SELECTION = withAlpha(DesignTokens.Accent.PRIMARY, 0x30);
         /* Modal backdrop (scrim) */
-        public static final int SCRIM = 0xCC000000;
+        public static final int SCRIM = withAlpha(Palette.SHADOW, 0xCC);
         /* Disabled elements */
-        public static final int DISABLED = 0xFF505060;
+        public static final int DISABLED = DesignTokens.Neutral.N760;
         /* Drop shadows */
-        public static final int SHADOW = 0x80000000;
+        public static final int SHADOW = withAlpha(Palette.SHADOW, 0x80);
         /* Cyan glow */
-        public static final int GLOW_CYAN = 0x6000D4FF;
+        public static final int GLOW_CYAN = withAlpha(DesignTokens.Accent.PRIMARY, 0x60);
 
         private Utility() {}
     }
@@ -1623,7 +1796,11 @@ public final class DesignTokens {
     // COLOR MASKS (bitwise helpers)
     // ===========================================================================
 
-    public static final class Mask extends SharedColorTokens.Mask {
+    public static final class Mask {
+        public static final int RGB = 0x00FFFFFF;
+        public static final int ALPHA = 0xFF000000;
+        public static final int NONE = 0x00000000;
+
         private Mask() {}
     }
 
@@ -1918,7 +2095,7 @@ public final class DesignTokens {
         public static final int CONTENT = Bg.LEVEL_3;
         public static final int TAB_INACTIVE = Surface.LEVEL_1;
         public static final int TAB_ACTIVE = Surface.LEVEL_2;
-        public static final int OVERLAY = withAlpha(0x000000, 0x80);
+        public static final int OVERLAY = withAlpha(Palette.SHADOW, 0x80);
         public static final int SCREEN = PANEL;
         public static final int TOOLTIP = withAlpha(Surface.LEVEL_0, 0xF0);
         public static final int HUD_PANEL = withAlpha(PANEL_SOLID, 0xCC);
@@ -1975,7 +2152,7 @@ public final class DesignTokens {
         public static final int SPEED = Semantic.SUCCESS;
         public static final int DURABILITY = Semantic.WARNING;
         public static final int SPECIAL = DesignTokens.Accent.SECONDARY;
-        public static final int NEUTRAL = 0xFF78909C;
+        public static final int NEUTRAL = Text.SECONDARY;
         public static final int PERCENT = DesignTokens.Accent.PRIMARY;
 
         private SliderColors() {}
@@ -2191,7 +2368,7 @@ public final class DesignTokens {
         /* Toggle track disabled */
         public static final int TRACK_DISABLED = Surface.LEVEL_0;
         /* Toggle thumb */
-        public static final int THUMB = 0xFFD0D0D8;
+        public static final int THUMB = Stroke.DEFAULT;
         /* Toggle thumb disabled */
         public static final int THUMB_DISABLED = Utility.DISABLED;
 
@@ -2207,7 +2384,12 @@ public final class DesignTokens {
     // BODY PART COLORS (for damage/hitbox visualization)
     // ===========================================================================
 
-    public static final class BodyPart extends SharedColorTokens.BodyPart {
+    public static final class BodyPart {
+        public static final int HEAD = Palette.ERROR;
+        public static final int BODY = Palette.SUCCESS;
+        public static final int ARMS = Palette.WARNING;
+        public static final int LEGS = Palette.ACCENT_BLUE;
+
         private BodyPart() {}
     }
 
@@ -2235,63 +2417,75 @@ public final class DesignTokens {
     // DOMAIN PALETTES (feature-specific colors)
     // ===========================================================================
 
-    public static final class Message extends SharedColorTokens.Message {
+    public static final class Message {
+        public static final int RGB_SUCCESS = Palette.SUCCESS & Mask.RGB;
+        public static final int RGB_ERROR = Palette.ERROR & Mask.RGB;
+        public static final int RGB_MUTED = Palette.TEXT_SECONDARY & Mask.RGB;
+
         private Message() {}
     }
 
-    public static final class FollowRange extends SharedColorTokens.FollowRange {
+    public static final class FollowRange {
+        public static final int RED = Basic.RED;
+        public static final int YELLOW = Basic.YELLOW;
+        public static final int GREEN = Basic.GREEN;
+        public static final int CYAN = Basic.CYAN;
+        public static final int BLUE = Basic.BLUE;
+
         private FollowRange() {}
     }
 
     public static final class AttributeLog {
-        public static final int GREEN = 0xFF00FF00;
-        public static final int RED = 0xFFFF0000;
-        public static final int YELLOW = 0xFFFFFF00;
-        public static final int LIGHT_RED = 0xFFFF5555;
-        public static final int DARK_RED = 0xFFAA0000;
-        public static final int CRITICAL_RED = 0xFF550000;
-        public static final int ORANGE = 0xFFFFAA00;
-        public static final int LIGHT_GREEN = 0xFF55FF55;
-        public static final int GRAY = 0xFFAAAAAA;
-        public static final int MAGENTA = 0xFFFF55FF;
+        public static final int GREEN = Palette.SUCCESS;
+        public static final int RED = Palette.ERROR;
+        public static final int YELLOW = Palette.WARNING;
+        public static final int LIGHT_RED = Palette.ERROR;
+        public static final int DARK_RED = Palette.ERROR;
+        public static final int CRITICAL_RED = Palette.ERROR;
+        public static final int ORANGE = Palette.ACCENT_AMBER;
+        public static final int LIGHT_GREEN = Palette.SUCCESS;
+        public static final int GRAY = Palette.TEXT_SECONDARY;
+        public static final int MAGENTA = Palette.ACCENT_BLUE;
 
         private AttributeLog() {}
     }
 
-    public static final class Shield extends SharedColorTokens.Shield {
+    public static final class Shield {
+        public static final int DEFAULT = Palette.ACCENT_BLUE;
+
         private Shield() {}
     }
 
     public static final class Alert {
-        public static final int ERROR = 0xED4245;
-        public static final int WARN = 0xFEE75C;
-        public static final int INFO = 0x5865F2;
+        public static final int ERROR = Palette.ERROR;
+        public static final int WARN = Palette.WARNING;
+        public static final int INFO = Palette.ACCENT_BLUE;
 
         private Alert() {}
     }
 
     public static final class JourneyMap {
-        public static final int SPAWN = 0x00FF00;
-        public static final int OBJECTIVE = 0xFFD700;
-        public static final int EXIT = 0x4169E1;
+        public static final int SPAWN = Palette.SUCCESS;
+        public static final int OBJECTIVE = Palette.ACCENT_BLUE;
+        public static final int EXIT = Palette.ACCENT_AMBER;
 
         private JourneyMap() {}
     }
 
     public static final class Trail {
         public static final class Entity {
-            public static final int ARROW = 0xFFFFAA00;
-            public static final int POTION = 0xFF9900FF;
-            public static final int TRIDENT = 0xFF00FFFF;
-            public static final int FIREWORK = 0xFFFF5555;
-            public static final int WITHER_SKULL = 0xFF333333;
-            public static final int FIREBALL = 0xFFFF4400;
-            public static final int SMALL_FIREBALL = 0xFFFF6600;
-            public static final int SHULKER_BULLET = 0xFFFF00FF;
-            public static final int XP_ORB = 0xFF55FF55;
-            public static final int ENDER_EYE = 0xFF00FF88;
-            public static final int ELYTRA = 0xFFAADDFF;
-            public static final int DEFAULT = 0xFFFFFFFF;
+            public static final int ARROW = Accent.SECONDARY;
+            public static final int POTION = Accent.BLUE;
+            public static final int TRIDENT = Accent.PRIMARY;
+            public static final int FIREWORK = Semantic.WARNING;
+            public static final int WITHER_SKULL = Stroke.MUTED;
+            public static final int FIREBALL = Semantic.ERROR;
+            public static final int SMALL_FIREBALL = Semantic.ERROR;
+            public static final int SHULKER_BULLET = Accent.BLUE;
+            public static final int XP_ORB = Semantic.SUCCESS;
+            public static final int ENDER_EYE = Accent.PRIMARY;
+            public static final int ELYTRA = Accent.BLUE;
+            public static final int DEFAULT = Text.PRIMARY;
 
             private Entity() {}
         }
@@ -2299,16 +2493,60 @@ public final class DesignTokens {
         private Trail() {}
     }
 
-    public static final class Combat extends SharedColorTokens.Combat {
+    public static final class Combat {
+        public static final class Text {
+            public static final int PRIMARY = Palette.TEXT_PRIMARY;
+            public static final int MUTED = Palette.TEXT_SECONDARY;
+            public static final int WARNING = Palette.WARNING;
+
+            private Text() {}
+        }
+
+        public static final class BodyPart {
+            public static final int DEFAULT = Palette.TEXT_PRIMARY;
+            public static final int HEAD = Palette.ERROR;
+            public static final int BODY = Palette.SUCCESS;
+            public static final int ARMS = Palette.WARNING;
+            public static final int LEGS = Palette.ACCENT_BLUE;
+
+            private BodyPart() {}
+        }
+
+        public static final class ImprintStage {
+            public static final int OWNER = Palette.TEXT_SECONDARY;
+            public static final int ENHANCED = Palette.ACCENT_TEAL;
+            public static final int LEGENDARY = Palette.ACCENT_AMBER;
+            public static final int ASCENDED = Palette.ACCENT_BLUE;
+
+            private ImprintStage() {}
+        }
+
+        public static final class WeaponTrait {
+            public static final int EXECUTIONER = Palette.ERROR;
+            public static final int TYRANT_SLAYER = Palette.WARNING;
+            public static final int STYLISH = Palette.ACCENT_TEAL;
+            public static final int BLOODTHIRSTY = Palette.ERROR;
+            public static final int HARMONIC = Palette.ACCENT_TEAL;
+            public static final int PRECISION = Palette.ACCENT_BLUE;
+            public static final int RELENTLESS = Palette.WARNING;
+            public static final int GUARDIAN = Palette.SUCCESS;
+            public static final int DEVASTATING = Palette.ERROR;
+            public static final int FINISHER = Palette.ERROR;
+            public static final int CLEAVING = Palette.WARNING;
+            public static final int RETALIATING = Palette.ACCENT_BLUE;
+
+            private WeaponTrait() {}
+        }
+
         private Combat() {}
     }
 
     public static final class CombatPanel {
         public static final class Damage {
-            public static final int CRITICAL = 0xFFFF4444;
-            public static final int HIGH = 0xFFFFAA00;
-            public static final int MEDIUM = 0xFFFFFF00;
-            public static final int LOW = 0xFFFFFFFF;
+            public static final int CRITICAL = Semantic.ERROR;
+            public static final int HIGH = Semantic.WARNING;
+            public static final int MEDIUM = Accent.SECONDARY;
+            public static final int LOW = DesignTokens.Text.PRIMARY;
 
             private Damage() {}
         }
@@ -2318,74 +2556,74 @@ public final class DesignTokens {
 
     public static final class TestingUi {
         public static final class Screen {
-            public static final int BG = 0xFF1A1A1A;
+            public static final int BG = Bg.LEVEL_1;
 
             private Screen() {}
         }
 
         public static final class Accent {
-            public static final int GOLD = 0xFFFFAA00;
+            public static final int GOLD = DesignTokens.Accent.SECONDARY;
 
             private Accent() {}
         }
 
         public static final class Panel {
-            public static final int BG = 0xE0202035;
-            public static final int HEADER = 0xFF303050;
-            public static final int HEADER_ALT = 0xFF403020;
-            public static final int XP_BG = 0xFF333344;
+            public static final int BG = withAlpha(Bg.LEVEL_4, 0xE0);
+            public static final int HEADER = Bg.LEVEL_4;
+            public static final int HEADER_ALT = Bg.LEVEL_3;
+            public static final int XP_BG = Surface.LEVEL_0;
 
             private Panel() {}
         }
 
         public static final class Scrollbar {
-            public static final int TRACK = 0x40FFFFFF;
-            public static final int THUMB = 0x80FFFFFF;
+            public static final int TRACK = withAlpha(DesignTokens.Text.PRIMARY, 0x40);
+            public static final int THUMB = withAlpha(DesignTokens.Text.PRIMARY, 0x80);
 
             private Scrollbar() {}
         }
 
         public static final class Hud {
-            public static final int PANEL_BG = 0xE0202030;
-            public static final int PANEL_BORDER = 0xFF5588FF;
-            public static final int PANEL_HEADER_BG = 0xFF303050;
+            public static final int PANEL_BG = withAlpha(Bg.LEVEL_4, 0xE0);
+            public static final int PANEL_BORDER = Stroke.DEFAULT;
+            public static final int PANEL_HEADER_BG = Bg.LEVEL_4;
 
-            public static final int TEXT_TITLE = 0xFF00FFFF;
-            public static final int TEXT_PRIMARY = 0xFFFFFFFF;
-            public static final int TEXT_SECONDARY = 0xFFBBBBBB;
-            public static final int TEXT_MUTED = 0xFF888888;
-            public static final int TEXT_SUCCESS = 0xFF55FF55;
-            public static final int TEXT_WARNING = 0xFFFFAA00;
+            public static final int TEXT_TITLE = DesignTokens.Accent.PRIMARY;
+            public static final int TEXT_PRIMARY = DesignTokens.Text.PRIMARY;
+            public static final int TEXT_SECONDARY = DesignTokens.Text.SECONDARY;
+            public static final int TEXT_MUTED = DesignTokens.Text.MUTED;
+            public static final int TEXT_SUCCESS = Semantic.SUCCESS;
+            public static final int TEXT_WARNING = Semantic.WARNING;
 
-            public static final int PROGRESS_BG = 0xFF333344;
-            public static final int PROGRESS_FILL = 0xFF5588FF;
-            public static final int PROGRESS_COMPLETE = 0xFF55FF55;
+            public static final int PROGRESS_BG = Surface.LEVEL_0;
+            public static final int PROGRESS_FILL = DesignTokens.Accent.PRIMARY;
+            public static final int PROGRESS_COMPLETE = Semantic.SUCCESS;
 
-            public static final int HINT_BG = 0x80000000;
-            public static final int NEW_TEST_GLOW_RGB = 0x5588FF;
-            public static final int HEADER_IN_PROGRESS = 0xFF504020;
+            public static final int HINT_BG = withAlpha(Palette.SHADOW, 0x80);
+            public static final int NEW_TEST_GLOW_RGB = DesignTokens.Accent.PRIMARY & Mask.RGB;
+            public static final int HEADER_IN_PROGRESS = withAlpha(Semantic.WARNING, 0x55);
 
             private Hud() {}
         }
 
         public static final class Notification {
-            public static final int BG_RGB = 0x202020;
-            public static final int TEXT_RGB = 0xFFFFFF;
-            public static final int TEXT_MUTED_RGB = 0xAAAAAA;
+            public static final int BG_RGB = Surface.LEVEL_1 & Mask.RGB;
+            public static final int TEXT_RGB = DesignTokens.Text.PRIMARY & Mask.RGB;
+            public static final int TEXT_MUTED_RGB = DesignTokens.Text.SECONDARY & Mask.RGB;
 
-            public static final int TEST_PASSED = 0xFF55FF55;
-            public static final int TEST_FAILED = 0xFFFF5555;
-            public static final int ACHIEVEMENT = 0xFFFFAA00;
-            public static final int LEVEL_UP = 0xFFFF55FF;
-            public static final int BADGE = 0xFFFFD700;
-            public static final int STREAK = 0xFF55FFFF;
-            public static final int XP_GAIN = 0xFFAAFFAA;
+            public static final int TEST_PASSED = Semantic.SUCCESS;
+            public static final int TEST_FAILED = Semantic.ERROR;
+            public static final int ACHIEVEMENT = DesignTokens.Accent.SECONDARY;
+            public static final int LEVEL_UP = DesignTokens.Accent.PRIMARY;
+            public static final int BADGE = DesignTokens.Accent.SECONDARY;
+            public static final int STREAK = DesignTokens.Accent.PRIMARY;
+            public static final int XP_GAIN = Semantic.SUCCESS;
 
             private Notification() {}
         }
 
         public static final class Badge {
-            public static final int UNREAD = 0xFF00FF00;
+            public static final int UNREAD = Semantic.SUCCESS;
 
             private Badge() {}
         }
@@ -2394,49 +2632,49 @@ public final class DesignTokens {
     }
 
     public static final class ArenaTestWizard {
-        public static final int UNKNOWN = 0xFF808080;
-        public static final int STONE = 0xFF808080;
-        public static final int WOOD = 0xFFB87333;
-        public static final int GRASS = 0xFF4CAF50;
-        public static final int SAND = 0xFFE8D4A0;
-        public static final int DIRT = 0xFF8B4513;
-        public static final int BRICK = 0xFFB22222;
-        public static final int IRON = 0xFFD3D3D3;
-        public static final int GOLD = 0xFFFFD700;
-        public static final int DIAMOND = 0xFF00CED1;
-        public static final int EMERALD = 0xFF50C878;
-        public static final int OBSIDIAN = 0xFF1A1A2E;
-        public static final int NETHER = 0xFF8B0000;
-        public static final int END = 0xFFE8E8A0;
-        public static final int PRISMARINE = 0xFF5F9EA0;
-        public static final int GLASS = 0x80FFFFFF;
-        public static final int WOOL_WHITE = 0xFFFFFFFF;
-        public static final int WOOL_BLACK = 0xFF1A1A1A;
-        public static final int WOOL_RED = 0xFFFF0000;
-        public static final int WOOL_BLUE = 0xFF0000FF;
-        public static final int WOOL_GREEN = 0xFF00FF00;
-        public static final int WOOL_YELLOW = 0xFFFFFF00;
-        public static final int FALLBACK = 0xFF606060;
+        public static final int UNKNOWN = Text.SECONDARY;
+        public static final int STONE = Text.SECONDARY;
+        public static final int WOOD = Accent.SECONDARY;
+        public static final int GRASS = Semantic.SUCCESS;
+        public static final int SAND = Accent.SECONDARY;
+        public static final int DIRT = Stroke.MUTED;
+        public static final int BRICK = Semantic.ERROR;
+        public static final int IRON = Text.SECONDARY;
+        public static final int GOLD = Accent.SECONDARY;
+        public static final int DIAMOND = Accent.BLUE;
+        public static final int EMERALD = Semantic.SUCCESS;
+        public static final int OBSIDIAN = Bg.LEVEL_3;
+        public static final int NETHER = Semantic.ERROR;
+        public static final int END = Text.PRIMARY;
+        public static final int PRISMARINE = Accent.PRIMARY;
+        public static final int GLASS = withAlpha(Text.PRIMARY, 0x80);
+        public static final int WOOL_WHITE = Text.PRIMARY;
+        public static final int WOOL_BLACK = Bg.LEVEL_0;
+        public static final int WOOL_RED = Semantic.ERROR;
+        public static final int WOOL_BLUE = Semantic.INFO;
+        public static final int WOOL_GREEN = Semantic.SUCCESS;
+        public static final int WOOL_YELLOW = Semantic.WARNING;
+        public static final int FALLBACK = Text.SECONDARY;
 
         private ArenaTestWizard() {}
     }
 
     public static final class BuildProgressHud {
         public static final class Panel {
-            public static final int BACKGROUND = 0x80000000;
-            public static final int BORDER = 0xFF404040;
-            public static final int BAR_EMPTY = 0xFF202020;
-            public static final int TEXT = 0xFFFFFFFF;
-            public static final int TEXT_SHADOW = 0xFF000000;
+            public static final int BACKGROUND = withAlpha(Bg.LEVEL_1, 0x80);
+            public static final int BORDER = Stroke.DEFAULT;
+            public static final int BAR_EMPTY = Surface.LEVEL_0;
+            public static final int TEXT = DesignTokens.Text.PRIMARY;
+            public static final int TEXT_SHADOW = Palette.SHADOW;
 
             private Panel() {}
         }
 
         public static final class Progress {
-            public static final int NORMAL = 0xFF00AA00;
-            public static final int WARNING = 0xFFAAAA00;
-            public static final int COMPLETE = 0xFF00FF00;
-            public static final int FAILED = 0xFFFF0000;
+            public static final int NORMAL = Semantic.SUCCESS;
+            public static final int WARNING = Semantic.WARNING;
+            public static final int COMPLETE = Semantic.SUCCESS;
+            public static final int FAILED = Semantic.ERROR;
 
             private Progress() {}
         }
@@ -2444,79 +2682,323 @@ public final class DesignTokens {
         private BuildProgressHud() {}
     }
 
-    public static final class Endurance extends SharedColorTokens.Endurance {
+    public static final class Endurance {
+        private static final int ACCENT = Palette.ACCENT_TEAL;
+        private static final int ACCENT_ALT = Palette.ACCENT_BLUE;
+        private static final int ACCENT_WARM = Palette.ACCENT_AMBER;
+        private static final int SUCCESS = Palette.SUCCESS;
+        private static final int WARNING = Palette.WARNING;
+        private static final int ERROR = Palette.ERROR;
+        private static final int MUTED = Palette.TEXT_SECONDARY;
+        private static final int PRIMARY = Palette.TEXT_PRIMARY;
+
+        public static final class Text {
+            public static final int WHITE = Endurance.PRIMARY;
+            public static final int MUTED = Endurance.MUTED;
+
+            private Text() {}
+        }
+
+        public static final class Currency {
+            public static final int TOKENS = ACCENT;
+            public static final int COINS = ACCENT_WARM;
+            public static final int PRESTIGE = ACCENT_ALT;
+            public static final int GEMS = SUCCESS;
+            public static final int BLOOD_GEMS = ERROR;
+
+            private Currency() {}
+        }
+
+        public static final class LootTier {
+            public static final int COMMON = MUTED;
+            public static final int UNCOMMON = ACCENT;
+            public static final int RARE = ACCENT_ALT;
+            public static final int EPIC = ACCENT_WARM;
+            public static final int LEGENDARY = SUCCESS;
+            public static final int MYTHIC = ERROR;
+
+            private LootTier() {}
+        }
+
+        public static final class RewardCategory {
+            public static final int STATS = ACCENT;
+            public static final int PERKS = ACCENT_ALT;
+            public static final int UTILITY = ACCENT_WARM;
+            public static final int COSMETICS = SUCCESS;
+
+            private RewardCategory() {}
+        }
+
+        public static final class StyleRank {
+            public static final int D = MUTED;
+            public static final int C = ACCENT;
+            public static final int B = ACCENT_ALT;
+            public static final int A = ACCENT_WARM;
+            public static final int S = SUCCESS;
+            public static final int SS = WARNING;
+            public static final int SSS = ERROR;
+
+            private StyleRank() {}
+        }
+
+        public static final class Momentum {
+            public static final int STAGNANT = MUTED;
+            public static final int BUILDING = ACCENT;
+            public static final int HEATED = WARNING;
+            public static final int OVERDRIVE = ERROR;
+
+            private Momentum() {}
+        }
+
+        public static final class Flow {
+            public static final int STALE = MUTED;
+            public static final int NEUTRAL = MUTED;
+            public static final int FRESH = SUCCESS;
+            public static final int VIRTUOSO = ACCENT_ALT;
+
+            private Flow() {}
+        }
+
+        public static final class Tension {
+            public static final int CALM = SUCCESS;
+            public static final int BUILDING = ACCENT;
+            public static final int MODERATE = WARNING;
+            public static final int HIGH = ACCENT_WARM;
+            public static final int CRITICAL = ERROR;
+            public static final int DEFAULT = PRIMARY;
+
+            private Tension() {}
+        }
+
+        public static final class Tide {
+            public static final int CALM = SUCCESS;
+            public static final int RISING = ACCENT;
+            public static final int HIGH = WARNING;
+            public static final int STORM = ERROR;
+            public static final int APOCALYPSE = ERROR;
+
+            private Tide() {}
+        }
+
+        public static final class Boss {
+            public static final int BERSERKER = ERROR;
+            public static final int SUMMONER = ACCENT_ALT;
+            public static final int JUGGERNAUT = SUCCESS;
+            public static final int ASSASSIN = ACCENT;
+            public static final int ELEMENTAL = ACCENT_WARM;
+
+            private Boss() {}
+        }
+
+        public static final class Contract {
+            public static final int MINOR = MUTED;
+            public static final int STANDARD = ACCENT;
+            public static final int MAJOR = ACCENT_WARM;
+            public static final int BLOOD = ERROR;
+
+            private Contract() {}
+        }
+
+        public static final class Kit {
+            public static final int STARTER = MUTED;
+            public static final int WARRIOR = ERROR;
+            public static final int RANGER = SUCCESS;
+            public static final int TANK = ACCENT_ALT;
+            public static final int MAGE = ACCENT;
+            public static final int BERSERKER = ERROR;
+            public static final int CUSTOM = ACCENT_WARM;
+
+            private Kit() {}
+        }
+
+        public static final class Prestige {
+            public static final int PERK_SLOT = ACCENT;
+            public static final int MUTATOR_UNLOCK = ACCENT_WARM;
+            public static final int ARENA_UNLOCK = ACCENT_ALT;
+            public static final int COSMETIC_TITLE = ACCENT_WARM;
+            public static final int STARTING_BONUS = SUCCESS;
+            public static final int TOKEN_MULTIPLIER = ACCENT_WARM;
+            public static final int EXCLUSIVE_PERK = ACCENT_ALT;
+
+            private Prestige() {}
+        }
+
+        public static final class PerkRarity {
+            public static final int COMMON = MUTED;
+            public static final int UNCOMMON = ACCENT;
+            public static final int RARE = ACCENT_ALT;
+            public static final int EPIC = ACCENT_WARM;
+            public static final int LEGENDARY = SUCCESS;
+
+            private PerkRarity() {}
+        }
+
+        public static final class PerkCategory {
+            public static final int OFFENSE = ERROR;
+            public static final int DEFENSE = SUCCESS;
+            public static final int UTILITY = ACCENT;
+            public static final int VAMPIRIC = ERROR;
+            public static final int ELEMENTAL = ACCENT_WARM;
+            public static final int COMBO = ACCENT_ALT;
+            public static final int CURSE = ERROR;
+
+            private PerkCategory() {}
+        }
+
+        public static final class Mutator {
+            public static final int POSITIVE = SUCCESS;
+            public static final int NEGATIVE = ERROR;
+            public static final int NEUTRAL = MUTED;
+            public static final int CHAOTIC = WARNING;
+
+            private Mutator() {}
+        }
+
+        public static final class Synergy {
+            public static final int MINOR = MUTED;
+            public static final int MODERATE = ACCENT;
+            public static final int STRONG = ACCENT_WARM;
+            public static final int LEGENDARY = SUCCESS;
+
+            private Synergy() {}
+        }
+
+        public static final class ResonanceChain {
+            public static final int DUO = ACCENT;
+            public static final int TRINITY = ACCENT_ALT;
+            public static final int APOCALYPSE = ERROR;
+            public static final int DEFAULT = PRIMARY;
+
+            private ResonanceChain() {}
+        }
+
+        public static final class Hazard {
+            public static final int FIRE = WARNING;
+            public static final int BLEED = ERROR;
+            public static final int VOID = ACCENT_ALT;
+            public static final int ARC = ACCENT;
+            public static final int PSI = ACCENT_WARM;
+
+            private Hazard() {}
+        }
+
+        public static final class Nemesis {
+            public static final int PROJECTILE_DEFLECTION = ACCENT_ALT;
+            public static final int SWEEPING_BLADE = ERROR;
+            public static final int EARLY_PHASE_ACTIVATION = WARNING;
+            public static final int DAMAGE_RESISTANCE = MUTED;
+            public static final int PROTECTIVE_HELMET = ACCENT_WARM;
+            public static final int IMPROVED_REFLEXES = SUCCESS;
+            public static final int ENRAGED = ERROR;
+            public static final int VETERAN = ACCENT_ALT;
+            public static final int EVASION = ACCENT;
+            public static final int REGENERATION = SUCCESS;
+            public static final int SUMMONER = ACCENT_ALT;
+
+            private Nemesis() {}
+        }
+
+        public static final class Bargain {
+            public static final int GLASS_CANNON = ERROR;
+            public static final int SLUGGISH = MUTED;
+            public static final int FUMBLING = WARNING;
+            public static final int HUNGER = ACCENT_WARM;
+            public static final int ECHO_DAMAGE = ACCENT_ALT;
+            public static final int BLOOD_TITHE = ERROR;
+            public static final int CROWD_PRESSURE = ACCENT_ALT;
+            public static final int FRAILTY = MUTED;
+            public static final int BURNING_SOUL = WARNING;
+            public static final int COMBO_BREAKER = ACCENT_WARM;
+            public static final int MOMENTUM_DRAIN = ACCENT;
+            public static final int ONE_SHOT = ERROR;
+            public static final int ELITE_HUNTER = ACCENT_ALT;
+            public static final int NO_HEALING = ERROR;
+            public static final int EXECUTIONER = ERROR;
+
+            private Bargain() {}
+        }
+
+        public static final class BargainTier {
+            public static final int MINOR = LootTier.UNCOMMON;
+            public static final int MAJOR = LootTier.LEGENDARY;
+            public static final int CURSED = LootTier.MYTHIC;
+
+            private BargainTier() {}
+        }
+
         private Endurance() {}
     }
 
+
     public static final class EnduranceUi {
         public static final class Accent {
-            public static final int ORANGE = 0xFFFF8C00;
-            public static final int PURPLE = 0xFFA371F7;
-            public static final int GOLD = 0xFFFFD700;
-            public static final int GOLD_RGB = 0xFFD700;
+            public static final int ORANGE = DesignTokens.Accent.SECONDARY;
+            public static final int PURPLE = DesignTokens.Accent.BLUE;
+            public static final int GOLD = DesignTokens.Accent.SECONDARY;
+            public static final int GOLD_RGB = DesignTokens.Accent.SECONDARY & Mask.RGB;
 
             private Accent() {}
         }
 
         public static final class QuestTier {
-            public static final int HARD = EnduranceUi.Accent.ORANGE;
-            public static final int ELITE = EnduranceUi.Accent.PURPLE;
+            public static final int HARD = Semantic.WARNING;
+            public static final int ELITE = Semantic.ERROR;
 
             private QuestTier() {}
         }
 
         public static final class Challenge {
-            public static final int HARD = 0xFFFF8800;
+            public static final int HARD = Semantic.WARNING;
 
             private Challenge() {}
         }
 
         public static final class DeathScreen {
-            public static final int BG = 0xEE0A0A14;
-            public static final int PANEL_BG = 0xDD1A0A0A;
+            public static final int BG = withAlpha(Bg.LEVEL_1, 0xEE);
+            public static final int PANEL_BG = withAlpha(Bg.LEVEL_2, 0xDD);
 
             private DeathScreen() {}
         }
 
         public static final class CompletionScreen {
-            public static final int BACKDROP_RGB = 0x0A1428;
-            public static final int PANEL_RGB = 0x0F1E38;
+            public static final int BACKDROP_RGB = Bg.LEVEL_2 & Mask.RGB;
+            public static final int PANEL_RGB = Bg.LEVEL_3 & Mask.RGB;
             public static final int GOLD_RGB = EnduranceUi.Accent.GOLD_RGB;
 
             private CompletionScreen() {}
         }
 
         public static final class PerkSelection {
-            public static final int TAG_REQUIRED = 0xFFE85C5C;
-            public static final int TAG_OPTIONAL = 0xFF5B9BD5;
+            public static final int TAG_REQUIRED = Semantic.ERROR;
+            public static final int TAG_OPTIONAL = DesignTokens.Accent.BLUE;
 
-            public static final int SYNERGY_COMPLETE = 0xFFFF55;
-            public static final int SYNERGY_STRONG = 0xFFA500;
-            public static final int SYNERGY_MODERATE = 0xFFFF7F;
-            public static final int SYNERGY_MINOR = 0x7FFF7F;
+            public static final int SYNERGY_COMPLETE = Semantic.SUCCESS;
+            public static final int SYNERGY_STRONG = DesignTokens.Accent.SECONDARY;
+            public static final int SYNERGY_MODERATE = DesignTokens.Accent.PRIMARY;
+            public static final int SYNERGY_MINOR = Text.SECONDARY;
 
             private PerkSelection() {}
         }
 
         public static final class KitSelection {
-            public static final int ACCENT_PURPLE = EnduranceUi.Accent.PURPLE;
-            public static final int BTN_SUCCESS_HOVER = 0xFF2EA043;
-            public static final int BTN_SUCCESS_BORDER_HOVER = 0xFF3FB950;
-            public static final int BTN_SUCCESS_BORDER = 0xFF238636;
-            public static final int SCRIM = 0xAA000000;
+            public static final int ACCENT_PURPLE = DesignTokens.Accent.BLUE;
+            public static final int BTN_SUCCESS_HOVER = Semantic.SUCCESS;
+            public static final int BTN_SUCCESS_BORDER_HOVER = Semantic.SUCCESS;
+            public static final int BTN_SUCCESS_BORDER = Semantic.SUCCESS;
+            public static final int SCRIM = withAlpha(Palette.SHADOW, 0xAA);
 
             private KitSelection() {}
         }
 
         public static final class KitCategory {
-            public static final int ALL = 0xFFE6EDF3;
-            public static final int ARMOR = 0xFF58A6FF;
-            public static final int WEAPONS = 0xFFF85149;
-            public static final int TOOLS = 0xFFD29922;
-            public static final int POTIONS = EnduranceUi.Accent.PURPLE;
-            public static final int FOOD = 0xFF3FB950;
-            public static final int COMBAT = 0xFFFF7B72;
-            public static final int BLOCKS = 0xFF79C0FF;
+            public static final int ALL = Text.PRIMARY;
+            public static final int ARMOR = Semantic.INFO;
+            public static final int WEAPONS = Semantic.ERROR;
+            public static final int TOOLS = DesignTokens.Accent.SECONDARY;
+            public static final int POTIONS = DesignTokens.Accent.BLUE;
+            public static final int FOOD = Semantic.SUCCESS;
+            public static final int COMBAT = Semantic.WARNING;
+            public static final int BLOCKS = DesignTokens.Accent.PRIMARY;
 
             private KitCategory() {}
         }
@@ -2526,7 +3008,7 @@ public final class DesignTokens {
 
     public static final class Mailbox {
         public static final class Panel {
-            public static final int BG = 0xE8101820;
+            public static final int BG = withAlpha(Bg.LEVEL_1, 0xE8);
 
             private Panel() {}
         }
@@ -2538,8 +3020,8 @@ public final class DesignTokens {
         }
 
         public static final class List {
-            public static final int SELECTED_BG = 0x40007ACC;
-            public static final int HOVER_BG = 0x20FFFFFF;
+            public static final int SELECTED_BG = withAlpha(Accent.PRIMARY, 0x40);
+            public static final int HOVER_BG = withAlpha(Text.PRIMARY, 0x20);
 
             private List() {}
         }
@@ -2552,12 +3034,12 @@ public final class DesignTokens {
         }
 
         public static final class News {
-            public static final int PATCH_NOTES = 0xFF4CAF50;
-            public static final int EVENTS = 0xFFFF9800;
-            public static final int ANNOUNCEMENTS = 0xFF2196F3;
-            public static final int MAINTENANCE = 0xFFF44336;
-            public static final int DEV_BLOG = 0xFF9C27B0;
-            public static final int COMMUNITY = 0xFF00BCD4;
+            public static final int PATCH_NOTES = Semantic.SUCCESS;
+            public static final int EVENTS = Accent.SECONDARY;
+            public static final int ANNOUNCEMENTS = Semantic.INFO;
+            public static final int MAINTENANCE = Semantic.ERROR;
+            public static final int DEV_BLOG = Accent.BLUE;
+            public static final int COMMUNITY = Accent.PRIMARY;
 
             private static final int[] CATEGORY_COLORS = {
                 PATCH_NOTES,
@@ -2576,28 +3058,28 @@ public final class DesignTokens {
         }
 
         public static final class TesterTasks {
-            public static final int PANEL_BG = 0xDD1A1A1A;
+            public static final int PANEL_BG = withAlpha(Bg.LEVEL_1, 0xDD);
             public static final int PANEL_OUTLINE = DesignTokens.Neutral.N760;
-            public static final int LIST_BG = 0xFF0A0A0A;
+            public static final int LIST_BG = Bg.LEVEL_0;
             public static final int SCROLLBAR = DesignTokens.Neutral.N700;
 
             public static final int ENTRY_DEFAULT = DesignTokens.Neutral.N880;
             public static final int ENTRY_HOVER = DesignTokens.Neutral.N820;
-            public static final int ENTRY_SELECTED = 0xFF2A4A6A;
+            public static final int ENTRY_SELECTED = withAlpha(Accent.PRIMARY, 0x40);
 
             public static final int TEXT_PRIMARY = DesignTokens.Text.WHITE;
             public static final int TEXT_MUTED = DesignTokens.Neutral.N500;
             public static final int TEXT_DIM = DesignTokens.Neutral.N550;
 
-            public static final int DUE_OVERDUE = 0xFFFF5555;
-            public static final int DUE_SOON = 0xFFFFAA00;
+            public static final int DUE_OVERDUE = Semantic.ERROR;
+            public static final int DUE_SOON = Semantic.WARNING;
 
             public static final int PRIORITY_HIGH = DUE_OVERDUE;
             public static final int PRIORITY_MEDIUM = DUE_SOON;
-            public static final int PRIORITY_LOW = 0xFF55FF55;
+            public static final int PRIORITY_LOW = Semantic.SUCCESS;
 
             public static final int STATUS_PENDING = DesignTokens.Neutral.N500;
-            public static final int STATUS_IN_PROGRESS = 0xFF55AAFF;
+            public static final int STATUS_IN_PROGRESS = Semantic.INFO;
             public static final int STATUS_COMPLETED = PRIORITY_LOW;
 
             private TesterTasks() {}
@@ -2624,11 +3106,11 @@ public final class DesignTokens {
         }
 
         public static final class Panel {
-            public static final int BG_BASE = 0x1A1A2E;
+            public static final int BG_BASE = Bg.LEVEL_2 & Mask.RGB;
             public static final int BG_STANDARD = (Overlay.Alpha.STANDARD << 24) | BG_BASE;
             public static final int BG_LIGHT = (Overlay.Alpha.LIGHT << 24) | BG_BASE;
             public static final int BG_HEAVY = (Overlay.Alpha.HEAVY << 24) | BG_BASE;
-            public static final int BG_HEADER = 0xFF1A1A30;
+            public static final int BG_HEADER = Bg.LEVEL_3;
 
             public static int withAlpha(int alpha) {
                 return DesignTokens.withAlpha(BG_BASE, alpha);
@@ -2638,14 +3120,14 @@ public final class DesignTokens {
         }
 
         public static final class Border {
-            public static final int ACCENT = 0xFF3D5AFE;
-            public static final int INFO = 0xFF00FFFF;
-            public static final int SUCCESS = 0xFF4CAF50;
-            public static final int WARNING = 0xFFFFAA00;
-            public static final int ERROR = 0xFFFF4444;
-            public static final int GOLD = 0xFFFFD700;
-            public static final int ENDURANCE = 0xFFFF5722;
-            public static final int MUTED = 0xFF555555;
+            public static final int ACCENT = Accent.PRIMARY;
+            public static final int INFO = Semantic.INFO;
+            public static final int SUCCESS = Semantic.SUCCESS;
+            public static final int WARNING = Semantic.WARNING;
+            public static final int ERROR = Semantic.ERROR;
+            public static final int GOLD = Accent.SECONDARY;
+            public static final int ENDURANCE = Accent.SECONDARY;
+            public static final int MUTED = Stroke.MUTED;
 
             public static int glow(int borderColor) {
                 return DesignTokens.withAlpha(borderColor, Overlay.Alpha.GLOW);
@@ -2659,23 +3141,23 @@ public final class DesignTokens {
         }
 
         public static final class Text {
-            public static final int PRIMARY = DesignTokens.Text.WHITE;
-            public static final int LIGHT = 0xFFE6E6E6;
-            public static final int TITLE = DesignTokens.Basic.CYAN;
-            public static final int MUTED = DesignTokens.Neutral.N500;
-            public static final int HINT = DesignTokens.Neutral.N550;
+            public static final int PRIMARY = DesignTokens.Text.PRIMARY;
+            public static final int LIGHT = DesignTokens.Text.PRIMARY;
+            public static final int TITLE = Accent.PRIMARY;
+            public static final int MUTED = DesignTokens.Text.SECONDARY;
+            public static final int HINT = DesignTokens.Text.MUTED;
 
-            public static final int VALUE = DesignTokens.Basic.GREEN;
-            public static final int VALUE_BRIGHT = 0xFF55FF55;
+            public static final int VALUE = Semantic.SUCCESS;
+            public static final int VALUE_BRIGHT = Semantic.SUCCESS;
 
-            public static final int WARNING = DesignTokens.Basic.YELLOW;
-            public static final int WARNING_ORANGE = 0xFFFFAA00;
-            public static final int DANGER = 0xFFFF4444;
-            public static final int DANGER_BRIGHT = 0xFFFF5555;
+            public static final int WARNING = Semantic.WARNING;
+            public static final int WARNING_ORANGE = Semantic.WARNING;
+            public static final int DANGER = Semantic.ERROR;
+            public static final int DANGER_BRIGHT = Semantic.ERROR;
 
-            public static final int CYAN = 0xFF55FFFF;
-            public static final int PURPLE = 0xFFAA55FF;
-            public static final int GOLD = DesignTokens.Accent.GOLD;
+            public static final int CYAN = Accent.PRIMARY;
+            public static final int PURPLE = Semantic.INFO;
+            public static final int GOLD = Accent.SECONDARY;
 
             private Text() {}
         }
@@ -2704,15 +3186,15 @@ public final class DesignTokens {
         }
 
         public static final class Progress {
-            public static final int BG = DesignTokens.Neutral.N780;
-            public static final int BG_ALT = 0xFF333344;
+            public static final int BG = Surface.LEVEL_0;
+            public static final int BG_ALT = Surface.LEVEL_1;
 
-            public static final int FILL = 0xFF00DD88;
-            public static final int FILL_GREEN = 0xFF44AA44;
-            public static final int FILL_YELLOW = 0xFFAAAA44;
-            public static final int FILL_RED = 0xFFAA4444;
-            public static final int FILL_ORANGE = 0xFFFF5722;
-            public static final int FILL_CYAN = 0xFF4488FF;
+            public static final int FILL = Accent.PRIMARY;
+            public static final int FILL_GREEN = Semantic.SUCCESS;
+            public static final int FILL_YELLOW = Semantic.WARNING;
+            public static final int FILL_RED = Semantic.ERROR;
+            public static final int FILL_ORANGE = Accent.SECONDARY;
+            public static final int FILL_CYAN = Accent.PRIMARY;
 
             public static int byRatio(float ratio) {
                 if (ratio > 0.6f) return FILL_GREEN;
@@ -2733,71 +3215,71 @@ public final class DesignTokens {
         }
 
         public static final class Endurance {
-            public static final int PRIMARY = 0xFFFF5722;
-            public static final int LIGHT = 0xFFFFAB91;
-            public static final int BG = 0xBB1A1A2E;
-            public static final int BG_SURVIVE = 0xBB1A2E1A;
-            public static final int BOSS_ALERT = 0xFFFF4444;
+            public static final int PRIMARY = Accent.SECONDARY;
+            public static final int LIGHT = withAlpha(Accent.SECONDARY, 0xAA);
+            public static final int BG = withAlpha(Bg.LEVEL_2, 0xBB);
+            public static final int BG_SURVIVE = withAlpha(Bg.LEVEL_2, 0xBB);
+            public static final int BOSS_ALERT = Semantic.ERROR;
 
             private Endurance() {}
         }
 
         public static final class Economy {
-            public static final int PRIMARY = 0xFFFFD700;
-            public static final int BG = 0xE0101020;
+            public static final int PRIMARY = Accent.SECONDARY;
+            public static final int BG = withAlpha(Bg.LEVEL_2, 0xE0);
 
             private Economy() {}
         }
 
         public static final class Combat {
-            public static final int IMPACT = 0xFF3D5AFE;
-            public static final int SECONDARY = 0xFF00E5FF;
-            public static final int GLOW = 0xFF82B1FF;
+            public static final int IMPACT = Accent.PRIMARY;
+            public static final int SECONDARY = Semantic.INFO;
+            public static final int GLOW = Semantic.INFO;
 
             private Combat() {}
         }
 
         public static final class CombatRecap {
-            public static final int BG = 0xF0101018;
-            public static final int PANEL_BG = 0xE0181820;
-            public static final int ACCENT = 0xFF00DDFF;
+            public static final int BG = withAlpha(Bg.LEVEL_1, 0xF0);
+            public static final int PANEL_BG = withAlpha(Bg.LEVEL_2, 0xE0);
+            public static final int ACCENT = Accent.PRIMARY;
             public static final int TEXT_PRIMARY = Overlay.Text.PRIMARY;
             public static final int TEXT_SECONDARY = Overlay.Text.MUTED;
-            public static final int TEXT_HIGHLIGHT = 0xFFFFDD00;
+            public static final int TEXT_HIGHLIGHT = Accent.SECONDARY;
 
-            public static final int BAR_DAMAGE = 0xFFFF4444;
-            public static final int BAR_CRIT = 0xFFFFAA00;
-            public static final int BAR_HEADSHOT = 0xFF44DDFF;
-            public static final int BAR_DPS = 0xFF44FF44;
+            public static final int BAR_DAMAGE = Semantic.ERROR;
+            public static final int BAR_CRIT = Semantic.WARNING;
+            public static final int BAR_HEADSHOT = Semantic.INFO;
+            public static final int BAR_DPS = Semantic.SUCCESS;
 
-            public static final int DIVIDER = 0x444444;
-            public static final int BAR_BG = 0x333333;
-            public static final int GRAPH_BG = 0x222228;
+            public static final int DIVIDER = Stroke.MUTED;
+            public static final int BAR_BG = Surface.LEVEL_0;
+            public static final int GRAPH_BG = Surface.LEVEL_1;
 
             private CombatRecap() {}
         }
 
         public static final class Impact3D {
-            public static final int DPS = 0xFF44FF44;
+            public static final int DPS = Semantic.SUCCESS;
 
             private Impact3D() {}
         }
 
         public static final class EpicFight {
-            public static final int HEADER = 0xFFFF5722;
-            public static final int GUARD = 0xFF4444FF;
-            public static final int GUARD_FLASH = 0xFFFFFFFF;
-            public static final int PARRY = 0xFFFFAA00;
-            public static final int PARRY_FLASH = 0xFFFFFFFF;
-            public static final int PERFECT_PARRY = 0xFFFF00FF;
-            public static final int PERFECT_PARRY_SECONDARY = 0xFF00FFFF;
-            public static final int SKILL_NAME = 0xFFAAAAAA;
-            public static final int BATTLE_MODE = 0xFFFF8800;
-            public static final int STAMINA_BG = 0xFF1A1A2E;
-            public static final int STAMINA_FULL = 0xFFAAFF00;
-            public static final int STAMINA_MEDIUM = 0xFFFFDD00;
-            public static final int STAMINA_LOW = 0xFFFF6600;
-            public static final int STAMINA_EXHAUSTED = 0xFFFF2222;
+            public static final int HEADER = Accent.SECONDARY;
+            public static final int GUARD = Semantic.INFO;
+            public static final int GUARD_FLASH = Overlay.Text.PRIMARY;
+            public static final int PARRY = Semantic.WARNING;
+            public static final int PARRY_FLASH = Overlay.Text.PRIMARY;
+            public static final int PERFECT_PARRY = Accent.PRIMARY;
+            public static final int PERFECT_PARRY_SECONDARY = Accent.SECONDARY;
+            public static final int SKILL_NAME = Overlay.Text.MUTED;
+            public static final int BATTLE_MODE = Semantic.WARNING;
+            public static final int STAMINA_BG = Surface.LEVEL_0;
+            public static final int STAMINA_FULL = Semantic.SUCCESS;
+            public static final int STAMINA_MEDIUM = Semantic.WARNING;
+            public static final int STAMINA_LOW = Accent.SECONDARY;
+            public static final int STAMINA_EXHAUSTED = Semantic.ERROR;
 
             public static int getStaminaColor(float percent) {
                 if (percent > 0.6f) return STAMINA_FULL;
@@ -2816,17 +3298,17 @@ public final class DesignTokens {
             public static final int SLASH = Combat.IMPACT;
             public static final int LINE = Combat.SECONDARY;
 
-            public static final int HIGHLIGHT_SHADOW = 0xFF550000;
-            public static final int CALCULATED_SHADOW = 0xFF005500;
+            public static final int HIGHLIGHT_SHADOW = withAlpha(Semantic.ERROR, 0x55);
+            public static final int CALCULATED_SHADOW = withAlpha(Semantic.SUCCESS, 0x55);
 
             private Impact() {}
         }
 
         public static final class Help {
-            public static final int TITLE = 0xFF81C784;
-            public static final int CATEGORY = 0xFF64B5F6;
-            public static final int KEY_BG = 0xFF333333;
-            public static final int HINT = 0xFF555555;
+            public static final int TITLE = Semantic.SUCCESS;
+            public static final int CATEGORY = Semantic.INFO;
+            public static final int KEY_BG = Surface.LEVEL_0;
+            public static final int HINT = Overlay.Text.MUTED;
 
             private Help() {}
         }
@@ -2836,11 +3318,11 @@ public final class DesignTokens {
             public static final int BORDER = Border.SUCCESS;
             public static final int BORDER_GLOW = DesignTokens.withAlpha(Border.SUCCESS, Overlay.Alpha.GHOST);
 
-            public static final int TITLE = 0xFF81C784;
+            public static final int TITLE = Semantic.SUCCESS;
             public static final int TEXT = Overlay.Text.PRIMARY;
-            public static final int TASK = 0xFFFFD54F;
-            public static final int NOTE = 0xFFB0BEC5;
-            public static final int PROGRESS = 0xFF64B5F6;
+            public static final int TASK = Accent.SECONDARY;
+            public static final int NOTE = Overlay.Text.MUTED;
+            public static final int PROGRESS = Semantic.INFO;
             public static final int COMPLETED = Border.SUCCESS;
             public static final int HINT = Overlay.Neutral.N650;
 
@@ -2857,129 +3339,129 @@ public final class DesignTokens {
             public static final int VALUE_YELLOW = Overlay.Text.GOLD;
             public static final int VALUE_RED = Overlay.Text.DANGER;
             public static final int VALUE_GRAY = Overlay.Text.MUTED;
-            public static final int VALUE_ORANGE = 0xFFFF9800;
-            public static final int SCALE = 0xFFFF55FF;
+            public static final int VALUE_ORANGE = Accent.SECONDARY;
+            public static final int SCALE = Accent.PRIMARY;
             public static final int EMPTY_LOG = Overlay.Neutral.N700;
 
             private Attribute() {}
         }
 
         public static final class BodyPart {
-            public static final int HEAD = 0xFF00FFFF;
-            public static final int BODY = 0xFF00FF00;
-            public static final int ARMS = 0xFFFFFF00;
-            public static final int LEGS = 0xFFFF0000;
+            public static final int HEAD = Semantic.ERROR;
+            public static final int BODY = Semantic.SUCCESS;
+            public static final int ARMS = Semantic.WARNING;
+            public static final int LEGS = Semantic.INFO;
 
             private BodyPart() {}
         }
 
         public static final class Affix {
-            public static final int SWIFT = 0xFF64B5F6;
-            public static final int EMPOWERED = 0xFFFF5252;
-            public static final int FORTIFIED = 0xFF4CAF50;
-            public static final int ARMORED = 0xFF9E9E9E;
-            public static final int BLAZING = 0xFFFF9800;
-            public static final int PHANTOM = 0xFF7C4DFF;
-            public static final int REGENERATING = 0xFFE91E63;
-            public static final int HORDE = 0xFFFFEB3B;
+            public static final int SWIFT = Semantic.INFO;
+            public static final int EMPOWERED = Semantic.ERROR;
+            public static final int FORTIFIED = Semantic.SUCCESS;
+            public static final int ARMORED = Overlay.Text.MUTED;
+            public static final int BLAZING = Semantic.WARNING;
+            public static final int PHANTOM = Accent.PRIMARY;
+            public static final int REGENERATING = Semantic.SUCCESS;
+            public static final int HORDE = Accent.SECONDARY;
 
             private Affix() {}
         }
 
         public static final class Momentum {
-            public static final int NORMAL = 0xFF66FF66;
-            public static final int HEATED = 0xFFFFAA00;
-            public static final int OVERDRIVE = 0xFFFF00FF;
-            public static final int STAGNANT = 0xFFFF4444;
+            public static final int NORMAL = Semantic.SUCCESS;
+            public static final int HEATED = Semantic.WARNING;
+            public static final int OVERDRIVE = Accent.PRIMARY;
+            public static final int STAGNANT = Semantic.ERROR;
 
             private Momentum() {}
         }
 
         public static final class Contract {
-            public static final int HEADER = 0xFFFF8800;
-            public static final int MULTIPLIER_HIGH = 0xFFFF4444;
-            public static final int MULTIPLIER_MED = 0xFFFFAA00;
-            public static final int MULTIPLIER_LOW = 0xFFAAFFAA;
-            public static final int VIOLATED = 0xFF888888;
-            public static final int STRIKETHROUGH = 0xFFFF4444;
-            public static final int VIOLATED_MUTED = 0xFF666666;
-            public static final int SEPARATOR = 0x44FFFFFF;
-            public static final int MULTIPLIER_TEXT = 0xFFFFFFFF;
+            public static final int HEADER = Accent.SECONDARY;
+            public static final int MULTIPLIER_HIGH = Semantic.ERROR;
+            public static final int MULTIPLIER_MED = Semantic.WARNING;
+            public static final int MULTIPLIER_LOW = Semantic.SUCCESS;
+            public static final int VIOLATED = Overlay.Text.MUTED;
+            public static final int STRIKETHROUGH = Semantic.ERROR;
+            public static final int VIOLATED_MUTED = Overlay.Text.MUTED;
+            public static final int SEPARATOR = withAlpha(Overlay.Text.PRIMARY, 0x44);
+            public static final int MULTIPLIER_TEXT = Overlay.Text.PRIMARY;
 
             private Contract() {}
         }
 
         public static final class Stamina {
-            public static final int BG = 0xFF1A1A1A;
-            public static final int BORDER = 0xFF3A3A3A;
-            public static final int FULL = 0xFF4CAF50;
-            public static final int MEDIUM = 0xFFFFEB3B;
-            public static final int LOW = 0xFFFF5722;
-            public static final int EXHAUSTED = 0xFFF44336;
-            public static final int REGEN = 0xFF81C784;
+            public static final int BG = Surface.LEVEL_0;
+            public static final int BORDER = Stroke.DEFAULT;
+            public static final int FULL = Semantic.SUCCESS;
+            public static final int MEDIUM = Semantic.WARNING;
+            public static final int LOW = Accent.SECONDARY;
+            public static final int EXHAUSTED = Semantic.ERROR;
+            public static final int REGEN = Semantic.SUCCESS;
 
             private Stamina() {}
         }
 
         public static final class Debug {
-            public static final int HITBOX = 0x80FFFF00;
-            public static final int AGGRO_SPHERE = 0x8000FFFF;
+            public static final int HITBOX = withAlpha(Semantic.WARNING, 0x80);
+            public static final int AGGRO_SPHERE = withAlpha(Accent.PRIMARY, 0x80);
 
-            public static final int WALL = 0x44AAFF;
+            public static final int WALL = withAlpha(Semantic.INFO, 0x44);
 
-            public static final int LABEL = 0xFFFFFFFF;
-            public static final int TITLE = 0xFFFFAA00;
+            public static final int LABEL = Text.PRIMARY;
+            public static final int TITLE = Accent.SECONDARY;
 
-            public static final int RANGE_HOSTILE = 0x40FF5555;
-            public static final int RANGE_NEUTRAL = 0x40FFFF55;
-            public static final int RANGE_ATTACK = 0x60FF0000;
-            public static final int RANGE_PASSIVE = 0x4055FF55;
+            public static final int RANGE_HOSTILE = withAlpha(Semantic.ERROR, 0x40);
+            public static final int RANGE_NEUTRAL = withAlpha(Semantic.WARNING, 0x40);
+            public static final int RANGE_ATTACK = withAlpha(Semantic.ERROR, 0x60);
+            public static final int RANGE_PASSIVE = withAlpha(Semantic.SUCCESS, 0x40);
 
-            public static final int SAFE_SPOT_LABEL = 0xFFFF4444;
+            public static final int SAFE_SPOT_LABEL = Semantic.ERROR;
 
-            public static final int LIGHT_SAFE = 0xFF00FF00;
-            public static final int LIGHT_WARN = 0xFFFFFF00;
-            public static final int LIGHT_DANGER = 0xFFFF0000;
+            public static final int LIGHT_SAFE = Semantic.SUCCESS;
+            public static final int LIGHT_WARN = Semantic.WARNING;
+            public static final int LIGHT_DANGER = Semantic.ERROR;
 
-            public static final int SPAWN_YES = 0xFFFF0000;
-            public static final int SPAWN_CONDITIONAL = 0xFFFF8800;
-            public static final int SPAWN_NO = 0xFF00FF00;
+            public static final int SPAWN_YES = Semantic.ERROR;
+            public static final int SPAWN_CONDITIONAL = Semantic.WARNING;
+            public static final int SPAWN_NO = Semantic.SUCCESS;
 
-            public static final int ENTITY_HEALTH_GOOD = 0x55FF55;
-            public static final int ENTITY_HEALTH_MED = 0xFFFF55;
-            public static final int ENTITY_HEALTH_LOW = 0xFF5555;
-            public static final int ENTITY_STAT = 0xAAAAAA;
-            public static final int ATTACK_REACH = 0xFFFFFF00;
+            public static final int ENTITY_HEALTH_GOOD = Semantic.SUCCESS;
+            public static final int ENTITY_HEALTH_MED = Semantic.WARNING;
+            public static final int ENTITY_HEALTH_LOW = Semantic.ERROR;
+            public static final int ENTITY_STAT = Overlay.Text.MUTED;
+            public static final int ATTACK_REACH = Semantic.WARNING;
             public static final int ENTITY_HOSTILE = ENTITY_HEALTH_LOW;
             public static final int ENTITY_PASSIVE = ENTITY_HEALTH_GOOD;
             public static final int ENTITY_NEUTRAL = ENTITY_HEALTH_MED;
-            public static final int ENTITY_NAME = 0xFFFFFF00;
+            public static final int ENTITY_NAME = Text.PRIMARY;
             public static final int ENTITY_HP = ENTITY_HEALTH_LOW;
-            public static final int ENTITY_ARMOR = 0x5555FF;
-            public static final int ENTITY_DAMAGE = 0xFFAAAA;
-            public static final int ENTITY_FOLLOW_RANGE = 0x00FF00;
-            public static final int ENTITY_REACH_MODIFIED = 0xFFFFFF00;
+            public static final int ENTITY_ARMOR = Semantic.INFO;
+            public static final int ENTITY_DAMAGE = Semantic.ERROR;
+            public static final int ENTITY_FOLLOW_RANGE = Semantic.SUCCESS;
+            public static final int ENTITY_REACH_MODIFIED = Semantic.WARNING;
             public static final int ENTITY_REACH_VANILLA = ENTITY_STAT;
-            public static final int ENTITY_TARGET = 0xFFA500;
+            public static final int ENTITY_TARGET = Accent.SECONDARY;
 
-            public static final int ZONE_FLOOR = 0xFF00CC00;
-            public static final int ZONE_MID = 0xFFCCCC00;
-            public static final int ZONE_HIGH = 0xFFCC0000;
+            public static final int ZONE_FLOOR = Semantic.SUCCESS;
+            public static final int ZONE_MID = Semantic.WARNING;
+            public static final int ZONE_HIGH = Semantic.ERROR;
 
-            public static final int PATH_START = 0xFF00FFFF;
-            public static final int PATH_DEST_OK = 0xFFFFD700;
-            public static final int PATH_DEST_FAIL = 0xFFFF4444;
-            public static final int PATH_INFO = 0xFFAAAAAA;
+            public static final int PATH_START = Accent.PRIMARY;
+            public static final int PATH_DEST_OK = Semantic.SUCCESS;
+            public static final int PATH_DEST_FAIL = Semantic.ERROR;
+            public static final int PATH_INFO = Overlay.Text.MUTED;
 
-            public static final int ROOM_RED = 0xFFFF0000;
-            public static final int ROOM_GREEN = 0xFF00FF00;
-            public static final int ROOM_BLUE = 0xFF0000FF;
-            public static final int ROOM_YELLOW = 0xFFFFFF00;
-            public static final int ROOM_MAGENTA = 0xFFFF00FF;
-            public static final int ROOM_CYAN = 0xFF00FFFF;
-            public static final int ROOM_ORANGE = 0xFFFF8000;
-            public static final int ROOM_PURPLE = 0xFF8000FF;
-            public static final int ROOM_GAP = 0xFFFF0000;
+            public static final int ROOM_RED = Semantic.ERROR;
+            public static final int ROOM_GREEN = Semantic.SUCCESS;
+            public static final int ROOM_BLUE = Semantic.INFO;
+            public static final int ROOM_YELLOW = Semantic.WARNING;
+            public static final int ROOM_MAGENTA = Accent.BLUE;
+            public static final int ROOM_CYAN = Accent.PRIMARY;
+            public static final int ROOM_ORANGE = Accent.SECONDARY;
+            public static final int ROOM_PURPLE = Accent.BLUE;
+            public static final int ROOM_GAP = Semantic.ERROR;
 
             private static final int[] ROOM_PALETTE = {
                 ROOM_RED, ROOM_GREEN, ROOM_BLUE, ROOM_YELLOW,
@@ -2990,39 +3472,39 @@ public final class DesignTokens {
                 return ROOM_PALETTE.clone();
             }
 
-            public static final int LOS_VISIBLE = 0xFF00FF00;
-            public static final int LOS_OUT_OF_FOV = 0xFFFFFF00;
-            public static final int LOS_BLOCKED = 0xFFFF4444;
+            public static final int LOS_VISIBLE = Semantic.SUCCESS;
+            public static final int LOS_OUT_OF_FOV = Semantic.WARNING;
+            public static final int LOS_BLOCKED = Semantic.ERROR;
 
-            public static final int ZONE_ENV_DEFAULT = 0xFFFFFF;
-            public static final int ZONE_ENV_NETHER = 0xFF4444;
-            public static final int ZONE_ENV_END = 0xAA44FF;
-            public static final int ZONE_ENV_ICE = 0x44FFFF;
-            public static final int ZONE_ENV_DESERT = 0xFFFF44;
-            public static final int ZONE_ENV_DESERT_WALL = 0xFFAA44;
-            public static final int ZONE_ENV_OCEAN = 0x4444FF;
-            public static final int ZONE_ENV_FOREST = 0x44FF44;
-            public static final int ZONE_ENV_CAVE = 0x884422;
-            public static final int ZONE_ENV_NIGHT = 0x6644AA;
-            public static final int ZONE_ENV_DAY = 0xFFDD44;
-            public static final int ZONE_ENV_DARK = 0x444444;
-            public static final int ZONE_ENV_BRIGHT = 0xFFFFAA;
-            public static final int ZONE_ENV_FALLBACK = 0xCCCCCC;
+            public static final int ZONE_ENV_DEFAULT = Overlay.Text.MUTED;
+            public static final int ZONE_ENV_NETHER = Semantic.ERROR;
+            public static final int ZONE_ENV_END = Accent.BLUE;
+            public static final int ZONE_ENV_ICE = Accent.BLUE;
+            public static final int ZONE_ENV_DESERT = Accent.SECONDARY;
+            public static final int ZONE_ENV_DESERT_WALL = Semantic.WARNING;
+            public static final int ZONE_ENV_OCEAN = Semantic.INFO;
+            public static final int ZONE_ENV_FOREST = Semantic.SUCCESS;
+            public static final int ZONE_ENV_CAVE = Stroke.MUTED;
+            public static final int ZONE_ENV_NIGHT = Bg.LEVEL_3;
+            public static final int ZONE_ENV_DAY = Accent.SECONDARY;
+            public static final int ZONE_ENV_DARK = Bg.LEVEL_0;
+            public static final int ZONE_ENV_BRIGHT = Text.PRIMARY;
+            public static final int ZONE_ENV_FALLBACK = Overlay.Text.MUTED;
 
-            public static final int GAP_VOID = 0x1A0A2E;
-            public static final int GAP_END = 0x200030;
-            public static final int GAP_NETHER = 0x2A1010;
-            public static final int GAP_DARK = 0x0A0A1A;
+            public static final int GAP_VOID = Bg.LEVEL_2;
+            public static final int GAP_END = Bg.LEVEL_3;
+            public static final int GAP_NETHER = Bg.LEVEL_2;
+            public static final int GAP_DARK = Bg.LEVEL_0;
 
             private Debug() {}
         }
 
         public static final class Flash {
-            public static final int HEADSHOT = 0xFF0000;
-            public static final int CRITICAL = 0xFF8800;
-            public static final int DAMAGE = 0xFF4444;
-            public static final int HEAL = 0x44FF44;
-            public static final int SHIELD = 0x44FFFF;
+            public static final int HEADSHOT = Semantic.ERROR;
+            public static final int CRITICAL = Semantic.WARNING;
+            public static final int DAMAGE = Semantic.ERROR;
+            public static final int HEAL = withAlpha(Semantic.SUCCESS, 0x44);
+            public static final int SHIELD = withAlpha(Accent.PRIMARY, 0x44);
 
             private Flash() {}
         }
@@ -3047,7 +3529,7 @@ public final class DesignTokens {
             public static final int WHITE = DesignTokens.Text.WHITE;
             public static final int BLACK = (DesignTokens.Alpha.A100 << 24) | DesignTokens.Mask.NONE;
             public static final int SHADOW = (DesignTokens.Alpha.A25 << 24) | DesignTokens.Mask.NONE;
-            public static final int SHADOW_LIGHT = 0x26000000;
+            public static final int SHADOW_LIGHT = withAlpha(Palette.SHADOW, 0x26);
             public static final int SHADOW_HEAVY = (DesignTokens.Alpha.A50 << 24) | DesignTokens.Mask.NONE;
 
             private Utility() {}
@@ -3058,78 +3540,78 @@ public final class DesignTokens {
 
     public static final class RadialMenu {
         public static final class Core {
-            public static final int BG_DARK = 0xF0202035;
-            public static final int SELECTED_BG = 0xEE252540;
-            public static final int MACRO_SELECTED_BASE = 0xFF252540;
-            public static final int UNSELECTED_BG = 0xDD1A1A30;
-            public static final int BORDER = 0xFF404060;
-            public static final int DIVIDER = 0xFF505070;
-            public static final int MACRO_HOVER_BORDER = 0xFF606080;
-            public static final int INNER_RING = 0xFF303050;
-            public static final int CLOSE_HOVER = 0xFF453545;
-            public static final int CLOSE_NORMAL = 0xF0252530;
-            public static final int CLOSE_BORDER_HOVER = 0xFFFF6666;
-            public static final int CENTER_ICON_BACK = 0xFF80AAFF;
-            public static final int TEXT_PRIMARY = 0xFFFFFFFF;
-            public static final int TEXT_SECONDARY = 0xFFBBBBCC;
-            public static final int INACTIVE = 0xFFAAAAAA;
+            public static final int BG_DARK = withAlpha(Bg.LEVEL_2, 0xF0);
+            public static final int SELECTED_BG = withAlpha(Bg.LEVEL_3, 0xEE);
+            public static final int MACRO_SELECTED_BASE = Bg.LEVEL_3;
+            public static final int UNSELECTED_BG = withAlpha(Bg.LEVEL_2, 0xDD);
+            public static final int BORDER = Stroke.DEFAULT;
+            public static final int DIVIDER = Stroke.MUTED;
+            public static final int MACRO_HOVER_BORDER = Stroke.EMPHASIS;
+            public static final int INNER_RING = Bg.LEVEL_3;
+            public static final int CLOSE_HOVER = Semantic.ERROR;
+            public static final int CLOSE_NORMAL = withAlpha(Bg.LEVEL_2, 0xF0);
+            public static final int CLOSE_BORDER_HOVER = Semantic.ERROR;
+            public static final int CENTER_ICON_BACK = Accent.PRIMARY;
+            public static final int TEXT_PRIMARY = Text.PRIMARY;
+            public static final int TEXT_SECONDARY = Text.SECONDARY;
+            public static final int INACTIVE = Text.MUTED;
 
             private Core() {}
         }
 
         public static final class Badge {
-            public static final int BG = 0xDD000000;
+            public static final int BG = withAlpha(Palette.SHADOW, 0xDD);
 
             private Badge() {}
         }
 
         public static final class Favorites {
-            public static final int BG_SELECTED = 0xDDFFD700;
-            public static final int BG_UNSELECTED = 0x88FFD700;
-            public static final int STAR = 0xFFFFD700;
+            public static final int BG_SELECTED = withAlpha(Accent.SECONDARY, 0xDD);
+            public static final int BG_UNSELECTED = withAlpha(Accent.SECONDARY, 0x88);
+            public static final int STAR = Accent.SECONDARY;
 
             private Favorites() {}
         }
 
         public static final class Item {
-            public static final int STATUS_INACTIVE = 0xFF666666;
+            public static final int STATUS_INACTIVE = Text.MUTED;
 
             private Item() {}
         }
 
         public static final class Overlay {
-            public static final int BACKGROUND_RGB = 0x0D0D15;
-            public static final int TOOLTIP_BG = 0xF0101020;
-            public static final int SEARCH_BOX_BG = 0xEE101020;
-            public static final int SEARCH_RESULT_BG = 0xCC101020;
-            public static final int BREADCRUMB = 0xFFFFFFFF;
-            public static final int EDIT_MODE_BG = 0xCC000000;
-            public static final int EDIT_MODE_TEXT = 0xFFFF4444;
-            public static final int THEME_INDICATOR_RGB = 0xFFFFFF;
+            public static final int BACKGROUND_RGB = Bg.LEVEL_1 & Mask.RGB;
+            public static final int TOOLTIP_BG = withAlpha(Surface.LEVEL_0, 0xF0);
+            public static final int SEARCH_BOX_BG = withAlpha(Surface.LEVEL_0, 0xEE);
+            public static final int SEARCH_RESULT_BG = withAlpha(Surface.LEVEL_0, 0xCC);
+            public static final int BREADCRUMB = Text.PRIMARY;
+            public static final int EDIT_MODE_BG = withAlpha(Palette.SHADOW, 0xCC);
+            public static final int EDIT_MODE_TEXT = Semantic.ERROR;
+            public static final int THEME_INDICATOR_RGB = Text.PRIMARY & Mask.RGB;
 
             private Overlay() {}
         }
 
         public static final class Base {
-            public static final int BG_DARK = 0xE6101020;
-            public static final int BG_LIGHT = 0xCC1A1A35;
-            public static final int SELECTED = 0xDD2A2A55;
-            public static final int HOVER = 0xEE353566;
-            public static final int ACTIVE = 0xFF00FF88;
-            public static final int ACTIVE_GLOW = 0x4400FF88;
-            public static final int INACTIVE = 0xFFAAAAAA;
-            public static final int TEXT_PRIMARY = 0xFFFFFFFF;
-            public static final int TEXT_SECONDARY = 0xFFAAAAAA;
-            public static final int TEXT_HIGHLIGHT = 0xFF88CCFF;
-            public static final int BORDER = 0xFF505080;
-            public static final int BORDER_GLOW = 0x40FFFFFF;
+            public static final int BG_DARK = withAlpha(Bg.LEVEL_1, 0xE6);
+            public static final int BG_LIGHT = withAlpha(Bg.LEVEL_2, 0xCC);
+            public static final int SELECTED = withAlpha(Bg.LEVEL_3, 0xDD);
+            public static final int HOVER = withAlpha(Bg.LEVEL_3, 0xEE);
+            public static final int ACTIVE = Accent.PRIMARY;
+            public static final int ACTIVE_GLOW = withAlpha(Accent.PRIMARY, 0x44);
+            public static final int INACTIVE = Text.MUTED;
+            public static final int TEXT_PRIMARY = Text.PRIMARY;
+            public static final int TEXT_SECONDARY = Text.SECONDARY;
+            public static final int TEXT_HIGHLIGHT = Accent.SECONDARY;
+            public static final int BORDER = Stroke.DEFAULT;
+            public static final int BORDER_GLOW = withAlpha(Text.PRIMARY, 0x40);
             private static final int[] CATEGORY_COLORS = {
-                0xFF00DDFF,
-                0xFFFFDD00,
-                0xFF00FF88,
-                0xFFFF4466,
-                0xFFFF9900,
-                0xFFCC44FF
+                Accent.BLUE,
+                Accent.SECONDARY,
+                Accent.PRIMARY,
+                Semantic.ERROR,
+                Semantic.WARNING,
+                Semantic.SUCCESS
             };
 
             public static int[] categoryColors() {
@@ -3167,38 +3649,38 @@ public final class DesignTokens {
 
         public static final class Presets {
             public static final PresetValues DEFAULT = new PresetValues(
-                0xE6101020, 0xCC1A1A35, 0xDD2A2A55, 0xEE353566,
-                0xFF00FF88, 0x4400FF88, 0xFF505080, 0xFFFFFFFF, 0xFFAAAAAA
+                withAlpha(Bg.LEVEL_1, 0xE6), withAlpha(Bg.LEVEL_2, 0xCC), withAlpha(Bg.LEVEL_3, 0xDD), withAlpha(Bg.LEVEL_3, 0xEE),
+                Accent.PRIMARY, withAlpha(Accent.PRIMARY, 0x44), Stroke.DEFAULT, Text.PRIMARY, Text.SECONDARY
             );
 
             public static final PresetValues NEON = new PresetValues(
-                0xE6000510, 0xCC0A0A20, 0xDD1A1A40, 0xEE2525AA,
-                0xFF00FFFF, 0x4400FFFF, 0xFF0088FF, 0xFFFFFFFF, 0xFF88FFFF
+                withAlpha(Bg.LEVEL_1, 0xE6), withAlpha(Bg.LEVEL_2, 0xCC), withAlpha(Bg.LEVEL_3, 0xDD), withAlpha(Bg.LEVEL_3, 0xEE),
+                Semantic.INFO, withAlpha(Semantic.INFO, 0x44), Stroke.EMPHASIS, Text.PRIMARY, Text.SECONDARY
             );
 
             public static final PresetValues CRIMSON = new PresetValues(
-                0xE6200808, 0xCC351010, 0xDD552020, 0xEE663030,
-                0xFFFF4444, 0x44FF4444, 0xFFFF6666, 0xFFFFFFFF, 0xFFFFAAAA
+                withAlpha(Bg.LEVEL_1, 0xE6), withAlpha(Bg.LEVEL_2, 0xCC), withAlpha(Bg.LEVEL_3, 0xDD), withAlpha(Bg.LEVEL_3, 0xEE),
+                Semantic.ERROR, withAlpha(Semantic.ERROR, 0x44), Stroke.DEFAULT, Text.PRIMARY, Text.SECONDARY
             );
 
             public static final PresetValues FOREST = new PresetValues(
-                0xE6081808, 0xCC103510, 0xDD205520, 0xEE306630,
-                0xFF44FF44, 0x4444FF44, 0xFF66FF66, 0xFFFFFFFF, 0xFFAAFFAA
+                withAlpha(Bg.LEVEL_1, 0xE6), withAlpha(Bg.LEVEL_2, 0xCC), withAlpha(Bg.LEVEL_3, 0xDD), withAlpha(Bg.LEVEL_3, 0xEE),
+                Semantic.SUCCESS, withAlpha(Semantic.SUCCESS, 0x44), Stroke.DEFAULT, Text.PRIMARY, Text.SECONDARY
             );
 
             public static final PresetValues GOLD = new PresetValues(
-                0xE6181408, 0xCC352810, 0xDD554420, 0xEE665530,
-                0xFFFFCC00, 0x44FFCC00, 0xFFFFDD44, 0xFFFFFFFF, 0xFFFFEEAA
+                withAlpha(Bg.LEVEL_1, 0xE6), withAlpha(Bg.LEVEL_2, 0xCC), withAlpha(Bg.LEVEL_3, 0xDD), withAlpha(Bg.LEVEL_3, 0xEE),
+                Accent.SECONDARY, withAlpha(Accent.SECONDARY, 0x44), Stroke.DEFAULT, Text.PRIMARY, Text.SECONDARY
             );
 
             public static final PresetValues MIDNIGHT = new PresetValues(
-                0xF0050510, 0xDD080820, 0xCC151540, 0xBB202060,
-                0xFF6666FF, 0x446666FF, 0xFF4444AA, 0xFFCCCCFF, 0xFF8888CC
+                withAlpha(Bg.LEVEL_1, 0xE6), withAlpha(Bg.LEVEL_2, 0xCC), withAlpha(Bg.LEVEL_3, 0xDD), withAlpha(Bg.LEVEL_3, 0xEE),
+                Accent.BLUE, withAlpha(Accent.BLUE, 0x44), Stroke.DEFAULT, Text.PRIMARY, Text.SECONDARY
             );
 
             public static final PresetValues MINIMAL = new PresetValues(
-                0xE6181818, 0xCC282828, 0xDD383838, 0xEE484848,
-                0xFFFFFFFF, 0x44FFFFFF, 0xFF606060, 0xFFFFFFFF, 0xFFAAAAAA
+                withAlpha(Bg.LEVEL_1, 0xE6), withAlpha(Bg.LEVEL_2, 0xCC), withAlpha(Bg.LEVEL_3, 0xDD), withAlpha(Bg.LEVEL_3, 0xEE),
+                Text.PRIMARY, withAlpha(Text.PRIMARY, 0x44), Stroke.MUTED, Text.PRIMARY, Text.SECONDARY
             );
 
             private Presets() {}

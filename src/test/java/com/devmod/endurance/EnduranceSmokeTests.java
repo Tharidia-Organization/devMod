@@ -91,7 +91,22 @@ class EnduranceSmokeTests {
             );
         EnduranceQuest quest = new EnduranceQuest(mobConfig);
         quest.start(UUID.randomUUID());
-        WaveManager.WaveState waveState = new WaveManager.WaveState(UUID.randomUUID(), quest, 1);
+        // Use full constructor to avoid config dependency in simplified constructor
+        int totalToSpawn = 10;
+        WaveManager.WaveState waveState = new WaveManager.WaveState(
+            UUID.randomUUID(),
+            quest,
+            1,
+            1,
+            QuestType.PVE_COOP,
+            totalToSpawn,
+            WaveObjectiveState.killAll(totalToSpawn),
+            List.of(),
+            null,
+            1.0f,
+            null,
+            false
+        );
 
         int limit = waveState.getExternalRespawnLimit();
         int allowed = waveState.registerExternalRespawn(limit + 5);

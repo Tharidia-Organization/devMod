@@ -1,21 +1,21 @@
 /* DevMod Analytics Dashboard v3.0 Styles */
 
 :root {
-    --bg-dark: #0f0f1a;
-    --bg-card: #1a1a2e;
-    --bg-input: #0f3460;
-    --bg-hover: #252545;
-    --accent: #e94560;
-    --accent-hover: #ff6b6b;
-    --accent-secondary: #00d9ff;
-    --text: #eaeaea;
-    --text-muted: #8892a0;
-    --border: #2a2a4a;
-    --success: #4ade80;
-    --warning: #fbbf24;
-    --error: #f87171;
-    --gradient-start: #e94560;
-    --gradient-end: #00d9ff;
+    --bg-dark: #0F131A;
+    --bg-card: #151B24;
+    --bg-input: #1B2432;
+    --bg-hover: #242F40;
+    --accent: #39CDBE;
+    --accent-hover: #4E9CFF;
+    --accent-secondary: #4E9CFF;
+    --text: #E7ECF4;
+    --text-muted: #B9C3D4;
+    --border: #34455E;
+    --success: #45D483;
+    --warning: #F2C14E;
+    --error: #E06B5B;
+    --gradient-start: #39CDBE;
+    --gradient-end: #4E9CFF;
 }
 
 * {
@@ -40,7 +40,7 @@ body {
 
 /* Header */
 header {
-    background: linear-gradient(135deg, var(--bg-card) 0%, #1f1f3a 100%);
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-hover) 100%);
     padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
@@ -164,9 +164,9 @@ nav {
 }
 
 .nav-btn.active {
-    background: linear-gradient(135deg, var(--accent) 0%, #c73659 100%);
-    color: white;
-    box-shadow: 0 2px 8px rgba(233, 69, 96, 0.3);
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    color: var(--bg-dark);
+    box-shadow: 0 2px 8px rgba(57, 205, 190, 0.3);
 }
 
 /* Main Content */
@@ -174,7 +174,7 @@ main {
     flex: 1;
     padding: 1.5rem;
     overflow-y: auto;
-    background: linear-gradient(180deg, var(--bg-dark) 0%, #0a0a14 100%);
+    background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-card) 100%);
 }
 
 .section {
@@ -223,7 +223,7 @@ main {
 }
 
 .stat-card {
-    background: linear-gradient(135deg, var(--bg-card) 0%, #1f1f3a 100%);
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-hover) 100%);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 1.25rem;
@@ -248,7 +248,7 @@ main {
 .stat-card:hover {
     transform: translateY(-2px);
     border-color: var(--accent);
-    box-shadow: 0 8px 25px rgba(233, 69, 96, 0.15);
+    box-shadow: 0 8px 25px rgba(57, 205, 190, 0.15);
 }
 
 .stat-card:hover::before {
@@ -312,7 +312,7 @@ main {
 }
 
 .chart-container:hover {
-    border-color: rgba(233, 69, 96, 0.3);
+    border-color: rgba(57, 205, 190, 0.3);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
@@ -358,7 +358,7 @@ main {
     border-color: var(--accent-secondary);
     color: var(--accent-secondary);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 217, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(78, 156, 255, 0.2);
 }
 
 /* Toast notifications */
@@ -384,17 +384,17 @@ main {
 
 .toast-success {
     background: var(--success);
-    color: #0f0f1a;
+    color: var(--bg-dark);
 }
 
 .toast-error {
     background: var(--error);
-    color: #0f0f1a;
+    color: var(--bg-dark);
 }
 
 .toast-info {
     background: var(--accent-secondary);
-    color: #0f0f1a;
+    color: var(--bg-dark);
 }
 
 .chart-container canvas {
@@ -520,7 +520,7 @@ main {
 
 .tab-btn:hover {
     color: var(--text);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(231, 236, 244, 0.05);
 }
 
 .tab-btn.active {
@@ -554,7 +554,7 @@ main {
 .controls button {
     background: var(--accent);
     border: none;
-    color: white;
+    color: var(--bg-dark);
     padding: 0.5rem 1rem;
     border-radius: 6px;
     cursor: pointer;
@@ -602,7 +602,7 @@ th, td {
 }
 
 th {
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(15, 19, 26, 0.4);
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -614,7 +614,7 @@ th {
 }
 
 tr:hover {
-    background: rgba(233, 69, 96, 0.05);
+    background: rgba(57, 205, 190, 0.05);
 }
 
 td {
@@ -677,7 +677,7 @@ td.json {
 .query-buttons button {
     background: var(--accent);
     border: none;
-    color: white;
+    color: var(--bg-dark);
     padding: 0.6rem 1.5rem;
     border-radius: 6px;
     cursor: pointer;
@@ -725,7 +725,7 @@ footer {
 }
 
 .error-message {
-    background: rgba(248, 113, 113, 0.1);
+    background: rgba(224, 107, 91, 0.1);
     border: 1px solid var(--error);
     border-radius: 8px;
     padding: 1rem;
@@ -750,7 +750,7 @@ footer {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(15, 15, 26, 0.9);
+    background: rgba(15, 19, 26, 0.9);
     border-radius: 12px;
     z-index: 10;
 }
@@ -879,7 +879,7 @@ footer {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(15, 15, 26, 0.98);
+    background: rgba(15, 19, 26, 0.98);
     color: var(--text);
     padding: 0.75rem 1rem;
     border-radius: 8px;
@@ -893,7 +893,7 @@ footer {
     transition: all 0.2s ease;
     z-index: 1000;
     border: 1px solid var(--accent);
-    box-shadow: 0 4px 20px rgba(233, 69, 96, 0.2);
+    box-shadow: 0 4px 20px rgba(57, 205, 190, 0.2);
     pointer-events: none;
     margin-bottom: 8px;
 }

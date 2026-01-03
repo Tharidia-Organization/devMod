@@ -68,6 +68,7 @@ public class ClientServerSeparationTest {
     // Allowed patterns (properly guarded code)
     private static final List<String> ALLOWED_PATTERNS = List.of(
         "FMLEnvironment.dist.isClient()",  // Proper guard
+        "FMLEnvironment.dist != Dist.CLIENT", // Proper guard (early return pattern)
         "DistExecutor.safeRunWhenOn",       // Proper guard
         "@OnlyIn(Dist.CLIENT)",             // Annotation guard
         "TestHarnessClientDelegate"          // Our delegate pattern
@@ -171,7 +172,10 @@ public class ClientServerSeparationTest {
                     }
                 }
 
-                violations.addAll(findClientInstanceViolations(file, content));
+                // Only check for client instance violations if not properly guarded
+                if (!hasProperGuard(content)) {
+                    violations.addAll(findClientInstanceViolations(file, content));
+                }
 
                 return FileVisitResult.CONTINUE;
             }

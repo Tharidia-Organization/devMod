@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
@@ -38,6 +37,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.arena.builder.ArenaBuilder;
 import com.devmod.arena.builder.AsyncArenaBuildCoordinator;
@@ -72,6 +72,8 @@ import com.devmod.runtime.RecoverySystem;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
+import com.devmod.mob.MobRequirements;
+import com.devmod.mob.MobRequirementsRegistry;
 
 public class EnduranceQuestManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestManager.class);
@@ -342,6 +344,15 @@ public class EnduranceQuestManager {
             && policyResolver != null;
     }
 
+    /**
+     * Gets the PolicyResolver for template suggestions.
+     * Used by network handlers to delegate scoring logic.
+     */
+    @javax.annotation.Nullable
+    public PolicyResolver getPolicyResolver() {
+        return policyResolver;
+    }
+
     @javax.annotation.Nullable
     private String getTemplateSystemReadinessError() {
         if (!useInstanceDimensions) {
@@ -371,7 +382,8 @@ public class EnduranceQuestManager {
         return getTemplateSystemReadinessError();
     }
 
-    private ResolvedArena resolveArenaTemplate(UUID playerId, ResourceLocation mobId, QuestSettings settings) {
+    private ResolvedArena resolveArenaTemplate(UUID playerId, ResourceLocation mobId, QuestSettings settings,
+                                               @javax.annotation.Nullable net.minecraft.server.MinecraftServer server) {
         if (policyResolver == null) {
             return null;
         }
@@ -380,21 +392,35 @@ public class EnduranceQuestManager {
         String difficulty = resolveDifficultyLabel(settings, mobConfig);
         Set<String> tags = resolveTags(settings, mobConfig);
 
+        // Get mob requirements for arena selection (space, biome, light, etc.)
+        MobRequirements mobRequirements = MobRequirementsRegistry.INSTANCE.get(mobId);
+
         ResolveContext.Builder ctxBuilder = ResolveContext.builder(playerId)
             .partyId(settings.partyId)
             .mobType(mobId.toString())
+            .mobRequirements(mobRequirements)
             .questType(questType)
             .difficulty(difficulty)
             .playerCount(settings.getPlayerCount())
-            .tags(tags);
-        ForceTemplateCapability capability = forceTemplateCapability;
-        if (capability != null) {
-            capability.getForcedTemplate(playerId)
-                .ifPresent(templateId -> {
-                    LOGGER.info("[EnduranceQuest] Force template override active for {}: {}",
-                        playerId, templateId);
-                    ctxBuilder.forceTemplateId(templateId);
-                });
+            .tags(tags)
+            .server(server);
+
+        // Priority 1: forceTemplateId from settings (explicit user selection from UI)
+        if (settings.forceTemplateId != null && !settings.forceTemplateId.isEmpty()) {
+            LOGGER.info("[EnduranceQuest] Using explicit template override from settings: {}",
+                settings.forceTemplateId);
+            ctxBuilder.forceTemplateId(settings.forceTemplateId);
+        } else {
+            // Priority 2: ForceTemplateCapability (admin override)
+            ForceTemplateCapability capability = forceTemplateCapability;
+            if (capability != null) {
+                capability.getForcedTemplate(playerId)
+                    .ifPresent(templateId -> {
+                        LOGGER.info("[EnduranceQuest] Force template override active for {}: {}",
+                            playerId, templateId);
+                        ctxBuilder.forceTemplateId(templateId);
+                    });
+            }
         }
 
         return policyResolver.resolve(ctxBuilder.build());
@@ -574,7 +600,7 @@ public class EnduranceQuestManager {
         ResourceLocation mobId,
         QuestSettings settings,
         EnduranceQuestRegistry.MobQuestConfig mobConfig) {
-        ResolvedArena resolved = resolveArenaTemplate(leader.getUUID(), mobId, settings);
+        ResolvedArena resolved = resolveArenaTemplate(leader.getUUID(), mobId, settings, leader.getServer());
         if (resolved == null) {
             return CompletableFuture.completedFuture(PreparedArenaResult.failure("No matching arena template/policy"));
         }
@@ -754,7 +780,7 @@ public class EnduranceQuestManager {
                                                              ResourceLocation mobId,
                                                              QuestSettings settings,
                                                              EnduranceQuestRegistry.MobQuestConfig mobConfig) {
-        ResolvedArena resolved = resolveArenaTemplate(leader.getUUID(), mobId, settings);
+        ResolvedArena resolved = resolveArenaTemplate(leader.getUUID(), mobId, settings, leader.getServer());
         if (resolved == null) {
             return PreparedArenaResult.failure("No matching arena template/policy");
         }
@@ -1733,6 +1759,7 @@ public class EnduranceQuestManager {
             session.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
             session.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
             session.setKitId(settings.kitId);
+            session.setPracticeMode(settings.practiceMode);
             activeSessions.put(playerId, session); // Replaces placeholder
 
             // Apply arena policy config overrides and sync to client
@@ -1863,7 +1890,7 @@ public class EnduranceQuestManager {
             return new StartQuestResult(false, "Internal error: missing session", null);
         }
 
-        ResolvedArena resolved = resolveArenaTemplate(playerId, mobId, settings);
+        ResolvedArena resolved = resolveArenaTemplate(playerId, mobId, settings, player.getServer());
         if (resolved == null) {
             activeSessions.remove(playerId);
             return new StartQuestResult(false, "No matching arena template/policy", null);
@@ -1873,6 +1900,7 @@ public class EnduranceQuestManager {
         pendingSession.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
         pendingSession.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
         pendingSession.setKitId(settings.kitId);
+        pendingSession.setPracticeMode(settings.practiceMode);
         pendingSession.scheduleBriefing(BRIEFING_TICKS);
         pendingSession.scheduleInstanceStart(mobId, settings, resolved, PRE_TELEPORT_COUNTDOWN_TICKS);
 
@@ -1913,7 +1941,7 @@ public class EnduranceQuestManager {
 
         com.devmod.network.NetworkHandler.sendInstanceLoadingShow(player, "Creating template instance...");
         player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
-            .withStyle(ChatFormatting.YELLOW)));
+            .withStyle(SharedColorTokens.Chat.YELLOW)));
 
         var startFuture = InstanceManager.INSTANCE
             .startInstanceQuestImmediate(player, resolved.template().id(), mobId.toString(), null);
@@ -2007,7 +2035,7 @@ public class EnduranceQuestManager {
             com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Failed to create instance")
-                .withStyle(ChatFormatting.RED)));
+                .withStyle(SharedColorTokens.Chat.RED)));
             return;
         }
 
@@ -2018,7 +2046,7 @@ public class EnduranceQuestManager {
             com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance not found")
-                .withStyle(ChatFormatting.RED)));
+                .withStyle(SharedColorTokens.Chat.RED)));
             return;
         }
 
@@ -2030,7 +2058,7 @@ public class EnduranceQuestManager {
             com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance dimension not ready")
-                .withStyle(ChatFormatting.RED)));
+                .withStyle(SharedColorTokens.Chat.RED)));
             return;
         }
 
@@ -2041,7 +2069,7 @@ public class EnduranceQuestManager {
             com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance level not found")
-                .withStyle(ChatFormatting.RED)));
+                .withStyle(SharedColorTokens.Chat.RED)));
             return;
         }
 
@@ -2192,7 +2220,7 @@ public class EnduranceQuestManager {
             }
             String msg = message != null ? message : "Build failed";
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] " + msg)
-                .withStyle(ChatFormatting.RED)));
+                .withStyle(SharedColorTokens.Chat.RED)));
         }
     }
 
@@ -2239,10 +2267,12 @@ public class EnduranceQuestManager {
             session.setDifficultyLabel(pendingSession.getDifficultyLabel());
             session.setQuestTypeLabel(pendingSession.getQuestTypeLabel());
             session.setKitId(pendingSession.getKitId());
+            session.setPracticeMode(pendingSession.isPracticeMode());
         } else {
             session.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
             session.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
             session.setKitId(settings.kitId);
+            session.setPracticeMode(settings.practiceMode);
         }
         activeSessions.put(effectivePlayerId, session);
 
@@ -2268,7 +2298,7 @@ public class EnduranceQuestManager {
             player.getName().getString(), quest.getDisplayName(), instanceId);
 
         player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Quest started in instance dimension!")
-            .withStyle(ChatFormatting.GREEN)));
+            .withStyle(SharedColorTokens.Chat.GREEN)));
     }
 
     // ========== Session Management (Delegated) ==========
@@ -2621,6 +2651,13 @@ public class EnduranceQuestManager {
         // Kit selection
         public String kitId = "STARTER";
 
+        // Arena template override (null = auto-select based on MobRequirements)
+        @javax.annotation.Nullable
+        public String forceTemplateId = null;
+
+        // Practice mode (uses training dummies instead of real mobs)
+        public boolean practiceMode = false;
+
         public QuestSettings() {}
 
         public QuestSettings waves(int waves) {
@@ -2648,6 +2685,11 @@ public class EnduranceQuestManager {
         public QuestSettings party(UUID partyId, java.util.List<UUID> memberIds) {
             this.partyId = partyId;
             this.partyMemberIds = memberIds;
+            return this;
+        }
+
+        public QuestSettings forceTemplate(@javax.annotation.Nullable String templateId) {
+            this.forceTemplateId = templateId;
             return this;
         }
 
@@ -2735,6 +2777,15 @@ public class EnduranceQuestManager {
 
         // Kit selection for this quest
         private String kitId = "STARTER";
+
+        // Practice mode (uses training dummies instead of mobs)
+        private boolean practiceMode = false;
+
+        // Session-specific config overrides (for SESSION scope changes)
+        private final Map<String, String> configOverrides = new HashMap<>();
+
+        // Session-specific mob pool configuration (for mob editing in Endurance)
+        private @javax.annotation.Nullable com.devmod.endurance.config.EnduranceMobPoolConfig mobPoolConfig;
 
         public ActiveQuestSession(UUID playerId, EnduranceQuest quest, ArenaContext arena, long startTime) {
             this.playerId = playerId;
@@ -2997,6 +3048,10 @@ public class EnduranceQuestManager {
 
         public void setKitId(String kitId) { this.kitId = kitId != null ? kitId : "STARTER"; }
 
+        public boolean isPracticeMode() { return practiceMode; }
+
+        public void setPracticeMode(boolean practiceMode) { this.practiceMode = practiceMode; }
+
         public void setPendingDirectives(List<WaveDirective> directives, int waveNumber) {
             this.pendingDirectives = directives != null ? List.copyOf(directives) : List.of();
             this.directiveWaveNumber = waveNumber;
@@ -3055,6 +3110,56 @@ public class EnduranceQuestManager {
             pendingDirectives = List.of();
             selectedDirectiveId = null;
             directiveWaveNumber = -1;
+        }
+
+        // Config override methods (SESSION scope)
+        public boolean isHost(UUID uuid) {
+            // For solo quests, the player is always the host
+            // For party quests, check if this is the party leader (playerId is the session owner)
+            return playerId.equals(uuid);
+        }
+
+        public void setConfigOverride(String key, String value) {
+            if (key != null && value != null) {
+                configOverrides.put(key, value);
+            }
+        }
+
+        public @javax.annotation.Nullable String getConfigOverride(String key) {
+            return configOverrides.get(key);
+        }
+
+        public Map<String, String> getConfigOverrides() {
+            return Collections.unmodifiableMap(configOverrides);
+        }
+
+        public void clearConfigOverrides() {
+            configOverrides.clear();
+        }
+
+        // ========== Mob Pool Config ==========
+
+        /**
+         * Set the mob pool configuration for this session.
+         * @param config The mob pool configuration, or null to clear
+         */
+        public void setMobPoolConfig(@javax.annotation.Nullable com.devmod.endurance.config.EnduranceMobPoolConfig config) {
+            this.mobPoolConfig = config;
+        }
+
+        /**
+         * Get the mob pool configuration for this session.
+         * @return The mob pool configuration, or null if not set
+         */
+        public @javax.annotation.Nullable com.devmod.endurance.config.EnduranceMobPoolConfig getMobPoolConfig() {
+            return mobPoolConfig;
+        }
+
+        /**
+         * Check if this session has a custom mob pool configuration.
+         */
+        public boolean hasMobPoolConfig() {
+            return mobPoolConfig != null && mobPoolConfig.hasModifications();
         }
     }
 

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -66,6 +67,11 @@ public class CustomKit {
      * Creates a custom kit from a player's current inventory.
      */
     public static CustomKit fromInventory(net.minecraft.world.entity.player.Inventory inventory, String name) {
+        return fromInventory(inventory, name, null);
+    }
+
+    public static CustomKit fromInventory(net.minecraft.world.entity.player.Inventory inventory, String name,
+                                          @javax.annotation.Nullable RegistryAccess registryAccess) {
         CustomKit kit = new CustomKit(name);
         kit.description = "Saved from player inventory";
 
@@ -73,7 +79,7 @@ public class CustomKit {
         for (int i = 0; i < 4; i++) {
             ItemStack armor = inventory.getArmor(i);
             if (!armor.isEmpty()) {
-                kit.addItem(armor.copy());
+                kit.addItem(armor.copy(), registryAccess);
             }
         }
 
@@ -81,14 +87,14 @@ public class CustomKit {
         for (int i = 0; i < 36; i++) {
             ItemStack item = inventory.getItem(i);
             if (!item.isEmpty()) {
-                kit.addItem(item.copy());
+                kit.addItem(item.copy(), registryAccess);
             }
         }
 
         // Add offhand
         ItemStack offhand = inventory.offhand.get(0);
         if (!offhand.isEmpty()) {
-            kit.addItem(offhand.copy());
+            kit.addItem(offhand.copy(), registryAccess);
         }
 
         return kit;
@@ -130,8 +136,12 @@ public class CustomKit {
     }
 
     public void addItem(ItemStack stack) {
+        addItem(stack, null);
+    }
+
+    public void addItem(ItemStack stack, @javax.annotation.Nullable RegistryAccess registryAccess) {
         if (stack != null && !stack.isEmpty()) {
-            items.add(KitItem.fromItemStack(stack));
+            items.add(KitItem.fromItemStack(stack, registryAccess));
             this.lastModified = System.currentTimeMillis();
         }
     }

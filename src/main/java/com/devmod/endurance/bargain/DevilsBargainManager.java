@@ -448,12 +448,12 @@ public class DevilsBargainManager {
         CurseSession session = sessions.get(requireQuestId(questId));
         if (session == null) return;
 
-        // Blood Tithe - lose HP on kill
+        // Blood Tithe - lose HP on kill (use generic() to respect armor instead of magic())
         int selfDamage = session.getSelfDamagePerKill();
         if (selfDamage > 0) {
-            var magicSource = player.damageSources().magic();
-            if (magicSource != null) {
-                player.hurt(magicSource, selfDamage);
+            var genericSource = player.damageSources().generic();
+            if (genericSource != null) {
+                player.hurt(genericSource, selfDamage);
             }
         }
     }

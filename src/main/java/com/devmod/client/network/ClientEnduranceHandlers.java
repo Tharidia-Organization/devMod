@@ -1,5 +1,7 @@
 package com.devmod.client.network;
 
+import net.minecraft.client.Minecraft;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -10,9 +12,11 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.endurance.ClientChallengeCache;
 import com.devmod.client.endurance.ClientPersonalRecordsCache;
 import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.endurance.EnduranceQuestScreen;
 import com.devmod.client.endurance.EnduranceUiCache;
 import com.devmod.client.overlay.InstanceLoadingOverlay;
 import com.devmod.endurance.ClientShopCache;
+import com.devmod.endurance.KitSyncConfirmPayload;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PersonalRecordsSyncPayload;
 import com.devmod.endurance.QuestCompletionPayload;
@@ -71,5 +75,12 @@ public final class ClientEnduranceHandlers {
 
     public static void handleChallengeSync(ChallengeSyncPayload payload) {
         ClientChallengeCache.INSTANCE.handleSync(payload);
+    }
+
+    public static void handleKitSyncConfirm(KitSyncConfirmPayload payload) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null && mc.screen instanceof EnduranceQuestScreen screen) {
+            screen.onKitSyncConfirm(payload);
+        }
     }
 }

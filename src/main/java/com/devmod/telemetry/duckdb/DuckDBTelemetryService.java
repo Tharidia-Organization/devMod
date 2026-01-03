@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -101,7 +102,7 @@ public class DuckDBTelemetryService {
             }
 
             // Ensure schema exists (connectionManager guaranteed non-null after validation)
-            DuckDBConnectionManager cm = connectionManager;
+            DuckDBConnectionManager cm = Objects.requireNonNull(connectionManager);
             DuckDBSchemaManager.ensureSchema(cm.getConnection());
 
             // Initialize batch writer

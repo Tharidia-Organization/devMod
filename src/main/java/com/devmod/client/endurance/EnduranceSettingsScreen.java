@@ -1,8 +1,13 @@
 package com.devmod.client.endurance;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -14,10 +19,18 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.config.GameMechanicsConfig;
+import com.devmod.endurance.EnduranceConfigSyncPayload;
+import com.devmod.endurance.config.ConfigScope;
+import com.devmod.notification.Notification;
+import com.devmod.notification.NotificationCategory;
+import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
+
+import net.neoforged.neoforge.network.PacketDistributor;
 
 @OnlyIn(Dist.CLIENT)
 public class EnduranceSettingsScreen extends Screen {
@@ -37,14 +50,36 @@ public class EnduranceSettingsScreen extends Screen {
     private static final int COLOR_GREEN = DesignTokens.Semantic.SUCCESS;
     private static final int COLOR_BLUE = DesignTokens.Semantic.INFO;
 
+    private static final int FOOTER_HEIGHT = 50;
+    private static final int COLOR_WARNING = DesignTokens.Semantic.WARNING; // Orange for modified
+    private static final int COLOR_SAVED = DesignTokens.Semantic.SUCCESS; // Green for saved
+    private static final long SAVE_FEEDBACK_DURATION_MS = 2000;
+
     private final Screen parent;
     private final List<ConfigSection> sections = new ArrayList<>();
     private int activeSection = 0;
     private int scrollOffset = 0;
     private int maxScroll = 0;
 
+    // State tracking for UX feedback
+    private final Map<String, Object> originalValues = new HashMap<>();
+    private final Set<String> modifiedKeys = new HashSet<>();
+    private final Set<String> recentlySavedKeys = new HashSet<>();
+    private long lastSaveTime = 0;
+    private int pendingChangesCount = 0;
+
     @Nullable
     private EditorButton backButton;
+    @Nullable
+    private EditorButton applyGlobalButton;
+    @Nullable
+    private EditorButton applySessionButton;
+    @Nullable
+    private EditorButton proposeButton;
+    @Nullable
+    private EditorButton resetSectionButton;
+    @Nullable
+    private EditorButton resetAllButton;
 
     public EnduranceSettingsScreen(Screen parent) {
         super(I18n.translate("devmod.endurance.settings.title"));
@@ -57,7 +92,20 @@ public class EnduranceSettingsScreen extends Screen {
 
         initSections();
         initButtons();
+        captureOriginalValues();
         calculateMaxScroll();
+    }
+
+    /**
+     * Capture original values for all config items to track modifications.
+     */
+    private void captureOriginalValues() {
+        originalValues.clear();
+        for (ConfigSection section : sections) {
+            for (ConfigItem item : section.items) {
+                originalValues.put(item.getConfigKey(), item.getCurrentValue());
+            }
+        }
     }
 
     private void initSections() {
@@ -256,6 +304,21 @@ public class EnduranceSettingsScreen extends Screen {
         challenges.addSlider(I18n.translate("devmod.endurance.settings.challenges.daily_xp_reward").getString(), GameMechanicsConfig.CHALLENGE_DAILY_XP_REWARD, 0, 5000);
         challenges.addSlider(I18n.translate("devmod.endurance.settings.challenges.weekly_xp_reward").getString(), GameMechanicsConfig.CHALLENGE_WEEKLY_XP_REWARD, 0, 20000);
         sections.add(challenges);
+
+        // Mob Configuration
+        var mobConfig = new ConfigSection(I18n.translate("devmod.endurance.settings.section.mob_config").getString(), COLOR_CYAN);
+        String mobEditorLabel = Objects.requireNonNull(I18n.translate("devmod.endurance.settings.mob_pool_editor").getString());
+        mobConfig.addButton(mobEditorLabel, this::openMobPoolEditor);
+        sections.add(mobConfig);
+    }
+
+    /**
+     * Open the Mob Pool Editor screen.
+     */
+    private void openMobPoolEditor() {
+        if (minecraft != null) {
+            minecraft.setScreen(new MobPoolEditorScreen(this));
+        }
     }
 
     private void initButtons() {
@@ -264,13 +327,196 @@ public class EnduranceSettingsScreen extends Screen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build();
+
+        // 3 scope buttons for config sync
+        applyGlobalButton = EditorButton.builder("apply-global", I18n.translate("devmod.settings.button.apply_global").getString())
+            .style(EditorButton.Style.DANGER)
+            .size(EditorButton.Size.SMALL)
+            .onClick(() -> applyChanges(ConfigScope.GLOBAL))
+            .build();
+
+        applySessionButton = EditorButton.builder("apply-session", I18n.translate("devmod.settings.button.apply_session").getString())
+            .style(EditorButton.Style.SUCCESS)
+            .size(EditorButton.Size.SMALL)
+            .onClick(() -> applyChanges(ConfigScope.SESSION))
+            .build();
+
+        proposeButton = EditorButton.builder("propose", I18n.translate("devmod.settings.button.propose").getString())
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.SMALL)
+            .onClick(() -> applyChanges(ConfigScope.PROPOSAL))
+            .build();
+
+        resetSectionButton = EditorButton.builder("reset-section", I18n.translate("devmod.settings.button.reset_section").getString())
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::resetCurrentSection)
+            .build();
+
+        resetAllButton = EditorButton.builder("reset-all", I18n.translate("devmod.settings.button.reset_all").getString())
+            .style(EditorButton.Style.DANGER)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::resetAllToDefaults)
+            .build();
+    }
+
+    // ========================================
+    // Apply and Reset Methods
+    // ========================================
+
+    private void applyChanges(ConfigScope scope) {
+        if (pendingChangesCount == 0) {
+            return;
+        }
+
+        // Collect modified config entries
+        List<EnduranceConfigSyncPayload.ConfigEntry> entries = new ArrayList<>();
+        for (ConfigSection section : sections) {
+            for (ConfigItem item : section.items) {
+                if (modifiedKeys.contains(item.getConfigKey())) {
+                    entries.add(new EnduranceConfigSyncPayload.ConfigEntry(
+                        item.getConfigKey(),
+                        item.getValueType(),
+                        item.getCurrentValueAsString()
+                    ));
+                }
+            }
+        }
+
+        if (entries.isEmpty()) {
+            return;
+        }
+
+        // Send to server
+        EnduranceConfigSyncPayload payload = new EnduranceConfigSyncPayload(entries, scope);
+        PacketDistributor.sendToServer(payload);
+
+        // Mark all modified as saved
+        recentlySavedKeys.addAll(modifiedKeys);
+        lastSaveTime = System.currentTimeMillis();
+
+        int savedCount = pendingChangesCount;
+
+        // Clear modified tracking
+        modifiedKeys.clear();
+        pendingChangesCount = 0;
+
+        // Show toast notification based on scope
+        String messageKey = switch (scope) {
+            case GLOBAL -> "devmod.settings.applied.global";
+            case SESSION -> "devmod.settings.applied.session";
+            case PROPOSAL -> "devmod.settings.applied.proposal";
+        };
+
+        Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+            .titleKey("devmod.settings.applied.title")
+            .messageKey(messageKey)
+            .param("count", String.valueOf(savedCount))
+            .priority(NotificationPriority.NORMAL)
+            .displayDurationMs(2500)
+            .build();
+        ClientNotificationManager.INSTANCE.handleNotification(notification);
+    }
+
+    private void resetCurrentSection() {
+        if (activeSection < 0 || activeSection >= sections.size()) {
+            return;
+        }
+
+        ConfigSection section = sections.get(activeSection);
+        for (ConfigItem item : section.items) {
+            item.resetToDefault();
+        }
+
+        // Recalculate pending changes
+        recalculatePendingChanges();
+
+        // Show toast
+        Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+            .titleKey("devmod.settings.reset.title")
+            .messageKey("devmod.settings.reset.section")
+            .param("section", section.name)
+            .priority(NotificationPriority.NORMAL)
+            .displayDurationMs(2000)
+            .build();
+        ClientNotificationManager.INSTANCE.handleNotification(notification);
+    }
+
+    private void resetAllToDefaults() {
+        for (ConfigSection section : sections) {
+            for (ConfigItem item : section.items) {
+                item.resetToDefault();
+            }
+        }
+
+        // Clear all tracking
+        modifiedKeys.clear();
+        pendingChangesCount = 0;
+
+        // Show toast
+        Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+            .titleKey("devmod.settings.reset.title")
+            .messageKey("devmod.settings.reset.all")
+            .priority(NotificationPriority.NORMAL)
+            .displayDurationMs(2000)
+            .build();
+        ClientNotificationManager.INSTANCE.handleNotification(notification);
+    }
+
+    private void recalculatePendingChanges() {
+        modifiedKeys.clear();
+        for (ConfigSection section : sections) {
+            for (ConfigItem item : section.items) {
+                if (item.isModified()) {
+                    modifiedKeys.add(item.getConfigKey());
+                }
+            }
+        }
+        pendingChangesCount = modifiedKeys.size();
+    }
+
+    /**
+     * Called when a config value changes to track modifications.
+     */
+    void onConfigValueChanged(String configKey, Object originalValue, Object newValue) {
+        if (Objects.equals(originalValue, newValue)) {
+            modifiedKeys.remove(configKey);
+        } else {
+            modifiedKeys.add(configKey);
+        }
+        pendingChangesCount = modifiedKeys.size();
+
+        // Clear from recently saved if modified again
+        recentlySavedKeys.remove(configKey);
+    }
+
+    /**
+     * Check if a config key was recently saved (for visual feedback).
+     */
+    boolean wasRecentlySaved(String configKey) {
+        if (!recentlySavedKeys.contains(configKey)) {
+            return false;
+        }
+        // Check if within feedback duration
+        if (System.currentTimeMillis() - lastSaveTime > SAVE_FEEDBACK_DURATION_MS) {
+            recentlySavedKeys.clear();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Check if a config key has pending modifications.
+     */
+    boolean isModified(String configKey) {
+        return modifiedKeys.contains(configKey);
     }
 
     private void calculateMaxScroll() {
         if (activeSection >= 0 && activeSection < sections.size()) {
             ConfigSection section = sections.get(activeSection);
             int contentHeight = section.getContentHeight();
-            int viewportHeight = height - HEADER_HEIGHT - PADDING * 2;
+            int viewportHeight = height - HEADER_HEIGHT - FOOTER_HEIGHT - PADDING * 2;
             maxScroll = Math.max(0, contentHeight - viewportHeight);
         } else {
             maxScroll = 0;
@@ -293,6 +539,9 @@ public class EnduranceSettingsScreen extends Screen {
 
         // Content area
         renderContent(graphics, safeFont, mouseX, mouseY);
+
+        // Footer with buttons
+        renderFooter(graphics, safeFont, mouseX, mouseY);
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -368,7 +617,7 @@ public class EnduranceSettingsScreen extends Screen {
         int contentX = SIDEBAR_WIDTH + PADDING;
         int contentY = HEADER_HEIGHT + PADDING;
         int contentW = width - SIDEBAR_WIDTH - PADDING * 2;
-        int contentH = height - HEADER_HEIGHT - PADDING * 2;
+        int contentH = height - HEADER_HEIGHT - FOOTER_HEIGHT - PADDING * 2;
 
         if (activeSection < 0 || activeSection >= sections.size()) return;
 
@@ -382,6 +631,15 @@ public class EnduranceSettingsScreen extends Screen {
         for (ConfigItem item : section.items) {
             if (y + item.getHeight() > contentY - 50 && y < contentY + contentH + 50) {
                 item.render(graphics, font, contentX, y, contentW, mouseX, mouseY);
+
+                // Show checkmark for recently saved items
+                if (wasRecentlySaved(item.getConfigKey())) {
+                    graphics.drawString(font, "\u2713", contentX + contentW - 20, y + 2, COLOR_SAVED, false);
+                }
+                // Show warning indicator for modified items
+                else if (isModified(item.getConfigKey())) {
+                    graphics.drawString(font, "\u25CF", contentX + contentW - 20, y + 2, COLOR_WARNING, false);
+                }
             }
             y += item.getHeight() + SLIDER_SPACING;
         }
@@ -398,11 +656,89 @@ public class EnduranceSettingsScreen extends Screen {
         }
     }
 
+    private void renderFooter(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
+        int footerY = height - FOOTER_HEIGHT;
+        int footerX = SIDEBAR_WIDTH;
+
+        // Footer background
+        graphics.fill(footerX, footerY, width, height, DesignTokens.Bg.LEVEL_1);
+        graphics.fill(footerX, footerY, width, footerY + 1, DesignTokens.Accent.PRIMARY);
+
+        // Pending changes indicator
+        int textY = footerY + 18;
+        if (pendingChangesCount > 0) {
+            String pendingMsg = I18n.translate("devmod.settings.pending", pendingChangesCount).getString();
+            graphics.drawString(font, pendingMsg, footerX + PADDING, textY, COLOR_WARNING, false);
+        } else {
+            String noChangesMsg = I18n.translate("devmod.settings.no_changes").getString();
+            // Show green if recently saved, otherwise muted
+            boolean recentlySaved = !recentlySavedKeys.isEmpty() &&
+                (System.currentTimeMillis() - lastSaveTime <= SAVE_FEEDBACK_DURATION_MS);
+            int statusColor = recentlySaved ? COLOR_SAVED : DesignTokens.Text.MUTED;
+            graphics.drawString(font, noChangesMsg, footerX + PADDING, textY, statusColor, false);
+        }
+
+        // Buttons - right aligned
+        int btnY = footerY + 12;
+        int btnSpacing = 6;
+        int btnH = 26;
+        int btnW = 90;
+
+        // Apply Global button (rightmost, OP only)
+        int globalBtnX = width - PADDING - btnW;
+        if (applyGlobalButton != null) {
+            applyGlobalButton.render(graphics, globalBtnX, btnY, btnW, btnH, mouseX, mouseY);
+        }
+
+        // Apply Session button
+        int sessionBtnX = globalBtnX - btnSpacing - btnW;
+        if (applySessionButton != null) {
+            applySessionButton.render(graphics, sessionBtnX, btnY, btnW, btnH, mouseX, mouseY);
+        }
+
+        // Propose button
+        int proposeBtnX = sessionBtnX - btnSpacing - btnW;
+        if (proposeButton != null) {
+            proposeButton.render(graphics, proposeBtnX, btnY, btnW, btnH, mouseX, mouseY);
+        }
+
+        // Reset All button
+        int resetAllBtnW = 70;
+        int resetAllBtnX = proposeBtnX - btnSpacing - resetAllBtnW;
+        if (resetAllButton != null) {
+            resetAllButton.render(graphics, resetAllBtnX, btnY, resetAllBtnW, btnH, mouseX, mouseY);
+        }
+
+        // Reset Section button
+        int resetSectionBtnW = 90;
+        int resetSectionBtnX = resetAllBtnX - btnSpacing - resetSectionBtnW;
+        if (resetSectionButton != null) {
+            resetSectionButton.render(graphics, resetSectionBtnX, btnY, resetSectionBtnW, btnH, mouseX, mouseY);
+        }
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
             // Back button
             if (backButton != null && backButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+
+            // Footer buttons - scope apply buttons
+            if (applyGlobalButton != null && applyGlobalButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (applySessionButton != null && applySessionButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (proposeButton != null && proposeButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (resetSectionButton != null && resetSectionButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (resetAllButton != null && resetAllButton.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
 
@@ -447,6 +783,21 @@ public class EnduranceSettingsScreen extends Screen {
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (backButton != null) {
             backButton.mouseReleased(mouseX, mouseY, button);
+        }
+        if (applyGlobalButton != null) {
+            applyGlobalButton.mouseReleased(mouseX, mouseY, button);
+        }
+        if (applySessionButton != null) {
+            applySessionButton.mouseReleased(mouseX, mouseY, button);
+        }
+        if (proposeButton != null) {
+            proposeButton.mouseReleased(mouseX, mouseY, button);
+        }
+        if (resetSectionButton != null) {
+            resetSectionButton.mouseReleased(mouseX, mouseY, button);
+        }
+        if (resetAllButton != null) {
+            resetAllButton.mouseReleased(mouseX, mouseY, button);
         }
 
         if (activeSection >= 0 && activeSection < sections.size()) {
@@ -526,6 +877,10 @@ public class EnduranceSettingsScreen extends Screen {
             items.add(new ToggleItem(label, config));
         }
 
+        void addButton(@Nonnull String label, @Nonnull Runnable onClick) {
+            items.add(new ButtonItem(label, onClick));
+        }
+
         int getContentHeight() {
             int h = 0;
             for (ConfigItem item : items) {
@@ -535,29 +890,56 @@ public class EnduranceSettingsScreen extends Screen {
         }
     }
 
+    /**
+     * Extracts the simple config key from a NeoForge config path.
+     * Example: "[wave, baseMobCount]" -> "baseMobCount"
+     */
+    private static String normalizeConfigKey(List<String> path) {
+        if (path == null || path.isEmpty()) {
+            return "unknown";
+        }
+        // Return the last element (the actual key name)
+        return path.get(path.size() - 1);
+    }
+
     private interface ConfigItem {
         void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY);
         int getHeight();
         boolean mouseClicked(double mouseX, double mouseY, int sliderX, int sliderY, int sliderW);
         void mouseReleased();
         boolean mouseDragged(double mouseX, double mouseY, int sliderX, int sliderY, int sliderW);
+
+        // Methods for UX feedback
+        String getConfigKey();
+        @Nullable Object getDefaultValue();
+        @Nullable Object getCurrentValue();
+        void resetToDefault();
+        boolean isModified();
+
+        // Methods for network sync
+        String getValueType();
+        String getCurrentValueAsString();
     }
 
     private static class DoubleSliderItem implements ConfigItem {
         final String label;
+        final String configKey;
         final ModConfigSpec.DoubleValue config;
         final double min, max;
         final String format;
         final double displayScale;
+        final double defaultValue;
         boolean dragging = false;
 
         DoubleSliderItem(String label, ModConfigSpec.DoubleValue config, double min, double max, String format, double displayScale) {
             this.label = label;
+            this.configKey = normalizeConfigKey(config.getPath());
             this.config = config;
             this.min = min;
             this.max = max;
             this.format = format;
             this.displayScale = displayScale;
+            this.defaultValue = config.getDefault();
         }
 
         @Override
@@ -628,19 +1010,58 @@ public class EnduranceSettingsScreen extends Screen {
             double newValue = min + ratio * (max - min);
             config.set(newValue);
         }
+
+        @Override
+        public String getConfigKey() {
+            return configKey;
+        }
+
+        @Override
+        public Object getDefaultValue() {
+            return defaultValue;
+        }
+
+        @Override
+        public Object getCurrentValue() {
+            return config.get();
+        }
+
+        @Override
+        public void resetToDefault() {
+            config.set(defaultValue);
+        }
+
+        @Override
+        public boolean isModified() {
+            return Math.abs(config.get() - defaultValue) > 0.0001;
+        }
+
+        @Override
+        public String getValueType() {
+            return "double";
+        }
+
+        @Override
+        public String getCurrentValueAsString() {
+            return String.valueOf(config.get());
+        }
     }
 
     private static class IntSliderItem implements ConfigItem {
         final String label;
+        final String configKey;
         final ModConfigSpec.IntValue config;
         final int min, max;
+        final int defaultValue;
         boolean dragging = false;
 
         IntSliderItem(String label, ModConfigSpec.IntValue config, int min, int max) {
             this.label = label;
+            this.configKey = normalizeConfigKey(config.getPath());
             this.config = config;
             this.min = min;
             this.max = max;
+            this.defaultValue = config.getDefault();
         }
 
         @Override
@@ -710,15 +1131,54 @@ public class EnduranceSettingsScreen extends Screen {
             int newValue = (int) Math.round(min + ratio * (max - min));
             config.set(newValue);
         }
+
+        @Override
+        public String getConfigKey() {
+            return configKey;
+        }
+
+        @Override
+        public Object getDefaultValue() {
+            return defaultValue;
+        }
+
+        @Override
+        public Object getCurrentValue() {
+            return config.get();
+        }
+
+        @Override
+        public void resetToDefault() {
+            config.set(defaultValue);
+        }
+
+        @Override
+        public boolean isModified() {
+            return !config.get().equals(defaultValue);
+        }
+
+        @Override
+        public String getValueType() {
+            return "int";
+        }
+
+        @Override
+        public String getCurrentValueAsString() {
+            return String.valueOf(config.get());
+        }
     }
 
     private static class ToggleItem implements ConfigItem {
         final String label;
+        final String configKey;
         final ModConfigSpec.BooleanValue config;
+        final boolean defaultValue;
 
         ToggleItem(String label, ModConfigSpec.BooleanValue config) {
             this.label = label;
+            this.configKey = normalizeConfigKey(config.getPath());
             this.config = config;
+            this.defaultValue = config.getDefault();
         }
 
         @Override
@@ -774,6 +1234,141 @@ public class EnduranceSettingsScreen extends Screen {
         @Override
         public boolean mouseDragged(double mouseX, double mouseY, int baseX, int baseY, int baseW) {
             return false;
+        }
+
+        @Override
+        public String getConfigKey() {
+            return configKey;
+        }
+
+        @Override
+        public Object getDefaultValue() {
+            return defaultValue;
+        }
+
+        @Override
+        public Object getCurrentValue() {
+            return config.get();
+        }
+
+        @Override
+        public void resetToDefault() {
+            config.set(defaultValue);
+        }
+
+        @Override
+        public boolean isModified() {
+            return !config.get().equals(defaultValue);
+        }
+
+        @Override
+        public String getValueType() {
+            return "boolean";
+        }
+
+        @Override
+        public String getCurrentValueAsString() {
+            return String.valueOf(config.get());
+        }
+    }
+
+    /**
+     * A button item that executes an action when clicked.
+     * Used for opening sub-screens or triggering actions.
+     */
+    private static class ButtonItem implements ConfigItem {
+        @Nonnull final String label;
+        @Nonnull final Runnable onClick;
+
+        ButtonItem(@Nonnull String label, @Nonnull Runnable onClick) {
+            this.label = label;
+            this.onClick = onClick;
+        }
+
+        @Override
+        public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
+            int btnX = x;
+            int btnY = y;
+            int btnW = Math.min(200, width - 20);
+            int btnH = 22;
+
+            boolean hovered = mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH;
+
+            // Button background
+            int bgColor = hovered ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_1;
+            graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, bgColor);
+            graphics.renderOutline(btnX, btnY, btnW, btnH, hovered ? DesignTokens.Accent.PRIMARY : DesignTokens.Border.DEFAULT);
+
+            // Label (centered)
+            int textX = btnX + (btnW - font.width(label)) / 2;
+            int textColor = hovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
+            graphics.drawString(font, label, textX, btnY + 7, textColor, false);
+        }
+
+        @Override
+        public int getHeight() {
+            return 26; // Slightly taller than sliders
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int baseX, int baseY, int baseW) {
+            int btnX = baseX;
+            int btnY = baseY;
+            int btnW = Math.min(200, baseW - 20);
+            int btnH = 22;
+
+            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+                onClick.run();
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void mouseReleased() {
+            // No-op
+        }
+
+        @Override
+        public boolean mouseDragged(double mouseX, double mouseY, int baseX, int baseY, int baseW) {
+            return false;
+        }
+
+        @Override
+        public String getConfigKey() {
+            return "button_" + label.toLowerCase(Locale.ROOT).replace(" ", "_");
+        }
+
+        @Override
+        @Nullable
+        public Object getDefaultValue() {
+            return null;
+        }
+
+        @Override
+        @Nullable
+        public Object getCurrentValue() {
+            return null;
+        }
+
+        @Override
+        public void resetToDefault() {
+            // No-op - buttons don't have values
+        }
+
+        @Override
+        public boolean isModified() {
+            return false; // Buttons are never "modified"
+        }
+
+        @Override
+        public String getValueType() {
+            return "button";
+        }
+
+        @Override
+        public String getCurrentValueAsString() {
+            return "";
         }
     }
 }

@@ -3,6 +3,7 @@ package com.devmod.client.endurance;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Splitter;
 import com.google.errorprone.annotations.Immutable;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -33,17 +35,17 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MaceItem;
 import net.minecraft.world.item.PotionItem;
-import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TieredItem;
 import net.minecraft.world.item.TridentItem;
@@ -55,6 +57,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.search.ItemSearchQuery;
 import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.KitManager;
 import com.devmod.endurance.KitPersistence;
@@ -71,6 +74,10 @@ public class KitSelectionScreen extends Screen {
     private static final int PANEL_PADDING = 12;
     private static final int TAB_HEIGHT = 28;
     private static final int SLOT_SIZE = 22;
+    private static final int LABEL_LINE_HEIGHT = 14;
+    private static final int SECTION_DIVIDER_SPACING = 12;
+    private static final int ACTION_BUTTON_HEIGHT = 18;
+    private static final int ACTION_BUTTON_GAP = 6;
 
     // Colors - Using DesignTokens for consistency
     private static final int COLOR_BG = DesignTokens.Bg.LEVEL_0;
@@ -100,11 +107,29 @@ public class KitSelectionScreen extends Screen {
     @FunctionalInterface
     private interface ItemStackFilter extends Predicate<ItemStack> {}
 
+    private record ItemGridLayout(int panelX, int panelY, int panelW, int panelH,
+                                  int gridX, int gridY, int gridW, int gridH) {}
+
+    private record KitPanelLayout(int panelX, int panelY, int panelW, int panelH, int contentX,
+                                  int equipmentLabelY, int equipmentRowY,
+                                  int hotbarLabelY, int hotbarRowY,
+                                  int actionsDividerY, int actionsLabelY, int actionsRowY,
+                                  int presetsDividerY, int presetsLabelY, int presetsRowY,
+                                  int instructionsDividerY, int instructionsStartY) {}
+
+    private enum ActionType {
+        EDIT,
+        ENCHANT,
+        REMOVE
+    }
+
+    private record ActionButton(ActionType type, String label, int x, int y, int w, int h, boolean enabled) {}
+
     // Categories with icons
     private enum Category {
         ALL("devmod.kit.category.all", "devmod.kit.category.all.tab", "◆", EnduranceUiTheme.KitCategory.ALL, stack -> true),
         ARMOR("devmod.kit.category.armor", "devmod.kit.category.armor.tab", "🛡", EnduranceUiTheme.KitCategory.ARMOR,
-            stack -> stack.getItem() instanceof ArmorItem),
+            KitSelectionScreen::isArmorEquipable),
         WEAPONS("devmod.kit.category.weapons", "devmod.kit.category.weapons.tab", "⚔", EnduranceUiTheme.KitCategory.WEAPONS,
             stack -> stack.getItem() instanceof SwordItem ||
                                           stack.getItem() instanceof AxeItem ||
@@ -123,7 +148,7 @@ public class KitSelectionScreen extends Screen {
         FOOD("devmod.kit.category.food", "devmod.kit.category.food.tab", "🍖", EnduranceUiTheme.KitCategory.FOOD,
             stack -> stack.has(Objects.requireNonNull(net.minecraft.core.component.DataComponents.FOOD))),
         COMBAT("devmod.kit.category.combat", "devmod.kit.category.combat.tab", "🏹", EnduranceUiTheme.KitCategory.COMBAT,
-            stack -> stack.getItem() instanceof ShieldItem ||
+            stack -> isOffhandEquipable(stack) ||
                                          stack.getItem() == Items.ARROW ||
                                          stack.getItem() == Items.SPECTRAL_ARROW ||
                                          stack.getItem() == Items.TIPPED_ARROW ||
@@ -170,7 +195,11 @@ public class KitSelectionScreen extends Screen {
     private String searchQuery = "";
     private int itemScrollOffset = 0;
     private int itemMaxScroll = 0;
+    private int kitLowerScrollOffset = 0;
+    private int kitLowerMaxScroll = 0;
     private int selectedSlot = -1;
+    private boolean needsSearchTabRefresh = false;
+    private int searchTabRetryTicks = 0;
 
     // Popup state
     private boolean showEnchantPopup = false;
@@ -193,21 +222,26 @@ public class KitSelectionScreen extends Screen {
     @Nullable
     private final Consumer<List<ItemStack>> onKitSelected;
     @Nullable
+    private final Consumer<CustomKit> onKitSaved;
+    @Nullable
     private final Screen parentScreen;
     @Nullable
     private CustomKit editingKit;
 
     public KitSelectionScreen(@Nullable Screen parent, @Nullable Consumer<List<ItemStack>> onSelect) {
-        super(I18n.screenTitle("kit_selection"));
-        this.parentScreen = parent;
-        this.onKitSelected = onSelect;
-        this.editingKit = null;
+        this(parent, onSelect, null, null);
     }
 
     public KitSelectionScreen(@Nullable Screen parent, @Nullable Consumer<List<ItemStack>> onSelect, @Nullable CustomKit existingKit) {
+        this(parent, onSelect, null, existingKit);
+    }
+
+    public KitSelectionScreen(@Nullable Screen parent, @Nullable Consumer<List<ItemStack>> onSelect,
+                              @Nullable Consumer<CustomKit> onSave, @Nullable CustomKit existingKit) {
         super(I18n.screenTitle("kit_selection"));
         this.parentScreen = parent;
         this.onKitSelected = onSelect;
+        this.onKitSaved = onSave;
         this.editingKit = existingKit;
     }
 
@@ -218,6 +252,25 @@ public class KitSelectionScreen extends Screen {
         loadExistingKit();
         initSearchBox();
         filterItems();
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (!needsSearchTabRefresh) {
+            return;
+        }
+        searchTabRetryTicks++;
+        if (searchTabRetryTicks % 10 != 0) {
+            return;
+        }
+        if (isSearchTabReady()) {
+            loadAllItems();
+            filterItems();
+            needsSearchTabRefresh = false;
+        } else if (searchTabRetryTicks > 200) {
+            needsSearchTabRefresh = false;
+        }
     }
 
     private void loadExistingKit() {
@@ -231,21 +284,9 @@ public class KitSelectionScreen extends Screen {
             int slot = 5;
             for (ItemStack stack : items) {
                 if (!stack.isEmpty()) {
-                    if (stack.getItem() instanceof ArmorItem armor) {
-                        int armorSlot = switch (armor.getEquipmentSlot()) {
-                            case HEAD -> 0;
-                            case CHEST -> 1;
-                            case LEGS -> 2;
-                            case FEET -> 3;
-                            default -> -1;
-                        };
-                        if (armorSlot >= 0 && !kitSlots.containsKey(armorSlot)) {
-                            kitSlots.put(armorSlot, stack.copy());
-                            continue;
-                        }
-                    }
-                    if (stack.getItem() instanceof ShieldItem && !kitSlots.containsKey(4)) {
-                        kitSlots.put(4, stack.copy());
+                    int equipSlot = getKitSlotIndex(stack);
+                    if (equipSlot >= 0 && !kitSlots.containsKey(equipSlot)) {
+                        kitSlots.put(equipSlot, stack.copy());
                         continue;
                     }
                     while (slot <= 13 && kitSlots.containsKey(slot)) slot++;
@@ -265,7 +306,8 @@ public class KitSelectionScreen extends Screen {
         int searchX = PANEL_PADDING + 8;
         int searchY = TAB_HEIGHT + PANEL_PADDING + 36;
         final EditBox box = new EditBox(safeFont, searchX, searchY, searchWidth, 18, I18n.ui("search"));
-        box.setHint(Objects.requireNonNull(I18n.translate("devmod.kit.search_items")));
+        // Hint shows search syntax: @mod for namespace, #tag for tags, $text for tooltip
+        box.setHint(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("Search... @mod #tag $tooltip")));
         box.setBordered(true);
         box.setResponder(query -> {
             searchQuery = query;
@@ -274,30 +316,94 @@ public class KitSelectionScreen extends Screen {
         addRenderableWidget(box);
     }
 
+    private boolean isSearchTabReady() {
+        var mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return false;
+        }
+        try {
+            return !CreativeModeTabs.searchTab().getDisplayItems().isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private void loadAllItems() {
         allItems.clear();
-        for (Item item : BuiltInRegistries.ITEM) {
-            if (item != Items.AIR) {
-                allItems.add(new ItemStack(Objects.requireNonNull(item)));
+        Map<Integer, List<ItemStack>> buckets = new HashMap<>();
+        boolean loadedFromTabs = false;
+
+        var mc = Minecraft.getInstance();
+        var level = mc.level;
+        if (level != null) {
+            try {
+                // Try to get items from the search tab (already populated by game)
+                for (ItemStack stack : CreativeModeTabs.searchTab().getDisplayItems()) {
+                    addItemIfUnique(buckets, allItems, stack);
+                }
+                loadedFromTabs = !allItems.isEmpty();
+            } catch (Exception e) {
+                LOGGER.warn("[KitSelectionScreen] Failed to load creative tab items; falling back to registry list.", e);
             }
         }
-        LOGGER.debug("[KitSelectionScreen] Loaded {} items", allItems.size());
+
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (item != Items.AIR) {
+                addItemIfUnique(buckets, allItems, Objects.requireNonNull(item.getDefaultInstance()));
+            }
+        }
+
+        needsSearchTabRefresh = level != null && !loadedFromTabs;
+        searchTabRetryTicks = 0;
+
+        if (level != null) {
+            appendPotionVariants(buckets, level.registryAccess());
+        }
+
+        if (loadedFromTabs) {
+            LOGGER.debug("[KitSelectionScreen] Loaded {} items (creative tabs + registry fallback)", allItems.size());
+        } else {
+            LOGGER.debug("[KitSelectionScreen] Loaded {} items (registry only)", allItems.size());
+        }
+    }
+
+    private void appendPotionVariants(Map<Integer, List<ItemStack>> buckets, net.minecraft.core.RegistryAccess registryAccess) {
+        if (registryAccess == null) {
+            return;
+        }
+
+        var potionRegistry = registryAccess.registryOrThrow(Objects.requireNonNull(Registries.POTION));
+        for (Holder<net.minecraft.world.item.alchemy.Potion> holder : potionRegistry.holders().toList()) {
+            Holder<net.minecraft.world.item.alchemy.Potion> safeHolder = Objects.requireNonNull(holder);
+            addPotionVariant(buckets, Items.POTION, safeHolder);
+            addPotionVariant(buckets, Items.SPLASH_POTION, safeHolder);
+            addPotionVariant(buckets, Items.LINGERING_POTION, safeHolder);
+            addPotionVariant(buckets, Items.TIPPED_ARROW, safeHolder);
+        }
+    }
+
+    private void addPotionVariant(Map<Integer, List<ItemStack>> buckets, Item baseItem,
+                                  Holder<net.minecraft.world.item.alchemy.Potion> potion) {
+        if (baseItem == null || baseItem == Items.AIR) {
+            return;
+        }
+        ItemStack stack = new ItemStack(baseItem);
+        stack.set(Objects.requireNonNull(net.minecraft.core.component.DataComponents.POTION_CONTENTS),
+            new net.minecraft.world.item.alchemy.PotionContents(Objects.requireNonNull(potion)));
+        addItemIfUnique(buckets, allItems, stack);
     }
 
     private void filterItems() {
         filteredItems.clear();
-        String query = searchQuery.toLowerCase(Locale.ROOT).trim();
+
+        // Parse query with prefix support (@mod, #tag, $tooltip)
+        ItemSearchQuery parsedQuery = ItemSearchQuery.parse(Objects.requireNonNull(searchQuery));
 
         for (ItemStack stack : allItems) {
-            if (!selectedCategory.matches(stack)) continue;
-            if (!query.isEmpty()) {
-                String name = stack.getHoverName().getString().toLowerCase(Locale.ROOT);
-                String id = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem())))
-                    .toString()
-                    .toLowerCase(Locale.ROOT);
-                if (!name.contains(query) && !id.contains(query)) continue;
-            }
-            filteredItems.add(stack);
+            ItemStack safeStack = Objects.requireNonNull(stack);
+            if (!selectedCategory.matches(safeStack)) continue;
+            if (!parsedQuery.matches(safeStack)) continue;
+            filteredItems.add(safeStack);
         }
 
         itemScrollOffset = 0;
@@ -305,12 +411,145 @@ public class KitSelectionScreen extends Screen {
     }
 
     private void calculateMaxScroll() {
-        int browserWidth = (width / 2) - PANEL_PADDING * 3 - 16;
-        int itemsPerRow = Math.max(1, browserWidth / (ITEM_SIZE + ITEM_MARGIN));
+        ItemGridLayout layout = getItemGridLayout();
+        int itemsPerRow = Math.max(1, layout.gridW() / (ITEM_SIZE + ITEM_MARGIN));
         int rows = (filteredItems.size() + itemsPerRow - 1) / itemsPerRow;
         int contentHeight = rows * (ITEM_SIZE + ITEM_MARGIN);
-        int viewportHeight = height - TAB_HEIGHT - 140;
+        int viewportHeight = layout.gridH();
         itemMaxScroll = Math.max(0, contentHeight - viewportHeight);
+    }
+
+    private ItemGridLayout getItemGridLayout() {
+        int panelX = PANEL_PADDING;
+        int panelY = TAB_HEIGHT + PANEL_PADDING;
+        int panelW = (width / 2) - PANEL_PADDING * 2;
+        int panelH = height - TAB_HEIGHT - PANEL_PADDING * 2 - 55;
+        int gridX = panelX + 8;
+        int gridY = panelY + 58;
+        int gridW = panelW - 20;
+        int gridH = panelH - 68;
+        return new ItemGridLayout(panelX, panelY, panelW, panelH, gridX, gridY, gridW, gridH);
+    }
+
+    private KitPanelLayout getKitPanelLayout() {
+        int panelX = width / 2 + PANEL_PADDING;
+        int panelY = TAB_HEIGHT + PANEL_PADDING;
+        int panelW = (width / 2) - PANEL_PADDING * 2;
+        int panelH = height - TAB_HEIGHT - PANEL_PADDING * 2 - 55;
+        int contentX = panelX + 12;
+
+        int y = panelY + 40;
+
+        int equipmentLabelY = y;
+        int equipmentRowY = equipmentLabelY + LABEL_LINE_HEIGHT;
+        y = equipmentRowY + SLOT_SIZE + 16;
+
+        int hotbarLabelY = y;
+        int hotbarRowY = hotbarLabelY + LABEL_LINE_HEIGHT;
+        y = hotbarRowY + SLOT_SIZE + SECTION_DIVIDER_SPACING;
+
+        int actionsDividerY = y;
+        y += SECTION_DIVIDER_SPACING;
+
+        int actionsLabelY = y;
+        int actionsRowY = actionsLabelY + LABEL_LINE_HEIGHT;
+        y = actionsRowY + ACTION_BUTTON_HEIGHT + SECTION_DIVIDER_SPACING;
+
+        int presetsDividerY = y;
+        y += SECTION_DIVIDER_SPACING;
+
+        int presetsLabelY = y;
+        int presetsRowY = presetsLabelY + LABEL_LINE_HEIGHT;
+        y = presetsRowY + ACTION_BUTTON_HEIGHT + SECTION_DIVIDER_SPACING;
+
+        int instructionsDividerY = y;
+        int instructionsStartY = instructionsDividerY + SECTION_DIVIDER_SPACING;
+
+        return new KitPanelLayout(panelX, panelY, panelW, panelH, contentX,
+            equipmentLabelY, equipmentRowY,
+            hotbarLabelY, hotbarRowY,
+            actionsDividerY, actionsLabelY, actionsRowY,
+            presetsDividerY, presetsLabelY, presetsRowY,
+            instructionsDividerY, instructionsStartY);
+    }
+
+    private int getKitLowerStartY(KitPanelLayout layout) {
+        return layout.actionsDividerY() + 1;
+    }
+
+    private int getKitLowerEndY(KitPanelLayout layout) {
+        return layout.panelY() + layout.panelH() - 1;
+    }
+
+    private void updateKitLowerScroll(KitPanelLayout layout) {
+        int lowerStartY = getKitLowerStartY(layout);
+        int lowerEndY = getKitLowerEndY(layout);
+        int lowerViewportH = Math.max(0, lowerEndY - lowerStartY);
+
+        int instructionHeight = getInstructionLines().length * 11;
+        int lowerContentHeight = (layout.instructionsStartY() + instructionHeight) - layout.actionsLabelY();
+
+        kitLowerMaxScroll = Math.max(0, lowerContentHeight - lowerViewportH);
+        if (kitLowerScrollOffset > kitLowerMaxScroll) {
+            kitLowerScrollOffset = kitLowerMaxScroll;
+        }
+    }
+
+    private boolean isMouseInKitLowerRegion(int mouseX, int mouseY, KitPanelLayout layout) {
+        int lowerStartY = getKitLowerStartY(layout);
+        int lowerEndY = getKitLowerEndY(layout);
+        return mouseX >= layout.panelX() && mouseX < layout.panelX() + layout.panelW() &&
+            mouseY >= lowerStartY && mouseY < lowerEndY;
+    }
+
+    private static void addItemIfUnique(Map<Integer, List<ItemStack>> buckets, List<ItemStack> target, ItemStack stack) {
+        if (stack == null || stack.isEmpty() || stack.getItem() == Items.AIR) {
+            return;
+        }
+        int hash = ItemStack.hashItemAndComponents(stack);
+        List<ItemStack> bucket = buckets.computeIfAbsent(hash, key -> new ArrayList<>());
+        for (ItemStack existing : bucket) {
+            if (existing != null && ItemStack.isSameItemSameComponents(existing, stack)) {
+                return;
+            }
+        }
+        ItemStack copy = stack.copy();
+        bucket.add(copy);
+        target.add(copy);
+    }
+
+    @Nullable
+    private static EquipmentSlot getEquipSlot(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return null;
+        }
+        Equipable equipable = Equipable.get(stack);
+        return equipable != null ? equipable.getEquipmentSlot() : null;
+    }
+
+    private static boolean isArmorEquipable(ItemStack stack) {
+        EquipmentSlot slot = getEquipSlot(stack);
+        return slot == EquipmentSlot.HEAD || slot == EquipmentSlot.CHEST ||
+            slot == EquipmentSlot.LEGS || slot == EquipmentSlot.FEET;
+    }
+
+    private static boolean isOffhandEquipable(ItemStack stack) {
+        return getEquipSlot(stack) == EquipmentSlot.OFFHAND;
+    }
+
+    private int getKitSlotIndex(ItemStack stack) {
+        EquipmentSlot slot = getEquipSlot(stack);
+        if (slot == null) {
+            return -1;
+        }
+        return switch (slot) {
+            case HEAD -> 0;
+            case CHEST -> 1;
+            case LEGS -> 2;
+            case FEET -> 3;
+            case OFFHAND -> 4;
+            default -> -1;
+        };
     }
 
     @Override
@@ -327,10 +566,10 @@ public class KitSelectionScreen extends Screen {
 
         // Render popups last (on top)
         if (showEnchantPopup) {
-            renderEnchantPopup(graphics, mouseX, mouseY);
+            renderModalLayer(graphics, () -> renderEnchantPopup(graphics, mouseX, mouseY));
         }
         if (showNameDialog) {
-            renderNameDialog(graphics, mouseX, mouseY);
+            renderModalLayer(graphics, () -> renderNameDialog(graphics, mouseX, mouseY));
         }
 
         // Tooltips (after popups)
@@ -375,10 +614,11 @@ public class KitSelectionScreen extends Screen {
     private void renderItemBrowser(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
 
-        int panelX = PANEL_PADDING;
-        int panelY = TAB_HEIGHT + PANEL_PADDING;
-        int panelW = (width / 2) - PANEL_PADDING * 2;
-        int panelH = height - TAB_HEIGHT - PANEL_PADDING * 2 - 55;
+        ItemGridLayout layout = getItemGridLayout();
+        int panelX = layout.panelX();
+        int panelY = layout.panelY();
+        int panelW = layout.panelW();
+        int panelH = layout.panelH();
 
         // Panel background
         graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, COLOR_PANEL);
@@ -391,40 +631,47 @@ public class KitSelectionScreen extends Screen {
         graphics.drawString(safeFont, headerText, panelX + 10, panelY + 10, selectedCategory.color);
 
         // Item grid
-        int gridX = panelX + 8;
-        int gridY = panelY + 58;
-        int gridW = panelW - 20;
-        int gridH = panelH - 68;
+        int gridX = layout.gridX();
+        int gridY = layout.gridY();
+        int gridW = layout.gridW();
+        int gridH = layout.gridH();
 
         graphics.enableScissor(gridX, gridY, gridX + gridW, gridY + gridH);
 
         int itemsPerRow = Math.max(1, gridW / (ITEM_SIZE + ITEM_MARGIN));
         int y = gridY - itemScrollOffset;
 
-        for (int i = 0; i < filteredItems.size(); i++) {
-            int col = i % itemsPerRow;
-            int row = i / itemsPerRow;
-            int itemX = gridX + col * (ITEM_SIZE + ITEM_MARGIN);
-            int itemY = y + row * (ITEM_SIZE + ITEM_MARGIN);
+        if (filteredItems.isEmpty()) {
+            String emptyLabel = Objects.requireNonNull(I18n.ui("no_results").getString());
+            int textX = gridX + (gridW - safeFont.width(emptyLabel)) / 2;
+            int textY = gridY + gridH / 2 - 4;
+            graphics.drawString(safeFont, emptyLabel, textX, textY, COLOR_TEXT_DIM);
+        } else {
+            for (int i = 0; i < filteredItems.size(); i++) {
+                int col = i % itemsPerRow;
+                int row = i / itemsPerRow;
+                int itemX = gridX + col * (ITEM_SIZE + ITEM_MARGIN);
+                int itemY = y + row * (ITEM_SIZE + ITEM_MARGIN);
 
-            if (itemY + ITEM_SIZE < gridY || itemY > gridY + gridH) continue;
+                if (itemY + ITEM_SIZE < gridY || itemY > gridY + gridH) continue;
 
-            ItemStack stack = Objects.requireNonNull(filteredItems.get(i));
-            boolean hovered = mouseX >= itemX && mouseX < itemX + ITEM_SIZE &&
-                              mouseY >= itemY && mouseY < itemY + ITEM_SIZE;
+                ItemStack stack = Objects.requireNonNull(filteredItems.get(i));
+                boolean hovered = mouseX >= itemX && mouseX < itemX + ITEM_SIZE &&
+                                  mouseY >= itemY && mouseY < itemY + ITEM_SIZE;
 
-            int bgColor = hovered ? COLOR_ITEM_HOVER : COLOR_ITEM_BG;
-            graphics.fill(itemX, itemY, itemX + ITEM_SIZE, itemY + ITEM_SIZE, bgColor);
+                int bgColor = hovered ? COLOR_ITEM_HOVER : COLOR_ITEM_BG;
+                graphics.fill(itemX, itemY, itemX + ITEM_SIZE, itemY + ITEM_SIZE, bgColor);
 
-            if (hovered) {
-                // Hover border
-                graphics.fill(itemX, itemY, itemX + ITEM_SIZE, itemY + 1, COLOR_ACCENT);
-                graphics.fill(itemX, itemY + ITEM_SIZE - 1, itemX + ITEM_SIZE, itemY + ITEM_SIZE, COLOR_ACCENT);
-                graphics.fill(itemX, itemY, itemX + 1, itemY + ITEM_SIZE, COLOR_ACCENT);
-                graphics.fill(itemX + ITEM_SIZE - 1, itemY, itemX + ITEM_SIZE, itemY + ITEM_SIZE, COLOR_ACCENT);
+                if (hovered) {
+                    // Hover border
+                    graphics.fill(itemX, itemY, itemX + ITEM_SIZE, itemY + 1, COLOR_ACCENT);
+                    graphics.fill(itemX, itemY + ITEM_SIZE - 1, itemX + ITEM_SIZE, itemY + ITEM_SIZE, COLOR_ACCENT);
+                    graphics.fill(itemX, itemY, itemX + 1, itemY + ITEM_SIZE, COLOR_ACCENT);
+                    graphics.fill(itemX + ITEM_SIZE - 1, itemY, itemX + ITEM_SIZE, itemY + ITEM_SIZE, COLOR_ACCENT);
+                }
+
+                graphics.renderItem(stack, itemX + 1, itemY + 1);
             }
-
-            graphics.renderItem(stack, itemX + 1, itemY + 1);
         }
 
         graphics.disableScissor();
@@ -442,10 +689,13 @@ public class KitSelectionScreen extends Screen {
     private void renderKitPanel(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
 
-        int panelX = width / 2 + PANEL_PADDING;
-        int panelY = TAB_HEIGHT + PANEL_PADDING;
-        int panelW = (width / 2) - PANEL_PADDING * 2;
-        int panelH = height - TAB_HEIGHT - PANEL_PADDING * 2 - 55;
+        KitPanelLayout layout = getKitPanelLayout();
+        int panelX = layout.panelX();
+        int panelY = layout.panelY();
+        int panelW = layout.panelW();
+        int panelH = layout.panelH();
+        int contentX = layout.contentX();
+        updateKitLowerScroll(layout);
 
         // Panel background
         graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, COLOR_PANEL);
@@ -457,70 +707,92 @@ public class KitSelectionScreen extends Screen {
         String headerText = I18n.translate("devmod.kit.header.kit", itemCount).getString();
         graphics.drawString(safeFont, headerText, panelX + 10, panelY + 10, COLOR_ACCENT_ORANGE);
 
-        int contentX = panelX + 12;
-        int y = panelY + 40;
-
         // === CHARACTER PREVIEW ===
         int previewX = panelX + panelW - 80;
-        int previewY = y + 80;
+        int previewY = layout.equipmentLabelY() + 80;
         renderCharacterPreview(graphics, previewX, previewY, mouseX, mouseY);
 
         // === EQUIPMENT SLOTS ===
-        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.equipment").getString(), contentX, y, COLOR_TEXT_DIM);
-        y += 14;
+        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.equipment").getString(),
+            contentX, layout.equipmentLabelY(), COLOR_TEXT_DIM);
 
         // Armor slots (vertical)
         for (int slot = 0; slot < 4; slot++) {
-            renderSlot(graphics, contentX + slot * (SLOT_SIZE + 6), y, slot, mouseX, mouseY);
+            renderSlot(graphics, contentX + slot * (SLOT_SIZE + 6), layout.equipmentRowY(), slot, mouseX, mouseY);
         }
 
         // Offhand
-        renderSlot(graphics, contentX + 4 * (SLOT_SIZE + 6) + 10, y, 4, mouseX, mouseY);
-        y += SLOT_SIZE + 16;
+        renderSlot(graphics, contentX + 4 * (SLOT_SIZE + 6) + 10, layout.equipmentRowY(), 4, mouseX, mouseY);
 
         // === HOTBAR SLOTS ===
-        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.hotbar").getString(), contentX, y, COLOR_TEXT_DIM);
-        y += 14;
+        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.hotbar").getString(),
+            contentX, layout.hotbarLabelY(), COLOR_TEXT_DIM);
 
         for (int i = 0; i < 9; i++) {
             int slotX = contentX + i * (SLOT_SIZE + 4);
-            renderSlot(graphics, slotX, y, 5 + i, mouseX, mouseY);
+            renderSlot(graphics, slotX, layout.hotbarRowY(), 5 + i, mouseX, mouseY);
         }
-        y += SLOT_SIZE + 20;
 
-        // === QUICK PRESETS ===
-        graphics.fill(contentX - 4, y, panelX + panelW - 12, y + 1, COLOR_BORDER);
-        y += 12;
+        // Divider between hotbar and scrollable actions/presets area
+        graphics.fill(contentX - 4, layout.actionsDividerY(), panelX + panelW - 12,
+            layout.actionsDividerY() + 1, COLOR_BORDER);
 
-        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.quick_presets").getString(), contentX, y, COLOR_TEXT_DIM);
-        y += 14;
+        int lowerStartY = getKitLowerStartY(layout);
+        int lowerEndY = getKitLowerEndY(layout);
+        if (lowerEndY > lowerStartY) {
+            graphics.enableScissor(panelX + 1, lowerStartY, panelX + panelW - 1, lowerEndY);
+            int lowerOffset = kitLowerScrollOffset;
 
-        String[][] presets = getQuickPresets();
+            // === ACTIONS ===
+            renderActionsHeader(graphics, layout, lowerOffset);
+            renderActionButtons(graphics, layout, mouseX, mouseY, lowerOffset);
 
-        int px = contentX;
-        for (int i = 0; i < presets.length; i++) {
-            String presetName = Objects.requireNonNull(presets[i][0]);
-            String presetIcon = Objects.requireNonNull(presets[i][1]);
-            int pw = safeFont.width(presetName) + 20;
-            boolean pHover = mouseX >= px && mouseX < px + pw && mouseY >= y && mouseY < y + 18;
+            // === QUICK PRESETS ===
+            graphics.fill(contentX - 4, layout.presetsDividerY() - lowerOffset, panelX + panelW - 12,
+                layout.presetsDividerY() - lowerOffset + 1, COLOR_BORDER);
 
-            graphics.fill(px, y, px + pw, y + 18, pHover ? COLOR_ITEM_HOVER : COLOR_SLOT_EMPTY);
-            renderBorder(graphics, px, y, pw, 18, pHover ? COLOR_ACCENT : COLOR_BORDER);
+            graphics.drawString(safeFont, I18n.translate("devmod.kit.section.quick_presets").getString(),
+                contentX, layout.presetsLabelY() - lowerOffset, COLOR_TEXT_DIM);
 
-            graphics.drawString(safeFont, presetIcon + " " + presetName, px + 4, y + 5, COLOR_TEXT);
-            px += pw + 6;
+            String[][] presets = getQuickPresets();
+
+            int px = contentX;
+            int presetY = layout.presetsRowY() - lowerOffset;
+            for (int i = 0; i < presets.length; i++) {
+                String presetName = Objects.requireNonNull(presets[i][0]);
+                String presetIcon = Objects.requireNonNull(presets[i][1]);
+                int pw = safeFont.width(presetName) + 20;
+                boolean pHover = mouseX >= px && mouseX < px + pw && mouseY >= presetY && mouseY < presetY + ACTION_BUTTON_HEIGHT;
+
+                graphics.fill(px, presetY, px + pw, presetY + ACTION_BUTTON_HEIGHT, pHover ? COLOR_ITEM_HOVER : COLOR_SLOT_EMPTY);
+                renderBorder(graphics, px, presetY, pw, ACTION_BUTTON_HEIGHT, pHover ? COLOR_ACCENT : COLOR_BORDER);
+
+                graphics.drawString(safeFont, presetIcon + " " + presetName, px + 4, presetY + 5, COLOR_TEXT);
+                px += pw + 6;
+            }
+
+            // === INSTRUCTIONS ===
+            graphics.fill(contentX - 4, layout.instructionsDividerY() - lowerOffset, panelX + panelW - 12,
+                layout.instructionsDividerY() - lowerOffset + 1, COLOR_BORDER);
+
+            int y = layout.instructionsStartY() - lowerOffset;
+            String[] instructions = getInstructionLines();
+            for (String instr : instructions) {
+                graphics.drawString(safeFont, instr, contentX, y, COLOR_TEXT_DIM);
+                y += 11;
+            }
+
+            graphics.disableScissor();
         }
-        y += 28;
 
-        // === INSTRUCTIONS ===
-        graphics.fill(contentX - 4, y, panelX + panelW - 12, y + 1, COLOR_BORDER);
-        y += 12;
-
-        String[] instructions = getInstructionLines();
-
-        for (String instr : instructions) {
-            graphics.drawString(safeFont, instr, contentX, y, COLOR_TEXT_DIM);
-            y += 11;
+        if (kitLowerMaxScroll > 0) {
+            int sbX = panelX + panelW - 6;
+            int sbY = lowerStartY + 2;
+            int sbH = Math.max(10, (lowerEndY - lowerStartY) - 4);
+            int thumbH = Math.max(16, (int) ((float) sbH / (sbH + kitLowerMaxScroll) * sbH));
+            int thumbY = sbY + (int) ((float) kitLowerScrollOffset / kitLowerMaxScroll * (sbH - thumbH));
+            graphics.fill(sbX, sbY, sbX + 3, sbY + sbH, COLOR_ITEM_BG);
+            graphics.fill(sbX, thumbY, sbX + 3, thumbY + thumbH, COLOR_ACCENT);
         }
     }
 
@@ -598,6 +870,93 @@ public class KitSelectionScreen extends Screen {
         }
     }
 
+    private void renderActionsHeader(GuiGraphics graphics, KitPanelLayout layout, int yOffset) {
+        var safeFont = Objects.requireNonNull(font);
+        String header = Objects.requireNonNull(I18n.translate("devmod.kit.section.actions").getString());
+        graphics.drawString(safeFont, header, layout.contentX(), layout.actionsLabelY() - yOffset, COLOR_TEXT_DIM);
+
+        int panelRight = layout.panelX() + layout.panelW() - 12;
+        int leftMin = layout.contentX() + safeFont.width(header) + 8;
+        int maxWidth = panelRight - leftMin;
+        if (maxWidth <= 0) {
+            return;
+        }
+
+        String selection = Objects.requireNonNull(getActionsSelectionLabel());
+        if (safeFont.width(selection) > maxWidth) {
+            int ellipsisWidth = safeFont.width("...");
+            if (maxWidth <= ellipsisWidth) {
+                selection = Objects.requireNonNull(safeFont.plainSubstrByWidth(selection, maxWidth));
+            } else {
+                selection = Objects.requireNonNull(safeFont.plainSubstrByWidth(selection, maxWidth - ellipsisWidth)) + "...";
+            }
+        }
+        int selectionX = panelRight - safeFont.width(selection);
+        graphics.drawString(safeFont, selection, selectionX, layout.actionsLabelY() - yOffset, COLOR_TEXT_DIM);
+    }
+
+    private void renderActionButtons(GuiGraphics graphics, KitPanelLayout layout, int mouseX, int mouseY, int yOffset) {
+        var safeFont = Objects.requireNonNull(font);
+        for (ActionButton button : buildActionButtons(layout, yOffset)) {
+            boolean hovered = mouseX >= button.x() && mouseX < button.x() + button.w() &&
+                              mouseY >= button.y() && mouseY < button.y() + button.h();
+            boolean enabled = button.enabled();
+            int bgColor = enabled ? (hovered ? COLOR_ITEM_HOVER : COLOR_PANEL) : COLOR_SLOT_EMPTY;
+            int borderColor = enabled ? (hovered ? COLOR_ACCENT : COLOR_BORDER) : COLOR_BORDER;
+            int textColor = enabled ? COLOR_TEXT : COLOR_TEXT_DIM;
+
+            graphics.fill(button.x(), button.y(), button.x() + button.w(), button.y() + button.h(), bgColor);
+            renderBorder(graphics, button.x(), button.y(), button.w(), button.h(), borderColor);
+
+            String label = Objects.requireNonNull(button.label());
+            int textX = button.x() + (button.w() - safeFont.width(label)) / 2;
+            int textY = button.y() + (button.h() - 8) / 2;
+            graphics.drawString(safeFont, label, textX, textY, textColor);
+        }
+    }
+
+    private List<ActionButton> buildActionButtons(KitPanelLayout layout, int yOffset) {
+        var safeFont = Objects.requireNonNull(font);
+        List<ActionButton> buttons = new ArrayList<>();
+
+        ItemStack selectedStack = selectedSlot >= 0
+            ? kitSlots.getOrDefault(selectedSlot, Objects.requireNonNull(ItemStack.EMPTY))
+            : Objects.requireNonNull(ItemStack.EMPTY);
+        boolean hasItem = selectedSlot >= 0 && !selectedStack.isEmpty();
+
+        int x = layout.contentX();
+        int y = layout.actionsRowY() - yOffset;
+
+        String editLabel = Objects.requireNonNull(I18n.ui("edit").getString());
+        int editW = Math.max(70, safeFont.width(editLabel) + 16);
+        buttons.add(new ActionButton(ActionType.EDIT, editLabel, x, y, editW, ACTION_BUTTON_HEIGHT, hasItem));
+        x += editW + ACTION_BUTTON_GAP;
+
+        String enchantLabel = Objects.requireNonNull(I18n.ui("enchant").getString());
+        int enchantW = Math.max(80, safeFont.width(enchantLabel) + 16);
+        buttons.add(new ActionButton(ActionType.ENCHANT, enchantLabel, x, y, enchantW, ACTION_BUTTON_HEIGHT, hasItem));
+        x += enchantW + ACTION_BUTTON_GAP;
+
+        String removeLabel = Objects.requireNonNull(I18n.ui("remove").getString());
+        int removeW = Math.max(70, safeFont.width(removeLabel) + 16);
+        buttons.add(new ActionButton(ActionType.REMOVE, removeLabel, x, y, removeW, ACTION_BUTTON_HEIGHT, hasItem));
+
+        return buttons;
+    }
+
+    private String getActionsSelectionLabel() {
+        if (selectedSlot < 0) {
+            return Objects.requireNonNull(I18n.translate("devmod.kit.actions.select_slot").getString());
+        }
+
+        ItemStack stack = kitSlots.getOrDefault(selectedSlot, Objects.requireNonNull(ItemStack.EMPTY));
+        if (stack.isEmpty()) {
+            return I18n.translate("devmod.kit.actions.selected_empty", getSlotName(selectedSlot)).getString();
+        }
+
+        return I18n.translate("devmod.kit.actions.selected_item", stack.getHoverName().getString()).getString();
+    }
+
     private void renderBottomBar(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
         int barY = height - 50;
@@ -663,6 +1022,15 @@ public class KitSelectionScreen extends Screen {
         renderBorder(graphics, x, y, w, h, COLOR_BORDER);
     }
 
+    private void renderModalLayer(GuiGraphics graphics, Runnable renderer) {
+        graphics.pose().pushPose();
+        graphics.pose().translate(0, 0, DesignTokens.ZOrder.MODAL);
+        RenderSystem.disableDepthTest();
+        renderer.run();
+        RenderSystem.enableDepthTest();
+        graphics.pose().popPose();
+    }
+
     private void renderEnchantPopup(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
 
@@ -694,31 +1062,38 @@ public class KitSelectionScreen extends Screen {
 
         graphics.enableScissor(popupX + 10, listY, popupX + popupW - 10, listY + listH);
 
-        int ey = listY - enchantScrollOffset;
-        for (EnchantmentOption opt : availableEnchants) {
-            if (ey + 24 < listY || ey > listY + listH) {
+        if (availableEnchants.isEmpty()) {
+            String emptyLabel = Objects.requireNonNull(I18n.ui("no_results").getString());
+            int textX = popupX + (popupW - safeFont.width(emptyLabel)) / 2;
+            int textY = listY + listH / 2 - 4;
+            graphics.drawString(safeFont, emptyLabel, textX, textY, COLOR_TEXT_DIM);
+        } else {
+            int ey = listY - enchantScrollOffset;
+            for (EnchantmentOption opt : availableEnchants) {
+                if (ey + 24 < listY || ey > listY + listH) {
+                    ey += 26;
+                    continue;
+                }
+
+                boolean eHover = mouseX >= popupX + 10 && mouseX < popupX + popupW - 10 &&
+                                mouseY >= ey && mouseY < ey + 24;
+
+                graphics.fill(popupX + 10, ey, popupX + popupW - 10, ey + 24, eHover ? COLOR_ITEM_HOVER : COLOR_SLOT_EMPTY);
+                renderBorder(graphics, popupX + 10, ey, popupW - 20, 24, eHover ? COLOR_ACCENT_PURPLE : COLOR_BORDER);
+
+                graphics.drawString(safeFont, opt.displayName, popupX + 16, ey + 8, COLOR_TEXT);
+
+                // Level buttons
+                int lvlX = popupX + popupW - 80;
+                for (int lvl = 1; lvl <= opt.maxLevel && lvl <= 5; lvl++) {
+                    int btnX = lvlX + (lvl - 1) * 14;
+                    boolean lvlHover = mouseX >= btnX && mouseX < btnX + 12 && mouseY >= ey + 4 && mouseY < ey + 20;
+                    int lvlColor = lvlHover ? COLOR_ACCENT_PURPLE : COLOR_TEXT_DIM;
+                    graphics.drawString(safeFont, String.valueOf(lvl), btnX + 3, ey + 8, lvlColor);
+                }
+
                 ey += 26;
-                continue;
             }
-
-            boolean eHover = mouseX >= popupX + 10 && mouseX < popupX + popupW - 10 &&
-                            mouseY >= ey && mouseY < ey + 24;
-
-            graphics.fill(popupX + 10, ey, popupX + popupW - 10, ey + 24, eHover ? COLOR_ITEM_HOVER : COLOR_SLOT_EMPTY);
-            renderBorder(graphics, popupX + 10, ey, popupW - 20, 24, eHover ? COLOR_ACCENT_PURPLE : COLOR_BORDER);
-
-            graphics.drawString(safeFont, opt.displayName, popupX + 16, ey + 8, COLOR_TEXT);
-
-            // Level buttons
-            int lvlX = popupX + popupW - 80;
-            for (int lvl = 1; lvl <= opt.maxLevel && lvl <= 5; lvl++) {
-                int btnX = lvlX + (lvl - 1) * 14;
-                boolean lvlHover = mouseX >= btnX && mouseX < btnX + 12 && mouseY >= ey + 4 && mouseY < ey + 20;
-                int lvlColor = lvlHover ? COLOR_ACCENT_PURPLE : COLOR_TEXT_DIM;
-                graphics.drawString(safeFont, String.valueOf(lvl), btnX + 3, ey + 8, lvlColor);
-            }
-
-            ey += 26;
         }
 
         graphics.disableScissor();
@@ -789,10 +1164,11 @@ public class KitSelectionScreen extends Screen {
 
     private void renderTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
         // Item browser tooltips
-        int gridX = PANEL_PADDING + 8;
-        int gridY = TAB_HEIGHT + PANEL_PADDING + 58;
-        int gridW = (width / 2) - PANEL_PADDING * 2 - 20;
-        int gridH = height - TAB_HEIGHT - 140 - 68;
+        ItemGridLayout layout = getItemGridLayout();
+        int gridX = layout.gridX();
+        int gridY = layout.gridY();
+        int gridW = layout.gridW();
+        int gridH = layout.gridH();
 
         if (mouseX >= gridX && mouseX < gridX + gridW && mouseY >= gridY && mouseY < gridY + gridH) {
             int itemsPerRow = Math.max(1, gridW / (ITEM_SIZE + ITEM_MARGIN));
@@ -813,8 +1189,9 @@ public class KitSelectionScreen extends Screen {
     }
 
     private void renderSlotTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
-        int panelX = width / 2 + PANEL_PADDING + 12;
-        int y = TAB_HEIGHT + PANEL_PADDING + 54;
+        KitPanelLayout layout = getKitPanelLayout();
+        int panelX = layout.contentX();
+        int y = layout.equipmentRowY();
 
         // Armor + offhand row
         for (int slot = 0; slot < 5; slot++) {
@@ -835,7 +1212,7 @@ public class KitSelectionScreen extends Screen {
         }
 
         // Hotbar row
-        int hotbarY = y + SLOT_SIZE + 30;
+        int hotbarY = layout.hotbarRowY();
         for (int i = 0; i < 9; i++) {
             int slotX = panelX + i * (SLOT_SIZE + 4);
             int slotY = hotbarY;
@@ -879,7 +1256,8 @@ public class KitSelectionScreen extends Screen {
             I18n.translate("devmod.kit.instructions.add").getString(),
             I18n.translate("devmod.kit.instructions.remove").getString(),
             I18n.translate("devmod.kit.instructions.stack").getString(),
-            I18n.translate("devmod.kit.instructions.slot").getString()
+            I18n.translate("devmod.kit.instructions.slot").getString(),
+            I18n.translate("devmod.kit.instructions.actions").getString()
         };
     }
 
@@ -904,6 +1282,9 @@ public class KitSelectionScreen extends Screen {
 
         // Kit slots
         if (handleSlotClick((int) mouseX, (int) mouseY, button)) return true;
+
+        // Actions
+        if (handleActionButtonsClick((int) mouseX, (int) mouseY)) return true;
 
         // Quick presets
         if (handlePresetClick((int) mouseX, (int) mouseY)) return true;
@@ -968,10 +1349,11 @@ public class KitSelectionScreen extends Screen {
     }
 
     private boolean handleItemBrowserClick(int mouseX, int mouseY) {
-        int gridX = PANEL_PADDING + 8;
-        int gridY = TAB_HEIGHT + PANEL_PADDING + 58;
-        int gridW = (width / 2) - PANEL_PADDING * 2 - 20;
-        int gridH = height - TAB_HEIGHT - 140 - 68;
+        ItemGridLayout layout = getItemGridLayout();
+        int gridX = layout.gridX();
+        int gridY = layout.gridY();
+        int gridW = layout.gridW();
+        int gridH = layout.gridH();
 
         if (mouseX < gridX || mouseX >= gridX + gridW || mouseY < gridY || mouseY >= gridY + gridH) {
             return false;
@@ -993,7 +1375,6 @@ public class KitSelectionScreen extends Screen {
 
             if (selectedSlot >= 0) {
                 kitSlots.put(selectedSlot, stack);
-                selectedSlot = -1;
             } else {
                 addItemToKit(stack);
             }
@@ -1005,8 +1386,9 @@ public class KitSelectionScreen extends Screen {
     }
 
     private boolean handleSlotClick(int mouseX, int mouseY, int button) {
-        int panelX = width / 2 + PANEL_PADDING + 12;
-        int y = TAB_HEIGHT + PANEL_PADDING + 54;
+        KitPanelLayout layout = getKitPanelLayout();
+        int panelX = layout.contentX();
+        int y = layout.equipmentRowY();
 
         // Armor + offhand
         for (int slot = 0; slot < 5; slot++) {
@@ -1019,7 +1401,7 @@ public class KitSelectionScreen extends Screen {
         }
 
         // Hotbar
-        int hotbarY = y + SLOT_SIZE + 30;
+        int hotbarY = layout.hotbarRowY();
         for (int i = 0; i < 9; i++) {
             int slotX = panelX + i * (SLOT_SIZE + 4);
             int slotY = hotbarY;
@@ -1057,10 +1439,46 @@ public class KitSelectionScreen extends Screen {
         return true;
     }
 
+    private boolean handleActionButtonsClick(int mouseX, int mouseY) {
+        KitPanelLayout layout = getKitPanelLayout();
+        updateKitLowerScroll(layout);
+        if (!isMouseInKitLowerRegion(mouseX, mouseY, layout)) {
+            return false;
+        }
+        for (ActionButton button : buildActionButtons(layout, kitLowerScrollOffset)) {
+            if (mouseX >= button.x() && mouseX < button.x() + button.w() &&
+                mouseY >= button.y() && mouseY < button.y() + button.h()) {
+                if (!button.enabled()) {
+                    return true;
+                }
+                if (selectedSlot < 0) {
+                    return true;
+                }
+
+                ItemStack stack = kitSlots.getOrDefault(selectedSlot, Objects.requireNonNull(ItemStack.EMPTY));
+                switch (button.type()) {
+                    case EDIT -> openItemEditor(selectedSlot, stack);
+                    case ENCHANT -> openEnchantPopup(selectedSlot);
+                    case REMOVE -> {
+                        kitSlots.remove(selectedSlot);
+                        playRemoveSound();
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean handlePresetClick(int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
-        int panelX = width / 2 + PANEL_PADDING + 12;
-        int y = TAB_HEIGHT + PANEL_PADDING + 54 + SLOT_SIZE + 16 + 14 + SLOT_SIZE + 20 + 12 + 14;
+        KitPanelLayout layout = getKitPanelLayout();
+        int panelX = layout.contentX();
+        updateKitLowerScroll(layout);
+        if (!isMouseInKitLowerRegion(mouseX, mouseY, layout)) {
+            return false;
+        }
+        int y = layout.presetsRowY() - kitLowerScrollOffset;
 
         String[][] presets = getQuickPresets();
 
@@ -1157,13 +1575,21 @@ public class KitSelectionScreen extends Screen {
             return true;
         }
 
-        int gridX = PANEL_PADDING + 8;
-        int gridY = TAB_HEIGHT + PANEL_PADDING + 58;
-        int gridW = (width / 2) - PANEL_PADDING * 2 - 20;
-        int gridH = height - TAB_HEIGHT - 140 - 68;
+        ItemGridLayout layout = getItemGridLayout();
+        int gridX = layout.gridX();
+        int gridY = layout.gridY();
+        int gridW = layout.gridW();
+        int gridH = layout.gridH();
 
         if (mouseX >= gridX && mouseX < gridX + gridW && mouseY >= gridY && mouseY < gridY + gridH) {
             itemScrollOffset = Math.max(0, Math.min(itemMaxScroll, itemScrollOffset - (int) (scrollY * 24)));
+            return true;
+        }
+
+        KitPanelLayout kitLayout = getKitPanelLayout();
+        updateKitLowerScroll(kitLayout);
+        if (kitLowerMaxScroll > 0 && isMouseInKitLowerRegion((int) mouseX, (int) mouseY, kitLayout)) {
+            kitLowerScrollOffset = Math.max(0, Math.min(kitLowerMaxScroll, kitLowerScrollOffset - (int) (scrollY * 20)));
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -1204,21 +1630,9 @@ public class KitSelectionScreen extends Screen {
     }
 
     private void addItemToKit(ItemStack stack) {
-        if (stack.getItem() instanceof ArmorItem armor) {
-            int slot = switch (armor.getEquipmentSlot()) {
-                case HEAD -> 0;
-                case CHEST -> 1;
-                case LEGS -> 2;
-                case FEET -> 3;
-                default -> -1;
-            };
-            if (slot >= 0) {
-                kitSlots.put(slot, stack);
-                return;
-            }
-        }
-        if (stack.getItem() instanceof ShieldItem) {
-            kitSlots.put(4, stack);
+        int equipSlot = getKitSlotIndex(stack);
+        if (equipSlot >= 0) {
+            kitSlots.put(equipSlot, stack);
             return;
         }
         for (int slot = 5; slot <= 13; slot++) {
@@ -1300,7 +1714,7 @@ public class KitSelectionScreen extends Screen {
 
         // Open the editor with callback support
         var mc = Minecraft.getInstance();
-        mc.setScreen(new ItemEditorScreen(stack, startTab, this, onItemEdited));
+        mc.setScreen(new ItemEditorScreen(stack, startTab, this, onItemEdited, true));
         playClickSound();
     }
 
@@ -1388,15 +1802,22 @@ public class KitSelectionScreen extends Screen {
         }
         kit.clearItems();
 
+        var mc = Minecraft.getInstance();
+        var level = mc.level;
+        var registryAccess = level != null ? level.registryAccess() : null;
+
         for (int slot = 0; slot <= 13; slot++) {
             ItemStack stack = kitSlots.get(slot);
             if (stack != null && !stack.isEmpty()) {
-                kit.addItem(stack);
+                kit.addItem(stack, registryAccess);
             }
         }
 
         KitPersistence.saveKit(kit);
         LOGGER.info("[KitSelectionScreen] Saved kit: {} with {} items", kit.getName(), kit.getItemCount());
+        if (onKitSaved != null) {
+            onKitSaved.accept(kit);
+        }
 
         closeNameDialog();
         playSuccessSound();

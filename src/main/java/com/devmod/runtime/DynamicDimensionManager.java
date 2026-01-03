@@ -42,7 +42,6 @@ import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
-import net.minecraft.world.level.storage.DerivedLevelData;
 
 import com.devmod.DevMod;
 import com.devmod.arena.config.InstanceLimitConfig;
@@ -102,8 +101,12 @@ public class DynamicDimensionManager {
         dimensionToInstance.clear();
         instanceToDimension.clear();
 
-        // Clear DH registrations on shutdown
-        com.devmod.integration.DistantHorizonsIntegration.clearAllRegistrations();
+        // Clear DH registrations on shutdown (wrapped to handle classloader issues during shutdown)
+        try {
+            com.devmod.integration.DistantHorizonsIntegration.clearAllRegistrations();
+        } catch (LinkageError e) {
+            LOGGER.debug("[DynamicDim] Could not clear DH registrations during shutdown: {}", e.getMessage());
+        }
 
         LOGGER.info("[DynamicDim] Shutdown complete");
     }
@@ -506,11 +509,14 @@ public class DynamicDimensionManager {
             // Get overworld as template for world settings
             ServerLevel overworld = server.overworld();
 
-            // Create derived level data for the new dimension
-            DerivedLevelData derivedLevelData = new DerivedLevelData(
+            // Create custom level data for the instance dimension
+            // Using InstanceLevelData to force NORMAL difficulty regardless of server settings
+            // This ensures mobs can attack players in endurance quests even if server is PEACEFUL
+            InstanceLevelData derivedLevelData = new InstanceLevelData(
                 nn(server.getWorldData(), "world data"),
                 nn(server.getWorldData().overworldData(), "overworld data")
             );
+            LOGGER.debug("[DynamicDim] Using InstanceLevelData with forced NORMAL difficulty for {}", dimensionKey.location());
 
             // Get executor and storage via accessor
             MinecraftServerAccessor accessor = (MinecraftServerAccessor) server;
@@ -540,7 +546,11 @@ public class DynamicDimensionManager {
             levels.put(dimensionKey, newLevel);
 
             // Register with Distant Horizons for LOD compatibility
-            com.devmod.integration.DistantHorizonsIntegration.registerDynamicDimension(newLevel);
+            try {
+                com.devmod.integration.DistantHorizonsIntegration.registerDynamicDimension(newLevel);
+            } catch (LinkageError e) {
+                LOGGER.debug("[DynamicDim] Could not register with DH: {}", e.getMessage());
+            }
 
             // Post LevelEvent.Load to notify other mods about the new dimension
             try {
@@ -554,7 +564,11 @@ public class DynamicDimensionManager {
 
             // Register with LittleTiles for animation handler compatibility
             // This forces lazy initialization of the per-level handler
-            com.devmod.integration.LittleTilesIntegration.registerDynamicDimension(newLevel);
+            try {
+                com.devmod.integration.LittleTilesIntegration.registerDynamicDimension(newLevel);
+            } catch (LinkageError e) {
+                LOGGER.debug("[DynamicDim] Could not register with LittleTiles: {}", e.getMessage());
+            }
 
             LOGGER.info("[DynamicDim] Successfully injected dimension {}", dimensionKey.location());
             return newLevel;
@@ -786,7 +800,11 @@ public class DynamicDimensionManager {
         }
 
         // 3. Unregister from Distant Horizons BEFORE cleanup
-        com.devmod.integration.DistantHorizonsIntegration.unregisterDynamicDimension(resolvedKey);
+        try {
+            com.devmod.integration.DistantHorizonsIntegration.unregisterDynamicDimension(resolvedKey);
+        } catch (LinkageError e) {
+            LOGGER.debug("[DynamicDim] Could not unregister from DH: {}", e.getMessage());
+        }
 
         // 3b. Clean up environment settings
         DimensionEnvironmentManager.INSTANCE.cleanupDimension(resolvedKey);

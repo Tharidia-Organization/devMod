@@ -18,6 +18,7 @@ import com.devmod.network.PayloadValidation;
 
 import static com.devmod.network.ChannelId.DEBUG_SYNC;
 import static com.devmod.network.ChannelId.DEBUG_TOGGLE;
+import static com.devmod.network.ChannelId.ENTITY_PATHING;
 
 public class DebugNetworkHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugNetworkHandler.class);
@@ -46,8 +47,15 @@ public class DebugNetworkHandler {
                 DebugNetworkHandler::handleDebugSync
             );
 
-            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {})",
-                DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString());
+            // Entity Pathing (server to client) - send path data for debug visualization
+            event.registrar(ENTITY_PATHING.asString()).playToClient(
+                Objects.requireNonNull(EntityPathingPayload.TYPE),
+                Objects.requireNonNull(EntityPathingPayload.STREAM_CODEC),
+                DebugNetworkHandler::handleEntityPathing
+            );
+
+            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {})",
+                DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString(), ENTITY_PATHING.asString());
         } catch (NoClassDefFoundError e) {
             LOGGER.error("[DevMod] Debug payload classes missing; debug networking disabled", e);
         }
@@ -102,6 +110,25 @@ public class DebugNetworkHandler {
             // Client handler not available on dedicated servers.
         } catch (Exception e) {
             LOGGER.debug("[Debug] Client debug sync unavailable: {}", e.getMessage());
+        }
+    }
+
+    private static void handleEntityPathing(EntityPathingPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> invokeClientEntityPathing(payload)), "entity pathing");
+    }
+
+    private static void invokeClientEntityPathing(EntityPathingPayload payload) {
+        try {
+            Class<?> handlerClass = Class.forName("com.devmod.client.debug.DebugNetworkClientHandler");
+            java.lang.reflect.Method method = handlerClass.getMethod("handleEntityPathing", EntityPathingPayload.class);
+            method.invoke(null, payload);
+        } catch (ClassNotFoundException e) {
+            // Client handler not available on dedicated servers.
+        } catch (Exception e) {
+            LOGGER.debug("[Debug] Client entity pathing unavailable: {}", e.getMessage());
         }
     }
 }

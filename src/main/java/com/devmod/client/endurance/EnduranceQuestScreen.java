@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.world.item.ItemStack;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -25,16 +26,22 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.BaseDevModScreen;
+import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.KitManager;
 import com.devmod.endurance.KitPreset;
+import com.devmod.endurance.KitSyncConfirmPayload;
+import com.devmod.endurance.KitSyncPayload;
 import com.devmod.endurance.PersonalRecordsSyncPayload;
 import com.devmod.endurance.RequestPersonalRecordsPayload;
 import com.devmod.endurance.StartQuestPayload;
 import com.devmod.util.I18n;
+
+import net.neoforged.neoforge.network.PacketDistributor;
 
 @OnlyIn(Dist.CLIENT)
 public class EnduranceQuestScreen extends BaseDevModScreen {
@@ -60,6 +67,8 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     private static final int COLOR_SUCCESS = DesignTokens.Semantic.SUCCESS;
     private static final int COLOR_WARNING = DesignTokens.Semantic.WARNING;
     private static final int COLOR_DANGER = DesignTokens.Semantic.ERROR;
+    private static final long KIT_SYNC_TIMEOUT_MS = 5_000L;
+    private static final int KIT_SYNC_MAX_ATTEMPTS = 3;
 
     // Tier colors - using DesignTokens where applicable
     private static final int COLOR_TIER_TRIVIAL = DesignTokens.Text.MUTED;
@@ -82,6 +91,15 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     private List<EnduranceQuestRegistry.MobQuestConfig> filteredQuests = new ArrayList<>();
     @Nullable
     private EnduranceQuestRegistry.MobQuestConfig selectedQuest = null;
+    @Nullable
+    private StartQuestPayload pendingStartPayload = null;
+    @Nullable
+    private String pendingKitId = null;
+    @Nullable
+    private KitSyncPayload pendingKitSyncPayload = null;
+    private boolean kitSyncInFlight = false;
+    private long kitSyncStartTime = 0L;
+    private int kitSyncAttempts = 0;
 
     // Filters
     private static final String ALL_NAMESPACE = "all";
@@ -110,11 +128,14 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     @Nullable
     private EditorButton endlessToggleButton;
     @Nullable
+    private EditorButton practiceToggleButton;
+    @Nullable
     private EditorButton introDismissButton;
 
     // Quest settings
     private int questWaves = 10;
     private boolean endlessMode = false;
+    private boolean practiceMode = false;
     private KitPreset selectedKit = KitPreset.STARTER;
 
     // Kit selection buttons
@@ -130,6 +151,15 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     @Nullable
     private String customKitName = null;
 
+    // Saved custom kits support
+    private List<CustomKit> savedCustomKits = new ArrayList<>();
+    @Nullable
+    private CustomKit selectedCustomKit = null;  // null = using preset or temporary
+
+    // Arena selection panel
+    @Nullable
+    private ArenaSelectionPanel arenaPanel;
+
     // Reset filters button
     @Nullable
     private EditorButton resetFiltersButton;
@@ -137,6 +167,10 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     // Config button for game mechanics settings
     @Nullable
     private EditorButton configButton;
+
+    // Configure Mob button - opens MobPoolEditorScreen with selected mob
+    @Nullable
+    private EditorButton configureMobButton;
 
     // Pre-selection from QuickTestWizard
     @Nullable
@@ -180,6 +214,9 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         // Load quests
         loadQuests();
 
+        // Load saved custom kits for kit selection
+        savedCustomKits = KitManager.INSTANCE.getAllCustomKits();
+
         // Search box - positioned at very bottom of sidebar
         var safeFont = Objects.requireNonNull(font);
         int searchY = height - 28;
@@ -197,6 +234,11 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     }
 
     private void initButtons() {
+        // Initialize arena selection panel in the right panel area
+        int rightPanelX = width - RIGHT_PANEL_WIDTH + 10;
+        int arenaPanelY = HEADER_HEIGHT + 200; // Below kit selector
+        arenaPanel = new ArenaSelectionPanel(rightPanelX, arenaPanelY, RIGHT_PANEL_WIDTH - 20, 40);
+
         startButton = EditorButton.builder("start-quest", I18n.ui("start_quest").getString())
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.LARGE)
@@ -228,6 +270,15 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             .toggled(endlessMode)
             .size(EditorButton.Size.MEDIUM)
             .onToggle(enabled -> endlessMode = enabled)
+            .build();
+
+        // Practice mode toggle (only shown if Dummmmmmy mod is available)
+        practiceToggleButton = EditorButton.builder("practice-toggle", I18n.translate("devmod.endurance.quest.button.practice").getString())
+            .style(EditorButton.Style.NORMAL)
+            .toggleable(true)
+            .toggled(practiceMode)
+            .size(EditorButton.Size.SMALL)
+            .onToggle(enabled -> practiceMode = enabled)
             .build();
 
         introDismissButton = EditorButton.builder("intro-dismiss", I18n.ui("got_it").getString())
@@ -265,11 +316,37 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             .size(EditorButton.Size.SMALL)
             .onClick(this::openConfigScreen)
             .build();
+
+        configureMobButton = EditorButton.builder("configure-mob", I18n.translate("devmod.endurance.quest.button.configure_mob").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::openMobConfigEditor)
+            .build();
+
+        // Request arena suggestions if a quest is already pre-selected
+        var preselected = selectedQuest;
+        if (preselected != null && arenaPanel != null) {
+            arenaPanel.requestSuggestions(preselected.mobId.toString());
+        }
     }
 
     private void openConfigScreen() {
         net.minecraft.client.Minecraft.getInstance().setScreen(
             new EnduranceSettingsScreen(this)
+        );
+    }
+
+    /**
+     * Open the MobPoolEditorScreen with the currently selected mob preselected.
+     * This provides a quick way to configure the selected mob's Endurance settings.
+     */
+    private void openMobConfigEditor() {
+        var quest = selectedQuest;
+        if (quest == null) {
+            return;
+        }
+        net.minecraft.client.Minecraft.getInstance().setScreen(
+            new MobPoolEditorScreen(this, quest.mobId)
         );
     }
 
@@ -284,34 +361,105 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     }
 
     private void prevKit() {
-        KitPreset[] kits = KitPreset.values();
-        int index = selectedKit.ordinal();
-        index = (index - 1 + kits.length) % kits.length;
-        selectedKit = kits[index];
-        usingCustomKit = false;
-        customKitName = null;
+        KitPreset[] presets = getSelectablePresets();
+
+        if (selectedCustomKit != null) {
+            // Currently on a saved kit - go to previous saved or last preset
+            int idx = savedCustomKits.indexOf(selectedCustomKit);
+            if (idx > 0) {
+                selectedCustomKit = savedCustomKits.get(idx - 1);
+            } else {
+                // Go to last preset
+                selectedCustomKit = null;
+                selectedKit = presets[presets.length - 1];
+            }
+        } else {
+            // Currently on a preset
+            int idx = java.util.Arrays.asList(presets).indexOf(selectedKit);
+            if (idx > 0) {
+                selectedKit = presets[idx - 1];
+            } else if (!savedCustomKits.isEmpty()) {
+                // Wrap to last saved kit
+                selectedCustomKit = savedCustomKits.get(savedCustomKits.size() - 1);
+            } else {
+                // Wrap to last preset
+                selectedKit = presets[presets.length - 1];
+            }
+        }
+
+        usingCustomKit = selectedCustomKit != null;
+        customKitName = selectedCustomKit != null ? selectedCustomKit.getName() : null;
     }
 
     private void nextKit() {
-        KitPreset[] kits = KitPreset.values();
-        int index = selectedKit.ordinal();
-        index = (index + 1) % kits.length;
-        selectedKit = kits[index];
-        usingCustomKit = false;
-        customKitName = null;
+        KitPreset[] presets = getSelectablePresets();
+
+        if (selectedCustomKit != null) {
+            // Currently on a saved kit - go to next saved or first preset
+            int idx = savedCustomKits.indexOf(selectedCustomKit);
+            if (idx < savedCustomKits.size() - 1) {
+                selectedCustomKit = savedCustomKits.get(idx + 1);
+            } else {
+                // Wrap to first preset
+                selectedCustomKit = null;
+                selectedKit = presets[0];
+            }
+        } else {
+            // Currently on a preset
+            int idx = java.util.Arrays.asList(presets).indexOf(selectedKit);
+            if (idx < presets.length - 1) {
+                selectedKit = presets[idx + 1];
+            } else if (!savedCustomKits.isEmpty()) {
+                // Go to first saved kit
+                selectedCustomKit = savedCustomKits.get(0);
+            } else {
+                // Wrap to first preset
+                selectedKit = presets[0];
+            }
+        }
+
+        usingCustomKit = selectedCustomKit != null;
+        customKitName = selectedCustomKit != null ? selectedCustomKit.getName() : null;
+    }
+
+    /**
+     * Get presets that can be selected (excludes CUSTOM which is special).
+     */
+    private KitPreset[] getSelectablePresets() {
+        return java.util.Arrays.stream(KitPreset.values())
+            .filter(p -> p != KitPreset.CUSTOM)
+            .toArray(KitPreset[]::new);
     }
 
     private void openKitEditor() {
         net.minecraft.client.Minecraft.getInstance().setScreen(
             new KitSelectionScreen(this, items -> {
+                // Refresh saved kits in case a new one was created
+                savedCustomKits = KitManager.INSTANCE.getAllCustomKits();
+
                 if (items != null && !items.isEmpty()) {
+                    // Using temporary on-the-fly kit (not a saved custom kit)
                     usingCustomKit = true;
                     customKitName = KitManager.INSTANCE.getTemporaryKitName();
+                    selectedCustomKit = null;  // Clear saved kit selection
                 } else {
                     usingCustomKit = false;
                     customKitName = null;
+                    selectedCustomKit = null;
                 }
-            })
+            }, savedKit -> {
+                savedCustomKits = KitManager.INSTANCE.getAllCustomKits();
+                CustomKit currentSelection = selectedCustomKit;  // Local copy for null safety
+                if (currentSelection != null) {
+                    for (CustomKit kit : savedCustomKits) {
+                        if (kit.getId().equals(currentSelection.getId())) {
+                            selectedCustomKit = kit;
+                            customKitName = kit.getName();
+                            break;
+                        }
+                    }
+                }
+            }, null)  // No existing kit to edit
         );
     }
 
@@ -378,7 +526,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         renderSidebar(graphics, mouseX, mouseY);
 
         // Right panel (unified details + settings) - render first to set Y positions
-        renderRightPanel(graphics);
+        renderRightPanel(graphics, mouseX, mouseY);
 
         // Header (center top)
         renderHeader(graphics);
@@ -748,7 +896,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
      * Renders the unified right panel containing both quest details and settings.
      * This is the main control panel for configuring and starting quests.
      */
-    private void renderRightPanel(GuiGraphics graphics) {
+    private void renderRightPanel(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
         int panelX = width - RIGHT_PANEL_WIDTH;
         int panelY = 0;
@@ -813,7 +961,11 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                 quest.pointsPerKill).getString(), contentX, y, COLOR_TEXT);
             graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.details.elite_chance",
                 quest.eliteChance * 100).getString(), contentX + 100, y, COLOR_TEXT);
-            y += 20;
+            y += 16;
+
+            // Configure Mob button Y position
+            configureMobButtonY = y;
+            y += 24;
 
         } else {
             // No quest selected state
@@ -865,6 +1017,12 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         endlessToggleY = y;
         y += 30;
 
+        // Practice mode toggle (only if Dummmmmmy available)
+        if (DummmmmmyCompat.isAvailable()) {
+            practiceModeY = y;
+            y += 26;
+        }
+
         // Divider
         graphics.fill(contentX, y, contentX + contentW, y + 1, DesignTokens.Stroke.MUTED);
         y += 10;
@@ -878,11 +1036,19 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         String kitName;
         String kitDesc;
         int kitColor;
-        if (usingCustomKit && customKitName != null) {
+        CustomKit customKit = selectedCustomKit;  // Local copy for null safety
+        if (customKit != null) {
+            // Saved custom kit
+            kitName = customKit.getName();
+            kitDesc = I18n.translate("devmod.endurance.quest.kit.saved_desc").getString();
+            kitColor = customKit.getColor();
+        } else if (usingCustomKit && customKitName != null) {
+            // Temporary on-the-fly kit
             kitName = customKitName;
             kitDesc = I18n.translate("devmod.endurance.quest.kit.custom_desc", I18n.ui("edit").getString()).getString();
             kitColor = DesignTokens.Semantic.WARNING;
         } else {
+            // Preset kit
             kitName = selectedKit.getDisplayName();
             kitDesc = selectedKit.getDescription();
             kitColor = selectedKit.getColor();
@@ -899,12 +1065,24 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         y += 28;
 
         // Kit preview items (show first 8 items as icons in 2 rows)
-        if (!selectedKit.isCustom()) {
-            var previewItems = selectedKit.getPreviewItems();
+        List<net.minecraft.world.item.ItemStack> previewItems;
+        if (customKit != null) {
+            // Saved custom kit - show its items
+            previewItems = customKit.toItemStacks();
+        } else if (usingCustomKit && KitManager.INSTANCE.hasTemporaryKit()) {
+            // Temporary on-the-fly kit
+            previewItems = KitManager.INSTANCE.getTemporaryKitItems();
+        } else {
+            // Preset kit
+            previewItems = selectedKit.getPreviewItems();
+        }
+
+        if (!previewItems.isEmpty()) {
             int itemX = contentX;
             int itemCount = Math.min(previewItems.size(), 8);
             for (int i = 0; i < itemCount; i++) {
                 var item = Objects.requireNonNull(previewItems.get(i));
+                if (item.isEmpty()) continue;
                 // Draw item background
                 graphics.fill(itemX - 1, y - 1, itemX + 17, y + 17, DesignTokens.Surface.LEVEL_0);
                 graphics.renderItem(item, itemX, y);
@@ -915,13 +1093,28 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                     y += 20;
                 }
             }
-            if (itemCount > 4) y += 20;
-            else y += 24;
+            if (itemCount > 4) y += 22;
+            else y += 22;
         } else {
             graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.kit.uses_inventory").getString(),
                 contentX, y, COLOR_TEXT_DIM);
-            y += 20;
+            y += 16;
         }
+
+        // === SECTION 4: ARENA SELECTION ===
+        graphics.fill(contentX - 4, y, contentX + contentW + 4, y + 18, DesignTokens.Surface.LEVEL_0);
+        graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.section.arena").getString(),
+            contentX, y + 5, COLOR_ACCENT);
+        y += 22;
+
+        // Render arena selection panel with dynamic position
+        var panel = arenaPanel;  // Local copy for null safety
+        if (panel != null) {
+            // Update panel position dynamically based on current Y
+            panel.setPosition(contentX, y, contentW, 40);
+            panel.render(graphics, safeFont, mouseX, mouseY);
+        }
+        y += 45;
 
         // Store the Y position for the start button
         startButtonY = height - 50;
@@ -930,9 +1123,11 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     // Y positions for control elements (set during renderRightPanel, used in renderActionButtons)
     private int waveControlY = 0;
     private int endlessToggleY = 0;
+    private int practiceModeY = 0;
     private int kitControlY = 0;
     private int startButtonY = 0;
     private int configButtonY = 0;
+    private int configureMobButtonY = 0;
 
     /**
      * Render custom action buttons with Impact styling.
@@ -949,6 +1144,14 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         int configBtnX = panelX + RIGHT_PANEL_WIDTH - configBtnW - 16;
         if (configButton != null) {
             configButton.render(graphics, configBtnX, configButtonY, configBtnW, configBtnH, mouseX, mouseY);
+        }
+
+        // === CONFIGURE MOB BUTTON (in mob details section, only when quest selected) ===
+        var configMobBtn = configureMobButton;
+        if (selectedQuest != null && configMobBtn != null) {
+            int mobConfigBtnW = 100;
+            int mobConfigBtnH = 18;
+            configMobBtn.render(graphics, controlX, configureMobButtonY, mobConfigBtnW, mobConfigBtnH, mouseX, mouseY);
         }
 
         // === WAVE CONTROL BUTTONS ===
@@ -978,6 +1181,20 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             endlessBtn.render(graphics, controlX, endlessToggleY, toggleW, toggleH, mouseX, mouseY);
         }
 
+        // === PRACTICE MODE TOGGLE (only if Dummmmmmy available) ===
+        var practiceBtn = practiceToggleButton;
+        if (DummmmmmyCompat.isAvailable() && practiceBtn != null) {
+            int practiceW = 120;
+            int practiceH = 18;
+            practiceBtn
+                .toggled(practiceMode)
+                .style(practiceMode ? EditorButton.Style.SUCCESS : EditorButton.Style.NORMAL)
+                .hotkeyHint(practiceMode
+                    ? I18n.translate("devmod.overlay.on").getString()
+                    : I18n.translate("devmod.overlay.off").getString());
+            practiceBtn.render(graphics, controlX, practiceModeY, practiceW, practiceH, mouseX, mouseY);
+        }
+
         // === KIT SELECTION BUTTONS ===
         int kitBtnW = 28;
         int kitBtnH = 22;
@@ -999,8 +1216,16 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         int startX = controlX;
         var startBtn2 = startButton;
         if (startBtn2 != null) {
-            startBtn2.setEnabled(selectedQuest != null);
+            startBtn2.setEnabled(selectedQuest != null && !kitSyncInFlight);
             startBtn2.render(graphics, startX, startButtonY, startW, startH, mouseX, mouseY);
+        }
+        if (kitSyncInFlight) {
+            var safeFont = Objects.requireNonNull(font);
+            String message = I18n.translate("devmod.loading.syncing").getString();
+            if (kitSyncAttempts > 1) {
+                message = message + " (" + kitSyncAttempts + "/" + KIT_SYNC_MAX_ATTEMPTS + ")";
+            }
+            graphics.drawString(safeFont, message, startX, startButtonY - 12, COLOR_TEXT_DIM, false);
         }
 
         // === SHOP BUTTON (bottom of sidebar, above search) ===
@@ -1031,11 +1256,13 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             if (decreaseWaveButton != null && decreaseWaveButton.mouseClicked(mouseX, mouseY, button)) return true;
             if (increaseWaveButton != null && increaseWaveButton.mouseClicked(mouseX, mouseY, button)) return true;
             if (endlessToggleButton != null && endlessToggleButton.mouseClicked(mouseX, mouseY, button)) return true;
+            if (practiceToggleButton != null && practiceToggleButton.mouseClicked(mouseX, mouseY, button)) return true;
             if (prevKitButton != null && prevKitButton.mouseClicked(mouseX, mouseY, button)) return true;
             if (nextKitButton != null && nextKitButton.mouseClicked(mouseX, mouseY, button)) return true;
             if (editKitButton != null && editKitButton.mouseClicked(mouseX, mouseY, button)) return true;
             if (resetFiltersButton != null && resetFiltersButton.mouseClicked(mouseX, mouseY, button)) return true;
             if (configButton != null && configButton.mouseClicked(mouseX, mouseY, button)) return true;
+            if (configureMobButton != null && configureMobButton.mouseClicked(mouseX, mouseY, button)) return true;
         }
 
         // Check sidebar clicks - but let the search box handle its own clicks first
@@ -1060,9 +1287,19 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             int relativeY = (int) mouseY - listY + scrollOffset;
             int index = relativeY / (QUEST_CARD_HEIGHT + QUEST_CARD_MARGIN);
             if (index >= 0 && index < filteredQuests.size()) {
-                selectedQuest = filteredQuests.get(index);
+                var quest = filteredQuests.get(index);
+                selectedQuest = quest;
+                // Request arena suggestions for the selected mob
+                if (arenaPanel != null) {
+                    arenaPanel.requestSuggestions(quest.mobId.toString());
+                }
                 return true;
             }
+        }
+
+        // Arena panel click handling
+        if (arenaPanel != null && arenaPanel.mouseClicked(mouseX, mouseY, button)) {
+            return true;
         }
 
         return false;
@@ -1084,11 +1321,13 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         if (decreaseWaveButton != null) handled |= decreaseWaveButton.mouseReleased(mouseX, mouseY, button);
         if (increaseWaveButton != null) handled |= increaseWaveButton.mouseReleased(mouseX, mouseY, button);
         if (endlessToggleButton != null) handled |= endlessToggleButton.mouseReleased(mouseX, mouseY, button);
+        if (practiceToggleButton != null) handled |= practiceToggleButton.mouseReleased(mouseX, mouseY, button);
         if (prevKitButton != null) handled |= prevKitButton.mouseReleased(mouseX, mouseY, button);
         if (nextKitButton != null) handled |= nextKitButton.mouseReleased(mouseX, mouseY, button);
         if (editKitButton != null) handled |= editKitButton.mouseReleased(mouseX, mouseY, button);
         if (resetFiltersButton != null) handled |= resetFiltersButton.mouseReleased(mouseX, mouseY, button);
         if (configButton != null) handled |= configButton.mouseReleased(mouseX, mouseY, button);
+        if (configureMobButton != null) handled |= configureMobButton.mouseReleased(mouseX, mouseY, button);
 
         if (handled) return true;
         return super.mouseReleased(mouseX, mouseY, button);
@@ -1180,6 +1419,11 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             return true;
         }
 
+        // Arena panel scroll handling
+        if (arenaPanel != null && arenaPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
+            return true;
+        }
+
         return false;
     }
 
@@ -1235,29 +1479,191 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             return;
         }
 
+        if (kitSyncInFlight) {
+            return;
+        }
+
         playClickSound();
+
         // Send packet to server to start quest
-        // Use "TEMPORARY" kit ID if using custom kit, otherwise use the preset name
-        String kitId = (usingCustomKit && KitManager.INSTANCE.hasTemporaryKit())
-            ? "TEMPORARY"
-            : selectedKit.name();
+        // Determine kit ID based on selection type
+        String kitId;
+        if (selectedCustomKit != null) {
+            // Saved custom kit - send its 8-char ID
+            kitId = selectedCustomKit.getId();
+        } else if (usingCustomKit && KitManager.INSTANCE.hasTemporaryKit()) {
+            // On-the-fly temporary kit
+            kitId = "TEMPORARY";
+        } else {
+            // Preset kit
+            kitId = selectedKit.name();
+        }
 
         int wavesToSend = endlessMode ? 0 : questWaves;
-        LOGGER.info("[EnduranceQuest] Starting quest: {} with {} waves, endless={}, kit={}",
-            currentQuest.displayName, wavesToSend, endlessMode, kitId);
+
+        // Get template override from arena panel (null if using auto-selection)
+        String templateOverride = arenaPanel != null ? arenaPanel.getOverrideTemplateId() : null;
+
+        LOGGER.info("[EnduranceQuest] Starting quest: {} with {} waves, endless={}, kit={}, template={}, practice={}",
+            currentQuest.displayName, wavesToSend, endlessMode, kitId,
+            templateOverride != null ? templateOverride : "auto", practiceMode);
 
         StartQuestPayload payload = new StartQuestPayload(
             currentQuest.mobId.toString(),
             wavesToSend,
             endlessMode,
-            kitId
+            kitId,
+            templateOverride,
+            practiceMode
         );
+
+        if (requiresKitSync()) {
+            beginKitSync(payload);
+            return;
+        }
+
+        sendStartQuest(payload);
+    }
+
+    private boolean requiresKitSync() {
+        if (selectedCustomKit != null) {
+            return true;
+        }
+        return usingCustomKit && KitManager.INSTANCE.hasTemporaryKit();
+    }
+
+    private void beginKitSync(StartQuestPayload payload) {
+        KitSyncPayload kitPayload = buildKitSyncPayload();
+        if (kitPayload == null) {
+            pendingStartPayload = null;
+            pendingKitId = null;
+            showError("Kit sync failed");
+            return;
+        }
+        pendingStartPayload = payload;
+        pendingKitId = payload.kitId();
+        pendingKitSyncPayload = kitPayload;
+        kitSyncInFlight = true;
+        kitSyncAttempts = 1;
+        kitSyncStartTime = System.currentTimeMillis();
+        sendKitSyncPayload(kitPayload);
+    }
+
+    private void sendStartQuest(StartQuestPayload payload) {
         ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_START,
             ClientActionContexts.forClient(ActionOrigin.UI, payload));
+    }
+
+    @Nullable
+    private KitSyncPayload buildKitSyncPayload() {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        var level = mc.level;
+        if (level == null) {
+            return null;
+        }
+        var registryAccess = level.registryAccess();
+
+        if (selectedCustomKit != null) {
+            List<ItemStack> stacks = selectedCustomKit.toItemStacks(registryAccess);
+            if (stacks.size() > KitSyncPayload.MAX_ITEMS) {
+                showError("Kit too large (max " + KitSyncPayload.MAX_ITEMS + " items)");
+                return null;
+            }
+            return KitSyncPayload.fromCustomKit(selectedCustomKit, registryAccess);
+        }
+
+        if (usingCustomKit && KitManager.INSTANCE.hasTemporaryKit()) {
+            String kitName = KitManager.INSTANCE.getTemporaryKitName();
+            List<ItemStack> items = KitManager.INSTANCE.getTemporaryKitItems();
+            if (items.size() > KitSyncPayload.MAX_ITEMS) {
+                showError("Kit too large (max " + KitSyncPayload.MAX_ITEMS + " items)");
+                return null;
+            }
+            return KitSyncPayload.fromTemporary(
+                kitName != null ? kitName : "Temporary Kit",
+                items,
+                registryAccess
+            );
+        }
+        return null;
+    }
+
+    private void sendKitSyncPayload(KitSyncPayload payload) {
+        PacketDistributor.sendToServer(Objects.requireNonNull(payload));
+    }
+
+    public void onKitSyncConfirm(KitSyncConfirmPayload payload) {
+        if (!kitSyncInFlight) {
+            return;
+        }
+
+        String kitId = payload != null ? payload.kitId() : "";
+        String pending = this.pendingKitId;
+        if (pending != null && !pending.isBlank()
+            && kitId != null && !kitId.isBlank()
+            && !pending.equals(kitId)) {
+            return;
+        }
+
+        kitSyncInFlight = false;
+        kitSyncAttempts = 0;
+        pendingKitId = null;
+        pendingKitSyncPayload = null;
+
+        if (payload == null || !payload.success()) {
+            pendingStartPayload = null;
+            String message = payload != null && payload.message() != null && !payload.message().isBlank()
+                ? payload.message()
+                : "Kit sync failed";
+            showError(message);
+            return;
+        }
+
+        StartQuestPayload queued = pendingStartPayload;
+        pendingStartPayload = null;
+        if (queued != null) {
+            sendStartQuest(queued);
+        }
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (kitSyncInFlight && System.currentTimeMillis() - kitSyncStartTime > KIT_SYNC_TIMEOUT_MS) {
+            if (kitSyncAttempts < KIT_SYNC_MAX_ATTEMPTS) {
+                kitSyncAttempts++;
+                kitSyncStartTime = System.currentTimeMillis();
+                KitSyncPayload payload = pendingKitSyncPayload;
+                if (payload != null) {
+                    sendKitSyncPayload(payload);
+                    return;
+                }
+            }
+            kitSyncInFlight = false;
+            kitSyncAttempts = 0;
+            pendingStartPayload = null;
+            pendingKitId = null;
+            pendingKitSyncPayload = null;
+            showError("Kit sync timeout. Retry.");
+        }
     }
 
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        // Cleanup arena panel listener
+        if (arenaPanel != null) {
+            arenaPanel.cleanup();
+        }
+        kitSyncInFlight = false;
+        kitSyncAttempts = 0;
+        pendingStartPayload = null;
+        pendingKitId = null;
+        pendingKitSyncPayload = null;
     }
 }

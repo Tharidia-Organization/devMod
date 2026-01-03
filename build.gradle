@@ -310,9 +310,13 @@ dependencies {
     localRuntime('org.eclipse.jetty.websocket:websocket-core-common:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime('org.eclipse.jetty.websocket:websocket-servlet:11.0.20') { exclude group: 'org.slf4j' }
     localRuntime 'org.jetbrains:annotations:24.1.0'
+    localRuntime 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
     localRuntime 'io.jsonwebtoken:jjwt-api:0.12.3'
     localRuntime 'io.jsonwebtoken:jjwt-impl:0.12.3'
     localRuntime 'io.jsonwebtoken:jjwt-gson:0.12.3'
+    localRuntime 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    localRuntime 'com.fasterxml.jackson.core:jackson-core:2.17.2'
+    localRuntime 'com.fasterxml.jackson.core:jackson-annotations:2.17.2'
     // NeoForge will resolve DuckDB at runtime via the standard dependency classpath
     testImplementation 'org.duckdb:duckdb_jdbc:1.4.3.0'
 
@@ -334,55 +338,26 @@ dependencies {
     localRuntime "maven.modrinth:auto-gui-scaler:1.21.1-1.0.1"
 
     // Javalin - Lightweight HTTP server for REST API (admin panel backend)
-    // Javalin 5.x uses Jetty 11, Javalin 6.x uses Jetty 12 - using 5.6.5 for compatibility
-    // NOTE: Kotlin included - required by Javalin module-info at bootstrap
-    implementation('io.javalin:javalin:5.6.5') {
-        exclude group: 'org.slf4j'
-    }
-    implementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2'
-    implementation('org.eclipse.jetty:jetty-server:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty:jetty-servlet:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty:jetty-webapp:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty:jetty-xml:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty:jetty-http:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty:jetty-io:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty:jetty-util:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty:jetty-security:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty.websocket:websocket-jetty-common:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty.websocket:websocket-jetty-api:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty.websocket:websocket-core-server:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty.websocket:websocket-core-common:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation('org.eclipse.jetty.websocket:websocket-servlet:11.0.20') {
-        exclude group: 'org.slf4j'
-    }
-    implementation 'org.jetbrains:annotations:24.1.0'
+    // NOTE: These are compileOnly - downloaded at runtime by JavalinBootstrap
+    // to keep the mod JAR lightweight (~3MB instead of ~10MB)
+    compileOnly('io.javalin:javalin:5.6.5') { exclude group: 'org.slf4j' }
+    compileOnly 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2'
+    compileOnly('org.eclipse.jetty:jetty-server:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-servlet:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-webapp:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-xml:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-http:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-io:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-util:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-security:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-jetty-common:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-jetty-api:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-core-server:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-core-common:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-servlet:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
 
     // NOTE: All jarJar dependencies removed - they cause module conflicts in dev environment
     // with other mods (Kotlin For Forge, Plasmo Voice, etc.) that include the same libraries.
@@ -390,13 +365,16 @@ dependencies {
     // For production JAR, these would need to be re-enabled or dependencies bundled differently.
 
     // Jackson - JSON serialization for Javalin REST API
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
-    localRuntime 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    // NOTE: compileOnly - downloaded at runtime by JavalinBootstrap
+    compileOnly 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    compileOnly 'com.fasterxml.jackson.core:jackson-core:2.17.2'
+    compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.17.2'
 
     // JWT for API authentication
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
-    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
-    implementation 'io.jsonwebtoken:jjwt-gson:0.12.3'
+    // NOTE: compileOnly - downloaded at runtime by JavalinBootstrap
+    compileOnly 'io.jsonwebtoken:jjwt-api:0.12.3'
+    compileOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    compileOnly 'io.jsonwebtoken:jjwt-gson:0.12.3'
     // NOTE: Removed jarJar for jjwt - causes module conflict with Plasmo Voice
     // which also includes JWT libraries (error: "reads more than one module named jjwt.gson")
 
@@ -782,4 +760,64 @@ tasks.register('generateBuildProperties', GenerateBuildProperties) {
 // Ensure build properties are generated before processResources
 tasks.named('processResources') {
     dependsOn 'generateBuildProperties'
+}
+
+def designTokenColorAllowlist = [
+    'src/main/java/com/devmod/client/ui/editor/core/DesignTokens.java',
+    'src/main/java/com/devmod/shared/SharedColorTokens.java'
+]
+
+tasks.register('checkDesignTokensColors') {
+    group = 'verification'
+    description = 'Fails if hex color literals appear outside DesignTokens.'
+
+    // Capture project values at configuration time for configuration cache compatibility
+    def projectDir = layout.projectDirectory.asFile
+    def allowed = designTokenColorAllowlist.collect { new File(projectDir, it).canonicalFile }
+    def sourceTree = fileTree('src/main/java').matching { pattern ->
+        pattern.include('**/*.java')
+        pattern.exclude(designTokenColorAllowlist)
+    }
+
+    doLast {
+        def violations = []
+
+        sourceTree.each { file ->
+            if (allowed.contains(file.canonicalFile)) {
+                return
+            }
+            int lineNumber = 0
+            file.eachLine('UTF-8') { line ->
+                lineNumber++
+                def matcher = (line =~ /0x[0-9A-Fa-f_]+/)
+                while (matcher.find()) {
+                    def literal = matcher.group()
+                    def digits = literal.substring(2).replace('_', '')
+                    if (digits.length() == 6 || digits.length() == 8) {
+                        def endIndex = matcher.end()
+                        if (endIndex < line.length()) {
+                            char suffix = line.charAt(endIndex)
+                            if (suffix == 'L' || suffix == 'l') {
+                                continue
+                            }
+                        }
+                        def relPath = projectDir.toPath().relativize(file.toPath()).toString()
+                        violations << "${relPath}:${lineNumber}: ${literal}"
+                    }
+                }
+            }
+        }
+
+        if (!violations.isEmpty()) {
+            throw new GradleException(
+                "Hex color literals found outside DesignTokens:\n" +
+                violations.join('\n') +
+                "\nMove them into DesignTokens.java (or SharedColorTokens) and reference via tokens."
+            )
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'checkDesignTokensColors'
 }

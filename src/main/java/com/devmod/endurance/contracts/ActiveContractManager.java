@@ -243,9 +243,9 @@ public final class ActiveContractManager {
     public Collection<ContractSession> getQuestSessions(UUID questId) {
         Map<UUID, ContractSession> questSessions = sessions.get(questId);
         if (questSessions == null) {
-            return Collections.emptyList();
+            return requireNonNull(Collections.emptyList(), "emptyList");
         }
-        return Collections.unmodifiableCollection(questSessions.values());
+        return requireNonNull(Collections.unmodifiableCollection(questSessions.values()), "questSessions.values");
     }
 
     // ========== Contract Operations ==========
@@ -313,19 +313,20 @@ public final class ActiveContractManager {
 
     /**
      * Apply consequences when a contract is violated.
+     * Uses generic() damage to respect armor while still applying punishment.
      */
     private void applyViolationConsequence(ServerPlayer player, BloodContract contract) {
         switch (contract.getTier()) {
             case BLOOD -> {
-                // Blood contracts = instant death on violation
-                player.hurt(requireNonNull(player.damageSources().magic(), "magic"), Float.MAX_VALUE);
+                // Blood contracts = instant death on violation (MAX_VALUE still kills through armor)
+                player.hurt(requireNonNull(player.damageSources().generic(), "generic"), Float.MAX_VALUE);
                 LOGGER.info("[Contracts] {} killed for violating BLOOD contract {}",
                     player.getName().getString(), contract.getId());
             }
             case MAJOR -> {
-                // Major contracts = heavy damage
+                // Major contracts = heavy damage (generic respects armor)
                 float damage = player.getMaxHealth() * 0.5f;
-                player.hurt(requireNonNull(player.damageSources().magic(), "magic"), damage);
+                player.hurt(requireNonNull(player.damageSources().generic(), "generic"), damage);
             }
             case STANDARD, MINOR -> {
                 // No additional punishment beyond losing reward multiplier

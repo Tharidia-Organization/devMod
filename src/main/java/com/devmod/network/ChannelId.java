@@ -33,6 +33,10 @@ public enum ChannelId {
     PERSONAL_RECORDS_SYNC(16, Direction.SERVER_TO_CLIENT, "PersonalRecordsSyncPayload"),
     REQUEST_PERSONAL_RECORDS(17, Direction.CLIENT_TO_SERVER, "RequestPersonalRecordsPayload"),
     BOSS_ALERT(18, Direction.SERVER_TO_CLIENT, "BossAlertPayload"),
+    REQUEST_ARENA_SUGGESTIONS(19, Direction.CLIENT_TO_SERVER, "RequestArenaSuggestionsPayload"),
+    ARENA_SUGGESTIONS(20, Direction.SERVER_TO_CLIENT, "ArenaSuggestionsPayload"),
+    KIT_SYNC(21, Direction.CLIENT_TO_SERVER, "KitSyncPayload"),
+    KIT_SYNC_CONFIRM(22, Direction.SERVER_TO_CLIENT, "KitSyncConfirmPayload"),
     INSTANCE_LOADING(23, Direction.SERVER_TO_CLIENT, "InstanceLoadingPayload"),
     WAVE_DIRECTIVE_CHOICES(24, Direction.SERVER_TO_CLIENT, "WaveDirectiveChoicesPayload"),
     WAVE_DIRECTIVE_SELECTION(25, Direction.CLIENT_TO_SERVER, "WaveDirectiveSelectionPayload"),
@@ -60,6 +64,7 @@ public enum ChannelId {
     RECIPE_CLIENT_SYNC(41, Direction.SERVER_TO_CLIENT, "RecipeClientSyncPayload"),
     TELEMETRY_BATCH(42, Direction.CLIENT_TO_SERVER, "TelemetryBatchPayload"),
     EDITOR_APPLY_CONFIRM(43, Direction.SERVER_TO_CLIENT, "EditorApplyConfirmPayload"),
+    ENDURANCE_CONFIG_SYNC(44, Direction.CLIENT_TO_SERVER, "EnduranceConfigSyncPayload"),
     CONTRACT_SYNC(45, Direction.SERVER_TO_CLIENT, "ContractSyncPayload"),
 
     // ============================================================================
@@ -72,6 +77,7 @@ public enum ChannelId {
     // ID 50 reserved (WEAPON_STATS_NBT removed - uses same payload as V2)
     TENSION_UPDATE(51, Direction.SERVER_TO_CLIENT, "TensionUpdatePayload"),
     GAME_MECHANICS_SYNC(52, Direction.SERVER_TO_CLIENT, "GameMechanicsSyncPayload"),
+    ENDURANCE_MOB_CONFIG_SYNC(53, Direction.CLIENT_TO_SERVER, "EnduranceMobConfigSyncPayload"),
     COMBAT_FLOW_SYNC(54, Direction.SERVER_TO_CLIENT, "CombatFlowSyncPayload"),
 
     // ============================================================================
@@ -103,10 +109,11 @@ public enum ChannelId {
     // ID 87 reserved for future ChallengeCompletePayload
 
     // ============================================================================
-    // DEBUG CHANNELS (90-91)
+    // DEBUG CHANNELS (90-99)
     // ============================================================================
     DEBUG_TOGGLE(90, Direction.CLIENT_TO_SERVER, "DebugTogglePayload"),
     DEBUG_SYNC(91, Direction.SERVER_TO_CLIENT, "DebugSyncPayload"),
+    ENTITY_PATHING(92, Direction.SERVER_TO_CLIENT, "EntityPathingPayload"),
 
     // ============================================================================
     // MAILBOX SYSTEM CHANNELS (100-115)
