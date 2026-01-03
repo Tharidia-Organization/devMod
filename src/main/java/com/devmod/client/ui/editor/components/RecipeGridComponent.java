@@ -158,7 +158,7 @@ public class RecipeGridComponent {
                         y + scaledCellSize - indicatorSize - 2,
                         x + scaledCellSize - 2,
                         y + scaledCellSize - 2,
-                        0xFFFF9800 // Orange
+                        DesignTokens.RecipeGrid.TAG_INDICATOR
                     );
                 }
             } else {
@@ -189,9 +189,11 @@ public class RecipeGridComponent {
             tooltip.add(Component.literal(Objects.requireNonNull(slot.data().getDisplayName(), "displayName")));
 
             if (slot.data().isTag()) {
-                tooltip.add(Component.literal("Tag ingredient").withStyle(s -> s.withColor(0xAAAAAA)));
+                tooltip.add(Component.literal("Tag ingredient")
+                    .withStyle(s -> s.withColor(DesignTokens.Neutral.N500 & DesignTokens.Mask.RGB)));
                 int tagCount = slot.data().getTagItems().size();
-                tooltip.add(Component.literal(tagCount + " items in tag").withStyle(s -> s.withColor(0x888888)));
+                tooltip.add(Component.literal(tagCount + " items in tag")
+                    .withStyle(s -> s.withColor(DesignTokens.Neutral.N550 & DesignTokens.Mask.RGB)));
             }
 
             graphics.renderComponentTooltip(Objects.requireNonNull(font, "font"), tooltip, mouseX, mouseY);

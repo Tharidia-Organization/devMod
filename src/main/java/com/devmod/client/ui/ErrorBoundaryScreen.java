@@ -60,9 +60,9 @@ public abstract class ErrorBoundaryScreen extends Screen {
     private static final int MAX_ERRORS_BEFORE_LOCKOUT = 3;
 
     // Error UI
-    private static final int ERROR_BG_COLOR = 0xE01a1a2e;
-    private static final int ERROR_BORDER_COLOR = DesignTokens.Semantic.ERROR;
-    private static final int ERROR_TEXT_COLOR = 0xFFFFFFFF;
+    private static final int ERROR_BG_COLOR = DesignTokens.ErrorBoundary.BG;
+    private static final int ERROR_BORDER_COLOR = DesignTokens.ErrorBoundary.BORDER;
+    private static final int ERROR_TEXT_COLOR = DesignTokens.ErrorBoundary.TEXT;
     private static final int MAX_STACK_LINES = 5;
 
     @Nullable
@@ -185,7 +185,7 @@ public abstract class ErrorBoundaryScreen extends Screen {
         int boxY = centerY - boxHeight / 2 - 20;
 
         // Box background
-        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xFF1a1a2e);
+        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, DesignTokens.ErrorBoundary.PANEL_BG);
 
         // Border
         graphics.fill(boxX, boxY, boxX + boxWidth, boxY + 2, ERROR_BORDER_COLOR);
@@ -334,13 +334,13 @@ public abstract class ErrorBoundaryScreen extends Screen {
             LOGGER.error("[ErrorBoundary] Error rendering {}", screen.getClass().getSimpleName(), e);
 
             // Render minimal error indicator
-            graphics.fill(0, 0, screen.width, screen.height, 0xC01a1a2e);
+            graphics.fill(0, 0, screen.width, screen.height, DesignTokens.ErrorBoundary.SCRIM);
             graphics.drawCenteredString(
                 Minecraft.getInstance().font,
                 Component.translatable("gui.devmod.error.render_failed"),
                 screen.width / 2,
                 screen.height / 2,
-                0xFFFF5555
+                DesignTokens.ErrorBoundary.HIGHLIGHT
             );
         }
     }

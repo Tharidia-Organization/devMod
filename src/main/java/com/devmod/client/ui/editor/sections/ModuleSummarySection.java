@@ -81,17 +81,18 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
             int valueWidth = font.width(valueStr);
             int valueX = x + w - PADDING - valueWidth;
 
-            // Source badge if present
-            if (stat.source != null) {
+            // Source badge if present - use local capture for null safety
+            String source = stat.source;
+            if (source != null) {
                 valueX -= BADGE_WIDTH + 4;
                 int badgeX = x + w - PADDING - BADGE_WIDTH;
                 int badgeY = statY + 2;
-                int badgeColor = getBadgeColor(stat.source);
+                int badgeColor = getBadgeColor(source);
                 graphics.fill(badgeX, badgeY, badgeX + BADGE_WIDTH, badgeY + BADGE_HEIGHT, badgeColor);
-                String badgeText = stat.source.substring(0, Math.min(3, stat.source.length())).toUpperCase(Locale.ROOT);
+                String badgeText = source.substring(0, Math.min(3, source.length())).toUpperCase(Locale.ROOT);
                 Objects.requireNonNull(badgeText, "badgeText");
                 int badgeTextX = badgeX + (BADGE_WIDTH - font.width(badgeText)) / 2;
-                graphics.drawString(font, badgeText, badgeTextX, badgeY + 2, 0xFFFFFFFF, false);
+                graphics.drawString(font, badgeText, badgeTextX, badgeY + 2, DesignTokens.Text.WHITE, false);
             }
 
             // Value with color
@@ -105,7 +106,7 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
         return switch (source.toUpperCase(Locale.ROOT)) {
             case "DEV" -> DesignTokens.Accent.BLUE();
             case "NBT" -> DesignTokens.Accent.ORANGE();
-            case "VAN", "VANILLA" -> 0xFF666666;
+            case "VAN", "VANILLA" -> DesignTokens.Neutral.N650;
             default -> DesignTokens.Background.INPUT();
         };
     }

@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -15,6 +14,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import com.devmod.client.ui.radial.model.MacroCategory;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -170,33 +171,25 @@ class RadialMenuMacroCategoryTest {
         @Test
         @DisplayName("L1-03: Each MacroCategory has valid color (hex format with alpha)")
         void eachMacroCategoryHasValidColor() {
-            // Color is third parameter: 0xFFxxxxxx format
             String[] macros = {"ANALYZE", "COMBAT", "TOOLS", "PLAY"};
             for (String macro : macros) {
-                Pattern pattern = Pattern.compile(macro + "\\s*\\([^)]*,\\s*(0x[0-9A-Fa-f]{8})");
-                Matcher matcher = pattern.matcher(macroCategorySourceCode);
-                assertTrue(matcher.find(),
-                    macro + " should have a valid hex color (0xFFxxxxxx format)");
-                String colorHex = matcher.group(1);
-                // Verify it starts with 0xFF (full alpha)
-                assertTrue(colorHex.toUpperCase(Locale.ROOT).startsWith("0XFF"),
-                    macro + " color should have full alpha (0xFF): " + colorHex);
+                MacroCategory macroCategory = MacroCategory.valueOf(macro);
+                int color = macroCategory.getColor();
+                assertTrue((color >>> 24) == 0xFF,
+                    macro + " color should have full alpha (0xFF): 0x" + String.format("%08X", color));
             }
         }
 
         @Test
         @DisplayName("L1-04: All MacroCategory colors are unique")
         void macroCategoryColorsAreUnique() {
-            Set<String> colors = new HashSet<>();
+            Set<Integer> colors = new HashSet<>();
             String[] macros = {"ANALYZE", "COMBAT", "TOOLS", "PLAY"};
             for (String macro : macros) {
-                Pattern pattern = Pattern.compile(macro + "\\s*\\([^)]*,\\s*(0x[0-9A-Fa-f]{8})");
-                Matcher matcher = pattern.matcher(macroCategorySourceCode);
-                if (matcher.find()) {
-                    String color = matcher.group(1).toUpperCase(Locale.ROOT);
-                    assertTrue(colors.add(color),
-                        "Each MacroCategory should have unique color. Duplicate: " + color);
-                }
+                MacroCategory macroCategory = MacroCategory.valueOf(macro);
+                int color = macroCategory.getColor();
+                assertTrue(colors.add(color),
+                    "Each MacroCategory should have unique color. Duplicate: 0x" + String.format("%08X", color));
             }
             assertEquals(4, colors.size(), "All 4 MacroCategories should have unique colors");
         }
@@ -494,17 +487,18 @@ class RadialMenuMacroCategoryTest {
         @DisplayName("L6-05: MacroCategory colors follow visual hierarchy")
         void macroCategoryColorsFollowHierarchy() {
             // ANALYZE = blue, COMBAT = red, TOOLS = orange, PLAY = green
-            Map<String, String> expectedColors = Map.of(
-                "ANALYZE", "0xFF4488FF", // Blue
-                "COMBAT", "0xFFFF4444",  // Red
-                "TOOLS", "0xFFFFAA00",   // Orange
-                "PLAY", "0xFF44FF88"     // Green
+            Map<MacroCategory, Integer> expectedColors = Map.of(
+                MacroCategory.ANALYZE, 0xFF4488FF, // Blue
+                MacroCategory.COMBAT, 0xFFFF4444,  // Red
+                MacroCategory.TOOLS, 0xFFFFAA00,   // Orange
+                MacroCategory.PLAY, 0xFF44FF88     // Green
             );
 
-            for (Map.Entry<String, String> entry : expectedColors.entrySet()) {
-                assertTrue(macroCategorySourceCode.contains(entry.getKey() + "(") &&
-                        macroCategorySourceCode.contains(entry.getValue()),
-                    entry.getKey() + " should have color " + entry.getValue());
+            for (Map.Entry<MacroCategory, Integer> entry : expectedColors.entrySet()) {
+                int actual = entry.getKey().getColor();
+                int expected = entry.getValue();
+                assertEquals(expected, actual,
+                    entry.getKey().name() + " should have color 0x" + String.format("%08X", expected));
             }
         }
     }

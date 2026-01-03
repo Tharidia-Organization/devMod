@@ -75,10 +75,10 @@ public class FightSessionService {
         if (isKill) {
             if (target instanceof ServerPlayer) {
                 session.playerDeaths++;
-                session.playerDeathsByName.merge(target.getName().getString(), 1, FightSessionService::sumCounts);
+                session.playerDeathsByName.merge(target.getName().getString(), 1, Integer::sum);
             } else {
                 session.mobKills++;
-                session.mobKillsByType.merge(getEntityTypeName(target), 1, FightSessionService::sumCounts);
+                session.mobKillsByType.merge(getEntityTypeName(target), 1, Integer::sum);
             }
         }
     }
@@ -199,16 +199,6 @@ public class FightSessionService {
 
     private String getEntityTypeName(Entity entity) {
         return entity.getType().toShortString();
-    }
-
-    private static Integer sumCounts(Integer left, Integer right) {
-        if (left == null) {
-            return right == null ? 0 : right;
-        }
-        if (right == null) {
-            return left;
-        }
-        return left + right;
     }
 
     // ============================================

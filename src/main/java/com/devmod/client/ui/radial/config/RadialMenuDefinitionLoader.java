@@ -27,8 +27,13 @@ import net.minecraft.world.item.Items;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.RadialMenuRegistry;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.CategoryConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.MacroCategoryConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.MenuItemConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.RootConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.SubcategoryConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.ValidationResult;
 import com.devmod.client.ui.radial.model.MacroCategory;
-import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.*;
 
 /**
  * Loads radial menu definitions from JSON configuration.
@@ -51,15 +56,6 @@ public final class RadialMenuDefinitionLoader {
 
     /**
      * Load radial menu definitions from config or fall back to defaults.
-     *
-     * @return Map of macro category to list of categories
-     */
-    public static Map<MacroCategory, List<RadialCategory>> load() {
-        return load(null);
-    }
-
-    /**
-     * Load radial menu definitions with optional mob editor supplier.
      *
      * @param mobEditorItemSupplier Supplier for mob editor item (may be null)
      * @return Map of macro category to list of categories
@@ -103,15 +99,8 @@ public final class RadialMenuDefinitionLoader {
     /**
      * Get the path to the config file.
      */
-    public static Path getConfigPath() {
+    private static Path getConfigPath() {
         return Minecraft.getInstance().gameDirectory.toPath().resolve(CONFIG_PATH);
-    }
-
-    /**
-     * Check if a config file exists.
-     */
-    public static boolean configExists() {
-        return Files.exists(getConfigPath());
     }
 
     /**
@@ -132,7 +121,10 @@ public final class RadialMenuDefinitionLoader {
         for (MacroCategoryConfig macroCfg : config.macroCategories()) {
             try {
                 MacroCategory macro = MacroCategory.valueOf(macroCfg.id());
-                List<RadialCategory> categories = result.get(macro);
+                List<RadialCategory> categories = Objects.requireNonNull(
+                    result.get(macro),
+                    "Missing categories for macro " + macro
+                );
 
                 for (CategoryConfig catCfg : macroCfg.categories()) {
                     RadialCategory category = buildCategory(catCfg, mobEditorItemSupplier);
@@ -179,8 +171,9 @@ public final class RadialMenuDefinitionLoader {
         RadialCategory category = builder.build();
 
         // Add subcategories
-        if (cfg.subcategories() != null) {
-            for (SubcategoryConfig subCfg : cfg.subcategories()) {
+        List<SubcategoryConfig> subcats = cfg.subcategories();
+        if (subcats != null) {
+            for (SubcategoryConfig subCfg : subcats) {
                 buildSubcategory(category, subCfg, mobEditorItemSupplier);
             }
         }
@@ -198,13 +191,11 @@ public final class RadialMenuDefinitionLoader {
 
         int color = resolveColor(cfg.color(), cfg.colorToken());
         ItemStack iconStack = resolveIconItem(cfg.iconItem());
+        String icon = cfg.icon() != null ? cfg.icon() : "";
 
-        RadialCategory sub = parent.addSubcategory(
-            cfg.id(),
-            cfg.name() != null ? cfg.name() : cfg.id(),
-            color,
-            iconStack
-        );
+        RadialCategory sub = iconStack != null && !iconStack.isEmpty()
+            ? parent.addSubcategory(cfg.id(), cfg.name() != null ? cfg.name() : cfg.id(), color, iconStack)
+            : parent.addSubcategory(cfg.id(), cfg.name() != null ? cfg.name() : cfg.id(), color, icon);
 
         // Add items
         for (MenuItemConfig itemCfg : cfg.items()) {
@@ -215,8 +206,9 @@ public final class RadialMenuDefinitionLoader {
         }
 
         // Recursive subcategories
-        if (cfg.subcategories() != null) {
-            for (SubcategoryConfig nestedCfg : cfg.subcategories()) {
+        List<SubcategoryConfig> nestedSubs = cfg.subcategories();
+        if (nestedSubs != null) {
+            for (SubcategoryConfig nestedCfg : nestedSubs) {
                 buildSubcategory(sub, nestedCfg, mobEditorItemSupplier);
             }
         }
@@ -304,17 +296,5 @@ public final class RadialMenuDefinitionLoader {
             @Nullable java.util.function.Supplier<RadialMenuItem> mobEditorItemSupplier) {
         LOGGER.info("[RadialMenuLoader] Using embedded default categories");
         return RadialMenuRegistry.createDefaultCategories(mobEditorItemSupplier);
-    }
-
-    /**
-     * Export current categories to JSON (for migration).
-     *
-     * @param categories The categories to export
-     * @param outputPath Output file path
-     */
-    public static void exportToJson(Map<MacroCategory, List<RadialCategory>> categories, Path outputPath) {
-        // This would need to reverse-engineer the structure from RadialCategory objects
-        // For now, log that this needs manual conversion
-        LOGGER.info("[RadialMenuLoader] Export to JSON not yet implemented - use RadialMenuConfigExporter");
     }
 }

@@ -125,7 +125,6 @@ public class PlayerProgressionService {
      */
     public LevelChangeRecord recordLevelChange(ServerPlayer player, int oldLevel, int newLevel) {
         XpStats stats = playerXpStats.computeIfAbsent(player.getUUID(), k -> new XpStats());
-        stats.currentLevel = newLevel;
         if (newLevel > stats.maxLevelReached) {
             stats.maxLevelReached = newLevel;
         }
@@ -314,7 +313,6 @@ public class PlayerProgressionService {
     public static class XpStats {
         public int totalXpGained = 0;
         public int xpPickups = 0;
-        public int currentLevel = 0;
         public int maxLevelReached = 0;
     }
 

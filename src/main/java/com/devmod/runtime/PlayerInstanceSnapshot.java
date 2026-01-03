@@ -578,7 +578,10 @@ public class PlayerInstanceSnapshot {
         CompoundTag tag = toNBT();
 
         // Create parent directories if needed
-        Files.createDirectories(filePath.getParent());
+        Path parent = filePath.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
 
         // Write to temp file first, then rename (atomic operation)
         Path tempPath = Objects.requireNonNull(filePath.resolveSibling(filePath.getFileName() + ".tmp"), "tempPath");

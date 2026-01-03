@@ -133,25 +133,29 @@ public class EconomyOverlay {
         List<EconomyMetricsService.MobDropSummary> allMobs =
             EconomyMetricsService.INSTANCE.getTopKilledMobs(50);
 
+        final List<EconomyMetricsService.MobDropSummary> mobStats;
         if (allMobs != null && !allMobs.isEmpty()) {
-            cachedMobStats = new ArrayList<>(allMobs);
+            mobStats = new ArrayList<>(allMobs);
+            cachedMobStats = mobStats;
             sortMobStats();
         } else {
-            cachedMobStats = new ArrayList<>();
+            mobStats = new ArrayList<>();
+            cachedMobStats = mobStats;
         }
 
         // Clamp scroll offset
-        int maxScroll = Math.max(0, cachedMobStats.size() - MAX_VISIBLE_MOBS);
+        int maxScroll = Math.max(0, mobStats.size() - MAX_VISIBLE_MOBS);
         scrollOffset = Math.min(scrollOffset, maxScroll);
     }
 
     private static void sortMobStats() {
-        if (cachedMobStats == null || cachedMobStats.isEmpty()) return;
+        final var safeMobStats = cachedMobStats;
+        if (safeMobStats == null || safeMobStats.isEmpty()) return;
 
         switch (sortMode) {
-            case 0 -> cachedMobStats.sort(Comparator.comparingInt(
+            case 0 -> safeMobStats.sort(Comparator.comparingInt(
                 EconomyMetricsService.MobDropSummary::killCount).reversed());
-            case 1 -> cachedMobStats.sort(Comparator.comparingDouble(
+            case 1 -> safeMobStats.sort(Comparator.comparingDouble(
                 EconomyMetricsService.MobDropSummary::lootDropPercentage).reversed());
             case 2 -> {} // Already sorted by recent (default order from service)
         }
@@ -175,13 +179,14 @@ public class EconomyOverlay {
         graphics.drawString(safeFont, "\u2726 ECONOMY TRACKER", textX, textY, TEXT_TITLE, false);
         textY = y + HEADER_HEIGHT + 4;
 
-        if (cachedStats == null) {
+        final var safeStats = cachedStats;
+        if (safeStats == null) {
             graphics.drawString(safeFont, "Loading...", textX, textY, TEXT_MUTED, false);
             return;
         }
 
         // Session duration with icon
-        String duration = Objects.requireNonNull(formatDuration(cachedStats.durationMs()));
+        String duration = Objects.requireNonNull(formatDuration(safeStats.durationMs()));
         graphics.drawString(safeFont, "\u23F1 Session: " + duration, textX, textY, TEXT_WHITE, false);
         textY += LINE_HEIGHT + 6;
 
@@ -193,8 +198,8 @@ public class EconomyOverlay {
         graphics.drawString(safeFont, "\u2193 Dropped", col2X, textY, TEXT_MUTED, false);
         textY += LINE_HEIGHT;
 
-        graphics.drawString(safeFont, String.valueOf(cachedStats.itemsPickedUp()), textX + 4, textY, TEXT_VALUE, false);
-        graphics.drawString(safeFont, String.valueOf(cachedStats.itemsDropped()), col2X + 4, textY, TEXT_CYAN, false);
+        graphics.drawString(safeFont, String.valueOf(safeStats.itemsPickedUp()), textX + 4, textY, TEXT_VALUE, false);
+        graphics.drawString(safeFont, String.valueOf(safeStats.itemsDropped()), col2X + 4, textY, TEXT_CYAN, false);
         textY += LINE_HEIGHT + 4;
 
         // Row 2: Used / Chests
@@ -202,8 +207,8 @@ public class EconomyOverlay {
         graphics.drawString(safeFont, "\u2610 Chests", col2X, textY, TEXT_MUTED, false);
         textY += LINE_HEIGHT;
 
-        graphics.drawString(safeFont, String.valueOf(cachedStats.itemsUsed()), textX + 4, textY, TEXT_WARNING, false);
-        graphics.drawString(safeFont, String.valueOf(cachedStats.chestsOpened()), col2X + 4, textY, TEXT_PURPLE, false);
+        graphics.drawString(safeFont, String.valueOf(safeStats.itemsUsed()), textX + 4, textY, TEXT_WARNING, false);
+        graphics.drawString(safeFont, String.valueOf(safeStats.chestsOpened()), col2X + 4, textY, TEXT_PURPLE, false);
         textY += LINE_HEIGHT + 6;
 
         // Separator
@@ -211,7 +216,7 @@ public class EconomyOverlay {
         textY += 6;
 
         // Acquisition rate with color coding
-        double rate = cachedStats.itemsPerMinute();
+        double rate = safeStats.itemsPerMinute();
         String rateStr = String.format("%.1f", rate);
         int rateColor = rate > 10 ? TEXT_VALUE : rate > 5 ? TEXT_WARNING : TEXT_DANGER;
         graphics.drawString(safeFont, "Rate: ", textX, textY, TEXT_MUTED, false);
@@ -219,31 +224,31 @@ public class EconomyOverlay {
         textY += LINE_HEIGHT + 4;
 
         // Most acquired item
-        if (!cachedStats.mostAcquiredItem().isEmpty()) {
+        if (!safeStats.mostAcquiredItem().isEmpty()) {
             graphics.drawString(safeFont, "Top Item:", textX, textY, TEXT_MUTED, false);
             textY += LINE_HEIGHT;
-            String itemName = Objects.requireNonNull(formatItemNameFull(cachedStats.mostAcquiredItem()));
+            String itemName = Objects.requireNonNull(formatItemNameFull(safeStats.mostAcquiredItem()));
             if (safeFont.width(itemName) > PANEL_WIDTH - 40) {
                 itemName = truncateString(itemName, safeFont, PANEL_WIDTH - 40);
             }
             graphics.drawString(safeFont, "  " + itemName, textX, textY, TEXT_CYAN, false);
-            graphics.drawString(safeFont, "x" + cachedStats.mostAcquiredCount(),
-                x + PANEL_WIDTH - PANEL_PADDING - safeFont.width("x" + cachedStats.mostAcquiredCount()),
+            graphics.drawString(safeFont, "x" + safeStats.mostAcquiredCount(),
+                x + PANEL_WIDTH - PANEL_PADDING - safeFont.width("x" + safeStats.mostAcquiredCount()),
                 textY, TEXT_VALUE, false);
             textY += LINE_HEIGHT + 4;
         }
 
         // Scarcity warning
-        if (!cachedStats.mostScarceItem().isEmpty() && cachedStats.scarcityIndex() > 0.7) {
-            int scarceColor = cachedStats.scarcityIndex() > 0.9 ? TEXT_DANGER : TEXT_WARNING;
+        if (!safeStats.mostScarceItem().isEmpty() && safeStats.scarcityIndex() > 0.7) {
+            int scarceColor = safeStats.scarcityIndex() > 0.9 ? TEXT_DANGER : TEXT_WARNING;
             graphics.drawString(safeFont, "\u26A0 Scarce Resource:", textX, textY, scarceColor, false);
             textY += LINE_HEIGHT;
-            String scarceItem = Objects.requireNonNull(formatItemNameFull(cachedStats.mostScarceItem()));
+            String scarceItem = Objects.requireNonNull(formatItemNameFull(safeStats.mostScarceItem()));
             if (safeFont.width(scarceItem) > PANEL_WIDTH - 60) {
                 scarceItem = truncateString(scarceItem, safeFont, PANEL_WIDTH - 60);
             }
             graphics.drawString(safeFont, "  " + scarceItem, textX, textY, TEXT_WHITE, false);
-            String pct = Objects.requireNonNull(String.format("%.0f%%", cachedStats.scarcityIndex() * 100));
+            String pct = Objects.requireNonNull(String.format("%.0f%%", safeStats.scarcityIndex() * 100));
             graphics.drawString(safeFont, pct,
                 x + PANEL_WIDTH - PANEL_PADDING - safeFont.width(pct), textY, scarceColor, false);
         }
@@ -258,7 +263,8 @@ public class EconomyOverlay {
 
     private static void renderMobLootPanel(GuiGraphics graphics, Font font, int x, int y) {
         var safeFont = Objects.requireNonNull(font);
-        int height = calculateMobPanelHeight();
+        final var safeMobStats = cachedMobStats;
+        int height = calculateMobPanelHeightSafe(safeMobStats);
 
         // Background
         graphics.fill(x, y, x + PANEL_WIDTH, y + HEADER_HEIGHT, PANEL_BG_HEADER);
@@ -284,7 +290,7 @@ public class EconomyOverlay {
             textX + safeFont.width("Total Kills: "), textY, TEXT_VALUE, false);
 
         // Mob count
-        int mobCount = cachedMobStats != null ? cachedMobStats.size() : 0;
+        int mobCount = safeMobStats != null ? safeMobStats.size() : 0;
         String mobCountStr = mobCount + " types";
         graphics.drawString(safeFont, mobCountStr,
             x + PANEL_WIDTH - PANEL_PADDING - safeFont.width(mobCountStr), textY, TEXT_MUTED, false);
@@ -294,7 +300,7 @@ public class EconomyOverlay {
         graphics.fill(x + 8, textY, x + PANEL_WIDTH - 8, textY + 1, OverlayTheme.Border.divider(TEXT_WHITE));
         textY += 6;
 
-        if (cachedMobStats == null || cachedMobStats.isEmpty()) {
+        if (safeMobStats == null || safeMobStats.isEmpty()) {
             graphics.drawString(safeFont, "No mob kills yet...", textX, textY, TEXT_MUTED, false);
             textY += LINE_HEIGHT;
             graphics.drawString(safeFont, "Kill mobs to track", textX, textY, TEXT_MUTED, false);
@@ -302,18 +308,18 @@ public class EconomyOverlay {
             graphics.drawString(safeFont, "their drop rates!", textX, textY, TEXT_MUTED, false);
         } else {
             // Render visible mobs
-            int visibleCount = Math.min(MAX_VISIBLE_MOBS, cachedMobStats.size() - scrollOffset);
+            int visibleCount = Math.min(MAX_VISIBLE_MOBS, safeMobStats.size() - scrollOffset);
             for (int i = 0; i < visibleCount; i++) {
                 int mobIndex = scrollOffset + i;
-                if (mobIndex >= cachedMobStats.size()) break;
+                if (mobIndex >= safeMobStats.size()) break;
 
-                EconomyMetricsService.MobDropSummary mob = cachedMobStats.get(mobIndex);
+                EconomyMetricsService.MobDropSummary mob = safeMobStats.get(mobIndex);
                 renderMobEntry(graphics, safeFont, x, textY, mob, mobIndex + 1);
                 textY += MOB_ENTRY_HEIGHT;
             }
 
             // Scroll indicator
-            if (cachedMobStats.size() > MAX_VISIBLE_MOBS) {
+            if (safeMobStats.size() > MAX_VISIBLE_MOBS) {
                 int scrollBarX = x + PANEL_WIDTH - 6;
                 int scrollAreaHeight = MAX_VISIBLE_MOBS * MOB_ENTRY_HEIGHT;
                 int scrollBarTop = y + HEADER_HEIGHT + LINE_HEIGHT + 12;
@@ -323,8 +329,8 @@ public class EconomyOverlay {
                     scrollBarTop + scrollAreaHeight, OverlayTheme.Border.divider(TEXT_WHITE));
 
                 // Scroll thumb
-                float scrollRatio = (float) scrollOffset / (cachedMobStats.size() - MAX_VISIBLE_MOBS);
-                int thumbHeight = Math.max(20, scrollAreaHeight * MAX_VISIBLE_MOBS / cachedMobStats.size());
+                float scrollRatio = (float) scrollOffset / (safeMobStats.size() - MAX_VISIBLE_MOBS);
+                int thumbHeight = Math.max(20, scrollAreaHeight * MAX_VISIBLE_MOBS / safeMobStats.size());
                 int thumbY = scrollBarTop + (int) ((scrollAreaHeight - thumbHeight) * scrollRatio);
                 graphics.fill(scrollBarX, thumbY, scrollBarX + 3, thumbY + thumbHeight, TEXT_TITLE);
             }
@@ -336,7 +342,7 @@ public class EconomyOverlay {
         String hint2 = "[Ctrl+F3] Sort";
 
         // Show scroll hint only if there are more mobs than visible
-        if (cachedMobStats != null && cachedMobStats.size() > MAX_VISIBLE_MOBS) {
+        if (safeMobStats != null && safeMobStats.size() > MAX_VISIBLE_MOBS) {
             String hint3 = "[PgUp/Dn]";
             graphics.drawString(safeFont, hint3, textX, footerY, TEXT_MUTED, false);
             int midX = textX + safeFont.width(hint3) + 6;
@@ -521,12 +527,12 @@ public class EconomyOverlay {
         return height;
     }
 
-    private static int calculateMobPanelHeight() {
+    private static int calculateMobPanelHeightSafe(@Nullable List<EconomyMetricsService.MobDropSummary> mobStats) {
         int height = HEADER_HEIGHT;
         height += LINE_HEIGHT + 4;    // Total kills header
         height += 6;                  // Separator
 
-        int mobCount = cachedMobStats != null ? Math.min(cachedMobStats.size(), MAX_VISIBLE_MOBS) : 0;
+        int mobCount = mobStats != null ? Math.min(mobStats.size(), MAX_VISIBLE_MOBS) : 0;
         if (mobCount == 0) {
             height += LINE_HEIGHT * 3 + 8; // "No mob kills" message
         } else {
@@ -598,8 +604,9 @@ public class EconomyOverlay {
      * Scroll the mob list down.
      */
     public static void scrollDown() {
-        if (!enabled || viewMode != 1 || cachedMobStats == null) return;
-        int maxScroll = Math.max(0, cachedMobStats.size() - MAX_VISIBLE_MOBS);
+        final var safeMobStats = cachedMobStats;
+        if (!enabled || viewMode != 1 || safeMobStats == null) return;
+        int maxScroll = Math.max(0, safeMobStats.size() - MAX_VISIBLE_MOBS);
         scrollOffset = Math.min(maxScroll, scrollOffset + 1);
     }
 

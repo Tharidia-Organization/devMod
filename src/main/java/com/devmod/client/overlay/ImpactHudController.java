@@ -1,5 +1,6 @@
 package com.devmod.client.overlay;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
@@ -82,7 +83,10 @@ public final class ImpactHudController {
      */
     private void saveUserPreference() {
         try {
-            Config.IMPACT_DISPLAY_MODE_DEFAULT.set(userPreferredCombatMode.name());
+            String modeName = Objects.requireNonNull(
+                userPreferredCombatMode.name(),
+                "ImpactDisplayMode name cannot be null");
+            Config.IMPACT_DISPLAY_MODE_DEFAULT.set(modeName);
         } catch (Exception e) {
             LOGGER.warn("Failed to save impact display mode to config", e);
         }

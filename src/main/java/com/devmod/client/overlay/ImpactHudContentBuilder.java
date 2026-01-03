@@ -200,7 +200,7 @@ public final class ImpactHudContentBuilder {
             .append(Objects.requireNonNull(I18n.literal(": "), "partHitSeparator"))
             .append(Objects.requireNonNull(
                 Objects.requireNonNull(I18n.literal(data.bodyPart.name()), "partHitName")
-                    .withStyle(style -> style.withColor(data.getBodyPartColor() & 0x00FFFFFF)),
+                    .withStyle(style -> style.withColor(data.getBodyPartColor() & DesignTokens.Mask.RGB)),
                 "partHitNameStyled"))
             .append(Objects.requireNonNull(I18n.literal(" ("), "partHitOpen"))
             .append(Objects.requireNonNull(I18n.translate("devmod.hud.modifier"), "partHitModifier"))
@@ -208,7 +208,7 @@ public final class ImpactHudContentBuilder {
             .append(Objects.requireNonNull(
                 Objects.requireNonNull(I18n.literal("x" + format.formatMultiplier(data.bodyPartMultiplier)),
                     "partHitMultiplier")
-                    .withStyle(style -> style.withColor(Colors.VALUE & 0x00FFFFFF)),
+                    .withStyle(style -> style.withColor(Colors.VALUE & DesignTokens.Mask.RGB)),
                 "partHitMultiplierStyled"))
             .append(Objects.requireNonNull(I18n.literal(")"), "partHitClose"));
         lines.add(new HudLine(partHit, Colors.NORMAL, LineType.NORMAL, Spacing.SMALL));

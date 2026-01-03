@@ -2,42 +2,44 @@ package com.devmod.client.ui.radial.model;
 
 import java.util.Objects;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
+
 public enum MacroCategory {
     /**
      * Debug, spatial analysis, and visualization tools.
-     * Color: Blue (0xFF4488FF)
+     * Color: Blue
      */
-    ANALYZE("Analyze", "\uD83D\uDD0E", 0xFF4488FF, "Debug, spatial analysis, visualization"),
+    ANALYZE("Analyze", "\uD83D\uDD0E", DesignTokens.Radial.MACRO_ANALYZE, "Debug, spatial analysis, visualization"),
 
     /**
      * Telemetry data, dashboards, and exports.
-     * Color: Cyan (0xFF66CCFF)
+     * Color: Cyan
      */
-    TELEMETRY("Telemetry", "\uD83D\uDCE1", 0xFF66CCFF, "Telemetry, dashboards, exports"),
+    TELEMETRY("Telemetry", "\uD83D\uDCE1", DesignTokens.Radial.MACRO_TELEMETRY, "Telemetry, dashboards, exports"),
 
     /**
      * Combat tools, abilities, and heatmaps.
-     * Color: Red (0xFFFF4444)
+     * Color: Red
      */
-    COMBAT("Combat", "\u2694", 0xFFFF4444, "Combat tools, abilities, heatmaps"),
+    COMBAT("Combat", "\u2694", DesignTokens.Radial.MACRO_COMBAT, "Combat tools, abilities, heatmaps"),
 
     /**
      * Arena systems and operations.
-     * Color: Emerald (0xFF55DD88)
+     * Color: Emerald
      */
-    ARENA("Arena", "\uD83C\uDFF0", 0xFF55DD88, "Arena ops, templates, autosmoke"),
+    ARENA("Arena", "\uD83C\uDFF0", DesignTokens.Radial.MACRO_ARENA, "Arena ops, templates, autosmoke"),
 
     /**
      * Quests, endurance mode, and party play.
-     * Color: Green (0xFF44FF88)
+     * Color: Green
      */
-    PLAY("Play", "\uD83C\uDFAE", 0xFF44FF88, "Quests, endurance, party"),
+    PLAY("Play", "\uD83C\uDFAE", DesignTokens.Radial.MACRO_PLAY, "Quests, endurance, party"),
 
     /**
      * Settings, editors, and testing utilities.
-     * Color: Orange (0xFFFFAA00)
+     * Color: Orange
      */
-    TOOLS("Tools", "\uD83D\uDEE0", 0xFFFFAA00, "Settings, editors, testing utilities");
+    TOOLS("Tools", "\uD83D\uDEE0", DesignTokens.Radial.MACRO_TOOLS, "Settings, editors, testing utilities");
 
     private final String name;
     private final int color;
@@ -68,7 +70,7 @@ public enum MacroCategory {
 
     /**
      * Returns the ARGB color for this macro-category.
-     * @return the color in 0xAARRGGBB format
+     * @return the color in ARGB format
      */
     public int getColor() {
         return color;

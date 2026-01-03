@@ -5,22 +5,70 @@ import com.google.gson.annotations.SerializedName;
 public class GameDesignConfig {
 
     @SerializedName("version")
-    public int version = 1;
+    private int version = 1;
 
     @SerializedName("resonance")
-    public ResonanceConfig resonance = new ResonanceConfig();
+    private ResonanceConfig resonance = new ResonanceConfig();
 
     @SerializedName("contracts")
-    public ContractsConfig contracts = new ContractsConfig();
+    private ContractsConfig contracts = new ContractsConfig();
 
     @SerializedName("signature_weapons")
-    public SignatureWeaponsConfig signatureWeapons = new SignatureWeaponsConfig();
+    private SignatureWeaponsConfig signatureWeapons = new SignatureWeaponsConfig();
 
     @SerializedName("nemesis")
-    public NemesisConfig nemesis = new NemesisConfig();
+    private NemesisConfig nemesis = new NemesisConfig();
 
     @SerializedName("tide")
-    public TideConfig tide = new TideConfig();
+    private TideConfig tide = new TideConfig();
+
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int value) {
+        version = value;
+    }
+
+    public ResonanceConfig getResonance() {
+        return resonance;
+    }
+
+    public void setResonance(ResonanceConfig value) {
+        resonance = value == null ? new ResonanceConfig() : value;
+    }
+
+    public ContractsConfig getContracts() {
+        return contracts;
+    }
+
+    public void setContracts(ContractsConfig value) {
+        contracts = value == null ? new ContractsConfig() : value;
+    }
+
+    public SignatureWeaponsConfig getSignatureWeapons() {
+        return signatureWeapons;
+    }
+
+    public void setSignatureWeapons(SignatureWeaponsConfig value) {
+        signatureWeapons = value == null ? new SignatureWeaponsConfig() : value;
+    }
+
+    public NemesisConfig getNemesis() {
+        return nemesis;
+    }
+
+    public void setNemesis(NemesisConfig value) {
+        nemesis = value == null ? new NemesisConfig() : value;
+    }
+
+    public TideConfig getTide() {
+        return tide;
+    }
+
+    public void setTide(TideConfig value) {
+        tide = value == null ? new TideConfig() : value;
+    }
 
     /**
      * Resonance Chain System configuration.
@@ -382,6 +430,8 @@ public class GameDesignConfig {
         ContractsConfig copy = new ContractsConfig();
         copy.enabled = src.enabled;
         copy.maxContractsPerWave = src.maxContractsPerWave;
+        copy.majorTierMinWave = src.majorTierMinWave;
+        copy.bloodTierMinWave = src.bloodTierMinWave;
         copy.aggressionDamageDealt = src.aggressionDamageDealt;
         copy.aggressionDamageTaken = src.aggressionDamageTaken;
         copy.aggressionReward = src.aggressionReward;

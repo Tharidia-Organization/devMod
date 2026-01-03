@@ -229,8 +229,8 @@ public class WaveCheckpointScreen extends Screen {
         // Outer glow (pulsing)
         long elapsed = System.currentTimeMillis() - openTime;
         float pulse = 0.5f + 0.5f * (float) Math.sin(elapsed / 500.0);
-        int glowAlpha = (int) (0x44 * pulse * alpha);
-        int glowColor = (glowAlpha << 24) | (COLOR_BORDER & 0x00FFFFFF);
+        int glowAlpha = (int) (DesignTokens.Alpha.A27 * pulse * alpha);
+        int glowColor = (glowAlpha << 24) | (COLOR_BORDER & DesignTokens.Mask.RGB);
 
         g.fill(x - 4, y - 4, x + w + 4, y + h + 4, glowColor);
         g.fill(x - 3, y - 3, x + w + 3, y + h + 3, glowColor);
@@ -279,7 +279,7 @@ public class WaveCheckpointScreen extends Screen {
         g.drawCenteredString(Objects.requireNonNull(font), headerText, centerX + 10, (int)(panelY + 18 + bounce), headerColor);
 
         // Separator with glow
-        int sepColor = applyAlpha(COLOR_BORDER & 0x88FFFFFF, alpha);
+        int sepColor = applyAlpha(DesignTokens.withAlpha(COLOR_BORDER, DesignTokens.Alpha.A53), alpha);
         g.fill(centerX - 150, panelY + 38, centerX + 150, panelY + 39, sepColor);
     }
 
@@ -352,7 +352,7 @@ public class WaveCheckpointScreen extends Screen {
         // Pulsing glow behind rank
         float pulse = 0.6f + 0.4f * (float) Math.sin(rankElapsed / 150.0);
         int glowRadius = (int) (30 * pulse);
-        int glowColor = applyAlpha(styleRank.color & 0x44FFFFFF, alpha * pulse);
+        int glowColor = applyAlpha(DesignTokens.withAlpha(styleRank.color, DesignTokens.Alpha.A27), alpha * pulse);
 
         g.fill(centerX - glowRadius, y - 10, centerX + glowRadius, y + 20, glowColor);
 
@@ -481,7 +481,7 @@ public class WaveCheckpointScreen extends Screen {
 
     private static int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     private static int lerpColor(int color1, int color2, float t) {
@@ -607,7 +607,7 @@ public class WaveCheckpointScreen extends Screen {
 
         void render(GuiGraphics g) {
             int alpha = (int) (255 * life);
-            int c = (alpha << 24) | (color & 0x00FFFFFF);
+            int c = (alpha << 24) | (color & DesignTokens.Mask.RGB);
             int s = (int) (size * life);
             g.fill((int)x - s/2, (int)y - s/2, (int)x + s/2, (int)y + s/2, c);
         }

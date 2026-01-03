@@ -15,33 +15,89 @@ public class FoodStats {
     // ═══════════════════════════════════════════════════════════════
 
     /** Hunger points restored (0-20, each unit = half drumstick) */
-    public int nutrition = 0;
+    private int nutrition = 0;
 
     /** Saturation modifier (0.0-2.0, multiplied by nutrition for actual saturation) */
-    public float saturation = 0.0f;
+    private float saturation = 0.0f;
 
     /** Time in ticks to consume the food (default 32 for food, 40 for drinks) */
-    public int consumptionTime = 32;
+    private int consumptionTime = 32;
 
     /** Whether the food can be eaten even when hunger is full */
-    public boolean canAlwaysEat = false;
+    private boolean canAlwaysEat = false;
 
     // ═══════════════════════════════════════════════════════════════
     // FOOD PROPERTIES
     // ═══════════════════════════════════════════════════════════════
 
     /** Whether wolves can eat this food */
-    public boolean isMeat = false;
+    private boolean isMeat = false;
 
     /** Whether this is a fast food (faster consumption animation) */
-    public boolean isFastFood = false;
+    private boolean isFastFood = false;
 
     // ═══════════════════════════════════════════════════════════════
     // EFFECTS
     // ═══════════════════════════════════════════════════════════════
 
     /** List of effects applied when consuming this food */
-    public List<FoodEffect> effects = new ArrayList<>();
+    private List<FoodEffect> effects = new ArrayList<>();
+
+    public int getNutrition() {
+        return nutrition;
+    }
+
+    public void setNutrition(int value) {
+        nutrition = value;
+    }
+
+    public float getSaturation() {
+        return saturation;
+    }
+
+    public void setSaturation(float value) {
+        saturation = value;
+    }
+
+    public int getConsumptionTime() {
+        return consumptionTime;
+    }
+
+    public void setConsumptionTime(int value) {
+        consumptionTime = value;
+    }
+
+    public boolean isCanAlwaysEat() {
+        return canAlwaysEat;
+    }
+
+    public void setCanAlwaysEat(boolean value) {
+        canAlwaysEat = value;
+    }
+
+    public boolean isMeat() {
+        return isMeat;
+    }
+
+    public void setMeat(boolean value) {
+        isMeat = value;
+    }
+
+    public boolean isFastFood() {
+        return isFastFood;
+    }
+
+    public void setFastFood(boolean value) {
+        isFastFood = value;
+    }
+
+    public List<FoodEffect> getEffects() {
+        return effects;
+    }
+
+    public void setEffects(List<FoodEffect> value) {
+        effects = value == null ? new ArrayList<>() : new ArrayList<>(value);
+    }
 
     /**
      * Represents a single effect that can be applied by food.
@@ -114,12 +170,12 @@ public class FoodStats {
 
     public FoodStats copy() {
         FoodStats copy = new FoodStats();
-        copy.nutrition = this.nutrition;
-        copy.saturation = this.saturation;
-        copy.consumptionTime = this.consumptionTime;
-        copy.canAlwaysEat = this.canAlwaysEat;
-        copy.isMeat = this.isMeat;
-        copy.isFastFood = this.isFastFood;
+        copy.setNutrition(this.getNutrition());
+        copy.setSaturation(this.getSaturation());
+        copy.setConsumptionTime(this.getConsumptionTime());
+        copy.setCanAlwaysEat(this.isCanAlwaysEat());
+        copy.setMeat(this.isMeat());
+        copy.setFastFood(this.isFastFood());
         copy.effects = new ArrayList<>();
         for (FoodEffect effect : this.effects) {
             copy.effects.add(effect.copy());
@@ -180,12 +236,12 @@ public class FoodStats {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof FoodStats that)) return false;
-        return nutrition == that.nutrition &&
-               Float.compare(that.saturation, saturation) == 0 &&
-               consumptionTime == that.consumptionTime &&
-               canAlwaysEat == that.canAlwaysEat &&
-               isMeat == that.isMeat &&
-               isFastFood == that.isFastFood &&
+        return nutrition == that.getNutrition() &&
+               Float.compare(that.getSaturation(), saturation) == 0 &&
+               consumptionTime == that.getConsumptionTime() &&
+               canAlwaysEat == that.isCanAlwaysEat() &&
+               isMeat == that.isMeat() &&
+               isFastFood == that.isFastFood() &&
                Objects.equals(effects, that.effects);
     }
 

@@ -160,17 +160,23 @@ public final class FoodConfigManager {
 
         FoodProperties food = stack.get(Objects.requireNonNull(DataComponents.FOOD));
         if (food != null) {
-            stats.nutrition = food.nutrition();
-            stats.saturation = food.saturation();
-            stats.canAlwaysEat = food.canAlwaysEat();
+            int nutrition = food.nutrition();
+            stats.setNutrition(nutrition);
+            float saturationModifier = 0.0f;
+            if (nutrition > 0) {
+                saturationModifier = food.saturation() / (nutrition * 2.0f);
+            }
+            stats.setSaturation(saturationModifier);
+            stats.setCanAlwaysEat(food.canAlwaysEat());
+            stats.setConsumptionTime(food.eatDurationTicks());
 
             // Extract effects from FoodProperties
             // Note: In 1.21.1, effects are accessed differently
             // We'll populate this when we have access to the actual API
+        } else {
+            // Default consumption time
+            stats.setConsumptionTime(32); // Default for food
         }
-
-        // Default consumption time
-        stats.consumptionTime = 32; // Default for food
 
         return stats;
     }
@@ -250,15 +256,15 @@ public final class FoodConfigManager {
 
     private static JsonObject statsToJson(FoodStats stats) {
         JsonObject obj = new JsonObject();
-        obj.addProperty("nutrition", stats.nutrition);
-        obj.addProperty("saturation", stats.saturation);
-        obj.addProperty("consumptionTime", stats.consumptionTime);
-        obj.addProperty("canAlwaysEat", stats.canAlwaysEat);
-        obj.addProperty("isMeat", stats.isMeat);
-        obj.addProperty("isFastFood", stats.isFastFood);
+        obj.addProperty("nutrition", stats.getNutrition());
+        obj.addProperty("saturation", stats.getSaturation());
+        obj.addProperty("consumptionTime", stats.getConsumptionTime());
+        obj.addProperty("canAlwaysEat", stats.isCanAlwaysEat());
+        obj.addProperty("isMeat", stats.isMeat());
+        obj.addProperty("isFastFood", stats.isFastFood());
 
         JsonArray effectsArray = new JsonArray();
-        for (FoodStats.FoodEffect effect : stats.effects) {
+        for (FoodStats.FoodEffect effect : stats.getEffects()) {
             JsonObject effectObj = new JsonObject();
             effectObj.addProperty("effectId", effect.effectId);
             effectObj.addProperty("duration", effect.duration);
@@ -273,12 +279,12 @@ public final class FoodConfigManager {
 
     private static FoodStats parseStatsFromJson(JsonObject obj) {
         FoodStats stats = new FoodStats();
-        if (obj.has("nutrition")) stats.nutrition = obj.get("nutrition").getAsInt();
-        if (obj.has("saturation")) stats.saturation = obj.get("saturation").getAsFloat();
-        if (obj.has("consumptionTime")) stats.consumptionTime = obj.get("consumptionTime").getAsInt();
-        if (obj.has("canAlwaysEat")) stats.canAlwaysEat = obj.get("canAlwaysEat").getAsBoolean();
-        if (obj.has("isMeat")) stats.isMeat = obj.get("isMeat").getAsBoolean();
-        if (obj.has("isFastFood")) stats.isFastFood = obj.get("isFastFood").getAsBoolean();
+        if (obj.has("nutrition")) stats.setNutrition(obj.get("nutrition").getAsInt());
+        if (obj.has("saturation")) stats.setSaturation(obj.get("saturation").getAsFloat());
+        if (obj.has("consumptionTime")) stats.setConsumptionTime(obj.get("consumptionTime").getAsInt());
+        if (obj.has("canAlwaysEat")) stats.setCanAlwaysEat(obj.get("canAlwaysEat").getAsBoolean());
+        if (obj.has("isMeat")) stats.setMeat(obj.get("isMeat").getAsBoolean());
+        if (obj.has("isFastFood")) stats.setFastFood(obj.get("isFastFood").getAsBoolean());
 
         if (obj.has("effects")) {
             JsonArray effectsArray = obj.getAsJsonArray("effects");
@@ -289,7 +295,7 @@ public final class FoodConfigManager {
                 if (effectObj.has("duration")) effect.duration = effectObj.get("duration").getAsInt();
                 if (effectObj.has("amplifier")) effect.amplifier = effectObj.get("amplifier").getAsInt();
                 if (effectObj.has("probability")) effect.probability = effectObj.get("probability").getAsFloat();
-                stats.effects.add(effect);
+                stats.getEffects().add(effect);
             }
         }
 

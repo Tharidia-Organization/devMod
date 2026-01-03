@@ -91,7 +91,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         } else {
             logNdjsonSkip();
@@ -132,7 +132,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -171,7 +171,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -275,7 +275,7 @@ public class EnduranceTelemetryService {
         json.append("}");
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         } else {
             logNdjsonSkip();
@@ -361,7 +361,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -398,7 +398,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -432,7 +432,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -465,7 +465,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -566,7 +566,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -610,7 +610,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -652,7 +652,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -683,7 +683,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -716,7 +716,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -749,7 +749,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -783,7 +783,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
         LOGGER.info("[Endurance] Achievement unlocked: {}", achievementName);
@@ -809,7 +809,7 @@ public class EnduranceTelemetryService {
             currency.name(), price, purchaseCount);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -830,7 +830,7 @@ public class EnduranceTelemetryService {
         DuckDBTelemetryService.INSTANCE.logPartyCreated(partyId, leaderId, leaderName, questType.name());
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -851,7 +851,7 @@ public class EnduranceTelemetryService {
         DuckDBTelemetryService.INSTANCE.logPartyJoin(partyId, memberId, memberName, partySize);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -870,7 +870,7 @@ public class EnduranceTelemetryService {
         DuckDBTelemetryService.INSTANCE.logPartyLeave(partyId, memberId, reason, partySize);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -889,7 +889,7 @@ public class EnduranceTelemetryService {
         DuckDBTelemetryService.INSTANCE.logPartyDisbanded(partyId, memberCount, reason);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -908,7 +908,7 @@ public class EnduranceTelemetryService {
         DuckDBTelemetryService.INSTANCE.logInviteSent(partyId, senderId, targetId);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -927,7 +927,7 @@ public class EnduranceTelemetryService {
         DuckDBTelemetryService.INSTANCE.logInviteResponse(partyId, targetId, accepted);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -961,7 +961,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -995,7 +995,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -1028,7 +1028,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -1064,7 +1064,7 @@ public class EnduranceTelemetryService {
             templateId, templateVersion, policyId, policyVersion, instanceId, arenaId);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -1150,7 +1150,7 @@ public class EnduranceTelemetryService {
         appendContext(json, stats);
         json.append("}");
 
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -1206,7 +1206,7 @@ public class EnduranceTelemetryService {
             stats != null ? stats.policyVersion : null,
             stats != null ? stats.arenaId : null);
 
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -1283,7 +1283,7 @@ public class EnduranceTelemetryService {
         }
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
@@ -1303,7 +1303,7 @@ public class EnduranceTelemetryService {
         );
 
         // NDJSON: Fallback only (no DuckDB mapping for badge yet)
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
@@ -1320,7 +1320,7 @@ public class EnduranceTelemetryService {
         );
 
         // NDJSON: Fallback only (no DuckDB mapping for leaderboard yet)
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }

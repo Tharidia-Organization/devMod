@@ -142,6 +142,7 @@ public class TelemetryService {
 
         // PERFORMANCE FIX: Initialize async writer for non-blocking telemetry I/O
         this.asyncWriter = new AsyncTelemetryWriter();
+        this.asyncWriter.start();
 
         // Initialize log handlers delegate
         this.logHandlers = new TelemetryLogHandlers(this);
@@ -164,7 +165,7 @@ public class TelemetryService {
         if (DuckDBConfig.ENABLED) {
             boolean duckDbInitialized = DuckDBTelemetryService.INSTANCE.initialize(server);
             if (duckDbInitialized) {
-                LOGGER.info("DuckDB telemetry initialized (NDJSON fallback: {})", DuckDBConfig.NDJSON_FALLBACK);
+                LOGGER.info("DuckDB telemetry initialized (NDJSON fallback: {})", DuckDBConfig.isNdjsonFallbackEnabled());
                 duckDbInitFailed = false;
             } else {
                 duckDbInitFailed = true;
@@ -359,7 +360,7 @@ public class TelemetryService {
             }
 
             // NDJSON: Fallback only
-            if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
                 appendLine("fights.ndjson", result.toJson());
             }
         });
@@ -411,7 +412,7 @@ public class TelemetryService {
         if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
             DuckDBTelemetryService.INSTANCE.logPerformance(averageMspt, tps);
         }
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             appendLine("performance.ndjson", line);
         }
     }
@@ -728,7 +729,7 @@ public class TelemetryService {
         }
 
         // DuckDB PRIMARY mode: Skip NDJSON writes when DuckDB is enabled and fallback is disabled
-        if (!DuckDBConfig.NDJSON_FALLBACK && DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (!DuckDBConfig.isNdjsonFallbackEnabled() && DuckDBTelemetryService.INSTANCE.isEnabled()) {
             // Rate-limited logging (every 1000 skips)
             int count = ndjsonSkipCount.incrementAndGet();
             if (count == 1 || count % 1000 == 0) {

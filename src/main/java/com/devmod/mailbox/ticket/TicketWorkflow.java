@@ -196,9 +196,12 @@ public final class TicketWorkflow {
             new Transition(
                 TicketStatus.ASSIGNED, TicketStatus.IN_PROGRESS,
                 EnumSet.of(ActorRole.MODERATOR, ActorRole.ADMIN),
-                (ticket, ctx) -> ticket.assignedTo() == null ||
-                    ticket.assignedTo().equals(ctx.actorUuid()) ||
-                    ctx.actorRole() == ActorRole.ADMIN,
+                (ticket, ctx) -> {
+                    UUID assignee = ticket.assignedTo();
+                    return assignee == null ||
+                        assignee.equals(ctx.actorUuid()) ||
+                        ctx.actorRole() == ActorRole.ADMIN;
+                },
                 "Start working (assignee or admin)"
             ),
             new Transition(
@@ -323,31 +326,6 @@ public final class TicketWorkflow {
     }
 
     /**
-     * Get all valid transitions from the current status for the given role.
-     *
-     * @param ticket The ticket
-     * @param actorRole The actor's role
-     * @return Set of valid target statuses
-     */
-    public static Set<TicketStatus> getValidTransitions(Ticket ticket, ActorRole actorRole) {
-        Set<Transition> transitions = TRANSITION_TABLE.get(ticket.status());
-        if (transitions == null) {
-            return Set.of();
-        }
-
-        Set<TicketStatus> valid = EnumSet.noneOf(TicketStatus.class);
-
-        for (Transition t : transitions) {
-            if (t.allowedRoles().contains(actorRole)) {
-                // Don't check guard for listing - just role check
-                valid.add(t.to());
-            }
-        }
-
-        return valid;
-    }
-
-    /**
      * Attempt to transition a ticket to a new status.
      *
      * @param ticket The ticket to transition
@@ -451,6 +429,55 @@ public final class TicketWorkflow {
     }
 
     /**
+     * Check if a ticket should be auto-escalated based on SLA.
+     *
+     * @param ticket The ticket
+     * @return The new priority if escalation is needed, or empty
+     */
+    public static Optional<TicketPriority> checkAutoEscalation(Ticket ticket) {
+        if (ticket.priority() == TicketPriority.URGENT) {
+            return Optional.empty(); // Already at max
+        }
+
+        if (isResolutionSlaBreached(ticket)) {
+            TicketPriority escalated = switch (ticket.priority()) {
+                case LOW -> TicketPriority.NORMAL;
+                case NORMAL -> TicketPriority.HIGH;
+                case HIGH -> TicketPriority.URGENT;
+                case URGENT -> TicketPriority.URGENT;
+            };
+            return Optional.of(escalated);
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Get all valid transitions from the current status for the given role.
+     *
+     * @param ticket The ticket
+     * @param actorRole The actor's role
+     * @return Set of valid target statuses
+     */
+    public static Set<TicketStatus> getValidTransitions(Ticket ticket, ActorRole actorRole) {
+        Set<Transition> transitions = TRANSITION_TABLE.get(ticket.status());
+        if (transitions == null) {
+            return Set.of();
+        }
+
+        Set<TicketStatus> valid = EnumSet.noneOf(TicketStatus.class);
+
+        for (Transition t : transitions) {
+            if (t.allowedRoles().contains(actorRole)) {
+                // Don't check guard for listing - just role check
+                valid.add(t.to());
+            }
+        }
+
+        return valid;
+    }
+
+    /**
      * Get remaining time until response SLA breach.
      *
      * @param ticket The ticket
@@ -490,30 +517,6 @@ public final class TicketWorkflow {
         Duration elapsed = Duration.between(ticket.createdAt(), Instant.now());
         Duration remaining = sla.minus(elapsed);
         return remaining.isNegative() ? Duration.ZERO : remaining;
-    }
-
-    /**
-     * Check if a ticket should be auto-escalated based on SLA.
-     *
-     * @param ticket The ticket
-     * @return The new priority if escalation is needed, or empty
-     */
-    public static Optional<TicketPriority> checkAutoEscalation(Ticket ticket) {
-        if (ticket.priority() == TicketPriority.URGENT) {
-            return Optional.empty(); // Already at max
-        }
-
-        if (isResolutionSlaBreached(ticket)) {
-            TicketPriority escalated = switch (ticket.priority()) {
-                case LOW -> TicketPriority.NORMAL;
-                case NORMAL -> TicketPriority.HIGH;
-                case HIGH -> TicketPriority.URGENT;
-                case URGENT -> TicketPriority.URGENT;
-            };
-            return Optional.of(escalated);
-        }
-
-        return Optional.empty();
     }
 
     // ============================================================================

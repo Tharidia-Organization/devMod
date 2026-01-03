@@ -40,9 +40,11 @@ import com.devmod.notification.network.NotificationPreferencesSyncPayload;
 import com.devmod.notification.persistence.NotificationHistoryRepository;
 import com.devmod.notification.persistence.NotificationPreferencesRepository;
 import com.devmod.stats.ArmorStats;
+import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBBootstrap;
 import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
 import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
+import com.devmod.telemetry.economy.EconomyMetricsService;
 import com.devmod.testing.stats.HazardTypeRegistry;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.DamageTypeConfig;
@@ -233,7 +235,7 @@ public class CommonModEvents {
                     }
                 });
 
-                com.devmod.mailbox.news.NewsManager.INSTANCE.setNewNewsCallback(article -> {
+                com.devmod.mailbox.news.NewsManager.getInstance().setNewNewsCallback(article -> {
                     var server = event.getServer();
                     for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                         try {
@@ -455,6 +457,12 @@ public class CommonModEvents {
         if (stack == null || stack.isEmpty()) return;
 
         EquipmentSlot slot = event.getSlot();
+        if (event.getEntity() instanceof ServerPlayer player && !player.level().isClientSide()) {
+            var equipRecord = EconomyMetricsService.INSTANCE.recordItemEquipped(player, stack, slot.getName());
+            if (equipRecord != null) {
+                TelemetryService.INSTANCE.appendEconomyLine(equipRecord.toJson());
+            }
+        }
         var armorComponent = ArmorComponents.armorStatsComponent();
         // Weapons (mainhand/offhand)
         if (slot == EquipmentSlot.MAINHAND || slot == EquipmentSlot.OFFHAND) {
@@ -601,8 +609,8 @@ public class CommonModEvents {
      */
     @SubscribeEvent
     public static void onBlockDrop(BlockEvent.BreakEvent event) {
-        ItemStack stack = event.getPlayer() != null ? event.getPlayer().getMainHandItem() : ItemStack.EMPTY;
-        if (stack == null || stack.isEmpty()) return;
+        ItemStack stack = event.getPlayer().getMainHandItem();
+        if (stack.isEmpty()) return;
         boolean hasDevmodData = false;
         try {
             var comp = stack.get(Objects.requireNonNull(com.devmod.components.WeaponComponents.WEAPON_STATS.get()));
@@ -619,7 +627,7 @@ public class CommonModEvents {
         if (!hasDevmodData) return;
         try {
             com.devmod.stats.WeaponStats stats = com.devmod.config.WeaponConfigManager.getStats(stack);
-            if (stats.clearToolRules && event.getPlayer() != null) {
+            if (stats.isClearToolRules()) {
                 // Remove any custom tool component; vanilla drop logic will apply
                 stack.remove(Objects.requireNonNull(net.minecraft.core.component.DataComponents.TOOL));
                 LOGGER.debug("[DevMod] Cleared tool component on drop due to clearToolRules");

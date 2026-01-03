@@ -255,7 +255,7 @@ public final class CompatRegistry {
     public static String getStatusReport() {
         StringBuilder sb = new StringBuilder();
         sb.append("=== DevMod Compatibility Status ===\n");
-        sb.append(String.format("Registered: %d, Active: %d\n\n", MODULES.size(), INITIALIZED_COMMON.size()));
+        sb.append(String.format("Registered: %d, Active: %d%n%n", MODULES.size(), INITIALIZED_COMMON.size()));
 
         List<String> sortedIds = new ArrayList<>(MODULES.keySet());
         Collections.sort(sortedIds);
@@ -275,7 +275,7 @@ public final class CompatRegistry {
                 status = "NOT PRESENT";
             }
 
-            sb.append(String.format("  [%s] %s v%s - %s\n",
+            sb.append(String.format("  [%s] %s v%s - %s%n",
                 status.substring(0, 1), module.displayName(),
                 version != null ? version : "?", status));
         }

@@ -110,6 +110,7 @@ neoForge {
             // "REGISTRIES": For firing of registry events.
             // "REGISTRYDUMP": For getting the contents of all registries.
             systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'devmod.template.dir', project.file('config/devmod/arena_templates').absolutePath
 
             // Recommended logging level for the console
             // You can set various levels here.
@@ -323,6 +324,10 @@ dependencies {
     // Distant Horizons API - compile-only for soft dependency (optional compatibility)
     // API v4.0.1 supports 1.21-1.21.1 on NeoForge
     compileOnly "maven.modrinth:distanthorizons:2.3.0-b-1.21.1"
+
+    // Player Animator (KosmX) - compile-only for SpotBugs analysis + optional compat
+    // Provides dev.kosmx.playerAnim.api.layered.IAnimatedPlayer
+    compileOnly "maven.modrinth:playeranimator:2.0.4+1.21.1-forge"
 
     // GUI Scaler - Auto-scales GUI based on screen resolution (dev testing)
     // https://github.com/zendiik/gui-scaler
@@ -578,8 +583,8 @@ tasks.named('checkstyleTest').configure {
 // Detects common bug patterns (null dereference, resource leaks, concurrency issues)
 spotbugs {
     toolVersion = "4.8.3"
-    effort = com.github.spotbugs.snom.Effort.MAX           // Thorough analysis
-    reportLevel = com.github.spotbugs.snom.Confidence.MEDIUM   // Report medium and high priority bugs
+    effort = com.github.spotbugs.snom.Effort.valueOf("MAX")           // Thorough analysis
+    reportLevel = com.github.spotbugs.snom.Confidence.valueOf("MEDIUM")   // Report medium and high priority bugs
     ignoreFailures = true    // Report but don't fail build (warning mode)
     excludeFilter = file("config/spotbugs/exclude.xml")
 }

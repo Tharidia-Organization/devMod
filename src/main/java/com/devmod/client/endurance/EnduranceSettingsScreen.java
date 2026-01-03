@@ -30,10 +30,10 @@ public class EnduranceSettingsScreen extends Screen {
 
     // Section colors - using DesignTokens
     private static final int COLOR_RED = DesignTokens.Semantic.ERROR;
-    private static final int COLOR_ORANGE = 0xFFFF8C00;   // No direct token
+    private static final int COLOR_ORANGE = EnduranceUiTheme.Accent.ORANGE;   // No direct token
     private static final int COLOR_GOLD = DesignTokens.Semantic.WARNING;
     private static final int COLOR_CYAN = DesignTokens.Accent.PRIMARY;
-    private static final int COLOR_PURPLE = 0xFFA371F7;   // No direct token
+    private static final int COLOR_PURPLE = EnduranceUiTheme.Accent.PURPLE;   // No direct token
     private static final int COLOR_GREEN = DesignTokens.Semantic.SUCCESS;
     private static final int COLOR_BLUE = DesignTokens.Semantic.INFO;
 
@@ -352,7 +352,7 @@ public class EnduranceSettingsScreen extends Screen {
             }
 
             // Section name
-            int textColor = isActive ? 0xFFFFFFFF : DesignTokens.Text.PRIMARY;
+            int textColor = isActive ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
             graphics.drawString(font, section.name, sidebarX + 12, y + 10, textColor, false);
 
             // Item count badge
@@ -581,7 +581,7 @@ public class EnduranceSettingsScreen extends Screen {
 
             // Slider handle
             int handleX = sliderX + fillW - 3;
-            graphics.fill(handleX, sliderY - 2, handleX + 6, sliderY + sliderH + 2, 0xFFFFFFFF);
+            graphics.fill(handleX, sliderY - 2, handleX + 6, sliderY + sliderH + 2, DesignTokens.Text.WHITE);
 
             // Value display
             String valueStr = String.format(format, value * displayScale);
@@ -664,7 +664,7 @@ public class EnduranceSettingsScreen extends Screen {
 
             // Slider handle
             int handleX = sliderX + fillW - 3;
-            graphics.fill(handleX, sliderY - 2, handleX + 6, sliderY + sliderH + 2, 0xFFFFFFFF);
+            graphics.fill(handleX, sliderY - 2, handleX + 6, sliderY + sliderH + 2, DesignTokens.Text.WHITE);
 
             // Value display
             graphics.drawString(font, String.valueOf(value), sliderX + sliderW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
@@ -738,7 +738,7 @@ public class EnduranceSettingsScreen extends Screen {
 
             // Toggle indicator
             int indicatorX = enabled ? toggleX + toggleW - 16 : toggleX + 2;
-            graphics.fill(indicatorX, toggleY + 2, indicatorX + 14, toggleY + toggleH - 2, 0xFFFFFFFF);
+            graphics.fill(indicatorX, toggleY + 2, indicatorX + 14, toggleY + toggleH - 2, DesignTokens.Text.WHITE);
 
             // Status text
             String status = enabled

@@ -29,13 +29,13 @@ public class CombatRecapScreen extends Screen {
     private static final int LINE_HEIGHT = 14;
 
     // === Colors ===
-    private static final int BG_COLOR = 0xF0101018;
-    private static final int PANEL_BG = 0xE0181820;
-    private static final int BORDER_COLOR = DesignTokens.Accent.PRIMARY;
-    private static final int ACCENT_COLOR = 0xFF00DDFF;
-    private static final int TEXT_PRIMARY = 0xFFFFFFFF;
-    private static final int TEXT_SECONDARY = 0xFFAAAAAA;
-    private static final int TEXT_HIGHLIGHT = 0xFFFFDD00;
+    private static final int BG_COLOR = OverlayTheme.CombatRecap.BG;
+    private static final int PANEL_BG = OverlayTheme.CombatRecap.PANEL_BG;
+    private static final int BORDER_COLOR = OverlayTheme.Border.ACCENT;
+    private static final int ACCENT_COLOR = OverlayTheme.CombatRecap.ACCENT;
+    private static final int TEXT_PRIMARY = OverlayTheme.CombatRecap.TEXT_PRIMARY;
+    private static final int TEXT_SECONDARY = OverlayTheme.CombatRecap.TEXT_SECONDARY;
+    private static final int TEXT_HIGHLIGHT = OverlayTheme.CombatRecap.TEXT_HIGHLIGHT;
 
     // === Body Part Colors ===
     private static final int COLOR_HEAD = OverlayTheme.BodyPart.HEAD;
@@ -44,10 +44,10 @@ public class CombatRecapScreen extends Screen {
     private static final int COLOR_LEGS = OverlayTheme.BodyPart.LEGS;
 
     // === Bar Colors ===
-    private static final int BAR_DAMAGE = 0xFFFF4444;
-    private static final int BAR_CRIT = 0xFFFFAA00;
-    private static final int BAR_HEADSHOT = 0xFF44DDFF;
-    private static final int BAR_DPS = 0xFF44FF44;
+    private static final int BAR_DAMAGE = OverlayTheme.CombatRecap.BAR_DAMAGE;
+    private static final int BAR_CRIT = OverlayTheme.CombatRecap.BAR_CRIT;
+    private static final int BAR_HEADSHOT = OverlayTheme.CombatRecap.BAR_HEADSHOT;
+    private static final int BAR_DPS = OverlayTheme.CombatRecap.BAR_DPS;
 
     // === Animation ===
     private long openTime;
@@ -68,8 +68,8 @@ public class CombatRecapScreen extends Screen {
         float animProgress = getAnimProgress();
 
         // Background with fade
-        int bgAlpha = (int) (0xF0 * animProgress);
-        graphics.fill(0, 0, width, height, (bgAlpha << 24) | 0x101018);
+        int bgAlpha = (int) (DesignTokens.Alpha.A94 * animProgress);
+        graphics.fill(0, 0, width, height, OverlayTheme.withAlpha(BG_COLOR, bgAlpha));
 
         // Main content panel
         int panelWidth = Math.min(600, width - 40);
@@ -87,7 +87,7 @@ public class CombatRecapScreen extends Screen {
         // Content
         if (animProgress > 0.3f) {
             float contentAlpha = (animProgress - 0.3f) / 0.7f;
-            renderContent(graphics, panelX, panelY, panelWidth, panelHeight, contentAlpha, mouseX, mouseY);
+            renderContent(graphics, panelX, panelY, panelWidth, panelHeight, contentAlpha);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -99,25 +99,25 @@ public class CombatRecapScreen extends Screen {
     }
 
     private void renderPanelBackground(GuiGraphics graphics, int x, int y, int w, int h, float alpha) {
-        int bgAlpha = (int) (0xE0 * alpha);
-        int borderAlpha = (int) (0xFF * alpha);
+        int bgAlpha = (int) (DesignTokens.Alpha.A88 * alpha);
+        int borderAlpha = (int) (DesignTokens.Alpha.A100 * alpha);
 
         // Main background
-        graphics.fill(x, y, x + w, y + h, (bgAlpha << 24) | 0x181820);
+        graphics.fill(x, y, x + w, y + h, OverlayTheme.withAlpha(PANEL_BG, bgAlpha));
 
         // Glow border
-        int glowColor = (borderAlpha << 24) | (ACCENT_COLOR & 0x00FFFFFF);
+        int glowColor = OverlayTheme.withAlpha(BORDER_COLOR, borderAlpha);
         graphics.fill(x - 1, y - 1, x + w + 1, y, glowColor);  // Top
         graphics.fill(x - 1, y + h, x + w + 1, y + h + 1, glowColor);  // Bottom
         graphics.fill(x - 1, y, x, y + h, glowColor);  // Left
         graphics.fill(x + w, y, x + w + 1, y + h, glowColor);  // Right
 
         // Inner accent line
-        graphics.fill(x + 2, y + 2, x + w - 2, y + 3, (borderAlpha << 24) | 0x00DDFF);
+        graphics.fill(x + 2, y + 2, x + w - 2, y + 3, withAlpha(BORDER_COLOR, alpha));
     }
 
     private void renderContent(GuiGraphics graphics, int panelX, int panelY, int panelW, int panelH,
-                               float alpha, int mouseX, int mouseY) {
+                               float alpha) {
         int x = panelX + PANEL_PADDING;
         int y = panelY + PANEL_PADDING;
         int contentW = panelW - PANEL_PADDING * 2;
@@ -136,7 +136,7 @@ public class CombatRecapScreen extends Screen {
         y += LINE_HEIGHT + SECTION_GAP;
 
         // Divider
-        graphics.fill(x, y, x + contentW, y + 1, withAlpha(0x444444, alpha));
+        graphics.fill(x, y, x + contentW, y + 1, withAlpha(OverlayTheme.CombatRecap.DIVIDER, alpha));
         y += SECTION_GAP;
 
         // Two-column layout
@@ -218,7 +218,7 @@ public class CombatRecapScreen extends Screen {
         // Bar background
         int barWidth = width - 4;
         int barHeight = 6;
-        graphics.fill(x, y, x + barWidth, y + barHeight, withAlpha(0x333333, alpha));
+        graphics.fill(x, y, x + barWidth, y + barHeight, withAlpha(OverlayTheme.CombatRecap.BAR_BG, alpha));
 
         // Bar fill with animation
         float animFill = fill * getAnimProgress();
@@ -227,7 +227,8 @@ public class CombatRecapScreen extends Screen {
             graphics.fill(x, y, x + fillWidth, y + barHeight, withAlpha(color, alpha));
 
             // Glow effect on top
-            int glowColor = withAlpha((color & 0x00FFFFFF) | 0x80000000, alpha * 0.5f);
+            int glowColor = withAlpha((color & DesignTokens.Mask.RGB) | (DesignTokens.Alpha.A50 << 24),
+                alpha * 0.5f);
             graphics.fill(x, y, x + fillWidth, y + 2, glowColor);
         }
 
@@ -349,12 +350,12 @@ public class CombatRecapScreen extends Screen {
         int graphHeight = height - LINE_HEIGHT - 4;
 
         // Graph background
-        graphics.fill(x, y, x + width, y + graphHeight, withAlpha(0x222228, alpha));
+        graphics.fill(x, y, x + width, y + graphHeight, withAlpha(OverlayTheme.CombatRecap.GRAPH_BG, alpha));
 
         // Grid lines
         for (int i = 1; i < 4; i++) {
             int lineY = y + (graphHeight * i / 4);
-            graphics.fill(x, lineY, x + width, lineY + 1, withAlpha(0x333333, alpha));
+            graphics.fill(x, lineY, x + width, lineY + 1, withAlpha(OverlayTheme.CombatRecap.BAR_BG, alpha));
         }
 
         List<CombatSessionTracker.DpsSnapshot> timeline = tracker.getDpsTimeline();
@@ -382,7 +383,8 @@ public class CombatRecapScreen extends Screen {
                 drawLine(graphics, prevX, prevY, px, py, lineColor);
 
                 // Fill below line
-                int fillColor = withAlpha(BAR_DPS & 0x00FFFFFF | 0x40000000, alpha * 0.3f);
+                int fillColor = withAlpha((BAR_DPS & DesignTokens.Mask.RGB) | (DesignTokens.Alpha.A25 << 24),
+                    alpha * 0.3f);
                 for (int fx = prevX; fx < px; fx++) {
                     float ft = (fx - prevX) / (float) (px - prevX);
                     int fy = (int) Mth.lerp(ft, prevY, py);
@@ -431,7 +433,7 @@ public class CombatRecapScreen extends Screen {
 
     private int withAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     @Override

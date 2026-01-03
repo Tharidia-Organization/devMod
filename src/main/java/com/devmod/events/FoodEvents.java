@@ -41,13 +41,13 @@ public class FoodEvents {
         }
 
         FoodStats stats = FoodConfigManager.getStats(stack);
-        if (stats.consumptionTime > 0 && stats.consumptionTime != 32) {
+        if (stats.getConsumptionTime() > 0 && stats.getConsumptionTime() != 32) {
             // Modify the use duration
-            event.setDuration(stats.consumptionTime);
+            event.setDuration(stats.getConsumptionTime());
 
             if (event.getEntity() instanceof Player) {
                 LOGGER.debug("[FoodEvents] Modified consumption time to {} ticks for {}",
-                    stats.consumptionTime, stack.getItem());
+                    stats.getConsumptionTime(), stack.getItem());
             }
         }
     }
@@ -73,9 +73,9 @@ public class FoodEvents {
         FoodStats stats = FoodConfigManager.getStats(stack);
 
         // Check if we have custom stats (non-default values)
-        boolean hasCustomStats = stats.nutrition > 0 ||
-                                stats.saturation > 0 ||
-                                !stats.effects.isEmpty();
+        boolean hasCustomStats = stats.getNutrition() > 0 ||
+                                stats.getSaturation() > 0 ||
+                                !stats.getEffects().isEmpty();
 
         if (!hasCustomStats) {
             return; // Let vanilla handle it
@@ -86,7 +86,7 @@ public class FoodEvents {
         // For now, we'll just apply effects since nutrition is complex
 
         // Apply custom effects
-        for (FoodStats.FoodEffect effectData : stats.effects) {
+        for (FoodStats.FoodEffect effectData : stats.getEffects()) {
             if (effectData.effectId == null || effectData.effectId.isEmpty()) {
                 continue;
             }

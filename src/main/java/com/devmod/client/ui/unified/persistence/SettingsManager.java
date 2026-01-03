@@ -16,6 +16,7 @@ import com.mojang.logging.LogUtils;
 import com.devmod.ModConfig;
 import com.devmod.client.overlay.BossPhaseOverlay;
 import com.devmod.client.overlay.EntityDensityOverlay;
+import com.devmod.client.overlay.PartyHudOverlay;
 import com.devmod.client.rendering.DebugRenderer;
 import com.devmod.client.rendering.HeatmapVisualizer;
 import com.devmod.client.rendering.LightLevelOverlay;
@@ -159,10 +160,11 @@ public class SettingsManager {
      */
     public void applyToSystems() {
         // === General Settings ===
-        ModConfig.showOverlay = currentSettings.general.showOverlay;
-        ModConfig.showRender = currentSettings.general.showRender;
-        ModConfig.renderAsBlocks = currentSettings.general.renderAsBlocks;
-        ModConfig.followRangeColor = currentSettings.general.followRangeColor;
+        ModConfig.setShowOverlay(currentSettings.general.showOverlay);
+        ModConfig.setShowRender(currentSettings.general.showRender);
+        ModConfig.setRenderAsBlocks(currentSettings.general.renderAsBlocks);
+        ModConfig.setFollowRangeColor(currentSettings.general.followRangeColor);
+        PartyHudOverlay.setEnabled(currentSettings.general.partyHudEnabled);
 
         // === Debug Overlays ===
         if (currentSettings.debug.debugRenderer) {
@@ -175,6 +177,7 @@ public class SettingsManager {
         LineOfSightVisualizer.INSTANCE.setEnabled(currentSettings.debug.lineOfSight);
         PathfindingDebugger.INSTANCE.setEnabled(currentSettings.debug.pathfinding);
         RoomBoundsVisualizer.INSTANCE.setEnabled(currentSettings.debug.roomBounds);
+        RoomBoundsVisualizer.INSTANCE.setShowGaps(currentSettings.debug.showRoomGaps);
         BossPhaseOverlay.setEnabled(currentSettings.debug.bossPhaseOverlay);
         EntityDensityOverlay.setEnabled(currentSettings.debug.entityDensityOverlay);
         com.devmod.client.overlay.SkillEfficacyOverlay.setEnabled(currentSettings.debug.skillEfficacyOverlay);
@@ -194,10 +197,11 @@ public class SettingsManager {
      */
     public void syncFromSystems() {
         // === General Settings ===
-        currentSettings.general.showOverlay = ModConfig.showOverlay;
-        currentSettings.general.showRender = ModConfig.showRender;
-        currentSettings.general.renderAsBlocks = ModConfig.renderAsBlocks;
-        currentSettings.general.followRangeColor = ModConfig.followRangeColor;
+        currentSettings.general.showOverlay = ModConfig.isShowOverlay();
+        currentSettings.general.showRender = ModConfig.isShowRender();
+        currentSettings.general.renderAsBlocks = ModConfig.isRenderAsBlocks();
+        currentSettings.general.followRangeColor = ModConfig.getFollowRangeColor();
+        currentSettings.general.partyHudEnabled = PartyHudOverlay.isEnabled();
 
         // === Debug Overlays ===
         currentSettings.debug.debugRenderer = DebugRenderer.INSTANCE.isEnabled();
@@ -205,6 +209,7 @@ public class SettingsManager {
         currentSettings.debug.lineOfSight = LineOfSightVisualizer.INSTANCE.isEnabled();
         currentSettings.debug.pathfinding = PathfindingDebugger.INSTANCE.isEnabled();
         currentSettings.debug.roomBounds = RoomBoundsVisualizer.INSTANCE.isEnabled();
+        currentSettings.debug.showRoomGaps = RoomBoundsVisualizer.INSTANCE.isShowingGaps();
         currentSettings.debug.bossPhaseOverlay = BossPhaseOverlay.isEnabled();
         currentSettings.debug.entityDensityOverlay = EntityDensityOverlay.isEnabled();
         currentSettings.debug.skillEfficacyOverlay = com.devmod.client.overlay.SkillEfficacyOverlay.isEnabled();

@@ -102,7 +102,10 @@ public class MobConfigManager {
         createBackup();
 
         try {
-            Files.createDirectories(file.getParent());
+            Path parent = file.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
 
             // Convert EntityType to String (ResourceLocation) for serialization
             Map<String, SavedStats> serializable = new HashMap<>();
@@ -215,7 +218,12 @@ public class MobConfigManager {
         }
 
         try {
-            Path backupDir = configFile.getParent().resolve("backups");
+            Path parent = configFile.getParent();
+            if (parent == null) {
+                LOGGER.warn("Mob config path has no parent directory: {}", configFile);
+                return;
+            }
+            Path backupDir = parent.resolve("backups");
             Files.createDirectories(backupDir);
 
             String timestamp = LocalDateTime.now(ZoneId.systemDefault()).format(BACKUP_DATE_FORMAT);
@@ -268,7 +276,12 @@ public class MobConfigManager {
      */
     public static boolean restoreFromBackup() {
         Path configFile = ConfigPaths.getMobConfigsFile();
-        Path backupDir = configFile.getParent().resolve("backups");
+        Path parent = configFile.getParent();
+        if (parent == null) {
+            LOGGER.warn("Mob config path has no parent directory: {}", configFile);
+            return false;
+        }
+        Path backupDir = parent.resolve("backups");
 
         if (!Files.exists(backupDir)) {
             LOGGER.warn("No backup directory found");
@@ -315,7 +328,12 @@ public class MobConfigManager {
     public static Map<String, String> listBackups() {
         Map<String, String> backups = new HashMap<>();
         Path configFile = ConfigPaths.getMobConfigsFile();
-        Path backupDir = configFile.getParent().resolve("backups");
+        Path parent = configFile.getParent();
+        if (parent == null) {
+            LOGGER.warn("Mob config path has no parent directory: {}", configFile);
+            return backups;
+        }
+        Path backupDir = parent.resolve("backups");
 
         if (!Files.exists(backupDir)) {
             return backups;
@@ -348,7 +366,12 @@ public class MobConfigManager {
      */
     public static boolean restoreFromBackup(String backupName) {
         Path configFile = ConfigPaths.getMobConfigsFile();
-        Path backupDir = configFile.getParent().resolve("backups");
+        Path parent = configFile.getParent();
+        if (parent == null) {
+            LOGGER.warn("Mob config path has no parent directory: {}", configFile);
+            return false;
+        }
+        Path backupDir = parent.resolve("backups");
         Path backupFile = backupDir.resolve(backupName);
 
         if (!Files.exists(backupFile)) {

@@ -33,8 +33,10 @@ public class HeaderComponent {
     private static final int LEFT_PADDING = 10;
     private static final int BORDER_THICKNESS = 1;
     private static final int SCROLL_TOLERANCE = 1;
-    private static final int FADE_COLOR_SOLID = 0xAA101010;
-    private static final int FADE_COLOR_TRANSPARENT = 0x00101010;
+    private static final int FADE_COLOR_SOLID =
+        DesignTokens.withAlpha(DesignTokens.Neutral.N950, DesignTokens.Alpha.A67);
+    private static final int FADE_COLOR_TRANSPARENT =
+        DesignTokens.withAlpha(DesignTokens.Neutral.N950, DesignTokens.Alpha.A0);
 
     // ═══════════════════════════════════════════════════════════════
     // TAB INFO

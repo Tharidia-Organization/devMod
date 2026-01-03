@@ -345,7 +345,7 @@ public class PanelRenderer {
         int originalAlpha = (argb >> 24) & 0xFF;
         if (originalAlpha == 0) originalAlpha = 255;
         int newAlpha = (int) (originalAlpha * alphaMultiplier);
-        return (newAlpha << 24) | (argb & 0x00FFFFFF);
+        return (newAlpha << 24) | (argb & DesignTokens.Mask.RGB);
     }
 
     /**

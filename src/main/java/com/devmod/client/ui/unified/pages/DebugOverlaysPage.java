@@ -20,7 +20,6 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
-import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.debug.client.DebugRenderBools;
 
@@ -45,17 +44,12 @@ public class DebugOverlaysPage implements SettingsPage {
     private final EditorButton enableAllBtn = new EditorButton("debug-enable-all", "Enable All").style(EditorButton.Style.SUCCESS);
 
     @Override
-    public SettingsCategory getCategory() {
-        return SettingsCategory.DEBUG;
-    }
-
-    @Override
     public String getTitle() {
         return "Debug Overlays";
     }
 
     @Override
-    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         // Store dimensions for scroll calculations
         lastContentX = x;
@@ -81,48 +75,48 @@ public class DebugOverlaysPage implements SettingsPage {
             // ==========================================
             // Section: Minecraft Native Debug API
             // ==========================================
-            graphics.drawString(safeFont, "§6Minecraft Native Debug API", x, currentY, 0xFFFF8800, false);
+            graphics.drawString(safeFont, "§6Minecraft Native Debug API", x, currentY, DesignTokens.Heatmap.LIGHT_DARK, false);
             currentY += 14;
 
             // Entity Pathing (like DebugUtils)
             currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Entity Pathing", "Show mob navigation paths (native)",
-                DebugRenderBools.ENTITY_PATHING);
+                DebugRenderBools.isEntityPathing());
 
             // Entity Goals
             currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Entity Goals", "Show AI goal selectors",
-                DebugRenderBools.ENTITY_GOALS);
+                DebugRenderBools.isEntityGoals());
 
             // Entity Brains
             currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Entity Brains", "Show villager/mob brain activity",
-                DebugRenderBools.ENTITY_BRAINS);
+                DebugRenderBools.isEntityBrains());
 
             // POI (Points of Interest)
             currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "POI", "Show points of interest (beds, workstations)",
-                DebugRenderBools.POI);
+                DebugRenderBools.isPoi());
 
             // Raids
             currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Raids", "Show raid center locations",
-                DebugRenderBools.RAIDS);
+                DebugRenderBools.isRaids());
 
             // Bees
             currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Bees", "Show bee pathfinding and hive info",
-                DebugRenderBools.BEES);
+                DebugRenderBools.isBees());
 
             // Game Events
             currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Game Events", "Show sculk sensor game events",
-                DebugRenderBools.GAME_EVENTS);
+                DebugRenderBools.isGameEvents());
 
             // Structures
             currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Structures", "Show structure bounding boxes",
-                DebugRenderBools.STRUCTURES);
+                DebugRenderBools.isStructures());
 
             currentY += SECTION_SPACING;
 
@@ -233,7 +227,8 @@ public class DebugOverlaysPage implements SettingsPage {
      * Render the scrollbar.
      */
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
-        Scrollbar.render(graphics, x, y, barWidth, height,
+        @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
+        Scrollbar.render(safeGraphics, x, y, barWidth, height,
             scrollOffset, totalContentHeight, visibleHeight,
             false, isDraggingScrollbar);
     }
@@ -255,7 +250,7 @@ public class DebugOverlaysPage implements SettingsPage {
         }
 
         // Orange indicator for native API
-        graphics.fill(x, y + 2, x + 3, y + 12, 0xFFFF8800);
+        graphics.fill(x, y + 2, x + 3, y + 12, DesignTokens.Heatmap.LIGHT_DARK);
 
         // Label
         graphics.drawString(safeFont, safeLabel, x + 8, y + 2, DesignTokens.Text.PRIMARY, false);
@@ -520,11 +515,6 @@ public class DebugOverlaysPage implements SettingsPage {
             return true;
         }
         return false;
-    }
-
-    @Override
-    public int getContentHeight() {
-        return calculateContentHeight();
     }
 
     private boolean isMouseOverContent(double mouseX, double mouseY) {

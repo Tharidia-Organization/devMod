@@ -55,14 +55,16 @@ public abstract class NetworkHandlerBase {
     protected static String getItemId(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return "<empty>";
         var key = BuiltInRegistries.ITEM.getKey(nn(stack.getItem()));
-        return key == null ? stack.getHoverName().getString() : key.toString();
+        return key.toString();
     }
 
     /**
      * Attach a failure logger to async operations to avoid silent failures.
+     * Uses exceptionally() which only triggers on failure and doesn't require
+     * capturing the returned future since we only need the side effect.
      */
     protected static void observeFuture(CompletableFuture<?> future, String action) {
-        future = future.exceptionally(throwable -> {
+        future.exceptionally(throwable -> {
             LOGGER.warn("Async operation failed: {}", action, throwable);
             return null;
         });

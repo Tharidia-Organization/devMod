@@ -13,6 +13,7 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.testing.VoxelLabTab;
 import com.devmod.client.ui.testing.panel.CollapsiblePanel;
 import com.devmod.client.ui.testing.panel.GridPanel;
@@ -115,7 +116,7 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
                 GridPanel.of("grid-position",
                     I18n.translate("devmod.testing.voxel_lab.section.select_position").getString(),
                     positionButtons, 2),
-                0xFFFFAA00)
+                DesignTokens.Testing.WARNING)
         );
 
         // Offset Section

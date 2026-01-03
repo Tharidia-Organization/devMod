@@ -12,6 +12,7 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
+import com.devmod.ammo.AmmoSystem;
 public class RangedWeaponModule {
     public enum ValueSource {
         VANILLA_DEFAULT,
@@ -69,6 +70,22 @@ public class RangedWeaponModule {
         public boolean riptideRequiresWater = true;
         public boolean channeling = false;
         
+        public float getCritChance() {
+            return critChance;
+        }
+
+        public void setCritChance(float critChance) {
+            this.critChance = critChance;
+        }
+
+        public float getCritDamage() {
+            return critDamage;
+        }
+
+        public void setCritDamage(float critDamage) {
+            this.critDamage = critDamage;
+        }
+
         public RangedStats copy() {
             var copy = new RangedStats();
             copy.drawSpeed = drawSpeed;
@@ -144,7 +161,7 @@ public class RangedWeaponModule {
             Integer pierce = item.get(java.util.Objects.requireNonNull(com.devmod.components.RangedComponents.PIERCING_LEVEL.get()));
             if (pierce != null) stats.piercing = pierce;
             ResourceLocation ammoTag = item.get(java.util.Objects.requireNonNull(com.devmod.components.RangedComponents.AMMO_TAG_FILTER.get()));
-            if (ammoTag != null) stats.ammoFilter = ammoTag.toString();
+            if (ammoTag != null) stats.ammoFilter = AmmoSystem.formatAmmoFilter(ammoTag);
         } catch (Exception ignored) {
             // graceful fallback to CustomData
         }
@@ -233,8 +250,15 @@ public class RangedWeaponModule {
             item.set(java.util.Objects.requireNonNull(com.devmod.components.RangedComponents.BASE_ARROW_DAMAGE.get()), stats.baseDamage);
             item.set(java.util.Objects.requireNonNull(com.devmod.components.RangedComponents.MULTISHOT_COUNT.get()), stats.multishotCount);
             item.set(java.util.Objects.requireNonNull(com.devmod.components.RangedComponents.PIERCING_LEVEL.get()), stats.piercing);
-            if (stats.ammoFilter != null && !stats.ammoFilter.isBlank()) {
-                item.set(java.util.Objects.requireNonNull(com.devmod.components.RangedComponents.AMMO_TAG_FILTER.get()), ResourceLocation.parse(java.util.Objects.requireNonNull(stats.ammoFilter)));
+            String ammoFilter = stats.ammoFilter == null ? "" : stats.ammoFilter.trim();
+            if (!ammoFilter.isBlank()) {
+                String componentValue = ammoFilter.startsWith("#") ? ammoFilter.substring(1) : ammoFilter;
+                ResourceLocation ammoId = ResourceLocation.tryParse(java.util.Objects.requireNonNull(componentValue));
+                if (ammoId != null) {
+                    item.set(java.util.Objects.requireNonNull(com.devmod.components.RangedComponents.AMMO_TAG_FILTER.get()), ammoId);
+                } else {
+                    item.remove(java.util.Objects.requireNonNull(com.devmod.components.RangedComponents.AMMO_TAG_FILTER.get()));
+                }
             } else {
                 item.remove(java.util.Objects.requireNonNull(com.devmod.components.RangedComponents.AMMO_TAG_FILTER.get()));
             }

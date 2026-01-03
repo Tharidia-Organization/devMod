@@ -53,7 +53,6 @@ public class RoomEntityCounter {
         public int npcs = 0;
         public int players = 0;
         public int bosses = 0;
-        public int projectiles = 0;
         public long lastUpdateMs = 0;
 
         public int getTotalLiving() {
@@ -67,7 +66,6 @@ public class RoomEntityCounter {
             npcs = 0;
             players = 0;
             bosses = 0;
-            projectiles = 0;
             lastUpdateMs = System.currentTimeMillis();
         }
 
@@ -179,10 +177,9 @@ public class RoomEntityCounter {
                 stats.hostileMobs++;
                 pendingGlobalStats.totalHostile++;
                 // Check for bosses (high HP mobs)
-                if (entity instanceof LivingEntity living) {
-                    if (living.getMaxHealth() >= 100) {
-                        stats.bosses++;
-                    }
+                LivingEntity living = (LivingEntity) entity;
+                if (living.getMaxHealth() >= 100) {
+                    stats.bosses++;
                 }
             } else if (entity instanceof Animal) {
                 stats.passiveMobs++;

@@ -64,19 +64,19 @@ public class PresetSelectorOverlay extends BaseOverlay {
     private static final int RENAME_TEXT_PADDING = 4;
     private static final int BUTTON_COUNT_WITH_RENAME = 4;
 
-    private static final int CLOSE_HOVER_COLOR = 0xFFFF4444;
-    private static final int RENAME_BG = 0xFF1A1A2A;
-    private static final int RENAME_BORDER = 0xFF4488FF;
-    private static final int SEARCH_BG_FOCUSED = 0xFF2A2A2A;
-    private static final int SEARCH_BG_DEFAULT = 0xFF1E1E1E;
-    private static final int PREVIEW_BG = 0xFF161616;
-    private static final int ROW_BG_SELECTED = 0xFF1F4D3A;
-    private static final int ROW_BG_HOVER = 0xFF2A2A2A;
-    private static final int ROW_BG_DEFAULT = 0xFF1A1A1A;
-    private static final int SCOPE_COLOR_MODPACK = 0xFFFF9900;
-    private static final int SCOPE_COLOR_CATEGORY = 0xFF66AAFF;
-    private static final int SCOPE_COLOR_GLOBAL = 0xFF88FF88;
-    private static final int SCOPE_COLOR_GLOBAL_USER = 0xFFAAFF88;
+    private static final int CLOSE_HOVER_COLOR = DesignTokens.PresetSelector.CLOSE_HOVER;
+    private static final int RENAME_BG = DesignTokens.PresetSelector.RENAME_BG;
+    private static final int RENAME_BORDER = DesignTokens.PresetSelector.RENAME_BORDER;
+    private static final int SEARCH_BG_FOCUSED = DesignTokens.PresetSelector.SEARCH_BG_FOCUSED;
+    private static final int SEARCH_BG_DEFAULT = DesignTokens.PresetSelector.SEARCH_BG_DEFAULT;
+    private static final int PREVIEW_BG = DesignTokens.PresetSelector.PREVIEW_BG;
+    private static final int ROW_BG_SELECTED = DesignTokens.PresetSelector.ROW_BG_SELECTED;
+    private static final int ROW_BG_HOVER = DesignTokens.PresetSelector.ROW_BG_HOVER;
+    private static final int ROW_BG_DEFAULT = DesignTokens.PresetSelector.ROW_BG_DEFAULT;
+    private static final int SCOPE_COLOR_MODPACK = DesignTokens.PresetSelector.SCOPE_MODPACK;
+    private static final int SCOPE_COLOR_CATEGORY = DesignTokens.PresetSelector.SCOPE_CATEGORY;
+    private static final int SCOPE_COLOR_GLOBAL = DesignTokens.PresetSelector.SCOPE_GLOBAL;
+    private static final int SCOPE_COLOR_GLOBAL_USER = DesignTokens.PresetSelector.SCOPE_GLOBAL_USER;
 
     private static final long CURSOR_BLINK_MS = 500L;
 
@@ -88,7 +88,6 @@ public class PresetSelectorOverlay extends BaseOverlay {
     private static final String CLOSE_LABEL = "X";
     private static final String CATEGORY_PREFIX = "Category: ";
     private static final String SELECTED_PREFIX = "Selected: ";
-    private static final String LIST_ID = "preset_selector_list";
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -159,7 +158,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
     /** Ensures presetList is initialized (lazy init to avoid this-escape). */
     private void ensureList() {
         if (!listInitialized) {
-            presetList = new VirtualizedList<PresetListEntry>(LIST_ID)
+            presetList = new VirtualizedList<PresetListEntry>()
                 .rowHeight(LIST_ROW_HEIGHT)
                 .onSelect(entry -> selectedEntry = entry)
                 .onDoubleClick(entry -> {
@@ -240,6 +239,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
      */
     public void refreshPresets() {
         allEntries.clear();
+        requirePresetList().resetScroll();
 
         // Load from PresetRegistry (hierarchical presets)
         List<PresetRegistry.RegistryPreset> registryPresets =
@@ -264,9 +264,10 @@ public class PresetSelectorOverlay extends BaseOverlay {
                 ItemEditorDataManager.INSTANCE.getPresetsForItemType(itemCategory);
 
             for (var up : userPresets) {
-                String userPresetName = (up.name == null || up.name.isBlank())
+                String rawName = up.name;
+                String userPresetName = (rawName == null || rawName.isBlank())
                     ? "Preset_" + up.createdAt
-                    : up.name;
+                    : rawName;
                 // Avoid duplicates by name
                 boolean alreadyExists = allEntries.stream()
                     .anyMatch(e -> e.name().equalsIgnoreCase(userPresetName));
@@ -313,9 +314,15 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         list.items(filteredEntries);
 
+        // Clear selection if list becomes empty
+        if (list.isEmpty()) {
+            selectedEntry = null;
+            return;
+        }
+
         // Keep selection if still in list, otherwise select first
         if (selectedEntry != null && !filteredEntries.contains(selectedEntry)) {
-            selectedEntry = filteredEntries.isEmpty() ? null : filteredEntries.get(0);
+            selectedEntry = filteredEntries.get(0);
         }
         if (selectedEntry != null) {
             int idx = filteredEntries.indexOf(selectedEntry);
@@ -397,8 +404,11 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         currentY += TITLE_HEIGHT;
 
-        // Filter info
+        // Filter info with preset count
         String filterInfo = CATEGORY_PREFIX + itemCategory;
+        if (!requirePresetList().isEmpty()) {
+            filterInfo += " (" + requirePresetList().getItemCount() + " presets)";
+        }
         graphics.drawString(font, filterInfo, x + PADDING, currentY + FILTER_TEXT_OFFSET_Y,
             DesignTokens.Text.MUTED(), false);
         currentY += FILTER_ROW_HEIGHT;
@@ -524,7 +534,8 @@ public class PresetSelectorOverlay extends BaseOverlay {
         // Background
         graphics.fill(x, y, x + width, y + height, PREVIEW_BG);
 
-        if (selectedEntry == null) {
+        PresetListEntry entry = selectedEntry;
+        if (entry == null) {
             String msg = PREVIEW_EMPTY_MESSAGE;
             int textWidth = safeFont.width(Objects.requireNonNull(msg, "previewMessage"));
             graphics.drawString(safeFont, Objects.requireNonNull(msg, "previewMessage"),
@@ -535,14 +546,14 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Selected preset info
         int textY = y + PREVIEW_TEXT_OFFSET_Y;
-        graphics.drawString(safeFont, Objects.requireNonNull(SELECTED_PREFIX + selectedEntry.name(), "selectedLabel"),
+        graphics.drawString(safeFont, Objects.requireNonNull(SELECTED_PREFIX + entry.name(), "selectedLabel"),
             x + PREVIEW_TEXT_PADDING, textY,
             DesignTokens.Text.PRIMARY(), false);
         textY += PREVIEW_LINE_HEIGHT;
 
         // Scope badge
-        String scopeLabel = selectedEntry.scope().label();
-        int scopeColor = switch (selectedEntry.scope()) {
+        String scopeLabel = entry.scope().label();
+        int scopeColor = switch (entry.scope()) {
             case PresetScope.Modpack ignored -> SCOPE_COLOR_MODPACK;
             case PresetScope.Category ignored -> SCOPE_COLOR_CATEGORY;
             case PresetScope.Global ignored -> SCOPE_COLOR_GLOBAL;
@@ -552,7 +563,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         textY += PREVIEW_LINE_HEIGHT;
 
         // Description (truncated)
-        String desc = selectedEntry.description();
+        String desc = entry.description();
         if (desc != null && !desc.isEmpty()) {
             if (desc.length() > PREVIEW_DESCRIPTION_MAX) {
                 desc = desc.substring(0, PREVIEW_DESCRIPTION_TRUNCATE) + "...";
@@ -562,7 +573,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         }
 
         // User preset indicator
-        if (selectedEntry.isUserPreset()) {
+        if (entry.isUserPreset()) {
             graphics.drawString(safeFont, Objects.requireNonNull(USER_PRESET_LABEL, "userLabel"),
                 x + width - USER_LABEL_OFFSET_X, y + PREVIEW_TEXT_OFFSET_Y,
                 SCOPE_COLOR_GLOBAL_USER, false);
@@ -661,8 +672,9 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         if (deleteButton.mouseClicked(mouseX, mouseY, 0)) {
             deleteButton.mouseReleased(mouseX, mouseY, 0);
-            if (selectedEntry != null && selectedEntry.isUserPreset() && onDelete != null) {
-                onDelete.accept(selectedEntry.asPresetData());
+            PresetListEntry entryToDelete = selectedEntry;
+            if (entryToDelete != null && entryToDelete.isUserPreset() && onDelete != null) {
+                onDelete.accept(entryToDelete.asPresetData());
                 cancelRename();
                 refreshPresets();
             }
@@ -696,19 +708,20 @@ public class PresetSelectorOverlay extends BaseOverlay {
     }
 
     private void commitRename() {
-        if (renamingEntry == null || renameBuffer.isBlank()) {
+        PresetListEntry entryToRename = renamingEntry;
+        if (entryToRename == null || renameBuffer.isBlank()) {
             cancelRename();
             return;
         }
 
         String newName = renameBuffer.trim();
-        if (newName.equals(renamingEntry.name())) {
+        if (newName.equals(entryToRename.name())) {
             cancelRename();
             return;
         }
 
         if (onRename != null) {
-            onRename.accept(renamingEntry.asPresetData(), newName);
+            onRename.accept(entryToRename.asPresetData(), newName);
         }
 
         cancelRename();
@@ -787,8 +800,9 @@ public class PresetSelectorOverlay extends BaseOverlay {
         }
 
         // Delete key
-        if (keyCode == GLFW.GLFW_KEY_DELETE && selectedEntry != null && selectedEntry.isUserPreset() && onDelete != null) {
-            onDelete.accept(selectedEntry.asPresetData());
+        PresetListEntry entryToDelete = selectedEntry;
+        if (keyCode == GLFW.GLFW_KEY_DELETE && entryToDelete != null && entryToDelete.isUserPreset() && onDelete != null) {
+            onDelete.accept(entryToDelete.asPresetData());
             refreshPresets();
             return true;
         }

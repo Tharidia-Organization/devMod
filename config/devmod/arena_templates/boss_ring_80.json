@@ -18,7 +18,7 @@
   "walls": {
     "enabled": true,
     "material": "minecraft:barrier",
-    "height": 12,
+    "height": 14,
     "thickness": 1,
     "startY": 64,
     "style": "solid"
@@ -80,7 +80,7 @@
       "yMode": "ABSOLUTE"
     }
   ],
-  "environment": { "particles": [], "ambientSound": null, "fog": { "enabled": false, "density": 0.0 } },
+  "environment": { "particles": [], "ambientSound": "minecraft:ambient.basalt_deltas.loop", "fog": { "enabled": false, "density": 0.0 } },
   "compat": { "minPlayers": 1, "maxPlayers": 4 },
   "instanceSettings": { "chunkRadius": 6, "tickDistance": 5, "keepLoaded": true },
   "structureNbt": null,

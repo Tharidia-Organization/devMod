@@ -122,7 +122,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
     }
 
     private boolean canApplyTo(Holder<Enchantment> enchantment, ItemStack stack) {
-        return stack.supportsEnchantment(enchantment);
+        return stack.supportsEnchantment(Objects.requireNonNull(enchantment, "enchantment"));
     }
 
     private void addEnchantmentEntry(Holder<Enchantment> holder, int currentLevel) {
@@ -156,9 +156,9 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
         if (key != null) {
             // Convert to display name (capitalize, replace underscores)
-            String path = key.getPath();
+            String path = Objects.requireNonNull(key.getPath(), "path");
             StringBuilder sb = new StringBuilder();
-            for (String word : UNDERSCORE_SPLITTER.split(path)) {
+            for (String word : UNDERSCORE_SPLITTER.split(Objects.requireNonNull(path))) {
                 if (!word.isEmpty()) {
                     sb.append(Character.toUpperCase(word.charAt(0)))
                       .append(word.substring(1))

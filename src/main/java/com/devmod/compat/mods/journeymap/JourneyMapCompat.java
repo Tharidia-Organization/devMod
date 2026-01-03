@@ -230,7 +230,7 @@ public class JourneyMapCompat implements CompatModule {
             ResourceKey<Level> dimension,
             BlockPos pos
     ) {
-        return createArenaWaypoint(id, "Arena Spawn", dimension, pos, 0x00FF00);
+        return createArenaWaypoint(id, "Arena Spawn", dimension, pos, JourneyMapColors.SPAWN);
     }
 
     /**
@@ -242,7 +242,7 @@ public class JourneyMapCompat implements CompatModule {
             ResourceKey<Level> dimension,
             BlockPos pos
     ) {
-        return createArenaWaypoint(id, name, dimension, pos, 0xFFD700);
+        return createArenaWaypoint(id, name, dimension, pos, JourneyMapColors.OBJECTIVE);
     }
 
     /**
@@ -253,7 +253,7 @@ public class JourneyMapCompat implements CompatModule {
             ResourceKey<Level> dimension,
             BlockPos pos
     ) {
-        return createArenaWaypoint(id, "Arena Exit", dimension, pos, 0x4169E1);
+        return createArenaWaypoint(id, "Arena Exit", dimension, pos, JourneyMapColors.EXIT);
     }
 
     /**

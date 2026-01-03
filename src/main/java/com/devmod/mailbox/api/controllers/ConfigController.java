@@ -301,7 +301,7 @@ public final class ConfigController {
             MailboxManager.INSTANCE.getKnownUsers(),
             (arr, users) -> new Object[] { arr[0], arr[1], users.size() }
         ).thenCombine(
-            NewsManager.INSTANCE.getActiveNews(),
+            NewsManager.getInstance().getActiveNews(),
             (arr, news) -> new Object[] { arr[0], arr[1], arr[2], news.size() }
         ).thenCombine(
             TestTaskManager.INSTANCE.getAllTasks(),

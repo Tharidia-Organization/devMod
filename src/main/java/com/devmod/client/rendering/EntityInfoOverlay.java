@@ -196,16 +196,16 @@ public class EntityInfoOverlay {
     }
 
     private static int getLineColor(int lineIndex, LivingEntity entity, float alpha) {
-        int alphaInt = (int)(alpha * 255) << 24;
+        int alphaValue = (int) (alpha * 255);
 
         if (lineIndex == 0) {
             // Name color based on entity type
             if (entity instanceof Monster) {
-                return alphaInt | (COLOR_HOSTILE & 0x00FFFFFF);
+                return OverlayTheme.withAlpha(COLOR_HOSTILE, alphaValue);
             } else if (entity instanceof Mob mob && mob.getTarget() != null) {
-                return alphaInt | (COLOR_NEUTRAL & 0x00FFFFFF);
+                return OverlayTheme.withAlpha(COLOR_NEUTRAL, alphaValue);
             } else {
-                return alphaInt | (COLOR_PASSIVE & 0x00FFFFFF);
+                return OverlayTheme.withAlpha(COLOR_PASSIVE, alphaValue);
             }
         } else if (lineIndex == 1) {
             // Health color based on percentage
@@ -218,9 +218,9 @@ public class EntityInfoOverlay {
             } else {
                 healthColor = COLOR_HEALTH_LOW;
             }
-            return alphaInt | (healthColor & 0x00FFFFFF);
+            return OverlayTheme.withAlpha(healthColor, alphaValue);
         } else {
-            return alphaInt | (COLOR_STAT & 0x00FFFFFF);
+            return OverlayTheme.withAlpha(COLOR_STAT, alphaValue);
         }
     }
 }

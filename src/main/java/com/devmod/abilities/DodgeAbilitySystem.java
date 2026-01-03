@@ -116,7 +116,6 @@ public class DodgeAbilitySystem {
 
         // Set cooldown
         data.cooldownTicks = data.maxCooldownTicks;
-        data.lastDodgeTime = System.currentTimeMillis();
         data.dodgeCount++;
 
         // Record telemetry
@@ -314,7 +313,6 @@ public class DodgeAbilitySystem {
         public int dodgeDurationTicks = 0;
         public int maxDodgeDurationTicks = DEFAULT_DODGE_DURATION_TICKS;
         public int perfectDodgeWindowTicks = PERFECT_DODGE_WINDOW_TICKS; // Configurable perfect dodge timing window
-        public long lastDodgeTime = 0;
         @Nullable
         public DodgeDirection lastDodgeDirection = null;
         public int dodgeCount = 0;

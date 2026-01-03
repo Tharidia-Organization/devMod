@@ -15,6 +15,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 
 public class Impact3DRenderer {
@@ -156,7 +157,7 @@ public class Impact3DRenderer {
             if (currentDps > 0.1f) {
                 textY += LINE_HEIGHT;
                 String dpsText = String.format("DPS: %.1f/s", currentDps);
-                int dpsColor = 0xFF44FF44; // Green
+                int dpsColor = OverlayTheme.Impact3D.DPS;
                 renderText3D(poseStack, bufferSource, font, dpsText, textX, textY,
                     applyAlpha(dpsColor, alpha), alpha);
             }
@@ -285,7 +286,7 @@ public class Impact3DRenderer {
         // Apply alpha to color
         int alpha = (int) (((color >> 24) & 0xFF) * globalAlpha);
         if (alpha == 0) alpha = (int) (255 * globalAlpha);
-        int finalColor = (alpha << 24) | (color & 0x00FFFFFF);
+        int finalColor = (alpha << 24) | (color & DesignTokens.Mask.RGB);
 
         // Use SEE_THROUGH for correct 3D rendering (not blocked by depth)
         font.drawInBatch(
@@ -308,7 +309,7 @@ public class Impact3DRenderer {
      */
     private int applyAlpha(int rgb, float alpha) {
         int a = (int) (255 * alpha);
-        return (a << 24) | (rgb & 0x00FFFFFF);
+        return (a << 24) | (rgb & DesignTokens.Mask.RGB);
     }
 
     /**
@@ -317,7 +318,7 @@ public class Impact3DRenderer {
     private int applyAlphaARGB(int argb, float alphaMultiplier) {
         int originalAlpha = (argb >> 24) & 0xFF;
         int newAlpha = (int) (originalAlpha * alphaMultiplier);
-        return (newAlpha << 24) | (argb & 0x00FFFFFF);
+        return (newAlpha << 24) | (argb & DesignTokens.Mask.RGB);
     }
 
     /**

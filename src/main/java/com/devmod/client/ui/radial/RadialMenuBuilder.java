@@ -10,6 +10,7 @@ import javax.annotation.Nullable;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.radial.model.MacroCategory;
 
 /**
@@ -21,7 +22,7 @@ import com.devmod.client.ui.radial.model.MacroCategory;
  * RadialMenuBuilder.forMacro(MacroCategory.TOOLS)
  *     .category("my_tools")
  *         .name("My Tools")
- *         .color(0xFF00AAFF)
+ *         .color(DesignTokens.Radial.ANALYZE_DEBUG)
  *         .iconItem(Items.DIAMOND_PICKAXE)
  *         .item("mymod.action.do_thing")
  *         .item("mymod.action.other_thing", () -&gt; isConditionMet())
@@ -98,7 +99,7 @@ public final class RadialMenuBuilder {
         private final RadialMenuBuilder parent;
         private final String id;
         private String name;
-        private int color = 0xFFFFFFFF;
+        private int color = DesignTokens.Text.WHITE;
         private String icon = "";
         @Nullable private ItemStack iconStack;
         private final List<ItemDef> items = new ArrayList<>();
@@ -146,11 +147,12 @@ public final class RadialMenuBuilder {
         /**
          * Set the icon from a Minecraft item.
          *
-         * @param item The item to use as icon
+         * @param item The item to use as icon (must not be null)
          * @return this builder
+         * @throws NullPointerException if item is null
          */
         public CategoryBuilder iconItem(Item item) {
-            this.iconStack = new ItemStack(item);
+            this.iconStack = new ItemStack(Objects.requireNonNull(item, "item cannot be null"));
             return this;
         }
 
@@ -270,7 +272,7 @@ public final class RadialMenuBuilder {
         @Nullable private final SubcategoryBuilder parentSub;
         private final String id;
         private String name;
-        private int color = 0xFFFFFFFF;
+        private int color = DesignTokens.Text.WHITE;
         @Nullable private ItemStack iconStack;
         private final List<ItemDef> items = new ArrayList<>();
         private final List<SubcategoryBuilder> subcategories = new ArrayList<>();
@@ -307,11 +309,12 @@ public final class RadialMenuBuilder {
         /**
          * Set the icon from a Minecraft item.
          *
-         * @param item The item to use as icon
+         * @param item The item to use as icon (must not be null)
          * @return this builder
+         * @throws NullPointerException if item is null
          */
         public SubcategoryBuilder iconItem(Item item) {
-            this.iconStack = new ItemStack(item);
+            this.iconStack = new ItemStack(Objects.requireNonNull(item, "item cannot be null"));
             return this;
         }
 

@@ -35,14 +35,14 @@ public class FpsTracker {
     private static final int LINE_HEIGHT = 10;
 
     // Colors (Impact UI Style)
-    private static final int BG_COLOR = 0xCC1A1A2E;         // Panel bg 80% opacity
-    private static final int BORDER_COLOR = 0xFF3D5AFE;     // Impact electric blue
-    private static final int BORDER_GLOW = 0x553D5AFE;      // Glow effect
-    private static final int TEXT_CYAN = 0xFF00FFFF;        // Impact cyan (titles)
-    private static final int TEXT_GREEN = 0xFF00FF00;       // Impact green
-    private static final int TEXT_YELLOW = 0xFFFFD700;      // Impact gold
-    private static final int TEXT_RED = 0xFFFF4444;         // Impact red
-    private static final int TEXT_GRAY = 0xFFAAAAAA;        // Muted gray
+    private static final int BG_COLOR = TelemetryUiTheme.Panel.BG;
+    private static final int BORDER_COLOR = TelemetryUiTheme.Panel.BORDER;
+    private static final int BORDER_GLOW = TelemetryUiTheme.Panel.GLOW;
+    private static final int TEXT_CYAN = TelemetryUiTheme.Text.CYAN;
+    private static final int TEXT_GREEN = TelemetryUiTheme.Text.GREEN;
+    private static final int TEXT_YELLOW = TelemetryUiTheme.Text.YELLOW;
+    private static final int TEXT_RED = TelemetryUiTheme.Text.RED;
+    private static final int TEXT_GRAY = TelemetryUiTheme.Text.GRAY;
 
     // === State ===
     private boolean enabled = false;
@@ -173,7 +173,7 @@ public class FpsTracker {
     private void logFpsTelemetry() {
         try {
             // DuckDB PRIMARY mode: Skip NDJSON writes
-            if (!com.devmod.telemetry.duckdb.DuckDBConfig.NDJSON_FALLBACK
+            if (!com.devmod.telemetry.duckdb.DuckDBConfig.isNdjsonFallbackEnabled()
                 && com.devmod.telemetry.duckdb.DuckDBTelemetryService.INSTANCE.isEnabled()) {
                 return; // Skip client FPS logging in DuckDB PRIMARY mode
             }
@@ -256,14 +256,14 @@ public class FpsTracker {
 
     private void renderFpsGraph(GuiGraphics graphics, int x, int y, int width, int height) {
         // Sfondo grafico
-        graphics.fill(x, y, x + width, y + height, 0xFF000000);
+        graphics.fill(x, y, x + width, y + height, TelemetryUiTheme.Graph.BG);
 
         if (maxFps == 0) return;
 
         // Linea target 60 FPS
         int target60Y = y + height - (int)((60f / Math.max(maxFps, 60)) * height);
         for (int i = 0; i < width; i += 4) {
-            graphics.fill(x + i, target60Y, x + i + 2, target60Y + 1, 0x44FFFFFF);
+            graphics.fill(x + i, target60Y, x + i + 2, target60Y + 1, TelemetryUiTheme.Graph.TARGET_LINE);
         }
 
         // Barre FPS

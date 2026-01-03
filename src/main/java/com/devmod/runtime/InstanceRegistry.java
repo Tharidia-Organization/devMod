@@ -342,7 +342,10 @@ public class InstanceRegistry {
 
         try {
             Path registryFile = getRegistryFile();
-            Files.createDirectories(registryFile.getParent());
+            Path parent = registryFile.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
 
             List<Map<String, Object>> instanceList = new ArrayList<>();
             for (InstanceData instance : instances.values()) {

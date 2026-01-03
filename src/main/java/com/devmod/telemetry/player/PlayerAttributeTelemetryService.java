@@ -108,7 +108,7 @@ public class PlayerAttributeTelemetryService {
         // Food section
         json.append("\"food\":{");
         json.append("\"hunger\":").append(snapshot.hungerLevel).append(",");
-        json.append("\"saturation\":"); appendFloat2(json, snapshot.saturation); json.append(",");
+        json.append("\"saturation\":"); appendFloat2(json, snapshot.getSaturation()); json.append(",");
         json.append("\"exhaustion\":"); appendFloat2(json, snapshot.exhaustion);
         json.append("},");
 
@@ -189,7 +189,7 @@ public class PlayerAttributeTelemetryService {
         json.append("\"hungerMultiplier\":"); appendFloat2(json, snapshot.hungerMultiplier); json.append(",");
         json.append("\"viewChunksBonus\":").append(snapshot.viewChunksBonus).append(",");
         json.append("\"resourceGatherSpeed\":"); appendFloat2(json, snapshot.resourceGatherSpeed); json.append(",");
-        json.append("\"critChance\":"); appendFloat2(json, snapshot.critChance); json.append(",");
+        json.append("\"critChance\":"); appendFloat2(json, snapshot.getCritChance()); json.append(",");
         json.append("\"critDamageMultiplier\":"); appendFloat2(json, snapshot.critDamageMultiplier); json.append(",");
         json.append("\"lifestealPercent\":"); appendFloat2(json, snapshot.lifestealPercent); json.append(",");
         json.append("\"styleMultiplier\":"); appendFloat2(json, snapshot.styleMultiplier);
@@ -216,7 +216,7 @@ public class PlayerAttributeTelemetryService {
         DuckDBTelemetryService.INSTANCE.logPlayerSnapshot(
             player.getUUID(), player.getGameProfile().getName(), trigger,
             snapshot.healthHp, snapshot.maxHealthHp, snapshot.healthHearts, snapshot.absorptionHp,
-            snapshot.hungerLevel, snapshot.saturation, snapshot.exhaustion,
+            snapshot.hungerLevel, snapshot.getSaturation(), snapshot.exhaustion,
             snapshot.movementSpeed, snapshot.velocityX, snapshot.velocityY, snapshot.velocityZ,
             movementFlags, snapshot.meleeDamageMultiplier, snapshot.meleeReduction,
             snapshot.magicDamageMultiplier, snapshot.magicReduction,
@@ -234,7 +234,7 @@ public class PlayerAttributeTelemetryService {
         );
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendPlayerAttributesLine(json.toString());
         }
 
@@ -260,7 +260,7 @@ public class PlayerAttributeTelemetryService {
             player.getUUID(), attributeName, oldValue, newValue);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendPlayerAttributesLine(json);
         }
     }
@@ -283,7 +283,7 @@ public class PlayerAttributeTelemetryService {
             player.getUUID(), "health:" + source, oldHealth, newHealth);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendPlayerAttributesLine(json);
         }
     }
@@ -306,7 +306,7 @@ public class PlayerAttributeTelemetryService {
             player.getUUID(), "hunger", oldLevel, newLevel);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendPlayerAttributesLine(json);
         }
     }
@@ -326,7 +326,7 @@ public class PlayerAttributeTelemetryService {
         // Food
         var foodData = player.getFoodData();
         snapshot.hungerLevel = foodData.getFoodLevel();
-        snapshot.saturation = foodData.getSaturationLevel();
+        snapshot.setSaturation(foodData.getSaturationLevel());
         snapshot.exhaustion = getExhaustion(foodData);
 
         // Movement
@@ -352,7 +352,7 @@ public class PlayerAttributeTelemetryService {
         var armorToughnessAttr = player.getAttribute(Objects.requireNonNull(Attributes.ARMOR_TOUGHNESS));
         snapshot.armorToughness = armorToughnessAttr != null ? armorToughnessAttr.getValue() : 0.0;
         var knockbackAttr = player.getAttribute(Objects.requireNonNull(Attributes.KNOCKBACK_RESISTANCE));
-        snapshot.knockbackResistance = knockbackAttr != null ? knockbackAttr.getValue() : 0.0;
+        snapshot.setKnockbackResistance(knockbackAttr != null ? knockbackAttr.getValue() : 0.0);
 
         // Physical - Reach
         var reachAttr = player.getAttribute(Objects.requireNonNull(Attributes.BLOCK_INTERACTION_RANGE));
@@ -396,7 +396,7 @@ public class PlayerAttributeTelemetryService {
 
             snapshot.meleeDamageMultiplier = session.getDamageMultiplier();
             snapshot.meleeReduction = session.getDamageReductionMultiplier();
-            snapshot.critChance = session.getCritChanceBonus();
+            snapshot.setCritChance(session.getCritChanceBonus());
             snapshot.critDamageMultiplier = session.getCritDamageMultiplier();
             snapshot.lifestealPercent = session.getLifestealPercent();
             snapshot.styleMultiplier = session.getStyleMultiplier();
@@ -417,10 +417,10 @@ public class PlayerAttributeTelemetryService {
             snapshot.meleeDamageMultiplier = 1.0f;
             snapshot.meleeReduction = 1.0f;
             snapshot.magicDamageMultiplier = 1.0f;
-            snapshot.magicReduction = 1.0f;
+            snapshot.setMagicReduction(1.0f);
             snapshot.rangedDamageMultiplier = 1.0f;
             snapshot.rangedReduction = 1.0f;
-            snapshot.critChance = 0.0f;
+            snapshot.setCritChance(0.0f);
             snapshot.critDamageMultiplier = 1.5f;
             snapshot.lifestealPercent = 0.0f;
             snapshot.styleMultiplier = 1.0f;
@@ -650,5 +650,37 @@ public class PlayerAttributeTelemetryService {
         public int currentCombo;
         public @Nullable String styleRank;
         public int styleScore;
+
+        public float getSaturation() {
+            return saturation;
+        }
+
+        public void setSaturation(float saturation) {
+            this.saturation = saturation;
+        }
+
+        public float getMagicReduction() {
+            return magicReduction;
+        }
+
+        public void setMagicReduction(float magicReduction) {
+            this.magicReduction = magicReduction;
+        }
+
+        public double getKnockbackResistance() {
+            return knockbackResistance;
+        }
+
+        public void setKnockbackResistance(double knockbackResistance) {
+            this.knockbackResistance = knockbackResistance;
+        }
+
+        public float getCritChance() {
+            return critChance;
+        }
+
+        public void setCritChance(float critChance) {
+            this.critChance = critChance;
+        }
     }
 }

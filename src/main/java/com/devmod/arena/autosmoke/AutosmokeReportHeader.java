@@ -148,22 +148,21 @@ public class AutosmokeReportHeader {
          * Formats the header as a multi-line string for reports
          */
         public String format() {
-            return String.format("""
-                ================================================================================
-                AUTOSMOKE REPORT
-                ================================================================================
-                Timestamp:     %s
-                Git Commit:    %s
-                Git Branch:    %s
-                Build Time:    %s
-                Mod Version:   %s
-                Config Hash:   %s
-                Java Version:  %s
-                OS:            %s
-                Max Memory:    %d MB
-                CPUs:          %d
-                ================================================================================
-                """,
+            return String.format(
+                "================================================================================%n" +
+                "AUTOSMOKE REPORT%n" +
+                "================================================================================%n" +
+                "Timestamp:     %s%n" +
+                "Git Commit:    %s%n" +
+                "Git Branch:    %s%n" +
+                "Build Time:    %s%n" +
+                "Mod Version:   %s%n" +
+                "Config Hash:   %s%n" +
+                "Java Version:  %s%n" +
+                "OS:            %s%n" +
+                "Max Memory:    %d MB%n" +
+                "CPUs:          %d%n" +
+                "================================================================================%n",
                 timestamp, gitCommit, gitBranch, buildTime, modVersion,
                 configHash, javaVersion, osName, maxMemoryMb, availableProcessors
             );

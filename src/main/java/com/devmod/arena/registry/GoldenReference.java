@@ -60,7 +60,7 @@ public record GoldenReference(
 
         int size = 80;
         int floorBlocks = size * size * 1; // 6,400
-        int wallBlocks = (2 * (size + size - 2)) * 11; // perimeter * (height - floor overlap) = 316 * 11 = 3,476
+        int wallBlocks = (2 * (size + size - 2)) * 12; // perimeter * (height - floor overlap) = 316 * 12 = 3,792
         int ceilingBlocks = size * size * 1; // 6,400
         int underfloorBlocks = size * size * 3; // 19,200
         int hazardBlocks = (int) Math.round(Math.PI * ((32 * 32) - (30 * 30))); // ~390

@@ -127,7 +127,7 @@ public final class ClientSeasonPassCache {
     public boolean hasBoost() { return hasBoost; }
     public float getBoostMultiplier() { return boostMultiplier; }
     public long getBoostRemainingSeconds() { return boostRemainingSeconds; }
-    @Nonnull public List<RewardEntry> getUpcomingRewards() { return upcomingRewards; }
+    @Nonnull public List<RewardEntry> getUpcomingRewards() { return Objects.requireNonNull(upcomingRewards); }
     public boolean isSynced() { return synced; }
     public long getLastSyncTime() { return lastSyncTime; }
 

@@ -19,7 +19,6 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
-import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.config.MobConfigManager;
 
@@ -54,11 +53,6 @@ public class MobConfigPage implements SettingsPage {
     private final EditorButton confirmClearBtn = new EditorButton("mob-clear-confirm", "Clear All").style(EditorButton.Style.DANGER);
     private final EditorButton cancelClearBtn = new EditorButton("mob-clear-cancel", "Cancel").style(EditorButton.Style.NORMAL);
     private boolean showingClearConfirm = false;
-
-    @Override
-    public SettingsCategory getCategory() {
-        return SettingsCategory.MOBS;
-    }
 
     @Override
     public String getTitle() {
@@ -100,7 +94,7 @@ public class MobConfigPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         lastContentX = x;
         lastContentY = y;
@@ -175,7 +169,7 @@ public class MobConfigPage implements SettingsPage {
             float alpha = elapsed > STATUS_MESSAGE_DURATION_MS - 500
                     ? (STATUS_MESSAGE_DURATION_MS - elapsed) / 500f
                     : 1f;
-            int color = (statusMessageColor & 0x00FFFFFF) | ((int)(alpha * 255) << 24);
+            int color = (statusMessageColor & DesignTokens.Mask.RGB) | ((int)(alpha * 255) << 24);
             graphics.drawString(font, statusMessage, x, currentY, color, false);
         }
 
@@ -325,11 +319,6 @@ public class MobConfigPage implements SettingsPage {
             return true;
         }
         return true;
-    }
-
-    @Override
-    public int getContentHeight() {
-        return 400;
     }
 
     @Override

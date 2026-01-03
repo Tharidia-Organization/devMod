@@ -96,13 +96,14 @@ public final class AutoTransitionService {
             return;
         }
 
-        scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        ScheduledExecutorService svc = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "TicketAutoTransition");
             t.setDaemon(true);
             return t;
         });
+        scheduler = svc;
 
-        scheduledTask = scheduler.scheduleAtFixedRate(
+        scheduledTask = svc.scheduleAtFixedRate(
             this::runAutoTransitions,
             1,
             runInterval.toMinutes(),
@@ -126,14 +127,15 @@ public final class AutoTransitionService {
             scheduledTask = null;
         }
 
-        if (scheduler != null) {
-            scheduler.shutdown();
+        ScheduledExecutorService svc = scheduler;
+        if (svc != null) {
+            svc.shutdown();
             try {
-                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    scheduler.shutdownNow();
+                if (!svc.awaitTermination(5, TimeUnit.SECONDS)) {
+                    svc.shutdownNow();
                 }
             } catch (InterruptedException e) {
-                scheduler.shutdownNow();
+                svc.shutdownNow();
                 Thread.currentThread().interrupt();
             }
             scheduler = null;
@@ -179,6 +181,31 @@ public final class AutoTransitionService {
 
                     List<AutoTransitionResult> results = new ArrayList<>();
 
+                    // Use batch operations for SLA processing (more efficient)
+                    if (slaEscalationEnabled) {
+                        // Batch find all tickets needing escalation
+                        Map<UUID, TicketPriority> escalations = TicketWorkflow.findTicketsNeedingEscalation(tickets);
+                        for (Ticket ticket : tickets) {
+                            TicketPriority newPriority = escalations.get(ticket.id());
+                            if (newPriority != null) {
+                                results.add(AutoTransitionResult.of(
+                                    ticket,
+                                    AutoTransitionType.SLA_ESCALATION,
+                                    null,
+                                    newPriority,
+                                    String.format("SLA escalation: %s -> %s", ticket.priority(), newPriority)
+                                ));
+                            }
+                        }
+
+                        // Log response SLA breaches for monitoring/alerting
+                        Set<UUID> breachingResponse = TicketWorkflow.findTicketsBreachingResponseSla(tickets);
+                        if (!breachingResponse.isEmpty()) {
+                            LOGGER.warn("[AutoTransition] {} tickets breaching response SLA: {}",
+                                breachingResponse.size(), breachingResponse);
+                        }
+                    }
+
                     for (Ticket ticket : tickets) {
                         // Skip terminal tickets
                         if (ticket.status().isTerminal()) {
@@ -188,11 +215,6 @@ public final class AutoTransitionService {
                         // Check auto-close for resolved tickets
                         if (autoCloseEnabled && ticket.status() == TicketStatus.RESOLVED) {
                             checkAutoClose(ticket).ifPresent(results::add);
-                        }
-
-                        // Check SLA escalation
-                        if (slaEscalationEnabled && ticket.status().isActive()) {
-                            checkSlaEscalation(ticket).ifPresent(results::add);
                         }
 
                         // Check auto-assign for open tickets
@@ -242,20 +264,6 @@ public final class AutoTransitionService {
         }
 
         return java.util.Optional.empty();
-    }
-
-    /**
-     * Check if a ticket should be escalated due to SLA breach.
-     */
-    private java.util.Optional<AutoTransitionResult> checkSlaEscalation(Ticket ticket) {
-        return TicketWorkflow.checkAutoEscalation(ticket)
-            .map(newPriority -> AutoTransitionResult.of(
-                ticket,
-                AutoTransitionType.SLA_ESCALATION,
-                null,
-                newPriority,
-                String.format("SLA escalation: %s -> %s", ticket.priority(), newPriority)
-            ));
     }
 
     /**
@@ -339,7 +347,7 @@ public final class AutoTransitionService {
 
         // Increment the selected moderator's ticket count
         if (lowestLoadModerator != null) {
-            moderatorTicketCounts.merge(lowestLoadModerator, 1, Integer::sum);
+            moderatorTicketCounts.merge(lowestLoadModerator, 1, (a, b) -> a + b);
         }
 
         return lowestLoadModerator;
@@ -356,7 +364,7 @@ public final class AutoTransitionService {
             if (ticket.isAssigned() && ticket.status().isActive()) {
                 UUID assignee = ticket.assignedTo();
                 if (assignee != null) {
-                    moderatorTicketCounts.merge(assignee, 1, Integer::sum);
+                    moderatorTicketCounts.merge(assignee, 1, (a, b) -> a + b);
                 }
             }
         }

@@ -312,4 +312,29 @@ public final class RadialMenuRuntimeRegistry {
             initialized = false;
         }
     }
+
+    /**
+     * Initialize registry for testing without requiring Minecraft.
+     * Does not load config from disk - starts with empty category lists.
+     * For testing purposes only.
+     */
+    static void initializeForTest() {
+        synchronized (INIT_LOCK) {
+            if (initialized) {
+                return;
+            }
+
+            // Register default visibility suppliers
+            VisibilitySupplierRegistry.registerDefaults();
+
+            // Initialize storage with empty lists
+            for (MacroCategory macro : MacroCategory.values()) {
+                CATEGORIES.put(macro, new CopyOnWriteArrayList<>());
+                DYNAMIC_ADDITIONS.put(macro, new CopyOnWriteArrayList<>());
+            }
+
+            initialized = true;
+            LOGGER.info("[RadialMenuRuntimeRegistry] Initialized for testing");
+        }
+    }
 }

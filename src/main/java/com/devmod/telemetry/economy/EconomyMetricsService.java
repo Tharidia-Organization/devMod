@@ -384,6 +384,33 @@ public class EconomyMetricsService {
         );
     }
 
+    /**
+     * Record an item being equipped.
+     *
+     * @param player Player who equipped the item
+     * @param item Item equipped
+     * @param slotName Equipment slot name
+     * @return ItemEquipRecord for telemetry logging
+     */
+    @Nullable
+    public ItemEquipRecord recordItemEquipped(ServerPlayer player, ItemStack item, String slotName) {
+        if (item.isEmpty()) return null;
+
+        String itemId = item.getItem().toString();
+        int count = item.getCount();
+
+        ItemLifecycle lifecycle = itemLifecycles.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>())
+                .computeIfAbsent(itemId, k -> new ItemLifecycle());
+        lifecycle.equipped += count;
+
+        return new ItemEquipRecord(
+                player.getGameProfile().getName(),
+                itemId,
+                count,
+                slotName
+        );
+    }
+
     // ===== M50: Resource Scarcity =====
 
     /**
@@ -482,22 +509,30 @@ public class EconomyMetricsService {
      * @param consumer Receives (category, jsonLine) pairs
      */
     public void exportEconomyData(BiConsumer<String, String> consumer) {
+        long now = System.currentTimeMillis();
+
         // Export chest stats
         chestOpenings.forEach((room, chests) -> {
             chests.forEach((pos, stats) -> {
+                long lastOpenedAgeMs = stats.lastOpenedTime > 0 ? (now - stats.lastOpenedTime) : -1;
+                String lastOpenedBy = stats.lastOpenedBy != null ? stats.lastOpenedBy.toString() : "";
                 String line = "{\"room\":\"" + TelemetryJson.escape(room) + "\","
                         + "\"pos\":[" + pos.getX() + "," + pos.getY() + "," + pos.getZ() + "],"
                         + "\"openCount\":" + stats.openCount + ","
-                        + "\"itemTypes\":" + stats.itemsFound.size() + "}";
+                        + "\"itemTypes\":" + stats.itemsFound.size() + ","
+                        + "\"lastOpenedAgeMs\":" + lastOpenedAgeMs + ","
+                        + "\"lastOpenedBy\":\"" + TelemetryJson.escape(lastOpenedBy) + "\"}";
                 consumer.accept("chests", line);
             });
         });
 
         // Export item acquisition stats
         itemAcquisitionStats.forEach((itemId, stats) -> {
+            long lastAcquiredAgeMs = stats.lastAcquiredTime > 0 ? (now - stats.lastAcquiredTime) : -1;
             String line = "{\"item\":\"" + TelemetryJson.escape(itemId) + "\","
                     + "\"acquired\":" + stats.totalAcquired + ","
-                    + "\"dropped\":" + stats.totalDropped + "}";
+                    + "\"dropped\":" + stats.totalDropped + ","
+                    + "\"lastAcquiredAgeMs\":" + lastAcquiredAgeMs + "}";
             consumer.accept("items", line);
         });
 
@@ -508,6 +543,30 @@ public class EconomyMetricsService {
                     + "\"outflow\":" + flow.outflow + ","
                     + "\"scarcity\":" + String.format("%.3f", calculateScarcityIndex(itemId)) + "}";
             consumer.accept("resource_flow", line);
+        });
+
+        // Export item lifecycles
+        itemLifecycles.forEach((playerId, items) -> {
+            items.forEach((itemId, lifecycle) -> {
+                String line = "{\"playerId\":\"" + TelemetryJson.escape(playerId.toString()) + "\","
+                        + "\"item\":\"" + TelemetryJson.escape(itemId) + "\","
+                        + "\"acquired\":" + lifecycle.acquired + ","
+                        + "\"used\":" + lifecycle.used + ","
+                        + "\"discarded\":" + lifecycle.discarded + ","
+                        + "\"equipped\":" + lifecycle.equipped + "}";
+                consumer.accept("item_lifecycle", line);
+            });
+        });
+
+        // Export mob loot stats
+        mobLootStats.forEach((mobType, stats) -> {
+            long lastKillAgeMs = stats.lastKillTime > 0 ? (now - stats.lastKillTime) : -1;
+            String line = "{\"mob\":\"" + TelemetryJson.escape(mobType) + "\","
+                    + "\"kills\":" + stats.killCount + ","
+                    + "\"killsWithLoot\":" + stats.killsWithLoot + ","
+                    + "\"totalItemsDropped\":" + stats.totalItemsDropped + ","
+                    + "\"lastKillAgeMs\":" + lastKillAgeMs + "}";
+            consumer.accept("mob_loot", line);
         });
     }
 
@@ -555,39 +614,39 @@ public class EconomyMetricsService {
      * Statistics for a single chest.
      */
     public static class ChestStats {
-        public int openCount = 0;
+        int openCount = 0;
         @Nullable
-        public UUID lastOpenedBy = null;
-        public long lastOpenedTime = 0;
-        public Map<String, Integer> itemsFound = new ConcurrentHashMap<>();
+        UUID lastOpenedBy = null;
+        long lastOpenedTime = 0;
+        Map<String, Integer> itemsFound = new ConcurrentHashMap<>();
     }
 
     /**
      * Acquisition statistics for an item type.
      */
     public static class ItemAcquisitionStats {
-        public int totalAcquired = 0;
-        public int totalDropped = 0;
-        public long lastAcquiredTime = 0;
-        public Map<String, Integer> dropSources = new ConcurrentHashMap<>();
+        int totalAcquired = 0;
+        int totalDropped = 0;
+        long lastAcquiredTime = 0;
+        Map<String, Integer> dropSources = new ConcurrentHashMap<>();
     }
 
     /**
      * Lifecycle tracking for items in player inventory.
      */
     public static class ItemLifecycle {
-        public int acquired = 0;
-        public int used = 0;
-        public int discarded = 0;
-        public int equipped = 0;
+        int acquired = 0;
+        int used = 0;
+        int discarded = 0;
+        int equipped = 0;
     }
 
     /**
      * Resource flow statistics (inflow vs outflow).
      */
     public static class ResourceFlowStats {
-        public int inflow = 0;  // Items acquired
-        public int outflow = 0; // Items consumed/used
+        int inflow = 0;  // Items acquired
+        int outflow = 0; // Items consumed/used
     }
 
     /**
@@ -595,11 +654,11 @@ public class EconomyMetricsService {
      * Tracks kills, drops, and calculates drop percentages.
      */
     public static class MobLootStats {
-        public int killCount = 0;                    // Total times this mob was killed
-        public int killsWithLoot = 0;                // Kills that dropped at least one item
-        public int totalItemsDropped = 0;            // Total items dropped across all kills
-        public Map<String, ItemDropStats> itemDrops = new ConcurrentHashMap<>(); // Per-item stats
-        public long lastKillTime = 0;
+        int killCount = 0;                    // Total times this mob was killed
+        int killsWithLoot = 0;                // Kills that dropped at least one item
+        int totalItemsDropped = 0;            // Total items dropped across all kills
+        Map<String, ItemDropStats> itemDrops = new ConcurrentHashMap<>(); // Per-item stats
+        long lastKillTime = 0;
 
         /**
          * Calculate the percentage of kills that dropped any loot.
@@ -624,8 +683,8 @@ public class EconomyMetricsService {
      * Drop statistics for a specific item from a specific mob.
      */
     public static class ItemDropStats {
-        public int dropCount = 0;      // How many times this item dropped
-        public int totalQuantity = 0;  // Total quantity dropped (sum of stack sizes)
+        int dropCount = 0;      // How many times this item dropped
+        int totalQuantity = 0;  // Total quantity dropped (sum of stack sizes)
 
         /**
          * Calculate drop rate percentage based on mob kill count.
@@ -694,6 +753,17 @@ public class EconomyMetricsService {
                     + "\"player\":\"" + TelemetryJson.escape(player) + "\","
                     + "\"item\":\"" + TelemetryJson.escape(itemId) + "\","
                     + "\"count\":" + count + "}";
+        }
+    }
+
+    public record ItemEquipRecord(String player, String itemId, int count, String slot) {
+        public String toJson() {
+            return "{\"ts\":\"" + Instant.now() + "\","
+                    + "\"type\":\"item_equip\","
+                    + "\"player\":\"" + TelemetryJson.escape(player) + "\","
+                    + "\"item\":\"" + TelemetryJson.escape(itemId) + "\","
+                    + "\"count\":" + count + ","
+                    + "\"slot\":\"" + TelemetryJson.escape(slot) + "\"}";
         }
     }
 

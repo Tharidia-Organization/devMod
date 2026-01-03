@@ -25,29 +25,59 @@ public final class NotificationUiTheme {
     // ═══════════════════════════════════════════════════════════════
 
     // Text colors (warm cream tones for notification panels)
-    public static final int RGB_TEXT_PRIMARY = 0xF5F1E8;
-    public static final int RGB_TEXT_SECONDARY = 0xCBBFA8;
-    public static final int RGB_TEXT_MUTED = 0x938877;
+    public static final int RGB_TEXT_PRIMARY = DesignTokens.Notification.RGB_TEXT_PRIMARY;
+    public static final int RGB_TEXT_SECONDARY = DesignTokens.Notification.RGB_TEXT_SECONDARY;
+    public static final int RGB_TEXT_MUTED = DesignTokens.Notification.RGB_TEXT_MUTED;
+    public static final int RGB_WHITE = DesignTokens.Notification.RGB_WHITE;
+    public static final int RGB_BLACK = DesignTokens.Notification.RGB_BLACK;
 
     // Panel gradients (warm browns)
-    public static final int RGB_PANEL_TOP = 0x2A2319;
-    public static final int RGB_PANEL_BOTTOM = 0x162227;
-    public static final int RGB_BACKDROP_TOP = mix(RGB_PANEL_TOP, 0x000000, 0.45f);
-    public static final int RGB_BACKDROP_BOTTOM = mix(RGB_PANEL_BOTTOM, 0x000000, 0.55f);
-    public static final int RGB_PANEL_INNER_TOP = 0x30281E;
-    public static final int RGB_PANEL_INNER_BOTTOM = 0x1B252A;
+    public static final int RGB_PANEL_TOP = DesignTokens.Notification.RGB_PANEL_TOP;
+    public static final int RGB_PANEL_BOTTOM = DesignTokens.Notification.RGB_PANEL_BOTTOM;
+    public static final int RGB_BACKDROP_TOP = DesignTokens.Notification.RGB_BACKDROP_TOP;
+    public static final int RGB_BACKDROP_BOTTOM = DesignTokens.Notification.RGB_BACKDROP_BOTTOM;
+    public static final int RGB_PANEL_INNER_TOP = DesignTokens.Notification.RGB_PANEL_INNER_TOP;
+    public static final int RGB_PANEL_INNER_BOTTOM = DesignTokens.Notification.RGB_PANEL_INNER_BOTTOM;
 
     // Surface colors
-    public static final int RGB_SURFACE_TOP = 0x2E271D;
-    public static final int RGB_SURFACE_BOTTOM = 0x221C14;
-    public static final int RGB_SURFACE_HOVER_TOP = 0x3A3124;
-    public static final int RGB_SURFACE_HOVER_BOTTOM = 0x2A2218;
-    public static final int RGB_SURFACE_READ = 0x1E1811;
+    public static final int RGB_SURFACE_TOP = DesignTokens.Notification.RGB_SURFACE_TOP;
+    public static final int RGB_SURFACE_BOTTOM = DesignTokens.Notification.RGB_SURFACE_BOTTOM;
+    public static final int RGB_SURFACE_HOVER_TOP = DesignTokens.Notification.RGB_SURFACE_HOVER_TOP;
+    public static final int RGB_SURFACE_HOVER_BOTTOM = DesignTokens.Notification.RGB_SURFACE_HOVER_BOTTOM;
+    public static final int RGB_SURFACE_READ = DesignTokens.Notification.RGB_SURFACE_READ;
 
     // Accent colors (gold/teal)
-    public static final int RGB_ACCENT = 0xE1A44C;
-    public static final int RGB_ACCENT_SOFT = 0x9B6D2E;
-    public static final int RGB_ACCENT_ALT = 0x2CB5A0;
+    public static final int RGB_ACCENT = DesignTokens.Notification.RGB_ACCENT;
+    public static final int RGB_ACCENT_SOFT = DesignTokens.Notification.RGB_ACCENT_SOFT;
+    public static final int RGB_ACCENT_ALT = DesignTokens.Notification.RGB_ACCENT_ALT;
+
+    public static final class Category {
+        public static final int ACHIEVEMENT = DesignTokens.Notification.Category.ACHIEVEMENT;
+        public static final int RECORD = DesignTokens.Notification.Category.RECORD;
+        public static final int SEASON = DesignTokens.Notification.Category.SEASON;
+        public static final int TOKEN = DesignTokens.Notification.Category.TOKEN;
+        public static final int REWARD = DesignTokens.Notification.Category.REWARD;
+        public static final int PARTY = DesignTokens.Notification.Category.PARTY;
+        public static final int QUEST = DesignTokens.Notification.Category.QUEST;
+        public static final int COMBAT = DesignTokens.Notification.Category.COMBAT;
+        public static final int RESONANCE = DesignTokens.Notification.Category.RESONANCE;
+        public static final int NEWS = DesignTokens.Notification.Category.NEWS;
+        public static final int ADMIN = DesignTokens.Notification.Category.ADMIN;
+        public static final int SYSTEM = DesignTokens.Notification.Category.SYSTEM;
+        public static final int MAILBOX = DesignTokens.Notification.Category.MAILBOX;
+
+        private Category() {}
+    }
+
+    public static final class Priority {
+        public static final int LOW = DesignTokens.Notification.Priority.LOW;
+        public static final int NORMAL = DesignTokens.Notification.Priority.NORMAL;
+        public static final int HIGH = DesignTokens.Notification.Priority.HIGH;
+        public static final int URGENT = DesignTokens.Notification.Priority.URGENT;
+        public static final int CRITICAL = DesignTokens.Notification.Priority.CRITICAL;
+
+        private Priority() {}
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // UTILITY METHODS (delegate to DesignTokens)
@@ -67,25 +97,25 @@ public final class NotificationUiTheme {
      */
     public static int mix(int rgbA, int rgbB, float t) {
         // Use DesignTokens.lerp but handle RGB (no alpha channel)
-        int result = DesignTokens.lerp(rgbA | 0xFF000000, rgbB | 0xFF000000, t);
-        return result & 0x00FFFFFF; // Strip alpha for RGB-only result
+        int result = DesignTokens.lerp(rgbA | DesignTokens.Mask.ALPHA, rgbB | DesignTokens.Mask.ALPHA, t);
+        return result & DesignTokens.Mask.RGB; // Strip alpha for RGB-only result
     }
 
     public static int getCategoryColor(NotificationCategory category) {
         return switch (category) {
-            case ACHIEVEMENT -> 0xE7B84D;
-            case RECORD -> 0x34C9C9;
-            case SEASON -> 0x4F7BD9;
-            case TOKEN -> 0x59B77C;
-            case REWARD -> 0xF19A3E;
-            case PARTY -> 0x5DA7E3;
-            case QUEST -> 0xD86C4D;
-            case COMBAT -> 0xE2554F;
-            case RESONANCE -> 0x60D1A7;
-            case NEWS -> 0x7B9CFF;
-            case ADMIN -> 0xE88B3D;
-            case SYSTEM -> 0x8E97A6;
-            case MAILBOX -> 0x3AA6D0;
+            case ACHIEVEMENT -> Category.ACHIEVEMENT;
+            case RECORD -> Category.RECORD;
+            case SEASON -> Category.SEASON;
+            case TOKEN -> Category.TOKEN;
+            case REWARD -> Category.REWARD;
+            case PARTY -> Category.PARTY;
+            case QUEST -> Category.QUEST;
+            case COMBAT -> Category.COMBAT;
+            case RESONANCE -> Category.RESONANCE;
+            case NEWS -> Category.NEWS;
+            case ADMIN -> Category.ADMIN;
+            case SYSTEM -> Category.SYSTEM;
+            case MAILBOX -> Category.MAILBOX;
         };
     }
 
@@ -109,20 +139,20 @@ public final class NotificationUiTheme {
 
     public static int getPriorityColor(NotificationPriority priority) {
         return switch (priority) {
-            case LOW -> 0x8E97A6;
-            case NORMAL -> 0x5DA7E3;
-            case HIGH -> 0xE1A44C;
-            case URGENT -> 0xE88B3D;
-            case CRITICAL -> 0xE2554F;
+            case LOW -> Priority.LOW;
+            case NORMAL -> Priority.NORMAL;
+            case HIGH -> Priority.HIGH;
+            case URGENT -> Priority.URGENT;
+            case CRITICAL -> Priority.CRITICAL;
         };
     }
 
     public static int getPriorityGlowColor(NotificationPriority priority) {
         return switch (priority) {
-            case CRITICAL -> 0xE2554F;
-            case URGENT -> 0xE88B3D;
-            case HIGH -> 0xE1A44C;
-            default -> 0x000000;
+            case CRITICAL -> Priority.CRITICAL;
+            case URGENT -> Priority.URGENT;
+            case HIGH -> Priority.HIGH;
+            default -> RGB_BLACK;
         };
     }
 }

@@ -14,10 +14,10 @@ import net.minecraft.world.level.Level;
 import com.devmod.client.environment.ClientEnvironmentCache;
 
 /**
- * Mixin to override getDayTime() on ClientLevel for arena dimensions with frozen time.
+ * Mixin to override getDayTime() on Level for arena dimensions with frozen time.
  * This ensures the client renders the correct time of day (day/night) for mob testing.
  */
-@Mixin(ClientLevel.class)
+@Mixin(Level.class)
 public class ClientLevelTimeMixin {
 
     /**
@@ -26,7 +26,11 @@ public class ClientLevelTimeMixin {
      */
     @Inject(method = "getDayTime", at = @At("HEAD"), cancellable = true)
     void devmod$overrideDayTime(CallbackInfoReturnable<Long> cir) {
-        ResourceKey<Level> dimension = ((ClientLevel) (Object) this).dimension();
+        Level level = (Level) (Object) this;
+        if (!(level instanceof ClientLevel)) {
+            return;
+        }
+        ResourceKey<Level> dimension = level.dimension();
 
         Optional<Long> frozenTime = ClientEnvironmentCache.getTimeOverride(dimension);
         if (frozenTime.isPresent()) {
@@ -34,24 +38,6 @@ public class ClientLevelTimeMixin {
         }
     }
 
-    /**
-     * Also override getTimeOfDay for consistency (used by some rendering).
-     */
-    @Inject(method = "getTimeOfDay", at = @At("HEAD"), cancellable = true)
-    void devmod$overrideTimeOfDay(float partialTick, CallbackInfoReturnable<Float> cir) {
-        ResourceKey<Level> dimension = ((ClientLevel) (Object) this).dimension();
-
-        Optional<Long> frozenTime = ClientEnvironmentCache.getTimeOverride(dimension);
-        if (frozenTime.isPresent()) {
-            // Calculate time of day from frozen time (same formula as vanilla)
-            float timeOfDay = (frozenTime.get() % 24000L + partialTick) / 24000.0F - 0.25F;
-            if (timeOfDay < 0.0F) {
-                timeOfDay += 1.0F;
-            }
-            if (timeOfDay > 1.0F) {
-                timeOfDay -= 1.0F;
-            }
-            cir.setReturnValue(timeOfDay);
-        }
-    }
+    // getTimeOfDay is now a default method on LevelTimeAccess, so time-of-day
+    // overrides are handled by LevelAccessorTimeMixin.
 }

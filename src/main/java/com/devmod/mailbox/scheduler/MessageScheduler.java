@@ -458,17 +458,16 @@ public final class MessageScheduler {
                 );
             }
 
-            future = future.whenComplete((messageId, error) -> {
-                if (error != null) {
-                    String errorMessage = error.getMessage();
-                    if (errorMessage == null) {
-                        errorMessage = error.toString();
-                    }
-                    handleDeliveryFailure(scheduled, errorMessage);
-                } else {
-                    handleDeliverySuccess(scheduled, messageId);
-                }
-            });
+            // Handle both success and failure - use thenAccept for success, exceptionally for failure
+            future.thenAccept(messageId -> handleDeliverySuccess(scheduled, messageId))
+                  .exceptionally(error -> {
+                      String errorMessage = error.getMessage();
+                      if (errorMessage == null) {
+                          errorMessage = error.toString();
+                      }
+                      handleDeliveryFailure(scheduled, errorMessage);
+                      return null;
+                  });
 
         } catch (Exception e) {
             String errorMessage = e.getMessage();

@@ -56,6 +56,7 @@ public record MailboxActionPayload(
     /**
      * Create a "mark as read" action payload.
      */
+    @Nonnull
     public static MailboxActionPayload read(UUID messageId) {
         return new MailboxActionPayload(Action.READ, messageId);
     }
@@ -63,6 +64,7 @@ public record MailboxActionPayload(
     /**
      * Create a "delete" action payload.
      */
+    @Nonnull
     public static MailboxActionPayload delete(UUID messageId) {
         return new MailboxActionPayload(Action.DELETE, messageId);
     }
@@ -70,6 +72,7 @@ public record MailboxActionPayload(
     /**
      * Create a "claim attachment" action payload.
      */
+    @Nonnull
     public static MailboxActionPayload claim(UUID messageId) {
         return new MailboxActionPayload(Action.CLAIM, messageId);
     }
@@ -77,6 +80,7 @@ public record MailboxActionPayload(
     /**
      * Create a "refresh mailbox" action payload.
      */
+    @Nonnull
     public static MailboxActionPayload refresh() {
         return new MailboxActionPayload(Action.REFRESH, new UUID(0L, 0L));
     }

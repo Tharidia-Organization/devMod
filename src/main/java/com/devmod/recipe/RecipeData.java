@@ -102,17 +102,24 @@ public sealed interface RecipeData permits
      * Get display-friendly recipe type name.
      */
     default String getTypeName() {
-        return switch (this) {
-            case CraftingRecipeData c -> c.craftingType() == CraftingType.SHAPED ? "Shaped" : "Shapeless";
-            case SmeltingRecipeData s -> switch (s.smeltingType()) {
+        if (this instanceof CraftingRecipeData c) {
+            return c.craftingType() == CraftingType.SHAPED ? "Shaped" : "Shapeless";
+        }
+        if (this instanceof SmeltingRecipeData s) {
+            return switch (s.smeltingType()) {
                 case SMELTING -> "Smelting";
                 case BLASTING -> "Blasting";
                 case SMOKING -> "Smoking";
                 case CAMPFIRE -> "Campfire";
             };
-            case SmithingRecipeData sm -> sm.smithingType() == SmithingType.TRANSFORM ? "Smithing" : "Trim";
-            case StonecuttingRecipeData ignored -> "Stonecutting";
-        };
+        }
+        if (this instanceof SmithingRecipeData sm) {
+            return sm.smithingType() == SmithingType.TRANSFORM ? "Smithing" : "Trim";
+        }
+        if (this instanceof StonecuttingRecipeData) {
+            return "Stonecutting";
+        }
+        return "Unknown";
     }
 
     /**

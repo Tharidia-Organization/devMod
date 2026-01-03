@@ -48,6 +48,42 @@ public final class MailboxSearchEngine {
     private static final int MAX_PAGE_SIZE = 100;
     private static final int MAX_SUGGESTIONS = 10;
 
+    private static final String SEARCH_SQL = """
+        SELECT message_id, sender_name, subject, body, message_type, sent_at, read_at,
+            (CASE WHEN LOWER(subject) LIKE ? THEN 3 ELSE 0 END +
+             CASE WHEN LOWER(body) LIKE ? THEN 2 ELSE 0 END +
+             CASE WHEN LOWER(sender_name) LIKE ? THEN 1 ELSE 0 END) AS relevance
+        FROM mailbox_messages_fts
+        WHERE recipient_uuid = ?
+          AND (LOWER(subject) LIKE ? OR LOWER(body) LIKE ? OR LOWER(sender_name) LIKE ?)
+          AND (? IS NULL OR message_type = ?)
+          AND (? = 'ALL' OR (? = 'READ' AND read_at IS NOT NULL) OR (? = 'UNREAD' AND read_at IS NULL))
+          AND (? IS NULL OR sent_at >= ?)
+          AND (? IS NULL OR sent_at <= ?)
+          AND (? IS NULL OR LOWER(sender_name) LIKE ?)
+        ORDER BY relevance DESC, sent_at DESC
+        LIMIT ? OFFSET ?
+        """;
+
+    private static final String FILTER_SQL = """
+        SELECT message_id, sender_name, subject, body, message_type, sent_at, read_at, 0 AS relevance
+        FROM mailbox_messages_fts
+        WHERE recipient_uuid = ?
+          AND (? IS NULL OR message_type = ?)
+          AND (? = 'ALL' OR (? = 'READ' AND read_at IS NOT NULL) OR (? = 'UNREAD' AND read_at IS NULL))
+          AND (? IS NULL OR sent_at >= ?)
+          AND (? IS NULL OR sent_at <= ?)
+          AND (? IS NULL OR LOWER(sender_name) LIKE ?)
+        ORDER BY
+          CASE WHEN ? = 'DATE_ASC' THEN sent_at END ASC,
+          CASE WHEN ? = 'DATE_DESC' THEN sent_at END DESC,
+          CASE WHEN ? = 'SENDER_ASC' THEN sender_name END ASC,
+          CASE WHEN ? = 'SENDER_DESC' THEN sender_name END DESC,
+          CASE WHEN ? = 'RELEVANCE' THEN sent_at END DESC,
+          sent_at DESC
+        LIMIT ? OFFSET ?
+        """;
+
     private final DuckDBConnectionManager connectionManager;
     private final ExecutorService executor;
     private volatile boolean initialized = false;
@@ -238,103 +274,73 @@ public final class MailboxSearchEngine {
             try {
                 Connection conn = connectionManager.getConnection();
 
-                // Build the search query
-                StringBuilder sql = new StringBuilder();
-                List<Object> params = new ArrayList<>();
-
-                sql.append("SELECT message_id, sender_name, subject, body, message_type, sent_at, read_at ");
-
                 // Extract nullable fields to local variables for null-safety
                 String searchText = query.searchText;
                 MessageType msgType = query.messageType;
                 String senderName = query.senderName;
+                String msgTypeName = msgType != null ? msgType.name() : null;
+                String senderPattern = (senderName != null && !senderName.isBlank())
+                    ? "%" + senderName.toLowerCase(Locale.ROOT) + "%"
+                    : null;
+                String readStatusName = query.readStatus != null ? query.readStatus.name() : ReadStatus.ALL.name();
+                java.sql.Timestamp fromTs = query.fromDate != null ? java.sql.Timestamp.from(query.fromDate) : null;
+                java.sql.Timestamp toTs = query.toDate != null ? java.sql.Timestamp.from(query.toDate) : null;
 
-                // Add relevance score if searching text
-                if (searchText != null && !searchText.isBlank()) {
-                    sql.append(", (");
-                    sql.append("CASE WHEN LOWER(subject) LIKE ? THEN 3 ELSE 0 END + ");
-                    sql.append("CASE WHEN LOWER(body) LIKE ? THEN 2 ELSE 0 END + ");
-                    sql.append("CASE WHEN LOWER(sender_name) LIKE ? THEN 1 ELSE 0 END");
-                    sql.append(") AS relevance ");
-                    String searchPattern = "%" + searchText.toLowerCase(Locale.ROOT) + "%";
-                    params.add(searchPattern);
-                    params.add(searchPattern);
-                    params.add(searchPattern);
-                } else {
-                    sql.append(", 0 AS relevance ");
-                }
-
-                sql.append("FROM mailbox_messages_fts WHERE recipient_uuid = ? ");
-                params.add(query.playerUuid.toString());
-
-                // Full-text search
-                if (searchText != null && !searchText.isBlank()) {
-                    sql.append("AND (");
-                    sql.append("LOWER(subject) LIKE ? OR ");
-                    sql.append("LOWER(body) LIKE ? OR ");
-                    sql.append("LOWER(sender_name) LIKE ?");
-                    sql.append(") ");
-                    String searchPattern = "%" + searchText.toLowerCase(Locale.ROOT) + "%";
-                    params.add(searchPattern);
-                    params.add(searchPattern);
-                    params.add(searchPattern);
-                }
-
-                // Message type filter
-                if (msgType != null) {
-                    sql.append("AND message_type = ? ");
-                    params.add(msgType.name());
-                }
-
-                // Read status filter
-                if (query.readStatus != null) {
-                    switch (query.readStatus) {
-                        case READ -> sql.append("AND read_at IS NOT NULL ");
-                        case UNREAD -> sql.append("AND read_at IS NULL ");
-                        case ALL -> {} // No filter
-                    }
-                }
-
-                // Date range filters
-                if (query.fromDate != null) {
-                    sql.append("AND sent_at >= ? ");
-                    params.add(java.sql.Timestamp.from(query.fromDate));
-                }
-                if (query.toDate != null) {
-                    sql.append("AND sent_at <= ? ");
-                    params.add(java.sql.Timestamp.from(query.toDate));
-                }
-
-                // Sender filter
-                if (senderName != null && !senderName.isBlank()) {
-                    sql.append("AND LOWER(sender_name) LIKE ? ");
-                    params.add("%" + senderName.toLowerCase(Locale.ROOT) + "%");
-                }
-
-                // Sorting
-                if (searchText != null && !searchText.isBlank()) {
-                    sql.append("ORDER BY relevance DESC, sent_at DESC ");
-                } else {
-                    sql.append("ORDER BY ");
-                    sql.append(switch (query.sortBy) {
-                        case DATE_ASC -> "sent_at ASC ";
-                        case DATE_DESC -> "sent_at DESC ";
-                        case SENDER_ASC -> "sender_name ASC, sent_at DESC ";
-                        case SENDER_DESC -> "sender_name DESC, sent_at DESC ";
-                        case RELEVANCE -> "relevance DESC, sent_at DESC ";
-                    });
-                }
-
-                // Pagination
                 int pageSize = Math.min(query.pageSize > 0 ? query.pageSize : DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
                 int offset = query.page * pageSize;
-                sql.append("LIMIT ? OFFSET ?");
-                params.add(pageSize);
-                params.add(offset);
+                String sql;
+                List<Object> params = new ArrayList<>();
+
+                if (searchText != null && !searchText.isBlank()) {
+                    String searchPattern = "%" + searchText.toLowerCase(Locale.ROOT) + "%";
+                    sql = SEARCH_SQL;
+                    params.add(searchPattern);
+                    params.add(searchPattern);
+                    params.add(searchPattern);
+                    params.add(query.playerUuid.toString());
+                    params.add(searchPattern);
+                    params.add(searchPattern);
+                    params.add(searchPattern);
+                    params.add(msgTypeName);
+                    params.add(msgTypeName);
+                    params.add(readStatusName);
+                    params.add(readStatusName);
+                    params.add(readStatusName);
+                    params.add(fromTs);
+                    params.add(fromTs);
+                    params.add(toTs);
+                    params.add(toTs);
+                    params.add(senderPattern);
+                    params.add(senderPattern);
+                    params.add(pageSize);
+                    params.add(offset);
+                } else {
+                    String sortName = query.sortBy.name();
+                    sql = FILTER_SQL;
+                    params.add(query.playerUuid.toString());
+                    params.add(msgTypeName);
+                    params.add(msgTypeName);
+                    params.add(readStatusName);
+                    params.add(readStatusName);
+                    params.add(readStatusName);
+                    params.add(fromTs);
+                    params.add(fromTs);
+                    params.add(toTs);
+                    params.add(toTs);
+                    params.add(senderPattern);
+                    params.add(senderPattern);
+                    params.add(sortName);
+                    params.add(sortName);
+                    params.add(sortName);
+                    params.add(sortName);
+                    params.add(sortName);
+                    params.add(pageSize);
+                    params.add(offset);
+                }
 
                 // Execute search
                 List<SearchHit> hits = new ArrayList<>();
-                try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     for (int i = 0; i < params.size(); i++) {
                         stmt.setObject(i + 1, params.get(i));
                     }

@@ -87,7 +87,7 @@ public final class TemplateDirectoryWatcher implements AutoCloseable {
     }
 
     private void runLoop() {
-        final WatchService service = watchService;
+        final WatchService service = getWatchService();
         if (service == null) {
             return;
         }
@@ -136,6 +136,10 @@ public final class TemplateDirectoryWatcher implements AutoCloseable {
                 LOGGER.warn("Template watcher reload failed: {}", e.getMessage());
             }
         }, debounceMs, TimeUnit.MILLISECONDS);
+    }
+
+    private synchronized WatchService getWatchService() {
+        return watchService;
     }
 
     @Override

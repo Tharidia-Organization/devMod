@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.config.Config;
 
@@ -597,7 +598,7 @@ public class DebugRenderer {
             // Draw with background
             mc.font.drawInBatch(safeText, xOffset, 0, color, false,
                     Objects.requireNonNull(poseStack.last().pose()), Objects.requireNonNull(mc.renderBuffers().bufferSource()),
-                    net.minecraft.client.gui.Font.DisplayMode.NORMAL, 0x40000000, 15728880);
+                    net.minecraft.client.gui.Font.DisplayMode.NORMAL, OverlayTheme.Utility.SHADOW, 15728880);
 
             poseStack.popPose();
         }

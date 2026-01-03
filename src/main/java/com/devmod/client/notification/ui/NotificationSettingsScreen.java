@@ -19,6 +19,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.notification.ClientNotificationPreferences;
 import com.devmod.client.notification.NotificationUiTheme;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 
@@ -106,8 +107,8 @@ public class NotificationSettingsScreen extends Screen {
 
         int panelAlpha = (int) (240 * easeOutCubic(Math.min(1f, (System.currentTimeMillis() - openedAt) / 240f)));
 
-        int shadowAlpha = Math.min(0x80, (int) (panelAlpha * 0.6f));
-        int shadowColor = NotificationUiTheme.withAlpha(0x000000, shadowAlpha);
+        int shadowAlpha = Math.min(DesignTokens.Alpha.A50, (int) (panelAlpha * 0.6f));
+        int shadowColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BLACK, shadowAlpha);
         graphics.fill(panelX - 8, panelY - 6, panelX + panelWidth + 8, panelY + panelHeight + 8, shadowColor);
 
         renderPanel(graphics, panelX, panelY, panelWidth, panelHeight, panelAlpha, mouseX, mouseY);
@@ -115,11 +116,11 @@ public class NotificationSettingsScreen extends Screen {
 
     @Override
     public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BACKDROP_TOP, 0xFF);
-        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BACKDROP_BOTTOM, 0xFF);
+        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BACKDROP_TOP, DesignTokens.Alpha.A100);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BACKDROP_BOTTOM, DesignTokens.Alpha.A100);
         graphics.fillGradient(0, 0, width, height, top, bottom);
 
-        int stripeColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, 0x12);
+        int stripeColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, 18);
         for (int x = -height; x < width + height; x += 44) {
             graphics.fill(x, 0, x + 2, height, stripeColor);
         }
@@ -131,7 +132,7 @@ public class NotificationSettingsScreen extends Screen {
         int panelBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_BOTTOM, panelAlpha);
         graphics.fillGradient(panelX, panelY, panelX + panelWidth, panelY + panelHeight, panelTop, panelBottom);
 
-        int borderAlpha = Math.min(0x66, panelAlpha);
+        int borderAlpha = Math.min(DesignTokens.Alpha.A40, panelAlpha);
         int borderColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, borderAlpha);
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 1, borderColor);
         graphics.fill(panelX, panelY + panelHeight - 1, panelX + panelWidth, panelY + panelHeight, borderColor);
@@ -164,12 +165,12 @@ public class NotificationSettingsScreen extends Screen {
         graphics.pose().translate(titleX, panelY + 16, 0);
         graphics.pose().scale(1.3f, 1.3f, 1.0f);
         graphics.drawString(font, title, 0, 0,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), true);
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
         graphics.pose().popPose();
 
         String subtitle = Component.translatable("devmod.notification.settings.subtitle").getString();
         graphics.drawString(font, subtitle, titleX, panelY + 38,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 0xFF), false);
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100), false);
 
         String backLabel = Objects.requireNonNull(Component.translatable("gui.back").getString());
         int backW = font.width(backLabel) + 14;
@@ -188,31 +189,33 @@ public class NotificationSettingsScreen extends Screen {
         boolean hovered = rect.contains(mouseX, mouseY);
 
         int base = accent ? NotificationUiTheme.RGB_ACCENT_SOFT : NotificationUiTheme.RGB_SURFACE_TOP;
-        int top = NotificationUiTheme.withAlpha(hovered ? NotificationUiTheme.mix(base, 0xFFFFFF, 0.08f) : base, 0xCC);
-        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, 0xCC);
+        int top = NotificationUiTheme.withAlpha(
+            hovered ? NotificationUiTheme.mix(base, NotificationUiTheme.RGB_WHITE, 0.08f) : base,
+            DesignTokens.Alpha.A80);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, DesignTokens.Alpha.A80);
 
         graphics.fillGradient(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(), top, bottom);
         graphics.fill(rect.x(), rect.y() + rect.h() - 1, rect.x() + rect.w(), rect.y() + rect.h(),
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, 0x66));
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, DesignTokens.Alpha.A40));
 
         int textColor = accent ? NotificationUiTheme.RGB_TEXT_PRIMARY : NotificationUiTheme.RGB_TEXT_SECONDARY;
         graphics.drawString(font, label, rect.x() + 7, rect.y() + 6,
-                NotificationUiTheme.withAlpha(textColor, 0xFF), false);
+                NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100), false);
     }
 
     private void renderGlobalPanel(GuiGraphics graphics, int x, int y, int width, int height,
                                    int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(this.font);
-        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_TOP, 0xD0);
-        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM, 0xD0);
+        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_TOP, 208);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM, 208);
         graphics.fillGradient(x, y, x + width, y + height, top, bottom);
 
-        int headerColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, 0x66);
+        int headerColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, DesignTokens.Alpha.A40);
         graphics.fill(x, y, x + width, y + 2, headerColor);
 
         int cursorY = y + 14;
         graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.global")),
-                x + 12, cursorY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), true);
+                x + 12, cursorY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
 
         cursorY += 18;
 
@@ -244,22 +247,22 @@ public class NotificationSettingsScreen extends Screen {
     private void drawSettingLabel(GuiGraphics graphics, int x, int y, String key) {
         Font font = Objects.requireNonNull(this.font);
         graphics.drawString(font, Objects.requireNonNull(Component.translatable(Objects.requireNonNull(key))), x, y + 6,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 0xFF), false);
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100), false);
     }
 
     private void renderCategoryPanel(GuiGraphics graphics, int x, int y, int width, int height,
                                      int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(this.font);
-        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_TOP, 0xD0);
-        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM, 0xD0);
+        int top = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_TOP, 208);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM, 208);
         graphics.fillGradient(x, y, x + width, y + height, top, bottom);
 
         graphics.fill(x, y, x + width, y + 2,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, 0x66));
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, DesignTokens.Alpha.A40));
 
         int headerY = y + 12;
         graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.categories")),
-                x + 10, headerY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), true);
+                x + 10, headerY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
 
         int labelY = headerY + 16;
         int overlayX = x + width - TOGGLE_WIDTH * 2 - 80;
@@ -267,11 +270,11 @@ public class NotificationSettingsScreen extends Screen {
         int volumeX = soundX + TOGGLE_WIDTH + 10;
 
         graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.overlay")),
-                overlayX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, 0xCC), false);
+                overlayX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80), false);
         graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.sound")),
-                soundX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, 0xCC), false);
+                soundX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80), false);
         graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.volume")),
-                volumeX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, 0xCC), false);
+                volumeX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80), false);
 
         int listTop = labelY + 12;
         int listHeight = height - (listTop - y) - 12;
@@ -296,32 +299,34 @@ public class NotificationSettingsScreen extends Screen {
                                int mouseX, int mouseY, int accent) {
         boolean hovered = rect.contains(mouseX, mouseY);
         int base = enabled ? accent : NotificationUiTheme.RGB_SURFACE_BOTTOM;
-        int trackTop = NotificationUiTheme.withAlpha(hovered ? NotificationUiTheme.mix(base, 0xFFFFFF, 0.1f) : base, 0xCC);
-        int trackBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, 0xCC);
+        int trackTop = NotificationUiTheme.withAlpha(
+            hovered ? NotificationUiTheme.mix(base, NotificationUiTheme.RGB_WHITE, 0.1f) : base,
+            DesignTokens.Alpha.A80);
+        int trackBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, DesignTokens.Alpha.A80);
 
         graphics.fillGradient(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(), trackTop, trackBottom);
         int knob = enabled ? rect.x() + rect.w() - rect.h() + 2 : rect.x() + 2;
         graphics.fill(knob, rect.y() + 2, knob + rect.h() - 4, rect.y() + rect.h() - 2,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF));
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100));
     }
 
     private void renderSlider(GuiGraphics graphics, Rect rect, float value,
                                int mouseX, int mouseY, int accent) {
-        int trackColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, 0xAA);
+        int trackColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, DesignTokens.Alpha.A67);
         graphics.fill(rect.x(), rect.y() + rect.h() / 2 - 1, rect.x() + rect.w(), rect.y() + rect.h() / 2 + 1, trackColor);
 
         int filled = (int) (rect.w() * value);
         graphics.fill(rect.x(), rect.y() + rect.h() / 2 - 1, rect.x() + filled, rect.y() + rect.h() / 2 + 1,
-                NotificationUiTheme.withAlpha(accent, 0xCC));
+                NotificationUiTheme.withAlpha(accent, DesignTokens.Alpha.A80));
 
         int handleX = rect.x() + Math.max(0, Math.min(rect.w() - 6, filled - 3));
         graphics.fill(handleX, rect.y(), handleX + 6, rect.y() + rect.h(),
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF));
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100));
 
         if (rect.contains(mouseX, mouseY)) {
             String label = Math.round(value * 100) + "%";
             graphics.drawString(Objects.requireNonNull(font), label, rect.x() + rect.w() + 6, rect.y() - 2,
-                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, 0xFF), false);
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A100), false);
         }
     }
 
@@ -329,14 +334,16 @@ public class NotificationSettingsScreen extends Screen {
                                         int mouseX, int mouseY) {
         boolean hovered = rect.contains(mouseX, mouseY);
         int base = NotificationUiTheme.RGB_SURFACE_TOP;
-        int top = NotificationUiTheme.withAlpha(hovered ? NotificationUiTheme.mix(base, 0xFFFFFF, 0.1f) : base, 0xCC);
-        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, 0xCC);
+        int top = NotificationUiTheme.withAlpha(
+            hovered ? NotificationUiTheme.mix(base, NotificationUiTheme.RGB_WHITE, 0.1f) : base,
+            DesignTokens.Alpha.A80);
+        int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, DesignTokens.Alpha.A80);
         graphics.fillGradient(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(), top, bottom);
 
         String label = priority.name().toLowerCase(Locale.ROOT);
         int textColor = NotificationUiTheme.getPriorityColor(priority);
         graphics.drawString(Objects.requireNonNull(font), label, rect.x() + 6, rect.y() + 5,
-                NotificationUiTheme.withAlpha(textColor, 0xFF), false);
+                NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100), false);
     }
 
     @Override
@@ -505,12 +512,12 @@ public class NotificationSettingsScreen extends Screen {
             int baseTop = hovered ? NotificationUiTheme.RGB_SURFACE_HOVER_TOP : NotificationUiTheme.RGB_SURFACE_TOP;
             int baseBottom = hovered ? NotificationUiTheme.RGB_SURFACE_HOVER_BOTTOM : NotificationUiTheme.RGB_SURFACE_BOTTOM;
             graphics.fillGradient(x, y, x + width, y + CATEGORY_ROW_HEIGHT,
-                    NotificationUiTheme.withAlpha(baseTop, 0xD8),
-                    NotificationUiTheme.withAlpha(baseBottom, 0xD8));
+                    NotificationUiTheme.withAlpha(baseTop, 216),
+                    NotificationUiTheme.withAlpha(baseBottom, 216));
 
             int accent = NotificationUiTheme.getCategoryColor(category);
             graphics.fill(x, y + 6, x + 4, y + CATEGORY_ROW_HEIGHT - 6,
-                    NotificationUiTheme.withAlpha(accent, 0xCC));
+                    NotificationUiTheme.withAlpha(accent, DesignTokens.Alpha.A80));
 
             int labelX = x + 10;
             String label = Objects.requireNonNull(Component.translatable(Objects.requireNonNull(category.getTranslationKey())).getString());
@@ -519,7 +526,7 @@ public class NotificationSettingsScreen extends Screen {
                 label = Objects.requireNonNull(font.plainSubstrByWidth(label, labelMax - 6)) + "...";
             }
             graphics.drawString(font, label, labelX, y + 10,
-                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), false);
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), false);
 
             int overlayX = x + width - TOGGLE_WIDTH * 2 - 80;
             overlayRect = new Rect(overlayX, y + 7, TOGGLE_WIDTH, 16);

@@ -106,19 +106,19 @@ public record UpdateArmorPayload(
      */
     public ArmorStats toArmorStats() {
         ArmorStats stats = new ArmorStats();
-        stats.physicalReduction = physicalReduction;
-        stats.fireReduction = fireReduction;
-        stats.magicReduction = magicReduction;
-        stats.explosionReduction = explosionReduction;
-        stats.projectileReduction = projectileReduction;
-        stats.armorBonus = armorBonus;
-        stats.toughnessBonus = toughnessBonus;
-        stats.knockbackResistance = knockbackResistance;
-        stats.thornsReflect = thornsEnabled;
-        stats.thornsPercent = thornsPercent;
-        stats.shieldReflectProjectiles = shieldReflect;
-        stats.shieldBlockStrength = shieldBlockStrength;
-        stats.shieldRecoverySpeed = shieldRecovery;
+        stats.setPhysicalReduction(physicalReduction);
+        stats.setFireReduction(fireReduction);
+        stats.setMagicReduction(magicReduction);
+        stats.setExplosionReduction(explosionReduction);
+        stats.setProjectileReduction(projectileReduction);
+        stats.setArmorBonus(armorBonus);
+        stats.setToughnessBonus(toughnessBonus);
+        stats.setKnockbackResistance(knockbackResistance);
+        stats.setThornsReflect(thornsEnabled);
+        stats.setThornsPercent(thornsPercent);
+        stats.setShieldReflectProjectiles(shieldReflect);
+        stats.setShieldBlockStrength(shieldBlockStrength);
+        stats.setShieldRecoverySpeed(shieldRecovery);
         return stats;
     }
 
@@ -129,19 +129,19 @@ public record UpdateArmorPayload(
         return new UpdateArmorPayload(
             isGlobal,
             slot,
-            stats.physicalReduction,
-            stats.fireReduction,
-            stats.magicReduction,
-            stats.explosionReduction,
-            stats.projectileReduction,
-            stats.armorBonus,
-            stats.toughnessBonus,
-            stats.knockbackResistance,
-            stats.thornsReflect,
-            stats.thornsPercent,
-            stats.shieldReflectProjectiles,
-            stats.shieldBlockStrength,
-            stats.shieldRecoverySpeed,
+            stats.getPhysicalReduction(),
+            stats.getFireReduction(),
+            stats.getMagicReduction(),
+            stats.getExplosionReduction(),
+            stats.getProjectileReduction(),
+            stats.getArmorBonus(),
+            stats.getToughnessBonus(),
+            stats.getKnockbackResistance(),
+            stats.isThornsReflect(),
+            stats.getThornsPercent(),
+            stats.isShieldReflectProjectiles(),
+            stats.getShieldBlockStrength(),
+            stats.getShieldRecoverySpeed(),
             itemName
         );
     }

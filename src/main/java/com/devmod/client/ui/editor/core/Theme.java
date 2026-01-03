@@ -55,13 +55,13 @@ public interface Theme {
     int overlayBackground();
 
     /** Darker areas (scrollbar track, deep separators) */
-    default int darkerBackground() { return 0xFF0D0D0D; }
+    default int darkerBackground() { return DesignTokens.EditorTheme.Shared.DARKER_BACKGROUND; }
 
     /** Value text color (cyan tinted) */
-    default int textValue() { return 0xFFB0E0E6; }
+    default int textValue() { return DesignTokens.EditorTheme.Shared.TEXT_VALUE; }
 
     /** Formula/code text color (green tinted) */
-    default int textFormula() { return 0xFF98D4A4; }
+    default int textFormula() { return DesignTokens.EditorTheme.Shared.TEXT_FORMULA; }
 
     // =========================================================================
     // BORDER COLORS
@@ -106,19 +106,19 @@ public interface Theme {
     // =========================================================================
 
     /** Primary accent (cyan) */
-    default int accentPrimary() { return 0xFF00D4FF; }
+    default int accentPrimary() { return DesignTokens.EditorTheme.Shared.ACCENT_PRIMARY; }
 
     /** Success accent (green) */
-    default int accentSuccess() { return 0xFF4CAF50; }
+    default int accentSuccess() { return DesignTokens.EditorTheme.Shared.ACCENT_SUCCESS; }
 
     /** Warning accent (orange) */
-    default int accentWarning() { return 0xFFFF9800; }
+    default int accentWarning() { return DesignTokens.EditorTheme.Shared.ACCENT_WARNING; }
 
     /** Error accent (red) */
-    default int accentError() { return 0xFFE53935; }
+    default int accentError() { return DesignTokens.EditorTheme.Shared.ACCENT_ERROR; }
 
     /** Info accent (blue) */
-    default int accentInfo() { return 0xFF2196F3; }
+    default int accentInfo() { return DesignTokens.EditorTheme.Shared.ACCENT_INFO; }
 
     // =========================================================================
     // BUTTON COLORS

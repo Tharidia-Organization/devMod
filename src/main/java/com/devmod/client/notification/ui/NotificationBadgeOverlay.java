@@ -20,6 +20,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.notification.NotificationUiTheme;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.notification.NotificationPriority;
 /**
  * HUD overlay showing notification badge with unread count.
@@ -207,16 +208,16 @@ public class NotificationBadgeOverlay {
         int renderY = badgeY - offsetY;
 
         // Render badge background
-        int bgAlpha = isHovered ? 0xEE : 0xCC;
+        int bgAlpha = isHovered ? DesignTokens.Alpha.A93 : DesignTokens.Alpha.A80;
         int bgRgb = isHovered ? RGB_BG_HOVER : RGB_BG_NORMAL;
         renderRoundedRect(graphics, renderX, renderY, scaledSize, scaledSize, 6,
                 NotificationUiTheme.withAlpha(bgRgb, bgAlpha));
         graphics.fill(renderX + 4, renderY + 2, renderX + scaledSize - 4, renderY + 3,
-                NotificationUiTheme.withAlpha(0xFFFFFF, (bgAlpha * 0x22) / 255));
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, (bgAlpha * DesignTokens.Alpha.A13) / 255));
 
         // Pulse glow effect
         if (pulseProgress > 0) {
-            int glowAlpha = (int) (pulseProgress * 0x66);
+            int glowAlpha = (int) (pulseProgress * DesignTokens.Alpha.A40);
             int glowSize = (int) (pulseProgress * 4);
             int glowColor = NotificationUiTheme.withAlpha(RGB_ACCENT, glowAlpha);
             renderRoundedRect(graphics, renderX - glowSize, renderY - glowSize,
@@ -224,7 +225,7 @@ public class NotificationBadgeOverlay {
         }
 
         // Border
-        int borderAlpha = isHovered ? 0x88 : 0x44;
+        int borderAlpha = isHovered ? DesignTokens.Alpha.A53 : DesignTokens.Alpha.A27;
         int borderColor = NotificationUiTheme.withAlpha(RGB_ACCENT, borderAlpha);
         renderRoundedRectBorder(graphics, renderX, renderY, scaledSize, scaledSize, 6, borderColor);
 
@@ -236,7 +237,7 @@ public class NotificationBadgeOverlay {
         int iconWidth = font.width(icon);
         int iconColor = displayedCount > 0 ? NotificationUiTheme.RGB_TEXT_PRIMARY : NotificationUiTheme.RGB_TEXT_MUTED;
         graphics.drawString(font, icon, iconCenterX - iconWidth / 2, iconCenterY - 4,
-                NotificationUiTheme.withAlpha(iconColor, 0xFF), false);
+                NotificationUiTheme.withAlpha(iconColor, DesignTokens.Alpha.A100), false);
 
         // Notification count badge (if > 0)
         if (displayedCount > 0) {
@@ -253,17 +254,17 @@ public class NotificationBadgeOverlay {
 
             // Pulse the badge if urgent
             if (urgentCount > 0 && pulseProgress > 0) {
-                badgeBgColor = NotificationUiTheme.mix(badgeBgColor, 0xFFFFFF, pulseProgress * 0.3f);
+                badgeBgColor = NotificationUiTheme.mix(badgeBgColor, NotificationUiTheme.RGB_WHITE, pulseProgress * 0.3f);
             }
 
             // Badge background
             renderRoundedRect(graphics, countBadgeX - badgeWidth / 2, countBadgeY,
-                    badgeWidth, badgeHeight, 7, NotificationUiTheme.withAlpha(badgeBgColor, 0xFF));
+                    badgeWidth, badgeHeight, 7, NotificationUiTheme.withAlpha(badgeBgColor, DesignTokens.Alpha.A100));
 
             // Badge text
             graphics.drawString(font, countText,
                     countBadgeX - countWidth / 2, countBadgeY + 3,
-                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), false);
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), false);
         }
 
         // Hover tooltip
@@ -302,20 +303,20 @@ public class NotificationBadgeOverlay {
             x = screenWidth - tooltipWidth - 8;
         }
 
-        int tooltipAlpha = 0xE0;
+        int tooltipAlpha = DesignTokens.Alpha.A88;
         graphics.fillGradient(x, y, x + tooltipWidth, y + tooltipHeight,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_TOP, tooltipAlpha),
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, tooltipAlpha));
 
         graphics.fill(x, y, x + tooltipWidth, y + 1,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, 0x66));
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, DesignTokens.Alpha.A40));
         graphics.fill(x, y + tooltipHeight - 1, x + tooltipWidth, y + tooltipHeight,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_SOFT, 0x44));
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_SOFT, DesignTokens.Alpha.A27));
 
         graphics.drawString(font, title, x + 8, y + 4,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, 0xFF), false);
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), false);
         graphics.drawString(font, subtitle, x + 8, y + 16,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 0xFF), false);
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100), false);
     }
 
     private static void renderRoundedRect(GuiGraphics graphics, int x, int y, int width, int height,

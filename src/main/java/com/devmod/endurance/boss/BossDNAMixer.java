@@ -380,15 +380,24 @@ public class BossDNAMixer {
      * Called when Evolving boss enters a new phase.
      */
     public BossArchetype getEvolvingNextArchetype(BossArchetype current, int phase, long bossId) {
-        Random rng = new Random(bossId + phase);
         BossArchetype[] archetypes = BossArchetype.values();
-        BossArchetype next;
-        do {
-            next = archetypes[rng.nextInt(archetypes.length)];
-        } while (next == current);
+        if (archetypes.length <= 1) {
+            return current;
+        }
+        int index = pickDeterministicIndex(bossId, phase, archetypes.length);
+        BossArchetype next = archetypes[index];
+        if (next == current) {
+            next = archetypes[(index + 1) % archetypes.length];
+        }
 
         LOGGER.info("[BossDNA] Evolving boss transitioning: {} → {} (phase {})", current, next, phase);
         return next;
+    }
+
+    private int pickDeterministicIndex(long bossId, int phase, int size) {
+        long seed = bossId ^ (long) phase * 0x9E3779B97F4A7C15L;
+        int hash = Long.hashCode(seed);
+        return Math.floorMod(hash, size);
     }
 
     /**

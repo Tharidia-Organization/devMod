@@ -71,11 +71,11 @@ public class PerkSystem {
      * Perk rarity tiers.
      */
     public enum PerkTier {
-        COMMON(0xAAAAAA, "Common", 60),      // 60% chance
-        UNCOMMON(0x4ade80, "Uncommon", 25),  // 25% chance
-        RARE(0x60a5fa, "Rare", 10),          // 10% chance
-        EPIC(0xa855f7, "Epic", 4),           // 4% chance
-        LEGENDARY(0xfbbf24, "Legendary", 1); // 1% chance
+        COMMON(EnduranceColors.PerkRarity.COMMON, "Common", 60),      // 60% chance
+        UNCOMMON(EnduranceColors.PerkRarity.UNCOMMON, "Uncommon", 25),// 25% chance
+        RARE(EnduranceColors.PerkRarity.RARE, "Rare", 10),            // 10% chance
+        EPIC(EnduranceColors.PerkRarity.EPIC, "Epic", 4),             // 4% chance
+        LEGENDARY(EnduranceColors.PerkRarity.LEGENDARY, "Legendary", 1); // 1% chance
 
         public final int color;
         public final String displayName;
@@ -92,13 +92,13 @@ public class PerkSystem {
      * Perk categories for organization and synergies.
      */
     public enum PerkCategory {
-        OFFENSE("Offense", 0xFF6B6B),      // Damage, crits, attack speed
-        DEFENSE("Defense", 0x4ECDC4),       // Health, armor, resistance
-        UTILITY("Utility", 0xFFE66D),       // Movement, cooldowns, resource
-        VAMPIRIC("Vampiric", 0x9B59B6),     // Life steal, drain effects
-        ELEMENTAL("Elemental", 0xE74C3C),   // Fire, ice, lightning
-        COMBO("Combo", 0xF39C12),           // Style and combo bonuses
-        CURSE("Curse", 0x2C3E50);           // Negative effects for rewards
+        OFFENSE("Offense", EnduranceColors.PerkCategory.OFFENSE),   // Damage, crits, attack speed
+        DEFENSE("Defense", EnduranceColors.PerkCategory.DEFENSE),   // Health, armor, resistance
+        UTILITY("Utility", EnduranceColors.PerkCategory.UTILITY),   // Movement, cooldowns, resource
+        VAMPIRIC("Vampiric", EnduranceColors.PerkCategory.VAMPIRIC),// Life steal, drain effects
+        ELEMENTAL("Elemental", EnduranceColors.PerkCategory.ELEMENTAL), // Fire, ice, lightning
+        COMBO("Combo", EnduranceColors.PerkCategory.COMBO),         // Style and combo bonuses
+        CURSE("Curse", EnduranceColors.PerkCategory.CURSE);         // Negative effects for rewards
 
         public final String displayName;
         public final int color;
@@ -200,14 +200,29 @@ public class PerkSystem {
         public final int stackCount;
 
         // Event-specific data
-        public float damage;
-        public float damageMultiplier = 1.0f;
-        public boolean isCritical;
+        private float damage;
+        private boolean isCritical;
 
         public PerkContext(ServerPlayer player, PerkSession session, int stackCount) {
             this.player = player;
             this.session = session;
             this.stackCount = stackCount;
+        }
+
+        public float getDamage() {
+            return damage;
+        }
+
+        public void setDamage(float damage) {
+            this.damage = damage;
+        }
+
+        public boolean isCritical() {
+            return isCritical;
+        }
+
+        public void setCritical(boolean critical) {
+            this.isCritical = critical;
         }
     }
 
@@ -590,7 +605,7 @@ public class PerkSystem {
             Set.of(), Set.of(),
             ctx -> {
                 // Remove knockback vulnerability
-                var attr = ctx.player.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
+                var attr = ctx.player.getAttribute(requireNonNull(Attributes.KNOCKBACK_RESISTANCE, "KNOCKBACK_RESISTANCE"));
                 if (attr != null) {
                     ResourceLocation modId = ResourceLocation.fromNamespaceAndPath("devmod", "unstoppable_force");
                     if (modId != null) {

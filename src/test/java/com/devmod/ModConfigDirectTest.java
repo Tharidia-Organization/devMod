@@ -8,37 +8,37 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ModConfigDirectTest {
 
-    private final int originalColor = ModConfig.followRangeColor;
+    private final int originalColor = ModConfig.getFollowRangeColor();
 
     @AfterEach
     void restoreColor() {
-        ModConfig.followRangeColor = originalColor;
+        ModConfig.setFollowRangeColor(originalColor);
     }
 
     @Test
     @DisplayName("cycleColor rotates through the configured palette")
     void cycleColorRotatesThroughPalette() {
-        ModConfig.followRangeColor = 0xFFFF0000;
+        ModConfig.setFollowRangeColor(0xFFFF0000);
         assertEquals("Red", ModConfig.getColorName());
 
         ModConfig.cycleColor();
-        assertEquals(0xFFFFFF00, ModConfig.followRangeColor);
+        assertEquals(0xFFFFFF00, ModConfig.getFollowRangeColor());
         assertEquals("Yellow", ModConfig.getColorName());
 
         ModConfig.cycleColor();
-        assertEquals(0xFF00FF00, ModConfig.followRangeColor);
+        assertEquals(0xFF00FF00, ModConfig.getFollowRangeColor());
         assertEquals("Green", ModConfig.getColorName());
 
         ModConfig.cycleColor();
-        assertEquals(0xFF00FFFF, ModConfig.followRangeColor);
+        assertEquals(0xFF00FFFF, ModConfig.getFollowRangeColor());
         assertEquals("Cyan", ModConfig.getColorName());
 
         ModConfig.cycleColor();
-        assertEquals(0xFF0000FF, ModConfig.followRangeColor);
+        assertEquals(0xFF0000FF, ModConfig.getFollowRangeColor());
         assertEquals("Blue", ModConfig.getColorName());
 
         ModConfig.cycleColor();
-        assertEquals(0xFFFF0000, ModConfig.followRangeColor);
+        assertEquals(0xFFFF0000, ModConfig.getFollowRangeColor());
         assertEquals("Red", ModConfig.getColorName());
     }
 }

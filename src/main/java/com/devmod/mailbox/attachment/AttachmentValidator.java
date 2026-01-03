@@ -238,7 +238,7 @@ public final class AttachmentValidator {
     /**
      * Check if an item is allowed based on blacklist/whitelist.
      */
-    public boolean isItemAllowed(String itemId) {
+    public boolean isItemAllowed(@Nullable String itemId) {
         if (itemId == null || itemId.isBlank()) {
             return false;
         }

@@ -25,7 +25,7 @@ public class CustomKit {
         this.id = UUID.randomUUID().toString().substring(0, 8);
         this.name = Objects.requireNonNull(name);
         this.description = "";
-        this.color = 0xFFAA00;
+        this.color = EnduranceColors.Kit.CUSTOM;
         this.items = new ArrayList<>();
         this.createdAt = System.currentTimeMillis();
         this.lastModified = this.createdAt;

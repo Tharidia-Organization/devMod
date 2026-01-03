@@ -1,5 +1,7 @@
 package com.devmod.client.ui.editor.debug;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
+
 /**
  * Types of debug warnings that can be detected.
  *
@@ -11,22 +13,22 @@ public enum WarningType {
     /**
      * Content exceeds its container bounds.
      */
-    OVERFLOW("⚠ OVERFLOW", 0xFFFF4444),
+    OVERFLOW("⚠ OVERFLOW", DesignTokens.DebugOverlay.WARNING),
 
     /**
      * Text was truncated to fit available width.
      */
-    TRUNCATED("✂ TRUNCATED", 0xFFFFAA00),
+    TRUNCATED("✂ TRUNCATED", DesignTokens.DebugOverlay.WARNING_TRUNCATED),
 
     /**
      * Component coordinates are not aligned to the 4px grid.
      */
-    MISALIGNED("⊠ MISALIGNED", 0xFFFF00FF),
+    MISALIGNED("⊠ MISALIGNED", DesignTokens.DebugOverlay.WARNING_MISALIGNED),
 
     /**
      * Component is rendered outside the visible viewport.
      */
-    OUT_OF_VIEWPORT("◐ OUT OF VIEW", 0xFF888888);
+    OUT_OF_VIEWPORT("◐ OUT OF VIEW", DesignTokens.DebugOverlay.WARNING_OUT_OF_VIEW);
 
     private final String icon;
     private final int color;

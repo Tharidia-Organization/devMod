@@ -15,13 +15,13 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 
 public enum KitPreset {
-    STARTER("Starter Kit", "Basic iron gear for beginners", 0xAAAAAA),
-    WARRIOR("Warrior Kit", "Full diamond melee build", 0x55FFFF),
-    RANGER("Ranger Kit", "Bow focus with speed", 0x55FF55),
-    TANK("Tank Kit", "Heavy armor, shield focus", 0x5555FF),
-    MAGE("Mage Kit", "Light armor, potions", 0xAA00AA),
-    BERSERKER("Berserker Kit", "High damage, low defense", 0xFF5555),
-    CUSTOM("Current Inventory", "Use your current inventory", 0xFFAA00);
+    STARTER("Starter Kit", "Basic iron gear for beginners", EnduranceColors.Kit.STARTER),
+    WARRIOR("Warrior Kit", "Full diamond melee build", EnduranceColors.Kit.WARRIOR),
+    RANGER("Ranger Kit", "Bow focus with speed", EnduranceColors.Kit.RANGER),
+    TANK("Tank Kit", "Heavy armor, shield focus", EnduranceColors.Kit.TANK),
+    MAGE("Mage Kit", "Light armor, potions", EnduranceColors.Kit.MAGE),
+    BERSERKER("Berserker Kit", "High damage, low defense", EnduranceColors.Kit.BERSERKER),
+    CUSTOM("Current Inventory", "Use your current inventory", EnduranceColors.Kit.CUSTOM);
 
     private final String displayName;
     private final String description;

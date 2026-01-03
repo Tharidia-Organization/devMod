@@ -17,7 +17,6 @@ import com.devmod.client.input.KeybindConflictDetector;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
-import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 
 public class KeybindsPage implements SettingsPage {
@@ -49,11 +48,6 @@ public class KeybindsPage implements SettingsPage {
     // Cached dimensions for scroll calculations
     private int lastContentX, lastContentWidth;
     private int lastContentY, lastContentHeight;
-
-    @Override
-    public SettingsCategory getCategory() {
-        return SettingsCategory.KEYBINDS;
-    }
 
     @Override
     public String getTitle() {
@@ -160,7 +154,7 @@ public class KeybindsPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         // Cache dimensions for scroll calculations
         lastContentX = x;
         lastContentY = y;
@@ -234,7 +228,7 @@ public class KeybindsPage implements SettingsPage {
     /**
      * Render the scrollbar track and thumb.
      */
-    private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
+    private void renderScrollbar(@Nonnull GuiGraphics graphics, int x, int y, int barWidth, int height) {
         // Delegate to unified Scrollbar helper
         Scrollbar.render(graphics, x, y, barWidth, height,
             scrollOffset, totalContentHeight, visibleHeight,
@@ -252,10 +246,10 @@ public class KeybindsPage implements SettingsPage {
 
         // Hover background (tinted red if conflict)
         if (hovered) {
-            int bgColor = hasConflict ? 0x30FF4444 : DesignTokens.Surface.LEVEL_1;
+            int bgColor = hasConflict ? DesignTokens.Keybinds.CONFLICT_BG : DesignTokens.Surface.LEVEL_1;
             graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, bgColor);
         } else if (hasConflict) {
-            graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, 0x18FF4444);
+            graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, DesignTokens.Keybinds.CONFLICT_GLOW);
         }
 
         // Key badge
@@ -265,18 +259,18 @@ public class KeybindsPage implements SettingsPage {
         int textWidth = font.width(entry.key);
         int actualBadgeWidth = Math.max(KEY_BADGE_WIDTH, textWidth + 8);
 
-        int badgeBorderColor = hasConflict ? 0xFFFF6666 : DesignTokens.Accent.PRIMARY;
+        int badgeBorderColor = hasConflict ? DesignTokens.Keybinds.CONFLICT_BORDER : DesignTokens.Accent.PRIMARY;
         graphics.fill(badgeX, badgeY, badgeX + actualBadgeWidth, badgeY + badgeHeight, DesignTokens.Bg.LEVEL_0);
         AxiomRenderer.drawBorder(graphics, badgeX, badgeY, actualBadgeWidth, badgeHeight, badgeBorderColor);
 
         int keyTextX = badgeX + (actualBadgeWidth - textWidth) / 2;
-        int keyTextColor = hasConflict ? 0xFFFF8888 : DesignTokens.Accent.PRIMARY;
+        int keyTextColor = hasConflict ? DesignTokens.Keybinds.CONFLICT_TEXT : DesignTokens.Accent.PRIMARY;
         graphics.drawString(font, entry.key, keyTextX, badgeY + (badgeHeight - 8) / 2, keyTextColor, false);
 
         // Conflict warning icon
         int nameX = badgeX + actualBadgeWidth + 10;
         if (hasConflict) {
-            graphics.drawString(font, "⚠", nameX - 2, y + 2, 0xFFFF6666, false);
+            graphics.drawString(font, "⚠", nameX - 2, y + 2, DesignTokens.Keybinds.CONFLICT_BORDER, false);
             nameX += 12;
         }
 
@@ -379,11 +373,6 @@ public class KeybindsPage implements SettingsPage {
             return true;
         }
         return false;
-    }
-
-    @Override
-    public int getContentHeight() {
-        return calculateTotalContentHeight() + HINT_HEIGHT;
     }
 
     private boolean isMouseOverContent(double mouseX, double mouseY) {

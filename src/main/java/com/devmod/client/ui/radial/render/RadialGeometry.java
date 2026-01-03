@@ -17,6 +17,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 
 public final class RadialGeometry {
@@ -104,7 +105,7 @@ public final class RadialGeometry {
     public static int applyAlpha(int color, int alpha) {
         int existingAlpha = (color >> 24) & 0xFF;
         int newAlpha = (existingAlpha * alpha) / 255;
-        return (newAlpha << 24) | (color & 0x00FFFFFF);
+        return (newAlpha << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     /**

@@ -3,6 +3,7 @@ package com.devmod.client.ui.unified.pages;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -13,11 +14,12 @@ import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.overlay.ImpactDisplayMode;
+import com.devmod.client.overlay.ImpactHudController;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
-import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
@@ -38,9 +40,20 @@ public class CombatSettingsPage implements SettingsPage {
     private int lastContentY, lastContentHeight;
     private final EditorButton openEditorButton = new EditorButton("combat-open-editor", "Open Weapon Editor [M]").style(EditorButton.Style.PRIMARY);
 
-    @Override
-    public SettingsCategory getCategory() {
-        return SettingsCategory.COMBAT;
+    // Impact HUD mode buttons
+    private final EditorButton impactMinimalBtn = new EditorButton("impact-minimal", "Minimal");
+    private final EditorButton impactDetailedBtn = new EditorButton("impact-detailed", "Detailed");
+    private final EditorButton impactAnalysisBtn = new EditorButton("impact-analysis", "Analysis");
+    @Nullable
+    private ImpactDisplayMode cachedImpactMode = null;
+
+    public CombatSettingsPage() {
+        // Register mode change listener for UI updates
+        ImpactHudController.INSTANCE.setModeChangeListener(this::onImpactModeChanged);
+    }
+
+    private void onImpactModeChanged(ImpactDisplayMode newMode) {
+        cachedImpactMode = newMode;
     }
 
     @Override
@@ -49,7 +62,7 @@ public class CombatSettingsPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         // Store dimensions for scroll calculations
         lastContentX = x;
         lastContentY = y;
@@ -91,22 +104,22 @@ public class CombatSettingsPage implements SettingsPage {
                 WeaponStats stats = WeaponConfigManager.getStats(heldItem);
 
                 // Stats display - body part colors
-                int headColor = 0xFFFF6B6B;   // Red for head
-                int bodyColor = 0xFF4ECDC4;   // Teal for body
-                int armsColor = 0xFFFFE66D;   // Yellow for arms
-                int legsColor = 0xFF95E1D3;   // Light green for legs
+                int headColor = DesignTokens.BodyDiagram.HEAD;   // Red for head
+                int bodyColor = DesignTokens.BodyDiagram.BODY;   // Teal for body
+                int armsColor = DesignTokens.BodyDiagram.ARMS;   // Yellow for arms
+                int legsColor = DesignTokens.BodyDiagram.LEGS;   // Light green for legs
                 currentY = renderStatRow(graphics, font, x, currentY, width, "Head Multiplier",
-                    String.format("%.1fx", stats.headMult), headColor);
+                    String.format("%.1fx", stats.getHeadMult()), headColor);
                 currentY = renderStatRow(graphics, font, x, currentY, width, "Body Multiplier",
-                    String.format("%.1fx", stats.bodyMult), bodyColor);
+                    String.format("%.1fx", stats.getBodyMult()), bodyColor);
                 currentY = renderStatRow(graphics, font, x, currentY, width, "Arms Multiplier",
-                    String.format("%.1fx", stats.armsMult), armsColor);
+                    String.format("%.1fx", stats.getArmsMult()), armsColor);
                 currentY = renderStatRow(graphics, font, x, currentY, width, "Legs Multiplier",
-                    String.format("%.1fx", stats.legsMult), legsColor);
+                    String.format("%.1fx", stats.getLegsMult()), legsColor);
                 currentY = renderStatRow(graphics, font, x, currentY, width, "Armor Penetration",
-                    String.format("%.0f%%", stats.armorPenetration * 100), 0xFFFF8C00);
+                    String.format("%.0f%%", stats.getArmorPenetration() * 100), DesignTokens.BodyDiagram.ARMOR_LABEL);
                 currentY = renderStatRow(graphics, font, x, currentY, width, "Base Damage Bonus",
-                    String.format("+%.1f", stats.baseDamageBonus), DesignTokens.Semantic.ERROR);
+                    String.format("+%.1f", stats.getBaseDamageBonus()), DesignTokens.Semantic.ERROR);
 
                 currentY += SECTION_SPACING;
             }
@@ -135,6 +148,58 @@ public class CombatSettingsPage implements SettingsPage {
 
             // Hint
             AxiomRenderer.drawHint(graphics, font, x, currentY, "Press M in-game to edit weapon stats");
+            currentY += ROW_HEIGHT + SECTION_SPACING;
+
+            // Separator
+            AxiomRenderer.drawSeparator(graphics, x, currentY, width);
+            currentY += SECTION_SPACING;
+
+            // === Impact HUD Settings Section ===
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Impact HUD Mode");
+            currentY += ROW_HEIGHT + 4;
+
+            // Get current preferred mode
+            ImpactDisplayMode currentMode = ImpactHudController.INSTANCE.getUserPreferredCombatMode();
+            if (cachedImpactMode != null) {
+                currentMode = cachedImpactMode;
+            }
+
+            // Mode buttons
+            int modeBtnWidth = 80;
+            int modeBtnHeight = DesignTokens.Component.BUTTON_HEIGHT_MD;
+            int btnGap = 8;
+
+            // Minimal button
+            boolean isMinimal = currentMode == ImpactDisplayMode.MINIMAL;
+            impactMinimalBtn
+                .style(isMinimal ? EditorButton.Style.PRIMARY : EditorButton.Style.NORMAL)
+                .onClick(() -> ImpactHudController.INSTANCE.setUserPreferredCombatMode(ImpactDisplayMode.MINIMAL));
+            impactMinimalBtn.render(graphics, x, currentY, modeBtnWidth, modeBtnHeight, mouseX, mouseY);
+
+            // Detailed button
+            boolean isDetailed = currentMode == ImpactDisplayMode.DETAILED;
+            impactDetailedBtn
+                .style(isDetailed ? EditorButton.Style.PRIMARY : EditorButton.Style.NORMAL)
+                .onClick(() -> ImpactHudController.INSTANCE.setUserPreferredCombatMode(ImpactDisplayMode.DETAILED));
+            impactDetailedBtn.render(graphics, x + modeBtnWidth + btnGap, currentY, modeBtnWidth, modeBtnHeight, mouseX, mouseY);
+
+            // Analysis button
+            boolean isAnalysis = currentMode == ImpactDisplayMode.ANALYSIS;
+            impactAnalysisBtn
+                .style(isAnalysis ? EditorButton.Style.PRIMARY : EditorButton.Style.NORMAL)
+                .onClick(() -> ImpactHudController.INSTANCE.setUserPreferredCombatMode(ImpactDisplayMode.ANALYSIS));
+            impactAnalysisBtn.render(graphics, x + (modeBtnWidth + btnGap) * 2, currentY, modeBtnWidth, modeBtnHeight, mouseX, mouseY);
+
+            currentY += modeBtnHeight + 8;
+
+            // Mode description
+            String modeDesc = switch (currentMode) {
+                case OFF -> "Impact feedback disabled";
+                case MINIMAL -> "Flash and shake effects only";
+                case DETAILED -> "Full damage breakdown panels";
+                case ANALYSIS -> "Complete analysis with DPS tracking";
+            };
+            AxiomRenderer.drawHint(graphics, font, x, currentY, modeDesc);
         } finally {
             // Disable scissoring
             graphics.disableScissor();
@@ -164,16 +229,20 @@ public class CombatSettingsPage implements SettingsPage {
         h += ROW_HEIGHT + 4; // Quick Actions header
         h += DesignTokens.Component.BUTTON_HEIGHT_LG + 8; // Button
         h += 20; // Hint
+        h += SECTION_SPACING * 2; // Separator + spacing
+        h += ROW_HEIGHT + 4; // Impact HUD Mode header
+        h += DesignTokens.Component.BUTTON_HEIGHT_MD + 8; // Mode buttons
+        h += ROW_HEIGHT; // Mode description
         return h;
     }
 
-    private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
+    private void renderScrollbar(@Nonnull GuiGraphics graphics, int x, int y, int barWidth, int height) {
         Scrollbar.render(graphics, x, y, barWidth, height,
             scrollOffset, totalContentHeight, visibleHeight,
             false, isDraggingScrollbar);
     }
 
-    private int renderStatRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
+    private int renderStatRow(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                String label, String value, int valueColor) {
         graphics.drawString(font, label, x, y + 2, DesignTokens.Text.SECONDARY, false);
 
@@ -207,8 +276,19 @@ public class CombatSettingsPage implements SettingsPage {
             }
         }
 
-        if (isMouseOverContent(mouseX, mouseY) && openEditorButton.mouseClicked(mouseX, mouseY, button)) {
-            return true;
+        if (isMouseOverContent(mouseX, mouseY)) {
+            if (openEditorButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (impactMinimalBtn.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (impactDetailedBtn.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (impactAnalysisBtn.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
         }
 
         return false;
@@ -233,6 +313,15 @@ public class CombatSettingsPage implements SettingsPage {
         if (openEditorButton.mouseReleased(mouseX, mouseY, button)) {
             return true;
         }
+        if (impactMinimalBtn.mouseReleased(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (impactDetailedBtn.mouseReleased(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (impactAnalysisBtn.mouseReleased(mouseX, mouseY, button)) {
+            return true;
+        }
         return false;
     }
 
@@ -252,11 +341,6 @@ public class CombatSettingsPage implements SettingsPage {
             return true;
         }
         return false;
-    }
-
-    @Override
-    public int getContentHeight() {
-        return calculateContentHeight();
     }
 
     private boolean isMouseOverContent(double mouseX, double mouseY) {

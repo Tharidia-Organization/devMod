@@ -37,24 +37,9 @@ class DuckDBTelemetryIntegrationTest {
     @Nullable private static Connection testConnection;
     @Nullable private static DuckDBConnectionManager connectionManager;
     @Nullable private static DuckDBBatchWriter batchWriter;
-    @Nullable private static Boolean samplingEnabledOriginal;
-    private static double sampleRateLowOriginal;
-    private static double sampleRateNormalOriginal;
-    private static double sampleRateHighOriginal;
-    private static double sampleRateCriticalOriginal;
-
     @BeforeAll
     static void setupDatabase() throws SQLException {
-        samplingEnabledOriginal = DuckDBConfig.SAMPLING_ENABLED;
-        sampleRateLowOriginal = DuckDBConfig.SAMPLE_RATE_LOW;
-        sampleRateNormalOriginal = DuckDBConfig.SAMPLE_RATE_NORMAL;
-        sampleRateHighOriginal = DuckDBConfig.SAMPLE_RATE_HIGH;
-        sampleRateCriticalOriginal = DuckDBConfig.SAMPLE_RATE_CRITICAL;
-        DuckDBConfig.SAMPLING_ENABLED = false;
-        DuckDBConfig.SAMPLE_RATE_LOW = 1.0;
-        DuckDBConfig.SAMPLE_RATE_NORMAL = 1.0;
-        DuckDBConfig.SAMPLE_RATE_HIGH = 1.0;
-        DuckDBConfig.SAMPLE_RATE_CRITICAL = 1.0;
+        DuckDBConfig.overrideSamplingForTest(false, 1.0, 1.0, 1.0, 1.0);
 
         Path dbPath = Objects.requireNonNull(tempDir).resolve("test_telemetry.duckdb");
         connectionManager = new DuckDBConnectionManager(dbPath);
@@ -77,13 +62,7 @@ class DuckDBTelemetryIntegrationTest {
         if (connectionManager != null) {
             requireConnectionManager().shutdown();
         }
-        if (samplingEnabledOriginal != null) {
-            DuckDBConfig.SAMPLING_ENABLED = samplingEnabledOriginal;
-            DuckDBConfig.SAMPLE_RATE_LOW = sampleRateLowOriginal;
-            DuckDBConfig.SAMPLE_RATE_NORMAL = sampleRateNormalOriginal;
-            DuckDBConfig.SAMPLE_RATE_HIGH = sampleRateHighOriginal;
-            DuckDBConfig.SAMPLE_RATE_CRITICAL = sampleRateCriticalOriginal;
-        }
+        DuckDBConfig.clearSamplingOverride();
     }
 
     private static DuckDBConnectionManager requireConnectionManager() {

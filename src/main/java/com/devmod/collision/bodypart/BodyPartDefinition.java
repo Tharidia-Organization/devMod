@@ -37,10 +37,10 @@ public record BodyPartDefinition(
     /**
      * Default colors for body parts (ARGB format).
      */
-    public static final int COLOR_HEAD = 0xFF00FFFF;  // Cyan
-    public static final int COLOR_ARMS = 0xFFFFFF00;  // Yellow
-    public static final int COLOR_BODY = 0xFF00FF00;  // Green
-    public static final int COLOR_LEGS = 0xFFFF0000;  // Red
+    public static final int COLOR_HEAD = BodyPartColors.HEAD;
+    public static final int COLOR_ARMS = BodyPartColors.ARMS;
+    public static final int COLOR_BODY = BodyPartColors.BODY;
+    public static final int COLOR_LEGS = BodyPartColors.LEGS;
 
     /**
      * Creates a base OBB from this definition (no rotation).

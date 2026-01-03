@@ -141,7 +141,7 @@ public class GameDesignConfigManager {
             GameDesignConfig loaded = GSON.fromJson(json, GameDesignConfig.class);
             if (loaded != null) {
                 this.globalConfig = loaded;
-                LOGGER.info("[GameDesignConfig] Loaded configuration (version {})", loaded.version);
+                LOGGER.info("[GameDesignConfig] Loaded configuration (version {})", loaded.getVersion());
             } else {
                 LOGGER.warn("[GameDesignConfig] Config file parsed to null, keeping defaults");
             }
@@ -156,7 +156,10 @@ public class GameDesignConfigManager {
     public void save() {
         Path configPath = getConfigPath();
         try {
-            Files.createDirectories(configPath.getParent());
+            Path parent = configPath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
             String json = GSON.toJson(getGlobalConfig());
             Files.writeString(configPath, json);
             dirty = false;
@@ -238,49 +241,49 @@ public class GameDesignConfigManager {
      * Get resonance config for an instance.
      */
     public GameDesignConfig.ResonanceConfig getResonanceConfig(@Nullable UUID instanceId) {
-        return getEffectiveConfig(instanceId).resonance;
+        return getEffectiveConfig(instanceId).getResonance();
     }
 
     /**
      * Get contracts config for an instance.
      */
     public GameDesignConfig.ContractsConfig getContractsConfig(@Nullable UUID instanceId) {
-        return getEffectiveConfig(instanceId).contracts;
+        return getEffectiveConfig(instanceId).getContracts();
     }
 
     /**
      * Get signature weapons config.
      */
     public GameDesignConfig.SignatureWeaponsConfig getSignatureWeaponsConfig() {
-        return getGlobalConfig().signatureWeapons;
+        return getGlobalConfig().getSignatureWeapons();
     }
 
     /**
      * Get signature weapons config for an instance.
      */
     public GameDesignConfig.SignatureWeaponsConfig getSignatureWeaponsConfig(@Nullable UUID instanceId) {
-        return getEffectiveConfig(instanceId).signatureWeapons;
+        return getEffectiveConfig(instanceId).getSignatureWeapons();
     }
 
     /**
      * Get nemesis config for an instance.
      */
     public GameDesignConfig.NemesisConfig getNemesisConfig(@Nullable UUID instanceId) {
-        return getEffectiveConfig(instanceId).nemesis;
+        return getEffectiveConfig(instanceId).getNemesis();
     }
 
     /**
      * Get tide config.
      */
     public GameDesignConfig.TideConfig getTideConfig() {
-        return getGlobalConfig().tide;
+        return getGlobalConfig().getTide();
     }
 
     /**
      * Get tide config for an instance.
      */
     public GameDesignConfig.TideConfig getTideConfig(@Nullable UUID instanceId) {
-        return getEffectiveConfig(instanceId).tide;
+        return getEffectiveConfig(instanceId).getTide();
     }
 
     // ========== Quick Enabled Checks ==========
@@ -294,7 +297,7 @@ public class GameDesignConfigManager {
     }
 
     public boolean isSignatureWeaponsEnabled() {
-        return getGlobalConfig().signatureWeapons.enabled;
+        return getGlobalConfig().getSignatureWeapons().enabled;
     }
 
     public boolean isNemesisEnabled(@Nullable UUID instanceId) {
@@ -302,6 +305,6 @@ public class GameDesignConfigManager {
     }
 
     public boolean isTideEnabled() {
-        return getGlobalConfig().tide.enabled;
+        return getGlobalConfig().getTide().enabled;
     }
 }

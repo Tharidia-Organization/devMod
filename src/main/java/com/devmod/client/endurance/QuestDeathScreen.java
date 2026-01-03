@@ -28,10 +28,10 @@ import com.devmod.util.I18n;
 public class QuestDeathScreen extends Screen {
 
     // === Colors - Thematic death screen (red theme, using DesignTokens) ===
-    private static final int COLOR_BG = 0xEE0a0a14;           // Dark red-tinted background (death-specific)
-    private static final int COLOR_PANEL_BG = 0xDD1a0a0a;     // Dark panel (death-specific)
+    private static final int COLOR_BG = EnduranceUiTheme.DeathScreen.BG;           // Dark red-tinted background (death-specific)
+    private static final int COLOR_PANEL_BG = EnduranceUiTheme.DeathScreen.PANEL_BG;     // Dark panel (death-specific)
     private static final int COLOR_BORDER = DesignTokens.Semantic.ERROR;
-    private static final int COLOR_BORDER_GLOW = DesignTokens.withAlpha(DesignTokens.Semantic.ERROR, 0x44);
+    private static final int COLOR_BORDER_GLOW = DesignTokens.withAlpha(DesignTokens.Semantic.ERROR, DesignTokens.Alpha.A27);
     private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
     private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
     private static final int COLOR_DEATH = DesignTokens.Semantic.ERROR;
@@ -110,7 +110,7 @@ public class QuestDeathScreen extends Screen {
 
         // Darken background
         int bgAlpha = (int) (((COLOR_BG >> 24) & 0xFF) * fadeProgress);
-        graphics.fill(0, 0, width, height, (bgAlpha << 24) | (COLOR_BG & 0x00FFFFFF));
+        graphics.fill(0, 0, width, height, (bgAlpha << 24) | (COLOR_BG & DesignTokens.Mask.RGB));
 
         int centerX = width / 2;
         int centerY = height / 2;
@@ -152,13 +152,13 @@ public class QuestDeathScreen extends Screen {
         int glowAlpha = (int) (((COLOR_BORDER_GLOW >> 24) & 0xFF) * alpha);
 
         // Glow
-        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, (glowAlpha << 24) | (COLOR_BORDER_GLOW & 0x00FFFFFF));
+        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, (glowAlpha << 24) | (COLOR_BORDER_GLOW & DesignTokens.Mask.RGB));
 
         // Background
-        g.fill(x, y, x + w, y + h, (bgAlpha << 24) | (COLOR_PANEL_BG & 0x00FFFFFF));
+        g.fill(x, y, x + w, y + h, (bgAlpha << 24) | (COLOR_PANEL_BG & DesignTokens.Mask.RGB));
 
         // Border
-        int borderColor = (borderAlpha << 24) | (COLOR_BORDER & 0x00FFFFFF);
+        int borderColor = (borderAlpha << 24) | (COLOR_BORDER & DesignTokens.Mask.RGB);
         g.fill(x, y, x + w, y + 2, borderColor);           // Top
         g.fill(x, y + h - 2, x + w, y + h, borderColor);   // Bottom
         g.fill(x, y, x + 2, y + h, borderColor);           // Left
@@ -229,7 +229,7 @@ public class QuestDeathScreen extends Screen {
     private int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
         if (a < 0) a = (int)(255 * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {

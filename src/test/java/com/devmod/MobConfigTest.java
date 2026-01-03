@@ -35,6 +35,13 @@ public class MobConfigTest {
         public float followRange = 16.0f;
         public float attackKnockback = 0.0f;
 
+        public float getAttackDamage() { return attackDamage; }
+        public void setAttackDamage(float v) { attackDamage = v; }
+        public float getKnockbackResistance() { return knockbackResistance; }
+        public void setKnockbackResistance(float v) { knockbackResistance = v; }
+        public float getAttackKnockback() { return attackKnockback; }
+        public void setAttackKnockback(float v) { attackKnockback = v; }
+
         public static MockMobStats defaultStats() {
             return new MockMobStats();
         }
@@ -42,13 +49,13 @@ public class MobConfigTest {
         public static MockMobStats copy(MockMobStats other) {
             MockMobStats stats = new MockMobStats();
             stats.maxHealth = other.maxHealth;
-            stats.attackDamage = other.attackDamage;
+            stats.setAttackDamage(other.getAttackDamage());
             stats.armor = other.armor;
             stats.armorToughness = other.armorToughness;
             stats.movementSpeed = other.movementSpeed;
-            stats.knockbackResistance = other.knockbackResistance;
+            stats.setKnockbackResistance(other.getKnockbackResistance());
             stats.followRange = other.followRange;
-            stats.attackKnockback = other.attackKnockback;
+            stats.setAttackKnockback(other.getAttackKnockback());
             return stats;
         }
 
@@ -56,13 +63,13 @@ public class MobConfigTest {
         public boolean equals(Object obj) {
             if (!(obj instanceof MockMobStats other)) return false;
             return Float.compare(maxHealth, other.maxHealth) == 0 &&
-                   Float.compare(attackDamage, other.attackDamage) == 0 &&
+                   Float.compare(attackDamage, other.getAttackDamage()) == 0 &&
                    Float.compare(armor, other.armor) == 0 &&
                    Float.compare(armorToughness, other.armorToughness) == 0 &&
                    Float.compare(movementSpeed, other.movementSpeed) == 0 &&
-                   Float.compare(knockbackResistance, other.knockbackResistance) == 0 &&
+                   Float.compare(knockbackResistance, other.getKnockbackResistance()) == 0 &&
                    Float.compare(followRange, other.followRange) == 0 &&
-                   Float.compare(attackKnockback, other.attackKnockback) == 0;
+                   Float.compare(attackKnockback, other.getAttackKnockback()) == 0;
         }
 
         @Override
@@ -151,13 +158,13 @@ public class MobConfigTest {
                 MockMobStats s = entry.getValue();
                 sb.append("  \"").append(entry.getKey()).append("\": {\n");
                 sb.append("    \"maxHealth\": ").append(s.maxHealth).append(",\n");
-                sb.append("    \"attackDamage\": ").append(s.attackDamage).append(",\n");
+                sb.append("    \"attackDamage\": ").append(s.getAttackDamage()).append(",\n");
                 sb.append("    \"armor\": ").append(s.armor).append(",\n");
                 sb.append("    \"armorToughness\": ").append(s.armorToughness).append(",\n");
                 sb.append("    \"movementSpeed\": ").append(s.movementSpeed).append(",\n");
-                sb.append("    \"knockbackResistance\": ").append(s.knockbackResistance).append(",\n");
+                sb.append("    \"knockbackResistance\": ").append(s.getKnockbackResistance()).append(",\n");
                 sb.append("    \"followRange\": ").append(s.followRange).append(",\n");
-                sb.append("    \"attackKnockback\": ").append(s.attackKnockback).append("\n");
+                sb.append("    \"attackKnockback\": ").append(s.getAttackKnockback()).append("\n");
                 sb.append("  }");
             }
             sb.append("\n}");
@@ -188,13 +195,13 @@ public class MobConfigTest {
 
                     switch (key) {
                         case "maxHealth" -> currentStats.maxHealth = Float.parseFloat(value);
-                        case "attackDamage" -> currentStats.attackDamage = Float.parseFloat(value);
+                        case "attackDamage" -> currentStats.setAttackDamage(Float.parseFloat(value));
                         case "armor" -> currentStats.armor = Float.parseFloat(value);
                         case "armorToughness" -> currentStats.armorToughness = Float.parseFloat(value);
                         case "movementSpeed" -> currentStats.movementSpeed = Float.parseFloat(value);
-                        case "knockbackResistance" -> currentStats.knockbackResistance = Float.parseFloat(value);
+                        case "knockbackResistance" -> currentStats.setKnockbackResistance(Float.parseFloat(value));
                         case "followRange" -> currentStats.followRange = Float.parseFloat(value);
-                        case "attackKnockback" -> currentStats.attackKnockback = Float.parseFloat(value);
+                        case "attackKnockback" -> currentStats.setAttackKnockback(Float.parseFloat(value));
                     }
                 }
             }
@@ -238,7 +245,7 @@ public class MobConfigTest {
             MockMobStats stats = configManager.getStatsFor("minecraft:zombie");
 
             assertEquals(20.0f, stats.maxHealth);
-            assertEquals(2.0f, stats.attackDamage);
+            assertEquals(2.0f, stats.getAttackDamage());
             assertEquals(0.0f, stats.armor);
             assertEquals(0.3f, stats.movementSpeed);
         }
@@ -275,14 +282,14 @@ public class MobConfigTest {
         void testSetStatsPersists() {
             MockMobStats stats = new MockMobStats();
             stats.maxHealth = 100;
-            stats.attackDamage = 20;
+            stats.setAttackDamage(20);
             stats.armor = 10;
 
             configManager.setStatsFor("minecraft:wither", stats);
 
             MockMobStats retrieved = configManager.getStatsFor("minecraft:wither");
             assertEquals(100, retrieved.maxHealth);
-            assertEquals(20, retrieved.attackDamage);
+            assertEquals(20, retrieved.getAttackDamage());
             assertEquals(10, retrieved.armor);
         }
 
@@ -426,7 +433,7 @@ public class MobConfigTest {
 
             MockMobStats stats = configManager.getStatsFor("minecraft:zombie");
             assertEquals(40.0f, stats.maxHealth, 0.01f);
-            assertEquals(5.0f, stats.attackDamage, 0.01f);
+            assertEquals(5.0f, stats.getAttackDamage(), 0.01f);
             assertEquals(35.0f, stats.followRange, 0.01f);
         }
 
@@ -435,7 +442,7 @@ public class MobConfigTest {
         void testRoundTrip() {
             MockMobStats original = new MockMobStats();
             original.maxHealth = 300;
-            original.attackDamage = 25;
+            original.setAttackDamage(25);
             original.armor = 15;
             original.movementSpeed = 0.4f;
 
@@ -447,7 +454,7 @@ public class MobConfigTest {
 
             MockMobStats restored = configManager.getStatsFor("minecraft:warden");
             assertEquals(original.maxHealth, restored.maxHealth, 0.01f);
-            assertEquals(original.attackDamage, restored.attackDamage, 0.01f);
+            assertEquals(original.getAttackDamage(), restored.getAttackDamage(), 0.01f);
         }
     }
 
@@ -510,8 +517,8 @@ public class MobConfigTest {
 
             MockMobStats stats = new MockMobStats();
             stats.maxHealth = 500;
-            stats.attackDamage = 50;
-            stats.knockbackResistance = 1.0f;
+            stats.setAttackDamage(50);
+            stats.setKnockbackResistance(1.0f);
             configManager.setStatsFor("minecraft:ender_dragon", stats);
 
             configManager.saveToFile();
@@ -522,8 +529,8 @@ public class MobConfigTest {
 
             MockMobStats loaded = newManager.getStatsFor("minecraft:ender_dragon");
             assertEquals(500, loaded.maxHealth, 0.01f);
-            assertEquals(50, loaded.attackDamage, 0.01f);
-            assertEquals(1.0f, loaded.knockbackResistance, 0.01f);
+            assertEquals(50, loaded.getAttackDamage(), 0.01f);
+            assertEquals(1.0f, loaded.getKnockbackResistance(), 0.01f);
         }
 
         @Test
@@ -592,8 +599,8 @@ public class MobConfigTest {
         void testExtremeValues() {
             MockMobStats stats = new MockMobStats();
             stats.maxHealth = 10000;
-            stats.attackDamage = 1000;
-            stats.knockbackResistance = 1.0f;
+            stats.setAttackDamage(1000);
+            stats.setKnockbackResistance(1.0f);
 
             configManager.setStatsFor("op:boss", stats);
 
@@ -610,26 +617,26 @@ public class MobConfigTest {
         void testZeroValues() {
             MockMobStats stats = new MockMobStats();
             stats.maxHealth = 0;
-            stats.attackDamage = 0;
+            stats.setAttackDamage(0);
             stats.movementSpeed = 0;
 
             configManager.setStatsFor("weak:mob", stats);
 
             MockMobStats loaded = configManager.getStatsFor("weak:mob");
             assertEquals(0, loaded.maxHealth, 0.01f);
-            assertEquals(0, loaded.attackDamage, 0.01f);
+            assertEquals(0, loaded.getAttackDamage(), 0.01f);
         }
 
         @Test
         @DisplayName("Negative stat values")
         void testNegativeValues() {
             MockMobStats stats = new MockMobStats();
-            stats.attackDamage = -5; // Healing attack?
+            stats.setAttackDamage(-5); // Healing attack?
 
             configManager.setStatsFor("healer:mob", stats);
 
             MockMobStats loaded = configManager.getStatsFor("healer:mob");
-            assertEquals(-5, loaded.attackDamage, 0.01f);
+            assertEquals(-5, loaded.getAttackDamage(), 0.01f);
         }
 
         @Test
@@ -637,7 +644,7 @@ public class MobConfigTest {
         void testFloatingPointPrecision() {
             MockMobStats stats = new MockMobStats();
             stats.movementSpeed = 0.2345679f;
-            stats.knockbackResistance = 0.12345678f;
+            stats.setKnockbackResistance(0.12345678f);
 
             configManager.setStatsFor("precise:mob", stats);
 
@@ -669,25 +676,25 @@ public class MobConfigTest {
         void testAllAttributes() {
             MockMobStats stats = new MockMobStats();
             stats.maxHealth = 100;
-            stats.attackDamage = 10;
+            stats.setAttackDamage(10);
             stats.armor = 5;
             stats.armorToughness = 2;
             stats.movementSpeed = 0.35f;
-            stats.knockbackResistance = 0.5f;
+            stats.setKnockbackResistance(0.5f);
             stats.followRange = 48;
-            stats.attackKnockback = 1.5f;
+            stats.setAttackKnockback(1.5f);
 
             configManager.setStatsFor("test:full_mob", stats);
 
             MockMobStats loaded = configManager.getStatsFor("test:full_mob");
             assertEquals(100, loaded.maxHealth, 0.01f);
-            assertEquals(10, loaded.attackDamage, 0.01f);
+            assertEquals(10, loaded.getAttackDamage(), 0.01f);
             assertEquals(5, loaded.armor, 0.01f);
             assertEquals(2, loaded.armorToughness, 0.01f);
             assertEquals(0.35f, loaded.movementSpeed, 0.01f);
-            assertEquals(0.5f, loaded.knockbackResistance, 0.01f);
+            assertEquals(0.5f, loaded.getKnockbackResistance(), 0.01f);
             assertEquals(48, loaded.followRange, 0.01f);
-            assertEquals(1.5f, loaded.attackKnockback, 0.01f);
+            assertEquals(1.5f, loaded.getAttackKnockback(), 0.01f);
         }
     }
 }

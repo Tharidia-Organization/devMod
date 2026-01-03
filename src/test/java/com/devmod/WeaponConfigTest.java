@@ -34,19 +34,34 @@ public class WeaponConfigTest {
         public float attackSpeed = 1.0f;
         public float range = 3.0f;
 
+        public float getBaseDamageBonus() { return baseDamageBonus; }
+        public void setBaseDamageBonus(float v) { baseDamageBonus = v; }
+        public float getHeadMult() { return headMult; }
+        public void setHeadMult(float v) { headMult = v; }
+        public float getBodyMult() { return bodyMult; }
+        public void setBodyMult(float v) { bodyMult = v; }
+        public float getArmsMult() { return armsMult; }
+        public void setArmsMult(float v) { armsMult = v; }
+        public float getLegsMult() { return legsMult; }
+        public void setLegsMult(float v) { legsMult = v; }
+        public float getArmorPenetration() { return armorPenetration; }
+        public void setArmorPenetration(float v) { armorPenetration = v; }
+        public float getAttackSpeed() { return attackSpeed; }
+        public void setAttackSpeed(float v) { attackSpeed = v; }
+
         public static MockWeaponStats defaultStats() {
             return new MockWeaponStats();
         }
 
         public static MockWeaponStats copy(MockWeaponStats other) {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = other.baseDamageBonus;
-            stats.headMult = other.headMult;
-            stats.bodyMult = other.bodyMult;
-            stats.armsMult = other.armsMult;
-            stats.legsMult = other.legsMult;
-            stats.armorPenetration = other.armorPenetration;
-            stats.attackSpeed = other.attackSpeed;
+            stats.setBaseDamageBonus(other.getBaseDamageBonus());
+            stats.setHeadMult(other.getHeadMult());
+            stats.setBodyMult(other.getBodyMult());
+            stats.setArmsMult(other.getArmsMult());
+            stats.setLegsMult(other.getLegsMult());
+            stats.setArmorPenetration(other.getArmorPenetration());
+            stats.setAttackSpeed(other.getAttackSpeed());
             stats.range = other.range;
             return stats;
         }
@@ -54,13 +69,13 @@ public class WeaponConfigTest {
         @Override
         public boolean equals(Object obj) {
             if (!(obj instanceof MockWeaponStats other)) return false;
-            return Float.compare(baseDamageBonus, other.baseDamageBonus) == 0 &&
-                   Float.compare(headMult, other.headMult) == 0 &&
-                   Float.compare(bodyMult, other.bodyMult) == 0 &&
-                   Float.compare(armsMult, other.armsMult) == 0 &&
-                   Float.compare(legsMult, other.legsMult) == 0 &&
-                   Float.compare(armorPenetration, other.armorPenetration) == 0 &&
-                   Float.compare(attackSpeed, other.attackSpeed) == 0 &&
+            return Float.compare(baseDamageBonus, other.getBaseDamageBonus()) == 0 &&
+                   Float.compare(headMult, other.getHeadMult()) == 0 &&
+                   Float.compare(bodyMult, other.getBodyMult()) == 0 &&
+                   Float.compare(armsMult, other.getArmsMult()) == 0 &&
+                   Float.compare(legsMult, other.getLegsMult()) == 0 &&
+                   Float.compare(armorPenetration, other.getArmorPenetration()) == 0 &&
+                   Float.compare(attackSpeed, other.getAttackSpeed()) == 0 &&
                    Float.compare(range, other.range) == 0;
         }
 
@@ -117,13 +132,13 @@ public class WeaponConfigTest {
                 first = false;
                 MockWeaponStats s = entry.getValue();
                 sb.append("  \"").append(entry.getKey()).append("\": {\n");
-                sb.append("    \"baseDamageBonus\": ").append(s.baseDamageBonus).append(",\n");
-                sb.append("    \"headMult\": ").append(s.headMult).append(",\n");
-                sb.append("    \"bodyMult\": ").append(s.bodyMult).append(",\n");
-                sb.append("    \"armsMult\": ").append(s.armsMult).append(",\n");
-                sb.append("    \"legsMult\": ").append(s.legsMult).append(",\n");
-                sb.append("    \"armorPenetration\": ").append(s.armorPenetration).append(",\n");
-                sb.append("    \"attackSpeed\": ").append(s.attackSpeed).append(",\n");
+                sb.append("    \"baseDamageBonus\": ").append(s.getBaseDamageBonus()).append(",\n");
+                sb.append("    \"headMult\": ").append(s.getHeadMult()).append(",\n");
+                sb.append("    \"bodyMult\": ").append(s.getBodyMult()).append(",\n");
+                sb.append("    \"armsMult\": ").append(s.getArmsMult()).append(",\n");
+                sb.append("    \"legsMult\": ").append(s.getLegsMult()).append(",\n");
+                sb.append("    \"armorPenetration\": ").append(s.getArmorPenetration()).append(",\n");
+                sb.append("    \"attackSpeed\": ").append(s.getAttackSpeed()).append(",\n");
                 sb.append("    \"range\": ").append(s.range).append("\n");
                 sb.append("  }");
             }
@@ -159,13 +174,13 @@ public class WeaponConfigTest {
                     String value = line.substring(colonIndex + 1).trim().replace(",", "");
 
                     switch (key) {
-                        case "baseDamageBonus" -> currentStats.baseDamageBonus = Float.parseFloat(value);
-                        case "headMult" -> currentStats.headMult = Float.parseFloat(value);
-                        case "bodyMult" -> currentStats.bodyMult = Float.parseFloat(value);
-                        case "armsMult" -> currentStats.armsMult = Float.parseFloat(value);
-                        case "legsMult" -> currentStats.legsMult = Float.parseFloat(value);
-                        case "armorPenetration" -> currentStats.armorPenetration = Float.parseFloat(value);
-                        case "attackSpeed" -> currentStats.attackSpeed = Float.parseFloat(value);
+                        case "baseDamageBonus" -> currentStats.setBaseDamageBonus(Float.parseFloat(value));
+                        case "headMult" -> currentStats.setHeadMult(Float.parseFloat(value));
+                        case "bodyMult" -> currentStats.setBodyMult(Float.parseFloat(value));
+                        case "armsMult" -> currentStats.setArmsMult(Float.parseFloat(value));
+                        case "legsMult" -> currentStats.setLegsMult(Float.parseFloat(value));
+                        case "armorPenetration" -> currentStats.setArmorPenetration(Float.parseFloat(value));
+                        case "attackSpeed" -> currentStats.setAttackSpeed(Float.parseFloat(value));
                         case "range" -> currentStats.range = Float.parseFloat(value);
                     }
                 }
@@ -209,12 +224,12 @@ public class WeaponConfigTest {
         void testNewWeaponDefaultStats() {
             MockWeaponStats stats = configManager.getStatsFor("minecraft:diamond_sword");
 
-            assertEquals(0f, stats.baseDamageBonus);
-            assertEquals(2.0f, stats.headMult);
-            assertEquals(1.0f, stats.bodyMult);
-            assertEquals(0.75f, stats.armsMult);
-            assertEquals(0.5f, stats.legsMult);
-            assertEquals(0f, stats.armorPenetration);
+            assertEquals(0f, stats.getBaseDamageBonus());
+            assertEquals(2.0f, stats.getHeadMult());
+            assertEquals(1.0f, stats.getBodyMult());
+            assertEquals(0.75f, stats.getArmsMult());
+            assertEquals(0.5f, stats.getLegsMult());
+            assertEquals(0f, stats.getArmorPenetration());
         }
 
         @Test
@@ -224,11 +239,11 @@ public class WeaponConfigTest {
             configManager.getStatsFor("minecraft:diamond_axe");
 
             // Modify sword
-            sword.baseDamageBonus = 5f;
+            sword.setBaseDamageBonus(5f);
 
             // Axe should still have default
             MockWeaponStats axeCheck = configManager.getStatsFor("minecraft:diamond_axe");
-            assertEquals(0f, axeCheck.baseDamageBonus);
+            assertEquals(0f, axeCheck.getBaseDamageBonus());
         }
 
         @Test
@@ -253,32 +268,32 @@ public class WeaponConfigTest {
         @DisplayName("Set stats should persist")
         void testSetStatsPersists() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 10f;
-            stats.headMult = 3.0f;
-            stats.armorPenetration = 0.5f;
+            stats.setBaseDamageBonus(10f);
+            stats.setHeadMult(3.0f);
+            stats.setArmorPenetration(0.5f);
 
             configManager.setStatsFor("minecraft:netherite_sword", stats);
 
             MockWeaponStats retrieved = configManager.getStatsFor("minecraft:netherite_sword");
-            assertEquals(10f, retrieved.baseDamageBonus);
-            assertEquals(3.0f, retrieved.headMult);
-            assertEquals(0.5f, retrieved.armorPenetration);
+            assertEquals(10f, retrieved.getBaseDamageBonus());
+            assertEquals(3.0f, retrieved.getHeadMult());
+            assertEquals(0.5f, retrieved.getArmorPenetration());
         }
 
         @Test
         @DisplayName("Set stats should be copied not referenced")
         void testSetStatsCopied() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 10f;
+            stats.setBaseDamageBonus(10f);
 
             configManager.setStatsFor("minecraft:diamond_sword", stats);
 
             // Modify original
-            stats.baseDamageBonus = 20f;
+            stats.setBaseDamageBonus(20f);
 
             // Should still be 10
             MockWeaponStats retrieved = configManager.getStatsFor("minecraft:diamond_sword");
-            assertEquals(10f, retrieved.baseDamageBonus);
+            assertEquals(10f, retrieved.getBaseDamageBonus());
         }
 
         @Test
@@ -327,7 +342,7 @@ public class WeaponConfigTest {
         @DisplayName("Single weapon should serialize correctly")
         void testSingleWeaponSerialization() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 5f;
+            stats.setBaseDamageBonus(5f);
             configManager.setStatsFor("minecraft:diamond_sword", stats);
 
             String json = configManager.toJson();
@@ -341,12 +356,12 @@ public class WeaponConfigTest {
         @DisplayName("Multiple weapons should serialize correctly")
         void testMultipleWeaponsSerialization() {
             MockWeaponStats sword = new MockWeaponStats();
-            sword.baseDamageBonus = 5f;
+            sword.setBaseDamageBonus(5f);
             configManager.setStatsFor("minecraft:diamond_sword", sword);
 
             MockWeaponStats axe = new MockWeaponStats();
-            axe.baseDamageBonus = 8f;
-            axe.headMult = 2.5f;
+            axe.setBaseDamageBonus(8f);
+            axe.setHeadMult(2.5f);
             configManager.setStatsFor("minecraft:diamond_axe", axe);
 
             String json = configManager.toJson();
@@ -376,20 +391,20 @@ public class WeaponConfigTest {
             configManager.fromJson(json);
 
             MockWeaponStats stats = configManager.getStatsFor("minecraft:diamond_sword");
-            assertEquals(5.0f, stats.baseDamageBonus, 0.01f);
-            assertEquals(3.0f, stats.headMult, 0.01f);
-            assertEquals(1.5f, stats.bodyMult, 0.01f);
-            assertEquals(0.25f, stats.armorPenetration, 0.01f);
+            assertEquals(5.0f, stats.getBaseDamageBonus(), 0.01f);
+            assertEquals(3.0f, stats.getHeadMult(), 0.01f);
+            assertEquals(1.5f, stats.getBodyMult(), 0.01f);
+            assertEquals(0.25f, stats.getArmorPenetration(), 0.01f);
         }
 
         @Test
         @DisplayName("Round-trip serialization should preserve data")
         void testRoundTrip() {
             MockWeaponStats original = new MockWeaponStats();
-            original.baseDamageBonus = 7.5f;
-            original.headMult = 2.5f;
-            original.armorPenetration = 0.33f;
-            original.attackSpeed = 1.4f;
+            original.setBaseDamageBonus(7.5f);
+            original.setHeadMult(2.5f);
+            original.setArmorPenetration(0.33f);
+            original.setAttackSpeed(1.4f);
             original.range = 5.0f;
 
             configManager.setStatsFor("test:weapon", original);
@@ -399,9 +414,9 @@ public class WeaponConfigTest {
             configManager.fromJson(json);
 
             MockWeaponStats restored = configManager.getStatsFor("test:weapon");
-            assertEquals(original.baseDamageBonus, restored.baseDamageBonus, 0.01f);
-            assertEquals(original.headMult, restored.headMult, 0.01f);
-            assertEquals(original.armorPenetration, restored.armorPenetration, 0.01f);
+            assertEquals(original.getBaseDamageBonus(), restored.getBaseDamageBonus(), 0.01f);
+            assertEquals(original.getHeadMult(), restored.getHeadMult(), 0.01f);
+            assertEquals(original.getArmorPenetration(), restored.getArmorPenetration(), 0.01f);
         }
     }
 
@@ -420,7 +435,7 @@ public class WeaponConfigTest {
             configManager.setConfigPath(configFile);
 
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 10f;
+            stats.setBaseDamageBonus(10f);
             configManager.setStatsFor("minecraft:diamond_sword", stats);
 
             configManager.saveToFile();
@@ -454,7 +469,7 @@ public class WeaponConfigTest {
 
             assertTrue(configManager.hasStats("minecraft:iron_sword"));
             MockWeaponStats stats = configManager.getStatsFor("minecraft:iron_sword");
-            assertEquals(3.0f, stats.baseDamageBonus, 0.01f);
+            assertEquals(3.0f, stats.getBaseDamageBonus(), 0.01f);
         }
 
         @Test
@@ -464,9 +479,9 @@ public class WeaponConfigTest {
             configManager.setConfigPath(configFile);
 
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 15f;
-            stats.headMult = 3.5f;
-            stats.armorPenetration = 0.6f;
+            stats.setBaseDamageBonus(15f);
+            stats.setHeadMult(3.5f);
+            stats.setArmorPenetration(0.6f);
             configManager.setStatsFor("modded:epic_sword", stats);
 
             configManager.saveToFile();
@@ -477,9 +492,9 @@ public class WeaponConfigTest {
             newManager.loadFromFile();
 
             MockWeaponStats loaded = newManager.getStatsFor("modded:epic_sword");
-            assertEquals(15f, loaded.baseDamageBonus, 0.01f);
-            assertEquals(3.5f, loaded.headMult, 0.01f);
-            assertEquals(0.6f, loaded.armorPenetration, 0.01f);
+            assertEquals(15f, loaded.getBaseDamageBonus(), 0.01f);
+            assertEquals(3.5f, loaded.getHeadMult(), 0.01f);
+            assertEquals(0.6f, loaded.getArmorPenetration(), 0.01f);
         }
 
         @Test
@@ -500,13 +515,13 @@ public class WeaponConfigTest {
 
             // First save
             MockWeaponStats stats1 = new MockWeaponStats();
-            stats1.baseDamageBonus = 5f;
+            stats1.setBaseDamageBonus(5f);
             configManager.setStatsFor("minecraft:diamond_sword", stats1);
             configManager.saveToFile();
 
             // Second save with different value
             MockWeaponStats stats2 = new MockWeaponStats();
-            stats2.baseDamageBonus = 20f;
+            stats2.setBaseDamageBonus(20f);
             configManager.setStatsFor("minecraft:diamond_sword", stats2);
             configManager.saveToFile();
 
@@ -516,7 +531,7 @@ public class WeaponConfigTest {
             newManager.loadFromFile();
 
             MockWeaponStats loaded = newManager.getStatsFor("minecraft:diamond_sword");
-            assertEquals(20f, loaded.baseDamageBonus, 0.01f);
+            assertEquals(20f, loaded.getBaseDamageBonus(), 0.01f);
         }
     }
 
@@ -539,26 +554,26 @@ public class WeaponConfigTest {
         @DisplayName("Various weapon IDs should work")
         void testVariousWeaponIds(String weaponId) {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 10f;
+            stats.setBaseDamageBonus(10f);
             configManager.setStatsFor(weaponId, stats);
 
             assertTrue(configManager.hasStats(weaponId));
-            assertEquals(10f, configManager.getStatsFor(weaponId).baseDamageBonus);
+            assertEquals(10f, configManager.getStatsFor(weaponId).getBaseDamageBonus());
         }
 
         @Test
         @DisplayName("Case-sensitive weapon IDs")
         void testCaseSensitiveIds() {
             MockWeaponStats lower = new MockWeaponStats();
-            lower.baseDamageBonus = 5f;
+            lower.setBaseDamageBonus(5f);
             configManager.setStatsFor("minecraft:sword", lower);
 
             MockWeaponStats upper = new MockWeaponStats();
-            upper.baseDamageBonus = 10f;
+            upper.setBaseDamageBonus(10f);
             configManager.setStatsFor("MINECRAFT:SWORD", upper);
 
-            assertEquals(5f, configManager.getStatsFor("minecraft:sword").baseDamageBonus);
-            assertEquals(10f, configManager.getStatsFor("MINECRAFT:SWORD").baseDamageBonus);
+            assertEquals(5f, configManager.getStatsFor("minecraft:sword").getBaseDamageBonus());
+            assertEquals(10f, configManager.getStatsFor("MINECRAFT:SWORD").getBaseDamageBonus());
         }
     }
 
@@ -574,9 +589,9 @@ public class WeaponConfigTest {
         @DisplayName("Extreme stat values")
         void testExtremeValues() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 1000f;
-            stats.headMult = 100f;
-            stats.armorPenetration = 1.0f;
+            stats.setBaseDamageBonus(1000f);
+            stats.setHeadMult(100f);
+            stats.setArmorPenetration(1.0f);
 
             configManager.setStatsFor("op:weapon", stats);
 
@@ -585,44 +600,44 @@ public class WeaponConfigTest {
             configManager.fromJson(json);
 
             MockWeaponStats loaded = configManager.getStatsFor("op:weapon");
-            assertEquals(1000f, loaded.baseDamageBonus, 0.01f);
-            assertEquals(100f, loaded.headMult, 0.01f);
+            assertEquals(1000f, loaded.getBaseDamageBonus(), 0.01f);
+            assertEquals(100f, loaded.getHeadMult(), 0.01f);
         }
 
         @Test
         @DisplayName("Negative stat values")
         void testNegativeValues() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = -5f;
-            stats.headMult = -1f;
+            stats.setBaseDamageBonus(-5f);
+            stats.setHeadMult(-1f);
 
             configManager.setStatsFor("cursed:weapon", stats);
 
             MockWeaponStats loaded = configManager.getStatsFor("cursed:weapon");
-            assertEquals(-5f, loaded.baseDamageBonus, 0.01f);
-            assertEquals(-1f, loaded.headMult, 0.01f);
+            assertEquals(-5f, loaded.getBaseDamageBonus(), 0.01f);
+            assertEquals(-1f, loaded.getHeadMult(), 0.01f);
         }
 
         @Test
         @DisplayName("Zero multipliers")
         void testZeroMultipliers() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.headMult = 0f;
-            stats.bodyMult = 0f;
+            stats.setHeadMult(0f);
+            stats.setBodyMult(0f);
 
             configManager.setStatsFor("weak:weapon", stats);
 
             MockWeaponStats loaded = configManager.getStatsFor("weak:weapon");
-            assertEquals(0f, loaded.headMult, 0.01f);
-            assertEquals(0f, loaded.bodyMult, 0.01f);
+            assertEquals(0f, loaded.getHeadMult(), 0.01f);
+            assertEquals(0f, loaded.getBodyMult(), 0.01f);
         }
 
         @Test
         @DisplayName("Floating point precision")
         void testFloatingPointPrecision() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 0.12345679f;
-            stats.headMult = 2.9876542f;
+            stats.setBaseDamageBonus(0.12345679f);
+            stats.setHeadMult(2.9876542f);
 
             configManager.setStatsFor("precise:weapon", stats);
 
@@ -631,8 +646,8 @@ public class WeaponConfigTest {
             configManager.fromJson(json);
 
             MockWeaponStats loaded = configManager.getStatsFor("precise:weapon");
-            assertEquals(0.12345679f, loaded.baseDamageBonus, 0.0001f);
-            assertEquals(2.9876542f, loaded.headMult, 0.0001f);
+            assertEquals(0.12345679f, loaded.getBaseDamageBonus(), 0.0001f);
+            assertEquals(2.9876542f, loaded.getHeadMult(), 0.0001f);
         }
 
         @Test
@@ -641,7 +656,7 @@ public class WeaponConfigTest {
             // Add 100 weapons
             for (int i = 0; i < 100; i++) {
                 MockWeaponStats stats = new MockWeaponStats();
-                stats.baseDamageBonus = i;
+                stats.setBaseDamageBonus(i);
                 configManager.setStatsFor("test:weapon_" + i, stats);
             }
 
@@ -649,7 +664,7 @@ public class WeaponConfigTest {
 
             // Verify random access
             MockWeaponStats stats50 = configManager.getStatsFor("test:weapon_50");
-            assertEquals(50f, stats50.baseDamageBonus, 0.01f);
+            assertEquals(50f, stats50.getBaseDamageBonus(), 0.01f);
 
             // Serialize and deserialize
             String json = configManager.toJson();

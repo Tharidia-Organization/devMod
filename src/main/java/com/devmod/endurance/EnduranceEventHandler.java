@@ -885,7 +885,7 @@ public class EnduranceEventHandler {
                 null // No attachment - rewards already given
             ).exceptionally(ex -> {
                 LOGGER.error("[EnduranceQuest] Failed to deliver mailbox reward notification", ex);
-                return null;
+                return Optional.empty();
             });
 
             LOGGER.debug("[EnduranceQuest] Sent mailbox reward notification to {}", playerName);

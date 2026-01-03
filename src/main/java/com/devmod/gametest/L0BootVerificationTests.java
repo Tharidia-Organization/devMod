@@ -250,10 +250,6 @@ public class L0BootVerificationTests {
         java.util.UUID ownerId = java.util.UUID.randomUUID();
         InstanceData instance = InstanceData.createSolo(ownerId);
 
-        if (instance == null) {
-            helper.fail("InstanceData.createSolo() returned null");
-            return;
-        }
         helper.assertTrue(instance.getInstanceId() != null, "Instance should have ID");
         helper.assertTrue(instance.getState() == InstanceState.CREATING, "Initial state should be CREATING");
         helper.assertTrue(instance.getOwnerId().equals(ownerId), "Owner should match");

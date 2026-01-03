@@ -73,12 +73,12 @@ public class BodyPartRenderer {
      */
     private static String generateLabel(HitHelper.BodyPart part, WeaponStats stats) {
         return switch (part) {
-            case HEAD -> stats.headMult >= 2.0f
-                ? String.format("Head [Crit x%.1f]", stats.headMult)
-                : String.format("Head [x%.2f]", stats.headMult);
-            case ARMS -> String.format("Arms [x%.2f]", stats.armsMult);
-            case BODY -> String.format("Torso [x%.2f]", stats.bodyMult);
-            case LEGS -> String.format("Legs [x%.2f]", stats.legsMult);
+            case HEAD -> stats.getHeadMult() >= 2.0f
+                ? String.format("Head [Crit x%.1f]", stats.getHeadMult())
+                : String.format("Head [x%.2f]", stats.getHeadMult());
+            case ARMS -> String.format("Arms [x%.2f]", stats.getArmsMult());
+            case BODY -> String.format("Torso [x%.2f]", stats.getBodyMult());
+            case LEGS -> String.format("Legs [x%.2f]", stats.getLegsMult());
         };
     }
 
@@ -104,7 +104,7 @@ public class BodyPartRenderer {
         renderWireframeBox(edgesConsumer, matrix, pose, box, r, g, b, EDGE_OPACITY);
 
         // 3. Render label (opzionale)
-        if (showLabels && ModConfig.showOverlay) {
+        if (showLabels && ModConfig.isShowOverlay()) {
             Vec3 labelPos = box.getCenter().add(0, box.getYsize() / 2 + 0.2, 0);
             DebugRenderer.INSTANCE.addLabel(labelPos, label, color, 50L); // 50ms lifetime
         }

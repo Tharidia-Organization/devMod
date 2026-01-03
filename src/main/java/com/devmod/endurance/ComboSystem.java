@@ -32,13 +32,13 @@ public class ComboSystem {
 
     // Style rank thresholds
     public enum StyleRank {
-        D("Dull", 0, 0x888888, 1.0f),
-        C("Crazy", 500, 0x66FF66, 1.2f),
-        B("Brutal", 1500, 0x6666FF, 1.5f),
-        A("Apocalyptic", 3500, 0xFFFF00, 2.0f),
-        S("Savage", 7000, 0xFF9900, 3.0f),
-        SS("Sadistic", 12000, 0xFF3300, 4.0f),
-        SSS("Sensational", 20000, 0xFF00FF, 5.0f);
+        D("Dull", 0, EnduranceColors.StyleRank.D, 1.0f),
+        C("Crazy", 500, EnduranceColors.StyleRank.C, 1.2f),
+        B("Brutal", 1500, EnduranceColors.StyleRank.B, 1.5f),
+        A("Apocalyptic", 3500, EnduranceColors.StyleRank.A, 2.0f),
+        S("Savage", 7000, EnduranceColors.StyleRank.S, 3.0f),
+        SS("Sadistic", 12000, EnduranceColors.StyleRank.SS, 4.0f),
+        SSS("Sensational", 20000, EnduranceColors.StyleRank.SSS, 5.0f);
 
         public final String displayName;
         public final int threshold;

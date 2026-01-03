@@ -233,63 +233,63 @@ public class TrailManager {
         float fadeTime;
 
         if (entity instanceof AbstractArrow) {
-            color = 0xFFFFAA00;  // Orange for arrows
+            color = TrailColors.Entity.ARROW;
             width = 1.5f;
             maxPoints = 30;
             fadeTime = 20f;
         } else if (entity instanceof ThrownPotion) {
-            color = 0xFF9900FF;  // Purple for potions
+            color = TrailColors.Entity.POTION;
             width = 2f;
             maxPoints = 25;
             fadeTime = 15f;
         } else if (entity instanceof ThrownTrident) {
-            color = 0xFF00FFFF;  // Cyan for tridents
+            color = TrailColors.Entity.TRIDENT;
             width = 2f;
             maxPoints = 40;
             fadeTime = 25f;
         } else if (entity instanceof FireworkRocketEntity) {
-            color = 0xFFFF5555;  // Red for fireworks
+            color = TrailColors.Entity.FIREWORK;
             width = 2.5f;
             maxPoints = 50;
             fadeTime = 30f;
         } else if (entity instanceof WitherSkull) {
-            color = 0xFF333333;  // Dark gray for wither skulls
+            color = TrailColors.Entity.WITHER_SKULL;
             width = 3f;
             maxPoints = 35;
             fadeTime = 20f;
         } else if (entity instanceof DragonFireball || entity instanceof LargeFireball) {
-            color = 0xFFFF4400;  // Orange-red for fireballs
+            color = TrailColors.Entity.FIREBALL;
             width = 3f;
             maxPoints = 40;
             fadeTime = 25f;
         } else if (entity instanceof SmallFireball) {
-            color = 0xFFFF6600;  // Orange for blaze fireballs
+            color = TrailColors.Entity.SMALL_FIREBALL;
             width = 2f;
             maxPoints = 25;
             fadeTime = 15f;
         } else if (entity instanceof ShulkerBullet) {
-            color = 0xFFFF00FF;  // Magenta for shulker bullets
+            color = TrailColors.Entity.SHULKER_BULLET;
             width = 2f;
             maxPoints = 60;
             fadeTime = 40f;
         } else if (entity instanceof ExperienceOrb) {
-            color = 0xFF55FF55;  // Green for XP orbs
+            color = TrailColors.Entity.XP_ORB;
             width = 1f;
             maxPoints = 15;
             fadeTime = 10f;
         } else if (entity instanceof EyeOfEnder) {
-            color = 0xFF00FF88;  // Ender green for Eyes of Ender
+            color = TrailColors.Entity.ENDER_EYE;
             width = 2.5f;
             maxPoints = 60;
             fadeTime = 40f;
         } else if (entity instanceof Player player && player.isFallFlying()) {
-            color = 0xFFAADDFF;  // Light blue for Elytra flight
+            color = TrailColors.Entity.ELYTRA;
             width = 2f;
             maxPoints = 80;
             fadeTime = 30f;
         } else {
             // Default trail
-            color = 0xFFFFFFFF;
+            color = TrailColors.Entity.DEFAULT;
             width = 1.5f;
             maxPoints = 25;
             fadeTime = 15f;

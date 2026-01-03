@@ -11,26 +11,110 @@ public class UsableStats {
     // USE PROPERTIES
     // ═══════════════════════════════════════════════════════════════
 
-    public int useDuration = 0;           // Ticks to complete use (0 = instant)
-    public int cooldownDuration = 0;      // Cooldown in ticks after use
-    public @Nonnull String useAnimation = "NONE";  // ItemUseAnimation name
+    private int useDuration = 0;           // Ticks to complete use (0 = instant)
+    private int cooldownDuration = 0;      // Cooldown in ticks after use
+    private @Nonnull String useAnimation = "NONE";  // ItemUseAnimation name
 
     // ═══════════════════════════════════════════════════════════════
     // THROWABLE PROPERTIES (for projectiles)
     // ═══════════════════════════════════════════════════════════════
 
-    public boolean isThrowable = false;
-    public float projectileSpeed = 1.5f;      // Base velocity
-    public float projectileGravity = 0.03f;   // Gravity factor
-    public float projectileInaccuracy = 1.0f; // Spread/inaccuracy
-    public int projectileDamage = 0;          // Direct damage on hit
+    private boolean isThrowable = false;
+    private float projectileSpeed = 1.5f;      // Base velocity
+    private float projectileGravity = 0.03f;   // Gravity factor
+    private float projectileInaccuracy = 1.0f; // Spread/inaccuracy
+    private int projectileDamage = 0;          // Direct damage on hit
 
     // ═══════════════════════════════════════════════════════════════
     // CONSUMPTION PROPERTIES
     // ═══════════════════════════════════════════════════════════════
 
-    public boolean consumeOnUse = true;   // Whether item is consumed
-    public @Nonnull String remainderItem = "";     // Item left after use (e.g., "minecraft:bucket")
+    private boolean consumeOnUse = true;   // Whether item is consumed
+    private @Nonnull String remainderItem = "";     // Item left after use (e.g., "minecraft:bucket")
+
+    // ═══════════════════════════════════════════════════════════════
+    // ACCESSORS
+    // ═══════════════════════════════════════════════════════════════
+
+    public int getUseDuration() {
+        return useDuration;
+    }
+
+    public void setUseDuration(int value) {
+        useDuration = value;
+    }
+
+    public int getCooldownDuration() {
+        return cooldownDuration;
+    }
+
+    public void setCooldownDuration(int value) {
+        cooldownDuration = value;
+    }
+
+    public String getUseAnimation() {
+        return useAnimation;
+    }
+
+    public void setUseAnimation(String value) {
+        useAnimation = value == null ? "NONE" : value;
+    }
+
+    public boolean isThrowable() {
+        return isThrowable;
+    }
+
+    public void setThrowable(boolean value) {
+        isThrowable = value;
+    }
+
+    public float getProjectileSpeed() {
+        return projectileSpeed;
+    }
+
+    public void setProjectileSpeed(float value) {
+        projectileSpeed = value;
+    }
+
+    public float getProjectileGravity() {
+        return projectileGravity;
+    }
+
+    public void setProjectileGravity(float value) {
+        projectileGravity = value;
+    }
+
+    public float getProjectileInaccuracy() {
+        return projectileInaccuracy;
+    }
+
+    public void setProjectileInaccuracy(float value) {
+        projectileInaccuracy = value;
+    }
+
+    public int getProjectileDamage() {
+        return projectileDamage;
+    }
+
+    public void setProjectileDamage(int value) {
+        projectileDamage = value;
+    }
+
+    public boolean isConsumeOnUse() {
+        return consumeOnUse;
+    }
+
+    public void setConsumeOnUse(boolean value) {
+        consumeOnUse = value;
+    }
+
+    public String getRemainderItem() {
+        return remainderItem;
+    }
+
+    public void setRemainderItem(String value) {
+        remainderItem = value == null ? "" : value;
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // SERIALIZATION

@@ -20,6 +20,7 @@ import com.devmod.client.rendering.SafeSpotVisualizer;
 import com.devmod.client.rendering.SpawnabilityOverlay;
 import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.testing.VoxelLabTab;
 import com.devmod.client.ui.testing.panel.CollapsiblePanel;
 import com.devmod.client.ui.testing.panel.GridPanel;
@@ -94,7 +95,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
                     .addRow(lineOfSightToggle, aggroRangeToggle)
                     .addButton(safeSpotToggle)
                     .build(),
-                0xFF00AAFF)
+                DesignTokens.Testing.TELEMETRY_ACCENT)
         );
 
         // Spatial Analysis Section
@@ -106,7 +107,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
                     .addRow(roomBoundsToggle, verticalLevelsToggle)
                     .addRow(spawnabilityToggle, chunkPerfToggle)
                     .build(),
-                0xFFFFAA00)
+                DesignTokens.Testing.WARNING)
         );
 
         // Heatmaps Section
@@ -116,7 +117,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
                 GridPanel.of("grid-heatmaps",
                     I18n.translate("devmod.testing.voxel_lab.debug.heatmap.types").getString(),
                     heatmapButtons, 2),
-                0xFFFF5500)
+                DesignTokens.Testing.ALERT)
         );
 
         // Render Distance Slider
@@ -169,12 +170,12 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
         EditorButton bodyPartBoxToggle = new EditorButton("toggle-bodypart",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.body_part_boxes").getString())
             .toggleable(true)
-            .toggled(ModConfig.showBodyPartBoxes)
+            .toggled(ModConfig.isShowBodyPartBoxes())
             .style(EditorButton.Style.SUCCESS)
             .icon("\u25A1")
             .hotkeyHint("[Shift+G]")
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_BODY_PARTS_TOGGLE,
-                Boolean.TRUE.equals(v), ModConfig.showBodyPartBoxes));
+                Boolean.TRUE.equals(v), ModConfig.isShowBodyPartBoxes()));
 
         // Entity debug
         EditorButton lineOfSightToggle = new EditorButton("toggle-los",
@@ -316,7 +317,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
     private void syncButtonStates() {
         debugMasterToggle.toggled(DebugRenderer.INSTANCE.isEnabled());
         lightLevelToggle.toggled(LightLevelOverlay.INSTANCE.isEnabled());
-        bodyPartBoxToggle.toggled(ModConfig.showBodyPartBoxes);
+        bodyPartBoxToggle.toggled(ModConfig.isShowBodyPartBoxes());
         lineOfSightToggle.toggled(LineOfSightVisualizer.INSTANCE.isEnabled());
         aggroRangeToggle.toggled(AggroRangeVisualizer.INSTANCE.isEnabled());
         safeSpotToggle.toggled(SafeSpotVisualizer.INSTANCE.isEnabled());

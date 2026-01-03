@@ -431,13 +431,13 @@ public final class ContentWhitelist {
      * Get the set of always-dangerous blocks.
      */
     public static Set<String> getDangerousBlocks() {
-        return DANGEROUS_BLOCKS;
+        return Set.copyOf(DANGEROUS_BLOCKS);
     }
 
     /**
      * Get the set of always-dangerous entities.
      */
     public static Set<String> getDangerousEntities() {
-        return DANGEROUS_ENTITIES;
+        return Set.copyOf(DANGEROUS_ENTITIES);
     }
 }

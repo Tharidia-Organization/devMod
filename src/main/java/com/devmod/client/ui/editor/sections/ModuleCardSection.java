@@ -96,7 +96,8 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
         // Icon area
         int iconX = lastX + CARD_PADDING;
         int iconY = lastY + (CARD_HEIGHT - ICON_SIZE) / 2;
-        graphics.fill(iconX, iconY, iconX + ICON_SIZE, iconY + ICON_SIZE, accentColor & 0x44FFFFFF);
+        graphics.fill(iconX, iconY, iconX + ICON_SIZE, iconY + ICON_SIZE,
+            DesignTokens.withAlpha(accentColor, DesignTokens.Alpha.A27));
 
         // Icon text (emoji/symbol)
         int iconTextX = iconX + (ICON_SIZE - font.width(safeIcon)) / 2;

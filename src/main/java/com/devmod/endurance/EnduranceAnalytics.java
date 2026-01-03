@@ -71,87 +71,87 @@ public class EnduranceAnalytics {
      * Complete record of a quest session.
      */
     public static class QuestSessionRecord {
-        public String sessionId;
-        public String playerId;
-        public String playerName;
-        public String mobType;
-        public String mobDisplayName;
-        public long timestamp;
-        public String dateTime;
-        public long durationMs;
-        public boolean completed;
-        public int wavesReached;
-        public int totalWaves;
+        String sessionId;
+        String playerId;
+        String playerName;
+        String mobType;
+        String mobDisplayName;
+        long timestamp;
+        String dateTime;
+        long durationMs;
+        boolean completed;
+        int wavesReached;
+        int totalWaves;
 
         // Combat stats
-        public float totalDamageDealt;
-        public float totalDamageTaken;
-        public int totalKills;
-        public int totalDeaths;
-        public float dps;
-        public float averageKillTime;
-        public float criticalHitRate;
+        float totalDamageDealt;
+        float totalDamageTaken;
+        int totalKills;
+        int totalDeaths;
+        float dps;
+        float averageKillTime;
+        float criticalHitRate;
 
         // Weapon breakdown
-        public List<WeaponUsageRecord> weaponUsage = new ArrayList<>();
+        List<WeaponUsageRecord> weaponUsage = new ArrayList<>();
 
         // Wave breakdown
-        public List<WaveRecord> waves = new ArrayList<>();
+        List<WaveRecord> waves = new ArrayList<>();
 
         // Body part targeting
-        public Map<String, Integer> bodyPartHits = new HashMap<>();
+        Map<String, Integer> bodyPartHits = new HashMap<>();
 
         // Damage type breakdown
-        public Map<String, Float> damageByType = new HashMap<>();
-        public Map<String, Float> damageTakenByType = new HashMap<>();
+        Map<String, Float> damageByType = new HashMap<>();
+        Map<String, Float> damageTakenByType = new HashMap<>();
     }
 
     public static class WeaponUsageRecord {
-        public String weaponId;
-        public String weaponName;
-        public float totalDamage;
-        public int hits;
-        public int criticalHits;
-        public float maxSingleHit;
-        public float averageDamage;
-        public float critRate;
-        public float damageShare; // percentage of total damage
+        String weaponId;
+        String weaponName;
+        float totalDamage;
+        int hits;
+        int criticalHits;
+        float maxSingleHit;
+        float averageDamage;
+        float critRate;
+        float damageShare; // percentage of total damage
     }
 
     public static class WaveRecord {
-        public int waveNumber;
-        public float damageDealt;
-        public float damageTaken;
-        public int kills;
-        public int deaths;
-        public long durationMs;
+        int waveNumber;
+        float damageDealt;
+        float damageTaken;
+        int kills;
+        int deaths;
+        long durationMs;
     }
 
     /**
      * Aggregated analytics for a mob type.
      */
     public static class MobAnalytics {
-        public String mobId;
-        public String displayName;
-        public int totalAttempts = 0;
-        public int totalCompletions = 0;
-        public float averageWavesReached = 0;
-        public float averageDamageDealt = 0;
-        public float averageDamageTaken = 0;
-        public float averageKillTime = 0;
-        public float averageDPS = 0;
-        public long averageDuration = 0;
+        String mobId;
+        String displayName;
+        int totalAttempts = 0;
+        int totalCompletions = 0;
+        float averageWavesReached = 0;
+        float averageDamageDealt = 0;
+        float averageDamageTaken = 0;
+        float averageKillTime = 0;
+        float averageDPS = 0;
+        long averageDuration = 0;
 
         // Difficulty indicators
-        public float completionRate = 0;
-        public float deathRate = 0;
-        public float damageRatio = 0; // dealt/taken
+        float completionRate = 0;
+        float deathRate = 0;
+        float damageRatio = 0; // dealt/taken
 
         // Best weapons against this mob
-        public Map<String, Float> weaponEffectiveness = new HashMap<>();
+        Map<String, Float> weaponEffectiveness = new HashMap<>();
 
         // Best body parts to target
-        public Map<String, Float> bodyPartEffectiveness = new HashMap<>();
+        Map<String, Float> bodyPartEffectiveness = new HashMap<>();
 
         public void recalculate(List<QuestSessionRecord> sessions) {
             if (sessions.isEmpty()) return;
@@ -203,16 +203,16 @@ public class EnduranceAnalytics {
      * Aggregated analytics for a weapon.
      */
     public static class WeaponAnalytics {
-        public String weaponId;
-        public String displayName;
-        public int totalUses = 0;
-        public float totalDamage = 0;
-        public float averageDamagePerHit = 0;
-        public float averageCritRate = 0;
-        public float maxSingleHit = 0;
+        String weaponId;
+        String displayName;
+        int totalUses = 0;
+        float totalDamage = 0;
+        float averageDamagePerHit = 0;
+        float averageCritRate = 0;
+        float maxSingleHit = 0;
 
         // Per-mob effectiveness
-        public Map<String, Float> effectivenessVsMob = new HashMap<>();
+        Map<String, Float> effectivenessVsMob = new HashMap<>();
 
         public void recalculate(List<WeaponUsageRecord> usages) {
             if (usages.isEmpty()) return;
@@ -301,8 +301,10 @@ public class EnduranceAnalytics {
         // Update aggregates
         updateAggregates(record);
 
-        LOGGER.info("[EnduranceAnalytics] Recorded session {} - {} vs {} - {} damage, {} kills",
-            record.sessionId, playerName, record.mobDisplayName, record.totalDamageDealt, record.totalKills);
+        logSessionDiagnostics(record);
+        LOGGER.info("[EnduranceAnalytics] Recorded session {} - {} vs {} - {} damage, {} kills (waves {}/{}, crit {:.2f})",
+            record.sessionId, record.playerName, record.mobDisplayName, record.totalDamageDealt, record.totalKills,
+            record.wavesReached, record.totalWaves, record.criticalHitRate);
     }
 
     private String getWeaponDisplayName(String weaponId) {
@@ -343,6 +345,7 @@ public class EnduranceAnalytics {
             .filter(s -> s.mobType.equals(record.mobType))
             .collect(Collectors.toList());
         mob.recalculate(mobSessions);
+        logMobAggregateDiagnostics(mob);
 
         // Update weapon analytics
         for (WeaponUsageRecord weaponUsage : record.weaponUsage) {
@@ -352,6 +355,7 @@ public class EnduranceAnalytics {
                 w.displayName = weaponUsage.weaponName;
                 return w;
             });
+            weapon.effectivenessVsMob.put(record.mobType, weaponUsage.averageDamage);
 
             // Collect all usages of this weapon
             List<WeaponUsageRecord> allUsages = recentSessions.stream()
@@ -359,6 +363,7 @@ public class EnduranceAnalytics {
                 .filter(w -> w.weaponId.equals(weaponUsage.weaponId))
                 .collect(Collectors.toList());
             weapon.recalculate(allUsages);
+            logWeaponAggregateDiagnostics(weapon);
         }
 
         saveAggregates();
@@ -376,6 +381,9 @@ public class EnduranceAnalytics {
                 }
                 LOGGER.info("[EnduranceAnalytics] Loaded aggregates: {} mobs, {} weapons",
                     mobAnalytics.size(), weaponAnalytics.size());
+                if (data != null) {
+                    logAggregateAge(data);
+                }
             } catch (Exception e) {
                 LOGGER.error("[EnduranceAnalytics] Failed to load aggregates", e);
             }
@@ -396,11 +404,10 @@ public class EnduranceAnalytics {
     }
 
     /** JSON serialization container for aggregate analytics data. */
-    @SuppressWarnings("unused") // Fields used by GSON serialization
     private static class AggregateData {
-        public Map<String, MobAnalytics> mobAnalytics;
-        public Map<String, WeaponAnalytics> weaponAnalytics;
-        public long lastUpdated;
+        Map<String, MobAnalytics> mobAnalytics;
+        Map<String, WeaponAnalytics> weaponAnalytics;
+        long lastUpdated;
     }
 
     // ========== Queries ==========
@@ -478,14 +485,163 @@ public class EnduranceAnalytics {
             .map(w -> w.weaponId)
             .collect(Collectors.toList());
 
+        logBalanceReport(report);
         return report;
     }
 
     public static class BalanceReport {
-        public long generatedAt;
-        public List<String> tooEasyMobs = new ArrayList<>();
-        public List<String> tooHardMobs = new ArrayList<>();
-        public List<String> overpoweredWeapons = new ArrayList<>();
-        public List<String> underpoweredWeapons = new ArrayList<>();
+        long generatedAt;
+        List<String> tooEasyMobs = new ArrayList<>();
+        List<String> tooHardMobs = new ArrayList<>();
+        List<String> overpoweredWeapons = new ArrayList<>();
+        List<String> underpoweredWeapons = new ArrayList<>();
+    }
+
+    private static final class SessionDiagnostics {
+        private final int totalWeaponHits;
+        private final int totalWeaponCrits;
+        private final double totalDamageShare;
+        private final int maxWaveNumber;
+        private final float totalWaveDamageDealt;
+        private final float totalWaveDamageTaken;
+        private final int totalWaveKills;
+        private final int totalWaveDeaths;
+        private final long totalWaveDurationMs;
+
+        private SessionDiagnostics(int totalWeaponHits,
+                                   int totalWeaponCrits,
+                                   double totalDamageShare,
+                                   int maxWaveNumber,
+                                   float totalWaveDamageDealt,
+                                   float totalWaveDamageTaken,
+                                   int totalWaveKills,
+                                   int totalWaveDeaths,
+                                   long totalWaveDurationMs) {
+            this.totalWeaponHits = totalWeaponHits;
+            this.totalWeaponCrits = totalWeaponCrits;
+            this.totalDamageShare = totalDamageShare;
+            this.maxWaveNumber = maxWaveNumber;
+            this.totalWaveDamageDealt = totalWaveDamageDealt;
+            this.totalWaveDamageTaken = totalWaveDamageTaken;
+            this.totalWaveKills = totalWaveKills;
+            this.totalWaveDeaths = totalWaveDeaths;
+            this.totalWaveDurationMs = totalWaveDurationMs;
+        }
+    }
+
+    private void logSessionDiagnostics(QuestSessionRecord record) {
+        if (!LOGGER.isDebugEnabled()) {
+            return;
+        }
+        SessionDiagnostics diagnostics = buildSessionDiagnostics(record);
+        long avgWaveDuration = record.waves.isEmpty()
+            ? 0
+            : diagnostics.totalWaveDurationMs / record.waves.size();
+        LOGGER.debug("[EnduranceAnalytics] Session {} player={} ({}) maxWave={} critRate={}" +
+                " weaponHits={} weaponCrits={} damageShare={}" +
+                " waveDamageDealt={} waveDamageTaken={} waveKills={} waveDeaths={} avgWaveMs={}",
+            record.sessionId,
+            record.playerName,
+            record.playerId,
+            diagnostics.maxWaveNumber,
+            record.criticalHitRate,
+            diagnostics.totalWeaponHits,
+            diagnostics.totalWeaponCrits,
+            String.format(Locale.ROOT, "%.2f", diagnostics.totalDamageShare),
+            diagnostics.totalWaveDamageDealt,
+            diagnostics.totalWaveDamageTaken,
+            diagnostics.totalWaveKills,
+            diagnostics.totalWaveDeaths,
+            avgWaveDuration
+        );
+    }
+
+    private SessionDiagnostics buildSessionDiagnostics(QuestSessionRecord record) {
+        int totalWeaponHits = record.weaponUsage.stream().mapToInt(w -> w.hits).sum();
+        int totalWeaponCrits = record.weaponUsage.stream().mapToInt(w -> w.criticalHits).sum();
+        double totalDamageShare = record.weaponUsage.stream().mapToDouble(w -> w.damageShare).sum();
+
+        int maxWaveNumber = 0;
+        float totalWaveDamageDealt = 0;
+        float totalWaveDamageTaken = 0;
+        int totalWaveKills = 0;
+        int totalWaveDeaths = 0;
+        long totalWaveDurationMs = 0;
+        for (WaveRecord wave : record.waves) {
+            maxWaveNumber = Math.max(maxWaveNumber, wave.waveNumber);
+            totalWaveDamageDealt += wave.damageDealt;
+            totalWaveDamageTaken += wave.damageTaken;
+            totalWaveKills += wave.kills;
+            totalWaveDeaths += wave.deaths;
+            totalWaveDurationMs += wave.durationMs;
+        }
+
+        return new SessionDiagnostics(
+            totalWeaponHits,
+            totalWeaponCrits,
+            totalDamageShare,
+            maxWaveNumber,
+            totalWaveDamageDealt,
+            totalWaveDamageTaken,
+            totalWaveKills,
+            totalWaveDeaths,
+            totalWaveDurationMs
+        );
+    }
+
+    private void logMobAggregateDiagnostics(MobAnalytics mob) {
+        if (!LOGGER.isDebugEnabled()) {
+            return;
+        }
+        LOGGER.debug("[EnduranceAnalytics] Mob {} attempts={} completionRate={} avgWaves={} avgKillTime={} avgDps={}" +
+                " avgDurationMs={} deathRate={} damageRatio={}",
+            mob.displayName,
+            mob.totalAttempts,
+            String.format(Locale.ROOT, "%.2f", mob.completionRate),
+            mob.averageWavesReached,
+            mob.averageKillTime,
+            mob.averageDPS,
+            mob.averageDuration,
+            mob.deathRate,
+            mob.damageRatio
+        );
+    }
+
+    private void logWeaponAggregateDiagnostics(WeaponAnalytics weapon) {
+        if (!LOGGER.isDebugEnabled()) {
+            return;
+        }
+        LOGGER.debug("[EnduranceAnalytics] Weapon {} uses={} avgDamage={} avgCritRate={} maxHit={} totalDamage={}" +
+                " mobVariants={}",
+            weapon.displayName,
+            weapon.totalUses,
+            weapon.averageDamagePerHit,
+            weapon.averageCritRate,
+            weapon.maxSingleHit,
+            weapon.totalDamage,
+            weapon.effectivenessVsMob.size()
+        );
+    }
+
+    private void logAggregateAge(AggregateData data) {
+        if (!LOGGER.isDebugEnabled()) {
+            return;
+        }
+        long ageMs = System.currentTimeMillis() - data.lastUpdated;
+        LOGGER.debug("[EnduranceAnalytics] Aggregate data age: {}s",
+            String.format(Locale.ROOT, "%.1f", ageMs / 1000.0));
+    }
+
+    private void logBalanceReport(BalanceReport report) {
+        if (!LOGGER.isDebugEnabled()) {
+            return;
+        }
+        LOGGER.debug("[EnduranceAnalytics] Balance report @{}: easy={} hard={} overpowered={} underpowered={}",
+            report.generatedAt,
+            report.tooEasyMobs.size(),
+            report.tooHardMobs.size(),
+            report.overpoweredWeapons.size(),
+            report.underpoweredWeapons.size()
+        );
     }
 }

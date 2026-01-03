@@ -120,12 +120,8 @@ public final class DatapackIO {
                         if (id == null) continue;
                         ArmorStats stats = parseArmor(json.getAsJsonObject("values"));
                         Item armorItem = ItemLookup.getItem(id);
-                        if (armorItem != null) {
-                            ArmorConfigManager.setGlobalStats(armorItem, stats);
-                            imported++;
-                        } else {
-                            LOGGER.warn("[DatapackIO] Unknown armor item id {}", id);
-                        }
+                        ArmorConfigManager.setGlobalStats(armorItem, stats);
+                        imported++;
                     } catch (Exception e) {
                         LOGGER.warn("[DatapackIO] Failed to import armor file {}", file.getFileName(), e);
                     }
@@ -150,12 +146,8 @@ public final class DatapackIO {
                         if (id == null) continue;
                         WeaponStats stats = parseWeapon(json.getAsJsonObject("values"));
                         Item weaponItem = ItemLookup.getItem(id);
-                        if (weaponItem != null) {
-                            WeaponConfigManager.setGlobalStats(weaponItem, stats);
-                            imported++;
-                        } else {
-                            LOGGER.warn("[DatapackIO] Unknown weapon item id {}", id);
-                        }
+                        WeaponConfigManager.setGlobalStats(weaponItem, stats);
+                        imported++;
                     } catch (Exception e) {
                         LOGGER.warn("[DatapackIO] Failed to import weapon file {}", file.getFileName(), e);
                     }
@@ -184,25 +176,28 @@ public final class DatapackIO {
     }
 
     private static void writeArmor(Path path, ResourceLocation id, ArmorStats stats) throws IOException {
-        Files.createDirectories(path.getParent());
+        Path parent = path.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
         JsonObject json = new JsonObject();
         json.addProperty("type", "devmod:armor_stats");
         json.addProperty("target", id.toString());
 
         JsonObject values = new JsonObject();
-        values.addProperty("physical_reduction", stats.physicalReduction);
-        values.addProperty("fire_reduction", stats.fireReduction);
-        values.addProperty("magic_reduction", stats.magicReduction);
-        values.addProperty("explosion_reduction", stats.explosionReduction);
-        values.addProperty("projectile_reduction", stats.projectileReduction);
-        values.addProperty("armor_bonus", stats.armorBonus);
-        values.addProperty("toughness_bonus", stats.toughnessBonus);
-        values.addProperty("knockback_resistance", stats.knockbackResistance);
-        values.addProperty("thorns_reflect", stats.thornsReflect);
-        values.addProperty("thorns_percent", stats.thornsPercent);
-        values.addProperty("shield_reflect_projectiles", stats.shieldReflectProjectiles);
-        values.addProperty("shield_block_strength", stats.shieldBlockStrength);
-        values.addProperty("shield_recovery_speed", stats.shieldRecoverySpeed);
+        values.addProperty("physical_reduction", stats.getPhysicalReduction());
+        values.addProperty("fire_reduction", stats.getFireReduction());
+        values.addProperty("magic_reduction", stats.getMagicReduction());
+        values.addProperty("explosion_reduction", stats.getExplosionReduction());
+        values.addProperty("projectile_reduction", stats.getProjectileReduction());
+        values.addProperty("armor_bonus", stats.getArmorBonus());
+        values.addProperty("toughness_bonus", stats.getToughnessBonus());
+        values.addProperty("knockback_resistance", stats.getKnockbackResistance());
+        values.addProperty("thorns_reflect", stats.isThornsReflect());
+        values.addProperty("thorns_percent", stats.getThornsPercent());
+        values.addProperty("shield_reflect_projectiles", stats.isShieldReflectProjectiles());
+        values.addProperty("shield_block_strength", stats.getShieldBlockStrength());
+        values.addProperty("shield_recovery_speed", stats.getShieldRecoverySpeed());
 
         json.add("values", values);
 
@@ -215,31 +210,34 @@ public final class DatapackIO {
     }
 
     private static void writeWeapon(Path path, ResourceLocation id, WeaponStats stats) throws IOException {
-        Files.createDirectories(path.getParent());
+        Path parent = path.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
         JsonObject json = new JsonObject();
         json.addProperty("type", "devmod:weapon_stats");
         json.addProperty("target", id.toString());
 
         JsonObject values = new JsonObject();
-        values.addProperty("attack_damage", stats.attackDamage);
-        values.addProperty("attack_speed", stats.attackSpeed);
-        values.addProperty("attack_reach", stats.attackReach);
-        values.addProperty("attack_knockback", stats.attackKnockback);
-        values.addProperty("armor_penetration", stats.armorPenetration);
-        values.addProperty("base_damage_bonus", stats.baseDamageBonus);
-        values.addProperty("crit_chance", stats.critChance);
-        values.addProperty("crit_damage", stats.critDamage);
-        values.addProperty("damage_bonus", stats.damageBonus);
-        values.addProperty("sweeping_ratio", stats.sweepingRatio);
-        values.addProperty("armor_shred", stats.armorShred);
-        values.addProperty("damage_vs_undead", stats.damageVsUndead);
-        values.addProperty("damage_vs_arthropods", stats.damageVsArthropods);
-        values.addProperty("damage_vs_players", stats.damageVsPlayers);
-        values.addProperty("true_damage_percent", stats.trueDamagePercent);
-        values.addProperty("fire_damage_bonus", stats.fireDamageBonus);
-        values.addProperty("magic_damage_bonus", stats.magicDamageBonus);
-        values.addProperty("lifesteal", stats.lifesteal);
-        values.addProperty("clear_tool_rules", stats.clearToolRules);
+        values.addProperty("attack_damage", stats.getAttackDamage());
+        values.addProperty("attack_speed", stats.getAttackSpeed());
+        values.addProperty("attack_reach", stats.getAttackReach());
+        values.addProperty("attack_knockback", stats.getAttackKnockback());
+        values.addProperty("armor_penetration", stats.getArmorPenetration());
+        values.addProperty("base_damage_bonus", stats.getBaseDamageBonus());
+        values.addProperty("crit_chance", stats.getCritChance());
+        values.addProperty("crit_damage", stats.getCritDamage());
+        values.addProperty("damage_bonus", stats.getDamageBonus());
+        values.addProperty("sweeping_ratio", stats.getSweepingRatio());
+        values.addProperty("armor_shred", stats.getArmorShred());
+        values.addProperty("damage_vs_undead", stats.getDamageVsUndead());
+        values.addProperty("damage_vs_arthropods", stats.getDamageVsArthropods());
+        values.addProperty("damage_vs_players", stats.getDamageVsPlayers());
+        values.addProperty("true_damage_percent", stats.getTrueDamagePercent());
+        values.addProperty("fire_damage_bonus", stats.getFireDamageBonus());
+        values.addProperty("magic_damage_bonus", stats.getMagicDamageBonus());
+        values.addProperty("lifesteal", stats.getLifesteal());
+        values.addProperty("clear_tool_rules", stats.isClearToolRules());
 
         json.add("values", values);
 
@@ -289,44 +287,44 @@ public final class DatapackIO {
     private static ArmorStats parseArmor(JsonObject values) {
         ArmorStats stats = new ArmorStats();
         if (values == null) return stats;
-        if (values.has("physical_reduction")) stats.physicalReduction = values.get("physical_reduction").getAsFloat();
-        if (values.has("fire_reduction")) stats.fireReduction = values.get("fire_reduction").getAsFloat();
-        if (values.has("magic_reduction")) stats.magicReduction = values.get("magic_reduction").getAsFloat();
-        if (values.has("explosion_reduction")) stats.explosionReduction = values.get("explosion_reduction").getAsFloat();
-        if (values.has("projectile_reduction")) stats.projectileReduction = values.get("projectile_reduction").getAsFloat();
-        if (values.has("armor_bonus")) stats.armorBonus = values.get("armor_bonus").getAsFloat();
-        if (values.has("toughness_bonus")) stats.toughnessBonus = values.get("toughness_bonus").getAsFloat();
-        if (values.has("knockback_resistance")) stats.knockbackResistance = values.get("knockback_resistance").getAsFloat();
-        if (values.has("thorns_reflect")) stats.thornsReflect = values.get("thorns_reflect").getAsBoolean();
-        if (values.has("thorns_percent")) stats.thornsPercent = values.get("thorns_percent").getAsFloat();
-        if (values.has("shield_reflect_projectiles")) stats.shieldReflectProjectiles = values.get("shield_reflect_projectiles").getAsBoolean();
-        if (values.has("shield_block_strength")) stats.shieldBlockStrength = values.get("shield_block_strength").getAsFloat();
-        if (values.has("shield_recovery_speed")) stats.shieldRecoverySpeed = values.get("shield_recovery_speed").getAsFloat();
+        if (values.has("physical_reduction")) stats.setPhysicalReduction(values.get("physical_reduction").getAsFloat());
+        if (values.has("fire_reduction")) stats.setFireReduction(values.get("fire_reduction").getAsFloat());
+        if (values.has("magic_reduction")) stats.setMagicReduction(values.get("magic_reduction").getAsFloat());
+        if (values.has("explosion_reduction")) stats.setExplosionReduction(values.get("explosion_reduction").getAsFloat());
+        if (values.has("projectile_reduction")) stats.setProjectileReduction(values.get("projectile_reduction").getAsFloat());
+        if (values.has("armor_bonus")) stats.setArmorBonus(values.get("armor_bonus").getAsFloat());
+        if (values.has("toughness_bonus")) stats.setToughnessBonus(values.get("toughness_bonus").getAsFloat());
+        if (values.has("knockback_resistance")) stats.setKnockbackResistance(values.get("knockback_resistance").getAsFloat());
+        if (values.has("thorns_reflect")) stats.setThornsReflect(values.get("thorns_reflect").getAsBoolean());
+        if (values.has("thorns_percent")) stats.setThornsPercent(values.get("thorns_percent").getAsFloat());
+        if (values.has("shield_reflect_projectiles")) stats.setShieldReflectProjectiles(values.get("shield_reflect_projectiles").getAsBoolean());
+        if (values.has("shield_block_strength")) stats.setShieldBlockStrength(values.get("shield_block_strength").getAsFloat());
+        if (values.has("shield_recovery_speed")) stats.setShieldRecoverySpeed(values.get("shield_recovery_speed").getAsFloat());
         return stats;
     }
 
     private static WeaponStats parseWeapon(JsonObject values) {
         WeaponStats stats = new WeaponStats();
         if (values == null) return stats;
-        if (values.has("attack_damage")) stats.attackDamage = values.get("attack_damage").getAsFloat();
-        if (values.has("attack_speed")) stats.attackSpeed = values.get("attack_speed").getAsFloat();
-        if (values.has("attack_reach")) stats.attackReach = values.get("attack_reach").getAsFloat();
-        if (values.has("attack_knockback")) stats.attackKnockback = values.get("attack_knockback").getAsFloat();
-        if (values.has("armor_penetration")) stats.armorPenetration = values.get("armor_penetration").getAsFloat();
-        if (values.has("base_damage_bonus")) stats.baseDamageBonus = values.get("base_damage_bonus").getAsFloat();
-        if (values.has("crit_chance")) stats.critChance = values.get("crit_chance").getAsFloat();
-        if (values.has("crit_damage")) stats.critDamage = values.get("crit_damage").getAsFloat();
-        if (values.has("damage_bonus")) stats.damageBonus = values.get("damage_bonus").getAsFloat();
-        if (values.has("sweeping_ratio")) stats.sweepingRatio = values.get("sweeping_ratio").getAsFloat();
-        if (values.has("armor_shred")) stats.armorShred = values.get("armor_shred").getAsFloat();
-        if (values.has("damage_vs_undead")) stats.damageVsUndead = values.get("damage_vs_undead").getAsFloat();
-        if (values.has("damage_vs_arthropods")) stats.damageVsArthropods = values.get("damage_vs_arthropods").getAsFloat();
-        if (values.has("damage_vs_players")) stats.damageVsPlayers = values.get("damage_vs_players").getAsFloat();
-        if (values.has("true_damage_percent")) stats.trueDamagePercent = values.get("true_damage_percent").getAsFloat();
-        if (values.has("fire_damage_bonus")) stats.fireDamageBonus = values.get("fire_damage_bonus").getAsFloat();
-        if (values.has("magic_damage_bonus")) stats.magicDamageBonus = values.get("magic_damage_bonus").getAsFloat();
-        if (values.has("lifesteal")) stats.lifesteal = values.get("lifesteal").getAsFloat();
-        if (values.has("clear_tool_rules")) stats.clearToolRules = values.get("clear_tool_rules").getAsBoolean();
+        if (values.has("attack_damage")) stats.setAttackDamage(values.get("attack_damage").getAsFloat());
+        if (values.has("attack_speed")) stats.setAttackSpeed(values.get("attack_speed").getAsFloat());
+        if (values.has("attack_reach")) stats.setAttackReach(values.get("attack_reach").getAsFloat());
+        if (values.has("attack_knockback")) stats.setAttackKnockback(values.get("attack_knockback").getAsFloat());
+        if (values.has("armor_penetration")) stats.setArmorPenetration(values.get("armor_penetration").getAsFloat());
+        if (values.has("base_damage_bonus")) stats.setBaseDamageBonus(values.get("base_damage_bonus").getAsFloat());
+        if (values.has("crit_chance")) stats.setCritChance(values.get("crit_chance").getAsFloat());
+        if (values.has("crit_damage")) stats.setCritDamage(values.get("crit_damage").getAsFloat());
+        if (values.has("damage_bonus")) stats.setDamageBonus(values.get("damage_bonus").getAsFloat());
+        if (values.has("sweeping_ratio")) stats.setSweepingRatio(values.get("sweeping_ratio").getAsFloat());
+        if (values.has("armor_shred")) stats.setArmorShred(values.get("armor_shred").getAsFloat());
+        if (values.has("damage_vs_undead")) stats.setDamageVsUndead(values.get("damage_vs_undead").getAsFloat());
+        if (values.has("damage_vs_arthropods")) stats.setDamageVsArthropods(values.get("damage_vs_arthropods").getAsFloat());
+        if (values.has("damage_vs_players")) stats.setDamageVsPlayers(values.get("damage_vs_players").getAsFloat());
+        if (values.has("true_damage_percent")) stats.setTrueDamagePercent(values.get("true_damage_percent").getAsFloat());
+        if (values.has("fire_damage_bonus")) stats.setFireDamageBonus(values.get("fire_damage_bonus").getAsFloat());
+        if (values.has("magic_damage_bonus")) stats.setMagicDamageBonus(values.get("magic_damage_bonus").getAsFloat());
+        if (values.has("lifesteal")) stats.setLifesteal(values.get("lifesteal").getAsFloat());
+        if (values.has("clear_tool_rules")) stats.setClearToolRules(values.get("clear_tool_rules").getAsBoolean());
         return stats;
     }
 }

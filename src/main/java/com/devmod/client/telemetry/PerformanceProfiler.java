@@ -36,14 +36,14 @@ public class PerformanceProfiler {
     private static final int BAR_HEIGHT = 4;
 
     // Colors (Impact UI Style)
-    private static final int BG_COLOR = 0xCC1A1A2E;         // Panel bg 80% opacity
-    private static final int BORDER_COLOR = 0xFF3D5AFE;     // Impact electric blue
-    private static final int BORDER_GLOW = 0x553D5AFE;      // Glow effect
-    private static final int TEXT_GREEN = 0xFF00FF00;       // Impact green
-    private static final int TEXT_YELLOW = 0xFFFFD700;      // Impact gold
-    private static final int TEXT_RED = 0xFFFF4444;         // Impact red
-    private static final int TEXT_GRAY = 0xFFAAAAAA;        // Muted gray
-    private static final int TEXT_CYAN = 0xFF00FFFF;        // Impact cyan (titles/headers)
+    private static final int BG_COLOR = TelemetryUiTheme.Panel.BG;
+    private static final int BORDER_COLOR = TelemetryUiTheme.Panel.BORDER;
+    private static final int BORDER_GLOW = TelemetryUiTheme.Panel.GLOW;
+    private static final int TEXT_GREEN = TelemetryUiTheme.Text.GREEN;
+    private static final int TEXT_YELLOW = TelemetryUiTheme.Text.YELLOW;
+    private static final int TEXT_RED = TelemetryUiTheme.Text.RED;
+    private static final int TEXT_GRAY = TelemetryUiTheme.Text.GRAY;
+    private static final int TEXT_CYAN = TelemetryUiTheme.Text.CYAN;
 
     // === State ===
     private boolean enabled = false;
@@ -340,7 +340,7 @@ public class PerformanceProfiler {
 
     private void renderFrameTimeGraph(GuiGraphics graphics, int x, int y, int width, int height) {
         // Sfondo
-        graphics.fill(x, y, x + width, y + height, 0xFF000000);
+        graphics.fill(x, y, x + width, y + height, TelemetryUiTheme.Graph.BG);
 
         // Target lines (16.67ms = 60fps, 33.33ms = 30fps)
         float maxMs = 50f; // Scala a 50ms
@@ -349,11 +349,11 @@ public class PerformanceProfiler {
 
         // Linea 60fps (verde)
         for (int i = 0; i < width; i += 4) {
-            graphics.fill(x + i, line60, x + i + 2, line60 + 1, 0x4400FF00);
+            graphics.fill(x + i, line60, x + i + 2, line60 + 1, TelemetryUiTheme.Graph.LINE_60);
         }
         // Linea 30fps (giallo)
         for (int i = 0; i < width; i += 4) {
-            graphics.fill(x + i, line30, x + i + 2, line30 + 1, 0x44FFFF00);
+            graphics.fill(x + i, line30, x + i + 2, line30 + 1, TelemetryUiTheme.Graph.LINE_30);
         }
 
         // Grafico frame time - usa float per distribuzione precisa
@@ -378,15 +378,15 @@ public class PerformanceProfiler {
 
     private void renderBar(GuiGraphics graphics, int x, int y, int width, int height, float percent, int color) {
         // Sfondo
-        graphics.fill(x, y, x + width, y + height, 0xFF222222);
+        graphics.fill(x, y, x + width, y + height, TelemetryUiTheme.Graph.BAR_BG);
 
         // Barra
         int barWidth = (int)(width * Math.min(1f, percent));
         graphics.fill(x, y, x + barWidth, y + height, color);
 
         // Bordo
-        graphics.fill(x, y, x + width, y + 1, 0xFF444444);
-        graphics.fill(x, y + height - 1, x + width, y + height, 0xFF444444);
+        graphics.fill(x, y, x + width, y + 1, TelemetryUiTheme.Graph.BAR_BORDER);
+        graphics.fill(x, y + height - 1, x + width, y + height, TelemetryUiTheme.Graph.BAR_BORDER);
     }
 
     private void drawBorder(GuiGraphics graphics, int x, int y, int width, int height, int color) {

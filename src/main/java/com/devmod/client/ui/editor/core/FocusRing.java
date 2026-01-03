@@ -8,7 +8,7 @@ public final class FocusRing {
     private FocusRing() {}
 
     /** Focus ring color - cyan, high visibility */
-    public static final int COLOR = 0xFF00D4FF;
+    public static final int COLOR = DesignTokens.Utility.FOCUS;
 
     /** Focus ring outline width */
     public static final int WIDTH = 2;
@@ -32,7 +32,8 @@ public final class FocusRing {
         int fh = h + OFFSET * 2;
 
         // Outer glow (semi-transparent)
-        graphics.fill(fx - 1, fy - 1, fx + fw + 1, fy + fh + 1, 0x4000D4FF);
+        graphics.fill(fx - 1, fy - 1, fx + fw + 1, fy + fh + 1,
+            DesignTokens.withAlpha(DesignTokens.Utility.FOCUS, DesignTokens.Alpha.A25));
 
         // Inner ring border
         AxiomRenderer.drawBorder(graphics, fx, fy, fw, fh, COLOR);
@@ -47,7 +48,8 @@ public final class FocusRing {
         int fw = w + customOffset * 2;
         int fh = h + customOffset * 2;
 
-        graphics.fill(fx - 1, fy - 1, fx + fw + 1, fy + fh + 1, 0x4000D4FF);
+        graphics.fill(fx - 1, fy - 1, fx + fw + 1, fy + fh + 1,
+            DesignTokens.withAlpha(DesignTokens.Utility.FOCUS, DesignTokens.Alpha.A25));
         AxiomRenderer.drawBorder(graphics, fx, fy, fw, fh, COLOR);
     }
 

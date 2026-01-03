@@ -37,10 +37,10 @@ public class UsableEvents {
         if (stats == null || stats.isDefault()) return;
 
         // Only modify if useDuration is explicitly set
-        if (stats.useDuration > 0) {
-            event.setDuration(stats.useDuration);
+        if (stats.getUseDuration() > 0) {
+            event.setDuration(stats.getUseDuration());
             LOGGER.debug("[UsableEvents] Modified use duration for {} to {} ticks",
-                stack.getHoverName().getString(), stats.useDuration);
+                stack.getHoverName().getString(), stats.getUseDuration());
         }
     }
 
@@ -59,13 +59,13 @@ public class UsableEvents {
         if (stats == null || stats.isDefault()) return;
 
         // Apply cooldown if set
-        if (stats.cooldownDuration > 0) {
+        if (stats.getCooldownDuration() > 0) {
             @Nonnull Item safeItem = Objects.requireNonNull(stack.getItem(), "item");
             player.getCooldowns().addCooldown(
                 safeItem,
-                stats.cooldownDuration);
+                stats.getCooldownDuration());
             LOGGER.debug("[UsableEvents] Applied cooldown of {} ticks to {} for player {}",
-                stats.cooldownDuration, stack.getHoverName().getString(), player.getName().getString());
+                stats.getCooldownDuration(), stack.getHoverName().getString(), player.getName().getString());
         }
     }
 

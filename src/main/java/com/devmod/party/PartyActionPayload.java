@@ -107,20 +107,12 @@ public record PartyActionPayload(
         return new PartyActionPayload(Action.SET_MOB_TYPE, null, 0, mobId.toString());
     }
 
-    public static PartyActionPayload setMobType(String mobIdString) {
-        return new PartyActionPayload(Action.SET_MOB_TYPE, null, 0, mobIdString);
-    }
-
     public static PartyActionPayload disbandParty() {
         return new PartyActionPayload(Action.DISBAND_PARTY, null, 0, null);
     }
 
     public static PartyActionPayload startQuest() {
         return new PartyActionPayload(Action.START_QUEST, null, 0, null);
-    }
-
-    public static PartyActionPayload createParty() {
-        return new PartyActionPayload(Action.CREATE_PARTY, null, 0, null);
     }
 
     public static PartyActionPayload createParty(com.devmod.endurance.QuestType questType) {
@@ -160,8 +152,9 @@ public record PartyActionPayload(
         }
         size += 1; // questTypeOrdinal (varint, typically 1 byte)
         size += 1; // boolean for mobId presence
-        if (mobId != null) {
-            size += varIntSize(mobId.length()) + mobId.length();
+        String mob = mobId;
+        if (mob != null) {
+            size += varIntSize(mob.length()) + mob.length();
         }
         return size;
     }

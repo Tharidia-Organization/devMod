@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.panels.tracking.EntityTracker;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public abstract class FloatingPanel {
 
@@ -104,7 +105,7 @@ public abstract class FloatingPanel {
                                  int contentWidth, int contentHeight, float alpha) {
         // Default implementation - panels can override for custom content
         // Renders basic info as text
-        renderText3D(poseStack, bufferSource, font, getTitle(), 0, 0, applyAlpha(0xFFFFFFFF, alpha));
+        renderText3D(poseStack, bufferSource, font, getTitle(), 0, 0, applyAlpha(DesignTokens.Text.WHITE, alpha));
     }
 
     /**
@@ -137,7 +138,7 @@ public abstract class FloatingPanel {
         int originalAlpha = (argb >> 24) & 0xFF;
         if (originalAlpha == 0) originalAlpha = 255;
         int newAlpha = (int) (originalAlpha * alphaMultiplier);
-        return (newAlpha << 24) | (argb & 0x00FFFFFF);
+        return (newAlpha << 24) | (argb & DesignTokens.Mask.RGB);
     }
 
     /**

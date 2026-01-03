@@ -10,6 +10,7 @@ import javax.annotation.Nullable;
 
 import org.joml.Matrix4f;
 
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 public record AnimationSnapshot(
@@ -236,9 +237,7 @@ public record AnimationSnapshot(
     }
 
     private static float lerpAngle(float delta, float start, float end) {
-        float diff = end - start;
-        while (diff < -180) diff += 360;
-        while (diff >= 180) diff -= 360;
+        float diff = Mth.wrapDegrees(end - start);
         return start + delta * diff;
     }
 

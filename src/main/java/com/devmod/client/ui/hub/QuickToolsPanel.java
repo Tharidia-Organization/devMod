@@ -127,8 +127,9 @@ public class QuickToolsPanel implements HubPanel {
         // === ENDURANCE SHORTCUTS ===
         contentY = HubSectionHeader.draw(graphics, font, "ENDURANCE", contentX, contentY, SECTION_HEADER_HEIGHT);
         boolean hasQuest = ClientQuestCache.hasActiveQuest();
-        EnduranceQuestState questState = hasQuest && ClientQuestCache.getData() != null
-            ? ClientQuestCache.getData().getState()
+        var questData = ClientQuestCache.getData();
+        EnduranceQuestState questState = hasQuest && questData != null
+            ? questData.getState()
             : EnduranceQuestState.AVAILABLE;
 
         for (QuestActionPayload.Action action : QuestActionPayload.Action.values()) {
@@ -287,6 +288,23 @@ public class QuickToolsPanel implements HubPanel {
     public int getWidth() { return width; }
     @Override
     public int getHeight() { return height; }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Handle tool hotkeys (G, L, H, R, P, V, Y, C)
+        String key = org.lwjgl.glfw.GLFW.glfwGetKeyName(keyCode, scanCode);
+        if (key != null) {
+            String upperKey = key.toUpperCase(Locale.ROOT);
+            for (ToolType tool : ToolType.values()) {
+                if (tool.getHotkey().equals(upperKey)) {
+                    tool.toggle();
+                    onToolToggled.accept(tool, tool.isEnabled());
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     private Map<ToolType, EditorButton> buildToolButtons() {
         Map<ToolType, EditorButton> buttons = new EnumMap<>(ToolType.class);

@@ -19,6 +19,7 @@ import com.google.gson.GsonBuilder;
 import net.minecraft.client.Minecraft;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.RadialMenuThemeDefaults;
 
 public class RadialMenuConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(RadialMenuConfig.class);
@@ -122,36 +123,29 @@ public class RadialMenuConfig {
         public String presetName = "default";
 
         // Background colors
-        public int bgDark = 0xE6101020;
-        public int bgLight = 0xCC1a1a35;
+        public int bgDark = RadialMenuThemeDefaults.Base.BG_DARK;
+        public int bgLight = RadialMenuThemeDefaults.Base.BG_LIGHT;
 
         // Selection colors
-        public int selected = 0xDD2a2a55;
-        public int hover = 0xEE353566;
+        public int selected = RadialMenuThemeDefaults.Base.SELECTED;
+        public int hover = RadialMenuThemeDefaults.Base.HOVER;
 
         // Status colors
-        public int active = 0xFF00FF88;
-        public int activeGlow = 0x4400FF88;
-        public int inactive = 0xFFAAAAAA;
+        public int active = RadialMenuThemeDefaults.Base.ACTIVE;
+        public int activeGlow = RadialMenuThemeDefaults.Base.ACTIVE_GLOW;
+        public int inactive = RadialMenuThemeDefaults.Base.INACTIVE;
 
         // Text colors
-        public int textPrimary = 0xFFFFFFFF;
-        public int textSecondary = 0xFFAAAAAA;
-        public int textHighlight = 0xFF88CCFF;
+        public int textPrimary = RadialMenuThemeDefaults.Base.TEXT_PRIMARY;
+        public int textSecondary = RadialMenuThemeDefaults.Base.TEXT_SECONDARY;
+        public int textHighlight = RadialMenuThemeDefaults.Base.TEXT_HIGHLIGHT;
 
         // Border colors
-        public int border = 0xFF505080;
-        public int borderGlow = 0x40FFFFFF;
+        public int border = RadialMenuThemeDefaults.Base.BORDER;
+        public int borderGlow = RadialMenuThemeDefaults.Base.BORDER_GLOW;
 
         // Category accent colors (per-category override)
-        public int[] categoryColors = {
-            0xFF00DDFF,  // Debug - Cyan
-            0xFFFFDD00,  // Spatial - Yellow
-            0xFF00FF88,  // Perf - Green
-            0xFFFF4466,  // Combat - Red
-            0xFFFF9900,  // Tools - Orange
-            0xFFCC44FF   // Quest - Purple
-        };
+        public int[] categoryColors = RadialMenuThemeDefaults.Base.categoryColors();
 
         /**
          * Apply a preset theme
@@ -174,51 +168,30 @@ public class RadialMenuConfig {
      * Predefined theme presets
      */
     public enum ThemePreset {
-        DEFAULT("default",
-            0xE6101020, 0xCC1a1a35, 0xDD2a2a55, 0xEE353566,
-            0xFF00FF88, 0x4400FF88, 0xFF505080, 0xFFFFFFFF, 0xFFAAAAAA),
-
-        NEON("neon",
-            0xE6000510, 0xCC0a0a20, 0xDD1a1a40, 0xEE2525aa,
-            0xFF00FFFF, 0x4400FFFF, 0xFF0088FF, 0xFFFFFFFF, 0xFF88FFFF),
-
-        CRIMSON("crimson",
-            0xE6200808, 0xCC351010, 0xDD552020, 0xEE663030,
-            0xFFFF4444, 0x44FF4444, 0xFFFF6666, 0xFFFFFFFF, 0xFFFFAAAA),
-
-        FOREST("forest",
-            0xE6081808, 0xCC103510, 0xDD205520, 0xEE306630,
-            0xFF44FF44, 0x4444FF44, 0xFF66FF66, 0xFFFFFFFF, 0xFFAAFFAA),
-
-        GOLD("gold",
-            0xE6181408, 0xCC352810, 0xDD554420, 0xEE665530,
-            0xFFFFCC00, 0x44FFCC00, 0xFFFFDD44, 0xFFFFFFFF, 0xFFFFEEAA),
-
-        MIDNIGHT("midnight",
-            0xF0050510, 0xDD080820, 0xCC151540, 0xBB202060,
-            0xFF6666FF, 0x446666FF, 0xFF4444AA, 0xFFCCCCFF, 0xFF8888CC),
-
-        MINIMAL("minimal",
-            0xE6181818, 0xCC282828, 0xDD383838, 0xEE484848,
-            0xFFFFFFFF, 0x44FFFFFF, 0xFF606060, 0xFFFFFFFF, 0xFFAAAAAA);
+        DEFAULT("default", RadialMenuThemeDefaults.Presets.DEFAULT),
+        NEON("neon", RadialMenuThemeDefaults.Presets.NEON),
+        CRIMSON("crimson", RadialMenuThemeDefaults.Presets.CRIMSON),
+        FOREST("forest", RadialMenuThemeDefaults.Presets.FOREST),
+        GOLD("gold", RadialMenuThemeDefaults.Presets.GOLD),
+        MIDNIGHT("midnight", RadialMenuThemeDefaults.Presets.MIDNIGHT),
+        MINIMAL("minimal", RadialMenuThemeDefaults.Presets.MINIMAL);
 
         public final String name;
         public final int bgDark, bgLight, selected, hover;
         public final int active, activeGlow, border;
         public final int textPrimary, textSecondary;
 
-        ThemePreset(String name, int bgDark, int bgLight, int selected, int hover,
-                    int active, int activeGlow, int border, int textPrimary, int textSecondary) {
+        ThemePreset(String name, RadialMenuThemeDefaults.ThemePresetValues values) {
             this.name = name;
-            this.bgDark = bgDark;
-            this.bgLight = bgLight;
-            this.selected = selected;
-            this.hover = hover;
-            this.active = active;
-            this.activeGlow = activeGlow;
-            this.border = border;
-            this.textPrimary = textPrimary;
-            this.textSecondary = textSecondary;
+            this.bgDark = values.bgDark;
+            this.bgLight = values.bgLight;
+            this.selected = values.selected;
+            this.hover = values.hover;
+            this.active = values.active;
+            this.activeGlow = values.activeGlow;
+            this.border = values.border;
+            this.textPrimary = values.textPrimary;
+            this.textSecondary = values.textSecondary;
         }
 
         public static ThemePreset fromName(String name) {

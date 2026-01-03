@@ -37,15 +37,15 @@ import com.devmod.util.I18n;
 public class WelcomeScreen extends Screen {
 
     // === Colors (Indigo theme for welcome screen) ===
-    private static final int COLOR_BG_TOP = 0xF0181818;  // Semi-transparent dark
-    private static final int COLOR_BG_BOTTOM = 0xF00d0d1a;   // Darker gradient
-    private static final int COLOR_BORDER = 0xFF6366f1;      // Indigo accent (intentionally different from Impact blue)
-    private static final int COLOR_TITLE = 0xFF818cf8;       // Light indigo
-    private static final int COLOR_SUBTITLE = 0xFFa5b4fc;    // Lighter indigo
+    private static final int COLOR_BG_TOP = DesignTokens.Welcome.BG_TOP;
+    private static final int COLOR_BG_BOTTOM = DesignTokens.Welcome.BG_BOTTOM;
+    private static final int COLOR_BORDER = DesignTokens.Welcome.BORDER;
+    private static final int COLOR_TITLE = DesignTokens.Welcome.TITLE;
+    private static final int COLOR_SUBTITLE = DesignTokens.Welcome.SUBTITLE;
     private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
     private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
     private static final int COLOR_KEY = DesignTokens.Accent.YELLOW;  // Yellow for keybinds
-    private static final int COLOR_PARTICLE = 0xFF6366f1;    // Indigo particles
+    private static final int COLOR_PARTICLE = DesignTokens.Welcome.PARTICLE;
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 450;
@@ -76,10 +76,10 @@ public class WelcomeScreen extends Screen {
 
     // === Features to display ===
     private static final Feature[] FEATURES = {
-        new Feature("Mob Stat Viewer", "See HP, armor, damage, and reach in real-time", 0xFF4ade80),
-        new Feature("Debug Overlays", "Light levels, pathfinding, hitboxes, aggro ranges", 0xFF60a5fa),
-        new Feature("Endurance Quest", "Wave-based survival with combos & style ranks", 0xFFf472b6),
-        new Feature("QA Testing Tools", "Comprehensive testing suite for mod developers", 0xFFfbbf24)
+        new Feature("Mob Stat Viewer", "See HP, armor, damage, and reach in real-time", DesignTokens.Welcome.FEATURE_MOB),
+        new Feature("Debug Overlays", "Light levels, pathfinding, hitboxes, aggro ranges", DesignTokens.Welcome.FEATURE_DEBUG),
+        new Feature("Endurance Quest", "Wave-based survival with combos & style ranks", DesignTokens.Welcome.FEATURE_ENDURANCE),
+        new Feature("QA Testing Tools", "Comprehensive testing suite for mod developers", DesignTokens.Welcome.FEATURE_TESTING)
     };
 
     private static final Keybind[] KEYBINDS = {
@@ -241,7 +241,7 @@ public class WelcomeScreen extends Screen {
         // === Buttons hint ===
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float hintAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
-            int hintColor = applyAlpha(0xFF444444, hintAlpha);
+            int hintColor = applyAlpha(DesignTokens.Welcome.HINT, hintAlpha);
             safeGraphics.drawCenteredString(safeFont, "Press ESC to skip", centerX, panelY + PANEL_HEIGHT - 15, hintColor);
         }
 
@@ -270,8 +270,8 @@ public class WelcomeScreen extends Screen {
         // Outer glow (pulsing)
         long elapsed = System.currentTimeMillis() - openTime;
         float pulse = 0.5f + 0.5f * (float) Math.sin(elapsed / 600.0);
-        int glowAlpha = (int) (0x33 * pulse * alpha);
-        int glowColor = (glowAlpha << 24) | (COLOR_BORDER & 0x00FFFFFF);
+        int glowAlpha = (int) (DesignTokens.Alpha.A20 * pulse * alpha);
+        int glowColor = (glowAlpha << 24) | (COLOR_BORDER & DesignTokens.Mask.RGB);
 
         g.fill(x - 5, y - 5, x + w + 5, y + h + 5, glowColor);
         g.fill(x - 4, y - 4, x + w + 4, y + h + 4, glowColor);
@@ -291,7 +291,7 @@ public class WelcomeScreen extends Screen {
         }
 
         // Inner highlight (top)
-        int highlightColor = applyAlpha(0x22FFFFFF, alpha);
+        int highlightColor = applyAlpha(DesignTokens.Welcome.HIGHLIGHT, alpha);
         g.fill(x, y, x + w, y + 1, highlightColor);
     }
 
@@ -316,7 +316,7 @@ public class WelcomeScreen extends Screen {
         g.drawCenteredString(safeFont, "Welcome!", centerX, panelY + 48, subtitleColor);
 
         // Separator line
-        int sepColor = applyAlpha(COLOR_BORDER & 0x66FFFFFF, alpha);
+        int sepColor = applyAlpha(DesignTokens.withAlpha(DesignTokens.Welcome.BORDER, DesignTokens.Alpha.A40), alpha);
         g.fill(centerX - 180, panelY + 65, centerX + 180, panelY + 66, sepColor);
     }
 
@@ -352,7 +352,7 @@ public class WelcomeScreen extends Screen {
         float bulletPulse = 1.0f + 0.2f * (float) Math.sin(elapsed / 300.0 + feature.name.hashCode());
 
         // Background highlight on hover effect (subtle)
-        int bgColor = applyAlpha(0x11FFFFFF, alpha);
+        int bgColor = applyAlpha(DesignTokens.Welcome.SUBTLE, alpha);
         g.fill(x - 5, y - 2, x + PANEL_WIDTH - 60, y + 20, bgColor);
 
         // Colored bullet
@@ -379,7 +379,7 @@ public class WelcomeScreen extends Screen {
         float alpha = Math.min(1.0f, keybindElapsed / 300.0f);
 
         // Separator
-        int sepColor = applyAlpha(COLOR_BORDER & 0x44FFFFFF, alpha);
+        int sepColor = applyAlpha(DesignTokens.withAlpha(DesignTokens.Welcome.BORDER, DesignTokens.Alpha.A27), alpha);
         g.fill(centerX - 180, startY, centerX + 180, startY + 1, sepColor);
 
         // Header
@@ -404,7 +404,7 @@ public class WelcomeScreen extends Screen {
         String keyText = "[" + kb.key + "]";
         int keyWidth = safeFont.width(keyText);
 
-        int boxColor = applyAlpha(0x44000000, alpha);
+        int boxColor = applyAlpha(DesignTokens.Welcome.SHADOW, alpha);
         g.fill(x - 2, y - 1, x + keyWidth + 4, y + 10, boxColor);
 
         // Key text
@@ -426,7 +426,7 @@ public class WelcomeScreen extends Screen {
 
     private static int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     private static int lerpColor(int color1, int color2, float t) {
@@ -526,7 +526,7 @@ public class WelcomeScreen extends Screen {
 
         void render(GuiGraphics g) {
             int a = (int) (255 * alpha);
-            int color = (a << 24) | (COLOR_PARTICLE & 0x00FFFFFF);
+            int color = (a << 24) | (COLOR_PARTICLE & DesignTokens.Mask.RGB);
             int s = (int) size;
             g.fill((int)x - s, (int)y - s, (int)x + s, (int)y + s, color);
         }

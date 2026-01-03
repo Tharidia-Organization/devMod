@@ -216,7 +216,8 @@ public class QuestSequenceOverlay {
         int boxY = 40;
 
         // Background
-        int bgColor = DesignTokens.withAlpha(DesignTokens.Background.PANEL_SOLID, (int) (0xE0 * animationProgress));
+        int bgColor = DesignTokens.withAlpha(DesignTokens.Background.PANEL_SOLID,
+            (int) (DesignTokens.Alpha.A88 * animationProgress));
         graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, bgColor);
 
         // Border with glow effect based on phase

@@ -40,7 +40,7 @@ public class OnboardingOverlay {
     // Colors (delegating to OverlayTheme)
     private static final int BG_COLOR = OverlayTheme.Panel.BG_HEAVY;
     private static final int BORDER_COLOR = OverlayTheme.Border.SUCCESS;
-    private static final int TITLE_COLOR = OverlayTheme.Help.TITLE;  // Light green (0xFF81C784)
+    private static final int TITLE_COLOR = OverlayTheme.Help.TITLE;  // Light green
     private static final int TEXT_COLOR = OverlayTheme.Text.PRIMARY;
     private static final int HINT_COLOR = OverlayTheme.Text.GOLD;
     private static final int MUTED_COLOR = OverlayTheme.Text.HINT;
@@ -225,7 +225,7 @@ public class OnboardingOverlay {
 
         // Draw instruction with highlight
         int highlightAlpha = (int) (150 + pulse * 100);
-        int highlightColor = (highlightAlpha << 24) | (HINT_COLOR & 0x00FFFFFF);
+        int highlightColor = OverlayTheme.withAlpha(HINT_COLOR, highlightAlpha);
         graphics.fill(contentX - 4, y - 2, contentX + contentWidth + 4, y + LINE_HEIGHT + 2, OverlayTheme.Utility.SHADOW);
         graphics.drawString(font, displayInstruction, contentX, y, highlightColor, false);
         y += LINE_HEIGHT + 10;

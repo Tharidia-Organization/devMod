@@ -19,11 +19,6 @@ public class DiscordAlertChannel implements AlertRouter.AlertChannel {
 
     private static final int DEFAULT_TIMEOUT_MS = 5000;
 
-    // Discord embed colors (decimal)
-    private static final int COLOR_ERROR = 0xED4245;   // Red
-    private static final int COLOR_WARN = 0xFEE75C;    // Yellow
-    private static final int COLOR_INFO = 0x5865F2;   // Blurple
-
     private final String id;
     private final String webhookUrl;
     private final boolean critical;
@@ -243,9 +238,9 @@ public class DiscordAlertChannel implements AlertRouter.AlertChannel {
      */
     private int getColorForSeverity(ErrorContext.Severity severity) {
         return switch (severity) {
-            case ERROR, CRITICAL -> COLOR_ERROR;
-            case WARNING -> COLOR_WARN;
-            case INFO, DEBUG -> COLOR_INFO;
+            case ERROR, CRITICAL -> AlertColors.ERROR;
+            case WARNING -> AlertColors.WARN;
+            case INFO, DEBUG -> AlertColors.INFO;
         };
     }
 

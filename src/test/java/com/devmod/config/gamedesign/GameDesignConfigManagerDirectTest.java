@@ -39,7 +39,7 @@ class GameDesignConfigManagerDirectTest {
         manager.clearInstanceOverrides();
 
         GameDesignConfig global = manager.getGlobalConfig();
-        long originalWindow = global.resonance.duoWindowMs;
+        long originalWindow = global.getResonance().duoWindowMs;
 
         UUID instanceId = UUID.randomUUID();
         InstanceOverride override = new InstanceOverride("test").setDuoWindowMs(900);
@@ -48,7 +48,7 @@ class GameDesignConfigManagerDirectTest {
         GameDesignConfig effective = manager.getEffectiveConfig(instanceId);
 
         assertNotSame(global, effective);
-        assertEquals(900, effective.resonance.duoWindowMs);
-        assertEquals(originalWindow, global.resonance.duoWindowMs);
+        assertEquals(900, effective.getResonance().duoWindowMs);
+        assertEquals(originalWindow, global.getResonance().duoWindowMs);
     }
 }

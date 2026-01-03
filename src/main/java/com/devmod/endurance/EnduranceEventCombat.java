@@ -19,6 +19,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.combat.signature.SoulImprintManager;
@@ -72,14 +73,8 @@ public class EnduranceEventCombat {
                 ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
                 if (comboSession != null) {
                     // Determine action type based on damage
-                    ComboSystem.ActionType actionType;
-                    if (damage >= 20) {
-                        actionType = ComboSystem.ActionType.HEAVY_ATTACK;
-                    } else if (damage >= 10) {
-                        actionType = ComboSystem.ActionType.LIGHT_ATTACK;
-                    } else {
-                        actionType = ComboSystem.ActionType.LIGHT_ATTACK;
-                    }
+                    ComboSystem.ActionType actionType =
+                        damage >= 20 ? ComboSystem.ActionType.HEAVY_ATTACK : ComboSystem.ActionType.LIGHT_ATTACK;
                     ComboSystem.ActionResult result = comboSession.registerAction(actionType, damage);
 
                     // Sync combat flow state to client
@@ -352,14 +347,22 @@ public class EnduranceEventCombat {
             }
         } else {
             // Mob died from external cause (not player kill)
-            // Log for debugging - the periodic validation will handle respawning
             String deathCause = source.type().msgId();
             LOGGER.debug("[EnduranceQuest] Quest mob {} died from external cause: {} (arena: {})",
                 mobId, deathCause, arenaId);
 
-            // Note: We do NOT call handleMobDeath here because we want the validation
-            // system to detect this as a "missing" mob and respawn it.
-            // This ensures the wave can't be completed by environmental deaths.
+            // Count external deaths toward wave completion if the mob belongs to an active instance.
+            if (arenaId != null) {
+                EnduranceQuestManager.ActiveQuestSession session =
+                    findSessionForArena(arenaId, questId, entity);
+                if (session != null) {
+                    var server = ServerLifecycleHooks.getCurrentServer();
+                    ServerPlayer questPlayer = server != null
+                        ? server.getPlayerList().getPlayer(Objects.requireNonNull(session.getPlayerId()))
+                        : null;
+                    WaveManager.INSTANCE.handleMobDeath(entity.getUUID(), arenaId, session, questPlayer);
+                }
+            }
         }
     }
 
@@ -433,6 +436,36 @@ public class EnduranceEventCombat {
         }
 
         return "BODY"; // Default fallback
+    }
+
+    private static @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession findSessionForArena(
+            UUID arenaId,
+            @javax.annotation.Nullable UUID questId,
+            LivingEntity entity) {
+        if (arenaId == null || entity == null) {
+            return null;
+        }
+        for (EnduranceQuestManager.ActiveQuestSession session :
+            EnduranceQuestManager.INSTANCE.getActiveSessions().values()) {
+            if (session == null || session.getQuest() == null) {
+                continue;
+            }
+            if (session.getQuest().getState() != EnduranceQuestState.IN_PROGRESS) {
+                continue;
+            }
+            var arena = session.getArena();
+            if (arena == null || !arenaId.equals(arena.getId())) {
+                continue;
+            }
+            if (questId != null && !questId.equals(session.getQuest().getQuestId())) {
+                continue;
+            }
+            if (arena.getLevel() != null && arena.getLevel() != entity.level()) {
+                continue;
+            }
+            return session;
+        }
+        return null;
     }
 
     private static boolean isRecentCriticalKill(UUID playerId, int entityId) {

@@ -21,6 +21,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
@@ -77,8 +78,9 @@ public class RoomBoundsVisualizer {
         int colorIndex = 0;
         for (RoomDefinition def : defs) {
             // Filter by current dimension if available
-            if (currentDimension != null && def.dimension() != null && !def.dimension().isEmpty()) {
-                if (!def.dimension().equals(currentDimension)) {
+            final String defDimension = def.dimension();
+            if (currentDimension != null && defDimension != null && !defDimension.isEmpty()) {
+                if (!defDimension.equals(currentDimension)) {
                     continue;
                 }
             }
@@ -208,6 +210,22 @@ public class RoomBoundsVisualizer {
     }
 
     /**
+     * Set gap detection enabled/disabled (for settings persistence).
+     */
+    public void setShowGaps(boolean value) {
+        if (this.showGaps != value) {
+            this.showGaps = value;
+            if (showGaps) {
+                markGapsDirty();
+                refreshGapsIfNeeded();
+            } else {
+                detectedGaps.clear();
+                gapsDirty = false;
+            }
+        }
+    }
+
+    /**
      * Force reload rooms from config (useful after editing config file).
      */
     public void reload() {
@@ -249,20 +267,6 @@ public class RoomBoundsVisualizer {
         rooms.clear();
         detectedGaps.clear();
         gapsDirty = false;
-    }
-
-    /**
-     * Imposta le room dal TelemetryService
-     */
-    public void setRoomsFromConfig(List<RoomData> roomDataList) {
-        rooms.clear();
-        int colorIndex = 0;
-        for (RoomData data : roomDataList) {
-            rooms.add(new RoomVisual(data.id, data.min, data.max, ROOM_COLORS[colorIndex % ROOM_COLORS.length]));
-            colorIndex++;
-        }
-        markGapsDirty();
-        refreshGapsIfNeeded();
     }
 
     /**
@@ -449,9 +453,6 @@ public class RoomBoundsVisualizer {
     // Internal data classes
     private record RoomVisual(String id, BlockPos min, BlockPos max, int color) {}
 
-    // Public data class per input esterno
-    public record RoomData(String id, BlockPos min, BlockPos max) {}
-
     // === Pending Point A/B Markers ===
 
     /**
@@ -505,29 +506,33 @@ public class RoomBoundsVisualizer {
      * Called from render() method.
      */
     private void renderPendingMarkers(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose, Vec3 cameraPos) {
+        // Capture @Nullable fields to local variables for null safety
+        final BlockPos pointA = pendingPointA;
+        final BlockPos pointB = pendingPointB;
+
         // Render Point A marker (green pillar)
-        if (pendingPointA != null) {
-            double dx = pendingPointA.getX() + 0.5 - cameraPos.x;
-            double dy = pendingPointA.getY() + 0.5 - cameraPos.y;
-            double dz = pendingPointA.getZ() + 0.5 - cameraPos.z;
+        if (pointA != null) {
+            double dx = pointA.getX() + 0.5 - cameraPos.x;
+            double dy = pointA.getY() + 0.5 - cameraPos.y;
+            double dz = pointA.getZ() + 0.5 - cameraPos.z;
             if (dx*dx + dy*dy + dz*dz < 200*200) {
-                renderPointMarker(consumer, matrix, pose, pendingPointA, 0.0f, 1.0f, 0.3f, "A");
+                renderPointMarker(consumer, matrix, pose, pointA, 0.0f, 1.0f, 0.3f, "A");
             }
         }
 
         // Render Point B marker (blue pillar)
-        if (pendingPointB != null) {
-            double dx = pendingPointB.getX() + 0.5 - cameraPos.x;
-            double dy = pendingPointB.getY() + 0.5 - cameraPos.y;
-            double dz = pendingPointB.getZ() + 0.5 - cameraPos.z;
+        if (pointB != null) {
+            double dx = pointB.getX() + 0.5 - cameraPos.x;
+            double dy = pointB.getY() + 0.5 - cameraPos.y;
+            double dz = pointB.getZ() + 0.5 - cameraPos.z;
             if (dx*dx + dy*dy + dz*dz < 200*200) {
-                renderPointMarker(consumer, matrix, pose, pendingPointB, 0.3f, 0.5f, 1.0f, "B");
+                renderPointMarker(consumer, matrix, pose, pointB, 0.3f, 0.5f, 1.0f, "B");
             }
         }
 
         // If both points set, render preview wireframe
-        if (pendingPointA != null && pendingPointB != null) {
-            renderPreviewBox(consumer, matrix, pose, pendingPointA, pendingPointB);
+        if (pointA != null && pointB != null) {
+            renderPreviewBox(consumer, matrix, pose, pointA, pointB);
         }
     }
 
@@ -557,7 +562,7 @@ public class RoomBoundsVisualizer {
 
         // Add label
         Vec3 labelPos = new Vec3(cx, cy + 2, cz);
-        int color = ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | (int)(b * 255) | 0xFF000000;
+        int color = DesignTokens.Mask.ALPHA | ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
         DebugRenderer.INSTANCE.addLabel(labelPos, "Point " + label, color, 200);
     }
 

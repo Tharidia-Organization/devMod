@@ -185,7 +185,7 @@ public final class MailboxNetworkHandler extends NetworkHandlerBase {
                 return;
             }
 
-            observeFuture(NewsManager.INSTANCE.markAsRead(player.getUUID(), payload.articleId())
+            observeFuture(NewsManager.getInstance().markAsRead(player.getUUID(), payload.articleId())
                 .thenRun(() -> sendNewsSync(player)), "news read");
         }), "news read enqueue");
     }
@@ -277,9 +277,9 @@ public final class MailboxNetworkHandler extends NetworkHandlerBase {
     public static void sendNewsSync(ServerPlayer player) {
         UUID playerUuid = player.getUUID();
 
-        observeFuture(NewsManager.INSTANCE.getActiveNews().thenCompose(articles -> {
+        observeFuture(NewsManager.getInstance().getActiveNews().thenCompose(articles -> {
             List<CompletableFuture<NewsSyncPayload.NewsArticleData>> futures = articles.stream()
-                .map(article -> NewsManager.INSTANCE.hasPlayerReadNews(playerUuid, article.id())
+                .map(article -> NewsManager.getInstance().hasPlayerReadNews(playerUuid, article.id())
                     .exceptionally(e -> false)
                     .thenApply(isRead -> toNewsArticleData(article, isRead)))
                 .toList();
@@ -288,7 +288,7 @@ public final class MailboxNetworkHandler extends NetworkHandlerBase {
             return CompletableFuture.allOf(futureArray)
                 .thenApply(v -> futures.stream().map(CompletableFuture::join).toList());
         }).thenCombine(
-            NewsManager.INSTANCE.getUnreadCount(playerUuid),
+            NewsManager.getInstance().getUnreadCount(playerUuid),
             (articleData, unreadCount) -> new NewsSyncPayload(articleData, unreadCount)
         ).thenAccept(payload -> {
             PacketDistributor.sendToPlayer(player, Objects.requireNonNull(payload, "news sync payload"));
@@ -373,7 +373,6 @@ public final class MailboxNetworkHandler extends NetworkHandlerBase {
     ) {
         observeFuture(context.enqueueWork(() -> {
             ServerPlayer player = (ServerPlayer) context.player();
-            if (player == null) return;
             if (!MailboxPermissions.INSTANCE.hasPermission(player, MailboxPermissions.Permission.TESTER)) {
                 return;
             }

@@ -9,6 +9,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
+
 @OnlyIn(Dist.CLIENT)
 public class UiAnimation {
 
@@ -321,7 +323,7 @@ public class UiAnimation {
     public int applyToBackdrop(int baseColor) {
         int baseAlpha = (baseColor >> 24) & 0xFF;
         int adjustedAlpha = (int) (baseAlpha * progress);
-        return (adjustedAlpha << 24) | (baseColor & 0x00FFFFFF);
+        return (adjustedAlpha << 24) | (baseColor & DesignTokens.Mask.RGB);
     }
 
     /**
@@ -333,7 +335,7 @@ public class UiAnimation {
     public int applyToColor(int color) {
         int baseAlpha = (color >> 24) & 0xFF;
         int adjustedAlpha = (int) (baseAlpha * getAlpha());
-        return (adjustedAlpha << 24) | (color & 0x00FFFFFF);
+        return (adjustedAlpha << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     // =========================================================================

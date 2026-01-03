@@ -1,6 +1,7 @@
 package com.devmod.arena.alert;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -104,7 +105,7 @@ public class MailboxAlertChannel implements AlertRouter.AlertChannel {
                     null
             ).exceptionally(ex -> {
                 LOGGER.warn("[MailboxAlert] Failed to deliver admin alert template", ex);
-                return null;
+                return Optional.empty();
             });
 
             LOGGER.debug("[MailboxAlert] Sent alert to admin mailbox: {}", errorType);

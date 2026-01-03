@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.joml.Quaternionf;
@@ -37,9 +38,9 @@ public class PreviewRenderer {
     private static final int SLOT_BOX_SIZE = 28;
     private static final int SLOT_BOX_PADDING = 6;
     private static final int SLOT_GROUP_SIZE = 3;
-    private static final int SELECTED_SLOT_BG = 0x4020C0FF;
-    private static final int PREVIEW_BG = 0xFF111419;
-    private static final int PREVIEW_BASE_SHADOW = 0x10101060;
+    private static final int SELECTED_SLOT_BG = DesignTokens.Preview.SELECTED_SLOT_BG;
+    private static final int PREVIEW_BG = DesignTokens.Preview.BG;
+    private static final int PREVIEW_BASE_SHADOW = DesignTokens.Preview.BASE_SHADOW;
     private static final int BASE_RADIUS_DIVISOR = 6;
     private static final float BASE_CENTER_Y_RATIO = 0.72f;
     private static final float INVENTORY_RENDER_SCALE = 0.0625f;
@@ -74,6 +75,7 @@ public class PreviewRenderer {
 
     private PreviewMode mode = PreviewMode.ENTITY;
     private ItemStack item = ItemStack.EMPTY;
+    @Nonnull
     private EquipmentSlot slot = EquipmentSlot.MAINHAND;
     // Uses player inventory directly; no local buffers
 
@@ -94,8 +96,7 @@ public class PreviewRenderer {
     @Nullable
     private Consumer<EquipmentSlot> onSlotClick;
 
-    // Bounds
-    private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
+    // Bounds for mouse hit detection
     private ResponsiveLayout.Rect previewBounds = ResponsiveLayout.Rect.EMPTY;
     private final List<SlotBox> slotBoxes = new ArrayList<>();
 
@@ -119,33 +120,8 @@ public class PreviewRenderer {
         return this;
     }
 
-    public PreviewRenderer slot(EquipmentSlot slot) {
-        this.slot = slot;
-        return this;
-    }
-
-    public PreviewRenderer showHint(boolean show) {
-        this.showHint = show;
-        return this;
-    }
-
-    public PreviewRenderer hintText(String text) {
-        this.hintText = text;
-        return this;
-    }
-
     public PreviewRenderer onSlotClick(Consumer<EquipmentSlot> callback) {
         this.onSlotClick = callback;
-        return this;
-    }
-
-    public PreviewRenderer autoRotate(boolean auto) {
-        this.autoRotate = auto;
-        return this;
-    }
-
-    public PreviewRenderer autoRotateSpeed(float speed) {
-        this.autoRotateSpeed = speed;
         return this;
     }
 
@@ -164,7 +140,6 @@ public class PreviewRenderer {
         int size = ScaledCoord.scaleDim(SIZE);
         int hintHeight = showHint ? ScaledCoord.scaleDim(HINT_HEIGHT) : 0;
         int totalHeight = size + hintHeight;
-        this.bounds = new ResponsiveLayout.Rect(x, y, size, totalHeight);
         this.previewBounds = new ResponsiveLayout.Rect(x, y, size, size);
 
         // Background layers (dark + glow)
@@ -275,7 +250,7 @@ public class PreviewRenderer {
         LivingEntity entity = Minecraft.getInstance().player;
 
         for (int i = 0; i < slots.length; i++) {
-            EquipmentSlot slot = slots[i];
+            EquipmentSlot slot = Objects.requireNonNull(slots[i], "slot element cannot be null");
             boolean leftSide = i < SLOT_GROUP_SIZE;
             int slotX = leftSide ? leftX : rightX;
             int slotY = startY + (i % SLOT_GROUP_SIZE) * (slotSize + gap);
@@ -350,7 +325,7 @@ public class PreviewRenderer {
     private void drawFilledCircle(GuiGraphics graphics, int cx, int cy, int radius, int color) {
         for (int r = radius; r >= 0; r--) {
             int a = Math.max(CIRCLE_ALPHA_MIN, ((color >> 24) & 0xFF) - (radius - r) * CIRCLE_ALPHA_STEP);
-            int rgb = (a << 24) | (color & 0x00FFFFFF);
+            int rgb = (a << 24) | (color & DesignTokens.Mask.RGB);
             graphics.fill(cx - r, cy - r, cx + r, cy + r, rgb);
         }
     }
@@ -464,30 +439,13 @@ public class PreviewRenderer {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // GETTERS & SETTERS
+    // SETTERS
     // ═══════════════════════════════════════════════════════════════
 
-    public PreviewMode getMode() {
-        return mode;
-    }
-
-    public void setMode(PreviewMode mode) {
-        this.mode = mode;
-    }
-
-    public ItemStack getItem() {
-        return item;
-    }
-
-    public void setItem(ItemStack item) {
-        this.item = item != null ? item : ItemStack.EMPTY;
-    }
-
-    public EquipmentSlot getSlot() {
-        return slot;
-    }
-
-    public void setSlot(EquipmentSlot slot) {
+    /**
+     * Set the current equipment slot and update item from player inventory.
+     */
+    public void setSlot(@Nonnull EquipmentSlot slot) {
         this.slot = Objects.requireNonNull(slot, "slot cannot be null");
         var player = Minecraft.getInstance().player;
         if (player != null) {
@@ -496,51 +454,9 @@ public class PreviewRenderer {
         }
     }
 
-    public float getRotationX() {
-        return rotationX;
-    }
-
-    public float getRotationY() {
-        return rotationY;
-    }
-
-    public void setRotation(float x, float y) {
-        this.rotationX = x;
-        this.rotationY = y;
-    }
-
-    public void resetRotation() {
-        this.rotationX = 0f;
-        this.rotationY = 0f;
-    }
-
-    public boolean isDragging() {
-        return dragging;
-    }
-
-    public boolean isAutoRotate() {
-        return autoRotate;
-    }
-
-    public void setAutoRotate(boolean autoRotate) {
-        this.autoRotate = autoRotate;
-    }
-
-    public int getSize() {
-        return SIZE;
-    }
-
-    public int getHeight() {
-        return SIZE + (showHint ? HINT_HEIGHT : 0);
-    }
-
-    public ResponsiveLayout.Rect getBounds() {
-        return bounds;
-    }
-
-    public ResponsiveLayout.Rect getPreviewBounds() {
-        return previewBounds;
-    }
+    // ═══════════════════════════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ═══════════════════════════════════════════════════════════════
 
     private String placeholderFor(EquipmentSlot slot) {
         return switch (slot) {
@@ -554,5 +470,5 @@ public class PreviewRenderer {
         };
     }
 
-    private record SlotBox(EquipmentSlot slot, ResponsiveLayout.Rect bounds) {}
+    private record SlotBox(@Nonnull EquipmentSlot slot, @Nonnull ResponsiveLayout.Rect bounds) {}
 }

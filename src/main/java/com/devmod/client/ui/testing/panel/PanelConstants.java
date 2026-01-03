@@ -1,8 +1,8 @@
 package com.devmod.client.ui.testing.panel;
 
-/**
- * Shared constants for the panel system.
- */
+import com.devmod.client.ui.editor.core.DesignTokens;
+
+// Shared constants for the panel system.
 public final class PanelConstants {
 
     private PanelConstants() {}
@@ -35,12 +35,12 @@ public final class PanelConstants {
     public static final float ANIMATION_SPEED = 0.15f;
 
     // Colors (defaults)
-    public static final int COLOR_SEPARATOR = 0x44FFFFFF;
-    public static final int COLOR_THUMB_NORMAL = 0x88FFFFFF;
-    public static final int COLOR_THUMB_HOVER = 0xAAFFFFFF;
-    public static final int COLOR_TRACK = 0x44FFFFFF;
-    public static final int COLOR_HEADER_ACCENT = 0xFF3D5AFE;
-    public static final int COLOR_SUCCESS = 0xFF44FF88;
-    public static final int COLOR_ERROR = 0xFFFF4444;
-    public static final int COLOR_CYAN = 0xFF00E5FF;
+    public static final int COLOR_SEPARATOR = DesignTokens.Testing.SEPARATOR;
+    public static final int COLOR_THUMB_NORMAL = DesignTokens.Testing.THUMB_NORMAL;
+    public static final int COLOR_THUMB_HOVER = DesignTokens.Testing.THUMB_HOVER;
+    public static final int COLOR_TRACK = DesignTokens.Testing.TRACK;
+    public static final int COLOR_HEADER_ACCENT = DesignTokens.Testing.HEADER_ACCENT;
+    public static final int COLOR_SUCCESS = DesignTokens.Testing.SUCCESS;
+    public static final int COLOR_ERROR = DesignTokens.Testing.ERROR;
+    public static final int COLOR_CYAN = DesignTokens.Testing.CYAN;
 }

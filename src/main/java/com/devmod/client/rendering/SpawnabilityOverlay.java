@@ -349,7 +349,9 @@ public class SpawnabilityOverlay {
         font.drawInBatch(
             safeText, xOffset, 0, color, false,
             textMatrix, bufferSource,
-            net.minecraft.client.gui.Font.DisplayMode.NORMAL, 0x60000000, 15728880
+            net.minecraft.client.gui.Font.DisplayMode.NORMAL,
+            OverlayTheme.withAlpha(OverlayTheme.Utility.BLACK, 96),
+            15728880
         );
 
         poseStack.popPose();

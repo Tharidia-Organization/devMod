@@ -158,7 +158,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Damage multiplier when hitting the head. 1.5x = headshots deal 50% more damage.")
-            .onChange(v -> { stats.headMult = v; module.markDirty("Head multiplier"); });
+            .onChange(v -> { stats.setHeadMult(v); module.markDirty("Head multiplier"); });
 
         bodyMultSlider = new EditorSlider("bodyMult", "Body Multiplier", 0.5f, 2.0f, 1.0f)
             .step(0.1f)
@@ -168,7 +168,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Damage multiplier for body/torso hits. 1.0 = normal damage.")
-            .onChange(v -> { stats.bodyMult = v; module.markDirty("Body multiplier"); });
+            .onChange(v -> { stats.setBodyMult(v); module.markDirty("Body multiplier"); });
 
         armsMultSlider = new EditorSlider("armsMult", "Arms Multiplier", 0.3f, 1.5f, 0.8f)
             .step(0.1f)
@@ -178,7 +178,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Damage multiplier when hitting arms. 0.8x = arm hits deal 20% less damage.")
-            .onChange(v -> { stats.armsMult = v; module.markDirty("Arms multiplier"); });
+            .onChange(v -> { stats.setArmsMult(v); module.markDirty("Arms multiplier"); });
 
         legsMultSlider = new EditorSlider("legsMult", "Legs Multiplier", 0.3f, 1.5f, 0.7f)
             .step(0.1f)
@@ -188,7 +188,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Damage multiplier when hitting legs. 0.7x = leg hits deal 30% less damage.")
-            .onChange(v -> { stats.legsMult = v; module.markDirty("Legs multiplier"); });
+            .onChange(v -> { stats.setLegsMult(v); module.markDirty("Legs multiplier"); });
     }
 
     public List<EditorSection> getHitLocationSections() {
@@ -218,7 +218,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Base damage added to attacks. Final = (Base + Attack Damage) * Multipliers. Uses minecraft:attack_damage attribute.")
-            .onChange(v -> { stats.attackDamage = v; module.markDirty("Attack damage"); });
+            .onChange(v -> { stats.setAttackDamage(v); module.markDirty("Attack damage"); });
 
         attackSpeedSlider = new EditorSlider("atkSpd", "Attack Speed", -5f, 4f, 0f)
             .step(0.1f)
@@ -227,7 +227,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Modifier to attack cooldown. Player base is 4.0, so -2.4 means 1.6 attacks/sec. DPS = Damage * (4 + Speed).")
-            .onChange(v -> { stats.attackSpeed = v; module.markDirty("Attack speed"); });
+            .onChange(v -> { stats.setAttackSpeed(v); module.markDirty("Attack speed"); });
 
         attackReachSlider = new EditorSlider("atkRch", "Attack Reach", 0f, 6f, 0f)
             .step(0.1f)
@@ -237,7 +237,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Additional melee range. Player base reach is 3.0 blocks. Uses minecraft:entity_interaction_range.")
-            .onChange(v -> { stats.attackReach = v; module.markDirty("Attack reach"); });
+            .onChange(v -> { stats.setAttackReach(v); module.markDirty("Attack reach"); });
 
         attackKnockbackSlider = new EditorSlider("atkKB", "Knockback", 0f, 5f, 0f)
             .step(0.1f)
@@ -246,7 +246,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Additional knockback strength. 1.0 = one Knockback enchantment level. Uses minecraft:attack_knockback.")
-            .onChange(v -> { stats.attackKnockback = v; module.markDirty("Knockback"); });
+            .onChange(v -> { stats.setAttackKnockback(v); module.markDirty("Knockback"); });
 
         damageBonusSlider = new EditorSlider("damageBonus", "Damage Bonus", 0f, 100f, 0f)
             .step(1f)
@@ -256,7 +256,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Percentage multiplier to final damage. 50% = 1.5x damage. Uses devmod:damage_bonus custom attribute.")
-            .onChange(v -> { stats.damageBonus = v / 100f; module.markDirty("Damage bonus"); });
+            .onChange(v -> { stats.setDamageBonus(v / 100f); module.markDirty("Damage bonus"); });
 
         sweepingRatioSlider = new EditorSlider("sweepRatio", "Sweeping Ratio", 0f, 100f, 0f)
             .step(1f)
@@ -266,7 +266,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("AoE sweep damage ratio. 100% = full damage to nearby enemies. Similar to Sweeping Edge. Uses minecraft:sweeping_damage_ratio.")
-            .onChange(v -> { stats.sweepingRatio = v / 100f; module.markDirty("Sweeping ratio"); });
+            .onChange(v -> { stats.setSweepingRatio(v / 100f); module.markDirty("Sweeping ratio"); });
 
         armorPenetrationSlider = new EditorSlider("armorPen", "Armor Penetration", 0f, 100f, 0f)
             .step(1f)
@@ -276,7 +276,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Percentage of target's armor ignored. 50% pen vs 20 armor = effective 10 armor. Applied before damage reduction.")
-            .onChange(v -> { stats.armorPenetration = v / 100f; module.markDirty("Armor penetration"); });
+            .onChange(v -> { stats.setArmorPenetration(v / 100f); module.markDirty("Armor penetration"); });
 
         baseDamageBonusSlider = new EditorSlider("baseDmg", "Base Damage Bonus", -50f, 50f, 0f)
             .step(0.5f)
@@ -285,7 +285,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Flat bonus to weapon's base damage before multipliers. Negative values reduce damage.")
-            .onChange(v -> { stats.baseDamageBonus = v; module.markDirty("Base damage bonus"); });
+            .onChange(v -> { stats.setBaseDamageBonus(v); module.markDirty("Base damage bonus"); });
 
         armorShredSlider = new EditorSlider("armorShred", "Armor Shred", 0f, 66f, 0f)
             .step(1f)
@@ -295,7 +295,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Permanently reduces target's armor on hit. Stacks up to cap. Uses devmod:armor_shred attribute.")
-            .onChange(v -> { stats.armorShred = v; module.markDirty("Armor shred"); });
+            .onChange(v -> { stats.setArmorShred(v); module.markDirty("Armor shred"); });
     }
 
     public List<EditorSection> getCombatSections() {
@@ -335,9 +335,9 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.PERCENT)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.critChance > 0)
+            .enabled(stats.getCritChance() > 0)
             .info("Chance to deal critical hit. Rolled on each attack. Uses devmod:crit_chance attribute.")
-            .onChange(v -> { stats.critChance = v / 100f; module.markDirty("Critical chance"); });
+            .onChange(v -> { stats.setCritChance(v / 100f); module.markDirty("Critical chance"); });
 
         EditorSlider critDamage = new EditorSlider("critDmg", "Critical Damage", 1f, 5f, 1.5f)
             .step(0.1f)
@@ -346,21 +346,21 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.critChance > 0)
+            .enabled(stats.getCritChance() > 0)
             .info("Damage multiplier on critical hit. 2.0x = double damage. Uses devmod:crit_multiplier attribute.")
-            .onChange(v -> { stats.critDamage = v; module.markDirty("Critical damage"); });
+            .onChange(v -> { stats.setCritDamage(v); module.markDirty("Critical damage"); });
 
         critChanceSlider = critChance;
         critDamageSlider = critDamage;
 
-        critEnabledToggle = new EditorToggle("critEnabled", "Enable Critical Hits", stats.critChance > 0)
+        critEnabledToggle = new EditorToggle("critEnabled", "Enable Critical Hits", stats.getCritChance() > 0)
             .source(dataSource)
             .tooltip("Enable critical hit mechanics for this weapon")
             .onChange(enabled -> {
                 critChance.setEnabled(enabled);
                 critDamage.setEnabled(enabled);
                 if (!enabled) {
-                    stats.critChance = 0f;
+                    stats.setCritChance(0f);
                     critChance.setValue(0f);
                 }
                 module.markDirty("Critical hits " + (enabled ? "enabled" : "disabled"));
@@ -373,19 +373,19 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.lifesteal > 0)
+            .enabled(stats.getLifesteal() > 0)
             .info("Heals attacker for percentage of damage dealt. 10% lifesteal on 20 damage = 2 HP healed.")
-            .onChange(v -> { stats.lifesteal = v / 100f; module.markDirty("Lifesteal"); });
+            .onChange(v -> { stats.setLifesteal(v / 100f); module.markDirty("Lifesteal"); });
 
         lifestealSlider = lifesteal;
 
-        lifestealEnabledToggle = new EditorToggle("lifestealEnabled", "Enable Lifesteal", stats.lifesteal > 0)
+        lifestealEnabledToggle = new EditorToggle("lifestealEnabled", "Enable Lifesteal", stats.getLifesteal() > 0)
             .source(dataSource)
             .tooltip("Heal a percentage of damage dealt")
             .onChange(enabled -> {
                 lifesteal.setEnabled(enabled);
                 if (!enabled) {
-                    stats.lifesteal = 0f;
+                    stats.setLifesteal(0f);
                     lifesteal.setValue(0f);
                 }
                 module.markDirty("Lifesteal " + (enabled ? "enabled" : "disabled"));
@@ -397,19 +397,19 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.fireDamageBonus > 0)
+            .enabled(stats.getFireDamageBonus() > 0)
             .info("Extra fire damage added to attacks. Sets target on fire. Ignores some armor.")
-            .onChange(v -> { stats.fireDamageBonus = v; module.markDirty("Fire damage"); });
+            .onChange(v -> { stats.setFireDamageBonus(v); module.markDirty("Fire damage"); });
 
         fireDamageSlider = fireDamage;
 
-        fireDamageEnabledToggle = new EditorToggle("fireEnabled", "Enable Fire Damage", stats.fireDamageBonus > 0)
+        fireDamageEnabledToggle = new EditorToggle("fireEnabled", "Enable Fire Damage", stats.getFireDamageBonus() > 0)
             .source(dataSource)
             .tooltip("Add fire damage to attacks")
             .onChange(enabled -> {
                 fireDamage.setEnabled(enabled);
                 if (!enabled) {
-                    stats.fireDamageBonus = 0f;
+                    stats.setFireDamageBonus(0f);
                     fireDamage.setValue(0f);
                 }
                 module.markDirty("Fire damage " + (enabled ? "enabled" : "disabled"));
@@ -421,19 +421,19 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.magicDamageBonus > 0)
+            .enabled(stats.getMagicDamageBonus() > 0)
             .info("Extra magic damage added to attacks. Bypasses physical armor. Affected by magic resistance.")
-            .onChange(v -> { stats.magicDamageBonus = v; module.markDirty("Magic damage"); });
+            .onChange(v -> { stats.setMagicDamageBonus(v); module.markDirty("Magic damage"); });
 
         magicDamageSlider = magicDamage;
 
-        magicDamageEnabledToggle = new EditorToggle("magicEnabled", "Enable Magic Damage", stats.magicDamageBonus > 0)
+        magicDamageEnabledToggle = new EditorToggle("magicEnabled", "Enable Magic Damage", stats.getMagicDamageBonus() > 0)
             .source(dataSource)
             .tooltip("Add magic damage to attacks")
             .onChange(enabled -> {
                 magicDamage.setEnabled(enabled);
                 if (!enabled) {
-                    stats.magicDamageBonus = 0f;
+                    stats.setMagicDamageBonus(0f);
                     magicDamage.setValue(0f);
                 }
                 module.markDirty("Magic damage " + (enabled ? "enabled" : "disabled"));
@@ -470,7 +470,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Bonus damage vs undead mobs (Zombies, Skeletons, Phantoms, etc.). Similar to Smite enchant.")
-            .onChange(v -> { stats.damageVsUndead = v / 100f; module.markDirty("Damage vs undead"); });
+            .onChange(v -> { stats.setDamageVsUndead(v / 100f); module.markDirty("Damage vs undead"); });
 
         vsArthroSlider = new EditorSlider("vsArthro", "Damage vs Arthropods", 0f, 200f, 0f)
             .step(1f)
@@ -480,7 +480,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Bonus damage vs arthropods (Spiders, Silverfish, Bees, Endermites). Similar to Bane of Arthropods.")
-            .onChange(v -> { stats.damageVsArthropods = v / 100f; module.markDirty("Damage vs arthropods"); });
+            .onChange(v -> { stats.setDamageVsArthropods(v / 100f); module.markDirty("Damage vs arthropods"); });
 
         vsPlayersSlider = new EditorSlider("vsPlayers", "Damage vs Players", 0f, 200f, 0f)
             .step(1f)
@@ -490,7 +490,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Bonus damage specifically against players. PvP-focused modifier.")
-            .onChange(v -> { stats.damageVsPlayers = v / 100f; module.markDirty("Damage vs players"); });
+            .onChange(v -> { stats.setDamageVsPlayers(v / 100f); module.markDirty("Damage vs players"); });
 
         trueDamageSlider = new EditorSlider("trueDmg", "True Damage Portion", 0f, 100f, 0f)
             .step(1f)
@@ -500,7 +500,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Percentage of damage that bypasses ALL armor and protection. 100% = full true damage.")
-            .onChange(v -> { stats.trueDamagePercent = v / 100f; module.markDirty("True damage"); });
+            .onChange(v -> { stats.setTrueDamagePercent(v / 100f); module.markDirty("True damage"); });
     }
 
     public List<EditorSection> getDamageTypeSections() {
@@ -538,7 +538,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Maximum durability points. Netherite sword = 2031. Item breaks when current damage reaches this value.")
-            .onChange(v -> { stats.maxDurability = Math.round(v); module.markDirty("Max durability"); });
+            .onChange(v -> { stats.setMaxDurability(Math.round(v)); module.markDirty("Max durability"); });
 
         currentDamageSlider = new EditorSlider("curDmg", "Current Damage", 0f, 4096f, 0f)
             .step(1f)
@@ -547,7 +547,7 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Current damage taken. 0 = full durability. When this reaches max durability, item breaks.")
-            .onChange(v -> { stats.currentDamage = Math.round(v); module.markDirty("Current damage"); });
+            .onChange(v -> { stats.setCurrentDamage(Math.round(v)); module.markDirty("Current damage"); });
 
         repairCostSlider = new EditorSlider("repair", "Repair Cost", 0f, 100f, 0f)
             .step(1f)
@@ -556,17 +556,17 @@ public class WeaponModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("XP level cost to repair/rename in anvil. Increases each repair. Max 39 before 'Too Expensive'.")
-            .onChange(v -> { stats.repairCost = Math.round(v); module.markDirty("Repair cost"); });
+            .onChange(v -> { stats.setRepairCost(Math.round(v)); module.markDirty("Repair cost"); });
 
-        unbreakableToggle = new EditorToggle("unbreakable", "Unbreakable", stats.unbreakable)
+        unbreakableToggle = new EditorToggle("unbreakable", "Unbreakable", stats.isUnbreakable())
             .source(dataSource)
             .tooltip("When enabled, item never loses durability. Sets minecraft:unbreakable component.")
-            .onChange(v -> { stats.unbreakable = v; module.markDirty("Unbreakable"); });
+            .onChange(v -> { stats.setUnbreakable(v); module.markDirty("Unbreakable"); });
 
-        clearToolRulesToggle = new EditorToggle("clearTools", "Clear Tool Rules (tags/speeds)", stats.clearToolRules)
+        clearToolRulesToggle = new EditorToggle("clearTools", "Clear Tool Rules (tags/speeds)", stats.isClearToolRules())
             .source(dataSource)
             .tooltip("Removes tool rules component; useful to bypass mining penalties (apply to persist)")
-            .onChange(v -> { stats.clearToolRules = v; module.markDirty("Clear tool rules"); });
+            .onChange(v -> { stats.setClearToolRules(v); module.markDirty("Clear tool rules"); });
     }
 
     public List<EditorSection> getDurabilitySections() {
@@ -590,17 +590,17 @@ public class WeaponModuleUI {
         WeaponStats stats = core.getStats();
         toolRuleSections.clear();
 
-        toolDefaultSpeedSlider = new EditorSlider("toolDefaultSpeed", "Default Mining Speed", 0f, 64f, stats.toolDefaultMiningSpeed)
+        toolDefaultSpeedSlider = new EditorSlider("toolDefaultSpeed", "Default Mining Speed", 0f, 64f, stats.getToolDefaultMiningSpeed())
             .step(0.1f)
             .format("%.1f")
             .trackColor(DesignTokens.SliderColors.SPECIAL)
-            .onChange(v -> { stats.toolDefaultMiningSpeed = v; module.markDirty("Tool default speed"); });
+            .onChange(v -> { stats.setToolDefaultMiningSpeed(v); module.markDirty("Tool default speed"); });
 
-        toolDamagePerBlockSlider = new EditorSlider("toolDamagePerBlock", "Damage Per Block", 0f, 64f, stats.toolDamagePerBlock)
+        toolDamagePerBlockSlider = new EditorSlider("toolDamagePerBlock", "Damage Per Block", 0f, 64f, stats.getToolDamagePerBlock())
             .step(1f)
             .format("%.0f")
             .trackColor(DesignTokens.SliderColors.DURABILITY)
-            .onChange(v -> { stats.toolDamagePerBlock = Math.round(v); module.markDirty("Tool damage per block"); });
+            .onChange(v -> { stats.setToolDamagePerBlock(Math.round(v)); module.markDirty("Tool damage per block"); });
 
         int maxRules = 3;
         for (int i = 0; i < maxRules; i++) {
@@ -704,24 +704,24 @@ public class WeaponModuleUI {
         WeaponStats baseline = core.getOriginalStats() == null ? new WeaponStats() : core.getOriginalStats();
         WeaponStats stats = core.getStats();
 
-        comparisons.add(makeComparison("Head multiplier", baseline.headMult, serverStats.headMult, stats.headMult, hasServerStats));
-        comparisons.add(makeComparison("Body multiplier", baseline.bodyMult, serverStats.bodyMult, stats.bodyMult, hasServerStats));
-        comparisons.add(makeComparison("Arms multiplier", baseline.armsMult, serverStats.armsMult, stats.armsMult, hasServerStats));
-        comparisons.add(makeComparison("Legs multiplier", baseline.legsMult, serverStats.legsMult, stats.legsMult, hasServerStats));
+        comparisons.add(makeComparison("Head multiplier", baseline.getHeadMult(), serverStats.getHeadMult(), stats.getHeadMult(), hasServerStats));
+        comparisons.add(makeComparison("Body multiplier", baseline.getBodyMult(), serverStats.getBodyMult(), stats.getBodyMult(), hasServerStats));
+        comparisons.add(makeComparison("Arms multiplier", baseline.getArmsMult(), serverStats.getArmsMult(), stats.getArmsMult(), hasServerStats));
+        comparisons.add(makeComparison("Legs multiplier", baseline.getLegsMult(), serverStats.getLegsMult(), stats.getLegsMult(), hasServerStats));
 
-        comparisons.add(makeComparison("Attack damage", baseline.attackDamage, serverStats.attackDamage, stats.attackDamage, hasServerStats));
-        comparisons.add(makeComparison("Attack speed", baseline.attackSpeed, serverStats.attackSpeed, stats.attackSpeed, hasServerStats));
-        comparisons.add(makeComparison("Attack reach", baseline.attackReach, serverStats.attackReach, stats.attackReach, hasServerStats));
-        comparisons.add(makeComparison("Attack knockback", baseline.attackKnockback, serverStats.attackKnockback, stats.attackKnockback, hasServerStats));
-        comparisons.add(makeComparison("Armor penetration (%)", baseline.armorPenetration * 100, serverStats.armorPenetration * 100, stats.armorPenetration * 100, hasServerStats));
-        comparisons.add(makeComparison("Base damage bonus", baseline.baseDamageBonus, serverStats.baseDamageBonus, stats.baseDamageBonus, hasServerStats));
+        comparisons.add(makeComparison("Attack damage", baseline.getAttackDamage(), serverStats.getAttackDamage(), stats.getAttackDamage(), hasServerStats));
+        comparisons.add(makeComparison("Attack speed", baseline.getAttackSpeed(), serverStats.getAttackSpeed(), stats.getAttackSpeed(), hasServerStats));
+        comparisons.add(makeComparison("Attack reach", baseline.getAttackReach(), serverStats.getAttackReach(), stats.getAttackReach(), hasServerStats));
+        comparisons.add(makeComparison("Attack knockback", baseline.getAttackKnockback(), serverStats.getAttackKnockback(), stats.getAttackKnockback(), hasServerStats));
+        comparisons.add(makeComparison("Armor penetration (%)", baseline.getArmorPenetration() * 100, serverStats.getArmorPenetration() * 100, stats.getArmorPenetration() * 100, hasServerStats));
+        comparisons.add(makeComparison("Base damage bonus", baseline.getBaseDamageBonus(), serverStats.getBaseDamageBonus(), stats.getBaseDamageBonus(), hasServerStats));
 
-        comparisons.add(makeComparison("Crit chance (%)", baseline.critChance * 100, serverStats.critChance * 100, stats.critChance * 100, hasServerStats));
-        comparisons.add(makeComparison("Crit damage", baseline.critDamage, serverStats.critDamage, stats.critDamage, hasServerStats));
+        comparisons.add(makeComparison("Crit chance (%)", baseline.getCritChance() * 100, serverStats.getCritChance() * 100, stats.getCritChance() * 100, hasServerStats));
+        comparisons.add(makeComparison("Crit damage", baseline.getCritDamage(), serverStats.getCritDamage(), stats.getCritDamage(), hasServerStats));
 
-        comparisons.add(makeComparison("Lifesteal (%)", baseline.lifesteal * 100, serverStats.lifesteal * 100, stats.lifesteal * 100, hasServerStats));
-        comparisons.add(makeComparison("Fire damage", baseline.fireDamageBonus, serverStats.fireDamageBonus, stats.fireDamageBonus, hasServerStats));
-        comparisons.add(makeComparison("Magic damage", baseline.magicDamageBonus, serverStats.magicDamageBonus, stats.magicDamageBonus, hasServerStats));
+        comparisons.add(makeComparison("Lifesteal (%)", baseline.getLifesteal() * 100, serverStats.getLifesteal() * 100, stats.getLifesteal() * 100, hasServerStats));
+        comparisons.add(makeComparison("Fire damage", baseline.getFireDamageBonus(), serverStats.getFireDamageBonus(), stats.getFireDamageBonus(), hasServerStats));
+        comparisons.add(makeComparison("Magic damage", baseline.getMagicDamageBonus(), serverStats.getMagicDamageBonus(), stats.getMagicDamageBonus(), hasServerStats));
         return comparisons;
     }
 
@@ -957,38 +957,38 @@ public class WeaponModuleUI {
     public void updateSlidersFromStats() {
         WeaponStats stats = core.getStats();
 
-        if (headMultSlider != null) headMultSlider.setValue(stats.headMult);
-        if (bodyMultSlider != null) bodyMultSlider.setValue(stats.bodyMult);
-        if (armsMultSlider != null) armsMultSlider.setValue(stats.armsMult);
-        if (legsMultSlider != null) legsMultSlider.setValue(stats.legsMult);
+        if (headMultSlider != null) headMultSlider.setValue(stats.getHeadMult());
+        if (bodyMultSlider != null) bodyMultSlider.setValue(stats.getBodyMult());
+        if (armsMultSlider != null) armsMultSlider.setValue(stats.getArmsMult());
+        if (legsMultSlider != null) legsMultSlider.setValue(stats.getLegsMult());
 
-        if (attackDamageSlider != null) attackDamageSlider.setValue(stats.attackDamage);
-        if (attackSpeedSlider != null) attackSpeedSlider.setValue(stats.attackSpeed);
-        if (attackReachSlider != null) attackReachSlider.setValue(stats.attackReach);
-        if (attackKnockbackSlider != null) attackKnockbackSlider.setValue(stats.attackKnockback);
-        if (armorPenetrationSlider != null) armorPenetrationSlider.setValue(stats.armorPenetration * 100);
-        if (baseDamageBonusSlider != null) baseDamageBonusSlider.setValue(stats.baseDamageBonus);
-        if (damageBonusSlider != null) damageBonusSlider.setValue(stats.damageBonus * 100);
-        if (sweepingRatioSlider != null) sweepingRatioSlider.setValue(stats.sweepingRatio * 100);
+        if (attackDamageSlider != null) attackDamageSlider.setValue(stats.getAttackDamage());
+        if (attackSpeedSlider != null) attackSpeedSlider.setValue(stats.getAttackSpeed());
+        if (attackReachSlider != null) attackReachSlider.setValue(stats.getAttackReach());
+        if (attackKnockbackSlider != null) attackKnockbackSlider.setValue(stats.getAttackKnockback());
+        if (armorPenetrationSlider != null) armorPenetrationSlider.setValue(stats.getArmorPenetration() * 100);
+        if (baseDamageBonusSlider != null) baseDamageBonusSlider.setValue(stats.getBaseDamageBonus());
+        if (damageBonusSlider != null) damageBonusSlider.setValue(stats.getDamageBonus() * 100);
+        if (sweepingRatioSlider != null) sweepingRatioSlider.setValue(stats.getSweepingRatio() * 100);
 
-        if (critChanceSlider != null) critChanceSlider.setValue(stats.critChance * 100);
-        if (critDamageSlider != null) critDamageSlider.setValue(stats.critDamage);
-        if (lifestealSlider != null) lifestealSlider.setValue(stats.lifesteal * 100);
-        if (fireDamageSlider != null) fireDamageSlider.setValue(stats.fireDamageBonus);
-        if (magicDamageSlider != null) magicDamageSlider.setValue(stats.magicDamageBonus);
-        if (armorShredSlider != null) armorShredSlider.setValue(stats.armorShred);
-        if (trueDamageSlider != null) trueDamageSlider.setValue(stats.trueDamagePercent * 100);
-        if (vsUndeadSlider != null) vsUndeadSlider.setValue(stats.damageVsUndead * 100);
-        if (vsArthroSlider != null) vsArthroSlider.setValue(stats.damageVsArthropods * 100);
-        if (vsPlayersSlider != null) vsPlayersSlider.setValue(stats.damageVsPlayers * 100);
+        if (critChanceSlider != null) critChanceSlider.setValue(stats.getCritChance() * 100);
+        if (critDamageSlider != null) critDamageSlider.setValue(stats.getCritDamage());
+        if (lifestealSlider != null) lifestealSlider.setValue(stats.getLifesteal() * 100);
+        if (fireDamageSlider != null) fireDamageSlider.setValue(stats.getFireDamageBonus());
+        if (magicDamageSlider != null) magicDamageSlider.setValue(stats.getMagicDamageBonus());
+        if (armorShredSlider != null) armorShredSlider.setValue(stats.getArmorShred());
+        if (trueDamageSlider != null) trueDamageSlider.setValue(stats.getTrueDamagePercent() * 100);
+        if (vsUndeadSlider != null) vsUndeadSlider.setValue(stats.getDamageVsUndead() * 100);
+        if (vsArthroSlider != null) vsArthroSlider.setValue(stats.getDamageVsArthropods() * 100);
+        if (vsPlayersSlider != null) vsPlayersSlider.setValue(stats.getDamageVsPlayers() * 100);
 
-        if (maxDurabilitySlider != null) maxDurabilitySlider.setValue(stats.maxDurability);
-        if (currentDamageSlider != null) currentDamageSlider.setValue(stats.currentDamage);
-        if (repairCostSlider != null) repairCostSlider.setValue(stats.repairCost);
-        if (unbreakableToggle != null) unbreakableToggle.setValue(stats.unbreakable);
-        if (clearToolRulesToggle != null) clearToolRulesToggle.setValue(stats.clearToolRules);
-        if (toolDefaultSpeedSlider != null) toolDefaultSpeedSlider.setValue(stats.toolDefaultMiningSpeed);
-        if (toolDamagePerBlockSlider != null) toolDamagePerBlockSlider.setValue(stats.toolDamagePerBlock);
+        if (maxDurabilitySlider != null) maxDurabilitySlider.setValue(stats.getMaxDurability());
+        if (currentDamageSlider != null) currentDamageSlider.setValue(stats.getCurrentDamage());
+        if (repairCostSlider != null) repairCostSlider.setValue(stats.getRepairCost());
+        if (unbreakableToggle != null) unbreakableToggle.setValue(stats.isUnbreakable());
+        if (clearToolRulesToggle != null) clearToolRulesToggle.setValue(stats.isClearToolRules());
+        if (toolDefaultSpeedSlider != null) toolDefaultSpeedSlider.setValue(stats.getToolDefaultMiningSpeed());
+        if (toolDamagePerBlockSlider != null) toolDamagePerBlockSlider.setValue(stats.getToolDamagePerBlock());
 
         for (int i = 0; i < toolRuleSections.size(); i++) {
             WeaponStats.ToolRuleData data = (stats.toolRules.size() > i)

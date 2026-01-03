@@ -16,6 +16,7 @@ import com.devmod.mailbox.ticket.TicketManager;
 import com.devmod.mailbox.ticket.TicketPriority;
 import com.devmod.mailbox.ticket.TicketRepository;
 import com.devmod.mailbox.ticket.TicketStatus;
+import com.devmod.mailbox.ticket.TicketWorkflow;
 
 /**
  * REST API controller for support ticket management.
@@ -347,6 +348,26 @@ public final class TicketController {
         UUID assignedTo = ticket.assignedTo();
         java.time.Instant updatedAt = ticket.updatedAt();
         java.time.Instant resolvedAt = ticket.resolvedAt();
+
+        // SLA breach checks using TicketWorkflow
+        boolean responseSlaBreach = TicketWorkflow.isResponseSlaBreached(ticket);
+        boolean resolutionSlaBreach = TicketWorkflow.isResolutionSlaBreached(ticket);
+
+        // Time until SLA breach (null if not applicable, i.e. very large duration)
+        java.time.Duration timeUntilResponse = TicketWorkflow.getTimeUntilResponseSlaBreach(ticket);
+        java.time.Duration timeUntilResolution = TicketWorkflow.getTimeUntilResolutionSlaBreach(ticket);
+
+        Long timeUntilResponseMillis = timeUntilResponse.toDays() >= 999 ? null : timeUntilResponse.toMillis();
+        Long timeUntilResolutionMillis = timeUntilResolution.toDays() >= 999 ? null : timeUntilResolution.toMillis();
+
+        // Valid transitions for admin UI (assuming ADMIN role for API access)
+        java.util.Set<TicketStatus> validStatuses = TicketWorkflow.getValidTransitions(
+            ticket, TicketWorkflow.ActorRole.ADMIN
+        );
+        List<String> validTransitions = validStatuses.stream()
+            .map(TicketStatus::name)
+            .toList();
+
         return new TicketDto(
             ticket.id().toString(),
             ticket.reporterUuid().toString(),
@@ -368,7 +389,12 @@ public final class TicketController {
             updatedAt != null ? updatedAt.toEpochMilli() : null,
             resolvedAt != null ? resolvedAt.toEpochMilli() : null,
             ticket.resolutionNotes(),
-            ticket.getAge()
+            ticket.getAge(),
+            responseSlaBreach,
+            resolutionSlaBreach,
+            timeUntilResponseMillis,
+            timeUntilResolutionMillis,
+            validTransitions
         );
     }
 
@@ -440,7 +466,14 @@ public final class TicketController {
         @Nullable Long updatedAtMillis,
         @Nullable Long resolvedAtMillis,
         @Nullable String resolutionNotes,
-        long ageMillis
+        long ageMillis,
+        // SLA information
+        boolean responseSlaBreach,
+        boolean resolutionSlaBreach,
+        @Nullable Long timeUntilResponseSlaMillis,
+        @Nullable Long timeUntilResolutionSlaMillis,
+        // Valid transitions for admin UI
+        List<String> validTransitions
     ) {}
 
     public record CommentDto(

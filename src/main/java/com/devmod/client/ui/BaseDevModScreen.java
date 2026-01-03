@@ -1,9 +1,8 @@
 package com.devmod.client.ui;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
+import java.util.Objects;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -17,23 +16,22 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.client.state.ClientStateManager;
 import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 /**
  * Base screen class for all DevMod screens.
  *
- * <p>Provides common functionality:
+ * <p>Provides common functionality:</p>
  * <ul>
  *   <li>Error boundary with fallback UI</li>
  *   <li>Telemetry hooks (open/close tracking)</li>
  *   <li>Common keyboard handling (ESC, etc.)</li>
- *   <li>Theme integration</li>
- *   <li>State subscription management</li>
- *   <li>Consistent close behavior</li>
+ *   <li>Status message display (showError)</li>
+ *   <li>Click sound utilities</li>
  * </ul>
  *
- * <p>Usage:
+ * <p>Usage:</p>
  * <pre>{@code
  * public class MyScreen extends BaseDevModScreen {
  *     public MyScreen() {
@@ -79,9 +77,11 @@ public abstract class BaseDevModScreen extends Screen {
     // ============================================================================
 
     /** Screen identifier for telemetry */
+    @Nonnull
     private final String screenId;
 
     /** Screen category for telemetry */
+    @Nonnull
     private final String screenCategory;
 
     /** Whether telemetry has been sent for this open */
@@ -90,13 +90,6 @@ public abstract class BaseDevModScreen extends Screen {
     // ============================================================================
     // STATE MANAGEMENT
     // ============================================================================
-
-    /** State subscriptions to clean up on close */
-    private final List<Runnable> subscriptionCleanups = new ArrayList<>();
-
-    /** Parent screen to return to */
-    @Nullable
-    protected Screen parentScreen;
 
     /** Whether screen is being closed */
     private boolean isClosing = false;
@@ -110,7 +103,7 @@ public abstract class BaseDevModScreen extends Screen {
     private String statusMessage;
 
     /** Status message color */
-    private int statusColor = 0xFFFFFFFF;
+    private int statusColor = DesignTokens.Text.WHITE;
 
     /** Ticks remaining for status message */
     private int statusTicks = 0;
@@ -128,7 +121,7 @@ public abstract class BaseDevModScreen extends Screen {
      * @param title The screen title
      * @param screenId Unique identifier for telemetry (e.g., "mailbox", "party")
      */
-    protected BaseDevModScreen(Component title, String screenId) {
+    protected BaseDevModScreen(Component title, @Nonnull String screenId) {
         this(title, screenId, "devmod");
     }
 
@@ -139,18 +132,10 @@ public abstract class BaseDevModScreen extends Screen {
      * @param screenId Unique identifier for telemetry
      * @param screenCategory Category for grouping (e.g., "social", "combat")
      */
-    protected BaseDevModScreen(Component title, String screenId, String screenCategory) {
+    protected BaseDevModScreen(Component title, @Nonnull String screenId, @Nonnull String screenCategory) {
         super(title);
-        this.screenId = screenId;
-        this.screenCategory = screenCategory;
-    }
-
-    /**
-     * Set parent screen to return to on close.
-     */
-    public BaseDevModScreen withParent(@Nullable Screen parent) {
-        this.parentScreen = parent;
-        return this;
+        this.screenId = Objects.requireNonNull(screenId, "screenId");
+        this.screenCategory = Objects.requireNonNull(screenCategory, "screenCategory");
     }
 
     // ============================================================================
@@ -188,16 +173,6 @@ public abstract class BaseDevModScreen extends Screen {
         if (isClosing) return;
         isClosing = true;
 
-        // Clean up subscriptions
-        for (Runnable cleanup : subscriptionCleanups) {
-            try {
-                cleanup.run();
-            } catch (Exception e) {
-                LOGGER.warn("[{}] Error cleaning up subscription", screenId, e);
-            }
-        }
-        subscriptionCleanups.clear();
-
         // Track screen close
         UiTelemetry.screenClosed(screenCategory, screenId);
 
@@ -208,12 +183,7 @@ public abstract class BaseDevModScreen extends Screen {
             LOGGER.warn("[{}] Error in onContentClose", screenId, e);
         }
 
-        // Return to parent or close
-        if (parentScreen != null) {
-            Minecraft.getInstance().setScreen(parentScreen);
-        } else {
-            super.onClose();
-        }
+        super.onClose();
     }
 
     /**
@@ -228,7 +198,7 @@ public abstract class BaseDevModScreen extends Screen {
     // ============================================================================
 
     @Override
-    public final void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public final void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (hasError) {
             renderErrorFallback(graphics, mouseX, mouseY, partialTick);
             return;
@@ -268,29 +238,39 @@ public abstract class BaseDevModScreen extends Screen {
      */
     protected void renderErrorFallback(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dark background
-        graphics.fill(0, 0, width, height, 0xE0200000);
+        graphics.fill(0, 0, width, height, DesignTokens.ErrorScreen.BG);
 
         // Error title
         int centerX = width / 2;
         int centerY = height / 2;
 
-        Component errorTitle = Component.translatable("devmod.screen.error.title");
-        graphics.drawCenteredString(font, errorTitle, centerX, centerY - 30, 0xFFFF4444);
+        // Local capture of font for null safety
+        final var safeFont = this.font;
+        if (safeFont == null) {
+            return; // Cannot render without font
+        }
+
+        Component errorTitle = Objects.requireNonNull(
+            Component.translatable("devmod.screen.error.title"), "errorTitle");
+        graphics.drawCenteredString(safeFont, errorTitle, centerX, centerY - 30, DesignTokens.ErrorScreen.TITLE);
 
         // Error message
         if (errorMessage != null) {
-            Component msgComponent = Component.literal(errorMessage);
-            graphics.drawCenteredString(font, msgComponent, centerX, centerY - 10, 0xFFCCCCCC);
+            Component msgComponent = Objects.requireNonNull(
+                Component.literal(errorMessage), "msgComponent");
+            graphics.drawCenteredString(safeFont, msgComponent, centerX, centerY - 10, DesignTokens.ErrorScreen.TEXT);
         }
 
         // Instructions
-        Component escHint = Component.translatable("devmod.screen.error.hint");
-        graphics.drawCenteredString(font, escHint, centerX, centerY + 20, 0xFF888888);
+        Component escHint = Objects.requireNonNull(
+            Component.translatable("devmod.screen.error.hint"), "escHint");
+        graphics.drawCenteredString(safeFont, escHint, centerX, centerY + 20, DesignTokens.ErrorScreen.HINT);
 
         // Retry hint if not maxed out
         if (errorCount < MAX_ERROR_COUNT) {
-            Component retryHint = Component.translatable("devmod.screen.error.retry");
-            graphics.drawCenteredString(font, retryHint, centerX, centerY + 40, 0xFF888888);
+            Component retryHint = Objects.requireNonNull(
+                Component.translatable("devmod.screen.error.retry"), "retryHint");
+            graphics.drawCenteredString(safeFont, retryHint, centerX, centerY + 40, DesignTokens.ErrorScreen.HINT);
         }
     }
 
@@ -298,17 +278,22 @@ public abstract class BaseDevModScreen extends Screen {
      * Render status message.
      */
     protected void renderStatusMessage(GuiGraphics graphics) {
-        if (statusMessage == null) return;
+        // Local capture for null safety
+        final String safeMessage = this.statusMessage;
+        final var safeFont = this.font;
+        if (safeMessage == null || safeFont == null) {
+            return;
+        }
 
-        int msgWidth = font.width(statusMessage);
+        int msgWidth = safeFont.width(safeMessage);
         int msgX = (width - msgWidth) / 2;
         int msgY = height - 50;
 
         // Background
-        graphics.fill(msgX - 6, msgY - 4, msgX + msgWidth + 6, msgY + 12, 0xC0000000);
+        graphics.fill(msgX - 6, msgY - 4, msgX + msgWidth + 6, msgY + 12, DesignTokens.ErrorScreen.STATUS_BG);
 
         // Text
-        graphics.drawString(font, statusMessage, msgX, msgY, statusColor, false);
+        graphics.drawString(safeFont, safeMessage, msgX, msgY, statusColor, false);
     }
 
     // ============================================================================
@@ -438,57 +423,12 @@ public abstract class BaseDevModScreen extends Screen {
     // ============================================================================
 
     /**
-     * Show a temporary status message.
-     */
-    protected void showStatus(String message, int color) {
-        this.statusMessage = message;
-        this.statusColor = color;
-        this.statusTicks = STATUS_DURATION_TICKS;
-    }
-
-    /**
-     * Show a success status message.
-     */
-    protected void showSuccess(String message) {
-        showStatus(message, 0xFF55FF55);
-    }
-
-    /**
-     * Show an error status message.
+     * Show an error status message at bottom of screen.
      */
     protected void showError(String message) {
-        showStatus(message, 0xFFFF5555);
-    }
-
-    /**
-     * Show an info status message.
-     */
-    protected void showInfo(String message) {
-        showStatus(message, 0xFFFFFF55);
-    }
-
-    // ============================================================================
-    // STATE SUBSCRIPTIONS
-    // ============================================================================
-
-    /**
-     * Subscribe to client state changes with automatic cleanup.
-     */
-    protected <T> void subscribeToState(
-            java.util.function.Supplier<T> stateGetter,
-            Consumer<T> onChange) {
-        // Initial state
-        onChange.accept(stateGetter.get());
-
-        // Note: Full implementation would integrate with ClientStateManager
-        // This is a simplified version that works with direct polling
-    }
-
-    /**
-     * Register a cleanup action to run on close.
-     */
-    protected void registerCleanup(Runnable cleanup) {
-        subscriptionCleanups.add(cleanup);
+        this.statusMessage = message;
+        this.statusColor = DesignTokens.ErrorScreen.STATUS_ERROR;
+        this.statusTicks = STATUS_DURATION_TICKS;
     }
 
     // ============================================================================
@@ -502,7 +442,9 @@ public abstract class BaseDevModScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
             mc.player.playSound(
-                net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                Objects.requireNonNull(
+                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),
+                    "UI_BUTTON_CLICK sound"),
                 1.0f, 1.0f
             );
         }
@@ -531,12 +473,5 @@ public abstract class BaseDevModScreen extends Screen {
      */
     public boolean hasError() {
         return hasError;
-    }
-
-    /**
-     * Get client state manager for convenience.
-     */
-    protected ClientStateManager getStateManager() {
-        return ClientStateManager.INSTANCE;
     }
 }

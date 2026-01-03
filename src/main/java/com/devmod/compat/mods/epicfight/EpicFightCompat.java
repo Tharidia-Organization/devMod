@@ -1,8 +1,7 @@
 package com.devmod.compat.mods.epicfight;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -10,6 +9,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
@@ -68,6 +68,23 @@ public class EpicFightCompat implements CompatModule {
 
     // Animator methods
     @Nullable private static Method getCurrentAnimationMethod;
+
+    // Guard/Parry detection methods (PlayerPatch)
+    @Nullable private static Method isHoldingSkillMethod;
+    @Nullable private static Method getHoldingSkillMethod;
+    @Nullable private static Method getTickSinceLastActionMethod;
+
+    // Skill class references
+    @Nullable private static Class<?> skillClass;
+    @Nullable private static Class<?> guardSkillClass;
+    @Nullable private static Class<?> parryingSkillClass;
+
+    // Sound events (loaded via reflection)
+    @Nullable private static SoundEvent parrySuccessSound;
+    @Nullable private static SoundEvent guardImpactSound;
+
+    // Default parry window (from Epic Fight source)
+    private static final int DEFAULT_PARRY_WINDOW = 8;
 
     @Override
     public String modId() {
@@ -134,6 +151,12 @@ public class EpicFightCompat implements CompatModule {
 
             // Load animator methods
             loadAnimatorMethods();
+
+            // Load skill classes for guard/parry detection
+            loadSkillClasses();
+
+            // Load sound events
+            loadSoundEvents();
 
             apiAvailable = true;
             LOGGER.info("[Compat:epicfight] Epic Fight API loaded successfully");
@@ -227,6 +250,101 @@ public class EpicFightCompat implements CompatModule {
         }
     }
 
+    private void loadSkillClasses() {
+        // Load base Skill class
+        try {
+            skillClass = Class.forName("yesman.epicfight.skill.Skill");
+            LOGGER.debug("[Compat:epicfight] Found Skill class");
+        } catch (ClassNotFoundException e) {
+            LOGGER.trace("[Compat:epicfight] Skill class not found");
+        }
+
+        // Load GuardSkill class
+        try {
+            guardSkillClass = Class.forName("yesman.epicfight.skill.guard.GuardSkill");
+            LOGGER.debug("[Compat:epicfight] Found GuardSkill class");
+        } catch (ClassNotFoundException e) {
+            LOGGER.trace("[Compat:epicfight] GuardSkill class not found");
+        }
+
+        // Load ParryingSkill class
+        try {
+            parryingSkillClass = Class.forName("yesman.epicfight.skill.guard.ParryingSkill");
+            LOGGER.debug("[Compat:epicfight] Found ParryingSkill class");
+        } catch (ClassNotFoundException e) {
+            LOGGER.trace("[Compat:epicfight] ParryingSkill class not found");
+        }
+
+        // Load guard/parry methods from PlayerPatch
+        final Class<?> ppClass = playerPatchClass;
+        if (ppClass != null) {
+            try {
+                isHoldingSkillMethod = ppClass.getMethod("isHoldingSkill");
+                LOGGER.debug("[Compat:epicfight] Found isHoldingSkill method");
+            } catch (NoSuchMethodException e) {
+                LOGGER.trace("[Compat:epicfight] isHoldingSkill not found");
+            }
+
+            try {
+                getHoldingSkillMethod = ppClass.getMethod("getHoldingSkill");
+                LOGGER.debug("[Compat:epicfight] Found getHoldingSkill method");
+            } catch (NoSuchMethodException e) {
+                LOGGER.trace("[Compat:epicfight] getHoldingSkill not found");
+            }
+
+            try {
+                getTickSinceLastActionMethod = ppClass.getMethod("getTickSinceLastAction");
+                LOGGER.debug("[Compat:epicfight] Found getTickSinceLastAction method");
+            } catch (NoSuchMethodException e) {
+                LOGGER.trace("[Compat:epicfight] getTickSinceLastAction not found");
+            }
+        }
+    }
+
+    private void loadSoundEvents() {
+        try {
+            Class<?> soundsClass = Class.forName("yesman.epicfight.gameasset.EpicFightSounds");
+            LOGGER.debug("[Compat:epicfight] Found EpicFightSounds class");
+
+            // Try to get parry sound (CLASH)
+            try {
+                Field parryField = soundsClass.getDeclaredField("CLASH");
+                parryField.setAccessible(true);
+                Object holder = parryField.get(null);
+                if (holder instanceof net.minecraft.core.Holder<?> soundHolder) {
+                    parrySuccessSound = (SoundEvent) soundHolder.value();
+                    LOGGER.debug("[Compat:epicfight] Found CLASH sound");
+                } else if (holder instanceof SoundEvent se) {
+                    parrySuccessSound = se;
+                    LOGGER.debug("[Compat:epicfight] Found CLASH sound (direct)");
+                }
+            } catch (NoSuchFieldException e) {
+                LOGGER.trace("[Compat:epicfight] CLASH sound not found");
+            }
+
+            // Try to get guard impact sound
+            try {
+                Field guardField = soundsClass.getDeclaredField("WEAPON_HIT_BLOCK");
+                guardField.setAccessible(true);
+                Object holder = guardField.get(null);
+                if (holder instanceof net.minecraft.core.Holder<?> soundHolder) {
+                    guardImpactSound = (SoundEvent) soundHolder.value();
+                    LOGGER.debug("[Compat:epicfight] Found WEAPON_HIT_BLOCK sound");
+                } else if (holder instanceof SoundEvent se) {
+                    guardImpactSound = se;
+                    LOGGER.debug("[Compat:epicfight] Found WEAPON_HIT_BLOCK sound (direct)");
+                }
+            } catch (NoSuchFieldException e) {
+                LOGGER.trace("[Compat:epicfight] WEAPON_HIT_BLOCK sound not found");
+            }
+
+        } catch (ClassNotFoundException e) {
+            LOGGER.trace("[Compat:epicfight] EpicFightSounds class not found");
+        } catch (Exception e) {
+            LOGGER.debug("[Compat:epicfight] Error loading sounds: {}", e.getMessage());
+        }
+    }
+
     @Override
     public void initClient() {
         if (!available) return;
@@ -235,7 +353,7 @@ public class EpicFightCompat implements CompatModule {
 
     @Override
     public String getFeatureDescription() {
-        return "Combat mode detection, entity patches, animation tracking, stamina integration";
+        return "Combat mode detection, entity patches, animation tracking, stamina integration, guard/parry detection, sound events";
     }
 
     // ============================================================
@@ -414,21 +532,6 @@ public class EpicFightCompat implements CompatModule {
     }
 
     /**
-     * Get stamina percentage for a player.
-     *
-     * @param player The player
-     * @return Stamina percentage (0-1), or -1 if unavailable
-     */
-    public static float getStaminaPercent(@Nonnull Player player) {
-        float current = getStamina(player);
-        float max = getMaxStamina(player);
-        if (current >= 0 && max > 0) {
-            return current / max;
-        }
-        return -1f;
-    }
-
-    /**
      * Get the current animation name for an entity.
      *
      * @param entity The entity
@@ -465,46 +568,6 @@ public class EpicFightCompat implements CompatModule {
     }
 
     /**
-     * Get combat state information for an entity.
-     *
-     * @param entity The entity
-     * @return Map with combat state info
-     */
-    public static Map<String, Object> getCombatState(@Nonnull LivingEntity entity) {
-        Map<String, Object> state = new LinkedHashMap<>();
-
-        if (!apiAvailable) {
-            state.put("available", false);
-            return state;
-        }
-
-        state.put("available", true);
-        state.put("hasEntityPatch", hasEntityPatch(entity));
-
-        if (hasEntityPatch(entity)) {
-            state.put("inAction", isInAction(entity));
-
-            String animation = getCurrentAnimationName(entity);
-            if (animation != null) {
-                state.put("currentAnimation", animation);
-            }
-
-            if (entity instanceof Player player) {
-                state.put("battleMode", isInBattleMode(player));
-                float stamina = getStamina(player);
-                float maxStamina = getMaxStamina(player);
-                if (stamina >= 0) {
-                    state.put("stamina", stamina);
-                    state.put("maxStamina", maxStamina);
-                    state.put("staminaPercent", getStaminaPercent(player));
-                }
-            }
-        }
-
-        return state;
-    }
-
-    /**
      * Check if Epic Fight combat is active for an entity.
      * Returns true if entity has a patch and is either in battle mode or performing an action.
      *
@@ -520,39 +583,186 @@ public class EpicFightCompat implements CompatModule {
         return isInAction(entity);
     }
 
-    /**
-     * Get status summary for logging/debug.
-     */
-    public static String getStatusSummary() {
-        if (!available) {
-            return "Epic Fight: not available";
-        }
-        if (!apiAvailable) {
-            return "Epic Fight: detected (API not loaded)";
-        }
+    // ============================================================
+    // Guard/Parry API
+    // ============================================================
 
-        StringBuilder sb = new StringBuilder("Epic Fight: available");
-        if (isBattleModeMethod != null) sb.append(" [battle-mode]");
-        if (getStaminaMethod != null) sb.append(" [stamina]");
-        if (getAnimatorMethod != null) sb.append(" [animations]");
-        return sb.toString();
+    /**
+     * Check if a player is currently holding a skill (guard, parry, etc.).
+     */
+    public static boolean isHoldingSkill(@Nonnull Player player) {
+        final Method method = isHoldingSkillMethod;
+        if (!apiAvailable || method == null) return false;
+
+        try {
+            Object playerPatch = getPlayerPatch(player);
+            if (playerPatch != null) {
+                Object result = method.invoke(playerPatch);
+                return result instanceof Boolean && (Boolean) result;
+            }
+        } catch (Exception e) {
+            LOGGER.debug("[Compat:epicfight] Failed to check isHoldingSkill: {}", e.getMessage());
+        }
+        return false;
     }
 
     /**
-     * Get Epic Fight info for telemetry.
+     * Get the skill object the player is currently holding.
      */
-    public static Map<String, Object> getTelemetryInfo() {
-        Map<String, Object> info = new LinkedHashMap<>();
-        info.put("available", available);
-        info.put("apiAvailable", apiAvailable);
+    @Nullable
+    public static Object getHoldingSkill(@Nonnull Player player) {
+        final Method method = getHoldingSkillMethod;
+        if (!apiAvailable || method == null) return null;
 
-        if (available) {
-            info.put("version", Compat.getVersion(MOD_ID));
-            info.put("hasBattleModeApi", isBattleModeMethod != null);
-            info.put("hasStaminaApi", getStaminaMethod != null);
-            info.put("hasAnimatorApi", getAnimatorMethod != null);
+        try {
+            Object playerPatch = getPlayerPatch(player);
+            if (playerPatch != null) {
+                Object skill = method.invoke(playerPatch);
+                if (skill == null) {
+                    return null;
+                }
+                Class<?> baseSkillClass = skillClass;
+                if (baseSkillClass != null && !baseSkillClass.isInstance(skill)) {
+                    return null;
+                }
+                return skill;
+            }
+        } catch (Exception e) {
+            LOGGER.debug("[Compat:epicfight] Failed to get holding skill: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Get the name of the skill the player is currently holding.
+     */
+    @Nullable
+    public static String getHoldingSkillName(@Nonnull Player player) {
+        Object skill = getHoldingSkill(player);
+        if (skill == null) return null;
+
+        try {
+            Method getNameMethod = skill.getClass().getMethod("getRegistryName");
+            Object name = getNameMethod.invoke(skill);
+            return name != null ? name.toString() : skill.getClass().getSimpleName();
+        } catch (NoSuchMethodException e) {
+            try {
+                Method getNameMethod = skill.getClass().getMethod("getName");
+                Object name = getNameMethod.invoke(skill);
+                return name != null ? name.toString() : skill.getClass().getSimpleName();
+            } catch (Exception e2) {
+                return skill.getClass().getSimpleName();
+            }
+        } catch (Exception e) {
+            return skill.getClass().getSimpleName();
+        }
+    }
+
+    /**
+     * Check if a player is currently guarding.
+     */
+    public static boolean isGuarding(@Nonnull Player player) {
+        if (!isHoldingSkill(player)) return false;
+
+        Object skill = getHoldingSkill(player);
+        if (skill == null) return false;
+
+        final Class<?> guardClass = guardSkillClass;
+        if (guardClass != null && guardClass.isInstance(skill)) {
+            return true;
         }
 
-        return info;
+        String skillName = getHoldingSkillName(player);
+        return skillName != null && (
+            skillName.toLowerCase(java.util.Locale.ROOT).contains("guard") ||
+            skillName.toLowerCase(java.util.Locale.ROOT).contains("block") ||
+            skillName.toLowerCase(java.util.Locale.ROOT).contains("shield")
+        );
     }
+
+    /**
+     * Check if a player is currently using a parry skill.
+     */
+    public static boolean isParrying(@Nonnull Player player) {
+        if (!isHoldingSkill(player)) return false;
+
+        Object skill = getHoldingSkill(player);
+        if (skill == null) return false;
+
+        final Class<?> parryClass = parryingSkillClass;
+        if (parryClass != null && parryClass.isInstance(skill)) {
+            return true;
+        }
+
+        String skillName = getHoldingSkillName(player);
+        return skillName != null && skillName.toLowerCase(java.util.Locale.ROOT).contains("parry");
+    }
+
+    /**
+     * Get the number of ticks since the player's last action.
+     */
+    public static int getTicksSinceLastAction(@Nonnull Player player) {
+        final Method method = getTickSinceLastActionMethod;
+        if (!apiAvailable || method == null) return -1;
+
+        try {
+            Object playerPatch = getPlayerPatch(player);
+            if (playerPatch != null) {
+                Object result = method.invoke(playerPatch);
+                if (result instanceof Number) {
+                    return ((Number) result).intValue();
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("[Compat:epicfight] Failed to get ticks since last action: {}", e.getMessage());
+        }
+        return -1;
+    }
+
+    /**
+     * Check if a player is within the parry window (8 ticks by default).
+     */
+    public static boolean isInParryWindow(@Nonnull Player player) {
+        int ticksSince = getTicksSinceLastAction(player);
+        int window = getParryWindow();
+        return ticksSince >= 0 && ticksSince <= window;
+    }
+
+    /**
+     * Check if a player executed a perfect parry (within first 3 ticks).
+     */
+    public static boolean isPerfectParry(@Nonnull Player player) {
+        if (!isGuarding(player) && !isParrying(player)) return false;
+
+        int ticksSince = getTicksSinceLastAction(player);
+        return ticksSince >= 0 && ticksSince <= 3;
+    }
+
+    /**
+     * Get the parry window duration in ticks.
+     */
+    public static int getParryWindow() {
+        return DEFAULT_PARRY_WINDOW;
+    }
+
+    // ============================================================
+    // Sound API
+    // ============================================================
+
+    /**
+     * Get the Epic Fight parry/clash sound event.
+     */
+    @Nullable
+    public static SoundEvent getParrySoundEvent() {
+        return parrySuccessSound;
+    }
+
+    /**
+     * Get the Epic Fight guard impact sound event.
+     */
+    @Nullable
+    public static SoundEvent getGuardSoundEvent() {
+        return guardImpactSound;
+    }
+
 }

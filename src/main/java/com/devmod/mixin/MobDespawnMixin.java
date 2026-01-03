@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 
 /**
@@ -17,11 +18,12 @@ import net.minecraft.world.entity.Mob;
  * This mixin checks for our endurance quest tag and cancels the despawn check entirely.
  */
 @Mixin(Mob.class)
-public class MobDespawnMixin {
+public abstract class MobDespawnMixin {
 
     @Inject(method = "checkDespawn", at = @At("HEAD"), cancellable = true)
     void devmod$preventEnduranceMobDespawn(CallbackInfo ci) {
-        Mob self = (Mob) (Object) this;
+        // getPersistentData() is defined in Entity (NeoForge), not Mob, so we cast
+        Entity self = (Entity) (Object) this;
         CompoundTag data = self.getPersistentData();
 
         // If this mob was spawned by our endurance quest system, never despawn

@@ -42,7 +42,7 @@ public class WorldRenderEvents {
     @SubscribeEvent
     public static void onRenderLevel(@Nonnull RenderLevelStageEvent event) {
         // If the user has disabled rendering in settings, stop immediately
-        if (!ModConfig.showRender) return;
+        if (!ModConfig.isShowRender()) return;
 
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 
@@ -122,12 +122,12 @@ public class WorldRenderEvents {
                 }
 
                 if (followRange > 0 && followRange <= 64) {
-                    if (ModConfig.renderAsBlocks) {
+                    if (ModConfig.isRenderAsBlocks()) {
                         // BLOCKS mode
                         renderAggroBlocks(Objects.requireNonNull(event.getPoseStack()), mob, followRange, cameraPos, level);
                     } else {
                         // SIMPLE CIRCLE mode
-                        renderCircle(Objects.requireNonNull(event.getPoseStack()), mob, followRange, cameraPos, ModConfig.followRangeColor);
+                        renderCircle(Objects.requireNonNull(event.getPoseStack()), mob, followRange, cameraPos, ModConfig.getFollowRangeColor());
                     }
                 }
 
@@ -154,7 +154,7 @@ public class WorldRenderEvents {
                 // 3. BODY PART HITBOXES DEBUG (HEAD, ARMS, BODY, LEGS)
                 // Render colored body part hitboxes (only if enabled AND OBB system is disabled)
                 // When OBB is enabled, RenderEvents.renderOBBHitboxes() handles the rendering instead
-                if (ModConfig.showBodyPartBoxes && !isOBBSystemEnabled()) {
+                if (ModConfig.isShowBodyPartBoxes() && !isOBBSystemEnabled()) {
                     renderBodyPartHitboxes(Objects.requireNonNull(event.getPoseStack()), mob, cameraPos);
                 }
             }
@@ -173,7 +173,7 @@ public class WorldRenderEvents {
         double rangeSqr = range * range;
 
         // Extract ARGB components from configured color
-        int color = ModConfig.followRangeColor;
+        int color = ModConfig.getFollowRangeColor();
         float alpha = ((color >> 24) & 0xFF) / 255f;
         if (alpha == 0) alpha = 1.0f; // Fix if no alpha
         float red = ((color >> 16) & 0xFF) / 255f;

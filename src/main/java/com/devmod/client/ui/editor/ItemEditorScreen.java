@@ -67,6 +67,7 @@ import com.devmod.client.ui.editor.favorites.FavoritePresetStore;
 import com.devmod.client.ui.editor.modules.ArmorModule;
 import com.devmod.client.ui.editor.modules.FoodModule;
 import com.devmod.client.ui.editor.modules.FuelModule;
+import com.devmod.client.ui.editor.modules.GeneralModule;
 import com.devmod.client.ui.editor.modules.RangedModule;
 import com.devmod.client.ui.editor.modules.UsableModule;
 import com.devmod.client.ui.editor.modules.WeaponModule;
@@ -103,7 +104,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int STATUS_MESSAGE_PADDING_X = 10;
     private static final int STATUS_MESSAGE_PADDING_Y = 4;
     private static final int STATUS_MESSAGE_SCREEN_MARGIN = 4;
-    private static final int STATUS_MESSAGE_BG = 0xE0000000;
+    private static final int STATUS_MESSAGE_BG = DesignTokens.ItemEditor.STATUS_MESSAGE_BG;
     private static final int HISTORY_PANEL_WIDTH = 260;
     private static final int HISTORY_PANEL_HEIGHT = 200;
     private static final int HISTORY_PANEL_MARGIN_RIGHT = 8;
@@ -155,7 +156,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int TOOLTIP_SCREEN_MARGIN = 4;
     private static final int TOOLTIP_TEXT_OFFSET_X = 4;
     private static final int TOOLTIP_TEXT_OFFSET_Y = 3;
-    private static final int TOOLTIP_BG = 0xF0100010;
+    private static final int TOOLTIP_BG = DesignTokens.ItemEditor.TOOLTIP_BG;
     private static final int FAVORITES_TITLE_OFFSET_X = 8;
     private static final int FAVORITES_TITLE_OFFSET_Y = 8;
     private static final int FAVORITES_ROW_HEIGHT = 18;
@@ -179,8 +180,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int DEV_PANEL_TEXT_OFFSET_Y = 8;
     private static final int DEV_PANEL_TITLE_LINE_STEP = 12;
     private static final int DEV_PANEL_LINE_STEP = 10;
-    private static final int DEV_PANEL_BG = 0xE0101020;
-    private static final int DEV_PANEL_TITLE_COLOR = 0xFFFFFFFF;
+    private static final int DEV_PANEL_BG = DesignTokens.ItemEditor.DEV_PANEL_BG;
+    private static final int DEV_PANEL_TITLE_COLOR = DesignTokens.ItemEditor.DEV_PANEL_TITLE;
     private static final String DEV_PANEL_TITLE_TEXT = "§b[Dev Mode]";
     private static final int STATUS_TICKS_DURATION = 60;
     private static final int HOTBAR_WIDTH = 182;
@@ -198,9 +199,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     /** Mode controller - handles preview/apply mode switching */
     private final ModeController modeController;
 
-    // Core item state (mirrored in editorState for gradual migration)
-    private final ItemStack item;
-    private final ItemStack originalItem;
     private final EditorStartTab requestedTab;
 
     /** Optional parent screen to return to on close */
@@ -212,8 +210,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private final Consumer<ItemStack> onItemEdited;
     @Nullable
     private EditorModule activeModule;
-    @Nullable
-    private SlotSelector.SlotInfo selectedSlot;
 
     // Mode flags are now managed entirely by editorState
     private boolean showDevPanel = false;
@@ -273,8 +269,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     @Nullable
     private PresetSelectorOverlay presetSelectorOverlay;
 
-    // Keyboard state for F3+D combo
-    private boolean f3Held = false;
+    // Preview error logging flag
     private boolean previewItemErrorLogged = false;
 
     // ═══════════════════════════════════════════════════════════════
@@ -290,13 +285,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     public ItemEditorScreen(ItemStack item, EditorStartTab startTab,
                             @Nullable Screen parentScreen, @Nullable Consumer<ItemStack> onItemEdited) {
         super(java.util.Objects.requireNonNull(Component.literal("Item Editor"), "title"));
-        this.item = item.copy();
-        this.originalItem = item.copy();
+        this.editorState = new ItemEditorState(item);
         this.parentScreen = parentScreen;
         this.onItemEdited = onItemEdited;
-        this.editorState = new ItemEditorState(item);
         this.modeController = new ModeController(editorState)
-            .setStatusCallback(this::showStatus);
+            .setStatusCallback((msg, color) -> showStatus(msg, color == null ? DesignTokens.Semantic.INFO : color));
         this.overlayController.setOnOverlayChanged(this::onOverlayChanged);
         this.inputRouter = new InputRouter(this);
         this.requestedTab = startTab;
@@ -328,12 +321,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Resolve and initialize the module
-        EditorModule resolvedModule = Objects.requireNonNull(resolveModule(item, requestedTab), "active module");
+        EditorModule resolvedModule = Objects.requireNonNull(resolveModule(getEditedItem(), requestedTab), "active module");
         activeModule = resolvedModule;
         editorState.setActiveModule(resolvedModule);
         resolvedModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? DesignTokens.Semantic.INFO : color));
         resolvedModule.setModuleSwitchCallback(this::switchModule);
-        resolvedModule.setItem(item);
+        resolvedModule.setItem(getEditedItem());
         resolvedModule.init(layout);
 
         // Configure and check low-confidence detection system
@@ -342,7 +335,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             onClose();
             Minecraft.getInstance().setScreen(null);
         });
-        lowConfidenceDetector.checkAndWarn(item, requestedTab, resolvedModule);
+        lowConfidenceDetector.checkAndWarn(getEditedItem(), requestedTab, resolvedModule);
         if (lowConfidenceDetector.hasPendingDetection()) {
             scrollArea.setScrollOffset(0); // ensure dialog visible
         }
@@ -423,7 +416,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                     }
                     yield new WeaponModule();
                 }
-                yield new PlaceholderModule("general", "Item Editor");
+                yield new GeneralModule();
             }
             case RECIPE -> new com.devmod.client.ui.editor.modules.RecipeModule();
             case USABLE -> new UsableModule(detectUsableVariant(stack));
@@ -480,12 +473,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Resolve and initialize the new module
-        EditorModule resolvedModule = Objects.requireNonNull(resolveModule(item, targetTab), "active module");
+        EditorModule resolvedModule = Objects.requireNonNull(resolveModule(getEditedItem(), targetTab), "active module");
         activeModule = resolvedModule;
         editorState.setActiveModule(resolvedModule);
         resolvedModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? DesignTokens.Semantic.INFO : color));
         resolvedModule.setModuleSwitchCallback(this::switchModule);
-        resolvedModule.setItem(item);
+        resolvedModule.setItem(getEditedItem());
         resolvedModule.init(layout);
         resolvedModule.setDirtyTrackingEnabled(true);
         resolvedModule.clearDirty();
@@ -503,17 +496,19 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void configureHeader() {
         header.clearTabs();
-        if (activeModule != null) {
-            List<ModuleTab> tabs = activeModule.getTabs();
+        EditorModule module = activeModule;
+        if (module != null) {
+            List<ModuleTab> tabs = module.getTabs();
             for (ModuleTab tab : tabs) {
                 header.addTab(tab.id(), tab.label());
             }
-            header.selectTab(activeModule.getActiveTabIndex());
+            header.selectTab(module.getActiveTabIndex());
         }
 
         header.onTabChange(index -> {
-            if (activeModule != null) {
-                activeModule.setActiveTab(index);
+            EditorModule mod = activeModule;
+            if (mod != null) {
+                mod.setActiveTab(index);
                 scrollArea.scrollToTop();
             }
         });
@@ -538,21 +533,21 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             default -> SlotSelector.SlotType.WEAPON;
         };
         leftColumn.slotType(slotType);
-        leftColumn.item(item);
+        leftColumn.item(getEditedItem());
         leftColumn.onSlotSelect(this::handleSlotSwitch);
-        selectedSlot = leftColumn.getSelectedSlot();
+        setSelectedSlotInfo(leftColumn.getSelectedSlot());
     }
 
     private void updateLeftColumnStats() {
         leftColumn.clearStats();
         // If preview is active, prefer the module's preview item for display to avoid mutating real item
-        ItemStack displayItem = resolvePreviewItem(item);
+        ItemStack displayItem = resolvePreviewItem(getEditedItem());
         leftColumn.item(displayItem);
         if (activeModule instanceof WeaponModule weaponModule) {
             var stats = weaponModule.getStats();
-            leftColumn.addStat("Attack", stats.attackDamage, "+%.1f");
-            leftColumn.addStat("Speed", stats.attackSpeed, "+%.1f");
-            leftColumn.addStat("Crit", stats.critChance * 100f, "%.0f%%");
+            leftColumn.addStat("Attack", stats.getAttackDamage(), "+%.1f");
+            leftColumn.addStat("Speed", stats.getAttackSpeed(), "+%.1f");
+            leftColumn.addStat("Crit", stats.getCritChance() * 100f, "%.0f%%");
         } else if (activeModule instanceof RangedModule rangedModule) {
             var stats = rangedModule.getStats();
             leftColumn.addStat("Draw", stats.drawSpeed, "%.2fx");
@@ -560,13 +555,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             leftColumn.addStat("Accuracy", stats.accuracy * 100f, "%.0f%%");
         } else if (activeModule instanceof ArmorModule armorModule) {
             var stats = armorModule.getStats();
-            leftColumn.addStat("Defense", stats.physicalReduction * 100f, "%.0f%%");
-            leftColumn.addStat("Fire", stats.fireReduction * 100f, "%.0f%%");
-            leftColumn.addStat("Magic", stats.magicReduction * 100f, "%.0f%%");
+            leftColumn.addStat("Defense", stats.getPhysicalReduction() * 100f, "%.0f%%");
+            leftColumn.addStat("Fire", stats.getFireReduction() * 100f, "%.0f%%");
+            leftColumn.addStat("Magic", stats.getMagicReduction() * 100f, "%.0f%%");
         }
 
-        if (activeModule != null) {
-            leftColumn.pendingChanges(activeModule.getPendingChanges().size());
+        EditorModule module = activeModule;
+        if (module != null) {
+            leftColumn.pendingChanges(module.getPendingChanges().size());
         }
         if (lastSaveTimestamp > 0) {
             leftColumn.lastSaved(lastSaveTimestamp);
@@ -574,9 +570,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private ItemStack resolvePreviewItem(ItemStack fallback) {
-        if (isPreviewMode() && activeModule != null) {
+        EditorModule module = activeModule;
+        if (isPreviewMode() && module != null) {
             try {
-                ItemStack preview = activeModule.getPreviewItem();
+                ItemStack preview = module.getPreviewItem();
                 if (preview != null) {
                     return preview;
                 }
@@ -591,13 +588,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private void handleSlotSwitch(SlotSelector.SlotInfo slot) {
-        if (slot == null || Objects.equals(selectedSlot, slot)) {
+        if (slot == null || Objects.equals(getSelectedSlotInfo(), slot)) {
             return;
         }
-        if (!isPreviewMode() && activeModule != null && activeModule.hasUnsavedChanges()) {
-            ConfirmDialog dialog = ConfirmDialog.switchSlot(slot.label(), activeModule.getPendingChanges().size(),
+        EditorModule module = activeModule;
+        if (!isPreviewMode() && module != null && module.hasUnsavedChanges()) {
+            ConfirmDialog dialog = ConfirmDialog.switchSlot(slot.label(), module.getPendingChanges().size(),
                 () -> {
-                    selectedSlot = slot;
+                    setSelectedSlotInfo(slot);
                     showStatus("Switched to " + slot.label(), DesignTokens.Semantic.INFO);
                 },
                 () -> {});
@@ -605,7 +603,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             dialog.show();
             return;
         }
-        selectedSlot = slot;
+        setSelectedSlotInfo(slot);
         showStatus("Switched to " + slot.label(), DesignTokens.Semantic.INFO);
         if (showMultiEditPanel) {
             refreshMultiEditSelection();
@@ -620,9 +618,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Switching from APPLY -> PREVIEW with pending changes: confirm discard
-        if (preview && !isPreviewMode() && activeModule != null && activeModule.hasUnsavedChanges()) {
+        EditorModule module = activeModule;
+        if (preview && !isPreviewMode() && module != null && module.hasUnsavedChanges()) {
             ConfirmDialog dialog = ConfirmDialog.switchModeToPreview(
-                activeModule.getPendingChanges().size(),
+                module.getPendingChanges().size(),
                 () -> {
                     switchToPreviewMode(true);
                     header.getModeBadge().setMode(ModeBadge.Mode.PREVIEW);
@@ -649,13 +648,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void switchToPreviewMode(boolean discardChanges) {
         editorState.setPreviewMode(true);
-        if (activeModule != null) {
+        EditorModule module = activeModule;
+        if (module != null) {
             if (discardChanges) {
-                activeModule.resetToOriginal();
-                activeModule.clearDirty();
+                module.resetToOriginal();
+                module.clearDirty();
             }
-            activeModule.applyPreview();
-            activeModule.logEvent(discardChanges
+            module.applyPreview();
+            module.logEvent(discardChanges
                 ? "Switched to PREVIEW (discarded changes)"
                 : "Switched to PREVIEW");
         }
@@ -664,12 +664,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void switchToApplyMode() {
         editorState.setPreviewMode(false);
-        if (activeModule != null) {
-            activeModule.clearPreview();
-            if (!activeModule.hasUnsavedChanges() && activeModule.hasPendingDiff()) {
-                activeModule.markDirty("Pending changes from preview");
+        EditorModule module = activeModule;
+        if (module != null) {
+            module.clearPreview();
+            if (!module.hasUnsavedChanges() && module.hasPendingDiff()) {
+                module.markDirty("Pending changes from preview");
             }
-            activeModule.logEvent("Switched to APPLY (dirty on)");
+            module.logEvent("Switched to APPLY (dirty on)");
         }
         showStatus("Apply Mode", DesignTokens.Semantic.SUCCESS);
     }
@@ -689,14 +690,16 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private void configureFooterCallbacks() {
         footer
             .onUndo(() -> {
-                if (activeModule != null && activeModule.canUndo()) {
-                    activeModule.undo();
+                EditorModule module = activeModule;
+                if (module != null && module.canUndo()) {
+                    module.undo();
                     showStatus("Undone", DesignTokens.Semantic.INFO);
                 }
             })
             .onRedo(() -> {
-                if (activeModule != null && activeModule.canRedo()) {
-                    activeModule.redo();
+                EditorModule module = activeModule;
+                if (module != null && module.canRedo()) {
+                    module.redo();
                     showStatus("Redone", DesignTokens.Semantic.INFO);
                 }
             })
@@ -708,8 +711,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         if (actionId == null) return;
         switch (actionId) {
             case "reset" -> {
-                if (activeModule != null) {
-                    EditorModule module = Objects.requireNonNull(activeModule, "active module");
+                EditorModule module = activeModule;
+                if (module != null) {
                     ConfirmDialog dialog = ConfirmDialog.resetToDefault(() -> {
                         module.resetToOriginal();
                         showStatus("Reset to original", DesignTokens.Semantic.WARNING);
@@ -736,7 +739,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 openTemplatesOverlay();
             }
             case "recipe" -> {
-                craftingPanel.show(item);
+                craftingPanel.show(getEditedItem());
                 overlayController.toggle(OverlayController.OverlayType.CRAFTING);
             }
             default -> {}
@@ -752,31 +755,33 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
      * Called when overlay state changes - syncs UI components.
      */
     private void onOverlayChanged(OverlayController.OverlayType newOverlay) {
-        if (templateOverlay != null) {
+        TemplateOverlay tOverlay = templateOverlay;
+        if (tOverlay != null) {
             if (newOverlay == OverlayController.OverlayType.TEMPLATES) {
-                if (!templateOverlay.isVisible()) {
-                    templateOverlay.show();
+                if (!tOverlay.isVisible()) {
+                    tOverlay.show();
                 }
             } else {
-                templateOverlay.resetSearch();
-                templateOverlay.hide();
+                tOverlay.resetSearch();
+                tOverlay.hide();
             }
         }
         if (newOverlay == OverlayController.OverlayType.CRAFTING) {
             if (!craftingPanel.isVisible()) {
-                craftingPanel.show(item);
+                craftingPanel.show(getEditedItem());
             }
         } else {
             craftingPanel.hide();
         }
         // Manage PresetSelectorOverlay visibility
-        if (presetSelectorOverlay != null) {
+        PresetSelectorOverlay psOverlay = presetSelectorOverlay;
+        if (psOverlay != null) {
             if (newOverlay == OverlayController.OverlayType.PRESETS) {
-                presetSelectorOverlay.setContext(getActiveItemType());
-                presetSelectorOverlay.show();
+                psOverlay.setContext(getActiveItemType());
+                psOverlay.show();
             } else {
-                presetSelectorOverlay.resetSearch();
-                presetSelectorOverlay.hide();
+                psOverlay.resetSearch();
+                psOverlay.hide();
             }
         }
     }
@@ -825,46 +830,48 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Left column (preview + slots + info)
-        if (activeModule != null) {
+        EditorModule module = activeModule;
+        if (module != null) {
             updateLeftColumnStats();
-            leftColumn.pendingChanges(activeModule.getPendingChanges().size());
+            leftColumn.pendingChanges(module.getPendingChanges().size());
         }
         leftColumn.render(graphics, leftBounds.x(), leftBounds.y(), leftBounds.width(), leftBounds.height(), mouseX, mouseY, partialTick);
 
         // Render multi-edit panel if visible (placed beneath left column area)
-        if (showMultiEditPanel && multiEditPanel != null) {
+        MultiEditPanel mePanel = multiEditPanel;
+        if (showMultiEditPanel && mePanel != null) {
             int panelX = leftBounds.x() + DesignTokens.Spacing.MD;
             int panelY = contentY + DesignTokens.Spacing.MD;
             int panelW = leftBounds.width() - DesignTokens.Spacing.MD * 2;
-            multiEditPanel.render(graphics, font, panelX, panelY, panelW, mouseX, mouseY);
+            mePanel.render(graphics, font, panelX, panelY, panelW, mouseX, mouseY);
         }
 
         // Content area (scrollable)
         int contentX = contentBounds.x() + DesignTokens.Spacing.MD;
         int contentWidth = contentBounds.width() - DesignTokens.Spacing.MD * 2;
         graphics.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, DesignTokens.Background.CONTENT());
-        if (activeModule != null) {
-            EditorModule module = Objects.requireNonNull(activeModule, "active module");
+        if (module != null) {
             perfMonitor.startTiming("render_content");
             int viewportHeight = contentHeight - DesignTokens.Spacing.MD * 2;
+            EditorModule renderModule = module; // Capture for lambda
             scrollArea.render(graphics, contentX, contentY, contentWidth, contentHeight,
                 mouseX, mouseY, partialTick, (g, x, y, w, mx, my) -> {
                     ResponsiveLayout.Rect bounds = new ResponsiveLayout.Rect(x, y, w, viewportHeight);
                     // Pass raw mouseY (screen space) - render Y coordinates are also screen space
                     // Scroll adjustment is only needed for click handling, not hover detection
-                    module.renderContent(g, bounds, mx, my);
-                    return module.calculateContentHeight();
+                    renderModule.renderContent(g, bounds, mx, my);
+                    return renderModule.calculateContentHeight();
                 });
             perfMonitor.endTiming("render_content");
         }
 
         // Footer
-        int pending = activeModule != null ? activeModule.getPendingChanges().size() : 0;
-        boolean dirty = activeModule != null && (activeModule.hasUnsavedChanges() || pending > 0);
+        int pending = module != null ? module.getPendingChanges().size() : 0;
+        boolean dirty = module != null && (module.hasUnsavedChanges() || pending > 0);
         footer
-            .canUndo(activeModule != null && activeModule.canUndo())
-            .canRedo(activeModule != null && activeModule.canRedo())
-            .canApply(activeModule != null)
+            .canUndo(module != null && module.canUndo())
+            .canRedo(module != null && module.canRedo())
+            .canApply(module != null)
             .isDirty(dirty)
             .pendingCount(pending);
         footer.render(graphics, panelBounds.x(), footerY, panelBounds.width(), mouseX, mouseY);
@@ -883,11 +890,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             renderHistoryPanel(graphics);
         }
 
-        if (overlayController.isPresetsVisible() && supportsDataOps() && presetSelectorOverlay != null) {
-            presetSelectorOverlay.render(graphics, font, width, height, mouseX, mouseY);
+        PresetSelectorOverlay psOverlay = presetSelectorOverlay;
+        if (overlayController.isPresetsVisible() && supportsDataOps() && psOverlay != null) {
+            psOverlay.render(graphics, font, width, height, mouseX, mouseY);
         }
-        if (overlayController.isTemplatesVisible() && templateOverlay != null) {
-            templateOverlay.render(graphics, font, width, height, mouseX, mouseY);
+        TemplateOverlay tOverlay = templateOverlay;
+        if (overlayController.isTemplatesVisible() && tOverlay != null) {
+            tOverlay.render(graphics, font, width, height, mouseX, mouseY);
         }
         if (overlayController.isCraftingVisible()) {
             craftingPanel.render(graphics, font, width, height, mouseX, mouseY);
@@ -908,13 +917,15 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         // Module overlay (e.g., ItemPickerOverlay from RecipeModule)
         // Rendered after other overlays but before modal dialogs
-        if (activeModule != null && activeModule.hasActiveOverlay()) {
-            activeModule.renderOverlay(graphics, font, width, height, mouseX, mouseY);
+        EditorModule overlayModule = activeModule;
+        if (overlayModule != null && overlayModule.hasActiveOverlay()) {
+            overlayModule.renderOverlay(graphics, font, width, height, mouseX, mouseY);
         }
 
         // Modal dialog (rendered last, on top of everything)
-        if (activeDialog != null && activeDialog.isVisible()) {
-            activeDialog.render(graphics, font, width, height, mouseX, mouseY);
+        ConfirmDialog dialog = activeDialog;
+        if (dialog != null && dialog.isVisible()) {
+            dialog.render(graphics, font, width, height, mouseX, mouseY);
         }
 
         // Help overlay (rendered on top of dialogs)
@@ -1010,18 +1021,19 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void refreshMultiEditSelection() {
-        if (multiEditManager == null) return;
-        multiEditManager.clearSelection();
+        var manager = multiEditManager;
+        if (manager == null) return;
+        manager.clearSelection();
         var mc = Minecraft.getInstance();
         if (mc == null) return;
         var player = mc.player;
         if (player == null) return;
         var inv = player.getInventory();
-        var targetItem = Objects.requireNonNull(item.getItem(), "item type cannot be null");
+        var targetItem = Objects.requireNonNull(getEditedItem().getItem(), "item type cannot be null");
         for (int i = 0; i < inv.items.size(); i++) {
             ItemStack stack = inv.items.get(i);
-            if (!stack.isEmpty() && stack.is(targetItem)) {
-                multiEditManager.addToSelection(stack, i);
+            if (!stack.isEmpty() && stack.getItem() == targetItem) {
+                manager.addToSelection(stack, i);
             }
         }
     }
@@ -1046,7 +1058,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private void renderHistoryPanel(GuiGraphics graphics) {
-        if (activeModule == null) return;
+        EditorModule module = activeModule;
+        if (module == null) return;
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
         ResponsiveLayout.Rect historyBounds = getHistoryPanelBounds();
         int panelWidth = historyBounds.width();
@@ -1060,7 +1073,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         graphics.drawString(safeFont, HISTORY_TITLE_TEXT, x + HISTORY_PANEL_TITLE_OFFSET_X, y + HISTORY_PANEL_TITLE_OFFSET_Y,
             DesignTokens.Text.TITLE(), false);
         int listY = y + HISTORY_PANEL_LIST_OFFSET_Y;
-        var entries = activeModule.getHistoryEntries();
+        var entries = module.getHistoryEntries();
         int lineHeight = HISTORY_PANEL_LINE_HEIGHT;
         int listHeight = panelHeight - HISTORY_PANEL_LIST_HEIGHT_PADDING;
         int maxScroll = Math.max(0, Math.max(0, entries.size() * lineHeight - listHeight));
@@ -1125,8 +1138,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int clearX = x + panelWidth - clearW - HISTORY_PANEL_CLEAR_OFFSET_X;
         int clearY = footerY - HISTORY_PANEL_CLEAR_OFFSET_Y;
         if (mouseX >= clearX && mouseX <= clearX + clearW && mouseY >= clearY && mouseY <= clearY + clearH) {
-            if (activeModule != null) {
-                activeModule.clearHistory();
+            EditorModule module = activeModule;
+            if (module != null) {
+                module.clearHistory();
                 historyScrollOffset = 0;
             }
             return true;
@@ -1135,7 +1149,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         return false;
     }
 
-    private boolean isPointInHistoryPanel(double mouseX, double mouseY) {
+    @Override
+    public boolean isPointInHistoryPanel(double mouseX, double mouseY) {
         return getHistoryPanelBounds().contains(mouseX, mouseY);
     }
 
@@ -1178,11 +1193,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Delegate to DebugPanel for richer info
-        if (debugPanel != null) {
+        DebugPanel panel = debugPanel;
+        if (panel != null) {
             // Prefer preview item when preview mode is active so debug reflects the preview state
-            ItemStack displayItem = resolvePreviewItem(item);
-            debugPanel.setStatSources(buildStatSources(displayItem));
-            debugPanel.render(graphics, font, devArea.x(), devArea.y(), devArea.width(), devArea.height(), mouseX, mouseY, displayItem);
+            ItemStack displayItem = resolvePreviewItem(getEditedItem());
+            panel.setStatSources(buildStatSources(displayItem));
+            panel.setStatDiffs(buildStatDiffs());
+            panel.render(graphics, font, devArea.x(), devArea.y(), devArea.width(), devArea.height(), mouseX, mouseY, displayItem);
             return;
         }
 
@@ -1221,19 +1238,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (lowConfidenceDetector.isVisible()) return false;
-        if (handleHotbarClick(mouseX, mouseY, button, true)) {
-            return true;
-        }
-        if (scrollArea.mouseReleased(mouseX, mouseY, button)) {
-            return true;
-        }
-        if (activeModule != null) {
-            // Pass raw mouseY (screen space) - consistent with mouseClicked
-            return activeModule.mouseReleased(mouseX, mouseY, button);
-        }
-
-        return super.mouseReleased(mouseX, mouseY, button);
+        return inputRouter.mouseReleased(mouseX, mouseY, button) || super.mouseReleased(mouseX, mouseY, button);
     }
 
     /**
@@ -1242,13 +1247,21 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
      */
     @Override
     public boolean handleHotbarClick(double mouseX, double mouseY, int button) {
-        return handleHotbarClick(mouseX, mouseY, button, false);
+        return handleHotbarClickInternal(mouseX, mouseY, button, false);
+    }
+
+    /**
+     * Hotbar release for drag-and-drop scenarios (place only mode).
+     */
+    @Override
+    public boolean handleHotbarRelease(double mouseX, double mouseY, int button) {
+        return handleHotbarClickInternal(mouseX, mouseY, button, true);
     }
 
     /**
      * @param placeOnly when true, only process if there's a carried stack (for drag-release scenarios)
      */
-    private boolean handleHotbarClick(double mouseX, double mouseY, int button, boolean placeOnly) {
+    private boolean handleHotbarClickInternal(double mouseX, double mouseY, int button, boolean placeOnly) {
         if (button != 0) return false;
         var player = Minecraft.getInstance().player;
         if (player == null) return false;
@@ -1287,245 +1300,26 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (lowConfidenceDetector.isVisible()) return false;
-        if (scrollArea.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
-            return true;
-        }
-        if (activeModule != null) {
-            // Pass raw mouseY (screen space) - consistent with mouseClicked
-            return activeModule.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-        }
-
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return inputRouter.mouseDragged(mouseX, mouseY, button, dragX, dragY) || super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        // Block scroll when low-confidence dialog is visible
-        if (lowConfidenceDetector.isVisible()) {
-            return true;
-        }
-        // Handle module overlay scroll (e.g., ItemPickerOverlay from RecipeModule)
-        if (activeModule != null && activeModule.hasActiveOverlay()) {
-            return activeModule.overlayMouseScrolled(mouseX, mouseY, scrollY, width, height);
-        }
-        if (overlayController.isHistoryVisible()) {
-            if (isPointInHistoryPanel(mouseX, mouseY)) {
-                historyScrollOffset -= (int) (scrollY * HISTORY_PANEL_LINE_HEIGHT);
-                return true;
-            }
-        }
-        if (overlayController.isTemplatesVisible() && templateOverlay != null) {
-            if (templateOverlay.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
-                return true;
-            }
-        }
-        if (overlayController.isCraftingVisible() && craftingPanel.isVisible()) {
-            if (craftingPanel.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
-                return true;
-            }
-        }
-        if (overlayController.isPresetsVisible() && presetSelectorOverlay != null) {
-            if (presetSelectorOverlay.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
-                return true;
-            }
-        }
-        if (header.mouseScrolled(mouseX, mouseY, scrollY)) {
-            return true;
-        }
-        if (footer.mouseScrolled(mouseX, mouseY, scrollY)) {
-            return true;
-        }
-        if (showMultiEditPanel && multiEditPanel != null && multiEditPanel.mouseScrolled(mouseX, mouseY, scrollY)) {
-            return true;
-        }
-        if (scrollArea.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
-            return true;
-        }
-        if (activeModule != null) {
-            return activeModule.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-        }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return inputRouter.mouseScrolled(mouseX, mouseY, scrollX, scrollY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Handle debug overlay shortcuts first
-        if (DebugOverlay.handleKeyPressed(keyCode, modifiers)) {
-            return true;
-        }
-
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-            if (forceCloseAllOverlays()) {
-                return true;
-            }
-        }
-
-        // Handle help overlay first
-        if (helpOverlay.isVisible()) {
-            return helpOverlay.keyPressed(keyCode);
-        }
-
-        // Handle module overlay keys (e.g., ItemPickerOverlay from RecipeModule)
-        if (activeModule != null && activeModule.hasActiveOverlay()) {
-            return activeModule.overlayKeyPressed(keyCode);
-        }
-
-        if (overlayController.isTemplatesVisible() && templateOverlay != null) {
-            if (templateOverlay.keyPressed(keyCode, modifiers)) {
-                return true;
-            }
-        }
-
-        // Quick shortcut: refresh MultiEdit selection and expand panel (M)
-        if (keyCode == GLFW.GLFW_KEY_M) {
-            refreshMultiEditSelection();
-            if (multiEditPanel != null) {
-                multiEditPanel.setExpanded(true);
-            }
-            showStatus("MultiEdit refreshed", DesignTokens.Semantic.INFO);
-            return true;
-        }
-
-        if (overlayController.isHistoryVisible() && keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            closeOverlay();
-            return true;
-        }
-        if (overlayController.isPresetsVisible() && keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            closeOverlay();
-            return true;
-        }
-        if (overlayController.isTemplatesVisible() && keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            closeOverlay();
-            return true;
-        }
-
-        // Handle modal dialog
-        if (activeDialog != null && activeDialog.isVisible()) {
-            return activeDialog.keyPressed(keyCode);
-        }
-
-        // Low-confidence dialog blocks input and supports Esc/Enter
-        if (lowConfidenceDetector.isVisible()) {
-            return lowConfidenceDetector.keyPressed(keyCode);
-        }
-
-        if (overlayController.isPresetsVisible() && presetSelectorOverlay != null) {
-            if (presetSelectorOverlay.keyPressed(keyCode)) {
-                return true;
-            }
-        }
-
-        // Escape to close
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            handleCloseRequest();
-            return true;
-        }
-
-        // F5 toggle preview/apply
-        if (keyCode == GLFW.GLFW_KEY_F5) {
-            handleModeChange(isPreviewMode() ? ModeBadge.Mode.APPLY : ModeBadge.Mode.PREVIEW);
-            return true;
-        }
-
-        // Ctrl+Enter quick apply (only APPLY + dirty)
-        if (keyCode == GLFW.GLFW_KEY_ENTER && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-            if (isPreviewMode()) {
-                showStatus("Preview mode: cannot apply", DesignTokens.Semantic.WARNING);
-            } else if (activeModule != null && activeModule.hasUnsavedChanges()) {
-                applyChanges();
-            } else {
-                showStatus("No changes to apply", DesignTokens.Semantic.WARNING);
-            }
-            return true;
-        }
-
-        // Ctrl+Z batch undo (when MultiEdit snapshot is available)
-        if (keyCode == GLFW.GLFW_KEY_Z && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-            if (multiEditManager != null && multiEditManager.hasSnapshot()) {
-                var result = multiEditManager.restoreSnapshot();
-                if (result.failureCount() == 0) {
-                    showStatus("Batch undo: " + result.successCount() + " items restored", DesignTokens.Semantic.SUCCESS);
-                } else {
-                    showStatus("Batch undo: " + result.successCount() + " ok, " + result.failureCount() + " failed", DesignTokens.Semantic.WARNING);
-                }
-                return true;
-            }
-            // If no batch snapshot, let module handle undo
-        }
-
-        // Component shortcuts
-        if (header.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        }
-        if (footer.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        }
-        if (leftColumn.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        }
-        if (scrollArea.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        }
-
-        // Track F3 for dev toggle combo
-        if (keyCode == GLFW.GLFW_KEY_F3) {
-            f3Held = true;
-        }
-
-        // F3 + D for dev panel toggle (matching design spec)
-        if (f3Held && keyCode == GLFW.GLFW_KEY_D) {
-            showDevPanel = !showDevPanel;
-            return true;
-        }
-
-        // Debug panel shortcuts when visible
-        if (showDevPanel && debugPanel != null) {
-            // Ctrl+E -> export recent (10) entries
-            if (keyCode == GLFW.GLFW_KEY_E && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-                try {
-                    var p = debugPanel.exportRecentToTempFile(10);
-                    debugPanel.log("Exported recent to: " + p.toString());
-                    showStatus("Exported debug recent", DesignTokens.Semantic.INFO);
-                } catch (Exception e) {
-                    debugPanel.log("Export failed: " + e.getMessage());
-                    showStatus("Export failed", DesignTokens.Semantic.WARNING);
-                }
-                return true;
-            }
-
-            // Ctrl+L -> clear debug log
-            if (keyCode == GLFW.GLFW_KEY_L && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-                debugPanel.clear();
-                showStatus("Debug log cleared", DesignTokens.Semantic.INFO);
-                return true;
-            }
-        }
-
-        // F1 for help
-        if (keyCode == GLFW.GLFW_KEY_F1) {
-            helpOverlay.toggle();
-            return true;
-        }
-
-        if (overlayController.isCraftingVisible() && craftingPanel.isVisible() && craftingPanel.keyPressed(keyCode)) {
-            overlayController.closeAll();
-            return true;
-        }
-
-        // Pass to module
-        if (activeModule != null) {
-            return activeModule.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return inputRouter.keyPressed(keyCode, scanCode, modifiers) || super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    private boolean forceCloseAllOverlays() {
+    @Override
+    public boolean forceCloseAllOverlays() {
         boolean closed = false;
 
-        if (activeModule != null && activeModule.hasActiveOverlay()) {
-            activeModule.overlayKeyPressed(GLFW.GLFW_KEY_ESCAPE);
+        EditorModule module = activeModule;
+        if (module != null && module.hasActiveOverlay()) {
+            module.overlayKeyPressed(GLFW.GLFW_KEY_ESCAPE);
             closed = true;
         }
 
@@ -1534,13 +1328,15 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             closed = true;
         }
 
-        if (templateOverlay != null && templateOverlay.isVisible()) {
-            templateOverlay.hide();
+        TemplateOverlay tOverlay = templateOverlay;
+        if (tOverlay != null && tOverlay.isVisible()) {
+            tOverlay.hide();
             closed = true;
         }
 
-        if (presetSelectorOverlay != null && presetSelectorOverlay.isVisible()) {
-            presetSelectorOverlay.hide();
+        PresetSelectorOverlay psOverlay = presetSelectorOverlay;
+        if (psOverlay != null && psOverlay.isVisible()) {
+            psOverlay.hide();
             closed = true;
         }
 
@@ -1549,8 +1345,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             closed = true;
         }
 
-        if (activeDialog != null && activeDialog.isVisible()) {
-            activeDialog.hide();
+        ConfirmDialog dialog = activeDialog;
+        if (dialog != null && dialog.isVisible()) {
+            dialog.hide();
             closed = true;
         }
 
@@ -1569,32 +1366,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        // Block input when low-confidence dialog is visible
-        if (lowConfidenceDetector.isVisible()) {
-            return lowConfidenceDetector.charTyped(chr, modifiers);
-        }
-        // Handle module overlay char input (e.g., ItemPickerOverlay search)
-        if (activeModule != null && activeModule.hasActiveOverlay()) {
-            return activeModule.overlayCharTyped(chr, modifiers);
-        }
-        if (overlayController.isTemplatesVisible() && templateOverlay != null) {
-            return templateOverlay.charTyped(chr, modifiers);
-        }
-        if (overlayController.isPresetsVisible() && presetSelectorOverlay != null) {
-            return presetSelectorOverlay.charTyped(chr, modifiers);
-        }
-        if (activeModule != null) {
-            return activeModule.charTyped(chr, modifiers);
-        }
-        return super.charTyped(chr, modifiers);
+        return inputRouter.charTyped(chr, modifiers) || super.charTyped(chr, modifiers);
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_F3) {
-            f3Held = false;
-        }
-        return super.keyReleased(keyCode, scanCode, modifiers);
+        return inputRouter.keyReleased(keyCode, scanCode, modifiers) || super.keyReleased(keyCode, scanCode, modifiers);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -1603,21 +1380,20 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void applyChanges() {
-        if (activeModule == null) return;
+        EditorModule module = activeModule;
+        if (module == null) return;
 
-        if (!activeModule.hasUnsavedChanges()) {
+        if (!module.hasUnsavedChanges()) {
             showStatus("No changes to apply", DesignTokens.Semantic.WARNING);
-            activeModule.logEvent("Apply skipped (no changes)");
+            module.logEvent("Apply skipped (no changes)");
             return;
         }
 
         try {
-            if (activeModule != null) {
-                activeModule.logEvent("Apply requested (" + (isGlobalMode() ? "GLOBAL" : "SPECIFIC") + ")");
-            }
+            module.logEvent("Apply requested (" + (isGlobalMode() ? "GLOBAL" : "SPECIFIC") + ")");
             // Build and send payload
             CustomPacketPayload payload;
-            if (activeModule instanceof com.devmod.client.ui.editor.modules.ArmorModule armorModule) {
+            if (module instanceof com.devmod.client.ui.editor.modules.ArmorModule armorModule) {
                 ArmorStats stats = armorModule.getStats().copy();
                 CompoundTag statsTag = new CompoundTag();
                 CompoundTag armorStats = new CompoundTag();
@@ -1626,8 +1402,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 statsTag.put(ARMOR_STATS_COMPONENT_KEY, Objects.requireNonNull(armorStats));
 
                 int slotIndex = -1;
-                if (!isGlobalMode() && selectedSlot != null && selectedSlot.slot() != null) {
-                    slotIndex = switch (selectedSlot.slot()) {
+                SlotSelector.SlotInfo slot = getSelectedSlotInfo();
+                if (!isGlobalMode() && slot != null && slot.slot() != null) {
+                    slotIndex = switch (slot.slot()) {
                         case HEAD -> 0;
                         case CHEST -> 1;
                         case LEGS -> 2;
@@ -1638,21 +1415,21 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 ItemStack armorItem = Objects.requireNonNull(armorModule.getItem(), "armor item");
                 payload = new ArmorStatsPayload(Objects.requireNonNull(armorItem.copy()), statsTag, isGlobalMode(), slotIndex);
             } else {
-                payload = activeModule.buildPayload(isGlobalMode());
+                payload = module.buildPayload(isGlobalMode());
             }
             if (payload == null) {
                 showStatus("Apply not available for this module (no payload)", DesignTokens.Semantic.WARNING);
-                activeModule.logEvent("Apply skipped: no payload");
+                module.logEvent("Apply skipped: no payload");
                 return;
             }
             PacketDistributor.sendToServer(payload);
-            activeModule.logEvent("Waiting for server confirm...");
+            module.logEvent("Waiting for server confirm...");
 
             // Apply preview locally to reflect new state
-            activeModule.applyPreview();
+            module.applyPreview();
 
             // Clear dirty state
-            activeModule.clearDirty();
+            module.clearDirty();
             lastSaveTimestamp = System.currentTimeMillis();
 
             // Invalidate cache
@@ -1660,12 +1437,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
             playSound(SoundEvents.UI_BUTTON_CLICK.value());
             showStatus("Changes applied!", DesignTokens.Semantic.SUCCESS);
-            activeModule.logEvent("Apply sent to server");
+            module.logEvent("Apply sent to server");
 
         } catch (Exception e) {
             showStatus("Failed to apply: " + e.getMessage(), DesignTokens.Semantic.ERROR);
-            if (activeModule != null) {
-                activeModule.logEvent("Apply error: " + e.getMessage());
+            EditorModule errorModule = activeModule;
+            if (errorModule != null) {
+                errorModule.logEvent("Apply error: " + e.getMessage());
             }
         }
     }
@@ -1678,15 +1456,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             " " + (payload.itemId() == null ? "" : payload.itemId());
         String detail = payload.message() == null ? "" : payload.message();
         String full = detail.isBlank() ? summary : summary + " - " + detail;
-        if (activeModule != null) {
-            activeModule.logEvent(full);
+        EditorModule module = activeModule;
+        if (module != null) {
+            module.logEvent(full);
         }
-        if (debugPanel != null) {
-            debugPanel.log(full);
+        DebugPanel panel = debugPanel;
+        if (panel != null) {
+            panel.log(full);
         }
         // Persist ACK/FAIL to session history file for tracking
         String action = payload.success() ? "apply_ack" : "apply_fail";
-        String itemId = payload.itemId() == null ? item.getHoverName().getString() : payload.itemId();
+        String itemId = payload.itemId() == null ? getEditedItem().getHoverName().getString() : payload.itemId();
         String details = (payload.global() ? "GLOBAL" : "SPECIFIC") + (detail.isBlank() ? "" : " - " + detail);
         ItemEditorDataManager.INSTANCE.addHistoryEntry(action, itemId, details);
 
@@ -1696,9 +1476,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void handleCloseRequest() {
-        if (!isPreviewMode() && activeModule != null && activeModule.hasUnsavedChanges()) {
+        EditorModule module = activeModule;
+        if (!isPreviewMode() && module != null && module.hasUnsavedChanges()) {
             ConfirmDialog dialog = ConfirmDialog.unsavedChanges(
-                activeModule.getPendingChanges().size(),
+                module.getPendingChanges().size(),
                 this::onClose,
                 () -> {}
             );
@@ -1722,7 +1503,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
         ItemEditorDataManager.ItemConfigExport config = new ItemEditorDataManager.ItemConfigExport();
         config.itemId = getCurrentItemId();
-        config.itemName = item.getHoverName().getString();
+        config.itemName = getEditedItem().getHoverName().getString();
         config.stats = collectStatsForExport();
 
         // Export enchantments from item
@@ -1730,11 +1511,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         // Export attributes from item
         config.attributes = collectAttributesForExport();
         // Export durability info
-        config.durability = item.isDamageableItem() ? item.getMaxDamage() - item.getDamageValue() : null;
+        ItemStack currentItem = getEditedItem();
+        config.durability = currentItem.isDamageableItem() ? currentItem.getMaxDamage() - currentItem.getDamageValue() : null;
         final var unbreakableType = Objects.requireNonNull(DataComponents.UNBREAKABLE, "unbreakable component");
-        config.unbreakable = item.has(unbreakableType);
+        config.unbreakable = currentItem.has(unbreakableType);
         final var repairCostType = Objects.requireNonNull(DataComponents.REPAIR_COST, "repair cost component");
-        config.repairCost = item.has(repairCostType) ? item.get(repairCostType) : null;
+        config.repairCost = currentItem.has(repairCostType) ? currentItem.get(repairCostType) : null;
 
         String fileName = buildSafeFileName(config.itemId + "_export_" + System.currentTimeMillis());
         boolean ok = data.exportToFile(config, fileName);
@@ -1754,8 +1536,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private List<ItemEditorDataManager.EnchantData> collectEnchantmentsForExport() {
         List<ItemEditorDataManager.EnchantData> result = new ArrayList<>();
         final var enchantType = Objects.requireNonNull(DataComponents.ENCHANTMENTS, "enchantments component");
-        ItemEnchantments enchants = item.has(enchantType)
-            ? Objects.requireNonNull(item.get(enchantType), "enchantments value")
+        ItemStack currentItem = getEditedItem();
+        ItemEnchantments enchants = currentItem.has(enchantType)
+            ? Objects.requireNonNull(currentItem.get(enchantType), "enchantments value")
             : ItemEnchantments.EMPTY;
         Minecraft mc = Minecraft.getInstance();
         Level level = mc != null ? mc.level : null;
@@ -1780,8 +1563,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private List<ItemEditorDataManager.AttrData> collectAttributesForExport() {
         List<ItemEditorDataManager.AttrData> result = new ArrayList<>();
         final var attrType = Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS, "attribute modifiers component");
-        ItemAttributeModifiers modifiers = item.has(attrType)
-            ? Objects.requireNonNull(item.get(attrType), "attribute modifiers")
+        ItemStack currentItem = getEditedItem();
+        ItemAttributeModifiers modifiers = currentItem.has(attrType)
+            ? Objects.requireNonNull(currentItem.get(attrType), "attribute modifiers")
             : ItemAttributeModifiers.EMPTY;
         Objects.requireNonNull(modifiers.modifiers(), "attribute modifier entries").forEach(entry -> {
             Holder<Attribute> attr = entry.attribute();
@@ -1813,7 +1597,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         try {
             ItemEditorDataManager.ItemConfigExport imported = data.importFromFile(fileName);
             applyImportedStats(imported, "Imported " + fileName);
-            data.addHistoryEntry("import", item.getHoverName().getString(), fileName);
+            data.addHistoryEntry("import", getEditedItem().getHoverName().getString(), fileName);
             showStatus("Imported " + fileName, DesignTokens.Semantic.INFO);
             int applied = DatapackIO.importOverrides(DEFAULT_DATAPACK_NAME);
             if (applied > 0) {
@@ -1853,7 +1637,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private String getCurrentItemId() {
-        var key = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item.getItem(), "item cannot be null"));
+        var key = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(getEditedItem().getItem(), "item cannot be null"));
         return key == null ? "unknown" : key.toString();
     }
 
@@ -1884,39 +1668,39 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         List<Float> stats = new ArrayList<>();
         if (activeModule instanceof WeaponModule weaponModule) {
             var s = weaponModule.getStats();
-            stats.add(s.headMult);
-            stats.add(s.bodyMult);
-            stats.add(s.armsMult);
-            stats.add(s.legsMult);
-            stats.add(s.attackDamage);
-            stats.add(s.attackSpeed);
-            stats.add(s.attackReach);
-            stats.add(s.attackKnockback);
-            stats.add(s.armorPenetration);
-            stats.add(s.baseDamageBonus);
-            stats.add(s.critChance);
-            stats.add(s.critDamage);
-            stats.add(s.lifesteal);
-            stats.add(s.fireDamageBonus);
-            stats.add(s.magicDamageBonus);
-            stats.add(s.damageBonus);
-            stats.add(s.armorShred);
-            stats.add(s.damageVsUndead);
-            stats.add(s.damageVsArthropods);
-            stats.add(s.damageVsPlayers);
-            stats.add(s.trueDamagePercent);
+            stats.add(s.getHeadMult());
+            stats.add(s.getBodyMult());
+            stats.add(s.getArmsMult());
+            stats.add(s.getLegsMult());
+            stats.add(s.getAttackDamage());
+            stats.add(s.getAttackSpeed());
+            stats.add(s.getAttackReach());
+            stats.add(s.getAttackKnockback());
+            stats.add(s.getArmorPenetration());
+            stats.add(s.getBaseDamageBonus());
+            stats.add(s.getCritChance());
+            stats.add(s.getCritDamage());
+            stats.add(s.getLifesteal());
+            stats.add(s.getFireDamageBonus());
+            stats.add(s.getMagicDamageBonus());
+            stats.add(s.getDamageBonus());
+            stats.add(s.getArmorShred());
+            stats.add(s.getDamageVsUndead());
+            stats.add(s.getDamageVsArthropods());
+            stats.add(s.getDamageVsPlayers());
+            stats.add(s.getTrueDamagePercent());
         } else if (activeModule instanceof ArmorModule armorModule) {
             var s = armorModule.getStats();
-            stats.add(s.physicalReduction);
-            stats.add(s.fireReduction);
-            stats.add(s.magicReduction);
-            stats.add(s.explosionReduction);
-            stats.add(s.projectileReduction);
-            stats.add(s.armorBonus);
-            stats.add(s.toughnessBonus);
-            stats.add(s.knockbackResistance);
-            stats.add(s.thornsPercent);
-            stats.add(s.thornsReflect ? 1f : 0f);
+            stats.add(s.getPhysicalReduction());
+            stats.add(s.getFireReduction());
+            stats.add(s.getMagicReduction());
+            stats.add(s.getExplosionReduction());
+            stats.add(s.getProjectileReduction());
+            stats.add(s.getArmorBonus());
+            stats.add(s.getToughnessBonus());
+            stats.add(s.getKnockbackResistance());
+            stats.add(s.getThornsPercent());
+            stats.add(s.isThornsReflect() ? 1f : 0f);
         }
         return stats;
     }
@@ -1939,42 +1723,42 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         if (activeModule instanceof WeaponModule weaponModule) {
             WeaponStats newStats = weaponModule.getStats().copy();
             List<Float> values = config.stats;
-            newStats.headMult = getStat(values, 0, newStats.headMult);
-            newStats.bodyMult = getStat(values, 1, newStats.bodyMult);
-            newStats.armsMult = getStat(values, 2, newStats.armsMult);
-            newStats.legsMult = getStat(values, 3, newStats.legsMult);
-            newStats.attackDamage = getStat(values, 4, newStats.attackDamage);
-            newStats.attackSpeed = getStat(values, 5, newStats.attackSpeed);
-            newStats.attackReach = getStat(values, 6, newStats.attackReach);
-            newStats.attackKnockback = getStat(values, 7, newStats.attackKnockback);
-            newStats.armorPenetration = getStat(values, 8, newStats.armorPenetration);
-            newStats.baseDamageBonus = getStat(values, 9, newStats.baseDamageBonus);
-            newStats.critChance = getStat(values, 10, newStats.critChance);
-            newStats.critDamage = getStat(values, 11, newStats.critDamage);
-            newStats.lifesteal = getStat(values, 12, newStats.lifesteal);
-            newStats.fireDamageBonus = getStat(values, 13, newStats.fireDamageBonus);
-            newStats.magicDamageBonus = getStat(values, 14, newStats.magicDamageBonus);
-            newStats.damageBonus = getStat(values, 15, newStats.damageBonus);
-            newStats.armorShred = getStat(values, 16, newStats.armorShred);
-            newStats.damageVsUndead = getStat(values, 17, newStats.damageVsUndead);
-            newStats.damageVsArthropods = getStat(values, 18, newStats.damageVsArthropods);
-            newStats.damageVsPlayers = getStat(values, 19, newStats.damageVsPlayers);
-            newStats.trueDamagePercent = getStat(values, 20, newStats.trueDamagePercent);
+            newStats.setHeadMult(getStat(values, 0, newStats.getHeadMult()));
+            newStats.setBodyMult(getStat(values, 1, newStats.getBodyMult()));
+            newStats.setArmsMult(getStat(values, 2, newStats.getArmsMult()));
+            newStats.setLegsMult(getStat(values, 3, newStats.getLegsMult()));
+            newStats.setAttackDamage(getStat(values, 4, newStats.getAttackDamage()));
+            newStats.setAttackSpeed(getStat(values, 5, newStats.getAttackSpeed()));
+            newStats.setAttackReach(getStat(values, 6, newStats.getAttackReach()));
+            newStats.setAttackKnockback(getStat(values, 7, newStats.getAttackKnockback()));
+            newStats.setArmorPenetration(getStat(values, 8, newStats.getArmorPenetration()));
+            newStats.setBaseDamageBonus(getStat(values, 9, newStats.getBaseDamageBonus()));
+            newStats.setCritChance(getStat(values, 10, newStats.getCritChance()));
+            newStats.setCritDamage(getStat(values, 11, newStats.getCritDamage()));
+            newStats.setLifesteal(getStat(values, 12, newStats.getLifesteal()));
+            newStats.setFireDamageBonus(getStat(values, 13, newStats.getFireDamageBonus()));
+            newStats.setMagicDamageBonus(getStat(values, 14, newStats.getMagicDamageBonus()));
+            newStats.setDamageBonus(getStat(values, 15, newStats.getDamageBonus()));
+            newStats.setArmorShred(getStat(values, 16, newStats.getArmorShred()));
+            newStats.setDamageVsUndead(getStat(values, 17, newStats.getDamageVsUndead()));
+            newStats.setDamageVsArthropods(getStat(values, 18, newStats.getDamageVsArthropods()));
+            newStats.setDamageVsPlayers(getStat(values, 19, newStats.getDamageVsPlayers()));
+            newStats.setTrueDamagePercent(getStat(values, 20, newStats.getTrueDamagePercent()));
             weaponModule.applyExternalStats(newStats, reason);
             weaponModule.applyPreview();
         } else if (activeModule instanceof ArmorModule armorModule) {
             ArmorStats newStats = armorModule.getStats().copy();
             List<Float> values = config.stats;
-            newStats.physicalReduction = getStat(values, 0, newStats.physicalReduction);
-            newStats.fireReduction = getStat(values, 1, newStats.fireReduction);
-            newStats.magicReduction = getStat(values, 2, newStats.magicReduction);
-            newStats.explosionReduction = getStat(values, 3, newStats.explosionReduction);
-            newStats.projectileReduction = getStat(values, 4, newStats.projectileReduction);
-            newStats.armorBonus = getStat(values, 5, newStats.armorBonus);
-            newStats.toughnessBonus = getStat(values, 6, newStats.toughnessBonus);
-            newStats.knockbackResistance = getStat(values, 7, newStats.knockbackResistance);
-            newStats.thornsPercent = getStat(values, 8, newStats.thornsPercent);
-            newStats.thornsReflect = getStat(values, 9, newStats.thornsReflect ? 1f : 0f) > 0.5f;
+            newStats.setPhysicalReduction(getStat(values, 0, newStats.getPhysicalReduction()));
+            newStats.setFireReduction(getStat(values, 1, newStats.getFireReduction()));
+            newStats.setMagicReduction(getStat(values, 2, newStats.getMagicReduction()));
+            newStats.setExplosionReduction(getStat(values, 3, newStats.getExplosionReduction()));
+            newStats.setProjectileReduction(getStat(values, 4, newStats.getProjectileReduction()));
+            newStats.setArmorBonus(getStat(values, 5, newStats.getArmorBonus()));
+            newStats.setToughnessBonus(getStat(values, 6, newStats.getToughnessBonus()));
+            newStats.setKnockbackResistance(getStat(values, 7, newStats.getKnockbackResistance()));
+            newStats.setThornsPercent(getStat(values, 8, newStats.getThornsPercent()));
+            newStats.setThornsReflect(getStat(values, 9, newStats.isThornsReflect() ? 1f : 0f) > 0.5f);
             armorModule.applyExternalStats(newStats, reason);
             armorModule.applyPreview();
         } else {
@@ -1984,9 +1768,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void handleTemplateApply(ItemEditorDataManager.TemplateData template) {
         if (template == null) return;
-        if (!isPreviewMode() && activeModule != null && activeModule.hasUnsavedChanges()) {
+        EditorModule module = activeModule;
+        if (!isPreviewMode() && module != null && module.hasUnsavedChanges()) {
             ConfirmDialog dialog = ConfirmDialog.unsavedChanges(
-                activeModule.getPendingChanges().size(),
+                module.getPendingChanges().size(),
                 () -> {
                     applyTemplateInternal(template);
                     closeOverlay();
@@ -2001,7 +1786,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private void applyTemplateInternal(ItemEditorDataManager.TemplateData template) {
-        ItemStack target = isPreviewMode() ? item.copy() : item;
+        ItemStack target = isPreviewMode() ? getEditedItem().copy() : getEditedItem();
 
         // Enchantments
         if (template.enchantments != null && !template.enchantments.isEmpty()) {
@@ -2062,16 +1847,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             );
         }
 
-        if (activeModule != null) {
-            activeModule.setItem(target);
-            activeModule.applyPreview();
+        EditorModule module = activeModule;
+        if (module != null) {
+            module.setItem(target);
+            module.applyPreview();
             if (!isPreviewMode()) {
-                activeModule.markDirty("Applied template: " + template.name);
+                module.markDirty("Applied template: " + template.name);
             }
         }
 
         String name = template.name == null ? "template" : template.name;
-        ItemEditorDataManager.INSTANCE.addHistoryEntry("template_apply", item.getHoverName().getString(), name);
+        ItemEditorDataManager.INSTANCE.addHistoryEntry("template_apply", getEditedItem().getHoverName().getString(), name);
         lastLoadedPreset = name;
         showStatus("Applied template " + name, DesignTokens.Semantic.SUCCESS);
         EditorCache.INSTANCE.invalidateItem(getCurrentItemId());
@@ -2091,14 +1877,15 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private void deletePreset(ItemEditorDataManager.PresetData preset) {
         if (preset == null || preset.name == null) return;
         String presetName = preset.name;
+        PresetSelectorOverlay psOverlay = presetSelectorOverlay;
         ConfirmDialog dialog = ConfirmDialog.deletePreset(presetName,
             () -> {
                 ItemEditorDataManager.INSTANCE.deletePreset(presetName);
-                ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_delete", item.getHoverName().getString(), presetName);
+                ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_delete", getEditedItem().getHoverName().getString(), presetName);
                 DevMod.LOGGER.info("[Editor] Preset deleted: {}", presetName);
                 showStatus("Preset deleted: " + presetName, DesignTokens.Semantic.INFO);
-                if (presetSelectorOverlay != null) {
-                    presetSelectorOverlay.refreshPresets();
+                if (psOverlay != null) {
+                    psOverlay.refreshPresets();
                 }
             },
             () -> {}  // onCancel - no action needed
@@ -2109,13 +1896,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void renamePreset(ItemEditorDataManager.PresetData preset, String newName) {
         if (preset == null || preset.name == null || newName == null || newName.isBlank()) return;
-        String oldName = preset.name;
+        String oldName = Objects.requireNonNull(preset.name, "preset name cannot be null after check");
 
         // Update the preset with new name
         preset.name = newName.trim();
         ItemEditorDataManager.INSTANCE.deletePreset(oldName);
         ItemEditorDataManager.INSTANCE.savePreset(preset);
-        ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_rename", item.getHoverName().getString(), oldName + " -> " + newName);
+        ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_rename", getEditedItem().getHoverName().getString(), oldName + " -> " + newName);
         DevMod.LOGGER.info("[Editor] Preset renamed: {} -> {}", oldName, newName);
         showStatus("Preset renamed: " + newName, DesignTokens.Semantic.INFO);
 
@@ -2124,8 +1911,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             lastLoadedPreset = newName;
         }
 
-        if (presetSelectorOverlay != null) {
-            presetSelectorOverlay.refreshPresets();
+        PresetSelectorOverlay psOverlay = presetSelectorOverlay;
+        if (psOverlay != null) {
+            psOverlay.refreshPresets();
         }
     }
 
@@ -2134,12 +1922,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         String presetName = buildPresetName(itemType);
         ItemEditorDataManager.PresetData preset = buildPresetFromCurrent(presetName, itemType);
         ItemEditorDataManager.INSTANCE.savePreset(preset);
-        ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_save", item.getHoverName().getString(), presetName);
+        ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_save", getEditedItem().getHoverName().getString(), presetName);
         DevMod.LOGGER.info("[Editor] Preset saved: {}", presetName);
         showStatus("Preset saved: " + presetName, DesignTokens.Semantic.SUCCESS);
         lastLoadedPreset = presetName;
-        if (presetSelectorOverlay != null) {
-            presetSelectorOverlay.refreshPresets();
+        PresetSelectorOverlay psOverlay = presetSelectorOverlay;
+        if (psOverlay != null) {
+            psOverlay.refreshPresets();
         }
     }
 
@@ -2170,7 +1959,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 String presetName = preset.name == null ? FAVORITES_LABEL_FALLBACK : preset.name;
                 Runnable loadAction = () -> {
                     applyPreset(preset);
-                    ItemEditorDataManager.INSTANCE.addHistoryEntry("favorite_load", item.getHoverName().getString(), presetName);
+                    ItemEditorDataManager.INSTANCE.addHistoryEntry("favorite_load", getEditedItem().getHoverName().getString(), presetName);
                     showStatus("Favorite applied: " + presetName, DesignTokens.Semantic.INFO);
                 };
                 if (activeModule != null && activeModule.hasUnsavedChanges()) {
@@ -2211,6 +2000,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private boolean persistMultiEditItem(ItemStack item, int slot) {
+        DebugPanel panel = debugPanel;
         try {
             var mc = Minecraft.getInstance();
             if (mc != null && mc.player != null) {
@@ -2249,12 +2039,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                     new ArmorStatsPayload(itemCopy, fullTag, isGlobalMode(), slot)
                 );
             }
-            if (debugPanel != null) {
-                debugPanel.log(MULTI_EDIT_PERSIST_PREFIX + slot + " (" + item.getHoverName().getString() + ")");
+            if (panel != null) {
+                panel.log(MULTI_EDIT_PERSIST_PREFIX + slot + " (" + item.getHoverName().getString() + ")");
             }
             return true;
         } catch (Exception e) {
-            if (debugPanel != null) debugPanel.log(MULTI_EDIT_PERSIST_FAILED_PREFIX + e.getMessage());
+            if (panel != null) panel.log(MULTI_EDIT_PERSIST_FAILED_PREFIX + e.getMessage());
             DevMod.LOGGER.warn("[MultiEdit] Persist failed for slot {}: {}", slot, e.getMessage());
             return false;
         }
@@ -2400,8 +2190,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             statusTicks--;
         }
 
-        if (activeModule != null) {
-            activeModule.tick();
+        EditorModule module = activeModule;
+        if (module != null) {
+            module.tick();
         }
     }
 
@@ -2410,15 +2201,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         // Track screen close for telemetry
         UiTelemetry.screenClosed("editor", "item_editor");
 
-        if (activeModule != null) {
-            activeModule.onClose();
+        EditorModule module = activeModule;
+        if (module != null) {
+            module.onClose();
         }
-        // Clear any registered state listeners to prevent memory leaks
-        editorState.removeAllListeners();
 
         // Invoke callback with edited item if available
         if (onItemEdited != null) {
-            onItemEdited.accept(item);
+            onItemEdited.accept(getEditedItem());
         }
 
         // Return to parent screen if available, otherwise close normally
@@ -2485,17 +2275,23 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         return sources;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // GETTERS
-    // ═══════════════════════════════════════════════════════════════
-
-    public ItemStack getItem() {
-        return item;
+    /**
+     * Build stat diffs for the debug panel comparing current vs original (baseline) stats.
+     * Uses DebugPanel.buildWeaponDiffs/buildArmorDiffs to generate comparison entries.
+     */
+    private List<DebugPanel.StatDiff> buildStatDiffs() {
+        EditorModule module = activeModule;
+        if (module instanceof WeaponModule weaponModule) {
+            return DebugPanel.buildWeaponDiffs(weaponModule.getStats(), weaponModule.getOriginalStats());
+        } else if (module instanceof ArmorModule armorModule) {
+            return DebugPanel.buildArmorDiffs(armorModule.getStats(), armorModule.getOriginalStats());
+        }
+        return List.of();
     }
 
-    public ItemStack getOriginalItem() {
-        return originalItem;
-    }
+    // ═══════════════════════════════════════════════════════════════
+    // MODE ACCESSORS
+    // ═══════════════════════════════════════════════════════════════
 
     @Override
     public boolean isPreviewMode() {
@@ -2506,15 +2302,29 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         return editorState.isGlobalMode();
     }
 
-    public @Nullable EditorModule getActiveModule() {
-        return activeModule;
+    // ═══════════════════════════════════════════════════════════════
+    // STATE DELEGATION
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Get the item being edited (delegated to editorState).
+     */
+    private ItemStack getEditedItem() {
+        return editorState.getItem();
     }
 
     /**
-     * Get the centralized editor state object.
-     * Subsystems should use this for decoupled access to item/mode state.
+     * Get the currently selected slot (delegated to editorState).
      */
-    public ItemEditorState getEditorState() {
-        return editorState;
+    @Nullable
+    private SlotSelector.SlotInfo getSelectedSlotInfo() {
+        return editorState.getSelectedSlot();
+    }
+
+    /**
+     * Set the currently selected slot (delegated to editorState).
+     */
+    private void setSelectedSlotInfo(@Nullable SlotSelector.SlotInfo slot) {
+        editorState.setSelectedSlot(slot);
     }
 }

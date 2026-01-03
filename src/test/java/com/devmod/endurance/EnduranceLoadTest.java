@@ -3,6 +3,7 @@ package com.devmod.endurance;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -167,7 +168,7 @@ public class EnduranceLoadTest {
             List<EnduranceQuest> quests = Collections.synchronizedList(new ArrayList<>());
 
             for (int i = 0; i < concurrency; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
 
@@ -226,7 +227,7 @@ public class EnduranceLoadTest {
 
             // Start and complete quests concurrently
             for (EnduranceQuest quest : quests) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         UUID arenaId = UUID.randomUUID();
 
@@ -329,7 +330,7 @@ public class EnduranceLoadTest {
             LoadTestMetrics metrics = new LoadTestMetrics();
 
             for (UUID mobId : mobIds) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         long start = System.nanoTime();
@@ -373,7 +374,7 @@ public class EnduranceLoadTest {
             }
 
             for (int i = 0; i < iterations; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         for (int wave = 1; wave <= 10; wave++) {
                             UUID arenaId = UUID.randomUUID();
@@ -445,7 +446,7 @@ public class EnduranceLoadTest {
             AtomicInteger totalAllowed = new AtomicInteger(0);
 
             for (int i = 0; i < attemptedRespawns; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         int allowed = waveState.registerExternalRespawn(1);
@@ -498,7 +499,7 @@ public class EnduranceLoadTest {
             for (int i = 0; i < iterations; i++) {
                 final int wave = (i % 10) + 1;
                 final int totalWaves = 10;
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         long start = System.nanoTime();
@@ -526,7 +527,7 @@ public class EnduranceLoadTest {
             assertEquals(iterations, metrics.successCount.get());
 
             // Compute expected multipliers for each wave
-            Map<Integer, Float> expected = new ConcurrentHashMap<>();
+            Map<Integer, Float> expected = new HashMap<>();
             for (int wave = 1; wave <= 10; wave++) {
                 expected.put(wave, DifficultyScaler.INSTANCE.getWaveMultiplier(wave, 10));
             }
@@ -552,7 +553,7 @@ public class EnduranceLoadTest {
                 final int kills = 10 + (i % 50);
                 final float multiplier = 1.0f + (i % 5) * 0.1f;
 
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         long start = System.nanoTime();
 
@@ -591,7 +592,7 @@ public class EnduranceLoadTest {
             List<ComboSystem.ComboSession> sessions = Collections.synchronizedList(new ArrayList<>());
 
             for (int i = 0; i < sessionCount; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         UUID playerId = UUID.randomUUID();
@@ -650,7 +651,7 @@ public class EnduranceLoadTest {
             LoadTestMetrics metrics = new LoadTestMetrics();
 
             for (int i = 0; i < targetKills; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         long start = System.nanoTime();
@@ -696,7 +697,7 @@ public class EnduranceLoadTest {
 
             // Register elites
             for (int i = 0; i < eliteCount; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         UUID eliteId = UUID.randomUUID();
                         long start = System.nanoTime();
@@ -715,7 +716,7 @@ public class EnduranceLoadTest {
             // Kill elites (may happen before registration completes)
             for (int i = 0; i < eliteCount; i++) {
                 final int index = i;
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         // Wait a bit for some registrations
                         Thread.sleep(random.nextInt(10));
@@ -758,7 +759,7 @@ public class EnduranceLoadTest {
             LoadTestMetrics metrics = new LoadTestMetrics();
 
             for (int i = 0; i < tickCount; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         long start = System.nanoTime();
                         objective.tick(null);
@@ -802,8 +803,8 @@ public class EnduranceLoadTest {
             LoadTestMetrics metrics = new LoadTestMetrics();
 
             for (int i = 0; i < updateCount; i++) {
-                final float delta = (random.nextFloat()) * 0.05f;
-                executor.submit(() -> {
+                final float delta = random.nextFloat() * 0.05f;
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         long start = System.nanoTime();
@@ -846,7 +847,7 @@ public class EnduranceLoadTest {
 
             for (int i = 0; i < questCount; i++) {
                 final float targetTension = (i + 1) / (float) questCount * 0.5f; // Keep under 1.0
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         UUID questId = UUID.randomUUID();
 
@@ -933,7 +934,7 @@ public class EnduranceLoadTest {
         void testWaveStateCleanup() throws InterruptedException {
             int waveCount = 100;
             int mobsPerWave = 50;
-            Map<UUID, WaveManager.WaveState> waveStates = new ConcurrentHashMap<>();
+            Map<UUID, WaveManager.WaveState> waveStates = new HashMap<>();
 
             // Create wave states
             for (int i = 0; i < waveCount; i++) {

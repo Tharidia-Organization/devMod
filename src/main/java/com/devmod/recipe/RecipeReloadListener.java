@@ -88,16 +88,7 @@ public final class RecipeReloadListener {
         } else {
             // Server reload (/reload command)
             var playerList = event.getPlayerList();
-            if (playerList == null) {
-                DevMod.LOGGER.warn("[RecipeReloadListener] PlayerList is null in OnDatapackSyncEvent");
-                return;
-            }
-
             var server = playerList.getServer();
-            if (server == null) {
-                DevMod.LOGGER.warn("[RecipeReloadListener] Server is null in OnDatapackSyncEvent");
-                return;
-            }
 
             // Re-inject recipes after reload
             RecipeInjector.injectAll(server.getRecipeManager());

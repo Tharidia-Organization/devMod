@@ -1,20 +1,19 @@
 package com.devmod.client.ui.hub;
 
-import com.devmod.client.ui.editor.core.DesignTokens;
-
+/**
+ * Verdict options for test case evaluation.
+ */
 public enum Verdict {
-    PASS("PASS", "1", DesignTokens.Semantic.SUCCESS),
-    FAIL("FAIL", "2", DesignTokens.Semantic.ERROR),
-    SKIP("SKIP", "3", DesignTokens.Text.MUTED());
+    PASS("PASS", "1"),
+    FAIL("FAIL", "2"),
+    SKIP("SKIP", "3");
 
     private final String label;
     private final String hotkey;
-    private final int color;
 
-    Verdict(String label, String hotkey, int color) {
+    Verdict(String label, String hotkey) {
         this.label = label;
         this.hotkey = hotkey;
-        this.color = color;
     }
 
     public String getLabel() {
@@ -23,9 +22,5 @@ public enum Verdict {
 
     public String getHotkey() {
         return hotkey;
-    }
-
-    public int getColor() {
-        return color;
     }
 }

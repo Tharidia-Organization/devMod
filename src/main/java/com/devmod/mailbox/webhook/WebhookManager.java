@@ -340,7 +340,7 @@ public final class WebhookManager {
             return;
         }
 
-        ExecutorService executor = this.executor;
+        ExecutorService executor = getExecutor();
         if (executor == null) {
             LOGGER.warn("[Webhooks] Dispatch skipped; executor not initialized");
             return;
@@ -456,7 +456,7 @@ public final class WebhookManager {
         try {
             String body = formatPayload(webhook.format(), event, payload);
 
-            HttpClient client = httpClient;
+            HttpClient client = getHttpClient();
             if (client == null) {
                 handleFailure(webhook, event, payload, attempt, "HTTP client not initialized");
                 return;
@@ -537,6 +537,14 @@ public final class WebhookManager {
         inflightRequests.add(future);
     }
 
+    private synchronized @Nullable HttpClient getHttpClient() {
+        return httpClient;
+    }
+
+    private synchronized @Nullable ExecutorService getExecutor() {
+        return executor;
+    }
+
     private String errorMessage(Throwable error) {
         if (error == null) {
             return "Unknown error";
@@ -550,7 +558,7 @@ public final class WebhookManager {
             return;
         }
 
-        ExecutorService executor = this.executor;
+        ExecutorService executor = getExecutor();
         if (executor == null) {
             LOGGER.warn("[Webhooks] Retry processing skipped; executor not initialized");
             return;
@@ -673,7 +681,7 @@ public final class WebhookManager {
 
         return switch (event) {
             case MESSAGE_SENT -> String.format(
-                "**Da:** %s\n**Oggetto:** %s\n**Allegato:** %s",
+                "**Da:** %s%n**Oggetto:** %s%n**Allegato:** %s",
                 data.get("sender_name"),
                 data.get("subject"),
                 Boolean.TRUE.equals(data.get("has_attachment")) ? "Sì" : "No"
@@ -683,23 +691,23 @@ public final class WebhookManager {
                 data.get("message_id")
             );
             case BROADCAST_SENT -> String.format(
-                "**Oggetto:** %s\n**Destinatari:** %s\n**Mittente:** %s",
+                "**Oggetto:** %s%n**Destinatari:** %s%n**Mittente:** %s",
                 data.get("subject"),
                 data.get("recipient_count"),
                 data.get("sender_name")
             );
             case ATTACHMENT_CLAIMED -> String.format(
-                "**Tipo:** %s\n**Messaggio ID:** %s",
+                "**Tipo:** %s%n**Messaggio ID:** %s",
                 data.get("attachment_type"),
                 data.get("message_id")
             );
             case NEWS_PUBLISHED -> String.format(
-                "**Titolo:** %s\n**Autore:** %s",
+                "**Titolo:** %s%n**Autore:** %s",
                 data.get("title"),
                 data.get("author_name")
             );
             case ANOMALY_DETECTED -> String.format(
-                "**Tipo:** %s\n**Descrizione:** %s",
+                "**Tipo:** %s%n**Descrizione:** %s",
                 data.get("anomaly_type"),
                 data.get("description")
             );

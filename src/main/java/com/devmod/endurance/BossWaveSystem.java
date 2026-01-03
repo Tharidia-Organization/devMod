@@ -41,6 +41,8 @@ import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.endurance.boss.BossDNAMixer;
 import com.devmod.endurance.boss.BossDNAMixer.MixedBossData;
+import com.devmod.mob.MobRequirements;
+import com.devmod.mob.MobRequirementsRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 public class BossWaveSystem {
@@ -62,15 +64,15 @@ public class BossWaveSystem {
      * Boss archetype determines attack patterns and abilities.
      */
     public enum BossArchetype {
-        BERSERKER("Berserker", 0xFF4444, 1.5f, 2.0f, 0.8f,
+        BERSERKER("Berserker", EnduranceColors.Boss.BERSERKER, 1.5f, 2.0f, 0.8f,
             "Aggressive melee boss with charge attacks and ground slams"),
-        SUMMONER("Summoner", 0x9944FF, 0.8f, 1.0f, 1.5f,
+        SUMMONER("Summoner", EnduranceColors.Boss.SUMMONER, 0.8f, 1.0f, 1.5f,
             "Spawns minions and creates protective barriers"),
-        JUGGERNAUT("Juggernaut", 0x44FF44, 0.5f, 0.7f, 3.0f,
+        JUGGERNAUT("Juggernaut", EnduranceColors.Boss.JUGGERNAUT, 0.5f, 0.7f, 3.0f,
             "Extremely tanky, reflects damage, devastating hits"),
-        ASSASSIN("Assassin", 0x4444FF, 2.0f, 1.5f, 0.6f,
+        ASSASSIN("Assassin", EnduranceColors.Boss.ASSASSIN, 2.0f, 1.5f, 0.6f,
             "Fast and elusive, teleports behind players"),
-        ELEMENTAL("Elemental", 0xFFAA00, 1.2f, 1.8f, 1.0f,
+        ELEMENTAL("Elemental", EnduranceColors.Boss.ELEMENTAL, 1.2f, 1.8f, 1.0f,
             "Harnesses elemental powers for area attacks");
 
         public final String displayName;
@@ -134,7 +136,7 @@ public class BossWaveSystem {
     /**
      * Boss fight state.
      */
-    public static class BossFight {
+    public static final class BossFight {
         private final UUID bossId;
         private final UUID arenaId;
         private final BossArchetype archetype;
@@ -411,7 +413,6 @@ public class BossWaveSystem {
         EnduranceQuest quest = session.getQuest();
         ArenaContext arena = session.getArena();
         ServerLevel level = Objects.requireNonNull(arena.getLevel());
-        BlockPos center = Objects.requireNonNull(arena.getCenter());
         ArenaHandle handle = session.getArenaHandle();
 
         // Get multiplayer scaling parameters
@@ -435,13 +436,13 @@ public class BossWaveSystem {
             fight.setBossEntity(boss);
             fight.setMaxHealth(boss.getMaxHealth());
             activeBosses.put(arena.getId(), fight);
-            if (handle != null && spawnPos != null) {
+            if (handle != null) {
                 EnduranceTelemetryService.INSTANCE.recordSpawnHeatmap(
                     quest.getQuestId(), handle, spawnPos);
             }
 
             // Announce mixed boss
-            announceMixedBoss(level, spawnPos != null ? spawnPos : center, mixedData, waveNumber);
+            announceMixedBoss(level, spawnPos, mixedData, waveNumber);
 
             // Telemetry: record boss wave start with variant info
             String primaryName = requireNonNull(mixedData.primaryArchetype().name(), "primaryArchetype.name");
@@ -477,6 +478,25 @@ public class BossWaveSystem {
         UUID arenaId = Objects.requireNonNull(arena.getId());
         UUID safeQuestId = Objects.requireNonNull(questId);
 
+        // Get mob requirements for boss validation
+        MobRequirements mobReqs = MobRequirementsRegistry.INSTANCE.get(mobConfig.entityType);
+
+        // Validate boss requirements (non-blocking, logging only)
+        if (mobReqs.boss().isBoss()) {
+            int minPlayers = mobReqs.boss().minPlayers();
+            if (playerCount < minPlayers) {
+                LOGGER.warn("[BossWave] Boss {} requires {} players, only {} present - scaling difficulty",
+                    mobConfig.entityType.getDescriptionId(), minPlayers, playerCount);
+            }
+        }
+
+        // Log space requirements for arena validation
+        int minRadius = mobReqs.space().minArenaRadius();
+        if (minRadius > 0) {
+            LOGGER.debug("[BossWave] Boss {} requires arena radius >= {}",
+                mobConfig.entityType.getDescriptionId(), minRadius);
+        }
+
         Entity entity = mobConfig.entityType.create(level);
         if (!(entity instanceof Mob mob)) return null;
 
@@ -492,9 +512,7 @@ public class BossWaveSystem {
 
         // Handle MIRROR variant - copy player stats
         if (mixedData.isMirror() && primaryPlayerId != null) {
-            ServerPlayer player = level.getServer() != null
-                ? level.getServer().getPlayerList().getPlayer(primaryPlayerId)
-                : null;
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(primaryPlayerId);
             if (player != null) {
                 BossDNAMixer.MirrorStats mirrorStats = BossDNAMixer.INSTANCE.calculateMirrorStats(player);
                 healthMult *= mirrorStats.healthMult();
@@ -662,16 +680,6 @@ public class BossWaveSystem {
             return center;
         }
         ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
-        if (registry == null) {
-            EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
-                questId,
-                waveNumber,
-                "boss_fallback_center",
-                handle.templateId(),
-                "registry_unavailable"
-            );
-            return center;
-        }
         ArenaTemplate template = registry.get(handle.templateId()).orElse(null);
         if (template == null || template.spawnSlots() == null || template.spawnSlots().isEmpty()) {
             EnduranceTelemetryService.INSTANCE.recordSpawnFallback(

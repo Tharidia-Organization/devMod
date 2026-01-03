@@ -66,7 +66,9 @@ public class MobRequirementsCommand {
                             .suggests(MobRequirementsCommand::suggestMobIds)
                             .executes(MobRequirementsCommand::testSpawn)))
                     .then(Commands.literal("cache")
-                        .executes(MobRequirementsCommand::showCacheStats))
+                        .executes(MobRequirementsCommand::showCacheStats)
+                        .then(Commands.literal("clear")
+                            .executes(MobRequirementsCommand::clearCache)))
                     .then(Commands.literal("generate")
                         .executes(MobRequirementsCommand::generateExamples)))
         );
@@ -246,7 +248,7 @@ public class MobRequirementsCommand {
 
         // Space check
         var space = reqs.space();
-        EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.get(mobId);
+        EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(mobId).orElse(null);
         float width = entityType != null ? entityType.getWidth() : space.width();
         float height = entityType != null ? entityType.getHeight() : space.height();
         ctx.getSource().sendSuccess(() -> Objects.requireNonNull(Component.literal(
@@ -435,5 +437,35 @@ public class MobRequirementsCommand {
                 "[MobRequirements] Failed to generate examples: " + e.getMessage())));
             return 0;
         }
+    }
+
+    /**
+     * Clears the requirements cache, forcing re-computation on next access.
+     */
+    private static int clearCache(CommandContext<CommandSourceStack> ctx) {
+        MobRequirementsRegistry registry = MobRequirementsRegistry.INSTANCE;
+
+        if (!registry.isInitialized()) {
+            ctx.getSource().sendFailure(Objects.requireNonNull(Component.literal(
+                "[MobRequirements] Registry not initialized. Wait for server start.")));
+            return 0;
+        }
+
+        int previousSize = registry.getCache().size();
+        registry.clearCache();
+
+        ctx.getSource().sendSuccess(() -> Objects.requireNonNull(Component.literal(
+            Objects.requireNonNull(String.format("[MobRequirements] Cache cleared. Removed %d entries.", previousSize)))), true);
+
+        // Show detector and loader status for debugging
+        var detector = registry.getDetector();
+        var loader = registry.getLoader();
+        ctx.getSource().sendSuccess(() -> Objects.requireNonNull(Component.literal(
+            Objects.requireNonNull(String.format("  Detector: %s | Loader: %s",
+                detector != null ? detector.getClass().getSimpleName() : "null",
+                loader != null ? "active" : "not initialized")))), false);
+
+        LOGGER.info("MobRequirements cache cleared via command ({} entries removed)", previousSize);
+        return 1;
     }
 }

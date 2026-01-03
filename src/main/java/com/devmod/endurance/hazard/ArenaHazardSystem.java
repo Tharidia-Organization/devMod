@@ -37,6 +37,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.endurance.EnduranceColors;
+
 public class ArenaHazardSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaHazardSystem.class);
 
@@ -55,7 +57,7 @@ public class ArenaHazardSystem {
             "Floor Crumble",
             "Parts of the floor become unstable!",
             3,  // Trigger wave
-            0xFF6600,
+            EnduranceColors.Hazard.FIRE,
             120, // Duration ticks (6 seconds warning)
             "The ground trembles beneath you..."
         ),
@@ -64,7 +66,7 @@ public class ArenaHazardSystem {
             "Blood Moon",
             "The sky turns red, enemies grow stronger!",
             5,
-            0xCC0000,
+            EnduranceColors.Hazard.BLEED,
             600, // Duration: 30 seconds
             "A crimson moon rises..."
         ),
@@ -73,7 +75,7 @@ public class ArenaHazardSystem {
             "Arena Shrink",
             "The arena walls close in!",
             7,
-            0x9900FF,
+            EnduranceColors.Hazard.VOID,
             400, // Duration: 20 seconds shrinking
             "The shadows creep closer..."
         ),
@@ -82,7 +84,7 @@ public class ArenaHazardSystem {
             "Lightning Storm",
             "Lightning strikes randomly in the arena!",
             9,
-            0x00CCFF,
+            EnduranceColors.Hazard.ARC,
             300, // Duration: 15 seconds
             "Storm clouds gather overhead..."
         ),
@@ -91,7 +93,7 @@ public class ArenaHazardSystem {
             "Void Rifts",
             "Dark portals spawn additional enemies!",
             11,
-            0x660099,
+            EnduranceColors.Hazard.PSI,
             200, // Duration: 10 seconds per rift
             "Reality tears at the seams..."
         );
@@ -134,7 +136,6 @@ public class ArenaHazardSystem {
         public int warningTicks;
         public final List<BlockPos> affectedBlocks = new ArrayList<>();
         public AABB shrinkBounds;
-        public AABB originalBounds;
 
         public ActiveHazard(HazardType type) {
             this.type = type;
@@ -439,13 +440,7 @@ public class ArenaHazardSystem {
         // Apply strength to nearby mobs
         if (hazard.ticksRemaining % 40 == 0) {
             AABB playerBounds = player.getBoundingBox();
-            if (playerBounds == null) {
-                return;
-            }
             AABB area = playerBounds.inflate(30);
-            if (area == null) {
-                return;
-            }
             List<Mob> mobs = level.getEntitiesOfClass(Mob.class, area);
             Holder<MobEffect> damageBoost = MobEffects.DAMAGE_BOOST;
             Holder<MobEffect> speedBoost = MobEffects.MOVEMENT_SPEED;
@@ -484,10 +479,6 @@ public class ArenaHazardSystem {
 
         int radius = session.arenaRadius - (session.currentShrinkLevel * 5);
         BlockPos center = session.arenaCenter;
-        hazard.originalBounds = new AABB(
-            center.getX() - radius, center.getY() - 5, center.getZ() - radius,
-            center.getX() + radius, center.getY() + 20, center.getZ() + radius
-        );
 
         // Shrink by 5 blocks
         session.currentShrinkLevel++;
@@ -504,9 +495,6 @@ public class ArenaHazardSystem {
 
         // Check if player is outside bounds
         Vec3 playerPos = player.position();
-        if (playerPos == null) {
-            return;
-        }
         if (!shrinkBounds.contains(playerPos)) {
             // Push player toward center
             BlockPos arenaCenter = session.arenaCenter;
@@ -717,8 +705,7 @@ public class ArenaHazardSystem {
     }
 
     private static BlockPos resolveBlockPos(ServerPlayer player) {
-        BlockPos pos = player.blockPosition();
-        return pos != null ? pos : BlockPos.containing(player.getX(), player.getY(), player.getZ());
+        return player.blockPosition();
     }
 
     private static void playSound(ServerLevel level, BlockPos pos, SoundEvent sound, SoundSource source,

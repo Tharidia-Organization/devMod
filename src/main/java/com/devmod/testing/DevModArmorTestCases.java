@@ -105,9 +105,9 @@ public final class DevModArmorTestCases {
 
             // Create stats with known values
             ArmorStats original = new ArmorStats();
-            original.physicalReduction = 0.5f;
-            original.fireReduction = 0.25f;
-            original.armorBonus = 5.0f;
+            original.setPhysicalReduction(0.5f);
+            original.setFireReduction(0.25f);
+            original.setArmorBonus(5.0f);
 
             // Save to component
             var component = ArmorComponents.armorStatsComponent();
@@ -124,9 +124,9 @@ public final class DevModArmorTestCases {
             ArmorStats restored = ArmorStats.load(loaded);
 
             // Verify values match
-            return Math.abs(restored.physicalReduction - 0.5f) < 0.001f &&
-                   Math.abs(restored.fireReduction - 0.25f) < 0.001f &&
-                   Math.abs(restored.armorBonus - 5.0f) < 0.001f;
+            return Math.abs(restored.getPhysicalReduction() - 0.5f) < 0.001f &&
+                   Math.abs(restored.getFireReduction() - 0.25f) < 0.001f &&
+                   Math.abs(restored.getArmorBonus() - 5.0f) < 0.001f;
         } catch (Exception e) {
             LOGGER.error("[ArmorTest] Component round-trip failed: {}", e.getMessage());
             return false;
@@ -174,8 +174,8 @@ public final class DevModArmorTestCases {
                 // Validate reflect toggle can be set
                 ItemStack shield = new ItemStack(Objects.requireNonNull(Items.SHIELD));
                 ArmorStats stats = ArmorConfigManager.getStats(shield);
-                stats.shieldReflectProjectiles = true;
-                return stats.shieldReflectProjectiles;
+                stats.setShieldReflectProjectiles(true);
+                return stats.isShieldReflectProjectiles();
             }
         );
     }
@@ -195,8 +195,8 @@ public final class DevModArmorTestCases {
             () -> {
                 ItemStack shield = new ItemStack(Objects.requireNonNull(Items.SHIELD));
                 ArmorStats stats = ArmorConfigManager.getStats(shield);
-                stats.shieldRecoverySpeed = 2.0f;
-                return Math.abs(stats.shieldRecoverySpeed - 2.0f) < 0.001f;
+                stats.setShieldRecoverySpeed(2.0f);
+                return Math.abs(stats.getShieldRecoverySpeed() - 2.0f) < 0.001f;
             }
         );
     }
@@ -221,7 +221,8 @@ public final class DevModArmorTestCases {
                 // Test export functionality exists
                 try {
                     // Just verify the method is callable - actual export needs game context
-                    return DatapackIO.class.getMethod("exportOverrides", String.class) != null;
+                    DatapackIO.class.getMethod("exportOverrides", String.class);
+                    return true;
                 } catch (Exception e) {
                     return false;
                 }
@@ -243,7 +244,8 @@ public final class DevModArmorTestCases {
             TestPriority.MEDIUM,
             () -> {
                 try {
-                    return DatapackIO.class.getMethod("importOverrides", String.class) != null;
+                    DatapackIO.class.getMethod("importOverrides", String.class);
+                    return true;
                 } catch (Exception e) {
                     return false;
                 }
@@ -270,9 +272,9 @@ public final class DevModArmorTestCases {
             () -> {
                 // Test clamp logic
                 ArmorStats stats = new ArmorStats();
-                stats.physicalReduction = 1.5f; // Over 100%
+                stats.setPhysicalReduction(1.5f); // Over 100%
                 ArmorStats clamped = ArmorConfigManager.clampStats(stats);
-                return clamped.physicalReduction <= 0.8f;
+                return clamped.getPhysicalReduction() <= 0.8f;
             }
         );
     }

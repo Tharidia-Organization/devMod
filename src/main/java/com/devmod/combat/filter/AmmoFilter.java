@@ -1,7 +1,6 @@
 package com.devmod.combat.filter;
 
 import java.lang.reflect.Method;
-import java.util.Locale;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -11,15 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
+import com.devmod.ammo.AmmoSystem;
 import com.devmod.components.RangedComponents;
 
 public final class AmmoFilter {
@@ -48,7 +44,7 @@ public final class AmmoFilter {
             }
 
             ItemStack pickup = getPickupItemViaReflection(arrow);
-            return matchesFilter(pickup, filterValue);
+            return AmmoSystem.matchesFilter(pickup, filterValue);
         } catch (Exception e) {
             LOGGER.debug("Ammo filter check failed: {}", e.getMessage());
             return true;
@@ -57,13 +53,18 @@ public final class AmmoFilter {
 
     @Nullable
     private static String getAmmoFilter(ItemStack weapon) {
+        String nbtFilter = readAmmoFilterFromNbt(weapon);
+
         // 1. Check DataComponent (modern storage from RangedWeaponModule)
         try {
             if (RangedComponents.isAmmoFilterBound()) {
                 ResourceLocation tagFilter = weapon.get(
                     requireNonNull(RangedComponents.AMMO_TAG_FILTER.get()));
                 if (tagFilter != null) {
-                    return "#" + tagFilter.toString();
+                    if (nbtFilter != null && !nbtFilter.isBlank()) {
+                        return nbtFilter.trim();
+                    }
+                    return AmmoSystem.formatAmmoFilter(tagFilter);
                 }
             }
         } catch (Exception e) {
@@ -71,6 +72,11 @@ public final class AmmoFilter {
         }
 
         // 2. Fallback to NBT CustomData (legacy storage from RangedModule)
+        return nbtFilter == null ? null : nbtFilter.trim();
+    }
+
+    @Nullable
+    private static String readAmmoFilterFromNbt(ItemStack weapon) {
         var custom = weapon.getOrDefault(
             requireNonNull(DataComponents.CUSTOM_DATA),
             requireNonNull(CustomData.EMPTY));
@@ -84,12 +90,7 @@ public final class AmmoFilter {
             return null;
         }
 
-        String rawFilter = ranged.getString(NBT_AMMO_FILTER);
-        if (rawFilter == null) {
-            return null;
-        }
-
-        return rawFilter.trim();
+        return ranged.getString(NBT_AMMO_FILTER);
     }
 
     private static ItemStack getPickupItemViaReflection(AbstractArrow arrow) {
@@ -134,37 +135,8 @@ public final class AmmoFilter {
         return cachedGetPickupItemMethod;
     }
 
-    private static boolean matchesFilter(ItemStack pickup, String filterValue) {
-        if (filterValue.startsWith("#")) {
-            return matchesTag(pickup, filterValue.substring(1));
-        }
-        return matchesItemId(pickup, filterValue);
-    }
-
-    private static boolean matchesTag(ItemStack pickup, String tagIdStr) {
-        ResourceLocation tagId = ResourceLocation.tryParse(requireNonNull(tagIdStr));
-        if (tagId == null) {
-            return false;
-        }
-
-        TagKey<Item> tagKey = TagKey.create(requireNonNull(Registries.ITEM), tagId);
-        return pickup.is(requireNonNull(tagKey));
-    }
-
-    private static boolean matchesItemId(ItemStack pickup, String filterValue) {
-        if (pickup.isEmpty()) {
-            return false;
-        }
-
-        // getKey() never returns null for registered items.
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(requireNonNull(pickup.getItem()));
-        String idStr = id.toString().toLowerCase(Locale.ROOT);
-        String normFilter = filterValue.trim().toLowerCase(Locale.ROOT);
-        return idStr.equals(normFilter) || idStr.endsWith(normFilter);
-    }
-
     @Nonnull
-    private static <T> T requireNonNull(@Nullable T value) {
+    private static <T> T requireNonNull(T value) {
         return Objects.requireNonNull(value);
     }
 }

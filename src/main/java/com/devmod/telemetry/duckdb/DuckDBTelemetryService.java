@@ -102,10 +102,6 @@ public class DuckDBTelemetryService {
 
             // Ensure schema exists (connectionManager guaranteed non-null after validation)
             DuckDBConnectionManager cm = connectionManager;
-            if (cm == null) {
-                LOGGER.error("[DuckDB] Connection manager unexpectedly null");
-                return false;
-            }
             DuckDBSchemaManager.ensureSchema(cm.getConnection());
 
             // Initialize batch writer
@@ -128,7 +124,7 @@ public class DuckDBTelemetryService {
             // Consolidated init log (was 6 lines, now 2)
             LOGGER.info("[DuckDB] Initialized at {} | Mode: {} | Fallback: {}",
                 dbPath != null ? dbPath.getFileName() : "unknown",
-                DuckDBConfig.NDJSON_FALLBACK ? "dual-write" : "DuckDB-only",
+                DuckDBConfig.isNdjsonFallbackEnabled() ? "dual-write" : "DuckDB-only",
                 DuckDBConfig.FALLBACK_ON_ERROR ? "on-error" : "strict");
             return true;
 
@@ -223,9 +219,9 @@ public class DuckDBTelemetryService {
 
         // Respect FALLBACK_ON_ERROR policy
         if (DuckDBConfig.FALLBACK_ON_ERROR) {
-            if (!DuckDBConfig.NDJSON_FALLBACK) {
+            if (!DuckDBConfig.isNdjsonFallbackEnabled()) {
                 LOGGER.warn("[DuckDB] FALLBACK_ON_ERROR=true: enabling NDJSON fallback for this session");
-                DuckDBConfig.NDJSON_FALLBACK = true;
+                DuckDBConfig.enableNdjsonFallbackForSession();
             }
         } else {
             LOGGER.error("[DuckDB] FALLBACK_ON_ERROR=false: telemetry DISABLED for this session (strict mode)");

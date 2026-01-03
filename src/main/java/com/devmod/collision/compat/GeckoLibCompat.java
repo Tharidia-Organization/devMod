@@ -23,8 +23,6 @@ public final class GeckoLibCompat {
     // ==================== Detection ====================
 
     @Nullable
-    private static Boolean geckoLibPresent = null;
-    @Nullable
     private static Class<?> geoAnimatableClass = null;
     @Nullable
     private static Class<?> geoBoneClass = null;
@@ -37,13 +35,10 @@ public final class GeckoLibCompat {
      * Checks if GeckoLib is present in the classpath.
      * Result is cached after first check.
      */
+    private static final boolean GECKO_LIB_PRESENT = detectGeckoLib();
+
     public static boolean isGeckoLibPresent() {
-        if (geckoLibPresent == null) {
-            geckoLibPresent = Boolean.valueOf(detectGeckoLib());
-        }
-        // Local final helps null analyzer track the non-null state after assignment
-        final Boolean present = geckoLibPresent;
-        return present != null && present.booleanValue();
+        return GECKO_LIB_PRESENT;
     }
 
     /**
@@ -76,12 +71,12 @@ public final class GeckoLibCompat {
                 LOGGER.info("[DevMod] GeckoLib 3.x detected - OBB compatibility enabled");
                 return true;
 
-            } catch (Exception e2) {
+            } catch (ReflectiveOperationException | SecurityException e2) {
                 LOGGER.debug("[DevMod] GeckoLib not found - using standard ModelPart system only");
                 return false;
             }
 
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException | SecurityException e) {
             LOGGER.debug("[DevMod] GeckoLib detection failed: {}", e.getMessage());
             return false;
         }
@@ -157,17 +152,12 @@ public final class GeckoLibCompat {
      */
     @Nullable
     private static Object getGeoModel() {
-        try {
-            // GeckoLib 4.x: entity.getGeoModel() or through renderer
-            // This is complex because GeoModel is retrieved from GeoRenderer
-            // For now, return null - full implementation requires renderer hook
+        // GeckoLib 4.x: entity.getGeoModel() or through renderer
+        // This is complex because GeoModel is retrieved from GeoRenderer
+        // For now, return null - full implementation requires renderer hook
 
-            // In practice, we capture transforms via GeoRenderer mixin instead
-            return null;
-
-        } catch (Exception e) {
-            return null;
-        }
+        // In practice, we capture transforms via GeoRenderer mixin instead
+        return null;
     }
 
     /**
@@ -184,7 +174,7 @@ public final class GeckoLibCompat {
             }
             return null;
 
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException | RuntimeException e) {
             return null;
         }
     }
@@ -198,7 +188,7 @@ public final class GeckoLibCompat {
             Method getNameMethod = bone.getClass().getMethod("getName");
             return (String) getNameMethod.invoke(bone);
 
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException | RuntimeException e) {
             return null;
         }
     }
@@ -258,7 +248,7 @@ public final class GeckoLibCompat {
 
             return transform;
 
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException | RuntimeException e) {
             LOGGER.debug("[DevMod] Failed to extract bone transform: {}", e.getMessage());
             return null;
         }

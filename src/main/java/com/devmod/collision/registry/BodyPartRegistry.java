@@ -121,7 +121,7 @@ public final class BodyPartRegistry {
     @Nullable
     public BodyPartHierarchy unregister(EntityType<?> entityType) {
         ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
-        return key != null ? hierarchies.remove(key) : null;
+        return hierarchies.remove(key);
     }
 
     // ==================== Query API ====================
@@ -162,7 +162,7 @@ public final class BodyPartRegistry {
         ensureInitialized();
 
         ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
-        return key != null ? hierarchies.get(key) : null;
+        return hierarchies.get(key);
     }
 
     /**

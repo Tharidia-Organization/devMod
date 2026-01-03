@@ -125,19 +125,6 @@ public class VerticalLevelsVisualizer {
     }
 
     /**
-     * Imposta le room dal TelemetryService.
-     * Clears existing rooms and their labels before adding new ones.
-     */
-    public void setRoomsFromConfig(List<RoomBoundsVisualizer.RoomData> roomDataList) {
-        // Clear existing labels before changing room list to prevent stale labels
-        DebugRenderer.INSTANCE.clearLabelsByText("FLOOR", "MID", "HIGH");
-        roomZonesList.clear();
-        for (RoomBoundsVisualizer.RoomData data : roomDataList) {
-            addRoom(data.id(), data.min(), data.max());
-        }
-    }
-
-    /**
      * Render delle zone verticali
      * Performance optimizations:
      * - Only renders active rooms

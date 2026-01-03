@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponentType;
@@ -17,6 +18,7 @@ import net.minecraft.world.item.crafting.RecipeType;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.client.ui.editor.WeaponTypeDetector;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.radial.model.MacroCategory;
 import com.devmod.config.ArmorConfigManager;
 
@@ -115,7 +117,7 @@ public final class RadialMenuRegistry {
      * @return Map of macro-category to list of categories
      */
     public static Map<MacroCategory, List<RadialCategory>> createDefaultCategories(
-            Supplier<RadialMenuItem> mobEditorItemSupplier) {
+            @Nullable Supplier<RadialMenuItem> mobEditorItemSupplier) {
 
         Map<MacroCategory, List<RadialCategory>> map = new EnumMap<>(MacroCategory.class);
 
@@ -144,7 +146,7 @@ public final class RadialMenuRegistry {
         // Category 1: Debug
         RadialCategory debug = RadialCategory.builder("debug")
             .name("Debug")
-            .color(0xFF4488FF)
+            .color(DesignTokens.Radial.ANALYZE_DEBUG)
             .icon("")
             .iconStack(stack(Items.ENDER_EYE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_OVERLAY_TOGGLE))
@@ -161,7 +163,7 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.DEBUG_SCREEN_SHAKE_TEST))
             .build();
 
-        RadialCategory nativeDebug = debug.addSubcategory("native_debug", "Native Debug", 0xFF4488FF,
+        RadialCategory nativeDebug = debug.addSubcategory("native_debug", "Native Debug", DesignTokens.Radial.ANALYZE_DEBUG,
             stack(Items.DEBUG_STICK));
         nativeDebug.addItems(
             RadialMenuItem.registry(ActionIds.DEBUG_NATIVE_ENTITY_PATHING_TOGGLE),
@@ -179,18 +181,20 @@ public final class RadialMenuRegistry {
         // Category 2: Spatial
         RadialCategory spatial = RadialCategory.builder("spatial")
             .name("Spatial")
-            .color(0xFF66AAFF)
+            .color(DesignTokens.Radial.ANALYZE_SPATIAL)
             .icon("")
             .iconStack(stack(Items.STRUCTURE_BLOCK))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_ROOM_BOUNDS_RELOAD))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_ROOM_BOUNDS_CLEAR))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_ROOM_BOUNDS_GAPS_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_SAFE_SPOTS_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_SPAWNABILITY_TOGGLE))
             .build();
 
-        RadialCategory roomBounds = spatial.addSubcategory("room_bounds", "Room Bounds", 0xFF66AAFF,
+        RadialCategory roomBounds = spatial.addSubcategory("room_bounds", "Room Bounds", DesignTokens.Radial.ANALYZE_SPATIAL,
             stack(Items.STRUCTURE_BLOCK));
         roomBounds.addItems(
             RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_EDITOR_OPEN),
@@ -205,7 +209,7 @@ public final class RadialMenuRegistry {
         // Category 3: Performance
         categories.add(RadialCategory.builder("performance")
             .name("Performance")
-            .color(0xFF88CCFF)
+            .color(DesignTokens.Radial.ANALYZE_PERFORMANCE)
             .icon("")
             .iconStack(stack(Items.CLOCK))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_FPS_TRACKER_TOGGLE))
@@ -226,7 +230,7 @@ public final class RadialMenuRegistry {
         // Category 1: Telemetry Ops
         categories.add(RadialCategory.builder("telemetry_ops")
             .name("Ops")
-            .color(0xFFAADDFF)
+            .color(DesignTokens.Radial.TELEMETRY_OPS)
             .icon("")
             .iconStack(stack(Items.MAP))
             .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_START))
@@ -241,7 +245,7 @@ public final class RadialMenuRegistry {
         // Category 2: Telemetry Data
         RadialCategory telemetryData = RadialCategory.builder("telemetry_data")
             .name("Data")
-            .color(0xFFCCEEFF)
+            .color(DesignTokens.Radial.TELEMETRY_DATA)
             .icon("")
             .iconStack(stack(Items.PAPER))
             .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DUMP_WEAPONS))
@@ -257,7 +261,7 @@ public final class RadialMenuRegistry {
             .build();
 
         RadialCategory heatmapExports = telemetryData.addSubcategory("telemetry_heatmap_exports",
-            "Heatmap Exports", 0xFFCCEEFF, stack(Items.MAP));
+            "Heatmap Exports", DesignTokens.Radial.TELEMETRY_DATA, stack(Items.MAP));
         heatmapExports.addItems(
             RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_DEATH),
             RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_MOVEMENT),
@@ -275,7 +279,7 @@ public final class RadialMenuRegistry {
         // Category 3: Telemetry Scan
         categories.add(RadialCategory.builder("telemetry_scan")
             .name("Scan")
-            .color(0xFFEEFFFF)
+            .color(DesignTokens.Radial.TELEMETRY_SCAN)
             .icon("")
             .iconStack(stack(Items.SPYGLASS))
             .item(RadialMenuItem.registry(ActionIds.TELEMETRY_SCAN_LIGHT_ALL))
@@ -291,7 +295,7 @@ public final class RadialMenuRegistry {
         // Category 4: Dashboard
         categories.add(RadialCategory.builder("dashboard")
             .name("Dash")
-            .color(0xFFBBDDFF)
+            .color(DesignTokens.Radial.TELEMETRY_DASH)
             .icon("")
             .iconStack(stack(Items.WRITABLE_BOOK))
             .item(RadialMenuItem.registry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN))
@@ -310,10 +314,11 @@ public final class RadialMenuRegistry {
         // Category 1: Combat HUD
         RadialCategory combatHud = RadialCategory.builder("combat_hud")
             .name("HUD")
-            .color(0xFFFF4444)
+            .color(DesignTokens.Radial.COMBAT_ACTIONS)
             .icon("")
             .iconStack(stack(Items.DIAMOND_SWORD))
             .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_3D_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE))
             .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_SHOW_RECAP))
@@ -326,7 +331,7 @@ public final class RadialMenuRegistry {
             .build();
 
         // Impact HUD Presets subcategory
-        RadialCategory impactPresets = combatHud.addSubcategory("impact_presets", "Impact Presets", 0xFFFF6666,
+        RadialCategory impactPresets = combatHud.addSubcategory("impact_presets", "Impact Presets", DesignTokens.Radial.COMBAT_DEBUG,
             stack(Items.COMPARATOR));
         impactPresets.addItems(
             RadialMenuItem.registry(ActionIds.HUD_IMPACT_PRESET_MINIMAL),
@@ -339,7 +344,7 @@ public final class RadialMenuRegistry {
         // Category 2: Heatmaps
         RadialCategory heatmaps = RadialCategory.builder("heatmaps")
             .name("Heatmaps")
-            .color(0xFFFF8888)
+            .color(DesignTokens.Radial.COMBAT_DAMAGE)
             .icon("")
             .iconStack(stack(Items.BLAZE_POWDER))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_CYCLE))
@@ -348,7 +353,7 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_CLEAR_ALL))
             .build();
 
-        RadialCategory heatmapTypes = heatmaps.addSubcategory("heatmap_types", "Heatmap Types", 0xFFFF8888,
+        RadialCategory heatmapTypes = heatmaps.addSubcategory("heatmap_types", "Heatmap Types", DesignTokens.Radial.COMBAT_DAMAGE,
             stack(Items.FILLED_MAP));
         heatmapTypes.addItems(
             RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE),
@@ -366,7 +371,7 @@ public final class RadialMenuRegistry {
         // Category 3: Abilities
         categories.add(RadialCategory.builder("abilities")
             .name("Abilities")
-            .color(0xFFFFAAAA)
+            .color(DesignTokens.Radial.COMBAT_WEAPON)
             .icon("")
             .iconStack(stack(Items.FEATHER))
             .item(RadialMenuItem.registry(ActionIds.ABILITY_DASH))
@@ -386,7 +391,7 @@ public final class RadialMenuRegistry {
         // Category 1: Arena Ops
         categories.add(RadialCategory.builder("arena_ops")
             .name("Ops")
-            .color(0xFF44FF88)
+            .color(DesignTokens.Radial.ARENA_MANAGE)
             .icon("")
             .iconStack(stack(Items.COMMAND_BLOCK))
             .item(RadialMenuItem.registry(ActionIds.ARENA_HELP))
@@ -398,7 +403,7 @@ public final class RadialMenuRegistry {
         // Category 2: Arena Templates
         categories.add(RadialCategory.builder("arena_templates")
             .name("Templates")
-            .color(0xFF66FFAA)
+            .color(DesignTokens.Radial.ARENA_TEMPLATES)
             .icon("")
             .iconStack(stack(Items.MAP))
             .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_LIST))
@@ -412,7 +417,7 @@ public final class RadialMenuRegistry {
         // Category 3: Arena Force
         categories.add(RadialCategory.builder("arena_force")
             .name("Force")
-            .color(0xFF88FFCC)
+            .color(DesignTokens.Radial.ARENA_SPAWNING)
             .icon("")
             .iconStack(stack(Items.NAME_TAG))
             .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE))
@@ -423,7 +428,7 @@ public final class RadialMenuRegistry {
         // Category 4: Arena Autosmoke
         categories.add(RadialCategory.builder("arena_autosmoke")
             .name("Autosmoke")
-            .color(0xFFAAFFDD)
+            .color(DesignTokens.Radial.ARENA_HAZARDS)
             .icon("")
             .iconStack(stack(Items.CAMPFIRE))
             .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_RUN))
@@ -434,7 +439,7 @@ public final class RadialMenuRegistry {
         // Category 5: Arena HUD
         categories.add(RadialCategory.builder("arena_hud")
             .name("HUD")
-            .color(0xFFCCFFEE)
+            .color(DesignTokens.Radial.ARENA_REWARDS)
             .icon("")
             .iconStack(stack(Items.REDSTONE_TORCH))
             .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_TOGGLE))
@@ -449,13 +454,13 @@ public final class RadialMenuRegistry {
     // ================================================================
 
     private static void buildToolsCategories(Map<MacroCategory, List<RadialCategory>> map,
-            Supplier<RadialMenuItem> mobEditorItemSupplier) {
+            @Nullable Supplier<RadialMenuItem> mobEditorItemSupplier) {
         List<RadialCategory> categories = requireCategories(map, MacroCategory.TOOLS);
 
         // Category 1: Settings
         RadialCategory settings = RadialCategory.builder("settings")
             .name("Settings")
-            .color(0xFFFFAA00)
+            .color(DesignTokens.Radial.TOOLS_PRIMARY)
             .icon("")
             .iconStack(stack(Items.COMPARATOR))
             .item(RadialMenuItem.registry(ActionIds.UI_SETTINGS_OPEN))
@@ -466,14 +471,14 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.UI_ONBOARDING_SKIP))
             .build();
 
-        RadialCategory hudConfig = settings.addSubcategory("config_hud", "HUD Config", 0xFFFFAA00,
+        RadialCategory hudConfig = settings.addSubcategory("config_hud", "HUD Config", DesignTokens.Radial.TOOLS_PRIMARY,
             stack(Items.ITEM_FRAME));
         hudConfig.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_HISTORY_TOGGLE),
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_DPS_TOGGLE)
         );
 
-        RadialCategory hudPosition = hudConfig.addSubcategory("hud_position", "Position", 0xFFFFAA00,
+        RadialCategory hudPosition = hudConfig.addSubcategory("hud_position", "Position", DesignTokens.Radial.TOOLS_PRIMARY,
             stack(Items.COMPASS));
         hudPosition.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_POSITION_TOP_LEFT),
@@ -484,7 +489,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_POSITION_BOTTOM_RIGHT)
         );
 
-        RadialCategory hudOffset = hudConfig.addSubcategory("hud_offset", "Offset", 0xFFFFAA00,
+        RadialCategory hudOffset = hudConfig.addSubcategory("hud_offset", "Offset", DesignTokens.Radial.TOOLS_PRIMARY,
             stack(Items.ARROW));
         hudOffset.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_OFFSET_X_MINUS),
@@ -493,7 +498,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_OFFSET_Y_PLUS)
         );
 
-        RadialCategory hudPresets = hudConfig.addSubcategory("hud_presets", "Presets", 0xFFFFAA00,
+        RadialCategory hudPresets = hudConfig.addSubcategory("hud_presets", "Presets", DesignTokens.Radial.TOOLS_PRIMARY,
             stack(Items.WRITABLE_BOOK));
         hudPresets.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_PRESET_EXPORT),
@@ -501,9 +506,9 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_RESET_DEFAULTS)
         );
 
-        RadialCategory effectsConfig = settings.addSubcategory("config_effects", "Effects", 0xFFFFAA00,
+        RadialCategory effectsConfig = settings.addSubcategory("config_effects", "Effects", DesignTokens.Radial.TOOLS_PRIMARY,
             stack(Items.BLAZE_POWDER));
-        RadialCategory impactVfx = effectsConfig.addSubcategory("impact_vfx", "Impact VFX", 0xFFFFAA00,
+        RadialCategory impactVfx = effectsConfig.addSubcategory("impact_vfx", "Impact VFX", DesignTokens.Radial.TOOLS_PRIMARY,
             stack(Items.BLAZE_POWDER));
         impactVfx.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_TOGGLE),
@@ -513,7 +518,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_RESET_DEFAULTS)
         );
 
-        RadialCategory vfxIntensity = impactVfx.addSubcategory("impact_vfx_intensity", "Intensity", 0xFFFFAA00,
+        RadialCategory vfxIntensity = impactVfx.addSubcategory("impact_vfx_intensity", "Intensity", DesignTokens.Radial.TOOLS_PRIMARY,
             stack(Items.GLOWSTONE_DUST));
         vfxIntensity.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_LOW),
@@ -528,7 +533,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_BADGE_POPUPS_TOGGLE)
         );
 
-        RadialCategory telemetryConfig = settings.addSubcategory("config_telemetry", "Telemetry Config", 0xFFFFAA00,
+        RadialCategory telemetryConfig = settings.addSubcategory("config_telemetry", "Telemetry Config", DesignTokens.Radial.TOOLS_PRIMARY,
             stack(Items.MAP));
         telemetryConfig.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_TELEMETRY_TOGGLE),
@@ -537,14 +542,14 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_TELEMETRY_SPAWNS_TOGGLE)
         );
 
-        RadialCategory combatConfig = settings.addSubcategory("config_combat", "Combat Config", 0xFFFFAA00,
+        RadialCategory combatConfig = settings.addSubcategory("config_combat", "Combat Config", DesignTokens.Radial.TOOLS_PRIMARY,
             stack(Items.TARGET));
         combatConfig.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_BODY_PART_DETECTION_TOGGLE)
         );
 
         // Game Design Config subcategory
-        RadialCategory gameDesign = settings.addSubcategory("config_gamedesign", "Game Design", 0xFFAA55FF,
+        RadialCategory gameDesign = settings.addSubcategory("config_gamedesign", "Game Design", DesignTokens.Radial.TOOLS_GAMEDESIGN,
             stack(Items.ENDER_CHEST));
         gameDesign.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_RELOAD),
@@ -552,7 +557,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_RESET)
         );
 
-        RadialCategory gameDesignSystems = gameDesign.addSubcategory("gamedesign_systems", "Systems", 0xFFAA55FF,
+        RadialCategory gameDesignSystems = gameDesign.addSubcategory("gamedesign_systems", "Systems", DesignTokens.Radial.TOOLS_GAMEDESIGN,
             stack(Items.REDSTONE));
         gameDesignSystems.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_RESONANCE_TOGGLE),
@@ -562,7 +567,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_TIDE_TOGGLE)
         );
 
-        RadialCategory gameDesignPresets = gameDesign.addSubcategory("gamedesign_presets", "Presets", 0xFFAA55FF,
+        RadialCategory gameDesignPresets = gameDesign.addSubcategory("gamedesign_presets", "Presets", DesignTokens.Radial.TOOLS_GAMEDESIGN,
             stack(Items.ENCHANTED_BOOK));
         gameDesignPresets.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_PRESET_EASY),
@@ -577,7 +582,7 @@ public final class RadialMenuRegistry {
         // Category 2: Testing
         RadialCategory testing = RadialCategory.builder("testing")
             .name("Testing")
-            .color(0xFFFFCC66)
+            .color(DesignTokens.Radial.TOOLS_EDITOR)
             .icon("")
             .iconStack(stack(Items.BREWING_STAND))
             .item(RadialMenuItem.registry(ActionIds.UI_TESTING_HUB_OPEN))
@@ -588,7 +593,7 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.UI_VOXELLAB_UI_TESTS_OPEN))
             .build();
 
-        RadialCategory hudTests = testing.addSubcategory("testing_hud", "HUD", 0xFFFFCC66,
+        RadialCategory hudTests = testing.addSubcategory("testing_hud", "HUD", DesignTokens.Radial.TOOLS_EDITOR,
             stack(Items.ITEM_FRAME));
         hudTests.addItems(
             RadialMenuItem.registry(ActionIds.TEST_HUD_ON),
@@ -598,7 +603,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.TEST_HUD_IMPORT)
         );
 
-        RadialCategory panelTests = testing.addSubcategory("testing_panels", "Panels", 0xFFFFCC66,
+        RadialCategory panelTests = testing.addSubcategory("testing_panels", "Panels", DesignTokens.Radial.TOOLS_EDITOR,
             stack(Items.GLASS_PANE));
         panelTests.addItems(
             RadialMenuItem.registry(ActionIds.TEST_PANEL_ON),
@@ -607,7 +612,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.TEST_PANELCLEAR)
         );
 
-        RadialCategory debugTests = testing.addSubcategory("testing_debug", "Debug", 0xFFFFCC66,
+        RadialCategory debugTests = testing.addSubcategory("testing_debug", "Debug", DesignTokens.Radial.TOOLS_EDITOR,
             stack(Items.REDSTONE));
         debugTests.addItems(
             RadialMenuItem.registry(ActionIds.TEST_DEBUG_ON),
@@ -617,7 +622,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.TEST_DEBUGCLEAR)
         );
 
-        RadialCategory enduranceTests = testing.addSubcategory("testing_endurance", "Endurance", 0xFFFFCC66,
+        RadialCategory enduranceTests = testing.addSubcategory("testing_endurance", "Endurance", DesignTokens.Radial.TOOLS_EDITOR,
             stack(Items.TOTEM_OF_UNDYING));
         enduranceTests.addItems(
             RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_STATS),
@@ -628,7 +633,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_AUTOSMOKE)
         );
 
-        RadialCategory miscTests = testing.addSubcategory("testing_misc", "Misc", 0xFFFFCC66,
+        RadialCategory miscTests = testing.addSubcategory("testing_misc", "Misc", DesignTokens.Radial.TOOLS_EDITOR,
             stack(Items.BOOK));
         miscTests.addItems(
             RadialMenuItem.registry(ActionIds.TEST_INFO),
@@ -636,7 +641,7 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.TEST_QA_OPEN)
         );
 
-        RadialCategory qaTests = testing.addSubcategory("testing_qa", "QA", 0xFFFFCC66,
+        RadialCategory qaTests = testing.addSubcategory("testing_qa", "QA", DesignTokens.Radial.TOOLS_EDITOR,
             stack(Items.NOTE_BLOCK));
         qaTests.addItems(
             RadialMenuItem.registry(ActionIds.QA_SESSION_START),
@@ -654,7 +659,7 @@ public final class RadialMenuRegistry {
         // Category 3: Mob Editor
         RadialCategory.Builder mobEditorBuilder = RadialCategory.builder("mobeditor")
             .name("Mob Edit")
-            .color(0xFFFFDD99)
+            .color(DesignTokens.Radial.TOOLS_SECONDARY)
             .icon("")
             .iconStack(stack(Items.LEAD));
         if (mobEditorItemSupplier != null) {
@@ -676,7 +681,7 @@ public final class RadialMenuRegistry {
             .setVisibilitySupplier(() -> isArmorItem(getHeldItem()));
 
         RadialMenuItem shieldEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_SHIELD)
-            .setCustomColor(0xFFDDDDDD)
+            .setCustomColor(DesignTokens.Radial.COMBAT_SHIELD)
             .setVisibilitySupplier(() -> isShieldItem(getHeldItem()));
 
         RadialMenuItem generalEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_GENERAL)
@@ -695,7 +700,7 @@ public final class RadialMenuRegistry {
 
         categories.add(RadialCategory.builder("itemeditors")
             .name("Items")
-            .color(0xFFFFEECC)
+            .color(DesignTokens.Radial.TOOLS_UTILITY)
             .icon("")
             .iconStack(stack(Items.DIAMOND_SWORD))
             .item(autoEditor)
@@ -712,7 +717,7 @@ public final class RadialMenuRegistry {
         // Category 5: Commands
         categories.add(RadialCategory.builder("commands")
             .name("Commands")
-            .color(0xFFFFFFEE)
+            .color(DesignTokens.Radial.TOOLS_COMMANDS)
             .icon("")
             .iconStack(stack(Items.COMMAND_BLOCK))
             .item(RadialMenuItem.registry(ActionIds.COMMAND_GAMEMODE_CREATIVE))
@@ -734,7 +739,7 @@ public final class RadialMenuRegistry {
         // Category 1: Endurance
         categories.add(RadialCategory.builder("endurance_core")
             .name("Endurance")
-            .color(0xFFFFCCCC)
+            .color(DesignTokens.Radial.PLAY_PARTY)
             .icon("")
             .iconStack(stack(Items.TOTEM_OF_UNDYING))
             .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SCREEN_OPEN))
@@ -748,7 +753,7 @@ public final class RadialMenuRegistry {
         // Category 2: Quests
         categories.add(RadialCategory.builder("quest_tools")
             .name("Quests")
-            .color(0xFFFFFFFF)
+            .color(DesignTokens.Radial.PLAY_SOCIAL)
             .icon("")
             .iconStack(stack(Items.FEATHER))
             .item(RadialMenuItem.registry(ActionIds.UI_QUEST_EDITOR_OPEN))
@@ -763,7 +768,7 @@ public final class RadialMenuRegistry {
         // Category 3: Endurance HUD
         categories.add(RadialCategory.builder("endurance_hud")
             .name("HUD")
-            .color(0xFFFFEEEE)
+            .color(DesignTokens.Radial.PLAY_QUESTS)
             .icon("")
             .iconStack(stack(Items.MAP))
             .item(RadialMenuItem.registry(ActionIds.HUD_ENDURANCE_TOGGLE))
@@ -774,9 +779,10 @@ public final class RadialMenuRegistry {
         // Category 4: Party
         categories.add(RadialCategory.builder("party")
             .name("Party")
-            .color(0xFFEEFFFF)
+            .color(DesignTokens.Radial.PLAY_COMMS)
             .icon("")
             .iconStack(stack(Items.PLAYER_HEAD))
+            .item(RadialMenuItem.registry(ActionIds.HUD_PARTY_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.UI_PARTY_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_PARTY_INVITE_POPUP_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_NOTIFICATION_CENTER_OPEN))

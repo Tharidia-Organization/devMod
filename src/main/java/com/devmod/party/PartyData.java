@@ -284,15 +284,28 @@ public class PartyData {
      * @return Number of expired invites removed
      */
     public int cleanupExpiredInvites() {
+        return cleanupExpiredInvites(System.currentTimeMillis()).expiredCount();
+    }
+
+    static record InviteCleanupResult(int expiredCount, long nextExpiryAt) {}
+
+    InviteCleanupResult cleanupExpiredInvites(long nowMillis) {
         List<UUID> expired = new ArrayList<>();
+        long nextExpiry = Long.MAX_VALUE;
         for (Map.Entry<UUID, PartyInvite> entry : pendingInvites.entrySet()) {
-            if (entry.getValue().isExpired()) {
-                entry.getValue().markExpired();
+            PartyInvite invite = entry.getValue();
+            if (invite.isExpiredAt(nowMillis)) {
+                invite.markExpired();
                 expired.add(entry.getKey());
+            } else {
+                long expiresAt = invite.getExpiresAt();
+                if (expiresAt < nextExpiry) {
+                    nextExpiry = expiresAt;
+                }
             }
         }
         expired.forEach(pendingInvites::remove);
-        return expired.size();
+        return new InviteCleanupResult(expired.size(), nextExpiry);
     }
 
     // === Leadership ===

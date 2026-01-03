@@ -135,12 +135,12 @@ public class MailboxManager {
         MailboxRepository repo = repository;
         return repo.initialize().thenRun(() -> {
             com.devmod.mailbox.moderation.AdminAuditLog.INSTANCE.initialize(repo);
-            NewsManager.INSTANCE.initialize(repo);
+            NewsManager.getInstance().initialize(repo);
             com.devmod.mailbox.task.TestTaskManager.INSTANCE.initialize(repo);
 
             // Initialize and start the news purge job
-            NewsPurgeJob.INSTANCE.initialize(repo);
-            NewsPurgeJob.INSTANCE.start();
+            NewsPurgeJob.getInstance().initialize(repo);
+            NewsPurgeJob.getInstance().start();
 
             // Start broadcast queue worker
             BroadcastQueueWorker.INSTANCE.start();
@@ -223,10 +223,10 @@ public class MailboxManager {
             scheduler.shutdown();
         }
 
-        NewsManager.INSTANCE.shutdown();
+        NewsManager.getInstance().shutdown();
         com.devmod.mailbox.task.TestTaskManager.INSTANCE.shutdown();
         com.devmod.mailbox.moderation.AdminAuditLog.INSTANCE.shutdown();
-        NewsPurgeJob.INSTANCE.shutdown();
+        NewsPurgeJob.getInstance().shutdown();
         BroadcastQueueWorker.INSTANCE.stop();
         MailboxAnalyticsEngine.INSTANCE.stop();
         MessageScheduler.INSTANCE.stop();
@@ -1584,11 +1584,7 @@ public class MailboxManager {
         net.minecraft.server.MinecraftServer server = sender.server;
         CompletableFuture<AttachmentReservation> future = new CompletableFuture<>();
         Runnable task = () -> future.complete(reserveAttachmentsNow(sender, attachments));
-        if (server != null) {
-            server.execute(task);
-        } else {
-            task.run();
-        }
+        server.execute(task);
         return future;
     }
 
@@ -1741,11 +1737,7 @@ public class MailboxManager {
                 RewardSystem.INSTANCE.savePlayerWallet(wallet);
             }
         };
-        if (server != null) {
-            server.execute(task);
-        } else {
-            task.run();
-        }
+        server.execute(task);
     }
 
     // ============================================================================

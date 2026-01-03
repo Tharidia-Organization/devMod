@@ -363,7 +363,7 @@ public class ArenaCommands {
 
         InstanceOnlyGate gate = resolveInstanceGate();
         ResourceKey<Level> dimensionKey = resolveDimensionKey(src);
-        String dimensionLabel = dimensionKey != null ? dimensionKey.location().toString() : "unknown";
+        String dimensionLabel = dimensionKey.location().toString();
         if (gate != null) {
             String gateCaller = getClass().getName();
             var gateResult = gate.checkDimensionKey(dimensionKey, gateCaller);

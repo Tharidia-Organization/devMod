@@ -3,6 +3,8 @@ package com.devmod.client.overlay;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.DeltaTracker;
@@ -16,10 +18,13 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.compat.mods.epicfight.ClientEpicFightCache;
 import com.devmod.client.endurance.ClientCombatFlowCache;
 import com.devmod.client.endurance.ClientCombatFlowCache.ActionAnnouncement;
 import com.devmod.client.notification.NotificationSoundManager;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
+import com.devmod.compat.mods.epicfight.EpicFightCompat;
 import com.devmod.endurance.ComboSystem.StyleRank;
 import com.devmod.endurance.FlowStateTracker.FlowState;
 import com.devmod.endurance.MomentumTracker.MomentumState;
@@ -57,6 +62,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
     private static final int MARGIN = 10;
     private static final int PANEL_WIDTH = 180;
     private static final int PANEL_HEIGHT = 120;
+    private static final int PANEL_HEIGHT_WITH_EPICFIGHT = 170; // Extra height for Epic Fight widget
 
     // Visual constants - using OverlayTheme for consistency
     private static final int BG_COLOR = OverlayTheme.Panel.BG_STANDARD;
@@ -68,7 +74,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
     private CombatFlowHudOverlay() {}
 
     @Override
-    public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull DeltaTracker deltaTracker) {
         ClientCombatFlowCache cache = ClientCombatFlowCache.INSTANCE;
 
         // Play sounds for state changes BEFORE tickAnimations resets flags
@@ -90,18 +96,20 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
             return;
         }
 
-        Font font = mc.font;
+        Font font = Objects.requireNonNull(mc.font, "Font cannot be null");
         int screenHeight = graphics.guiHeight();
 
         // Panel position (bottom-left)
+        boolean epicFightActive = ClientEpicFightCache.INSTANCE.isActive();
+        int panelHeight = epicFightActive ? PANEL_HEIGHT_WITH_EPICFIGHT : PANEL_HEIGHT;
         int x = MARGIN;
-        int y = screenHeight - PANEL_HEIGHT - MARGIN - 60; // Above hotbar
+        int y = screenHeight - panelHeight - MARGIN - 60; // Above hotbar
 
         PoseStack pose = graphics.pose();
         pose.pushPose();
 
         // === BACKGROUND ===
-        renderBackground(graphics, x, y);
+        renderBackground(graphics, x, y, panelHeight);
 
         // === COMBO COUNTER ===
         renderComboCounter(graphics, font, cache, x, y);
@@ -115,24 +123,29 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         // === MOMENTUM METER ===
         renderMomentumMeter(graphics, font, cache, x, y + 78);
 
+        // === EPIC FIGHT INTEGRATION (if active) ===
+        if (epicFightActive) {
+            renderEpicFightSection(graphics, font, x, y + 100);
+        }
+
         // === ACTION ANNOUNCEMENTS ===
         renderAnnouncements(graphics, font, cache, x + PANEL_WIDTH + 10, y);
 
         pose.popPose();
     }
 
-    private void renderBackground(GuiGraphics graphics, int x, int y) {
+    private void renderBackground(@Nonnull GuiGraphics graphics, int x, int y, int panelHeight) {
         // Semi-transparent dark background
-        graphics.fill(x, y, x + PANEL_WIDTH, y + PANEL_HEIGHT, BG_COLOR);
+        graphics.fill(x, y, x + PANEL_WIDTH, y + panelHeight, BG_COLOR);
 
         // Border
         graphics.fill(x, y, x + PANEL_WIDTH, y + 1, BORDER_COLOR);
-        graphics.fill(x, y + PANEL_HEIGHT - 1, x + PANEL_WIDTH, y + PANEL_HEIGHT, BORDER_COLOR);
-        graphics.fill(x, y, x + 1, y + PANEL_HEIGHT, BORDER_COLOR);
-        graphics.fill(x + PANEL_WIDTH - 1, y, x + PANEL_WIDTH, y + PANEL_HEIGHT, BORDER_COLOR);
+        graphics.fill(x, y + panelHeight - 1, x + PANEL_WIDTH, y + panelHeight, BORDER_COLOR);
+        graphics.fill(x, y, x + 1, y + panelHeight, BORDER_COLOR);
+        graphics.fill(x + PANEL_WIDTH - 1, y, x + PANEL_WIDTH, y + panelHeight, BORDER_COLOR);
     }
 
-    private void renderComboCounter(GuiGraphics graphics, Font font, ClientCombatFlowCache cache, int x, int y) {
+    private void renderComboCounter(@Nonnull GuiGraphics graphics, @Nonnull Font font, @Nonnull ClientCombatFlowCache cache, int x, int y) {
         int combo = cache.getCombo();
         float scale = cache.getComboScale();
         StyleRank rank = cache.getStyleRank();
@@ -141,7 +154,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         pose.pushPose();
 
         // Center the combo number
-        String comboText = String.valueOf(combo);
+        String comboText = Objects.requireNonNull(String.valueOf(combo));
         int textWidth = font.width(comboText);
 
         // Scale animation
@@ -152,43 +165,45 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         pose.translate(-textWidth / 2f, -font.lineHeight / 2f, 0);
 
         // Combo number with rank color
-        int color = combo > 0 ? rank.color : 0x666666;
-        graphics.drawString(font, comboText, 0, 0, color | 0xFF000000, true);
+        int color = combo > 0
+            ? OverlayTheme.withAlpha(rank.color, DesignTokens.Alpha.A100)
+            : OverlayTheme.Neutral.N650;
+        graphics.drawString(font, comboText, 0, 0, color, true);
 
         pose.popPose();
 
         // "HITS" label
         if (combo > 0) {
             String hitsLabel = "HITS";
-            graphics.drawString(font, hitsLabel, x + 70, y + 12, 0xFFAAAAAA, false);
+            graphics.drawString(font, hitsLabel, x + 70, y + 12, OverlayTheme.Text.MUTED, false);
 
             // Max combo indicator
             if (cache.getMaxCombo() > combo) {
                 String maxLabel = "MAX: " + cache.getMaxCombo();
-                graphics.drawString(font, maxLabel, x + 70, y + 22, 0xFF666666, false);
+                graphics.drawString(font, maxLabel, x + 70, y + 22, OverlayTheme.Neutral.N650, false);
             }
         }
     }
 
-    private void renderStyleRank(GuiGraphics graphics, Font font, ClientCombatFlowCache cache, int x, int y) {
+    private void renderStyleRank(@Nonnull GuiGraphics graphics, @Nonnull Font font, @Nonnull ClientCombatFlowCache cache, int x, int y) {
         StyleRank rank = cache.getStyleRank();
         float progress = cache.getRankProgress();
         float flashAlpha = cache.getRankFlashAlpha();
 
         // Rank letter/name
         String rankText = rank.name();
-        int rankColor = rank.color | 0xFF000000;
+        int rankColor = OverlayTheme.withAlpha(rank.color, DesignTokens.Alpha.A100);
 
         // Flash effect on rank up
         if (flashAlpha > 0) {
-            int flashColor = blendColor(rankColor, 0xFFFFFFFF, flashAlpha);
+            int flashColor = blendColor(rankColor, OverlayTheme.Utility.WHITE, flashAlpha);
             graphics.drawString(font, rankText, x + 6, y, flashColor, true);
         } else {
             graphics.drawString(font, rankText, x + 6, y, rankColor, true);
         }
 
         // Rank name
-        graphics.drawString(font, rank.displayName, x + 30, y, 0xFFCCCCCC, false);
+        graphics.drawString(font, rank.displayName, x + 30, y, OverlayTheme.Neutral.N450, false);
 
         // Progress bar to next rank
         int barX = x + 6;
@@ -197,7 +212,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         int barHeight = 4;
 
         // Background
-        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF222222);
+        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, OverlayTheme.Neutral.N840);
 
         // Progress fill
         int fillWidth = (int) (barWidth * progress);
@@ -208,12 +223,12 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         // Glow effect when close to rank up
         if (progress > 0.8f) {
             float glow = (float) Math.sin(animationTick * 0.3) * 0.3f + 0.7f;
-            int glowColor = blendColor(rankColor, 0xFFFFFFFF, glow * (progress - 0.8f) * 5f);
+            int glowColor = blendColor(rankColor, OverlayTheme.Utility.WHITE, glow * (progress - 0.8f) * 5f);
             graphics.fill(barX + fillWidth - 2, barY, barX + fillWidth, barY + barHeight, glowColor);
         }
     }
 
-    private void renderFlowState(GuiGraphics graphics, Font font, ClientCombatFlowCache cache, int x, int y) {
+    private void renderFlowState(@Nonnull GuiGraphics graphics, @Nonnull Font font, @Nonnull ClientCombatFlowCache cache, int x, int y) {
         FlowState flow = cache.getFlowState();
 
         // Only show non-neutral states
@@ -222,26 +237,26 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
             float virtuosoProgress = cache.getVirtuosoProgress();
             if (virtuosoProgress > 0) {
                 String label = "Variety: " + (int)(virtuosoProgress * 100) + "%";
-                int color = virtuosoProgress >= 1.0f ? 0xFFFFAA00 : 0xFF888888;
+                int color = virtuosoProgress >= 1.0f ? OverlayTheme.Momentum.HEATED : OverlayTheme.Text.HINT;
                 graphics.drawString(font, label, x + 6, y, color, false);
             }
             return;
         }
 
         // Flow state indicator
-        int color = flow.color | 0xFF000000;
+        int color = OverlayTheme.withAlpha(flow.color, DesignTokens.Alpha.A100);
         String text = flow.displayName;
 
         // Pulsing effect for STALE (warning)
         if (flow == FlowState.STALE) {
             float pulse = (float) Math.sin(animationTick * 0.5) * 0.3f + 0.7f;
-            color = blendColor(color, 0xFFFF0000, pulse);
+            color = blendColor(color, OverlayTheme.Momentum.STAGNANT, pulse);
         }
 
         // Rainbow-ish effect for VIRTUOSO
         if (cache.getVirtuosoProgress() >= 1.0f) {
             float hue = (animationTick * 0.02f) % 1.0f;
-            color = hsvToRgb(hue, 0.8f, 1.0f) | 0xFF000000;
+            color = hsvToRgb(hue, 0.8f, 1.0f);
             text = "★ VIRTUOSO ★";
         }
 
@@ -255,26 +270,26 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
             int barWidth = 80;
             int barHeight = 6;
 
-            graphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF222222);
+            graphics.fill(barX, barY, barX + barWidth, barY + barHeight, OverlayTheme.Neutral.N840);
             int riskWidth = (int) (barWidth * staleRisk);
-            int riskColor = staleRisk > 0.7f ? 0xFFFF4444 : 0xFFFFAA00;
+            int riskColor = staleRisk > 0.7f ? OverlayTheme.Momentum.STAGNANT : OverlayTheme.Momentum.HEATED;
             graphics.fill(barX, barY, barX + riskWidth, barY + barHeight, riskColor);
         }
     }
 
-    private void renderMomentumMeter(GuiGraphics graphics, Font font, ClientCombatFlowCache cache, int x, int y) {
+    private void renderMomentumMeter(@Nonnull GuiGraphics graphics, @Nonnull Font font, @Nonnull ClientCombatFlowCache cache, int x, int y) {
         MomentumState state = cache.getMomentumState();
         float momentum = cache.getMomentumPercent();
         boolean overdrive = cache.isInOverdrive();
 
         // Label
         String label = overdrive ? "OVERDRIVE" : "Momentum";
-        int labelColor = state.color | 0xFF000000;
+        int labelColor = OverlayTheme.withAlpha(state.color, DesignTokens.Alpha.A100);
 
         if (overdrive) {
             // Pulsing overdrive text
             float pulse = cache.getMomentumPulse();
-            labelColor = blendColor(0xFFFF00FF, 0xFFFFFFFF, pulse);
+            labelColor = blendColor(OverlayTheme.Momentum.OVERDRIVE, OverlayTheme.Utility.WHITE, pulse);
         }
 
         graphics.drawString(font, label, x + 6, y, labelColor, true);
@@ -286,24 +301,24 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         int barHeight = 8;
 
         // Background
-        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF111111);
+        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, OverlayTheme.Neutral.N920);
 
         // Fill
         int fillWidth = (int) (barWidth * (momentum / 100f));
-        int fillColor = state.color | 0xFF000000;
+        int fillColor = OverlayTheme.withAlpha(state.color, DesignTokens.Alpha.A100);
 
         if (overdrive) {
             // Animated rainbow fill during overdrive
             float pulse = cache.getMomentumPulse();
             float hue = (animationTick * 0.03f) % 1.0f;
-            fillColor = hsvToRgb(hue, 0.9f, 1.0f) | 0xFF000000;
+            fillColor = hsvToRgb(hue, 0.9f, 1.0f);
 
             // Full bar during overdrive
             fillWidth = barWidth;
 
             // Pulsing glow
             graphics.fill(barX - 1, barY - 1, barX + barWidth + 1, barY + barHeight + 1,
-                blendColor(fillColor, 0x00000000, 0.5f - pulse * 0.3f));
+                blendColor(fillColor, DesignTokens.Mask.NONE, 0.5f - pulse * 0.3f));
         }
 
         graphics.fill(barX, barY, barX + fillWidth, barY + barHeight, fillColor);
@@ -311,23 +326,165 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         // Overdrive countdown
         if (overdrive) {
             long remaining = cache.getOverdriveRemainingMs();
-            String countdown = String.format("%.1fs", remaining / 1000f);
+            String countdown = Objects.requireNonNull(String.format("%.1fs", remaining / 1000f));
             int countdownX = x + PANEL_WIDTH - font.width(countdown) - 6;
-            graphics.drawString(font, countdown, countdownX, y, 0xFFFFFFFF, true);
+            graphics.drawString(font, countdown, countdownX, y, OverlayTheme.Text.PRIMARY, true);
         }
 
         // Threshold markers
-        renderThresholdMarker(graphics, barX, barY, barWidth, barHeight, 0.75f, 0xFF666666); // Heated
-        renderThresholdMarker(graphics, barX, barY, barWidth, barHeight, 1.0f, 0xFFFF00FF);  // Overdrive
+        renderThresholdMarker(graphics, barX, barY, barWidth, barHeight, 0.75f, OverlayTheme.Neutral.N650); // Heated
+        renderThresholdMarker(graphics, barX, barY, barWidth, barHeight, 1.0f, OverlayTheme.Momentum.OVERDRIVE); // Overdrive
     }
 
-    private void renderThresholdMarker(GuiGraphics graphics, int barX, int barY, int barWidth, int barHeight,
+    private void renderThresholdMarker(@Nonnull GuiGraphics graphics, int barX, int barY, int barWidth, int barHeight,
                                         float threshold, int color) {
         int markerX = barX + (int)(barWidth * threshold);
         graphics.fill(markerX - 1, barY - 1, markerX + 1, barY + barHeight + 1, color);
     }
 
-    private void renderAnnouncements(GuiGraphics graphics, Font font, ClientCombatFlowCache cache, int x, int y) {
+    /**
+     * Renders the Epic Fight integration section (stamina, guard/parry indicators).
+     * Only rendered when Epic Fight is installed and player is in battle mode.
+     */
+    private void renderEpicFightSection(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y) {
+        ClientEpicFightCache cache = ClientEpicFightCache.INSTANCE;
+
+        // === HEADER ===
+        String header = "EPIC FIGHT";
+        graphics.drawString(font, header, x + 6, y, OverlayTheme.EpicFight.HEADER, true);
+
+        // === GUARD/PARRY INDICATOR ===
+        if (cache.isGuarding()) {
+            String guardText = cache.isPerfectParry() ? "PERFECT!" : "[GUARD]";
+            int guardColor;
+
+            if (cache.isPerfectParry()) {
+                // Pulsing blend between PERFECT_PARRY and PERFECT_PARRY_SECONDARY
+                float blend = (float) (Math.sin(animationTick * 0.15) * 0.5 + 0.5);
+                guardColor = blendColor(
+                    OverlayTheme.EpicFight.PERFECT_PARRY,
+                    OverlayTheme.EpicFight.PERFECT_PARRY_SECONDARY,
+                    blend);
+
+                // Scale effect
+                PoseStack pose = graphics.pose();
+                pose.pushPose();
+                float scale = cache.getPerfectParryScale();
+                int textWidth = font.width(guardText);
+                int textX = x + PANEL_WIDTH - textWidth - 6;
+                pose.translate(textX + textWidth / 2f, y + font.lineHeight / 2f, 0);
+                pose.scale(scale, scale, 1.0f);
+                pose.translate(-(textX + textWidth / 2f), -(y + font.lineHeight / 2f), 0);
+                graphics.drawString(font, guardText, textX, y, guardColor, true);
+                pose.popPose();
+            } else {
+                // Flash effect for guard
+                float flash = cache.getGuardFlashAlpha();
+                guardColor = blendColor(OverlayTheme.EpicFight.GUARD, OverlayTheme.EpicFight.GUARD_FLASH, flash);
+                int textX = x + PANEL_WIDTH - font.width(guardText) - 6;
+                graphics.drawString(font, guardText, textX, y, guardColor, true);
+            }
+        } else if (cache.isParrying()) {
+            String parryText = "[PARRY]";
+            float flash = cache.getParryFlashAlpha();
+            int parryColor = blendColor(OverlayTheme.EpicFight.PARRY, OverlayTheme.EpicFight.PARRY_FLASH, flash);
+            int textX = x + PANEL_WIDTH - font.width(parryText) - 6;
+            graphics.drawString(font, parryText, textX, y, parryColor, true);
+        } else if (cache.isBattleMode()) {
+            // Battle mode indicator when not guarding/parrying
+            String battleText = "BATTLE";
+            int textX = x + PANEL_WIDTH - font.width(battleText) - 6;
+            graphics.drawString(font, battleText, textX, y, OverlayTheme.EpicFight.BATTLE_MODE, true);
+        }
+
+        // === STAMINA BAR ===
+        int barX = x + 6;
+        int barY = y + 12;
+        int barWidth = PANEL_WIDTH - 16;
+        int barHeight = 6;
+
+        // Background
+        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, OverlayTheme.EpicFight.STAMINA_BG);
+
+        // Stamina fill (smooth animation)
+        float staminaPercent = cache.getDisplayedStaminaPercent();
+        int fillWidth = (int) (barWidth * staminaPercent);
+        int staminaColor = OverlayTheme.EpicFight.getStaminaColor(staminaPercent);
+
+        if (fillWidth > 0) {
+            graphics.fill(barX, barY, barX + fillWidth, barY + barHeight, staminaColor);
+        }
+
+        // Percentage text
+        String percentText = (int)(staminaPercent * 100) + "%";
+        int percentX = x + PANEL_WIDTH - font.width(percentText) - 6;
+        graphics.drawString(font, percentText, percentX, y + 10, OverlayTheme.Neutral.N450, false);
+
+        // === CURRENT SKILL NAME ===
+        String skillName = cache.getCurrentSkillName();
+        if (skillName != null && !skillName.isEmpty()) {
+            // Truncate if too long
+            if (font.width(skillName) > PANEL_WIDTH - 16) {
+                skillName = font.plainSubstrByWidth(skillName, PANEL_WIDTH - 20) + "...";
+            }
+            graphics.drawString(font, skillName, x + 6, y + 22, OverlayTheme.EpicFight.SKILL_NAME, false);
+        }
+
+        // === PLAY SOUNDS FOR STATE CHANGES ===
+        playEpicFightSounds(cache);
+    }
+
+    /**
+     * Play Epic Fight sounds for state changes.
+     */
+    private void playEpicFightSounds(@Nonnull ClientEpicFightCache cache) {
+        if (cache.wasPerfectParryJustOccurred()) {
+            // Try Epic Fight native sound first
+            var efSound = EpicFightCompat.getParrySoundEvent();
+            if (efSound != null) {
+                NotificationSoundManager.INSTANCE.playSound(efSound, 1.2f, 1.0f);
+            } else {
+                // Fallback
+                NotificationSoundManager.INSTANCE.play("epicfight.parry.perfect",
+                    NotificationCategory.COMBAT, NotificationPriority.HIGH);
+            }
+        } else if (cache.wasParryJustSucceeded()) {
+            var efSound = EpicFightCompat.getParrySoundEvent();
+            if (efSound != null) {
+                NotificationSoundManager.INSTANCE.playSound(efSound, 1.0f, 0.7f);
+            } else {
+                NotificationSoundManager.INSTANCE.play("epicfight.parry.success",
+                    NotificationCategory.COMBAT, NotificationPriority.NORMAL);
+            }
+        } else if (cache.wasGuardJustStarted()) {
+            var efSound = EpicFightCompat.getGuardSoundEvent();
+            if (efSound != null) {
+                NotificationSoundManager.INSTANCE.playSound(efSound, 1.0f, 0.5f);
+            } else {
+                NotificationSoundManager.INSTANCE.play("epicfight.guard.start",
+                    NotificationCategory.COMBAT, NotificationPriority.LOW);
+            }
+        }
+
+        // Guard impact sound (blocked an attack - independent check)
+        if (cache.wasGuardImpactJustOccurred()) {
+            var efSound = EpicFightCompat.getGuardSoundEvent();
+            if (efSound != null) {
+                NotificationSoundManager.INSTANCE.playSound(efSound, 0.9f, 0.8f);
+            } else {
+                NotificationSoundManager.INSTANCE.play("epicfight.guard.impact",
+                    NotificationCategory.COMBAT, NotificationPriority.NORMAL);
+            }
+        }
+
+        // Stamina low warning sound (independent check)
+        if (cache.wasStaminaLowWarningTriggered()) {
+            NotificationSoundManager.INSTANCE.play("epicfight.stamina.low",
+                NotificationCategory.COMBAT, NotificationPriority.HIGH);
+        }
+    }
+
+    private void renderAnnouncements(@Nonnull GuiGraphics graphics, @Nonnull Font font, @Nonnull ClientCombatFlowCache cache, int x, int y) {
         List<ActionAnnouncement> announcements = cache.getAnnouncements();
 
         int offsetY = 0;
@@ -346,8 +503,8 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
             pose.pushPose();
             pose.translate(slideOffset, 0, 0);
 
-            int color = (((int)(alpha * 255)) << 24) | (ann.color() & 0x00FFFFFF);
-            int subColor = (((int)(alpha * 180)) << 24) | 0x00CCCCCC;
+            int color = OverlayTheme.withAlpha(ann.color(), (int) (alpha * 255));
+            int subColor = OverlayTheme.withAlpha(OverlayTheme.Neutral.N450, (int) (alpha * 180));
 
             // Scale for important announcements
             if (ann.important()) {
@@ -408,7 +565,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
             default -> { r = v; g = p; b = q; }
         }
 
-        return ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | (int)(b * 255);
+        return DesignTokens.Mask.ALPHA | ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
     }
 
     // === Sound Effects ===
@@ -416,7 +573,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
     /**
      * Play sounds for state changes. Must be called BEFORE tickAnimations() resets flags.
      */
-    private void playSoundsForStateChanges(ClientCombatFlowCache cache) {
+    private void playSoundsForStateChanges(@Nonnull ClientCombatFlowCache cache) {
         if (cache.wasComboJustIncreased()) {
             NotificationSoundManager.INSTANCE.play("combatflow.combo.hit",
                 NotificationCategory.COMBAT, NotificationPriority.NORMAL);

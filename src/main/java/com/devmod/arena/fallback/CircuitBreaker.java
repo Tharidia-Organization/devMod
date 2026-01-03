@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class CircuitBreaker {
+public final class CircuitBreaker {
 
     public enum State {
         CLOSED,

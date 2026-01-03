@@ -129,60 +129,65 @@ public class InstanceOverride {
      * Apply all overrides to a config copy and return the result.
      */
     public GameDesignConfig applyTo(GameDesignConfig config) {
+        GameDesignConfig.ResonanceConfig resonance = config.getResonance();
+        GameDesignConfig.ContractsConfig contracts = config.getContracts();
+        GameDesignConfig.NemesisConfig nemesis = config.getNemesis();
+        GameDesignConfig.TideConfig tide = config.getTide();
+
         // Resonance overrides
         if (has("resonance.enabled")) {
-            config.resonance.enabled = (Boolean) get("resonance.enabled");
+            resonance.enabled = (Boolean) get("resonance.enabled");
         }
         if (has("resonance.duoWindowMs")) {
-            config.resonance.duoWindowMs = ((Number) get("resonance.duoWindowMs")).longValue();
+            resonance.duoWindowMs = ((Number) get("resonance.duoWindowMs")).longValue();
         }
         if (has("resonance.trinityWindowMs")) {
-            config.resonance.trinityWindowMs = ((Number) get("resonance.trinityWindowMs")).longValue();
+            resonance.trinityWindowMs = ((Number) get("resonance.trinityWindowMs")).longValue();
         }
         if (has("resonance.apocalypseWindowMs")) {
-            config.resonance.apocalypseWindowMs = ((Number) get("resonance.apocalypseWindowMs")).longValue();
+            resonance.apocalypseWindowMs = ((Number) get("resonance.apocalypseWindowMs")).longValue();
         }
         if (has("resonance.duoDamageMultiplier")) {
-            config.resonance.duoDamageMultiplier = ((Number) get("resonance.duoDamageMultiplier")).floatValue();
+            resonance.duoDamageMultiplier = ((Number) get("resonance.duoDamageMultiplier")).floatValue();
         }
         if (has("resonance.trinityDamageMultiplier")) {
-            config.resonance.trinityDamageMultiplier = ((Number) get("resonance.trinityDamageMultiplier")).floatValue();
+            resonance.trinityDamageMultiplier = ((Number) get("resonance.trinityDamageMultiplier")).floatValue();
         }
         if (has("resonance.apocalypseDamageMultiplier")) {
-            config.resonance.apocalypseDamageMultiplier = ((Number) get("resonance.apocalypseDamageMultiplier")).floatValue();
+            resonance.apocalypseDamageMultiplier = ((Number) get("resonance.apocalypseDamageMultiplier")).floatValue();
         }
         if (has("resonance.cooldownMs")) {
-            config.resonance.cooldownMs = ((Number) get("resonance.cooldownMs")).longValue();
+            resonance.cooldownMs = ((Number) get("resonance.cooldownMs")).longValue();
         }
 
         // Contracts overrides
         if (has("contracts.enabled")) {
-            config.contracts.enabled = (Boolean) get("contracts.enabled");
+            contracts.enabled = (Boolean) get("contracts.enabled");
         }
         if (has("contracts.maxContractsPerWave")) {
-            config.contracts.maxContractsPerWave = ((Number) get("contracts.maxContractsPerWave")).intValue();
+            contracts.maxContractsPerWave = ((Number) get("contracts.maxContractsPerWave")).intValue();
         }
 
         // Nemesis overrides
         if (has("nemesis.enabled")) {
-            config.nemesis.enabled = (Boolean) get("nemesis.enabled");
+            nemesis.enabled = (Boolean) get("nemesis.enabled");
         }
         if (has("nemesis.projectileDeflectionChance")) {
-            config.nemesis.projectileDeflectionChance = ((Number) get("nemesis.projectileDeflectionChance")).floatValue();
+            nemesis.projectileDeflectionChance = ((Number) get("nemesis.projectileDeflectionChance")).floatValue();
         }
         if (has("nemesis.weaponTypeResistance")) {
-            config.nemesis.weaponTypeResistance = ((Number) get("nemesis.weaponTypeResistance")).floatValue();
+            nemesis.weaponTypeResistance = ((Number) get("nemesis.weaponTypeResistance")).floatValue();
         }
 
         // Tide overrides
         if (has("tide.enabled")) {
-            config.tide.enabled = (Boolean) get("tide.enabled");
+            tide.enabled = (Boolean) get("tide.enabled");
         }
         if (has("tide.playerDeath")) {
-            config.tide.playerDeath = ((Number) get("tide.playerDeath")).intValue();
+            tide.playerDeath = ((Number) get("tide.playerDeath")).intValue();
         }
         if (has("tide.sssWave")) {
-            config.tide.sssWave = ((Number) get("tide.sssWave")).intValue();
+            tide.sssWave = ((Number) get("tide.sssWave")).intValue();
         }
 
         return config;

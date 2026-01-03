@@ -28,18 +28,22 @@ import com.devmod.util.I18n;
 public class SeasonPassScreen extends Screen {
 
     // === Colors (Gold/Bronze theme for season pass) ===
-    private static final int COLOR_BG_TOP = 0xF0181818;
-    private static final int COLOR_BG_BOTTOM = 0xF00d0d1a;
-    private static final int COLOR_BORDER = 0xFFD4AF37;      // Gold accent
-    private static final int COLOR_TITLE = 0xFFFFD700;       // Gold
-    private static final int COLOR_SUBTITLE = 0xFFDAA520;    // Goldenrod
+    private static final int COLOR_BG_TOP = DesignTokens.SeasonPass.BG_TOP;
+    private static final int COLOR_BG_BOTTOM = DesignTokens.SeasonPass.BG_BOTTOM;
+    private static final int COLOR_BORDER = DesignTokens.SeasonPass.BORDER;
+    private static final int COLOR_TITLE = DesignTokens.SeasonPass.TITLE;
+    private static final int COLOR_SUBTITLE = DesignTokens.SeasonPass.SUBTITLE;
     private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
     private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
-    private static final int COLOR_FREE_TRACK = 0xFF60a5fa;  // Blue for free
-    private static final int COLOR_PREMIUM_TRACK = 0xFFFFD700; // Gold for premium
-    private static final int COLOR_LOCKED = 0xFF555555;
-    private static final int COLOR_PROGRESS_BG = 0xFF2a2a2a;
-    private static final int COLOR_PROGRESS_FILL = 0xFFD4AF37;
+    private static final int COLOR_FREE_TRACK = DesignTokens.SeasonPass.FREE_TRACK;
+    private static final int COLOR_PREMIUM_TRACK = DesignTokens.SeasonPass.PREMIUM_TRACK;
+    private static final int COLOR_LOCKED = DesignTokens.SeasonPass.LOCKED;
+    private static final int COLOR_PROGRESS_BG = DesignTokens.SeasonPass.PROGRESS_BG;
+    private static final int COLOR_PROGRESS_FILL = DesignTokens.SeasonPass.PROGRESS_FILL;
+    private static final int COLOR_CLAIMED = DesignTokens.SeasonPass.CLAIMED;
+    private static final int COLOR_BOOST = DesignTokens.SeasonPass.BOOST;
+    private static final int COLOR_BADGE = DesignTokens.SeasonPass.BADGE;
+    private static final int COLOR_INACTIVE = DesignTokens.SeasonPass.INACTIVE;
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 520;
@@ -57,13 +61,24 @@ public class SeasonPassScreen extends Screen {
     private int highlightedTier = -1;
 
     // === Season Data (from ClientSeasonPassCache) ===
+    private int seasonNumber = 1;
     private int currentTier = 1;
     private int currentXP = 0;
+    private int rawCurrentXP = 0;
+    private int xpToNextTier = 1000;
     private int xpPerTier = 1000;
+    private float tierProgress = 0.0f;
     private int maxTier = 100;
     private String seasonName = "Season 1";
     private long remainingDays = 45;
+    private boolean seasonActive = true;
     private boolean hasPremium = false;
+    private int unclaimedRewards = 0;
+    private boolean hasBoost = false;
+    private float boostMultiplier = 1.0f;
+    private long boostRemainingSeconds = 0;
+    private boolean synced = false;
+    private long lastSyncTime = 0;
     private List<ClientSeasonPassCache.RewardEntry> rewardEntries = List.of();
 
     public SeasonPassScreen() {
@@ -116,12 +131,32 @@ public class SeasonPassScreen extends Screen {
     private void refreshFromCache() {
         ClientSeasonPassCache cache = ClientSeasonPassCache.INSTANCE;
 
-        this.currentTier = cache.getCurrentTier();
-        this.currentXP = cache.getCurrentTierXP();
-        this.xpPerTier = cache.getXpPerTier();
+        // Season info
+        this.seasonNumber = cache.getSeasonNumber();
         this.seasonName = cache.getSeasonName();
         this.remainingDays = cache.getRemainingDays();
+        this.seasonActive = cache.isSeasonActive();
+
+        // Player progress
+        this.currentTier = cache.getCurrentTier();
+        this.currentXP = cache.getCurrentTierXP();
+        this.rawCurrentXP = cache.getCurrentXP();
+        this.xpToNextTier = cache.getXpToNextTier();
+        this.xpPerTier = cache.getXpPerTier();
+        this.tierProgress = cache.getTierProgress();
         this.hasPremium = cache.isPremium();
+        this.unclaimedRewards = cache.getUnclaimedRewards();
+
+        // XP Boost
+        this.hasBoost = cache.hasBoost();
+        this.boostMultiplier = cache.getBoostMultiplier();
+        this.boostRemainingSeconds = cache.getBoostRemainingSeconds();
+
+        // Sync state
+        this.synced = cache.isSynced();
+        this.lastSyncTime = cache.getLastSyncTime();
+
+        // Rewards
         this.rewardEntries = cache.getUpcomingRewards();
     }
 
@@ -161,17 +196,28 @@ public class SeasonPassScreen extends Screen {
         // Legend
         renderLegend(g, panelX + 30, panelY + PANEL_HEIGHT - 60, fadeProgress);
 
-        // Close hint
+        // Sync status and close hint
         int hintColor = applyAlpha(COLOR_TEXT_DIM, fadeProgress * 0.7f);
-        g.drawCenteredString(f, "Press ESC to close", centerX, panelY + PANEL_HEIGHT - 20, hintColor);
+        String syncStatus = "";
+        if (synced && lastSyncTime > 0) {
+            long secondsAgo = (System.currentTimeMillis() - lastSyncTime) / 1000;
+            if (secondsAgo < 60) {
+                syncStatus = " | Synced " + secondsAgo + "s ago";
+            } else {
+                syncStatus = " | Synced " + (secondsAgo / 60) + "m ago";
+            }
+        } else if (!synced) {
+            syncStatus = " | Not synced";
+        }
+        g.drawCenteredString(f, "Press ESC to close" + syncStatus, centerX, panelY + PANEL_HEIGHT - 20, hintColor);
 
         super.render(g, mouseX, mouseY, partialTick);
     }
 
     private void renderPanel(GuiGraphics g, int x, int y, int w, int h, float alpha) {
         // Outer glow
-        int glowAlpha = (int) (0x33 * alpha);
-        int glowColor = (glowAlpha << 24) | (COLOR_BORDER & 0x00FFFFFF);
+        int glowAlpha = (int) (DesignTokens.Alpha.A20 * alpha);
+        int glowColor = (glowAlpha << 24) | (COLOR_BORDER & DesignTokens.Mask.RGB);
         g.fill(x - 5, y - 5, x + w + 5, y + h + 5, glowColor);
 
         // Border
@@ -188,14 +234,14 @@ public class SeasonPassScreen extends Screen {
         }
 
         // Inner highlight
-        int highlightColor = applyAlpha(0x22FFFFFF, alpha);
+        int highlightColor = applyAlpha(DesignTokens.SeasonPass.HIGHLIGHT, alpha);
         g.fill(x, y, x + w, y + 1, highlightColor);
     }
 
     private void renderHeader(GuiGraphics g, int centerX, int panelY, float alpha) {
         @Nonnull Font f = safeFont();
 
-        // Title
+        // Title with season number
         int titleColor = applyAlpha(COLOR_TITLE, alpha);
         g.pose().pushPose();
         g.pose().translate(centerX, panelY + 20, 0);
@@ -205,16 +251,38 @@ public class SeasonPassScreen extends Screen {
         g.drawString(f, title, -titleWidth / 2, 0, titleColor, true);
         g.pose().popPose();
 
-        // Season name and days remaining
-        int subtitleColor = applyAlpha(COLOR_SUBTITLE, alpha);
+        // Season name, number, and days remaining
+        int subtitleColor = seasonActive ? applyAlpha(COLOR_SUBTITLE, alpha) : applyAlpha(COLOR_INACTIVE, alpha);
         String daysText = Objects.requireNonNull(I18n.translate("devmod.ui.season_pass.days_remaining").getString());
-        String subtitle = seasonName + " - " + remainingDays + " " + daysText;
+        String seasonStatus = seasonActive ? "" : " [ENDED]";
+        String subtitle = seasonName + " (#" + seasonNumber + ") - " + remainingDays + " " + daysText + seasonStatus;
         g.drawCenteredString(f, subtitle, centerX, panelY + 50, subtitleColor);
 
-        // Current tier display
+        // Current tier and XP display
         int tierColor = applyAlpha(COLOR_TEXT, alpha);
         String tierText = Objects.requireNonNull(I18n.translate("devmod.ui.season_pass.current_tier", currentTier).getString());
+        tierText += " | " + rawCurrentXP + " XP (" + xpToNextTier + " to next)";
         g.drawCenteredString(f, tierText, centerX, panelY + 68, tierColor);
+
+        // Unclaimed rewards badge (top right)
+        if (unclaimedRewards > 0) {
+            int badgeX = centerX + PANEL_WIDTH / 2 - 50;
+            int badgeY = panelY + 15;
+            int badgeColor = applyAlpha(COLOR_BADGE, alpha);
+            g.fill(badgeX, badgeY, badgeX + 40, badgeY + 18, badgeColor);
+            String badgeText = unclaimedRewards + " NEW";
+            int badgeTextWidth = f.width(badgeText);
+            g.drawString(f, badgeText, badgeX + (40 - badgeTextWidth) / 2, badgeY + 5, applyAlpha(DesignTokens.Text.WHITE, alpha), true);
+        }
+
+        // XP Boost indicator (below title if active)
+        if (hasBoost && boostRemainingSeconds > 0) {
+            int boostColor = applyAlpha(COLOR_BOOST, alpha);
+            long minutes = boostRemainingSeconds / 60;
+            long seconds = boostRemainingSeconds % 60;
+            String boostText = Objects.requireNonNull(String.format("XP BOOST x%.1f (%d:%02d)", boostMultiplier, minutes, seconds));
+            g.drawCenteredString(f, boostText, centerX, panelY + 38, boostColor);
+        }
     }
 
     private void renderProgressBar(GuiGraphics g, int x, int y, int w, int h, float alpha) {
@@ -224,9 +292,9 @@ public class SeasonPassScreen extends Screen {
         int bgColor = applyAlpha(COLOR_PROGRESS_BG, alpha);
         g.fill(x, y, x + w, y + h, bgColor);
 
-        // Progress fill
-        float progress = (float) (currentXP % xpPerTier) / xpPerTier;
-        int fillWidth = (int) (w * progress);
+        // Progress fill - use tierProgress directly from cache for accuracy
+        float progress = tierProgress > 0 ? tierProgress : (xpPerTier > 0 ? (float) currentXP / xpPerTier : 0);
+        int fillWidth = (int) (w * Math.min(1.0f, progress));
         int fillColor = applyAlpha(COLOR_PROGRESS_FILL, alpha);
         g.fill(x, y, x + fillWidth, y + h, fillColor);
 
@@ -237,9 +305,13 @@ public class SeasonPassScreen extends Screen {
         g.fill(x, y, x + 1, y + h, borderColor);
         g.fill(x + w - 1, y, x + w, y + h, borderColor);
 
-        // XP text
+        // XP text with sync indicator
         int textColor = applyAlpha(COLOR_TEXT, alpha);
-        String xpText = (currentXP % xpPerTier) + " / " + xpPerTier + " XP";
+        String xpText = currentXP + " / " + xpPerTier + " XP";
+        if (!synced) {
+            xpText = "Loading...";
+            textColor = applyAlpha(COLOR_TEXT_DIM, alpha);
+        }
         int textWidth = f.width(xpText);
         g.drawString(f, xpText, x + (w - textWidth) / 2, y + (h - 8) / 2, textColor, true);
     }
@@ -285,9 +357,9 @@ public class SeasonPassScreen extends Screen {
         if (highlighted) {
             bgColor = applyAlpha(COLOR_BORDER, alpha * 0.3f);
         } else if (hovered) {
-            bgColor = applyAlpha(0x444444, alpha);
+            bgColor = applyAlpha(DesignTokens.SeasonPass.ROW_BG, alpha);
         } else if (unlocked) {
-            bgColor = applyAlpha(0x333333, alpha);
+            bgColor = applyAlpha(DesignTokens.SeasonPass.ROW_BG_ALT, alpha);
         } else {
             bgColor = applyAlpha(COLOR_LOCKED, alpha * 0.5f);
         }
@@ -315,31 +387,68 @@ public class SeasonPassScreen extends Screen {
         // Get reward entry for this tier if available
         ClientSeasonPassCache.RewardEntry rewardEntry = findRewardEntry(tier);
 
+        // Determine claim states
+        boolean freeUnlocked = rewardEntry != null && rewardEntry.freeUnlocked();
+        boolean freeClaimed = rewardEntry != null && rewardEntry.freeClaimed();
+        boolean premiumUnlocked = rewardEntry != null && rewardEntry.premiumUnlocked();
+        boolean premiumClaimed = rewardEntry != null && rewardEntry.premiumClaimed();
+
         // Free track reward
         int freeY = y + 40;
-        int freeColor = unlocked ? applyAlpha(COLOR_FREE_TRACK, alpha) : applyAlpha(COLOR_LOCKED, alpha);
+        int freeColor;
+        if (freeClaimed) {
+            freeColor = applyAlpha(COLOR_CLAIMED, alpha);
+        } else if (freeUnlocked) {
+            freeColor = applyAlpha(COLOR_FREE_TRACK, alpha);
+        } else {
+            freeColor = applyAlpha(COLOR_LOCKED, alpha);
+        }
         g.fill(x + 5, freeY, x + TIER_CARD_WIDTH - 5, freeY + 20, applyAlpha(COLOR_FREE_TRACK, alpha * 0.2f));
         String freeLabel = rewardEntry != null && !rewardEntry.getSafeFreeRewardName().isEmpty()
-            ? Objects.requireNonNull(truncateLabel(rewardEntry.getSafeFreeRewardName(), TIER_CARD_WIDTH - 12))
+            ? Objects.requireNonNull(truncateLabel(rewardEntry.getSafeFreeRewardName(), TIER_CARD_WIDTH - 18))
             : (tier % 5 == 0 ? "Reward" : "-");
-        int freeLabelWidth = f.width(freeLabel);
-        g.drawString(f, freeLabel, x + (TIER_CARD_WIDTH - freeLabelWidth) / 2, freeY + 6, freeColor, false);
+
+        // Show checkmark for claimed free rewards
+        if (freeClaimed) {
+            g.drawString(f, "\u2713", x + 7, freeY + 6, applyAlpha(COLOR_CLAIMED, alpha), false);
+            g.drawString(f, freeLabel, x + 18, freeY + 6, freeColor, false);
+        } else {
+            int freeLabelWidth = f.width(freeLabel);
+            g.drawString(f, freeLabel, x + (TIER_CARD_WIDTH - freeLabelWidth) / 2, freeY + 6, freeColor, false);
+        }
 
         // Premium track reward
         int premiumY = y + 65;
-        int premiumColor = (unlocked && hasPremium) ? applyAlpha(COLOR_PREMIUM_TRACK, alpha)
-                                                     : applyAlpha(COLOR_LOCKED, alpha);
+        int premiumColor;
+        if (premiumClaimed) {
+            premiumColor = applyAlpha(COLOR_CLAIMED, alpha);
+        } else if (premiumUnlocked && hasPremium) {
+            premiumColor = applyAlpha(COLOR_PREMIUM_TRACK, alpha);
+        } else {
+            premiumColor = applyAlpha(COLOR_LOCKED, alpha);
+        }
         g.fill(x + 5, premiumY, x + TIER_CARD_WIDTH - 5, premiumY + 20, applyAlpha(COLOR_PREMIUM_TRACK, alpha * 0.2f));
         String premiumLabel = rewardEntry != null && !rewardEntry.getSafePremiumRewardName().isEmpty()
-            ? Objects.requireNonNull(truncateLabel(rewardEntry.getSafePremiumRewardName(), TIER_CARD_WIDTH - 12))
+            ? Objects.requireNonNull(truncateLabel(rewardEntry.getSafePremiumRewardName(), TIER_CARD_WIDTH - 18))
             : "Premium";
-        int premiumLabelWidth = f.width(premiumLabel);
-        g.drawString(f, premiumLabel, x + (TIER_CARD_WIDTH - premiumLabelWidth) / 2, premiumY + 6, premiumColor, false);
 
-        // Lock icon for locked tiers
+        // Show checkmark for claimed premium rewards
+        if (premiumClaimed) {
+            g.drawString(f, "\u2713", x + 7, premiumY + 6, applyAlpha(COLOR_CLAIMED, alpha), false);
+            g.drawString(f, premiumLabel, x + 18, premiumY + 6, premiumColor, false);
+        } else {
+            int premiumLabelWidth = f.width(premiumLabel);
+            g.drawString(f, premiumLabel, x + (TIER_CARD_WIDTH - premiumLabelWidth) / 2, premiumY + 6, premiumColor, false);
+        }
+
+        // Lock icon for locked tiers, or claim indicator for unclaimed
         if (!unlocked) {
             int lockColor = applyAlpha(COLOR_LOCKED, alpha);
             g.drawCenteredString(f, "\uD83D\uDD12", x + TIER_CARD_WIDTH / 2, y + TIER_CARD_HEIGHT - 15, lockColor);
+        } else if ((freeUnlocked && !freeClaimed) || (premiumUnlocked && hasPremium && !premiumClaimed)) {
+            // Show exclamation for claimable rewards
+            int claimColor = applyAlpha(COLOR_BADGE, alpha);
+            g.drawCenteredString(f, "!", x + TIER_CARD_WIDTH / 2, y + TIER_CARD_HEIGHT - 15, claimColor);
         }
     }
 
@@ -443,7 +552,7 @@ public class SeasonPassScreen extends Screen {
 
     private static int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     private static int lerpColor(int color1, int color2, float t) {

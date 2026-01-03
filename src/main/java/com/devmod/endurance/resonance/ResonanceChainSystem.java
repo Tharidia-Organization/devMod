@@ -20,12 +20,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceColors;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 
 public final class ResonanceChainSystem {
 
@@ -85,10 +88,10 @@ public final class ResonanceChainSystem {
 
         public int getColor() {
             return switch (this) {
-                case DUO -> 0xFFD700;      // Gold
-                case TRINITY -> 0x9400D3;  // Purple
-                case APOCALYPSE -> 0xFF0000; // Red
-                default -> 0xFFFFFF;
+                case DUO -> EnduranceColors.ResonanceChain.DUO;           // Gold
+                case TRINITY -> EnduranceColors.ResonanceChain.TRINITY;   // Purple
+                case APOCALYPSE -> EnduranceColors.ResonanceChain.APOCALYPSE; // Red
+                default -> EnduranceColors.ResonanceChain.DEFAULT;
             };
         }
     }
@@ -152,9 +155,6 @@ public final class ResonanceChainSystem {
 
         // Create hit record
         UUID attackerId = attacker.getUUID();
-        if (attackerId == null) {
-            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, EMPTY_PARTICIPANTS, target.getId());
-        }
         String attackerName = resolveAttackerName(attacker);
         HitRecord record = new HitRecord(attackerId, attackerName, now, damage, questId);
 
@@ -291,10 +291,7 @@ public final class ResonanceChainSystem {
             });
 
             // Get player and apply visual/audio feedback
-            if (target.level() instanceof ServerLevel serverLevel && serverLevel.getServer() != null) {
-                if (playerId == null) {
-                    continue;
-                }
+            if (target.level() instanceof ServerLevel serverLevel) {
                 ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(playerId);
                 if (player != null) {
                     // Sound effect
@@ -358,25 +355,16 @@ public final class ResonanceChainSystem {
         float damage = tier == ResonanceTier.APOCALYPSE
             ? config.apocalypseShockwaveDamage : config.trinityShockwaveDamage;
 
-        var bounds = center.getBoundingBox();
-        if (bounds == null) {
-            return;
-        }
-        bounds = bounds.inflate(radius);
-        if (bounds == null) {
-            return;
-        }
+        var bounds = center.getBoundingBox().inflate(radius);
         List<LivingEntity> nearby = level.getEntitiesOfClass(
             LivingEntity.class,
             bounds,
             e -> !Objects.equals(e, center) && !(e instanceof ServerPlayer) && e.isAlive()
         );
 
+        DamageSource magicDamage = level.damageSources().magic();
         for (LivingEntity entity : nearby) {
-            var magicDamage = level.damageSources().magic();
-            if (magicDamage != null) {
-                entity.hurt(magicDamage, damage);
-            }
+            entity.hurt(magicDamage, damage);
 
             // Knockback away from center
             double dx = entity.getX() - center.getX();
@@ -460,9 +448,8 @@ public final class ResonanceChainSystem {
     }
 
     private static String resolveAttackerName(ServerPlayer attacker) {
-        var nameComponent = attacker.getName();
-        String name = nameComponent != null ? nameComponent.getString() : null;
-        if (name == null || name.trim().isEmpty()) {
+        String name = attacker.getName().getString();
+        if (name.trim().isEmpty()) {
             return "Unknown";
         }
         return name;

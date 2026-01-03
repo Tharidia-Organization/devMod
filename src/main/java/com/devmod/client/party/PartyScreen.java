@@ -31,7 +31,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
 import com.devmod.endurance.QuestType;
@@ -560,7 +560,7 @@ public class PartyScreen extends Screen {
         LOGGER.info("[PartyScreen] Sending invite to: {}", playerName);
         PacketDistributor.sendToServer(Objects.requireNonNull(NamedInvitePayload.create(playerName, questType)));
         box.setValue("");
-        DesignTokens.Sound.success();
+        UiSounds.success();
     }
 
     private void onReadyClicked() {
@@ -568,19 +568,19 @@ public class PartyScreen extends Screen {
         ClientPartyCache.setLocalPlayerReady(isReady);
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.toggleReady()));
         updateButtonStates();
-        DesignTokens.Sound.toggleOn();
+        UiSounds.toggleOn();
     }
 
     private void onLeaveClicked() {
         LOGGER.info("[PartyScreen] Leaving party");
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.leaveParty()));
         onClose();
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     private void onStartClicked() {
         if (!canStartQuest()) {
-            DesignTokens.Sound.error();
+            UiSounds.error();
             return;
         }
 
@@ -588,14 +588,14 @@ public class PartyScreen extends Screen {
                 members.size(), getSelectedMobId());
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.startQuest()));
         onClose();
-        DesignTokens.Sound.success();
+        UiSounds.success();
     }
 
     private void onDisbandClicked() {
         LOGGER.info("[PartyScreen] Disbanding party");
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.disbandParty()));
         onClose();
-        DesignTokens.Sound.warning();
+        UiSounds.warning();
     }
 
     private void onCreatePartyClicked() {
@@ -604,7 +604,7 @@ public class PartyScreen extends Screen {
         isInParty = true;
         isLeader = true;
         updateButtonStates();
-        DesignTokens.Sound.success();
+        UiSounds.success();
     }
 
     @Nullable
@@ -623,7 +623,7 @@ public class PartyScreen extends Screen {
             questType = QuestType.values()[hoveredQuestTab];
             ClientPartyCache.setQuestType(questType);
             PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.setQuestType(questType)));
-            DesignTokens.Sound.click();
+            UiSounds.click();
             updateButtonStates();
             return true;
         }
@@ -639,7 +639,7 @@ public class PartyScreen extends Screen {
                 mouseY >= nsFilterY && mouseY < nsFilterY + 12) {
                 selectedNamespace = null;
                 filterMobs();
-                DesignTokens.Sound.click();
+                UiSounds.click();
                 return true;
             }
             nsBtnX += allW + 2;
@@ -650,7 +650,7 @@ public class PartyScreen extends Screen {
                 mouseY >= nsFilterY && mouseY < nsFilterY + 12) {
                 selectedNamespace = "minecraft".equals(selectedNamespace) ? null : "minecraft";
                 filterMobs();
-                DesignTokens.Sound.click();
+                UiSounds.click();
                 return true;
             }
         }
@@ -666,7 +666,7 @@ public class PartyScreen extends Screen {
                     mouseY >= filterY && mouseY < filterY + 14) {
                     selectedTierFilter = (tier == selectedTierFilter) ? null : tier;
                     filterMobs();
-                    DesignTokens.Sound.click();
+                    UiSounds.click();
                     return true;
                 }
                 btnX += btnW + 2;
@@ -682,7 +682,7 @@ public class PartyScreen extends Screen {
             if (mobId != null) {
                 PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.setMobType(mobId)));
             }
-            DesignTokens.Sound.click();
+            UiSounds.click();
             return true;
         }
 
@@ -726,7 +726,7 @@ public class PartyScreen extends Screen {
             PartySyncPayload.PartyMemberInfo member = members.get(hoveredMemberIndex);
             if (!member.playerId().equals(leaderId)) {
                 PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.kickMember(member.playerId())));
-                DesignTokens.Sound.warning();
+                UiSounds.warning();
                 return true;
             }
         }

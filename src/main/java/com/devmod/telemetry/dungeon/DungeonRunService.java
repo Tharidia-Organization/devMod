@@ -252,7 +252,7 @@ public class DungeonRunService {
         );
 
         // P2-B: NDJSON fallback (only if enabled or DuckDB unavailable)
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             StringBuilder json = new StringBuilder();
             json.append("{\"ts\":\"").append(Instant.now()).append("\",");
             json.append("\"player_id\":\"").append(result.playerId).append("\",");

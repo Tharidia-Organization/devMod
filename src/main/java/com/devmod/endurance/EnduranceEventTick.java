@@ -709,6 +709,12 @@ public class EnduranceEventTick {
 
         EnduranceTelemetryService.INSTANCE.recordExternalDeathRespawn(waveState.getQuest().getQuestId(), successfulRespawns);
 
+        // Log respawn budget usage for telemetry/debug
+        LOGGER.debug("[EnduranceQuest] External respawn: {}/{} used (wave {})",
+            waveState.getExternalRespawnCount(),
+            waveState.getExternalRespawnLimit(),
+            waveState.getWaveNumber());
+
         // Notify player about respawned mobs
         UUID playerId = session.getPlayerId();
         var serverInstance = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();

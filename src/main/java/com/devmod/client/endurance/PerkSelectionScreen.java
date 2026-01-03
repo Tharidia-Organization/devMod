@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
@@ -121,12 +122,13 @@ public class PerkSelectionScreen extends Screen {
 
         // Skip button (bottom - prominent height for visibility)
         String skipLabel = skipAllowed ? "Skip Wave Perk" : "Must Choose";
-        skipButton = EditorButton.builder("perk-skip", skipLabel)
+        EditorButton skip = EditorButton.builder("perk-skip", skipLabel)
             .style(skipAllowed ? EditorButton.Style.GHOST : EditorButton.Style.DANGER)
             .size(EditorButton.Size.LARGE)
             .onClick(this::skipPerk)
             .build();
-        skipButton.setEnabled(skipAllowed);
+        skip.setEnabled(skipAllowed);
+        skipButton = skip;
     }
 
     /**
@@ -193,7 +195,7 @@ public class PerkSelectionScreen extends Screen {
 
         // Background
         int bgAlpha = (int) (0xEE * fadeProgress);
-        graphics.fill(0, 0, width, height, (bgAlpha << 24) | (COLOR_SCREEN_BG & 0x00FFFFFF));
+        graphics.fill(0, 0, width, height, (bgAlpha << 24) | (COLOR_SCREEN_BG & DesignTokens.Mask.RGB));
 
         // Title
         if (fadeProgress > 0.3f) {
@@ -265,7 +267,7 @@ public class PerkSelectionScreen extends Screen {
         g.fill(cardX, cardY, cardX + cardW, cardY + cardH, applyAlpha(bgColor, alpha));
 
         // Border with tier color
-        int borderColor = applyAlpha(perk.tierColor() | 0xFF000000, alpha);
+        int borderColor = applyAlpha(perk.tierColor() | DesignTokens.Mask.ALPHA, alpha);
         g.fill(cardX, cardY, cardX + cardW, cardY + 3, borderColor);
         g.fill(cardX, cardY + cardH - 3, cardX + cardW, cardY + cardH, borderColor);
         g.fill(cardX, cardY, cardX + 3, cardY + cardH, borderColor);
@@ -284,7 +286,7 @@ public class PerkSelectionScreen extends Screen {
         // Tier badge (top right)
         g.fill(cardX + cardW - tierBadgeW - contentPadding, textY,
                cardX + cardW - contentPadding, textY + tierBadgeH,
-               applyAlpha(perk.tierColor() | 0xFF000000, alpha * 0.85f));
+               applyAlpha(perk.tierColor() | DesignTokens.Mask.ALPHA, alpha * 0.85f));
         g.drawString(safeFont, tierText, cardX + cardW - tierBadgeW - contentPadding + 4, textY + 3,
                      applyAlpha(COLOR_TEXT, alpha));
 
@@ -297,14 +299,16 @@ public class PerkSelectionScreen extends Screen {
         // === CATEGORY ROW ===
         String categoryName = truncateText(perk.categoryName(), cardW - contentPadding * 2);
         g.drawString(safeFont, categoryName, cardX + contentPadding, textY,
-                     applyAlpha(perk.categoryColor() | 0xFF000000, alpha));
+                     applyAlpha(perk.categoryColor() | DesignTokens.Mask.ALPHA, alpha));
         textY += 14;
 
         // === REQUIRED/SUGGESTED TAG (below category, not overlapping) ===
         if (perk.required() || perk.suggested()) {
             String tagText = perk.required() ? "!" : "\u2605"; // ! or ★
             String tagLabel = perk.required() ? "Required" : "Suggested";
-            int tagColor = perk.required() ? 0xFFE85C5C : 0xFF5B9BD5;
+            int tagColor = perk.required()
+                ? EnduranceUiTheme.PerkSelection.TAG_REQUIRED
+                : EnduranceUiTheme.PerkSelection.TAG_OPTIONAL;
             g.drawString(safeFont, tagText + " " + tagLabel, cardX + contentPadding, textY, applyAlpha(tagColor, alpha));
             textY += 12;
         }
@@ -312,7 +316,7 @@ public class PerkSelectionScreen extends Screen {
         // === DESCRIPTION (word wrap) ===
         textY += 2; // Small gap
         int maxDescY = cardY + cardH - buttonAreaHeight - 25; // Leave room for stack info
-        List<String> lines = wrapText(perk.description(), cardW - contentPadding * 2);
+        List<String> lines = wrapText(Objects.requireNonNull(perk.description()), cardW - contentPadding * 2);
         int linesRendered = 0;
         for (String line : lines) {
             if (textY > maxDescY || linesRendered >= MAX_DESCRIPTION_LINES) break;
@@ -337,7 +341,8 @@ public class PerkSelectionScreen extends Screen {
             if (perk.newSynergyCount() > 0) {
                 // Completing a synergy - highlight!
                 String synergyBadge = "\u2605 SYNERGY!"; // ★ SYNERGY!
-                g.drawString(safeFont, synergyBadge, cardX + contentPadding, bottomInfoY, applyAlpha(0xFFFF55, alpha));
+                g.drawString(safeFont, synergyBadge, cardX + contentPadding, bottomInfoY,
+                    applyAlpha(EnduranceUiTheme.PerkSelection.SYNERGY_COMPLETE, alpha));
                 bottomInfoY -= 11;
             } else if (perk.isRecommended()) {
                 String recBadge = "\u2192 Recommended"; // → Recommended
@@ -348,7 +353,7 @@ public class PerkSelectionScreen extends Screen {
             // Show synergy hint on hover
             if (hovered && !perk.synergyHint().isEmpty()) {
                 String hint = perk.synergyHint();
-                if (safeFont.width(hint) > cardW - contentPadding * 2) {
+                if (safeFont.width(Objects.requireNonNull(hint)) > cardW - contentPadding * 2) {
                     hint = truncateText(hint, cardW - contentPadding * 2);
                 }
                 g.drawString(safeFont, hint, cardX + contentPadding, bottomInfoY, applyAlpha(synergyColor, alpha));
@@ -365,13 +370,13 @@ public class PerkSelectionScreen extends Screen {
      */
     private int getSynergyColor(PerkChoicesPayload.PerkChoice perk) {
         if (perk.newSynergyCount() > 0) {
-            return 0xFFFF55; // Yellow/gold for completing synergies
+            return EnduranceUiTheme.PerkSelection.SYNERGY_COMPLETE;
         } else if (perk.synergyScore() >= 6) {
-            return 0xFFA500; // Orange for strong synergy potential
+            return EnduranceUiTheme.PerkSelection.SYNERGY_STRONG;
         } else if (perk.synergyScore() >= 3) {
-            return 0xFFFF7F; // Light yellow for moderate
+            return EnduranceUiTheme.PerkSelection.SYNERGY_MODERATE;
         } else {
-            return 0x7FFF7F; // Light green for minor
+            return EnduranceUiTheme.PerkSelection.SYNERGY_MINOR;
         }
     }
 
@@ -432,10 +437,11 @@ public class PerkSelectionScreen extends Screen {
             // Synergy indicator (star if completing synergy, dot otherwise)
             if (perk.newSynergyCount() > 0) {
                 // Gold star for synergy completion
-                g.drawString(safeFont, "\u2605", panelX + 6, lineY, applyAlpha(0xFFFF55, alpha));
+                g.drawString(safeFont, "\u2605", panelX + 6, lineY,
+                    applyAlpha(EnduranceUiTheme.PerkSelection.SYNERGY_COMPLETE, alpha));
             } else {
                 // Tier indicator (colored dot)
-                int dotColor = applyAlpha(perk.tierColor() | 0xFF000000, alpha);
+                int dotColor = applyAlpha(perk.tierColor() | DesignTokens.Mask.ALPHA, alpha);
                 g.fill(panelX + 8, lineY + 3, panelX + 14, lineY + 9, dotColor);
             }
 
@@ -482,10 +488,10 @@ public class PerkSelectionScreen extends Screen {
         if (cat.contains("defense") || cat.contains("armor")) return COLOR_INFO;
         if (cat.contains("utility") || cat.contains("speed")) return COLOR_WARNING;
         if (cat.contains("heal") || cat.contains("regen")) return COLOR_SUCCESS;
-        return perk.categoryColor() | 0xFF000000;
+        return perk.categoryColor() | DesignTokens.Mask.ALPHA;
     }
 
-    private List<String> wrapText(String text, int maxWidth) {
+    private List<String> wrapText(@Nonnull String text, int maxWidth) {
         var safeFont = Objects.requireNonNull(font);
         List<String> lines = new ArrayList<>();
         Iterable<String> words = SPACE_SPLITTER.split(text);
@@ -528,7 +534,7 @@ public class PerkSelectionScreen extends Screen {
     private int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
         if (a <= 0) a = (int) (255 * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     private void renderCountdown(GuiGraphics graphics, float fadeProgress) {
@@ -539,7 +545,7 @@ public class PerkSelectionScreen extends Screen {
         if (remaining < 0) {
             return;
         }
-        String text = I18n.ui("selection_time_remaining", remaining).getString();
+        String text = Objects.requireNonNull(I18n.ui("selection_time_remaining", remaining).getString());
         var safeFont = Objects.requireNonNull(font, "font");
         int textWidth = safeFont.width(text);
         int x = width - textWidth - COUNTDOWN_MARGIN;
@@ -575,12 +581,13 @@ public class PerkSelectionScreen extends Screen {
         }
 
         // Skip button
-        if (skipButton != null && elapsed > FADE_IN_DURATION * 0.5f) {
+        final var skip = skipButton;
+        if (skip != null && elapsed > FADE_IN_DURATION * 0.5f) {
             int skipW = DesignTokens.Component.BUTTON_MIN_WIDTH * 2;
             int skipH = DesignTokens.Component.BUTTON_HEIGHT_LG;
             int skipX = width / 2 - skipW / 2;
             int skipY = height - 50;
-            skipButton.render(graphics, skipX, skipY, skipW, skipH, mouseX, mouseY);
+            skip.render(graphics, skipX, skipY, skipW, skipH, mouseX, mouseY);
         }
     }
 
@@ -610,8 +617,9 @@ public class PerkSelectionScreen extends Screen {
             }
 
             // Skip button
-            if (skipButton != null && elapsed > FADE_IN_DURATION * 0.5f) {
-                if (skipButton.mouseClicked(mouseX, mouseY, button)) {
+            final var skip = skipButton;
+            if (skip != null && elapsed > FADE_IN_DURATION * 0.5f) {
+                if (skip.mouseClicked(mouseX, mouseY, button)) {
                     return true;
                 }
             }
@@ -631,8 +639,9 @@ public class PerkSelectionScreen extends Screen {
                 if (elapsed <= cardDelay) continue;
                 handled |= perkButtons.get(i).mouseReleased(mouseX, mouseY, button);
             }
-            if (skipButton != null && elapsed > FADE_IN_DURATION * 0.5f) {
-                handled |= skipButton.mouseReleased(mouseX, mouseY, button);
+            final var skip = skipButton;
+            if (skip != null && elapsed > FADE_IN_DURATION * 0.5f) {
+                handled |= skip.mouseReleased(mouseX, mouseY, button);
             }
         }
 

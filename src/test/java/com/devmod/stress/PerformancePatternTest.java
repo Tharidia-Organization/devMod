@@ -947,7 +947,7 @@ class PerformancePatternTest {
             // Without caching (recompile each time)
             long uncachedStart = System.nanoTime();
             for (int i = 0; i < iterations; i++) {
-                if (input.matches(pattern)) {
+                if (java.util.regex.Pattern.matches(pattern, input)) {
                     matchCount++;
                 }
             }
@@ -955,9 +955,12 @@ class PerformancePatternTest {
 
             // With caching
             java.util.regex.Pattern compiled = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher matcher = compiled.matcher(input);
             long cachedStart = System.nanoTime();
             for (int i = 0; i < iterations; i++) {
-                compiled.matcher(input).find();
+                if (matcher.reset().matches()) {
+                    matchCount++;
+                }
             }
             long cachedElapsed = System.nanoTime() - cachedStart;
 

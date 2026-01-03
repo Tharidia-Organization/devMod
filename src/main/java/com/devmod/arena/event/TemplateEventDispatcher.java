@@ -17,8 +17,6 @@ public class TemplateEventDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateEventDispatcher.class);
 
-    private static final TemplateEventDispatcher INSTANCE = new TemplateEventDispatcher();
-
     private final Map<Class<? extends TemplateEvent>, List<ListenerEntry<? extends TemplateEvent>>> listeners = new ConcurrentHashMap<>();
     private final List<ListenerEntry<TemplateEvent>> globalListeners = new CopyOnWriteArrayList<>();
     private final Executor asyncExecutor;
@@ -37,7 +35,11 @@ public class TemplateEventDispatcher {
      * Returns the global singleton instance.
      */
     public static TemplateEventDispatcher getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final TemplateEventDispatcher INSTANCE = new TemplateEventDispatcher();
     }
 
     // ========== Listener Registration ==========

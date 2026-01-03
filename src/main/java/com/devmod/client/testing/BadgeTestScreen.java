@@ -78,7 +78,7 @@ public class BadgeTestScreen extends Screen {
                 Component.literal("Test " + rarity.displayName + " Badge")
             );
             EditorButton.Style style = EditorButton.Style.PRIMARY;
-            Integer accent = 0xFF000000 | rarity.color;
+            Integer accent = DesignTokens.Mask.ALPHA | rarity.color;
             if (rarity == BadgeRarity.LEGENDARY) {
                 style = EditorButton.Style.SUCCESS;
             } else if (rarity == BadgeRarity.COMMON) {
@@ -155,7 +155,7 @@ public class BadgeTestScreen extends Screen {
         int unreadCount = ClientNotificationManager.INSTANCE.getUnreadCount();
         String queueText = "Unread: " + unreadCount;
         graphics.drawCenteredString(font, queueText, this.width / 2, this.height - 30,
-            unreadCount > 0 ? 0xFF00FF00 : DesignTokens.Text.MUTED);
+            unreadCount > 0 ? TestingUiTheme.Badge.UNREAD : DesignTokens.Text.MUTED);
 
         // Render widgets
         for (PositionedButton pb : buttons) {
@@ -168,7 +168,7 @@ public class BadgeTestScreen extends Screen {
         for (BadgeRarity rarity : BadgeRarity.values()) {
             // Color dot
             int dotX = centerX + BUTTON_WIDTH / 2 + 10;
-            graphics.fill(dotX, y + 6, dotX + 12, y + 18, 0xFF000000 | rarity.color);
+            graphics.fill(dotX, y + 6, dotX + 12, y + 18, DesignTokens.Mask.ALPHA | rarity.color);
             y += BUTTON_SPACING;
         }
     }

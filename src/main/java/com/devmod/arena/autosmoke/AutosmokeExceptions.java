@@ -6,8 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AutosmokeExceptions {
 
-    private static final AutosmokeExceptions INSTANCE = new AutosmokeExceptions();
-
     /**
      * Exception categories
      */
@@ -35,7 +33,11 @@ public class AutosmokeExceptions {
     }
 
     public static AutosmokeExceptions getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final AutosmokeExceptions INSTANCE = new AutosmokeExceptions();
     }
 
     /**

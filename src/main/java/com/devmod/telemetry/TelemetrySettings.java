@@ -23,10 +23,13 @@ public record TelemetrySettings(long stuckMs, long campingMs, int campingHits, l
 
     public static TelemetrySettings load() {
         Path file = ConfigPaths.getTelemetrySettingsFile();
-        try {
-            Files.createDirectories(file.getParent());
-        } catch (IOException e) {
-            LOGGER.error("Cannot create config directory for telemetry settings", e);
+        Path parent = file.getParent();
+        if (parent != null) {
+            try {
+                Files.createDirectories(parent);
+            } catch (IOException e) {
+                LOGGER.error("Cannot create config directory for telemetry settings", e);
+            }
         }
 
         if (!Files.exists(file)) {

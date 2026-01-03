@@ -120,14 +120,13 @@ public sealed interface AvailabilityResult {
      * @return the check type name
      */
     default String getCheckType() {
-        return switch (this) {
-            case Available ignored -> "AVAILABLE";
-            case LevelNotMet ignored -> "LEVEL_CHECK";
-            case PrerequisitesNotMet ignored -> "PREREQUISITE_CHECK";
-            case OnCooldown ignored -> "COOLDOWN_CHECK";
-            case TemplateUnavailable ignored -> "TEMPLATE_CHECK";
-            case OutsideTimeWindow ignored -> "TIME_WINDOW_CHECK";
-        };
+        if (this instanceof Available) return "AVAILABLE";
+        if (this instanceof LevelNotMet) return "LEVEL_CHECK";
+        if (this instanceof PrerequisitesNotMet) return "PREREQUISITE_CHECK";
+        if (this instanceof OnCooldown) return "COOLDOWN_CHECK";
+        if (this instanceof TemplateUnavailable) return "TEMPLATE_CHECK";
+        if (this instanceof OutsideTimeWindow) return "TIME_WINDOW_CHECK";
+        return "UNKNOWN";
     }
 
     /**

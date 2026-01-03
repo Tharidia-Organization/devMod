@@ -3,6 +3,8 @@ package com.devmod.client.network;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.endurance.EnduranceColors;
+
 @OnlyIn(Dist.CLIENT)
 public final class ClientTensionCache {
 
@@ -66,12 +68,12 @@ public final class ClientTensionCache {
      */
     public static int getDisplayColor() {
         return switch (tensionLevel) {
-            case 0 -> 0x44FF44; // Green - calm
-            case 1 -> 0xAAFF44; // Yellow-green - building
-            case 2 -> 0xFFFF44; // Yellow - moderate
-            case 3 -> 0xFFAA44; // Orange - high
-            case 4 -> 0xFF4444; // Red - critical
-            default -> 0xFFFFFF;
+            case 0 -> EnduranceColors.Tension.CALM;      // Green - calm
+            case 1 -> EnduranceColors.Tension.BUILDING;  // Yellow-green - building
+            case 2 -> EnduranceColors.Tension.MODERATE;  // Yellow - moderate
+            case 3 -> EnduranceColors.Tension.HIGH;      // Orange - high
+            case 4 -> EnduranceColors.Tension.CRITICAL;  // Red - critical
+            default -> EnduranceColors.Tension.DEFAULT;
         };
     }
 

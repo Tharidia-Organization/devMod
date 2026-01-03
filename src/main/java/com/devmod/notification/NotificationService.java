@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -1018,7 +1019,7 @@ public class NotificationService {
             ).exceptionally(ex -> {
                 LOGGER.warn("[NotificationService] Achievement mailbox template failed for {}: {}",
                     playerUuid, ex.getMessage());
-                return null;
+                return Optional.empty();
             });
             return true;
         } catch (Exception e) {
@@ -1057,7 +1058,7 @@ public class NotificationService {
             ).exceptionally(ex -> {
                 LOGGER.warn("[NotificationService] Party mailbox template failed for {}: {}",
                     playerUuid, ex.getMessage());
-                return null;
+                return Optional.empty();
             });
         } catch (Exception e) {
             LOGGER.warn("[NotificationService] Party mailbox template failed for {}: {}",

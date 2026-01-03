@@ -239,12 +239,12 @@ public final class FuelConfigManager {
 
     private static FuelStats getVanillaDefaults(ItemStack stack) {
         FuelStats stats = new FuelStats();
-        stats.burnTime = getVanillaBurnTime(stack);
+        stats.setBurnTime(getVanillaBurnTime(stack));
         // Default cook times (vanilla values)
-        stats.furnaceCookTime = 200;
-        stats.blastFurnaceCookTime = 100;
-        stats.smokerCookTime = 100;
-        stats.campfireCookTime = 600;
+        stats.setFurnaceCookTime(200);
+        stats.setBlastFurnaceCookTime(100);
+        stats.setSmokerCookTime(100);
+        stats.setCampfireCookTime(600);
         return stats;
     }
 
@@ -323,27 +323,27 @@ public final class FuelConfigManager {
 
     private static JsonObject statsToJson(FuelStats stats) {
         JsonObject obj = new JsonObject();
-        obj.addProperty("burnTime", stats.burnTime);
-        obj.addProperty("overrideDefault", stats.overrideDefault);
-        obj.addProperty("efficiencyMultiplier", stats.efficiencyMultiplier);
-        obj.addProperty("furnaceCookTime", stats.furnaceCookTime);
-        obj.addProperty("blastFurnaceCookTime", stats.blastFurnaceCookTime);
-        obj.addProperty("smokerCookTime", stats.smokerCookTime);
-        obj.addProperty("campfireCookTime", stats.campfireCookTime);
-        obj.addProperty("customCookTimesEnabled", stats.customCookTimesEnabled);
+        obj.addProperty("burnTime", stats.getBurnTime());
+        obj.addProperty("overrideDefault", stats.isOverrideDefault());
+        obj.addProperty("efficiencyMultiplier", stats.getEfficiencyMultiplier());
+        obj.addProperty("furnaceCookTime", stats.getFurnaceCookTime());
+        obj.addProperty("blastFurnaceCookTime", stats.getBlastFurnaceCookTime());
+        obj.addProperty("smokerCookTime", stats.getSmokerCookTime());
+        obj.addProperty("campfireCookTime", stats.getCampfireCookTime());
+        obj.addProperty("customCookTimesEnabled", stats.isCustomCookTimesEnabled());
         return obj;
     }
 
     private static FuelStats parseStatsFromJson(JsonObject obj) {
         FuelStats stats = new FuelStats();
-        if (obj.has("burnTime")) stats.burnTime = obj.get("burnTime").getAsInt();
-        if (obj.has("overrideDefault")) stats.overrideDefault = obj.get("overrideDefault").getAsBoolean();
-        if (obj.has("efficiencyMultiplier")) stats.efficiencyMultiplier = obj.get("efficiencyMultiplier").getAsFloat();
-        if (obj.has("furnaceCookTime")) stats.furnaceCookTime = obj.get("furnaceCookTime").getAsInt();
-        if (obj.has("blastFurnaceCookTime")) stats.blastFurnaceCookTime = obj.get("blastFurnaceCookTime").getAsInt();
-        if (obj.has("smokerCookTime")) stats.smokerCookTime = obj.get("smokerCookTime").getAsInt();
-        if (obj.has("campfireCookTime")) stats.campfireCookTime = obj.get("campfireCookTime").getAsInt();
-        if (obj.has("customCookTimesEnabled")) stats.customCookTimesEnabled = obj.get("customCookTimesEnabled").getAsBoolean();
+        if (obj.has("burnTime")) stats.setBurnTime(obj.get("burnTime").getAsInt());
+        if (obj.has("overrideDefault")) stats.setOverrideDefault(obj.get("overrideDefault").getAsBoolean());
+        if (obj.has("efficiencyMultiplier")) stats.setEfficiencyMultiplier(obj.get("efficiencyMultiplier").getAsFloat());
+        if (obj.has("furnaceCookTime")) stats.setFurnaceCookTime(obj.get("furnaceCookTime").getAsInt());
+        if (obj.has("blastFurnaceCookTime")) stats.setBlastFurnaceCookTime(obj.get("blastFurnaceCookTime").getAsInt());
+        if (obj.has("smokerCookTime")) stats.setSmokerCookTime(obj.get("smokerCookTime").getAsInt());
+        if (obj.has("campfireCookTime")) stats.setCampfireCookTime(obj.get("campfireCookTime").getAsInt());
+        if (obj.has("customCookTimesEnabled")) stats.setCustomCookTimesEnabled(obj.get("customCookTimesEnabled").getAsBoolean());
         return stats;
     }
 }

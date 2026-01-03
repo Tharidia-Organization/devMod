@@ -125,7 +125,7 @@ public class PerkSynergyWeb {
     /**
      * Persistent discovery data for a player.
      */
-    public static class PlayerDiscoveries {
+    public static final class PlayerDiscoveries {
         private final UUID playerId;
         private final Set<String> discoveredHiddenPerks = new HashSet<>();
         private final Set<String> discoveredSynergies = new HashSet<>();

@@ -1,5 +1,7 @@
 package com.devmod.endurance.nemesis;
 
+import com.devmod.endurance.EnduranceColors;
+
 /**
  * Nemesis Adaptation - Abilities bosses unlock based on player combat patterns.
  *
@@ -17,7 +19,7 @@ public enum NemesisAdaptation {
     PROJECTILE_DEFLECTION(
         "Projectile Deflection",
         "Boss has a 30% chance to deflect ranged attacks",
-        0x55AAFF,
+        EnduranceColors.Nemesis.PROJECTILE_DEFLECTION,
         AdaptationType.DEFENSE
     ),
 
@@ -29,7 +31,7 @@ public enum NemesisAdaptation {
     SWEEPING_BLADE(
         "Sweeping Blade",
         "Boss anticipates dodge patterns with wide sweeping attacks",
-        0xFF5555,
+        EnduranceColors.Nemesis.SWEEPING_BLADE,
         AdaptationType.OFFENSE
     ),
 
@@ -41,7 +43,7 @@ public enum NemesisAdaptation {
     EARLY_PHASE_ACTIVATION(
         "Early Activation",
         "Boss starts the fight more prepared, with reduced phase times",
-        0xFFAA00,
+        EnduranceColors.Nemesis.EARLY_PHASE_ACTIVATION,
         AdaptationType.UTILITY
     ),
 
@@ -52,7 +54,7 @@ public enum NemesisAdaptation {
     DAMAGE_RESISTANCE(
         "Damage Resistance",
         "Boss has developed resistance to frequently used attack types",
-        0x888888,
+        EnduranceColors.Nemesis.DAMAGE_RESISTANCE,
         AdaptationType.DEFENSE
     ),
 
@@ -63,7 +65,7 @@ public enum NemesisAdaptation {
     PROTECTIVE_HELMET(
         "Protective Helmet",
         "Boss protects weak points, reducing headshot effectiveness",
-        0xAA8800,
+        EnduranceColors.Nemesis.PROTECTIVE_HELMET,
         AdaptationType.DEFENSE
     ),
 
@@ -76,7 +78,7 @@ public enum NemesisAdaptation {
     IMPROVED_REFLEXES(
         "Improved Reflexes",
         "Boss moves and attacks 15% faster",
-        0x55FF55,
+        EnduranceColors.Nemesis.IMPROVED_REFLEXES,
         AdaptationType.UTILITY
     ),
 
@@ -87,7 +89,7 @@ public enum NemesisAdaptation {
     ENRAGED(
         "Enraged",
         "Boss enters a fury state when wounded, dealing more damage",
-        0xFF0000,
+        EnduranceColors.Nemesis.ENRAGED,
         AdaptationType.OFFENSE
     ),
 
@@ -98,7 +100,7 @@ public enum NemesisAdaptation {
     VETERAN(
         "Veteran",
         "Battle-hardened boss with enhanced abilities and a signature move",
-        0xAA00AA,
+        EnduranceColors.Nemesis.VETERAN,
         AdaptationType.SPECIAL
     ),
 
@@ -111,7 +113,7 @@ public enum NemesisAdaptation {
     EVASION(
         "Evasion",
         "Boss can occasionally dodge attacks entirely",
-        0x00FFFF,
+        EnduranceColors.Nemesis.EVASION,
         AdaptationType.DEFENSE
     ),
 
@@ -122,7 +124,7 @@ public enum NemesisAdaptation {
     REGENERATION(
         "Regeneration",
         "Boss slowly heals when not taking damage",
-        0x00FF00,
+        EnduranceColors.Nemesis.REGENERATION,
         AdaptationType.UTILITY
     ),
 
@@ -133,7 +135,7 @@ public enum NemesisAdaptation {
     SUMMONER(
         "Summoner",
         "Boss calls reinforcements when wounded",
-        0x8800AA,
+        EnduranceColors.Nemesis.SUMMONER,
         AdaptationType.SPECIAL
     );
 

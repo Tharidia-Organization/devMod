@@ -56,7 +56,7 @@ public class EnduranceQuestRegistry {
      * Actual stats read from spawning a test entity.
      */
     public record ActualMobStats(double health, double damage, double speed, double armor, double knockbackResist) {
-        public static ActualMobStats UNKNOWN = new ActualMobStats(-1, -1, -1, -1, -1);
+        public static final ActualMobStats UNKNOWN = new ActualMobStats(-1, -1, -1, -1, -1);
 
         public boolean isValid() {
             return health > 0;
@@ -123,7 +123,7 @@ public class EnduranceQuestRegistry {
     /**
      * Configuration for a mob's quest parameters.
      */
-    public static class MobQuestConfig {
+    public static final class MobQuestConfig {
         public final ResourceLocation mobId;
         public final EntityType<?> entityType;
         public final MobTier tier;

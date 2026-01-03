@@ -1,6 +1,12 @@
 package com.devmod.client;
 
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
@@ -10,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.bridge.ClientUiBridge;
+import com.devmod.client.compat.mods.yacl.YaclCompat;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
 import com.devmod.client.ui.editor.debug.DebugOverlay;
@@ -17,6 +24,8 @@ import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
 public class ClientUiBridgeImpl implements ClientUiBridge {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientUiBridgeImpl.class);
 
     /**
      * Initialize and register this bridge.
@@ -33,7 +42,79 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
     @Override
     public void openSettings() {
         Minecraft mc = mc();
-        mc.setScreen(new com.devmod.client.ui.unified.UnifiedSettingsScreen(mc.screen));
+        Screen parent = mc.screen;
+
+        // Try YACL-based settings if available and preferred
+        Screen yaclScreen = tryBuildYaclSettings(parent);
+        if (yaclScreen != null) {
+            LOGGER.debug("[ClientUiBridge] Using YACL settings screen");
+            mc.setScreen(yaclScreen);
+            return;
+        }
+
+        // Fall back to native settings screen
+        mc.setScreen(new com.devmod.client.ui.unified.UnifiedSettingsScreen(parent));
+    }
+
+    /**
+     * Attempt to build a YACL-based settings screen.
+     * Uses YaclCompat API methods when YACL is available and preferred.
+     *
+     * @param parent Parent screen
+     * @return YACL screen if successful, null otherwise
+     */
+    @Nullable
+    private Screen tryBuildYaclSettings(Screen parent) {
+        // Check if YACL should be used
+        if (!YaclCompat.isApiAvailable() || !YaclCompat.shouldPreferYacl()) {
+            LOGGER.debug("[ClientUiBridge] YACL status: {}", YaclCompat.getStatusSummary());
+            return null;
+        }
+
+        // Try to build YACL screen with DevMod categories
+        final boolean[] categoryAdded = {false};
+        Screen screen = YaclCompat.buildConfigScreen(
+            parent,
+            Component.translatable("devmod.settings.title"),
+            builder -> {
+                // Create a simple category for demonstration
+                Object categoryBuilder = YaclCompat.createCategoryBuilder();
+                if (categoryBuilder == null) {
+                    return;
+                }
+
+                try {
+                    // Configure category name
+                    var nameMethod = categoryBuilder.getClass().getMethod("name", Component.class);
+                    categoryBuilder = nameMethod.invoke(categoryBuilder,
+                        Component.translatable("devmod.settings.category.general"));
+
+                    // Add tooltip/description
+                    Object description = YaclCompat.createDescription(
+                        Component.translatable("devmod.settings.category.general.description"));
+                    if (description != null) {
+                        var tooltipMethod = categoryBuilder.getClass().getMethod("tooltip", description.getClass());
+                        categoryBuilder = tooltipMethod.invoke(categoryBuilder, description);
+                    }
+
+                    // Build category and add to builder
+                    var buildMethod = categoryBuilder.getClass().getMethod("build");
+                    Object category = buildMethod.invoke(categoryBuilder);
+
+                    var categoryMethod = builder.getClass().getMethod("category", category.getClass());
+                    categoryMethod.invoke(builder, category);
+                    categoryAdded[0] = true;
+
+                } catch (Exception e) {
+                    LOGGER.debug("[ClientUiBridge] YACL category configuration failed: {}", e.getMessage());
+                }
+            }
+        );
+        if (screen == null || !categoryAdded[0]) {
+            LOGGER.debug("[ClientUiBridge] YACL screen build incomplete, falling back");
+            return null;
+        }
+        return screen;
     }
 
     @Override

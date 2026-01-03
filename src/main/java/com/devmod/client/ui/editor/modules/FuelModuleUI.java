@@ -14,6 +14,7 @@ import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.sections.ModuleSummarySection;
 import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
@@ -81,11 +82,11 @@ public class FuelModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Burn time in ticks. Coal = 1600, Stick = 100, Coal Block = 16000. 20 ticks = 1 second.")
-            .onChange(v -> { stats.burnTime = v.intValue(); module.markDirty("Burn time"); });
+            .onChange(v -> { stats.setBurnTime(v.intValue()); module.markDirty("Burn time"); });
 
         overrideDefaultToggle = new EditorToggle("overrideDefault", "Override Vanilla", false)
             .source(dataSource)
-            .onChange(v -> { stats.overrideDefault = v; module.markDirty("Override vanilla"); });
+            .onChange(v -> { stats.setOverrideDefault(v); module.markDirty("Override vanilla"); });
 
         efficiencySlider = new EditorSlider("efficiency", "Efficiency", 0.1f, 3.0f, 1.0f)
             .step(0.1f)
@@ -95,7 +96,7 @@ public class FuelModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Multiplier for burn time. 1.0 = normal, 2.0 = double burn time, 0.5 = half.")
-            .onChange(v -> { stats.efficiencyMultiplier = v; module.markDirty("Efficiency"); });
+            .onChange(v -> { stats.setEfficiencyMultiplier(v); module.markDirty("Efficiency"); });
     }
 
     public List<EditorSection> getBurnTimeSections() {
@@ -128,7 +129,7 @@ public class FuelModuleUI {
 
         customCookTimesToggle = new EditorToggle("customCookTimes", "Enable Custom Cook Times", false)
             .source(dataSource)
-            .onChange(v -> { stats.customCookTimesEnabled = v; module.markDirty("Custom cook times"); });
+            .onChange(v -> { stats.setCustomCookTimesEnabled(v); module.markDirty("Custom cook times"); });
 
         furnaceCookTimeSlider = new EditorSlider("furnaceCook", "Furnace", 1, 1000, 200)
             .step(10)
@@ -138,7 +139,7 @@ public class FuelModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Cook time in standard furnace. Default = 200 ticks (10 seconds).")
-            .onChange(v -> { stats.furnaceCookTime = v.intValue(); module.markDirty("Furnace cook time"); });
+            .onChange(v -> { stats.setFurnaceCookTime(v.intValue()); module.markDirty("Furnace cook time"); });
 
         blastFurnaceCookTimeSlider = new EditorSlider("blastCook", "Blast Furnace", 1, 500, 100)
             .step(10)
@@ -148,7 +149,7 @@ public class FuelModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Cook time in blast furnace. Default = 100 ticks (5 seconds, 2x faster).")
-            .onChange(v -> { stats.blastFurnaceCookTime = v.intValue(); module.markDirty("Blast furnace cook time"); });
+            .onChange(v -> { stats.setBlastFurnaceCookTime(v.intValue()); module.markDirty("Blast furnace cook time"); });
 
         smokerCookTimeSlider = new EditorSlider("smokerCook", "Smoker", 1, 500, 100)
             .step(10)
@@ -158,7 +159,7 @@ public class FuelModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Cook time in smoker. Default = 100 ticks (5 seconds, 2x faster for food).")
-            .onChange(v -> { stats.smokerCookTime = v.intValue(); module.markDirty("Smoker cook time"); });
+            .onChange(v -> { stats.setSmokerCookTime(v.intValue()); module.markDirty("Smoker cook time"); });
 
         campfireCookTimeSlider = new EditorSlider("campfireCook", "Campfire", 1, 2000, 600)
             .step(20)
@@ -168,7 +169,7 @@ public class FuelModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Cook time on campfire. Default = 600 ticks (30 seconds).")
-            .onChange(v -> { stats.campfireCookTime = v.intValue(); module.markDirty("Campfire cook time"); });
+            .onChange(v -> { stats.setCampfireCookTime(v.intValue()); module.markDirty("Campfire cook time"); });
     }
 
     public List<EditorSection> getCookTimeSections() {
@@ -210,22 +211,52 @@ public class FuelModuleUI {
             FuelStats stats = core.getStats();
             FuelStats original = core.getOriginalStats();
 
-            String burnChanged = stats.burnTime != original.burnTime ? " *" : "";
-            sections.add(new TextNoteSection("debug-burn", "Burn Time: " + stats.burnTime + burnChanged));
+            String burnChanged = stats.getBurnTime() != original.getBurnTime() ? " *" : "";
+            sections.add(new TextNoteSection("debug-burn", "Burn Time: " + stats.getBurnTime() + burnChanged));
 
-            String effChanged = Math.abs(stats.efficiencyMultiplier - original.efficiencyMultiplier) > 0.001f ? " *" : "";
-            sections.add(new TextNoteSection("debug-eff", String.format("Efficiency: %.1f%s", stats.efficiencyMultiplier, effChanged)));
+            String effChanged = Math.abs(stats.getEfficiencyMultiplier() - original.getEfficiencyMultiplier()) > 0.001f ? " *" : "";
+            sections.add(new TextNoteSection("debug-eff", String.format("Efficiency: %.1f%s", stats.getEfficiencyMultiplier(), effChanged)));
 
             String effectiveBurn = "Effective: " + stats.getEffectiveBurnTime() + " ticks";
             sections.add(new TextNoteSection("debug-effective", effectiveBurn));
 
-            String overrideChanged = stats.overrideDefault != original.overrideDefault ? " *" : "";
-            sections.add(new TextNoteSection("debug-override", "Override: " + stats.overrideDefault + overrideChanged));
+            String overrideChanged = stats.isOverrideDefault() != original.isOverrideDefault() ? " *" : "";
+            sections.add(new TextNoteSection("debug-override", "Override: " + stats.isOverrideDefault() + overrideChanged));
 
             sections.add(new TextNoteSection("debug-legend", "* = modified from original"));
         }
 
         return sections;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SUMMARY TAB (uses ModuleSummarySection with 2-param StatEntry)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Get summary sections using ModuleSummarySection with 2-param StatEntry constructor.
+     * This demonstrates usage of the simplest StatEntry pattern with just label and value.
+     */
+    public List<EditorSection> getSummarySections() {
+        FuelStats stats = core.getStats();
+
+        // Use 2-param StatEntry constructor for simplest usage pattern
+        ModuleSummarySection.StatEntry burnEntry = new ModuleSummarySection.StatEntry(
+            "Burn Time", stats.getBurnTime());
+        ModuleSummarySection.StatEntry effEntry = new ModuleSummarySection.StatEntry(
+            "Efficiency", stats.getEfficiencyMultiplier());
+
+        // Build summary demonstrating various overloads
+        ModuleSummarySection summary = ModuleSummarySection.builder("fuel-summary", "Fuel Summary")
+            .accentColor(DesignTokens.Accent.ORANGE())
+            .addStat(burnEntry)                                                 // StatEntry overload (2-param ctor)
+            .addStat(effEntry)                                                  // StatEntry overload (2-param ctor)
+            .addStat("Effective", stats.getEffectiveBurnTime(), "%.0f ticks")   // 3-param overload
+            .addStat("Items", stats.getItemsSmeltable())                        // 2-param overload
+            .addStat("Override", stats.isOverrideDefault() ? 1.0 : 0.0, stats.isOverrideDefault() ? "Yes" : "No")
+            .build();
+
+        return List.of(summary);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -239,15 +270,15 @@ public class FuelModuleUI {
         FuelStats stats = core.getStats();
 
         // Burn time components
-        if (burnTimeSlider != null) burnTimeSlider.setValue(stats.burnTime);
-        if (overrideDefaultToggle != null) overrideDefaultToggle.setValue(stats.overrideDefault);
-        if (efficiencySlider != null) efficiencySlider.setValue(stats.efficiencyMultiplier);
+        if (burnTimeSlider != null) burnTimeSlider.setValue(stats.getBurnTime());
+        if (overrideDefaultToggle != null) overrideDefaultToggle.setValue(stats.isOverrideDefault());
+        if (efficiencySlider != null) efficiencySlider.setValue(stats.getEfficiencyMultiplier());
 
         // Cook time components
-        if (customCookTimesToggle != null) customCookTimesToggle.setValue(stats.customCookTimesEnabled);
-        if (furnaceCookTimeSlider != null) furnaceCookTimeSlider.setValue(stats.furnaceCookTime);
-        if (blastFurnaceCookTimeSlider != null) blastFurnaceCookTimeSlider.setValue(stats.blastFurnaceCookTime);
-        if (smokerCookTimeSlider != null) smokerCookTimeSlider.setValue(stats.smokerCookTime);
-        if (campfireCookTimeSlider != null) campfireCookTimeSlider.setValue(stats.campfireCookTime);
+        if (customCookTimesToggle != null) customCookTimesToggle.setValue(stats.isCustomCookTimesEnabled());
+        if (furnaceCookTimeSlider != null) furnaceCookTimeSlider.setValue(stats.getFurnaceCookTime());
+        if (blastFurnaceCookTimeSlider != null) blastFurnaceCookTimeSlider.setValue(stats.getBlastFurnaceCookTime());
+        if (smokerCookTimeSlider != null) smokerCookTimeSlider.setValue(stats.getSmokerCookTime());
+        if (campfireCookTimeSlider != null) campfireCookTimeSlider.setValue(stats.getCampfireCookTime());
     }
 }

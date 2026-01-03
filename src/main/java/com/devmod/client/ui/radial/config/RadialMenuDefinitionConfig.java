@@ -86,7 +86,7 @@ public final class RadialMenuDefinitionConfig {
      *
      * @param id Unique category ID (lowercase with underscores)
      * @param name Display name for the category
-     * @param color Optional hex color (e.g., "0xFF4488FF")
+     * @param color Optional hex color (e.g., "#FF4488FF")
      * @param colorToken Optional reference to DesignTokens.Radial constant
      * @param icon Optional emoji icon
      * @param iconItem Optional Minecraft item ID for icon (e.g., "minecraft:ender_eye")

@@ -1,12 +1,11 @@
 package com.devmod.party;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -142,7 +141,7 @@ public class PartyManagerLoadTest {
 
             for (int i = 0; i < concurrency; i++) {
                 final int playerId = i;
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         UUID leaderId = UUID.randomUUID();
@@ -197,7 +196,7 @@ public class PartyManagerLoadTest {
             AtomicInteger successes = new AtomicInteger(0);
 
             for (int i = 0; i < attempts; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         PartyData party = manager.createParty(playerId, "TestPlayer", QuestType.PVE_COOP);
@@ -230,7 +229,7 @@ public class PartyManagerLoadTest {
             LoadTestMetrics disbandMetrics = new LoadTestMetrics();
 
             for (int i = 0; i < iterations; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         UUID leaderId = UUID.randomUUID();
 
@@ -290,7 +289,7 @@ public class PartyManagerLoadTest {
             ExecutorService executor = Executors.newFixedThreadPool(partyCount);
             CountDownLatch doneLatch = new CountDownLatch(partyCount);
             LoadTestMetrics metrics = new LoadTestMetrics();
-            Map<UUID, PartyData> parties = new ConcurrentHashMap<>();
+            Map<UUID, PartyData> parties = new HashMap<>();
 
             // Create parties with EVENT type for larger capacity
             for (int i = 0; i < partyCount; i++) {
@@ -306,7 +305,7 @@ public class PartyManagerLoadTest {
             // Send invites from each party
             for (Map.Entry<UUID, PartyData> entry : parties.entrySet()) {
                 UUID leaderId = entry.getKey();
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         for (int j = 0; j < invitesPerParty; j++) {
                             UUID targetId = UUID.randomUUID();
@@ -351,7 +350,7 @@ public class PartyManagerLoadTest {
             LoadTestMetrics declineMetrics = new LoadTestMetrics();
 
             // Create multiple parties with invites
-            Map<UUID, UUID> playerToInvite = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInvite = new HashMap<>();
             List<PartyData> parties = new ArrayList<>();
 
             for (int p = 0; p < partyCount; p++) {
@@ -372,13 +371,13 @@ public class PartyManagerLoadTest {
             assertEquals(totalInvites, playerToInvite.size());
 
             // Respond to invites concurrently (50% accept, 50% decline)
-            AtomicInteger index = new AtomicInteger(0);
+            int index = 0;
             for (Map.Entry<UUID, UUID> entry : playerToInvite.entrySet()) {
                 UUID playerId = entry.getKey();
                 UUID inviteId = entry.getValue();
-                boolean shouldAccept = (index.getAndIncrement() % 2 == 0);
+                boolean shouldAccept = (index++ % 2 == 0);
 
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         long start = System.nanoTime();
                         boolean result;
@@ -440,7 +439,7 @@ public class PartyManagerLoadTest {
             }
 
             for (UUID leaderId : leaders) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         PartyInvite invite = manager.sendInvite(leaderId, targetId, "Target");
@@ -523,7 +522,7 @@ public class PartyManagerLoadTest {
             LoadTestMetrics metrics = new LoadTestMetrics();
 
             for (UUID memberId : allMemberIds) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         long start = System.nanoTime();
@@ -571,7 +570,7 @@ public class PartyManagerLoadTest {
             AtomicInteger operationType = new AtomicInteger(0);
 
             for (int i = 0; i < operationCount; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         int op = operationType.getAndIncrement() % 3;
                         UUID playerId = UUID.randomUUID();
@@ -671,7 +670,7 @@ public class PartyManagerLoadTest {
             LoadTestMetrics tickMetrics = new LoadTestMetrics();
 
             for (int i = 0; i < 1000; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         long start = System.nanoTime();
                         manager.tick();
@@ -713,7 +712,7 @@ public class PartyManagerLoadTest {
 
             // Disconnect all players simultaneously
             for (UUID playerId : players) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         long start = System.nanoTime();
                         manager.handlePlayerDisconnect(playerId);

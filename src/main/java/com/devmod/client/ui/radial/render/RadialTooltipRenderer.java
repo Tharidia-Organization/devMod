@@ -11,6 +11,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
@@ -192,7 +193,7 @@ public final class RadialTooltipRenderer {
         float helpAlpha = Math.min(1f,
             (System.currentTimeMillis() - openTime) / (float) RadialMenuConstants.HELP_FADE_DURATION_MS);
         int textAlpha = (int) (RadialMenuConstants.HELP_TEXT_ALPHA * helpAlpha);
-        int helpColor = (textAlpha << 24) | (theme.textSecondary & 0x00FFFFFF);
+        int helpColor = (textAlpha << 24) | (theme.textSecondary & DesignTokens.Mask.RGB);
 
         String helpLine;
         if (searchMode) {

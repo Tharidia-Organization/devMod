@@ -114,20 +114,22 @@ public final class ConfigValidator {
             }
         }
 
-        lastResult = new ValidationResult(allErrors);
+        // Local capture for null safety - create result and capture locally
+        ValidationResult result = new ValidationResult(allErrors);
+        lastResult = result;
 
-        // Log summary
-        if (lastResult.hasErrors()) {
+        // Log summary using local capture
+        if (result.hasErrors()) {
             LOGGER.error("[ConfigValidator] Validation FAILED: {} errors, {} warnings",
-                lastResult.getErrorCount(), lastResult.getWarningCount());
-            for (ValidationError error : lastResult.getErrors()) {
+                result.getErrorCount(), result.getWarningCount());
+            for (ValidationError error : result.getErrors()) {
                 LOGGER.error("  - [{}] {}.{}: {}",
                     error.severity(), error.subsystem(), error.field(), error.message());
             }
-        } else if (lastResult.hasWarnings()) {
+        } else if (result.hasWarnings()) {
             LOGGER.warn("[ConfigValidator] Validation passed with {} warnings",
-                lastResult.getWarningCount());
-            for (ValidationError warning : lastResult.getWarnings()) {
+                result.getWarningCount());
+            for (ValidationError warning : result.getWarnings()) {
                 LOGGER.warn("  - [{}] {}.{}: {}",
                     warning.severity(), warning.subsystem(), warning.field(), warning.message());
             }
@@ -135,7 +137,7 @@ public final class ConfigValidator {
             LOGGER.info("[ConfigValidator] Validation passed");
         }
 
-        return lastResult;
+        return result;
     }
 
     /**
@@ -275,22 +277,18 @@ public final class ConfigValidator {
                 return errors; // Skip if disabled
             }
 
-            // Validate arena templates directory exists
-            java.nio.file.Path templatesDir = java.nio.file.Paths.get("config/devmod/arena_templates");
-            if (!java.nio.file.Files.exists(templatesDir)) {
-                errors.add(ValidationError.warning(
-                    "endurance", "templates",
-                    "Arena templates directory does not exist: " + templatesDir
-                ));
+            // Validate arena templates directory exists (uses helper)
+            ValidationError templatesError = validatePathExists(
+                "endurance", "templates", "config/devmod/arena_templates");
+            if (templatesError != null) {
+                errors.add(templatesError);
             }
 
-            // Validate kits directory
-            java.nio.file.Path kitsDir = java.nio.file.Paths.get("config/devmod/kits");
-            if (!java.nio.file.Files.exists(kitsDir)) {
-                errors.add(ValidationError.warning(
-                    "endurance", "kits",
-                    "Kits directory does not exist: " + kitsDir
-                ));
+            // Validate kits directory (uses helper)
+            ValidationError kitsError = validatePathExists(
+                "endurance", "kits", "config/devmod/kits");
+            if (kitsError != null) {
+                errors.add(kitsError);
             }
 
         } catch (Exception e) {

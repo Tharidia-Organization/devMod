@@ -9,6 +9,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
+import com.devmod.endurance.EnduranceColors;
+
 public final class BloodContract {
 
     private final ResourceLocation id;
@@ -24,10 +26,10 @@ public final class BloodContract {
      * Contract tiers determine visual style and base difficulty.
      */
     public enum ContractTier {
-        MINOR(0.5f, 0xFFAA00, "Minor"),      // Small risk, small reward
-        STANDARD(1.0f, 0xFF6600, "Standard"), // Balanced
-        MAJOR(1.5f, 0xFF3300, "Major"),       // High risk
-        BLOOD(2.0f, 0xFF0000, "Blood");       // Extreme risk
+        MINOR(0.5f, EnduranceColors.Contract.MINOR, "Minor"),       // Small risk, small reward
+        STANDARD(1.0f, EnduranceColors.Contract.STANDARD, "Standard"), // Balanced
+        MAJOR(1.5f, EnduranceColors.Contract.MAJOR, "Major"),        // High risk
+        BLOOD(2.0f, EnduranceColors.Contract.BLOOD, "Blood");        // Extreme risk
 
         public final float baseMultiplier;
         public final int color;

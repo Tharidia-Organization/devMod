@@ -238,7 +238,7 @@ public class DevilsBargainManager {
         message.append("§7Choose a curse for greater rewards:\n");
         for (int i = 0; i < offerings.size(); i++) {
             Curse curse = offerings.get(i);
-            message.append(String.format("§7[%d] %s §7- %s §e(%.2fx)\n",
+            message.append(String.format("§7[%d] %s §7- %s §e(%.2fx)%n",
                 i + 1, curse.getFormattedName(), curse.description, curse.rewardMultiplier));
         }
         message.append("§8Skip with /bargain skip");
@@ -532,8 +532,7 @@ public class DevilsBargainManager {
     }
 
     private static BlockPos resolveBlockPos(ServerPlayer player) {
-        BlockPos pos = player.blockPosition();
-        return pos != null ? pos : BlockPos.containing(player.getX(), player.getY(), player.getZ());
+        return player.blockPosition();
     }
 
     private static Component literalMessage(String message) {

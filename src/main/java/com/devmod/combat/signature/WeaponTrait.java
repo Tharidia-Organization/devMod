@@ -9,6 +9,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.combat.CombatColors;
+
 public class WeaponTrait {
 
     // Fields annotated @Nonnull - constructor validates via Objects.requireNonNull()
@@ -234,7 +236,7 @@ public class WeaponTrait {
         private String adjective = "Enhanced";
         private SoulImprint.ImprintStat requiredStat;
         private TraitEffect effect;
-        private int color = 0xFFFFFF;
+        private int color = CombatColors.Text.PRIMARY;
 
         private Builder(ResourceLocation id) {
             this.id = id;

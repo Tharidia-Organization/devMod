@@ -16,7 +16,6 @@ import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
 import net.minecraft.network.protocol.common.custom.NeighborUpdatesDebugPayload;
-import net.minecraft.network.protocol.common.custom.PathfindingDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiRemovedDebugPayload;
 import net.minecraft.network.protocol.common.custom.RaidsDebugPayload;
 import net.minecraft.network.protocol.game.DebugPackets;
@@ -38,18 +37,14 @@ public class DebugPacketsMixin {
     /**
      * Send pathfinding debug packets to players with the feature enabled.
      */
-    @Inject(method = "sendPathFindingPacket", at = @At("HEAD"))
+    @Inject(method = "sendPathFindingPacket", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendPathFindingPacket(Level level, Mob mob, Path path, float maxDistanceToWaypoint, CallbackInfo ci) {
         Objects.requireNonNull(ci, "CallbackInfo required by Mixin");
-        if (!(level instanceof ServerLevel serverLevel) || path == null) return;
-
-        PathfindingDebugPayload payload = new PathfindingDebugPayload(
-            mob.getId(),
-            path,
-            maxDistanceToWaypoint
-        );
-
-        sendToPlayers(serverLevel, payload, DebugFeature.ENTITY_PATHING);
+        // Cancel vanilla method completely - PathfindingDebugPayload has serialization issues
+        // that cause IndexOutOfBoundsException on client-side deserialization.
+        // The Path.createFromStream() reads more bytes than were written for some paths.
+        // TODO: Implement custom pathfinding debug visualization that doesn't use vanilla packets
+        ci.cancel();
     }
 
     /**

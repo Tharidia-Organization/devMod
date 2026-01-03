@@ -26,8 +26,6 @@ public class AbilityEventHandler {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         var server = event.getServer();
-        if (server == null) return;
-
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             // Skip creative/spectator players
             if (player.isCreative() || player.isSpectator()) continue;
@@ -48,7 +46,7 @@ public class AbilityEventHandler {
         if (player.level().isClientSide()) return;
 
         // Get damage source for telemetry
-        String damageSource = event.getSource() != null ? event.getSource().getMsgId() : "unknown";
+        String damageSource = event.getSource().getMsgId();
 
         // Check if player has dodge i-frames active
         if (DodgeAbilitySystem.INSTANCE.onDamageDuringDodge(player, event.getAmount(), damageSource)) {

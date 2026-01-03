@@ -23,7 +23,6 @@ public class TestDetailPanel implements HubPanel {
 
     private final int x, y, width, height;
     private final Font font;
-    private final TestingHubState state;
     private final BiConsumer<TestCase, Verdict> onVerdictGiven;
     private final EnumMap<Verdict, EditorButton> verdictButtons;
 
@@ -49,14 +48,12 @@ public class TestDetailPanel implements HubPanel {
     private int maxInstructionScroll = 0;
 
     public TestDetailPanel(int x, int y, int width, int height, Font font,
-                           TestingHubState state,
                            BiConsumer<TestCase, Verdict> onVerdictGiven) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.font = font;
-        this.state = state;
         this.onVerdictGiven = onVerdictGiven;
         this.verdictButtons = buildVerdictButtons();
     }
@@ -81,10 +78,6 @@ public class TestDetailPanel implements HubPanel {
     public void showCompletionMessage() {
         this.showCompletion = true;
         this.currentTest = null;
-    }
-
-    public void updateToolStatus(ToolType tool, boolean enabled) {
-        // Trigger re-render with new tool state
     }
 
     @Override
@@ -207,7 +200,7 @@ public class TestDetailPanel implements HubPanel {
     }
 
     private int renderWrappedText(GuiGraphics graphics, int cx, int cy, int maxWidth, String text, int color) {
-        Iterable<String> words = SPACE_SPLITTER.split(text);
+        Iterable<String> words = SPACE_SPLITTER.split(Objects.requireNonNull(text, "text"));
         StringBuilder line = new StringBuilder();
         int lineY = cy;
 
@@ -377,10 +370,6 @@ public class TestDetailPanel implements HubPanel {
     public int getWidth() { return width; }
     @Override
     public int getHeight() { return height; }
-
-    public TestingHubState getState() {
-        return state;
-    }
 
     private EnumMap<Verdict, EditorButton> buildVerdictButtons() {
         EnumMap<Verdict, EditorButton> buttons = new EnumMap<>(Verdict.class);

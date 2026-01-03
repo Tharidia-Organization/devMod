@@ -27,7 +27,7 @@ import com.google.gson.JsonParser;
 
 import com.devmod.util.ConfigPaths;
 
-public class TesterProfile {
+public final class TesterProfile {
     private static final Logger LOGGER = LoggerFactory.getLogger(TesterProfile.class);
     // Lazy initialization to avoid NPE during class loading (FMLPaths not ready yet)
     private static Path getProfileFile() {
@@ -60,16 +60,6 @@ public class TesterProfile {
         "Master Tester",
         "Elite Tester",
         "Legendary Tester"
-    };
-
-    private static final int[] LEVEL_COLORS = {
-        0xFF888888,  // Gray
-        0xFF55FF55,  // Green
-        0xFF5555FF,  // Blue
-        0xFFAA00AA,  // Purple
-        0xFFFFAA00,  // Gold
-        0xFFFF5555,  // Red
-        0xFFFF55FF   // Magenta (Legendary)
     };
 
     // === STREAKS ===
@@ -186,16 +176,16 @@ public class TesterProfile {
     }
 
     public enum AchievementCategory {
-        COMBAT("Combat", 0xFFFF5555),
-        PRECISION("Precision", 0xFFFFAA00),
-        RANGED("Ranged", 0xFF55FF55),
-        SURVIVAL("Survival", 0xFF5555FF),
-        EXPLOSION("Explosion", 0xFFFF8800),
-        ALCHEMY("Alchemy", 0xFFAA00AA),
-        EXPLORER("Explorer", 0xFF00AAAA),
-        DEDICATION("Dedication", 0xFFFFFF00),
-        TESTING("Testing", 0xFF55FFFF),
-        SPECIAL("Special", 0xFFFF55FF);
+        COMBAT("Combat", TestingColors.AchievementCategory.COMBAT),
+        PRECISION("Precision", TestingColors.AchievementCategory.PRECISION),
+        RANGED("Ranged", TestingColors.AchievementCategory.RANGED),
+        SURVIVAL("Survival", TestingColors.AchievementCategory.SURVIVAL),
+        EXPLOSION("Explosion", TestingColors.AchievementCategory.EXPLOSION),
+        ALCHEMY("Alchemy", TestingColors.AchievementCategory.ALCHEMY),
+        EXPLORER("Explorer", TestingColors.AchievementCategory.EXPLORER),
+        DEDICATION("Dedication", TestingColors.AchievementCategory.DEDICATION),
+        TESTING("Testing", TestingColors.AchievementCategory.TESTING),
+        SPECIAL("Special", TestingColors.AchievementCategory.SPECIAL);
 
         private final String name;
         private final int color;
@@ -213,13 +203,13 @@ public class TesterProfile {
     private final Set<String> earnedBadges = ConcurrentHashMap.newKeySet();
 
     public enum Badge {
-        BRONZE_TESTER("bronze_tester", "Bronze Tester", "Reach Level 2", 0xFFCD7F32),
-        SILVER_TESTER("silver_tester", "Silver Tester", "Reach Level 4", 0xFFC0C0C0),
-        GOLD_TESTER("gold_tester", "Gold Tester", "Reach Level 6", 0xFFFFD700),
-        DIAMOND_TESTER("diamond_tester", "Diamond Tester", "Reach Level 7", 0xFFB9F2FF),
-        COMBAT_SPECIALIST("combat_specialist", "Combat Specialist", "Earn all Combat achievements", 0xFFFF5555),
-        PRECISION_EXPERT("precision_expert", "Precision Expert", "Earn all Precision achievements", 0xFFFFAA00),
-        COMPLETIONIST("completionist", "Completionist", "Earn all achievements", 0xFFFF55FF);
+        BRONZE_TESTER("bronze_tester", "Bronze Tester", "Reach Level 2", TestingColors.Badge.BRONZE_TESTER),
+        SILVER_TESTER("silver_tester", "Silver Tester", "Reach Level 4", TestingColors.Badge.SILVER_TESTER),
+        GOLD_TESTER("gold_tester", "Gold Tester", "Reach Level 6", TestingColors.Badge.GOLD_TESTER),
+        DIAMOND_TESTER("diamond_tester", "Diamond Tester", "Reach Level 7", TestingColors.Badge.DIAMOND_TESTER),
+        COMBAT_SPECIALIST("combat_specialist", "Combat Specialist", "Earn all Combat achievements", TestingColors.Badge.COMBAT_SPECIALIST),
+        PRECISION_EXPERT("precision_expert", "Precision Expert", "Earn all Precision achievements", TestingColors.Badge.PRECISION_EXPERT),
+        COMPLETIONIST("completionist", "Completionist", "Earn all achievements", TestingColors.Badge.COMPLETIONIST);
 
         private final String id;
         private final String name;
@@ -308,7 +298,7 @@ public class TesterProfile {
     }
 
     public int getLevelColor() {
-        return LEVEL_COLORS[Math.min(currentLevel - 1, LEVEL_COLORS.length - 1)];
+        return TestingColors.Level.forLevel(currentLevel);
     }
 
     public int getXPForNextLevel() {
@@ -594,7 +584,11 @@ public class TesterProfile {
 
     public void save() {
         try {
-            Files.createDirectories(getProfileFile().getParent());
+            Path profileFile = getProfileFile();
+            Path parent = profileFile.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
 
             JsonObject root = new JsonObject();
 
@@ -629,7 +623,7 @@ public class TesterProfile {
             }
             root.add("earnedBadges", badgesArray);
 
-            Files.writeString(getProfileFile(), GSON.toJson(root), StandardCharsets.UTF_8);
+            Files.writeString(profileFile, GSON.toJson(root), StandardCharsets.UTF_8);
         } catch (IOException e) {
             LOGGER.error("Failed to save tester profile: {}", e.getMessage());
         }
@@ -641,7 +635,7 @@ public class TesterProfile {
             if (getProfileFile() == null || !Files.exists(getProfileFile())) {
                 return;
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // Files.exists() can throw on certain file systems or thread contexts
             LOGGER.debug("Could not check profile file existence: {}", e.getMessage());
             return;
@@ -698,7 +692,7 @@ public class TesterProfile {
 
             LOGGER.info("Tester profile loaded: Level {}, {} XP, {}/{} achievements",
                 currentLevel, totalXP, unlockedAchievements.size(), Achievement.values().length);
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             LOGGER.error("Failed to load tester profile: {}", e.getMessage());
         }
     }
@@ -724,10 +718,10 @@ public class TesterProfile {
      */
     public String getSummary() {
         return String.format(
-            "%s (Level %d)\n" +
-            "XP: %d | Next: %d\n" +
-            "Streak: %d days (max: %d)\n" +
-            "Achievements: %d/%d\n" +
+            "%s (Level %d)%n" +
+            "XP: %d | Next: %d%n" +
+            "Streak: %d days (max: %d)%n" +
+            "Achievements: %d/%d%n" +
             "Badges: %d/%d",
             getLevelTitle(), currentLevel,
             totalXP, getXPForNextLevel(),

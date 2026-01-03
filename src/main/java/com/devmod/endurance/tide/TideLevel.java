@@ -1,5 +1,7 @@
 package com.devmod.endurance.tide;
 
+import com.devmod.endurance.EnduranceColors;
+
 /**
  * Tide Level - Global threat severity stages.
  *
@@ -12,31 +14,31 @@ public enum TideLevel {
      * Normal gameplay, no threat modifiers.
      * Tide: 0-99
      */
-    CALM(0, 100, 0x55FF55, "Calm", 0f, false, false, 0),
+    CALM(0, 100, EnduranceColors.Tide.CALM, "Calm", 0f, false, false, 0),
 
     /**
      * Tension building, mobs slightly stronger.
      * Tide: 100-299
      */
-    RISING(100, 300, 0xFFFF55, "Rising", 0.10f, false, false, 0),
+    RISING(100, 300, EnduranceColors.Tide.RISING, "Rising", 0.10f, false, false, 0),
 
     /**
      * Dangerous conditions, curse mutators appear.
      * Tide: 300-499
      */
-    HIGH(300, 500, 0xFFAA00, "High", 0.20f, true, false, 0),
+    HIGH(300, 500, EnduranceColors.Tide.HIGH, "High", 0.20f, true, false, 0),
 
     /**
      * Storm conditions, boss every 3 waves.
      * Tide: 500-799
      */
-    STORM(500, 800, 0xFF5555, "Storm", 0.30f, true, true, 3),
+    STORM(500, 800, EnduranceColors.Tide.STORM, "Storm", 0.30f, true, true, 3),
 
     /**
      * Apocalypse - Tide Boss event imminent.
      * Tide: 800-1000
      */
-    APOCALYPSE(800, 1000, 0xAA0000, "Apocalypse", 0.50f, true, true, 2);
+    APOCALYPSE(800, 1000, EnduranceColors.Tide.APOCALYPSE, "Apocalypse", 0.50f, true, true, 2);
 
     public final int minTide;
     public final int maxTide;

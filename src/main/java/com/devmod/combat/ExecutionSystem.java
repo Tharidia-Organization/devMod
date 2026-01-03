@@ -199,8 +199,6 @@ public class ExecutionSystem {
         public final long startTime;
         public final int durationTicks;
         public int ticksRemaining;
-        public boolean completed = false;
-        public boolean interrupted = false;
 
         public ExecutionState(@Nonnull UUID playerId, @Nonnull UUID targetId, int durationTicks) {
             this.playerId = requireNonNull(playerId, "playerId");
@@ -296,9 +294,6 @@ public class ExecutionSystem {
         return EnduranceQuestManager.INSTANCE.getActiveSession(player)
             .map(session -> {
                 UUID mobQuestId = data.getUUID("endurance_quest_id");
-                if (mobQuestId == null) {
-                    return false;
-                }
                 return mobQuestId.equals(session.getQuest().getQuestId());
             })
             .orElse(false);
@@ -322,9 +317,6 @@ public class ExecutionSystem {
         // Start execution
         int durationTicks = getExecutionDurationTicks();
         UUID targetId = target.getUUID();
-        if (targetId == null) {
-            return ExecutionResult.fail("Target missing identity!");
-        }
         ExecutionState state = new ExecutionState(
             requireNonNull(playerId, "playerId"),
             targetId,
@@ -372,9 +364,6 @@ public class ExecutionSystem {
             // This is called from server tick, need to find the entities
             // We'll handle this in the event handler where we have access to the server
 
-            if (state.ticksRemaining <= 0) {
-                state.completed = true;
-            }
         }
     }
 
@@ -397,7 +386,7 @@ public class ExecutionSystem {
 
             if (target == null || !target.isAlive()) {
                 // Target died or despawned - count as success
-                completeExecution(player, null, state);
+                completeExecution(player, null);
                 return;
             }
 
@@ -408,7 +397,7 @@ public class ExecutionSystem {
 
             // Check completion
             if (state.ticksRemaining <= 0) {
-                completeExecution(player, target, state);
+                completeExecution(player, target);
             }
         }
     }
@@ -416,7 +405,7 @@ public class ExecutionSystem {
     /**
      * Complete an execution successfully.
      */
-    private void completeExecution(ServerPlayer player, Mob target, ExecutionState state) {
+    private void completeExecution(ServerPlayer player, Mob target) {
         UUID playerId = requirePlayerId(player);
         activeExecutions.remove(playerId);
 
@@ -453,12 +442,7 @@ public class ExecutionSystem {
 
             // Kill instantly
             DamageSource executionDamage = player.damageSources().playerAttack(player);
-            if (executionDamage == null) {
-                executionDamage = player.damageSources().magic();
-            }
-            if (executionDamage != null) {
-                target.hurt(executionDamage, Float.MAX_VALUE);
-            }
+            target.hurt(executionDamage, Float.MAX_VALUE);
         }
 
         // Visual/audio feedback
@@ -478,8 +462,6 @@ public class ExecutionSystem {
 
         LOGGER.info("[Execution] {} completed execution: +{} style, +{} HP",
             player.getName().getString(), styleGain, hpRegen);
-
-        state.completed = true;
     }
 
     /**
@@ -528,8 +510,6 @@ public class ExecutionSystem {
         player.displayClientMessage(interruptedMessage, true);
 
         LOGGER.info("[Execution] {} execution was interrupted!", player.getName().getString());
-
-        state.interrupted = true;
         return ExecutionResult.interrupted();
     }
 

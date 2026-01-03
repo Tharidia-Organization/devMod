@@ -300,11 +300,11 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 }
 
                 WeaponStats stats = new WeaponStats();
-                stats.headMult = (float) security.validateMultiplier(payload.head());
-                stats.bodyMult = (float) security.validateMultiplier(payload.body());
-                stats.legsMult = (float) security.validateMultiplier(payload.legs());
-                stats.armorPenetration = (float) security.validatePenetration(payload.pen());
-                stats.baseDamageBonus = (float) security.validateDamage(payload.bonus());
+                stats.setHeadMult((float) security.validateMultiplier(payload.head()));
+                stats.setBodyMult((float) security.validateMultiplier(payload.body()));
+                stats.setLegsMult((float) security.validateMultiplier(payload.legs()));
+                stats.setArmorPenetration((float) security.validatePenetration(payload.pen()));
+                stats.setBaseDamageBonus((float) security.validateDamage(payload.bonus()));
 
                 if (payload.isGlobal()) {
                     WeaponConfigManager.setGlobalStats(stack.getItem(), stats);
@@ -432,8 +432,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
 
             DevMod.LOGGER.info("[Server][WeaponApply] player={} item={} global={} dmg={} spd={} reach={} bonus={} pen={} shred={}",
                 player.getGameProfile().getName(), stack.getItem(), payload.isGlobal(),
-                stats.attackDamage, stats.attackSpeed, stats.attackReach, stats.baseDamageBonus,
-                stats.armorPenetration, stats.armorShred);
+                stats.getAttackDamage(), stats.getAttackSpeed(), stats.getAttackReach(), stats.getBaseDamageBonus(),
+                stats.getArmorPenetration(), stats.getArmorShred());
 
             if (payload.isGlobal()) {
                 WeaponConfigManager.setGlobalStats(stack.getItem(), stats);
@@ -479,7 +479,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                     return;
                 }
 
-                CompoundTag root = payload.statsTag() == null ? new CompoundTag() : payload.statsTag().copy();
+                CompoundTag root = payload.statsTag().copy();
                 CompoundTag data = stack.getOrDefault(nn(DataComponents.CUSTOM_DATA), nn(CustomData.EMPTY)).copyTag();
                 if (root.contains("RangedStats")) {
                     CompoundTag ranged = nn(root.getCompound("RangedStats"));
@@ -515,17 +515,17 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 }
 
                 ArmorStats stats = payload.toArmorStats();
-                stats.physicalReduction = Math.max(0f, Math.min(1f, stats.physicalReduction));
-                stats.fireReduction = Math.max(0f, Math.min(1f, stats.fireReduction));
-                stats.magicReduction = Math.max(0f, Math.min(1f, stats.magicReduction));
-                stats.explosionReduction = Math.max(0f, Math.min(1f, stats.explosionReduction));
-                stats.projectileReduction = Math.max(0f, Math.min(1f, stats.projectileReduction));
-                stats.armorBonus = Math.max(-20f, Math.min(30f, stats.armorBonus));
-                stats.toughnessBonus = Math.max(-10f, Math.min(20f, stats.toughnessBonus));
-                stats.knockbackResistance = Math.max(0f, Math.min(1f, stats.knockbackResistance));
-                stats.thornsPercent = Math.max(0f, Math.min(0.5f, stats.thornsPercent));
-                stats.shieldBlockStrength = Math.max(0f, Math.min(1f, stats.shieldBlockStrength));
-                stats.shieldRecoverySpeed = Math.max(0f, Math.min(2f, stats.shieldRecoverySpeed));
+                stats.setPhysicalReduction(Math.max(0f, Math.min(1f, stats.getPhysicalReduction())));
+                stats.setFireReduction(Math.max(0f, Math.min(1f, stats.getFireReduction())));
+                stats.setMagicReduction(Math.max(0f, Math.min(1f, stats.getMagicReduction())));
+                stats.setExplosionReduction(Math.max(0f, Math.min(1f, stats.getExplosionReduction())));
+                stats.setProjectileReduction(Math.max(0f, Math.min(1f, stats.getProjectileReduction())));
+                stats.setArmorBonus(Math.max(-20f, Math.min(30f, stats.getArmorBonus())));
+                stats.setToughnessBonus(Math.max(-10f, Math.min(20f, stats.getToughnessBonus())));
+                stats.setKnockbackResistance(Math.max(0f, Math.min(1f, stats.getKnockbackResistance())));
+                stats.setThornsPercent(Math.max(0f, Math.min(0.5f, stats.getThornsPercent())));
+                stats.setShieldBlockStrength(Math.max(0f, Math.min(1f, stats.getShieldBlockStrength())));
+                stats.setShieldRecoverySpeed(Math.max(0f, Math.min(2f, stats.getShieldRecoverySpeed())));
 
                 if (payload.isGlobal()) {
                     ResourceLocation itemLoc = ResourceLocation.tryParse(nn(payload.itemName()));
@@ -601,26 +601,26 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
             }
 
             CompoundTag tag = payload.statsTag();
-            if (tag == null || tag.isEmpty()) {
+            if (tag.isEmpty()) {
                 sendEditorConfirm(player, false, payload.isGlobal(), "armor", getItemId(payloadStack), "Missing stats");
                 return;
             }
 
             CompoundTag toLoad = tag.contains("armor_stats_component") ? tag.getCompound("armor_stats_component")
                 : (tag.contains("ArmorModStats") ? tag.getCompound("ArmorModStats") : tag);
-            ArmorStats stats = ArmorStats.load(toLoad == null ? new CompoundTag() : toLoad);
+            ArmorStats stats = ArmorStats.load(toLoad);
 
-            stats.physicalReduction = (float) security.validateArmorReduction(stats.physicalReduction);
-            stats.fireReduction = (float) security.validateArmorReduction(stats.fireReduction);
-            stats.magicReduction = (float) security.validateArmorReduction(stats.magicReduction);
-            stats.explosionReduction = (float) security.validateArmorReduction(stats.explosionReduction);
-            stats.projectileReduction = (float) security.validateArmorReduction(stats.projectileReduction);
-            stats.armorBonus = (float) security.validateArmorBonus(stats.armorBonus);
-            stats.toughnessBonus = (float) security.validateToughnessBonus(stats.toughnessBonus);
-            stats.knockbackResistance = (float) security.validateKnockbackResistance(stats.knockbackResistance);
-            stats.thornsPercent = (float) security.validateThornsPercent(stats.thornsPercent);
-            stats.shieldBlockStrength = (float) security.validateShieldBlock(stats.shieldBlockStrength);
-            stats.shieldRecoverySpeed = (float) security.validateShieldRecovery(stats.shieldRecoverySpeed);
+            stats.setPhysicalReduction((float) security.validateArmorReduction(stats.getPhysicalReduction()));
+            stats.setFireReduction((float) security.validateArmorReduction(stats.getFireReduction()));
+            stats.setMagicReduction((float) security.validateArmorReduction(stats.getMagicReduction()));
+            stats.setExplosionReduction((float) security.validateArmorReduction(stats.getExplosionReduction()));
+            stats.setProjectileReduction((float) security.validateArmorReduction(stats.getProjectileReduction()));
+            stats.setArmorBonus((float) security.validateArmorBonus(stats.getArmorBonus()));
+            stats.setToughnessBonus((float) security.validateToughnessBonus(stats.getToughnessBonus()));
+            stats.setKnockbackResistance((float) security.validateKnockbackResistance(stats.getKnockbackResistance()));
+            stats.setThornsPercent((float) security.validateThornsPercent(stats.getThornsPercent()));
+            stats.setShieldBlockStrength((float) security.validateShieldBlock(stats.getShieldBlockStrength()));
+            stats.setShieldRecoverySpeed((float) security.validateShieldRecovery(stats.getShieldRecoverySpeed()));
 
             if (payload.isGlobal()) {
                 Item item = payloadStack.getItem();
@@ -717,12 +717,12 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
             UsableStats stats = UsableStats.load(toLoad);
 
             // Clamp values for security
-            stats.useDuration = Math.max(0, Math.min(200, stats.useDuration));
-            stats.cooldownDuration = Math.max(0, Math.min(600, stats.cooldownDuration));
-            stats.projectileSpeed = Math.max(0.5f, Math.min(5.0f, stats.projectileSpeed));
-            stats.projectileGravity = Math.max(0.0f, Math.min(0.1f, stats.projectileGravity));
-            stats.projectileInaccuracy = Math.max(0.0f, Math.min(5.0f, stats.projectileInaccuracy));
-            stats.projectileDamage = Math.max(0, Math.min(20, stats.projectileDamage));
+            stats.setUseDuration(Math.max(0, Math.min(200, stats.getUseDuration())));
+            stats.setCooldownDuration(Math.max(0, Math.min(600, stats.getCooldownDuration())));
+            stats.setProjectileSpeed(Math.max(0.5f, Math.min(5.0f, stats.getProjectileSpeed())));
+            stats.setProjectileGravity(Math.max(0.0f, Math.min(0.1f, stats.getProjectileGravity())));
+            stats.setProjectileInaccuracy(Math.max(0.0f, Math.min(5.0f, stats.getProjectileInaccuracy())));
+            stats.setProjectileDamage(Math.max(0, Math.min(20, stats.getProjectileDamage())));
 
             if (payload.isGlobal()) {
                 Item item = stack.getItem();
@@ -778,12 +778,12 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
             stats.load(toLoad);
 
             // Clamp values for security
-            stats.nutrition = Math.max(0, Math.min(20, stats.nutrition));
-            stats.saturation = Math.max(0.0f, Math.min(2.0f, stats.saturation));
-            stats.consumptionTime = Math.max(1, Math.min(200, stats.consumptionTime));
+            stats.setNutrition(Math.max(0, Math.min(20, stats.getNutrition())));
+            stats.setSaturation(Math.max(0.0f, Math.min(2.0f, stats.getSaturation())));
+            stats.setConsumptionTime(Math.max(1, Math.min(200, stats.getConsumptionTime())));
 
             // Clamp effect values
-            for (FoodStats.FoodEffect effect : stats.effects) {
+            for (FoodStats.FoodEffect effect : stats.getEffects()) {
                 effect.duration = Math.max(1, Math.min(12000, effect.duration));
                 effect.amplifier = Math.max(0, Math.min(255, effect.amplifier));
                 effect.probability = Math.max(0.0f, Math.min(1.0f, effect.probability));
@@ -842,12 +842,12 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
             FuelStats stats = FuelStats.load(toLoad);
 
             // Clamp values for security
-            stats.burnTime = Math.max(0, Math.min(32000, stats.burnTime));
-            stats.efficiencyMultiplier = Math.max(0.1f, Math.min(3.0f, stats.efficiencyMultiplier));
-            stats.furnaceCookTime = Math.max(1, Math.min(1000, stats.furnaceCookTime));
-            stats.blastFurnaceCookTime = Math.max(1, Math.min(500, stats.blastFurnaceCookTime));
-            stats.smokerCookTime = Math.max(1, Math.min(500, stats.smokerCookTime));
-            stats.campfireCookTime = Math.max(1, Math.min(2000, stats.campfireCookTime));
+            stats.setBurnTime(Math.max(0, Math.min(32000, stats.getBurnTime())));
+            stats.setEfficiencyMultiplier(Math.max(0.1f, Math.min(3.0f, stats.getEfficiencyMultiplier())));
+            stats.setFurnaceCookTime(Math.max(1, Math.min(1000, stats.getFurnaceCookTime())));
+            stats.setBlastFurnaceCookTime(Math.max(1, Math.min(500, stats.getBlastFurnaceCookTime())));
+            stats.setSmokerCookTime(Math.max(1, Math.min(500, stats.getSmokerCookTime())));
+            stats.setCampfireCookTime(Math.max(1, Math.min(2000, stats.getCampfireCookTime())));
 
             if (payload.isGlobal()) {
                 String itemId = getItemId(stack);
@@ -996,34 +996,34 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
 
     private static void applyDelta(WeaponStats target, CompoundTag delta) {
         if (target == null || delta == null || delta.isEmpty()) return;
-        if (delta.contains("HeadMult")) target.headMult = delta.getFloat("HeadMult");
-        if (delta.contains("BodyMult")) target.bodyMult = delta.getFloat("BodyMult");
-        if (delta.contains("ArmsMult")) target.armsMult = delta.getFloat("ArmsMult");
-        if (delta.contains("LegsMult")) target.legsMult = delta.getFloat("LegsMult");
-        if (delta.contains("ArmorPen")) target.armorPenetration = delta.getFloat("ArmorPen");
-        if (delta.contains("BaseDmg")) target.baseDamageBonus = delta.getFloat("BaseDmg");
-        if (delta.contains("AtkDmg")) target.attackDamage = delta.getFloat("AtkDmg");
-        if (delta.contains("AtkSpd")) target.attackSpeed = delta.getFloat("AtkSpd");
-        if (delta.contains("AtkRch")) target.attackReach = delta.getFloat("AtkRch");
-        if (delta.contains("AtkKB")) target.attackKnockback = delta.getFloat("AtkKB");
-        if (delta.contains("DmgBonus")) target.damageBonus = delta.getFloat("DmgBonus");
-        if (delta.contains("CritCh")) target.critChance = delta.getFloat("CritCh");
-        if (delta.contains("CritDmg")) target.critDamage = delta.getFloat("CritDmg");
-        if (delta.contains("ArmorShred")) target.armorShred = delta.getFloat("ArmorShred");
-        if (delta.contains("FireDmg")) target.fireDamageBonus = delta.getFloat("FireDmg");
-        if (delta.contains("MagicDmg")) target.magicDamageBonus = delta.getFloat("MagicDmg");
-        if (delta.contains("Lifesteal")) target.lifesteal = delta.getFloat("Lifesteal");
-        if (delta.contains("VsUndead")) target.damageVsUndead = delta.getFloat("VsUndead");
-        if (delta.contains("VsArthro")) target.damageVsArthropods = delta.getFloat("VsArthro");
-        if (delta.contains("VsPlayers")) target.damageVsPlayers = delta.getFloat("VsPlayers");
-        if (delta.contains("TrueDmgPct")) target.trueDamagePercent = delta.getFloat("TrueDmgPct");
-        if (delta.contains("MaxDur")) target.maxDurability = delta.getInt("MaxDur");
-        if (delta.contains("CurDmg")) target.currentDamage = delta.getInt("CurDmg");
-        if (delta.contains("Repair")) target.repairCost = delta.getInt("Repair");
-        if (delta.contains("Unbreakable")) target.unbreakable = delta.getBoolean("Unbreakable");
-        if (delta.contains("ClearToolRules")) target.clearToolRules = delta.getBoolean("ClearToolRules");
-        if (delta.contains("DefaultSpeed")) target.toolDefaultMiningSpeed = delta.getFloat("DefaultSpeed");
-        if (delta.contains("DamagePerBlock")) target.toolDamagePerBlock = delta.getInt("DamagePerBlock");
+        if (delta.contains("HeadMult")) target.setHeadMult(delta.getFloat("HeadMult"));
+        if (delta.contains("BodyMult")) target.setBodyMult(delta.getFloat("BodyMult"));
+        if (delta.contains("ArmsMult")) target.setArmsMult(delta.getFloat("ArmsMult"));
+        if (delta.contains("LegsMult")) target.setLegsMult(delta.getFloat("LegsMult"));
+        if (delta.contains("ArmorPen")) target.setArmorPenetration(delta.getFloat("ArmorPen"));
+        if (delta.contains("BaseDmg")) target.setBaseDamageBonus(delta.getFloat("BaseDmg"));
+        if (delta.contains("AtkDmg")) target.setAttackDamage(delta.getFloat("AtkDmg"));
+        if (delta.contains("AtkSpd")) target.setAttackSpeed(delta.getFloat("AtkSpd"));
+        if (delta.contains("AtkRch")) target.setAttackReach(delta.getFloat("AtkRch"));
+        if (delta.contains("AtkKB")) target.setAttackKnockback(delta.getFloat("AtkKB"));
+        if (delta.contains("DmgBonus")) target.setDamageBonus(delta.getFloat("DmgBonus"));
+        if (delta.contains("CritCh")) target.setCritChance(delta.getFloat("CritCh"));
+        if (delta.contains("CritDmg")) target.setCritDamage(delta.getFloat("CritDmg"));
+        if (delta.contains("ArmorShred")) target.setArmorShred(delta.getFloat("ArmorShred"));
+        if (delta.contains("FireDmg")) target.setFireDamageBonus(delta.getFloat("FireDmg"));
+        if (delta.contains("MagicDmg")) target.setMagicDamageBonus(delta.getFloat("MagicDmg"));
+        if (delta.contains("Lifesteal")) target.setLifesteal(delta.getFloat("Lifesteal"));
+        if (delta.contains("VsUndead")) target.setDamageVsUndead(delta.getFloat("VsUndead"));
+        if (delta.contains("VsArthro")) target.setDamageVsArthropods(delta.getFloat("VsArthro"));
+        if (delta.contains("VsPlayers")) target.setDamageVsPlayers(delta.getFloat("VsPlayers"));
+        if (delta.contains("TrueDmgPct")) target.setTrueDamagePercent(delta.getFloat("TrueDmgPct"));
+        if (delta.contains("MaxDur")) target.setMaxDurability(delta.getInt("MaxDur"));
+        if (delta.contains("CurDmg")) target.setCurrentDamage(delta.getInt("CurDmg"));
+        if (delta.contains("Repair")) target.setRepairCost(delta.getInt("Repair"));
+        if (delta.contains("Unbreakable")) target.setUnbreakable(delta.getBoolean("Unbreakable"));
+        if (delta.contains("ClearToolRules")) target.setClearToolRules(delta.getBoolean("ClearToolRules"));
+        if (delta.contains("DefaultSpeed")) target.setToolDefaultMiningSpeed(delta.getFloat("DefaultSpeed"));
+        if (delta.contains("DamagePerBlock")) target.setToolDamagePerBlock(delta.getInt("DamagePerBlock"));
     }
 
     private static void clampRanged(CompoundTag ranged) {
@@ -1058,8 +1058,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
     }
 
     private static void sanitizeToolRules(WeaponStats stats, PacketValidator security) {
-        stats.toolDefaultMiningSpeed = (float) security.validateToolSpeed(stats.toolDefaultMiningSpeed);
-        stats.toolDamagePerBlock = security.validateToolDamagePerBlock(stats.toolDamagePerBlock);
+        stats.setToolDefaultMiningSpeed((float) security.validateToolSpeed(stats.getToolDefaultMiningSpeed()));
+        stats.setToolDamagePerBlock(security.validateToolDamagePerBlock(stats.getToolDamagePerBlock()));
         if (stats.toolRules == null) {
             stats.toolRules = new ArrayList<>();
             return;

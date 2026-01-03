@@ -11,6 +11,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
@@ -194,7 +195,7 @@ public final class RadialCategoryRenderer {
         float pulse = RadialMenuConstants.BADGE_PULSE_BASE +
             RadialMenuConstants.BADGE_PULSE_VARIATION *
                 (float) Math.sin(pulsePhase * RadialMenuConstants.BADGE_PULSE_SPEED);
-        int badgeColor = RadialGeometry.blendColors(color, 0xFFFFFFFF,
+        int badgeColor = RadialGeometry.blendColors(color, DesignTokens.Text.WHITE,
             pulse * RadialMenuConstants.BADGE_BLEND_FACTOR);
 
         graphics.fill(
@@ -356,7 +357,7 @@ public final class RadialCategoryRenderer {
 
         // Inner highlight for depth when selected
         if (itemSelected) {
-            int highlightColor = RadialGeometry.blendColors(category.getColor(), 0xFFFFFFFF,
+            int highlightColor = RadialGeometry.blendColors(category.getColor(), DesignTokens.Text.WHITE,
                 RadialMenuConstants.ITEM_HIGHLIGHT_BLEND);
             if (!canExecute) {
                 highlightColor = RadialGeometry.blendColors(highlightColor, RadialMenuConstants.COLOR_INACTIVE,
@@ -548,7 +549,7 @@ public final class RadialCategoryRenderer {
 
         int glowRadius = (int) (RadialMenuConstants.CATEGORY_GLOW_RADIUS * anim);
         int glowAlpha = (int) (RadialMenuConstants.CATEGORY_GLOW_ALPHA * anim);
-        int glowColorVal = (cat.getColor() & 0x00FFFFFF) | (glowAlpha << 24);
-        RadialGeometry.renderRadialGradient(graphics, glowX, glowY, glowRadius, glowColorVal, 0x00000000);
+        int glowColorVal = (cat.getColor() & DesignTokens.Mask.RGB) | (glowAlpha << 24);
+        RadialGeometry.renderRadialGradient(graphics, glowX, glowY, glowRadius, glowColorVal, DesignTokens.Mask.NONE);
     }
 }

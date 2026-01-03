@@ -1,11 +1,12 @@
 package com.devmod.client.ui.editor.state;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
+
+import com.devmod.client.ui.editor.components.SlotSelector;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,17 +46,6 @@ public class ItemEditorStateTest {
     }
 
     @Test
-    void togglePreviewModeAlternates() {
-        assertTrue(state.isPreviewMode());
-
-        state.togglePreviewMode();
-        assertFalse(state.isPreviewMode());
-
-        state.togglePreviewMode();
-        assertTrue(state.isPreviewMode());
-    }
-
-    @Test
     void toggleGlobalModeAlternates() {
         assertFalse(state.isGlobalMode());
 
@@ -86,60 +76,23 @@ public class ItemEditorStateTest {
     }
 
     @Test
-    void changeListenersAreNotified() {
-        AtomicInteger callCount = new AtomicInteger(0);
-        state.addChangeListener(s -> callCount.incrementAndGet());
-
-        state.setPreviewMode(false);
-        assertEquals(1, callCount.get());
-
-        state.setGlobalMode(true);
-        assertEquals(2, callCount.get());
-
-        state.togglePreviewMode();
-        assertEquals(3, callCount.get());
-    }
-
-    @Test
-    void removeChangeListenerStopsNotifications() {
-        AtomicInteger callCount = new AtomicInteger(0);
-        var listener = (java.util.function.Consumer<ItemEditorState>) s -> callCount.incrementAndGet();
-
-        state.addChangeListener(listener);
-        state.setPreviewMode(false);
-        assertEquals(1, callCount.get());
-
-        state.removeChangeListener(listener);
-        state.setPreviewMode(true);
-        assertEquals(1, callCount.get()); // Not incremented after removal
-    }
-
-    @Test
-    void removeAllListenersClearsAllNotifications() {
-        AtomicInteger callCount1 = new AtomicInteger(0);
-        AtomicInteger callCount2 = new AtomicInteger(0);
-
-        state.addChangeListener(s -> callCount1.incrementAndGet());
-        state.addChangeListener(s -> callCount2.incrementAndGet());
-
-        state.setPreviewMode(false);
-        assertEquals(1, callCount1.get());
-        assertEquals(1, callCount2.get());
-
-        state.removeAllListeners();
-        state.setPreviewMode(true);
-        assertEquals(1, callCount1.get()); // Not incremented after removeAll
-        assertEquals(1, callCount2.get()); // Not incremented after removeAll
-    }
-
-    @Test
     void getItemReturnsCurrentItem() {
         assertNotNull(state.getItem());
     }
 
     @Test
-    void getOriginalItemReturnsCopy() {
-        ItemStack original = state.getOriginalItem();
-        assertNotNull(original);
+    void setSelectedSlotStoresValue() {
+        SlotSelector.SlotInfo slot = new SlotSelector.SlotInfo(
+            EquipmentSlot.MAINHAND,
+            "Main Hand",
+            "M",
+            ItemStack.EMPTY
+        );
+
+        state.setSelectedSlot(slot);
+        assertEquals(slot, state.getSelectedSlot());
+
+        state.setSelectedSlot(null);
+        assertNull(state.getSelectedSlot());
     }
 }

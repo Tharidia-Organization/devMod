@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +17,8 @@ import net.minecraft.client.Options;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.client.compat.mods.controlling.ControllingCompat;
 
 @OnlyIn(Dist.CLIENT)
 public final class KeybindConflictDetector {
@@ -140,6 +144,7 @@ public final class KeybindConflictDetector {
 
     /**
      * Check if a specific DevMod key has any conflicts.
+     * Uses ControllingCompat when available for enhanced detection.
      *
      * @param devModKey The DevMod keybind to check
      * @return List of conflicting keybinds (empty if none)
@@ -148,6 +153,20 @@ public final class KeybindConflictDetector {
         List<KeyMapping> conflicts = new ArrayList<>();
 
         if (devModKey == null || devModKey.isUnbound()) {
+            return conflicts;
+        }
+
+        // If Controlling mod is available, use its conflict detection
+        if (ControllingCompat.isAvailable() && ControllingCompat.hasConflict(devModKey)) {
+            List<String> conflictNames = ControllingCompat.getConflicts(devModKey);
+            Minecraft mc = Minecraft.getInstance();
+            if (mc != null && mc.options != null) {
+                for (KeyMapping key : mc.options.keyMappings) {
+                    if (key != null && conflictNames.contains(key.getName())) {
+                        conflicts.add(key);
+                    }
+                }
+            }
             return conflicts;
         }
 
@@ -173,19 +192,50 @@ public final class KeybindConflictDetector {
 
     /**
      * Check if there are any keybind conflicts.
+     * Uses ControllingCompat when available for enhanced detection.
      *
      * @return true if at least one conflict exists
      */
     public static boolean hasConflicts() {
+        // If Controlling mod is available, use its enhanced conflict detection
+        if (ControllingCompat.isAvailable()) {
+            return ControllingCompat.hasDevModConflicts(DEVMOD_KEYS);
+        }
         return !detectConflicts().isEmpty();
     }
 
     /**
      * Get a summary of all conflicts for display.
+     * Uses ControllingCompat when available for enhanced detection.
      *
      * @return Human-readable conflict summary
      */
     public static String getConflictSummary() {
+        // If Controlling mod is available, use its status summary as base
+        if (ControllingCompat.isAvailable()) {
+            Map<String, List<String>> devModConflicts = ControllingCompat.getDevModConflicts(DEVMOD_KEYS);
+            if (devModConflicts.isEmpty()) {
+                return ControllingCompat.getStatusSummary();
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(devModConflicts.size()).append(" DevMod conflict(s) found:\n");
+            for (var entry : devModConflicts.entrySet()) {
+                KeyMapping keyMapping = findKeyMappingByName(entry.getKey());
+                String warning = keyMapping != null
+                    ? ControllingCompat.getConflictWarning(keyMapping)
+                    : null;
+                if (warning != null) {
+                    sb.append("• ").append(getShortNameFromString(entry.getKey()))
+                        .append(": ").append(warning).append("\n");
+                } else {
+                    sb.append("• ").append(getShortNameFromString(entry.getKey()))
+                        .append(" ↔ ").append(String.join(", ", entry.getValue())).append("\n");
+                }
+            }
+            return sb.toString();
+        }
+
         List<KeybindConflict> conflicts = detectConflicts();
         if (conflicts.isEmpty()) {
             return "No keybind conflicts detected.";
@@ -205,8 +255,13 @@ public final class KeybindConflictDetector {
 
     /**
      * Get the number of conflicts.
+     * Uses ControllingCompat when available for enhanced detection.
      */
     public static int getConflictCount() {
+        // If Controlling mod is available, use its cached conflict detection
+        if (ControllingCompat.isAvailable()) {
+            return ControllingCompat.getConflictCount();
+        }
         return detectConflicts().size();
     }
 
@@ -225,9 +280,14 @@ public final class KeybindConflictDetector {
     }
 
     private static boolean contextsConflict(KeyMapping key1, KeyMapping key2) {
-        // If either key has no context, they can conflict
+        // If either key has no context, they can conflict (assume universal)
         var ctx1 = key1.getKeyConflictContext();
         var ctx2 = key2.getKeyConflictContext();
+
+        // Null context means universal - conflicts with everything
+        if (ctx1 == null || ctx2 == null) {
+            return true;
+        }
 
         // If both are in-game only, they conflict
         // If either is universal, they conflict
@@ -240,6 +300,13 @@ public final class KeybindConflictDetector {
         if (name == null) {
             return "Unknown";
         }
+        return getShortNameFromString(name);
+    }
+
+    private static String getShortNameFromString(String name) {
+        if (name == null) {
+            return "Unknown";
+        }
         // Remove common prefixes for readability
         if (name.startsWith("key.devmod.")) {
             return name.substring("key.devmod.".length());
@@ -248,5 +315,18 @@ public final class KeybindConflictDetector {
             return name.substring("key.".length());
         }
         return name;
+    }
+
+    @Nullable
+    private static KeyMapping findKeyMappingByName(String name) {
+        if (name == null) {
+            return null;
+        }
+        for (KeyMapping key : DEVMOD_KEYS) {
+            if (key != null && name.equals(key.getName())) {
+                return key;
+            }
+        }
+        return null;
     }
 }

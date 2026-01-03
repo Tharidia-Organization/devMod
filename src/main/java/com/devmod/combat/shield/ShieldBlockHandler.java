@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -15,6 +17,10 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.combat.ShieldDeflector;
 import com.devmod.config.ArmorConfigManager;
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceEventCombat;
+import com.devmod.endurance.EnduranceEventHandler;
+import com.devmod.integration.ModIntegrationManager;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.stats.ArmorStats;
@@ -30,6 +36,12 @@ public final class ShieldBlockHandler {
      * Result of applying shield block.
      */
     public record BlockResult(float damageAfterBlock, boolean wasShattered, boolean wasDeflection) {}
+
+    private enum ParryTier {
+        NONE,
+        NORMAL,
+        PERFECT
+    }
 
     /**
      * Applies shield blocking to incoming damage.
@@ -51,6 +63,7 @@ public final class ShieldBlockHandler {
         ArmorStats stats = ArmorConfigManager.getStats(shield);
         BlockResult result = calculateBlock(player, source, incomingDamage, stats);
 
+        applyParryEffects(player, result, incomingDamage);
         applyVisualEffects(player, source, result);
         applyCooldown(player, shield, stats);
 
@@ -59,19 +72,19 @@ public final class ShieldBlockHandler {
 
     private static BlockResult calculateBlock(Player player, DamageSource source,
                                                float incomingDamage, ArmorStats stats) {
-        float blocked = Math.min(1f, Math.max(0f, stats.shieldBlockStrength));
+        float blocked = Math.min(1f, Math.max(0f, stats.getShieldBlockStrength()));
         float damageAfterBlock = incomingDamage * (1f - blocked);
 
-        boolean wasShattered = incomingDamage >= stats.shieldShatterThreshold;
+        boolean wasShattered = incomingDamage >= stats.getShieldShatterThreshold();
         boolean wasDeflection = false;
 
-        if (stats.shieldReflectProjectiles && source.getDirectEntity() instanceof Projectile projectile) {
+        if (stats.isShieldReflectProjectiles() && source.getDirectEntity() instanceof Projectile projectile) {
             wasDeflection = ShieldDeflector.deflectProjectile(
                 projectile,
                 player,
-                stats.shieldDeflectionSpread,
-                stats.shieldDeflectSpeedMult,
-                stats.shieldDeflectToOwner,
+                stats.getShieldDeflectionSpread(),
+                stats.getShieldDeflectSpeedMult(),
+                stats.isShieldDeflectToOwner(),
                 DEFAULT_SHIELD_RADIUS
             );
         }
@@ -139,9 +152,86 @@ public final class ShieldBlockHandler {
         }
     }
 
+    private static void applyParryEffects(Player player, BlockResult result, float incomingDamage) {
+        if (result.wasShattered() || incomingDamage <= 0f) {
+            return;
+        }
+        if (result.damageAfterBlock() >= incomingDamage) {
+            return;
+        }
+
+        ParryTier parryTier = detectParryTier(player);
+        if (parryTier == ParryTier.NONE) {
+            return;
+        }
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+
+        ComboSystem.ComboSession comboSession = EnduranceEventHandler.getComboSession(serverPlayer.getUUID());
+        if (comboSession != null) {
+            ComboSystem.ActionResult actionResult = comboSession.registerParry();
+            EnduranceEventCombat.syncCombatFlowToClient(
+                serverPlayer,
+                ComboSystem.ActionType.PARRY.displayName,
+                actionResult.styleEarned()
+            );
+        }
+
+        playParrySound(serverPlayer, parryTier);
+
+        if (LOGGER.isDebugEnabled()) {
+            String skillName = ModIntegrationManager.getEpicFightHoldingSkillName(serverPlayer);
+            LOGGER.debug("[Shield] EpicFight parry: player={}, tier={}, skill={}",
+                serverPlayer.getName().getString(),
+                parryTier,
+                skillName != null ? skillName : "unknown");
+        }
+    }
+
+    private static ParryTier detectParryTier(Player player) {
+        if (!ModIntegrationManager.isEpicFightLoaded()) {
+            return ParryTier.NONE;
+        }
+
+        boolean guarding = ModIntegrationManager.isEpicFightGuarding(player);
+        boolean parrying = ModIntegrationManager.isEpicFightParrying(player);
+        if (!guarding && !parrying) {
+            return ParryTier.NONE;
+        }
+        if (!ModIntegrationManager.isEpicFightInParryWindow(player)) {
+            return ParryTier.NONE;
+        }
+        if (ModIntegrationManager.isEpicFightPerfectParry(player)) {
+            return ParryTier.PERFECT;
+        }
+        return ParryTier.NORMAL;
+    }
+
+    private static void playParrySound(ServerPlayer player, ParryTier parryTier) {
+        SoundEvent sound = parryTier == ParryTier.PERFECT
+            ? ModIntegrationManager.getEpicFightParrySoundEvent()
+            : ModIntegrationManager.getEpicFightGuardSoundEvent();
+        if (sound == null) {
+            return;
+        }
+
+        float pitch = parryTier == ParryTier.PERFECT ? 1.2f : 1.0f;
+        player.serverLevel().playSound(
+            null,
+            player.getX(),
+            player.getY(),
+            player.getZ(),
+            sound,
+            SoundSource.PLAYERS,
+            0.9f,
+            pitch
+        );
+    }
+
     private static void applyCooldown(Player player, ItemStack shield, ArmorStats stats) {
         int baseCooldown = 5;
-        int cooldown = Math.max(1, Math.round(baseCooldown / Math.max(0.1f, stats.shieldRecoverySpeed)));
+        int cooldown = Math.max(1, Math.round(baseCooldown / Math.max(0.1f, stats.getShieldRecoverySpeed())));
         player.getCooldowns().addCooldown(Objects.requireNonNull(shield.getItem()), cooldown);
     }
 }

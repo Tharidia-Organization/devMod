@@ -6,7 +6,6 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
@@ -30,7 +29,8 @@ public class LeftColumnComponent {
     private static final int ARMOR_CARD_ICON_PADDING = 6;
     private static final int ARMOR_CARD_ICON_SIZE = DesignTokens.Size.ICON;
     private static final int ARMOR_CARD_ICON_GLYPH_OFFSET = 3;
-    private static final int ARMOR_CARD_HOVER_FILL = 0x2000D4FF;
+    private static final int ARMOR_CARD_HOVER_FILL =
+        DesignTokens.withAlpha(DesignTokens.Accent.PRIMARY, DesignTokens.Alpha.A12);
 
     // Layout proportions (how height is distributed)
     private static final float PREVIEW_PROPORTION = 0.52f;  // 52% for preview (player render needs space)
@@ -49,8 +49,6 @@ public class LeftColumnComponent {
     // ═══════════════════════════════════════════════════════════════
     // STATE
     // ═══════════════════════════════════════════════════════════════
-
-    private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
 
     // Callbacks
     @Nullable
@@ -88,27 +86,11 @@ public class LeftColumnComponent {
     }
 
     /**
-     * Set the current item in a slot.
-     */
-    public LeftColumnComponent setSlotItem(EquipmentSlot slot, ItemStack item) {
-        slotSelector.setSlotItem(slot, item);
-        return this;
-    }
-
-    /**
      * Set the item being edited.
      */
     public LeftColumnComponent item(ItemStack item) {
         itemInfo.item(item);
         preview.item(item);
-        return this;
-    }
-
-    /**
-     * Set preview mode.
-     */
-    public LeftColumnComponent previewMode(PreviewRenderer.PreviewMode mode) {
-        preview.mode(mode);
         return this;
     }
 
@@ -180,7 +162,6 @@ public class LeftColumnComponent {
     public int render(GuiGraphics graphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
         // Prefer provided width (already scaled by layout) to avoid double scaling
         int columnWidth = width > 0 ? width : ScaledCoord.scaleDim(EditorConstants.LEFT_COLUMN_WIDTH);
-        this.bounds = new ResponsiveLayout.Rect(x, y, columnWidth, height);
 
         // Background
         graphics.fill(x, y, x + columnWidth, y + height, DesignTokens.Background.CONTENT());
@@ -342,37 +323,8 @@ public class LeftColumnComponent {
     // GETTERS
     // ═══════════════════════════════════════════════════════════════
 
-    public PreviewRenderer getPreview() {
-        return preview;
-    }
-
-    public SlotSelector getSlotSelector() {
-        return slotSelector;
-    }
-
-    public ItemInfoPanel getItemInfo() {
-        return itemInfo;
-    }
-
-    public int getWidth() {
-        if (!Objects.equals(bounds, ResponsiveLayout.Rect.EMPTY) && bounds.width() > 0) {
-            return bounds.width();
-        }
-        return ScaledCoord.scaleDim(EditorConstants.LEFT_COLUMN_WIDTH);
-    }
-
-    public ResponsiveLayout.Rect getBounds() {
-        return bounds;
-    }
-
     @Nullable
     public SlotSelector.SlotInfo getSelectedSlot() {
         return slotSelector.getSelectedSlot();
-    }
-
-    @Nullable
-    public EquipmentSlot getSelectedEquipmentSlot() {
-        SlotSelector.SlotInfo info = slotSelector.getSelectedSlot();
-        return info != null ? info.slot() : null;
     }
 }

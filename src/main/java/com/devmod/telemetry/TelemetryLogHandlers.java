@@ -118,7 +118,7 @@ public class TelemetryLogHandlers {
                 amount, damageType, hpBefore, hpAfter, bodyPart, distance,
                 armorPenBonus, false, hazard, hazardType, attackerState, targetState);
         }
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             service.appendLine("hits.ndjson", line);
         }
 
@@ -126,7 +126,7 @@ public class TelemetryLogHandlers {
         if (attacker instanceof ServerPlayer player) {
             DamageTrackingService.INSTANCE.registerWeaponHit(player, amount, hpAfter <= 0);
         }
-        if (attacker instanceof Mob mobAttacker && !(attacker instanceof ServerPlayer)) {
+        if (attacker instanceof Mob mobAttacker) {
             DamageTrackingService.INSTANCE.registerMinionDamage(mobAttacker, amount);
         }
         DamageTrackingService.INSTANCE.registerRoomDamage(room, target, amount, hpAfter <= 0);
@@ -261,7 +261,7 @@ public class TelemetryLogHandlers {
                 entity.getName().getString(), EntityTypeName.of(entity),
                 source.getMsgId(), ttkFirstHit, ttkSpawn);
         }
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             service.appendLine("deaths.ndjson", line);
         }
 
@@ -330,7 +330,7 @@ public class TelemetryLogHandlers {
                 entity.getName().getString(), EntityTypeName.of(entity),
                 amount, hpBefore, hpAfter, source);
         }
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             service.appendLine("heals.ndjson", line);
         }
 
@@ -370,12 +370,12 @@ public class TelemetryLogHandlers {
                 entity.getName().getString(), EntityTypeName.of(entity),
                 reason, failed, entity.getX(), entity.getY(), entity.getZ());
         }
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             service.appendLine("spawns.ndjson", line);
         }
 
         // Track minion spawn for concurrent count
-        if (entity instanceof Mob && !(entity instanceof ServerPlayer) &&
+        if (entity instanceof Mob &&
                 entity.getMaxHealth() < service.getSettings().bossHpThreshold()) {
             MinionService.INSTANCE.recordSpawn(room, entity.getUUID());
         }

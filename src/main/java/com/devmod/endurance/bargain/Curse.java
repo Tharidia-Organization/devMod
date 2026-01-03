@@ -1,5 +1,7 @@
 package com.devmod.endurance.bargain;
 
+import com.devmod.endurance.EnduranceColors;
+
 /**
  * Curse definitions for Devil's Bargain system.
  *
@@ -19,7 +21,7 @@ public enum Curse {
         "Take 50% more damage, deal 25% more damage",
         CurseTier.MINOR,
         1.15f,
-        0xFF6B6B,
+        EnduranceColors.Bargain.GLASS_CANNON,
         "Your attacks hit harder, but so do theirs..."
     ),
 
@@ -28,7 +30,7 @@ public enum Curse {
         "Movement speed reduced by 20%",
         CurseTier.MINOR,
         1.1f,
-        0x888888,
+        EnduranceColors.Bargain.SLUGGISH,
         "Your legs feel heavy as lead..."
     ),
 
@@ -37,7 +39,7 @@ public enum Curse {
         "Attack speed reduced by 15%",
         CurseTier.MINOR,
         1.1f,
-        0xFFAA00,
+        EnduranceColors.Bargain.FUMBLING,
         "Your weapons feel unwieldy..."
     ),
 
@@ -46,7 +48,7 @@ public enum Curse {
         "Drain 1 hunger every 10 seconds",
         CurseTier.MINOR,
         1.15f,
-        0x8B4513,
+        EnduranceColors.Bargain.HUNGER,
         "A gnawing emptiness consumes you..."
     ),
 
@@ -55,7 +57,7 @@ public enum Curse {
         "Take 10% of damage dealt as self-damage",
         CurseTier.MINOR,
         1.2f,
-        0x9932CC,
+        EnduranceColors.Bargain.ECHO_DAMAGE,
         "Every strike echoes through your soul..."
     ),
 
@@ -66,7 +68,7 @@ public enum Curse {
         "Lose 1 HP per kill, gain 2% lifesteal",
         CurseTier.MAJOR,
         1.35f,
-        0xDC143C,
+        EnduranceColors.Bargain.BLOOD_TITHE,
         "The altar demands blood for blood..."
     ),
 
@@ -75,7 +77,7 @@ public enum Curse {
         "+30% mob spawn rate",
         CurseTier.MAJOR,
         1.4f,
-        0x4B0082,
+        EnduranceColors.Bargain.CROWD_PRESSURE,
         "They sense your weakness and gather..."
     ),
 
@@ -84,7 +86,7 @@ public enum Curse {
         "Max HP reduced by 30%",
         CurseTier.MAJOR,
         1.5f,
-        0x708090,
+        EnduranceColors.Bargain.FRAILTY,
         "Your body withers at the altar's touch..."
     ),
 
@@ -93,7 +95,7 @@ public enum Curse {
         "Periodically set on fire (every 30 sec)",
         CurseTier.MAJOR,
         1.35f,
-        0xFF4500,
+        EnduranceColors.Bargain.BURNING_SOUL,
         "Flames flicker within your chest..."
     ),
 
@@ -102,7 +104,7 @@ public enum Curse {
         "Combo resets if you don't hit for 2 seconds",
         CurseTier.MAJOR,
         1.45f,
-        0xFFD700,
+        EnduranceColors.Bargain.COMBO_BREAKER,
         "Hesitation means death to your rhythm..."
     ),
 
@@ -111,7 +113,7 @@ public enum Curse {
         "Momentum decays 3x faster",
         CurseTier.MAJOR,
         1.4f,
-        0x00CED1,
+        EnduranceColors.Bargain.MOMENTUM_DRAIN,
         "Your energy bleeds into the void..."
     ),
 
@@ -122,7 +124,7 @@ public enum Curse {
         "Any hit that deals >50% max HP is instant death",
         CurseTier.CURSED,
         2.0f,
-        0x000000,
+        EnduranceColors.Bargain.ONE_SHOT,
         "Death waits in every shadow..."
     ),
 
@@ -131,7 +133,7 @@ public enum Curse {
         "All mobs are elite variants (+50% stats)",
         CurseTier.CURSED,
         2.5f,
-        0x8A2BE2,
+        EnduranceColors.Bargain.ELITE_HUNTER,
         "Only the strongest dare face you now..."
     ),
 
@@ -140,7 +142,7 @@ public enum Curse {
         "Cannot regenerate HP by any means",
         CurseTier.CURSED,
         2.0f,
-        0x2F4F4F,
+        EnduranceColors.Bargain.NO_HEALING,
         "Your wounds refuse to close..."
     ),
 
@@ -149,7 +151,7 @@ public enum Curse {
         "Mobs below 25% HP become enraged (+100% damage)",
         CurseTier.CURSED,
         1.75f,
-        0xB22222,
+        EnduranceColors.Bargain.EXECUTIONER,
         "The dying fight hardest..."
     );
 
@@ -174,9 +176,9 @@ public enum Curse {
      * Curse tiers determine how impactful the curse is.
      */
     public enum CurseTier {
-        MINOR("Minor", 0x55FF55, 1),
-        MAJOR("Major", 0xFFAA00, 2),
-        CURSED("Cursed", 0xFF5555, 3);
+        MINOR("Minor", EnduranceColors.BargainTier.MINOR, 1),
+        MAJOR("Major", EnduranceColors.BargainTier.MAJOR, 2),
+        CURSED("Cursed", EnduranceColors.BargainTier.CURSED, 3);
 
         public final String displayName;
         public final int color;

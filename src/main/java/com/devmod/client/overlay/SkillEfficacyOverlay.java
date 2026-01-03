@@ -92,7 +92,8 @@ public class SkillEfficacyOverlay {
         textY += LINE_HEIGHT + 2;
 
         // Separator
-        graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1, PANEL_BORDER & 0x55FFFFFF);
+        graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1,
+            OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
         textY += 4;
 
         if (recentSkills.isEmpty()) {

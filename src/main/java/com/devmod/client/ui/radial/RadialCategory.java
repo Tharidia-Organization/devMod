@@ -7,6 +7,8 @@ import javax.annotation.Nullable;
 
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
+
 public class RadialCategory {
     private final String id;
     private final String name;
@@ -172,7 +174,7 @@ public class RadialCategory {
     public static class Builder {
         private final String id;
         private String name;
-        private int color = 0xFFFFFFFF;
+        private int color = DesignTokens.Text.WHITE;
         private String icon = "*";
         @Nullable
         private ItemStack iconStack;

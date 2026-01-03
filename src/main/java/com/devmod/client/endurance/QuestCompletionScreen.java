@@ -28,10 +28,10 @@ public class QuestCompletionScreen extends Screen {
     private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
     private static final int COLOR_TEXT_DIM = DesignTokens.Text.SECONDARY;
     private static final int COLOR_GOLD = DesignTokens.Semantic.WARNING;
-    private static final int COLOR_GEM = 0xFFA371F7;  // Blood gems (purple)
+    private static final int COLOR_GEM = EnduranceUiTheme.Accent.PURPLE;  // Blood gems (purple)
     private static final int COLOR_SUCCESS = DesignTokens.Semantic.SUCCESS;
     private static final int COLOR_BONUS = DesignTokens.Accent.PRIMARY;
-    private static final int COLOR_ORANGE = 0xFFFF8C00;  // Mutators/achievements
+    private static final int COLOR_ORANGE = EnduranceUiTheme.Accent.ORANGE;  // Mutators/achievements
 
     // === Dimensions (base values, may be scaled for small screens) ===
     private static final int BASE_PANEL_WIDTH = DesignTokens.Component.MODAL_MAX_WIDTH;
@@ -116,7 +116,7 @@ public class QuestCompletionScreen extends Screen {
 
         // Darken background
         int bgAlpha = (int) (0xEE * fadeProgress);
-        graphics.fill(0, 0, width, height, (bgAlpha << 24) | 0x0a1428);
+        graphics.fill(0, 0, width, height, (bgAlpha << 24) | EnduranceUiTheme.CompletionScreen.BACKDROP_RGB);
 
         int centerX = width / 2;
         int panelX = centerX - PANEL_WIDTH / 2;
@@ -147,13 +147,13 @@ public class QuestCompletionScreen extends Screen {
         int glowAlpha = (int) (0x44 * alpha);
 
         // Golden glow
-        g.fill(x - 3, y - 3, x + w + 3, y + h + 3, (glowAlpha << 24) | 0xFFD700);
+        g.fill(x - 3, y - 3, x + w + 3, y + h + 3, (glowAlpha << 24) | EnduranceUiTheme.CompletionScreen.GOLD_RGB);
 
         // Background
-        g.fill(x, y, x + w, y + h, (bgAlpha << 24) | 0x0f1e38);
+        g.fill(x, y, x + w, y + h, (bgAlpha << 24) | EnduranceUiTheme.CompletionScreen.PANEL_RGB);
 
         // Border
-        int borderColor = (borderAlpha << 24) | 0xFFD700;
+        int borderColor = (borderAlpha << 24) | EnduranceUiTheme.CompletionScreen.GOLD_RGB;
         g.fill(x, y, x + w, y + 3, borderColor);
         g.fill(x, y + h - 3, x + w, y + h, borderColor);
         g.fill(x, y, x + 3, y + h, borderColor);
@@ -352,7 +352,7 @@ public class QuestCompletionScreen extends Screen {
     private int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
         if (a <= 0) a = (int) (255 * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {

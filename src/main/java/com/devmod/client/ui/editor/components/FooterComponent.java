@@ -1,7 +1,5 @@
 package com.devmod.client.ui.editor.components;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -38,23 +36,6 @@ public class FooterComponent {
     private static final float APPLY_BORDER_LIGHTEN = 0.3f;
 
     // ═══════════════════════════════════════════════════════════════
-    // ACTION MENU ITEMS
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * Action menu item definition.
-     */
-    public record ActionItem(@Nullable String id, @Nullable String icon, @Nullable String label, boolean isSeparator) {
-        public ActionItem(String id, String icon, String label) {
-            this(id, icon, label, false);
-        }
-
-        public static ActionItem createSeparator() {
-            return new ActionItem(null, null, null, true);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════
     // STATE
     // ═══════════════════════════════════════════════════════════════
 
@@ -70,8 +51,7 @@ public class FooterComponent {
     private boolean rightArrowHovered = false;
     private boolean actionsOverflow = false;
 
-    // Action buttons (replacing dropdown)
-    private final List<ActionItem> actionItems = new ArrayList<>();
+    // Action button bounds
     private ResponsiveLayout.Rect historyBounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect exportBounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect importBounds = ResponsiveLayout.Rect.EMPTY;
@@ -107,15 +87,7 @@ public class FooterComponent {
     // ═══════════════════════════════════════════════════════════════
 
     public FooterComponent() {
-        // Default action items
-        actionItems.add(new ActionItem("history", "📋", "History"));
-        actionItems.add(new ActionItem("export", "📤", "Export"));
-        actionItems.add(new ActionItem("import", "📥", "Import"));
-        actionItems.add(new ActionItem("presets", "💾", "Presets"));
-        actionItems.add(new ActionItem("templates", "📂", "Templates"));
-        actionItems.add(new ActionItem("recipe", "📜", "Recipe"));
-        actionItems.add(new ActionItem("reset", "↺", "Reset"));
-        actionItems.add(new ActionItem("cancel", "✗", "Cancel"));
+        // No-op constructor - action buttons are hardcoded in render()
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -164,21 +136,6 @@ public class FooterComponent {
 
     public FooterComponent onAction(java.util.function.Consumer<String> callback) {
         this.onAction = callback;
-        return this;
-    }
-
-    public FooterComponent clearActions() {
-        actionItems.clear();
-        return this;
-    }
-
-    public FooterComponent addAction(String id, String icon, String label) {
-        actionItems.add(new ActionItem(id, icon, label));
-        return this;
-    }
-
-    public FooterComponent addSeparator() {
-        actionItems.add(ActionItem.createSeparator());
         return this;
     }
 
@@ -526,21 +483,26 @@ public class FooterComponent {
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Capture callbacks to local variables for null-safety
+        Runnable localOnUndo = onUndo;
+        Runnable localOnRedo = onRedo;
+        Runnable localOnApply = onApply;
+
         // Ctrl+Z = Undo
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_Z &&
             (modifiers & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) != 0) {
             if ((modifiers & org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT) != 0) {
                 // Ctrl+Shift+Z = Redo
-                if (canRedo && onRedo != null) {
+                if (canRedo && localOnRedo != null) {
                     EditorSounds.playRedo();
-                    onRedo.run();
+                    localOnRedo.run();
                     return true;
                 }
             } else {
                 // Ctrl+Z = Undo
-                if (canUndo && onUndo != null) {
+                if (canUndo && localOnUndo != null) {
                     EditorSounds.playUndo();
-                    onUndo.run();
+                    localOnUndo.run();
                     return true;
                 }
             }
@@ -549,9 +511,9 @@ public class FooterComponent {
         // Ctrl+Y = Redo
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_Y &&
             (modifiers & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) != 0) {
-            if (canRedo && onRedo != null) {
+            if (canRedo && localOnRedo != null) {
                 EditorSounds.playRedo();
-                onRedo.run();
+                localOnRedo.run();
                 return true;
             }
         }
@@ -559,9 +521,9 @@ public class FooterComponent {
         // Ctrl+S = Apply
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_S &&
             (modifiers & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) != 0) {
-            if (canApply && isDirty && onApply != null) {
+            if (canApply && isDirty && localOnApply != null) {
                 EditorSounds.playSuccess();
-                onApply.run();
+                localOnApply.run();
                 return true;
             }
         }

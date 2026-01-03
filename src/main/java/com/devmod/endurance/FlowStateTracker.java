@@ -35,10 +35,10 @@ public class FlowStateTracker {
      * Flow states that affect style point gains.
      */
     public enum FlowState {
-        STALE("STALE", 0xFF4444, STALE_PENALTY, "Boring! Try something new!"),
-        NEUTRAL("", 0xAAAAAA, 1.0f, ""),
-        FRESH("FRESH!", 0x44FF44, FRESH_BONUS, "Nice variety!"),
-        VIRTUOSO("VIRTUOSO!", 0xFFAA00, VIRTUOSO_MULTIPLIER, "Incredible style!");
+        STALE("STALE", EnduranceColors.Flow.STALE, STALE_PENALTY, "Boring! Try something new!"),
+        NEUTRAL("", EnduranceColors.Flow.NEUTRAL, 1.0f, ""),
+        FRESH("FRESH!", EnduranceColors.Flow.FRESH, FRESH_BONUS, "Nice variety!"),
+        VIRTUOSO("VIRTUOSO!", EnduranceColors.Flow.VIRTUOSO, VIRTUOSO_MULTIPLIER, "Incredible style!");
 
         public final String displayName;
         public final int color;

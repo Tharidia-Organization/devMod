@@ -15,18 +15,12 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.combat.CombatColors;
 import com.devmod.combat.signature.SoulImprint;
 import com.devmod.combat.signature.WeaponTrait;
 
 @OnlyIn(Dist.CLIENT)
 public class SignatureWeaponTooltip {
-
-    // Tier colors for evolution stages
-    private static final int STAGE_0_COLOR = 0xAAAAAA; // Common (gray)
-    private static final int STAGE_1_COLOR = 0xFFFFFF; // Personal (white)
-    private static final int STAGE_2_COLOR = 0x55FF55; // Enhanced (green)
-    private static final int STAGE_3_COLOR = 0x5555FF; // Legendary (blue)
-    private static final int STAGE_4_COLOR = 0xFF55FF; // Mythic (magenta)
 
     /**
      * Build tooltip lines for a weapon with a Soul Imprint.
@@ -155,12 +149,12 @@ public class SignatureWeaponTooltip {
      */
     private static int getStageColor(int stage) {
         return switch (stage) {
-            case 0 -> STAGE_0_COLOR;
-            case 1 -> STAGE_1_COLOR;
-            case 2 -> STAGE_2_COLOR;
-            case 3 -> STAGE_3_COLOR;
-            case 4 -> STAGE_4_COLOR;
-            default -> STAGE_0_COLOR;
+            case 0 -> CombatColors.ImprintStage.OWNER;
+            case 1 -> CombatColors.Text.PRIMARY;
+            case 2 -> CombatColors.ImprintStage.ENHANCED;
+            case 3 -> CombatColors.ImprintStage.LEGENDARY;
+            case 4 -> CombatColors.ImprintStage.ASCENDED;
+            default -> CombatColors.ImprintStage.OWNER;
         };
     }
 

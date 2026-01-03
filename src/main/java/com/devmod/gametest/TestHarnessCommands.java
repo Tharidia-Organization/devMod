@@ -33,6 +33,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
+import com.devmod.collision.bodypart.BodyPartColors;
 import com.devmod.combat.HitHelper;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.stats.WeaponStats;
@@ -40,6 +41,7 @@ import com.devmod.telemetry.duckdb.DuckDBMigrationService;
 import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
 import com.devmod.telemetry.duckdb.DuckDBQueryAPI.EnduranceStats;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.devmod.util.ColorMasks;
 import com.devmod.util.I18n;
 
 @EventBusSubscriber(modid = DevMod.MODID)
@@ -414,11 +416,19 @@ public class TestHarnessCommands {
 
     private static String getBodyPartColorName(HitHelper.BodyPart part) {
         return switch (part) {
-            case HEAD -> "Cyan (0x00FFFF)";
-            case BODY -> "Green (0x00FF00)";
-            case ARMS -> "Yellow (0xFFFF00)";
-            case LEGS -> "Red (0xFF0000)";
+            case HEAD -> formatColorName("Cyan", BodyPartColors.HEAD);
+            case BODY -> formatColorName("Green", BodyPartColors.BODY);
+            case ARMS -> formatColorName("Yellow", BodyPartColors.ARMS);
+            case LEGS -> formatColorName("Red", BodyPartColors.LEGS);
         };
+    }
+
+    private static String formatColorName(String name, int argb) {
+        return name + " (" + formatRgb(argb) + ")";
+    }
+
+    private static String formatRgb(int argb) {
+        return String.format("0x%06X", argb & ColorMasks.RGB);
     }
 
     private static int setHudOn(CommandContext<CommandSourceStack> ctx) {
@@ -603,7 +613,7 @@ public class TestHarnessCommands {
             pos.x - size / 2, pos.y, pos.z - size / 2,
             pos.x + size / 2, pos.y + size, pos.z + size / 2
         );
-        com.devmod.client.gametest.TestHarnessClientDelegate.addDebugBox(box, 0xFF00FF00, true, 10000L);
+        com.devmod.client.gametest.TestHarnessClientDelegate.addDebugBox(box, BodyPartColors.BODY, true, 10000L);
 
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.added_debug_box",
             String.format("%.1f, %.1f, %.1f", pos.x, pos.y, pos.z)), false);
@@ -669,10 +679,10 @@ public class TestHarnessCommands {
 
         WeaponStats stats = new WeaponStats();
         float mult = switch (bodyPart) {
-            case HEAD -> stats.headMult;
-            case BODY -> stats.bodyMult;
-            case ARMS -> stats.armsMult;
-            case LEGS -> stats.legsMult;
+            case HEAD -> stats.getHeadMult();
+            case BODY -> stats.getBodyMult();
+            case ARMS -> stats.getArmsMult();
+            case LEGS -> stats.getLegsMult();
         };
 
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.bodypart_info",

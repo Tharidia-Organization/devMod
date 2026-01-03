@@ -17,7 +17,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.mailbox.client.ClientTicketCache.TicketData;
+import com.devmod.mailbox.client.MailboxUiTheme;
 import com.devmod.mailbox.network.payload.TicketActionPayload;
 
 /**
@@ -106,7 +108,7 @@ public class TicketCommentScreen extends Screen {
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xE8101820);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, MailboxUiTheme.Panel.BG);
         int borderColor = DesignTokens.Border.DEFAULT();
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 1, borderColor);
         graphics.fill(panelX, panelY + PANEL_HEIGHT - 1, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
@@ -168,19 +170,19 @@ public class TicketCommentScreen extends Screen {
                 Component.translatable("devmod.ticket.comment.empty").getString(),
                 DesignTokens.Status.WARNING()
             );
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
 
         PacketDistributor.sendToServer(Objects.requireNonNull(TicketActionPayload.addComment(ticketId, comment)));
-        DesignTokens.Sound.click();
+        UiSounds.click();
         if (minecraft != null) {
             minecraft.setScreen(parent);
         }
     }
 
     private void onCancel() {
-        DesignTokens.Sound.click();
+        UiSounds.click();
         if (minecraft != null) {
             minecraft.setScreen(parent);
         }

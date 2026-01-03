@@ -142,7 +142,7 @@ public final class RadialMenuConstants {
     public static final float BADGE_BLEND_FACTOR = 0.3f;
 
     /** Badge background color */
-    public static final int BADGE_BG_COLOR = 0xDD000000;
+    public static final int BADGE_BG_COLOR = RadialMenuThemeDefaults.Badge.BG;
 
     /** Badge half width (pixels) */
     public static final int BADGE_HALF_WIDTH = 6;
@@ -203,7 +203,7 @@ public final class RadialMenuConstants {
     public static final int ITEM_STATUS_OFFSET_Y = 16;
 
     /** Item inactive status color */
-    public static final int ITEM_STATUS_INACTIVE_COLOR = 0xFF666666;
+    public static final int ITEM_STATUS_INACTIVE_COLOR = RadialMenuThemeDefaults.Item.STATUS_INACTIVE;
 
     // ================================================================
     // FAVORITES RING
@@ -216,10 +216,10 @@ public final class RadialMenuConstants {
     public static final int FAVORITE_SIZE_BONUS = 4;
 
     /** Favorite background color when selected */
-    public static final int FAVORITE_BG_SELECTED = 0xDDFFD700;
+    public static final int FAVORITE_BG_SELECTED = RadialMenuThemeDefaults.Favorites.BG_SELECTED;
 
     /** Favorite background color when unselected */
-    public static final int FAVORITE_BG_UNSELECTED = 0x88FFD700;
+    public static final int FAVORITE_BG_UNSELECTED = RadialMenuThemeDefaults.Favorites.BG_UNSELECTED;
 
     /** Favorite icon scale factor */
     public static final float FAVORITE_ICON_SCALE = 0.7f;
@@ -234,7 +234,7 @@ public final class RadialMenuConstants {
     public static final int FAVORITE_STAR_OFFSET_Y = -4;
 
     /** Favorite star color */
-    public static final int FAVORITE_STAR_COLOR = 0xFFFFD700;
+    public static final int FAVORITE_STAR_COLOR = RadialMenuThemeDefaults.Favorites.STAR;
 
     // ================================================================
     // BACKGROUND & OVERLAYS
@@ -244,7 +244,7 @@ public final class RadialMenuConstants {
     public static final int BACKGROUND_ALPHA_MAX = 0xE0;
 
     /** Background color (RGB) */
-    public static final int BACKGROUND_COLOR = 0x0D0D15;
+    public static final int BACKGROUND_COLOR = RadialMenuThemeDefaults.Overlay.BACKGROUND_RGB;
 
     /** Minimum search animation threshold */
     public static final float SEARCH_ANIMATION_EPSILON = 0.01f;
@@ -364,49 +364,49 @@ public final class RadialMenuConstants {
     // ================================================================
 
     /** Default background dark color */
-    public static final int COLOR_BG_DARK = 0xF0202035;
+    public static final int COLOR_BG_DARK = RadialMenuThemeDefaults.Core.BG_DARK;
 
     /** Default selected segment color */
-    public static final int COLOR_SELECTED_BG = 0xEE252540;
+    public static final int COLOR_SELECTED_BG = RadialMenuThemeDefaults.Core.SELECTED_BG;
 
     /** Macro hub selected base color */
-    public static final int COLOR_MACRO_SELECTED_BASE = 0xFF252540;
+    public static final int COLOR_MACRO_SELECTED_BASE = RadialMenuThemeDefaults.Core.MACRO_SELECTED_BASE;
 
     /** Default unselected segment color */
-    public static final int COLOR_UNSELECTED_BG = 0xDD1a1a30;
+    public static final int COLOR_UNSELECTED_BG = RadialMenuThemeDefaults.Core.UNSELECTED_BG;
 
     /** Default border color */
-    public static final int COLOR_BORDER = 0xFF404060;
+    public static final int COLOR_BORDER = RadialMenuThemeDefaults.Core.BORDER;
 
     /** Default divider color */
-    public static final int COLOR_DIVIDER = 0xFF505070;
+    public static final int COLOR_DIVIDER = RadialMenuThemeDefaults.Core.DIVIDER;
 
     /** Macro hover border base color */
-    public static final int COLOR_MACRO_HOVER_BORDER = 0xFF606080;
+    public static final int COLOR_MACRO_HOVER_BORDER = RadialMenuThemeDefaults.Core.MACRO_HOVER_BORDER;
 
     /** Default inner ring border color */
-    public static final int COLOR_INNER_RING = 0xFF303050;
+    public static final int COLOR_INNER_RING = RadialMenuThemeDefaults.Core.INNER_RING;
 
     /** Close button hover background */
-    public static final int COLOR_CLOSE_HOVER = 0xFF453545;
+    public static final int COLOR_CLOSE_HOVER = RadialMenuThemeDefaults.Core.CLOSE_HOVER;
 
     /** Close button normal background */
-    public static final int COLOR_CLOSE_NORMAL = 0xF0252530;
+    public static final int COLOR_CLOSE_NORMAL = RadialMenuThemeDefaults.Core.CLOSE_NORMAL;
 
     /** Close button hover border */
-    public static final int COLOR_CLOSE_BORDER_HOVER = 0xFFFF6666;
+    public static final int COLOR_CLOSE_BORDER_HOVER = RadialMenuThemeDefaults.Core.CLOSE_BORDER_HOVER;
 
     /** Center icon color for back indicator */
-    public static final int COLOR_CENTER_ICON_BACK = 0xFF80AAFF;
+    public static final int COLOR_CENTER_ICON_BACK = RadialMenuThemeDefaults.Core.CENTER_ICON_BACK;
 
     /** Text primary color */
-    public static final int COLOR_TEXT_PRIMARY = 0xFFFFFFFF;
+    public static final int COLOR_TEXT_PRIMARY = RadialMenuThemeDefaults.Core.TEXT_PRIMARY;
 
     /** Text secondary color */
-    public static final int COLOR_TEXT_SECONDARY = 0xFFBBBBCC;
+    public static final int COLOR_TEXT_SECONDARY = RadialMenuThemeDefaults.Core.TEXT_SECONDARY;
 
     /** Inactive element color */
-    public static final int COLOR_INACTIVE = 0xFFAAAAAA;
+    public static final int COLOR_INACTIVE = RadialMenuThemeDefaults.Core.INACTIVE;
 
     // ================================================================
     // ANGLES (Radians)
@@ -468,7 +468,7 @@ public final class RadialMenuConstants {
     // ================================================================
 
     /** Tooltip background color */
-    public static final int TOOLTIP_BG_COLOR = 0xF0101020;
+    public static final int TOOLTIP_BG_COLOR = RadialMenuThemeDefaults.Overlay.TOOLTIP_BG;
 
     /** Tooltip padding around text */
     public static final int TOOLTIP_PADDING = 6;
@@ -498,7 +498,7 @@ public final class RadialMenuConstants {
     public static final int SEARCH_BOX_BORDER = 2;
 
     /** Search box background color */
-    public static final int SEARCH_BOX_BG = 0xEE101020;
+    public static final int SEARCH_BOX_BG = RadialMenuThemeDefaults.Overlay.SEARCH_BOX_BG;
 
     /** Search box text X offset */
     public static final int SEARCH_BOX_TEXT_OFFSET_X = 10;
@@ -519,7 +519,7 @@ public final class RadialMenuConstants {
     public static final int SEARCH_CURSOR_WIDTH = 2;
 
     /** Search result background color */
-    public static final int SEARCH_RESULT_BG = 0xCC101020;
+    public static final int SEARCH_RESULT_BG = RadialMenuThemeDefaults.Overlay.SEARCH_RESULT_BG;
 
     /** Search result row height */
     public static final int SEARCH_RESULT_HEIGHT = 25;
@@ -556,13 +556,13 @@ public final class RadialMenuConstants {
     public static final int BREADCRUMB_Y = 10;
 
     /** Breadcrumb text color */
-    public static final int BREADCRUMB_COLOR = 0xFFFFFFFF;
+    public static final int BREADCRUMB_COLOR = RadialMenuThemeDefaults.Overlay.BREADCRUMB;
 
     /** Edit mode background color */
-    public static final int EDIT_MODE_BG_COLOR = 0xCC000000;
+    public static final int EDIT_MODE_BG_COLOR = RadialMenuThemeDefaults.Overlay.EDIT_MODE_BG;
 
     /** Edit mode text color */
-    public static final int EDIT_MODE_TEXT_COLOR = 0xFFFF4444;
+    public static final int EDIT_MODE_TEXT_COLOR = RadialMenuThemeDefaults.Overlay.EDIT_MODE_TEXT;
 
     /** Edit mode horizontal padding (pixels) */
     public static final int EDIT_MODE_PADDING_X = 5;
@@ -586,5 +586,5 @@ public final class RadialMenuConstants {
     public static final int THEME_INDICATOR_Y = 30;
 
     /** Theme indicator base color (RGB) */
-    public static final int THEME_INDICATOR_COLOR = 0xFFFFFF;
+    public static final int THEME_INDICATOR_COLOR = RadialMenuThemeDefaults.Overlay.THEME_INDICATOR_RGB;
 }

@@ -99,29 +99,33 @@ public final class UserController {
         boolean wasBlockedReceiver = perms.isReceiverBlocked(userUuid);
         List<String> changes = new ArrayList<>();
 
-        if (request.admin() != null) {
-            if (request.admin()) {
+        Boolean adminFlag = request.admin();
+        if (adminFlag != null) {
+            if (adminFlag) {
                 perms.grantAdmin(userUuid);
             } else {
                 perms.revokeAdmin(userUuid);
             }
         }
-        if (request.tester() != null) {
-            if (request.tester()) {
+        Boolean testerFlag = request.tester();
+        if (testerFlag != null) {
+            if (testerFlag) {
                 perms.grantTester(userUuid);
             } else {
                 perms.revokeTester(userUuid);
             }
         }
-        if (request.blockedSender() != null) {
-            if (request.blockedSender()) {
+        Boolean blockedSenderFlag = request.blockedSender();
+        if (blockedSenderFlag != null) {
+            if (blockedSenderFlag) {
                 perms.blockSender(userUuid);
             } else {
                 perms.unblockSender(userUuid);
             }
         }
-        if (request.blockedReceiver() != null) {
-            if (request.blockedReceiver()) {
+        Boolean blockedReceiverFlag = request.blockedReceiver();
+        if (blockedReceiverFlag != null) {
+            if (blockedReceiverFlag) {
                 perms.blockReceiver(userUuid);
             } else {
                 perms.unblockReceiver(userUuid);

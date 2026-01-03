@@ -707,7 +707,7 @@ public class ArenaPolicyRegistry {
             try {
                 var obj = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
                 return deserialize(obj);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 return Optional.empty();
             }
         }
@@ -838,7 +838,7 @@ public class ArenaPolicyRegistry {
                     enabled,
                     description
                 ));
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 return Optional.empty();
             }
         }

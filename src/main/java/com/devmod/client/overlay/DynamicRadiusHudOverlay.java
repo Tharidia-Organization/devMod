@@ -30,7 +30,7 @@ public final class DynamicRadiusHudOverlay {
         ResourceLocation.fromNamespaceAndPath("devmod", "dynamic_radius_hint");
 
     // Colors (delegating to OverlayTheme)
-    private static final int BG_COLOR = OverlayTheme.withAlpha(0x000000, OverlayTheme.Alpha.SUBTLE);
+    private static final int BG_COLOR = OverlayTheme.withAlpha(OverlayTheme.Utility.BLACK, OverlayTheme.Alpha.SUBTLE);
     private static final int TEXT_COLOR = OverlayTheme.Text.LIGHT;
     private static final int PADDING = 2;
     private static final int MARGIN = 6;

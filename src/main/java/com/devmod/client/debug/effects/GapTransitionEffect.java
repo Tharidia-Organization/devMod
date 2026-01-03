@@ -21,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.arena.zone.ArenaZone;
 import com.devmod.arena.zone.ZoneEnvironment;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 /**
  * Gap transition effect - void fog with falling particles.
@@ -347,23 +348,23 @@ public class GapTransitionEffect implements TransitionEffect {
     private int getVoidColor(ZoneEnvironment env) {
         // Void effects use dark colors
         if (env == null || ZoneEnvironment.DEFAULT.equals(env)) {
-            return 0x1A0A2E; // Deep purple/void
+            return OverlayTheme.Debug.GAP_VOID; // Deep purple/void
         }
 
         var biome = env.biome();
         if (biome.isPresent()) {
             String path = biome.get().getPath().toLowerCase(java.util.Locale.ROOT);
             if (path.contains("end")) {
-                return 0x200030; // End void purple
+                return OverlayTheme.Debug.GAP_END; // End void purple
             }
             if (path.contains("nether") || path.contains("soul")) {
-                return 0x2A1010; // Nether dark red
+                return OverlayTheme.Debug.GAP_NETHER; // Nether dark red
             }
             if (path.contains("deep_dark")) {
-                return 0x0A0A1A; // Deep dark blue-black
+                return OverlayTheme.Debug.GAP_DARK; // Deep dark blue-black
             }
         }
 
-        return 0x1A0A2E;
+        return OverlayTheme.Debug.GAP_VOID;
     }
 }

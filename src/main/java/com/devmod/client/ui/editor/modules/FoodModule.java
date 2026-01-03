@@ -98,7 +98,8 @@ public class FoodModule extends AbstractEditorModule {
         // Create UI components
         ui.createAllComponents(core.getDataSource());
 
-        // Add tabs
+        // Add tabs - Summary first to showcase ModuleSummarySection
+        addTab(ModuleTab.of("summary", "Summary", ui::getSummarySections));
         addTab(ModuleTab.of("nutrition", "Nutrition", ui::getNutritionSections));
         addTab(ModuleTab.of("effects", "Effects", ui::getEffectsSections));
         addTab(ModuleTab.of("properties", "Properties", ui::getPropertiesSections));
@@ -167,7 +168,7 @@ public class FoodModule extends AbstractEditorModule {
         stats.save(foodStats);
 
         DevMod.LOGGER.info("[Editor][Food][BuildPayload] item={} global={} nutrition={} saturation={} effects={}",
-            item.getItem(), isGlobal, stats.nutrition, stats.saturation, stats.effects.size());
+            item.getItem(), isGlobal, stats.getNutrition(), stats.getSaturation(), stats.getEffects().size());
 
         // Send both legacy and component-friendly payloads
         statsTag.put("FoodModStats", Objects.requireNonNull(foodStats.copy()));
@@ -185,7 +186,7 @@ public class FoodModule extends AbstractEditorModule {
         try {
             ItemStack copy = item.copy();
             DevMod.LOGGER.info("[Editor][Food][ApplyPreview] item={} nutrition={} saturation={} effects={}",
-                item.getItem(), stats.nutrition, stats.saturation, stats.effects.size());
+                item.getItem(), stats.getNutrition(), stats.getSaturation(), stats.getEffects().size());
 
             com.devmod.config.FoodConfigManager.setSpecificStats(copy, stats.copy());
             FoodStats applied = com.devmod.config.FoodConfigManager.getStats(copy).copy();

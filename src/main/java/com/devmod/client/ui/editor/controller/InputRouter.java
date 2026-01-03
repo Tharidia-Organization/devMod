@@ -86,20 +86,23 @@ public final class InputRouter {
                 return true;
             }
         }
-        if (context.overlayController().isTemplatesVisible() && context.templateOverlay() != null) {
-            if (context.templateOverlay().mouseClicked(mouseX, mouseY, context.screenWidth(), context.screenHeight())) {
+        TemplateOverlay templateOvl = context.templateOverlay();
+        if (context.overlayController().isTemplatesVisible() && templateOvl != null) {
+            if (templateOvl.mouseClicked(mouseX, mouseY, context.screenWidth(), context.screenHeight())) {
                 return true;
             }
         }
-        if (context.showDevPanel() && context.debugPanel() != null && context.debugPanel().handleClick(mouseX, mouseY)) {
+        DebugPanel dbgPanel = context.debugPanel();
+        if (context.showDevPanel() && dbgPanel != null && dbgPanel.handleClick(mouseX, mouseY)) {
             context.showStatus("Copied debug log", DesignTokens.Semantic.INFO);
             return true;
         }
         if (context.overlayController().isHistoryVisible() && context.handleHistoryClick(mouseX, mouseY)) {
             return true;
         }
-        if (context.overlayController().isPresetsVisible() && context.presetSelectorOverlay() != null) {
-            if (context.presetSelectorOverlay().mouseClicked(mouseX, mouseY, context.screenWidth(), context.screenHeight())) {
+        PresetSelectorOverlay presetOvl = context.presetSelectorOverlay();
+        if (context.overlayController().isPresetsVisible() && presetOvl != null) {
+            if (presetOvl.mouseClicked(mouseX, mouseY, context.screenWidth(), context.screenHeight())) {
                 return true;
             }
         }
@@ -133,8 +136,9 @@ public final class InputRouter {
         }
 
         // Priority 6: Multi-edit panel
-        if (context.showMultiEditPanel() && context.multiEditPanel() != null) {
-            if (context.multiEditPanel().mouseClicked(mouseX, mouseY, button)) {
+        MultiEditPanel mePanel = context.multiEditPanel();
+        if (context.showMultiEditPanel() && mePanel != null) {
+            if (mePanel.mouseClicked(mouseX, mouseY, button)) {
                 handleMultiEditResult();
                 return true;
             }
@@ -147,6 +151,22 @@ public final class InputRouter {
      * Route mouse release.
      */
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        // Block when low-confidence dialog is visible
+        if (context.lowConfidenceDetector().isVisible()) {
+            return false;
+        }
+
+        // Handle hotbar drag-release (place only mode)
+        if (context.handleHotbarRelease(mouseX, mouseY, button)) {
+            return true;
+        }
+
+        // ScrollArea release
+        if (context.scrollArea().mouseReleased(mouseX, mouseY, button)) {
+            return true;
+        }
+
+        // Module release
         EditorModule module = context.activeModule();
         if (module != null) {
             return module.mouseReleased(mouseX, mouseY, button);
@@ -158,6 +178,17 @@ public final class InputRouter {
      * Route mouse drag.
      */
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        // Block when low-confidence dialog is visible
+        if (context.lowConfidenceDetector().isVisible()) {
+            return false;
+        }
+
+        // ScrollArea drag
+        if (context.scrollArea().mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
+            return true;
+        }
+
+        // Module drag
         EditorModule module = context.activeModule();
         if (module != null) {
             return module.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -169,6 +200,11 @@ public final class InputRouter {
      * Route mouse scroll.
      */
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        // Block scroll when low-confidence dialog is visible
+        if (context.lowConfidenceDetector().isVisible()) {
+            return true;
+        }
+
         // Module overlay scroll
         EditorModule module = context.activeModule();
         if (module != null && module.hasActiveOverlay()) {
@@ -177,11 +213,14 @@ public final class InputRouter {
 
         // Panel overlay scroll
         if (context.overlayController().isHistoryVisible()) {
-            context.scrollHistory((int) -scrollY);
-            return true;
+            if (context.isPointInHistoryPanel(mouseX, mouseY)) {
+                context.scrollHistory((int) -scrollY);
+                return true;
+            }
         }
-        if (context.overlayController().isTemplatesVisible() && context.templateOverlay() != null) {
-            if (context.templateOverlay().mouseScrolled(mouseX, mouseY, scrollY, context.screenWidth(), context.screenHeight())) {
+        TemplateOverlay templateOvlScroll = context.templateOverlay();
+        if (context.overlayController().isTemplatesVisible() && templateOvlScroll != null) {
+            if (templateOvlScroll.mouseScrolled(mouseX, mouseY, scrollY, context.screenWidth(), context.screenHeight())) {
                 return true;
             }
         }
@@ -190,10 +229,25 @@ public final class InputRouter {
                 return true;
             }
         }
-        if (context.overlayController().isPresetsVisible() && context.presetSelectorOverlay() != null) {
-            if (context.presetSelectorOverlay().mouseScrolled(mouseX, mouseY, scrollY, context.screenWidth(), context.screenHeight())) {
+        PresetSelectorOverlay presetOvlScroll = context.presetSelectorOverlay();
+        if (context.overlayController().isPresetsVisible() && presetOvlScroll != null) {
+            if (presetOvlScroll.mouseScrolled(mouseX, mouseY, scrollY, context.screenWidth(), context.screenHeight())) {
                 return true;
             }
+        }
+
+        // Component scrolling
+        if (context.header().mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
+        }
+        if (context.footer().mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
+        }
+
+        // Multi-edit panel scroll
+        MultiEditPanel mePanelScroll = context.multiEditPanel();
+        if (context.showMultiEditPanel() && mePanelScroll != null && mePanelScroll.mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
         }
 
         // Scroll area
@@ -224,6 +278,13 @@ public final class InputRouter {
             return true;
         }
 
+        // Shift+Escape to force close all overlays
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
+            if (context.forceCloseAllOverlays()) {
+                return true;
+            }
+        }
+
         // Priority 1: Modal overlays
         if (context.helpOverlay().isVisible()) {
             return context.helpOverlay().keyPressed(keyCode);
@@ -236,26 +297,30 @@ public final class InputRouter {
         }
 
         // Template overlay (has text input)
-        if (context.overlayController().isTemplatesVisible() && context.templateOverlay() != null) {
-            if (context.templateOverlay().keyPressed(keyCode, modifiers)) {
+        TemplateOverlay templateOvlKey = context.templateOverlay();
+        if (context.overlayController().isTemplatesVisible() && templateOvlKey != null) {
+            if (templateOvlKey.keyPressed(keyCode, modifiers)) {
                 return true;
             }
         }
 
         // M key for multi-edit toggle/refresh
         if (keyCode == GLFW.GLFW_KEY_M) {
+            MultiEditPanel mePanelKey = context.multiEditPanel();
             if (context.showMultiEditPanel()) {
                 context.refreshMultiEditSelection();
-                if (context.multiEditPanel() != null) {
-                    context.multiEditPanel().setExpanded(true);
+                if (mePanelKey != null) {
+                    mePanelKey.setExpanded(true);
                 }
                 context.showStatus("MultiEdit refreshed", DesignTokens.Semantic.INFO);
             } else {
                 context.toggleMultiEditPanel();
                 if (context.showMultiEditPanel()) {
                     context.refreshMultiEditSelection();
-                    if (context.multiEditPanel() != null) {
-                        context.multiEditPanel().setExpanded(true);
+                    // Re-fetch after toggle since panel may have been created
+                    MultiEditPanel mePanelAfterToggle = context.multiEditPanel();
+                    if (mePanelAfterToggle != null) {
+                        mePanelAfterToggle.setExpanded(true);
                     }
                 }
             }
@@ -282,8 +347,9 @@ public final class InputRouter {
         }
 
         // Preset overlay keyboard
-        if (context.overlayController().isPresetsVisible() && context.presetSelectorOverlay() != null) {
-            if (context.presetSelectorOverlay().keyPressed(keyCode)) {
+        PresetSelectorOverlay presetOvlKey = context.presetSelectorOverlay();
+        if (context.overlayController().isPresetsVisible() && presetOvlKey != null) {
+            if (presetOvlKey.keyPressed(keyCode)) {
                 return true;
             }
         }
@@ -314,8 +380,9 @@ public final class InputRouter {
 
         // Ctrl+Z batch undo
         if (keyCode == GLFW.GLFW_KEY_Z && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-            if (context.multiEditManager() != null && context.multiEditManager().hasSnapshot()) {
-                var result = context.multiEditManager().restoreSnapshot();
+            MultiEditManager meManager = context.multiEditManager();
+            if (meManager != null && meManager.hasSnapshot()) {
+                var result = meManager.restoreSnapshot();
                 if (result.failureCount() == 0) {
                     context.showStatus("Batch undo: " + result.successCount() + " items restored", DesignTokens.Semantic.SUCCESS);
                 } else {
@@ -351,20 +418,21 @@ public final class InputRouter {
         }
 
         // Dev panel shortcuts
-        if (context.showDevPanel() && context.debugPanel() != null) {
+        DebugPanel dbgPanelKey = context.debugPanel();
+        if (context.showDevPanel() && dbgPanelKey != null) {
             if (keyCode == GLFW.GLFW_KEY_E && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
                 try {
-                    var path = context.debugPanel().exportRecentToTempFile(10);
-                    context.debugPanel().log("Exported recent to: " + path.toString());
+                    var path = dbgPanelKey.exportRecentToTempFile(10);
+                    dbgPanelKey.log("Exported recent to: " + path.toString());
                     context.showStatus("Exported debug recent", DesignTokens.Semantic.INFO);
                 } catch (Exception e) {
-                    context.debugPanel().log("Export failed: " + e.getMessage());
+                    dbgPanelKey.log("Export failed: " + e.getMessage());
                     context.showStatus("Export failed", DesignTokens.Semantic.WARNING);
                 }
                 return true;
             }
             if (keyCode == GLFW.GLFW_KEY_L && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-                context.debugPanel().clear();
+                dbgPanelKey.clear();
                 context.showStatus("Debug log cleared", DesignTokens.Semantic.INFO);
                 return true;
             }
@@ -406,6 +474,11 @@ public final class InputRouter {
      * Route character typed.
      */
     public boolean charTyped(char chr, int modifiers) {
+        // Block input when low-confidence dialog is visible
+        if (context.lowConfidenceDetector().isVisible()) {
+            return context.lowConfidenceDetector().charTyped(chr, modifiers);
+        }
+
         // Module overlay char input
         EditorModule module = context.activeModule();
         if (module != null && module.hasActiveOverlay()) {
@@ -413,13 +486,15 @@ public final class InputRouter {
         }
 
         // Template overlay char input
-        if (context.overlayController().isTemplatesVisible() && context.templateOverlay() != null) {
-            return context.templateOverlay().charTyped(chr, modifiers);
+        TemplateOverlay templateOvlChar = context.templateOverlay();
+        if (context.overlayController().isTemplatesVisible() && templateOvlChar != null) {
+            return templateOvlChar.charTyped(chr, modifiers);
         }
 
         // Preset overlay char input
-        if (context.overlayController().isPresetsVisible() && context.presetSelectorOverlay() != null) {
-            return context.presetSelectorOverlay().charTyped(chr, modifiers);
+        PresetSelectorOverlay presetOvlChar = context.presetSelectorOverlay();
+        if (context.overlayController().isPresetsVisible() && presetOvlChar != null) {
+            return presetOvlChar.charTyped(chr, modifiers);
         }
 
         // Module char input
@@ -443,11 +518,12 @@ public final class InputRouter {
 
         int succ = result.successCount();
         int fail = result.failureCount();
+        DebugPanel dbgPanelResult = context.debugPanel();
 
         if (fail == 0) {
             context.showStatus("Applied preset to " + succ + " items", DesignTokens.Semantic.SUCCESS);
-            if (context.debugPanel() != null) {
-                context.debugPanel().log("MultiEdit apply: " + succ + " successes");
+            if (dbgPanelResult != null) {
+                dbgPanelResult.log("MultiEdit apply: " + succ + " successes");
             }
         } else {
             context.showStatus("Applied: " + succ + " successes, " + fail + " failures", DesignTokens.Semantic.WARNING);
@@ -464,9 +540,9 @@ public final class InputRouter {
                 }
                 DevMod.LOGGER.warn("MultiEdit apply failures: {}", failures);
                 context.showStatus("Failures: " + sb, DesignTokens.Semantic.ERROR);
-                if (context.debugPanel() != null) {
+                if (dbgPanelResult != null) {
                     String first = failures.isEmpty() ? "" : failures.get(0);
-                    context.debugPanel().log("MultiEdit apply: " + succ + " successes, " + fail + " failures - first: " + first);
+                    dbgPanelResult.log("MultiEdit apply: " + succ + " successes, " + fail + " failures - first: " + first);
                 }
             } catch (Exception ignore) {
                 // ignore logging failure
@@ -524,6 +600,7 @@ public final class InputRouter {
         void showStatus(String message, int color);
         void clearTooltip();
         void closeOverlay();
+        boolean forceCloseAllOverlays();
         void handleCloseRequest();
         void handleModeChange(ModeBadge.Mode mode);
         void applyChanges();
@@ -533,5 +610,7 @@ public final class InputRouter {
         boolean handleHistoryClick(double mouseX, double mouseY);
         boolean handleFavoritesClick(double mouseX, double mouseY);
         boolean handleHotbarClick(double mouseX, double mouseY, int button);
+        boolean handleHotbarRelease(double mouseX, double mouseY, int button);
+        boolean isPointInHistoryPanel(double mouseX, double mouseY);
     }
 }

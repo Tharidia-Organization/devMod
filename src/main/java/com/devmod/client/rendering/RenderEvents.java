@@ -28,6 +28,7 @@ import com.devmod.client.attributes.AttributeMonitoringSystem;
 import com.devmod.client.attributes.AttributeRayVisualizer;
 import com.devmod.client.collision.rendering.OBBDebugRenderer;
 import com.devmod.client.combat.WeaponTrailVFX;
+import com.devmod.client.compat.mods.epicfight.ClientEpicFightCache;
 import com.devmod.client.effects.TrailManager;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.overlay.Impact3DPanelManager;
@@ -154,7 +155,7 @@ public class RenderEvents {
         }
 
         // === OBB Debug Rendering (when body part boxes enabled + OBB system active) ===
-        if (com.devmod.ModConfig.showBodyPartBoxes && isOBBSystemEnabled()) {
+        if (com.devmod.ModConfig.isShowBodyPartBoxes() && isOBBSystemEnabled()) {
             long t10 = profiler.startTiming("OBBDebugRenderer");
             renderOBBHitboxes(poseStack, bufferSource, event.getCamera().getPosition());
             profiler.endTiming("OBBDebugRenderer", t10);
@@ -459,6 +460,12 @@ public class RenderEvents {
         FloatingPanelManager.INSTANCE.tick();
         ContextDetector.INSTANCE.tick();
 
+        // === Epic Fight Integration: Update client cache ===
+        if (ClientEpicFightCache.shouldUpdate()) {
+            ClientEpicFightCache.INSTANCE.updateFromLocalPlayer(mc.player);
+            ClientEpicFightCache.INSTANCE.tickAnimations(1.0f);
+        }
+
         // Update panel hover based on mouse position
         if (mc.screen == null) { // Only if no GUI is open
             double mouseX = mc.mouseHandler.xpos();
@@ -568,15 +575,15 @@ public class RenderEvents {
             ArmorStats stats = ArmorConfigManager.getStats(useItem);
 
             // Only render if shield has visual properties enabled (opacity > 0)
-            if (stats.shieldOpacity <= 0.01f) continue;
+            if (stats.getShieldOpacity() <= 0.01f) continue;
 
             // Render the energy shield
             EnergyShieldRenderer.render(
                 poseStack,
                 bufferSource,
                 player,
-                stats.shieldColor,
-                stats.shieldOpacity,
+                stats.getShieldColor(),
+                stats.getShieldOpacity(),
                 1.2f, // Default shield radius
                 partialTick,
                 cameraPos

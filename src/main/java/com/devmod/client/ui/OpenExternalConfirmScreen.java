@@ -17,6 +17,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 @OnlyIn(Dist.CLIENT)
 public class OpenExternalConfirmScreen extends Screen {
@@ -35,7 +36,7 @@ public class OpenExternalConfirmScreen extends Screen {
     private final String dialogTitle;
     @Nullable
     private String statusMessage = null;
-    private int statusColor = 0xFFFFFF;
+    private int statusColor = DesignTokens.ExternalConfirm.TITLE;
 
     /**
      * Creates a confirmation screen for opening an external URL.
@@ -107,8 +108,8 @@ public class OpenExternalConfirmScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xDD000000);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, 0xFF555555);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, DesignTokens.ExternalConfirm.BG);
+        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, DesignTokens.ExternalConfirm.BORDER);
 
         // Null-safe font access
         var renderFont = this.font;
@@ -118,7 +119,7 @@ public class OpenExternalConfirmScreen extends Screen {
         }
 
         // Title
-        graphics.drawCenteredString(renderFont, dialogTitle, width / 2, dialogY + 12, 0xFFFFFF);
+        graphics.drawCenteredString(renderFont, dialogTitle, width / 2, dialogY + 12, DesignTokens.ExternalConfirm.TITLE);
 
         // URL (truncated if too long)
         String displayUrl = url;
@@ -129,7 +130,7 @@ public class OpenExternalConfirmScreen extends Screen {
             }
             displayUrl += "...";
         }
-        graphics.drawCenteredString(renderFont, displayUrl, width / 2, dialogY + 32, 0xAAAAAA);
+        graphics.drawCenteredString(renderFont, displayUrl, width / 2, dialogY + 32, DesignTokens.ExternalConfirm.URL);
 
         // Status message (if any)
         String currentStatus = statusMessage;
@@ -145,7 +146,7 @@ public class OpenExternalConfirmScreen extends Screen {
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 Desktop.getDesktop().browse(new URI(url));
                 statusMessage = Component.translatable("devmod.ui.open_external.opened").getString();
-                statusColor = 0x55FF55;
+                statusColor = DesignTokens.ExternalConfirm.STATUS_OK;
 
                 // Log telemetry
                 logExternalOpen(true, null);
@@ -162,13 +163,13 @@ public class OpenExternalConfirmScreen extends Screen {
             } else {
                 // Desktop not supported, offer copy instead
                 statusMessage = Component.translatable("devmod.ui.open_external.desktop_not_supported").getString();
-                statusColor = 0xFFAA00;
+                statusColor = DesignTokens.ExternalConfirm.STATUS_WARN;
                 copyToClipboard();
             }
         } catch (Exception e) {
             DevMod.LOGGER.error("[OpenExternalConfirmScreen] Failed to open URL: {}", url, e);
             statusMessage = Component.translatable("devmod.ui.open_external.failed").getString();
-            statusColor = 0xFF5555;
+            statusColor = DesignTokens.ExternalConfirm.STATUS_ERROR;
 
             // Log telemetry
             logExternalOpen(false, e.getMessage());
@@ -185,14 +186,14 @@ public class OpenExternalConfirmScreen extends Screen {
                 keyboard.setClipboard(url);
             }
             statusMessage = Component.translatable("devmod.ui.open_external.copied").getString();
-            statusColor = 0x55FF55;
+            statusColor = DesignTokens.ExternalConfirm.STATUS_OK;
 
             // Log telemetry
             logCopyAction();
         } catch (Exception e) {
             DevMod.LOGGER.error("[OpenExternalConfirmScreen] Failed to copy URL: {}", url, e);
             statusMessage = Component.translatable("devmod.ui.open_external.copy_failed").getString();
-            statusColor = 0xFF5555;
+            statusColor = DesignTokens.ExternalConfirm.STATUS_ERROR;
         }
     }
 

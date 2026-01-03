@@ -5,14 +5,14 @@ package com.devmod.rendering;
  * Extracted to shared package for use in both client and server-side code.
  */
 public enum HeatmapType {
-    DEATH(0xFFFF0000),      // Red
-    MOVEMENT(0xFF00FF00),   // Green
-    CAMPING(0xFFFFFF00),    // Yellow
-    STUCK(0xFFFF8000),      // Orange
-    AGGRO_DROP(0xFF8000FF), // Purple
-    KITING(0xFF00FFFF),     // Cyan
-    LIGHT_SPAWNABLE(0xFFFF0000), // Red (can spawn)
-    LIGHT_DARK(0xFFFF8800); // Orange (dark but not spawnable)
+    DEATH(HeatmapColors.DEATH),      // Red
+    MOVEMENT(HeatmapColors.MOVEMENT),   // Green
+    CAMPING(HeatmapColors.CAMPING),    // Yellow
+    STUCK(HeatmapColors.STUCK),      // Orange
+    AGGRO_DROP(HeatmapColors.AGGRO_DROP), // Purple
+    KITING(HeatmapColors.KITING),     // Cyan
+    LIGHT_SPAWNABLE(HeatmapColors.LIGHT_SPAWNABLE), // Red (can spawn)
+    LIGHT_DARK(HeatmapColors.LIGHT_DARK); // Orange (dark but not spawnable)
 
     private final int baseColor;
 

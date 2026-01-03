@@ -137,9 +137,11 @@ public final class VisibilitySupplierRegistry {
     private static ItemStack getHeldItem() {
         var mc = Minecraft.getInstance();
         var player = mc.player;
-        if (player == null) return ItemStack.EMPTY;
+        if (player == null) return Objects.requireNonNull(ItemStack.EMPTY, "ItemStack.EMPTY");
         ItemStack held = player.getMainHandItem();
-        return held.isEmpty() ? ItemStack.EMPTY : held.copy();
+        return held.isEmpty()
+            ? Objects.requireNonNull(ItemStack.EMPTY, "ItemStack.EMPTY")
+            : Objects.requireNonNull(held.copy(), "held item copy");
     }
 
     /**
@@ -194,7 +196,7 @@ public final class VisibilitySupplierRegistry {
      */
     private static boolean isFuelItem(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
-        return stack.getBurnTime(RecipeType.SMELTING) > 0;
+        return stack.getBurnTime(Objects.requireNonNull(RecipeType.SMELTING, "SMELTING recipe type")) > 0;
     }
 
     /**
@@ -235,13 +237,5 @@ public final class VisibilitySupplierRegistry {
         if (stack == null || stack.isEmpty()) return false;
         var detection = WeaponTypeDetector.detectDetailed(stack);
         return WeaponTypeDetector.isMelee(detection.type());
-    }
-
-    /**
-     * Reset the registry (for testing purposes only).
-     */
-    static void reset() {
-        SUPPLIERS.clear();
-        defaultsRegistered = false;
     }
 }

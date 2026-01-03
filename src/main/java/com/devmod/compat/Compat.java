@@ -285,7 +285,9 @@ public final class Compat {
         if (clazz == null) return null;
         try {
             Field field = clazz.getDeclaredField(fieldName);
-            field.setAccessible(true);
+            if (!field.canAccess(null) && !field.trySetAccessible()) {
+                return null;
+            }
             return field;
         } catch (NoSuchFieldException e) {
             return null;

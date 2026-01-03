@@ -28,11 +28,13 @@ public class TelemetryConfig {
         Path file = ConfigPaths.getTelemetryRoomsFile();
         Path configDir = file.getParent();
 
-        try {
-            Files.createDirectories(configDir);
-        } catch (IOException e) {
-            LOGGER.error("Unable to create telemetry config directory", e);
-            return Collections.emptyList();
+        if (configDir != null) {
+            try {
+                Files.createDirectories(configDir);
+            } catch (IOException e) {
+                LOGGER.error("Unable to create telemetry config directory", e);
+                return Collections.emptyList();
+            }
         }
 
         if (!Files.exists(file)) {

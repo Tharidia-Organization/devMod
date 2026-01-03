@@ -138,12 +138,18 @@ public final class PolicySchemaValidator {
 
     public static void tryLoadFromResource(String resourcePath) {
         if (resourcePath == null || resourcePath.isBlank()) return;
-        try (InputStream in = PolicySchemaValidator.class.getClassLoader().getResourceAsStream(resourcePath)) {
-            if (in == null) {
-                LOGGER.debug("Policy schema resource not found at {}, keeping defaults", resourcePath);
-                return;
-            }
-            JsonObject schema = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+        ClassLoader loader = PolicySchemaValidator.class.getClassLoader();
+        if (loader == null) {
+            LOGGER.warn("Policy schema classloader unavailable, keeping defaults");
+            return;
+        }
+        InputStream in = loader.getResourceAsStream(resourcePath);
+        if (in == null) {
+            LOGGER.debug("Policy schema resource not found at {}, keeping defaults", resourcePath);
+            return;
+        }
+        try (InputStream stream = in) {
+            JsonObject schema = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
             applySchema(schema, "classpath:" + resourcePath);
         } catch (Exception e) {
             allowedFields = DEFAULT_ALLOWED_FIELDS;

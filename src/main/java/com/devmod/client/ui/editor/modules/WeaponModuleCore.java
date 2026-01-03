@@ -172,37 +172,37 @@ public class WeaponModuleCore {
                 else if (isTrueDmg) trueDmg += mod.amount();
             }
 
-            if (dmg != 0) target.attackDamage = (float) dmg;
-            if (spd != 0) target.attackSpeed = (float) spd;
-            if (kb != 0) target.attackKnockback = (float) kb;
-            if (reach != 0) target.attackReach = (float) reach;
-            if (sweep != 0) target.sweepingRatio = (float) sweep;
-            if (critCh != 0) target.critChance = (float) (critCh / 100f);
-            if (critDmg != 0) target.critDamage = (float) critDmg;
-            if (shred != 0) target.armorShred = (float) shred;
-            if (lifesteal != 0) target.lifesteal = (float) (lifesteal / 100f);
-            if (dmgBonus != 0) target.damageBonus = (float) (dmgBonus / 100f);
-            if (vsUndead != 0) target.damageVsUndead = (float) (vsUndead / 100f);
-            if (vsArthro != 0) target.damageVsArthropods = (float) (vsArthro / 100f);
-            if (vsPlayers != 0) target.damageVsPlayers = (float) (vsPlayers / 100f);
-            if (trueDmg != 0) target.trueDamagePercent = (float) (trueDmg / 100f);
+            if (dmg != 0) target.setAttackDamage((float) dmg);
+            if (spd != 0) target.setAttackSpeed((float) spd);
+            if (kb != 0) target.setAttackKnockback((float) kb);
+            if (reach != 0) target.setAttackReach((float) reach);
+            if (sweep != 0) target.setSweepingRatio((float) sweep);
+            if (critCh != 0) target.setCritChance((float) (critCh / 100f));
+            if (critDmg != 0) target.setCritDamage((float) critDmg);
+            if (shred != 0) target.setArmorShred((float) shred);
+            if (lifesteal != 0) target.setLifesteal((float) (lifesteal / 100f));
+            if (dmgBonus != 0) target.setDamageBonus((float) (dmgBonus / 100f));
+            if (vsUndead != 0) target.setDamageVsUndead((float) (vsUndead / 100f));
+            if (vsArthro != 0) target.setDamageVsArthropods((float) (vsArthro / 100f));
+            if (vsPlayers != 0) target.setDamageVsPlayers((float) (vsPlayers / 100f));
+            if (trueDmg != 0) target.setTrueDamagePercent((float) (trueDmg / 100f));
 
             DevMod.LOGGER.info("[Editor][Weapon] From attributes -> dmg={} spd={} kb={} reach={} sweep={} critCh={} critDmg={} shred={} lifesteal={} dmgBonus={} vsUndead={} vsArthro={} vsPlayers={} trueDmg={}",
-                target.attackDamage, target.attackSpeed, target.attackKnockback, target.attackReach, target.sweepingRatio,
-                target.critChance, target.critDamage, target.armorShred, target.lifesteal, target.damageBonus,
-                target.damageVsUndead, target.damageVsArthropods, target.damageVsPlayers, target.trueDamagePercent);
+                target.getAttackDamage(), target.getAttackSpeed(), target.getAttackKnockback(), target.getAttackReach(), target.getSweepingRatio(),
+                target.getCritChance(), target.getCritDamage(), target.getArmorShred(), target.getLifesteal(), target.getDamageBonus(),
+                target.getDamageVsUndead(), target.getDamageVsArthropods(), target.getDamageVsPlayers(), target.getTrueDamagePercent());
         } catch (Exception ignored) {
             DevMod.LOGGER.warn("[Editor][Weapon] Failed to apply vanilla defaults", ignored);
         }
 
         try {
-            target.maxDurability = item.getMaxDamage();
-            target.currentDamage = item.getDamageValue();
+            target.setMaxDurability(item.getMaxDamage());
+            target.setCurrentDamage(item.getDamageValue());
             net.minecraft.core.component.DataComponentType<net.minecraft.world.item.component.Unbreakable> unbreakableType =
                 Objects.requireNonNull(net.minecraft.core.component.DataComponents.UNBREAKABLE,
                     "UNBREAKABLE component type cannot be null");
-            target.unbreakable = item.get(unbreakableType) != null;
-            DevMod.LOGGER.info("[Editor][Weapon] Durability -> max={} damage={} unbreakable={}", target.maxDurability, target.currentDamage, target.unbreakable);
+            target.setUnbreakable(item.get(unbreakableType) != null);
+            DevMod.LOGGER.info("[Editor][Weapon] Durability -> max={} damage={} unbreakable={}", target.getMaxDurability(), target.getCurrentDamage(), target.isUnbreakable());
         } catch (Exception e) {
             DevMod.LOGGER.debug("[Editor][Weapon] Failed to read durability data", e);
         }
@@ -255,8 +255,8 @@ public class WeaponModuleCore {
         try {
             net.minecraft.world.item.component.Tool tool = item.get(Objects.requireNonNull(net.minecraft.core.component.DataComponents.TOOL));
             if (tool != null) {
-                stats.toolDefaultMiningSpeed = tool.defaultMiningSpeed();
-                stats.toolDamagePerBlock = tool.damagePerBlock();
+                stats.setToolDefaultMiningSpeed(tool.defaultMiningSpeed());
+                stats.setToolDamagePerBlock(tool.damagePerBlock());
                 stats.toolRules.clear();
                 for (net.minecraft.world.item.component.Tool.Rule rule : tool.rules()) {
                     String blockTag = "";
@@ -264,7 +264,7 @@ public class WeaponModuleCore {
                     if (blocks instanceof net.minecraft.core.HolderSet.Named<net.minecraft.world.level.block.Block> named) {
                         blockTag = named.key().location().toString();
                     }
-                    float speed = rule.speed().orElse(stats.toolDefaultMiningSpeed);
+                    float speed = rule.speed().orElse(stats.getToolDefaultMiningSpeed());
                     Boolean drops = rule.correctForDrops().orElse(null);
                     stats.toolRules.add(new WeaponStats.ToolRuleData(blockTag, speed, drops));
                 }
@@ -299,38 +299,38 @@ public class WeaponModuleCore {
         CompoundTag delta = new CompoundTag();
         if (baseline == null || current == null) return delta;
 
-        putIfChanged(delta, "HeadMult", baseline.headMult, current.headMult);
-        putIfChanged(delta, "BodyMult", baseline.bodyMult, current.bodyMult);
-        putIfChanged(delta, "ArmsMult", baseline.armsMult, current.armsMult);
-        putIfChanged(delta, "LegsMult", baseline.legsMult, current.legsMult);
+        putIfChanged(delta, "HeadMult", baseline.getHeadMult(), current.getHeadMult());
+        putIfChanged(delta, "BodyMult", baseline.getBodyMult(), current.getBodyMult());
+        putIfChanged(delta, "ArmsMult", baseline.getArmsMult(), current.getArmsMult());
+        putIfChanged(delta, "LegsMult", baseline.getLegsMult(), current.getLegsMult());
 
-        putIfChanged(delta, "ArmorPen", baseline.armorPenetration, current.armorPenetration);
-        putIfChanged(delta, "BaseDmg", baseline.baseDamageBonus, current.baseDamageBonus);
-        putIfChanged(delta, "AtkDmg", baseline.attackDamage, current.attackDamage);
-        putIfChanged(delta, "AtkSpd", baseline.attackSpeed, current.attackSpeed);
-        putIfChanged(delta, "AtkRch", baseline.attackReach, current.attackReach);
-        putIfChanged(delta, "AtkKB", baseline.attackKnockback, current.attackKnockback);
-        putIfChanged(delta, "Sweep", baseline.damageBonus, current.damageBonus);
+        putIfChanged(delta, "ArmorPen", baseline.getArmorPenetration(), current.getArmorPenetration());
+        putIfChanged(delta, "BaseDmg", baseline.getBaseDamageBonus(), current.getBaseDamageBonus());
+        putIfChanged(delta, "AtkDmg", baseline.getAttackDamage(), current.getAttackDamage());
+        putIfChanged(delta, "AtkSpd", baseline.getAttackSpeed(), current.getAttackSpeed());
+        putIfChanged(delta, "AtkRch", baseline.getAttackReach(), current.getAttackReach());
+        putIfChanged(delta, "AtkKB", baseline.getAttackKnockback(), current.getAttackKnockback());
+        putIfChanged(delta, "Sweep", baseline.getDamageBonus(), current.getDamageBonus());
 
-        putIfChanged(delta, "CritCh", baseline.critChance, current.critChance);
-        putIfChanged(delta, "CritDmg", baseline.critDamage, current.critDamage);
-        putIfChanged(delta, "ArmorShred", baseline.armorShred, current.armorShred);
+        putIfChanged(delta, "CritCh", baseline.getCritChance(), current.getCritChance());
+        putIfChanged(delta, "CritDmg", baseline.getCritDamage(), current.getCritDamage());
+        putIfChanged(delta, "ArmorShred", baseline.getArmorShred(), current.getArmorShred());
 
-        putIfChanged(delta, "FireDmg", baseline.fireDamageBonus, current.fireDamageBonus);
-        putIfChanged(delta, "MagicDmg", baseline.magicDamageBonus, current.magicDamageBonus);
-        putIfChanged(delta, "Lifesteal", baseline.lifesteal, current.lifesteal);
-        putIfChanged(delta, "VsUndead", baseline.damageVsUndead, current.damageVsUndead);
-        putIfChanged(delta, "VsArthro", baseline.damageVsArthropods, current.damageVsArthropods);
-        putIfChanged(delta, "VsPlayers", baseline.damageVsPlayers, current.damageVsPlayers);
-        putIfChanged(delta, "TrueDmgPct", baseline.trueDamagePercent, current.trueDamagePercent);
+        putIfChanged(delta, "FireDmg", baseline.getFireDamageBonus(), current.getFireDamageBonus());
+        putIfChanged(delta, "MagicDmg", baseline.getMagicDamageBonus(), current.getMagicDamageBonus());
+        putIfChanged(delta, "Lifesteal", baseline.getLifesteal(), current.getLifesteal());
+        putIfChanged(delta, "VsUndead", baseline.getDamageVsUndead(), current.getDamageVsUndead());
+        putIfChanged(delta, "VsArthro", baseline.getDamageVsArthropods(), current.getDamageVsArthropods());
+        putIfChanged(delta, "VsPlayers", baseline.getDamageVsPlayers(), current.getDamageVsPlayers());
+        putIfChanged(delta, "TrueDmgPct", baseline.getTrueDamagePercent(), current.getTrueDamagePercent());
 
-        putIfChanged(delta, "MaxDur", baseline.maxDurability, current.maxDurability);
-        putIfChanged(delta, "CurDmg", baseline.currentDamage, current.currentDamage);
-        putIfChanged(delta, "Repair", baseline.repairCost, current.repairCost);
-        if (baseline.unbreakable != current.unbreakable) delta.putBoolean("Unbreakable", current.unbreakable);
-        if (baseline.clearToolRules != current.clearToolRules) delta.putBoolean("ClearToolRules", current.clearToolRules);
-        putIfChanged(delta, "DefaultSpeed", baseline.toolDefaultMiningSpeed, current.toolDefaultMiningSpeed);
-        putIfChanged(delta, "DamagePerBlock", baseline.toolDamagePerBlock, current.toolDamagePerBlock);
+        putIfChanged(delta, "MaxDur", baseline.getMaxDurability(), current.getMaxDurability());
+        putIfChanged(delta, "CurDmg", baseline.getCurrentDamage(), current.getCurrentDamage());
+        putIfChanged(delta, "Repair", baseline.getRepairCost(), current.getRepairCost());
+        if (baseline.isUnbreakable() != current.isUnbreakable()) delta.putBoolean("Unbreakable", current.isUnbreakable());
+        if (baseline.isClearToolRules() != current.isClearToolRules()) delta.putBoolean("ClearToolRules", current.isClearToolRules());
+        putIfChanged(delta, "DefaultSpeed", baseline.getToolDefaultMiningSpeed(), current.getToolDefaultMiningSpeed());
+        putIfChanged(delta, "DamagePerBlock", baseline.getToolDamagePerBlock(), current.getToolDamagePerBlock());
 
         return delta;
     }
@@ -359,34 +359,34 @@ public class WeaponModuleCore {
     }
 
     boolean statsEquals(WeaponStats a, WeaponStats b) {
-        return a.headMult == b.headMult
-            && a.bodyMult == b.bodyMult
-            && a.armsMult == b.armsMult
-            && a.legsMult == b.legsMult
-            && a.attackDamage == b.attackDamage
-            && a.attackSpeed == b.attackSpeed
-            && a.attackReach == b.attackReach
-            && a.attackKnockback == b.attackKnockback
-            && a.damageBonus == b.damageBonus
-            && a.armorPenetration == b.armorPenetration
-            && a.baseDamageBonus == b.baseDamageBonus
-            && a.armorShred == b.armorShred
-            && a.critChance == b.critChance
-            && a.critDamage == b.critDamage
-            && a.lifesteal == b.lifesteal
-            && a.fireDamageBonus == b.fireDamageBonus
-            && a.magicDamageBonus == b.magicDamageBonus
-            && a.damageVsUndead == b.damageVsUndead
-            && a.damageVsArthropods == b.damageVsArthropods
-            && a.damageVsPlayers == b.damageVsPlayers
-            && a.trueDamagePercent == b.trueDamagePercent
-            && a.maxDurability == b.maxDurability
-            && a.currentDamage == b.currentDamage
-            && a.repairCost == b.repairCost
-            && a.unbreakable == b.unbreakable
-            && a.clearToolRules == b.clearToolRules
-            && Float.compare(a.toolDefaultMiningSpeed, b.toolDefaultMiningSpeed) == 0
-            && a.toolDamagePerBlock == b.toolDamagePerBlock
+        return Float.compare(a.getHeadMult(), b.getHeadMult()) == 0
+            && Float.compare(a.getBodyMult(), b.getBodyMult()) == 0
+            && Float.compare(a.getArmsMult(), b.getArmsMult()) == 0
+            && Float.compare(a.getLegsMult(), b.getLegsMult()) == 0
+            && Float.compare(a.getAttackDamage(), b.getAttackDamage()) == 0
+            && Float.compare(a.getAttackSpeed(), b.getAttackSpeed()) == 0
+            && Float.compare(a.getAttackReach(), b.getAttackReach()) == 0
+            && Float.compare(a.getAttackKnockback(), b.getAttackKnockback()) == 0
+            && Float.compare(a.getDamageBonus(), b.getDamageBonus()) == 0
+            && Float.compare(a.getArmorPenetration(), b.getArmorPenetration()) == 0
+            && Float.compare(a.getBaseDamageBonus(), b.getBaseDamageBonus()) == 0
+            && Float.compare(a.getArmorShred(), b.getArmorShred()) == 0
+            && Float.compare(a.getCritChance(), b.getCritChance()) == 0
+            && Float.compare(a.getCritDamage(), b.getCritDamage()) == 0
+            && Float.compare(a.getLifesteal(), b.getLifesteal()) == 0
+            && Float.compare(a.getFireDamageBonus(), b.getFireDamageBonus()) == 0
+            && Float.compare(a.getMagicDamageBonus(), b.getMagicDamageBonus()) == 0
+            && Float.compare(a.getDamageVsUndead(), b.getDamageVsUndead()) == 0
+            && Float.compare(a.getDamageVsArthropods(), b.getDamageVsArthropods()) == 0
+            && Float.compare(a.getDamageVsPlayers(), b.getDamageVsPlayers()) == 0
+            && Float.compare(a.getTrueDamagePercent(), b.getTrueDamagePercent()) == 0
+            && a.getMaxDurability() == b.getMaxDurability()
+            && a.getCurrentDamage() == b.getCurrentDamage()
+            && a.getRepairCost() == b.getRepairCost()
+            && a.isUnbreakable() == b.isUnbreakable()
+            && a.isClearToolRules() == b.isClearToolRules()
+            && Float.compare(a.getToolDefaultMiningSpeed(), b.getToolDefaultMiningSpeed()) == 0
+            && a.getToolDamagePerBlock() == b.getToolDamagePerBlock()
             && toolRulesEqual(a.toolRules, b.toolRules)
             && !module.getVariants().variantChanged();
     }

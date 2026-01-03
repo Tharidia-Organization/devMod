@@ -26,6 +26,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ActionKeybindRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 @OnlyIn(Dist.CLIENT)
 public class RadialActionDetailScreen extends Screen {
@@ -102,7 +103,7 @@ public class RadialActionDetailScreen extends Screen {
             ? Objects.requireNonNullElse(registryAction.getLabel(), fallbackTitle)
             : fallbackTitle;
         Component safeTitle = Objects.requireNonNull(title, "title");
-        safeGraphics.drawCenteredString(font, safeTitle, width / 2, PADDING, 0xFFFFFF);
+        safeGraphics.drawCenteredString(font, safeTitle, width / 2, PADDING, DesignTokens.Text.WHITE);
 
         ItemStack icon = item.getIconStack();
         int iconY = PADDING + 16;
@@ -116,7 +117,7 @@ public class RadialActionDetailScreen extends Screen {
         int y = textStartY;
         for (FormattedCharSequence line : descriptionLines) {
             FormattedCharSequence safeLine = Objects.requireNonNull(line, "description line");
-            safeGraphics.drawString(font, safeLine, PADDING, y, 0xFFFFFF, false);
+            safeGraphics.drawString(font, safeLine, PADDING, y, DesignTokens.Text.WHITE, false);
             y += font.lineHeight + 2;
         }
 

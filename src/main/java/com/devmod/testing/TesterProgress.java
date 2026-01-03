@@ -31,7 +31,7 @@ import com.devmod.testing.stats.PotionStatistics;
 import com.devmod.testing.stats.SessionStatistics;
 import com.devmod.util.ConfigPaths;
 
-public class TesterProgress {
+public final class TesterProgress {
     private static final Logger LOGGER = LoggerFactory.getLogger(TesterProgress.class);
     // Lazy initialization to avoid NPE during class loading (FMLPaths not ready yet)
     private static Path getProgressFile() {
@@ -327,7 +327,11 @@ public class TesterProgress {
 
     public void save() {
         try {
-            Files.createDirectories(getProgressFile().getParent());
+            Path progressFile = getProgressFile();
+            Path parent = progressFile.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
 
             JsonObject root = new JsonObject();
             root.add("kills", kills.toJson());
@@ -342,7 +346,7 @@ public class TesterProgress {
             root.add("session", session.toJson());
             root.add("achievements", achievements.toJson());
 
-            Files.writeString(getProgressFile(), GSON.toJson(root), StandardCharsets.UTF_8);
+            Files.writeString(progressFile, GSON.toJson(root), StandardCharsets.UTF_8);
         } catch (IOException e) {
             LOGGER.error("Failed to save tester progress: {}", e.getMessage());
         }
@@ -371,7 +375,7 @@ public class TesterProgress {
 
             LOGGER.info("Tester progress loaded: {} kills, {} tests completed, {} mods interacted",
                 kills.getTotalKills(), session.getTestsCompleted(), mods.getUniqueModsInteractedCount());
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             LOGGER.error("Failed to load tester progress: {}", e.getMessage());
         }
     }

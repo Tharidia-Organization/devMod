@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
@@ -20,9 +21,15 @@ public final class ServerTransformProvider implements TransformProvider {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     @Nonnull
-    public static final ServerTransformProvider INSTANCE = new ServerTransformProvider();
+    public static ServerTransformProvider getInstance() {
+        return Holder.INSTANCE;
+    }
 
     private ServerTransformProvider() {} // Singleton
+
+    private static final class Holder {
+        private static final ServerTransformProvider INSTANCE = new ServerTransformProvider();
+    }
 
     // Transform cache with TTL
     private final Map<Integer, AnimationSnapshot> cache = new ConcurrentHashMap<>();
@@ -187,9 +194,7 @@ public final class ServerTransformProvider implements TransformProvider {
     }
 
     private static float lerpAngle(float delta, float start, float end) {
-        float diff = end - start;
-        while (diff < -180) diff += 360;
-        while (diff >= 180) diff -= 360;
+        float diff = Mth.wrapDegrees(end - start);
         return start + delta * diff;
     }
 }

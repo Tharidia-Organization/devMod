@@ -161,12 +161,18 @@ public final class SchemaValidator {
      */
     public static void tryLoadFromResource(String resourcePath) {
         if (resourcePath == null || resourcePath.isBlank()) return;
-        try (InputStream in = SchemaValidator.class.getClassLoader().getResourceAsStream(resourcePath)) {
-            if (in == null) {
-                LOGGER.debug("Schema resource not found at {}, keeping defaults", resourcePath);
-                return;
-            }
-            JsonObject schema = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+        ClassLoader loader = SchemaValidator.class.getClassLoader();
+        if (loader == null) {
+            LOGGER.warn("Schema classloader unavailable, keeping defaults");
+            return;
+        }
+        InputStream in = loader.getResourceAsStream(resourcePath);
+        if (in == null) {
+            LOGGER.debug("Schema resource not found at {}, keeping defaults", resourcePath);
+            return;
+        }
+        try (InputStream stream = in) {
+            JsonObject schema = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
             applySchema(schema, "classpath:" + resourcePath);
         } catch (Exception e) {
             allowedFields = DEFAULT_ALLOWED_FIELDS;

@@ -22,6 +22,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.arena.zone.ArenaZone;
 import com.devmod.arena.zone.ZoneEnvironment;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 /**
  * Gradient transition effect - fog with particles and soft glow.
@@ -343,20 +344,20 @@ public class GradientTransitionEffect implements TransitionEffect {
     private int getZoneColor(ZoneEnvironment env) {
         // Same color logic as HardTransitionEffect
         if (env == null || ZoneEnvironment.DEFAULT.equals(env)) {
-            return 0xFFFFFF;
+            return OverlayTheme.Debug.ZONE_ENV_DEFAULT;
         }
 
         var biome = env.biome();
         if (biome.isPresent()) {
             String path = biome.get().getPath().toLowerCase(java.util.Locale.ROOT);
-            if (path.contains("nether")) return 0xFF4444;
-            if (path.contains("end")) return 0xAA44FF;
-            if (path.contains("snow") || path.contains("ice")) return 0x44FFFF;
-            if (path.contains("desert")) return 0xFFFF44;
-            if (path.contains("ocean")) return 0x4444FF;
-            if (path.contains("forest")) return 0x44FF44;
+            if (path.contains("nether")) return OverlayTheme.Debug.ZONE_ENV_NETHER;
+            if (path.contains("end")) return OverlayTheme.Debug.ZONE_ENV_END;
+            if (path.contains("snow") || path.contains("ice")) return OverlayTheme.Debug.ZONE_ENV_ICE;
+            if (path.contains("desert")) return OverlayTheme.Debug.ZONE_ENV_DESERT;
+            if (path.contains("ocean")) return OverlayTheme.Debug.ZONE_ENV_OCEAN;
+            if (path.contains("forest")) return OverlayTheme.Debug.ZONE_ENV_FOREST;
         }
 
-        return 0xCCCCCC;
+        return OverlayTheme.Debug.ZONE_ENV_FALLBACK;
     }
 }

@@ -65,10 +65,15 @@ public class WaveDirectiveScreen extends Screen {
     protected void init() {
         super.init();
         selectButtons.clear();
-        if (payload == null || payload.choices() == null || payload.choices().isEmpty()) {
+        final var safePayload = payload;
+        if (safePayload == null) {
             return;
         }
-        for (int i = 0; i < payload.choices().size(); i++) {
+        final var choices = safePayload.choices();
+        if (choices == null || choices.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < choices.size(); i++) {
             int index = i;
             EditorButton btn = EditorButton.builder("directive-" + i, I18n.translate("devmod.ui.select").getString())
                 .style(EditorButton.Style.PRIMARY)
@@ -82,12 +87,17 @@ public class WaveDirectiveScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
-        if (payload == null || payload.choices() == null || payload.choices().isEmpty()) {
+        final var safePayload = payload;
+        if (safePayload == null) {
+            return;
+        }
+        final var choices = safePayload.choices();
+        if (choices == null || choices.isEmpty()) {
             return;
         }
 
         Font font = Objects.requireNonNull(Objects.requireNonNull(minecraft, "minecraft").font, "font");
-        int choicesCount = payload.choices().size();
+        int choicesCount = choices.size();
         int panelHeight = PANEL_PADDING * 2 + 24 + choicesCount * CARD_HEIGHT + (choicesCount - 1) * CARD_GAP;
         int panelX = (width - PANEL_WIDTH) / 2;
         int panelY = (height - panelHeight) / 2;
@@ -101,23 +111,24 @@ public class WaveDirectiveScreen extends Screen {
             graphics.fill(panelX, panelY + i, panelX + PANEL_WIDTH, panelY + i + 1, lineColor);
         }
 
-        graphics.drawCenteredString(font, "Choose Your Directive", width / 2, panelY + 6,
-            DesignTokens.Text.PRIMARY);
+        graphics.drawCenteredString(font, Objects.requireNonNull(I18n.translate("devmod.endurance.directive.choose_title").getString()),
+            width / 2, panelY + 6, DesignTokens.Text.PRIMARY);
         renderCountdown(graphics, font, panelX, panelY, PANEL_WIDTH);
 
         int cardWidth = PANEL_WIDTH - PANEL_PADDING * 2;
         int cardX = panelX + PANEL_PADDING;
         int cardY = panelY + PANEL_PADDING + 18;
 
-        for (int i = 0; i < payload.choices().size(); i++) {
-            WaveDirectiveChoicesPayload.DirectiveChoice choice = payload.choices().get(i);
+        for (int i = 0; i < choices.size(); i++) {
+            WaveDirectiveChoicesPayload.DirectiveChoice choice = choices.get(i);
             int y = cardY + i * (CARD_HEIGHT + CARD_GAP);
             int borderColor = DesignTokens.Stroke.MUTED;
             int cardColor = DesignTokens.Surface.LEVEL_0;
             graphics.fill(cardX - 1, y - 1, cardX + cardWidth + 1, y + CARD_HEIGHT + 1, borderColor);
             graphics.fill(cardX, y, cardX + cardWidth, y + CARD_HEIGHT, cardColor);
 
-            String name = choice.name() != null ? choice.name() : "Directive";
+            String name = choice.name() != null ? choice.name()
+                : Objects.requireNonNull(I18n.translate("devmod.endurance.directive.fallback_name").getString());
             graphics.drawString(Objects.requireNonNull(font, "font"), name, cardX + 8, y + 6,
                 DesignTokens.Text.PRIMARY, false);
 
@@ -129,7 +140,10 @@ public class WaveDirectiveScreen extends Screen {
                     cardX + 8, y + 20 + lineIndex * 10, DesignTokens.Text.SECONDARY, false);
             }
 
-            String rewardText = "Reward x" + String.format("%.2f", choice.rewardMultiplier());
+            String rewardText = Objects.requireNonNull(I18n.translate(
+                "devmod.endurance.directive.reward_multiplier",
+                String.format("%.2f", choice.rewardMultiplier())
+            ).getString());
             graphics.drawString(Objects.requireNonNull(font, "font"), rewardText,
                 cardX + 8, y + CARD_HEIGHT - 16,
                 DesignTokens.Semantic.WARNING, false);
@@ -166,20 +180,26 @@ public class WaveDirectiveScreen extends Screen {
 
     @Override
     public void onClose() {
-        if (!selectionSent && payload != null) {
-            PacketDistributor.sendToServer(new WaveDirectiveSelectionPayload("", payload.waveNumber()));
+        final var safePayload = payload;
+        if (!selectionSent && safePayload != null) {
+            PacketDistributor.sendToServer(new WaveDirectiveSelectionPayload("", safePayload.waveNumber()));
         }
         EnduranceUiCache.setLastDirectiveChoices(null);
         super.onClose();
     }
 
     private void selectDirective(int index) {
-        if (payload == null || index < 0 || index >= payload.choices().size()) {
+        final var safePayload = payload;
+        if (safePayload == null) {
             return;
         }
-        WaveDirectiveChoicesPayload.DirectiveChoice choice = payload.choices().get(index);
+        final var choices = safePayload.choices();
+        if (choices == null || index < 0 || index >= choices.size()) {
+            return;
+        }
+        WaveDirectiveChoicesPayload.DirectiveChoice choice = choices.get(index);
         selectionSent = true;
-        PacketDistributor.sendToServer(new WaveDirectiveSelectionPayload(choice.id(), payload.waveNumber()));
+        PacketDistributor.sendToServer(new WaveDirectiveSelectionPayload(choice.id(), safePayload.waveNumber()));
         EnduranceUiCache.setLastDirectiveChoices(null);
         onClose();
     }
@@ -236,7 +256,7 @@ public class WaveDirectiveScreen extends Screen {
         if (remaining < 0) {
             return;
         }
-        String text = I18n.ui("selection_time_remaining", remaining).getString();
+        String text = Objects.requireNonNull(I18n.ui("selection_time_remaining", remaining).getString());
         int textWidth = font.width(text);
         int x = panelX + panelWidth - textWidth - COUNTDOWN_PADDING;
         int y = panelY + 6;

@@ -23,13 +23,7 @@ public class UsableModuleCore {
     String sourcePrefix = "";
     SourceBadge.Source dataSource = SourceBadge.Source.VANILLA;
 
-    // Reference to parent module
-    @SuppressWarnings("unused")
-    private final UsableModule module;
-
-    public UsableModuleCore(UsableModule module) {
-        this.module = module;
-    }
+    public UsableModuleCore() {}
 
     // ═══════════════════════════════════════════════════════════════
     // LOADING
@@ -107,7 +101,7 @@ public class UsableModuleCore {
             var player = Minecraft.getInstance().player;
             int vanillaUseDuration = player != null ? item.getItem().getUseDuration(item, player) : 0;
             if (vanillaUseDuration > 0) {
-                target.useDuration = vanillaUseDuration;
+                target.setUseDuration(vanillaUseDuration);
             }
 
             // Check if item is throwable by type
@@ -116,16 +110,16 @@ public class UsableModuleCore {
                 itemType instanceof net.minecraft.world.item.EggItem ||
                 itemType instanceof net.minecraft.world.item.EnderpearlItem ||
                 itemType instanceof net.minecraft.world.item.ThrowablePotionItem) {
-                target.isThrowable = true;
-                target.projectileSpeed = 1.5f;
-                target.projectileGravity = 0.03f;
+                target.setThrowable(true);
+                target.setProjectileSpeed(1.5f);
+                target.setProjectileGravity(0.03f);
             }
 
             // Note: CONSUMABLE and USE_COOLDOWN components may not be available in all versions
             // For now, use duration is obtained via getUseDuration() above
 
             DevMod.LOGGER.info("[Editor][Usable] Vanilla defaults -> useDur={} cooldown={} throwable={}",
-                target.useDuration, target.cooldownDuration, target.isThrowable);
+                target.getUseDuration(), target.getCooldownDuration(), target.isThrowable());
         } catch (Exception e) {
             DevMod.LOGGER.warn("[Editor][Usable] Failed to apply vanilla defaults", e);
         }
@@ -167,16 +161,16 @@ public class UsableModuleCore {
      * Check if current stats differ from original.
      */
     public boolean hasModifications() {
-        if (stats.useDuration != originalStats.useDuration) return true;
-        if (stats.cooldownDuration != originalStats.cooldownDuration) return true;
-        if (!Objects.equals(stats.useAnimation, originalStats.useAnimation)) return true;
-        if (stats.isThrowable != originalStats.isThrowable) return true;
-        if (Math.abs(stats.projectileSpeed - originalStats.projectileSpeed) > EPSILON) return true;
-        if (Math.abs(stats.projectileGravity - originalStats.projectileGravity) > EPSILON) return true;
-        if (Math.abs(stats.projectileInaccuracy - originalStats.projectileInaccuracy) > EPSILON) return true;
-        if (stats.projectileDamage != originalStats.projectileDamage) return true;
-        if (stats.consumeOnUse != originalStats.consumeOnUse) return true;
-        if (!Objects.equals(stats.remainderItem, originalStats.remainderItem)) return true;
+        if (stats.getUseDuration() != originalStats.getUseDuration()) return true;
+        if (stats.getCooldownDuration() != originalStats.getCooldownDuration()) return true;
+        if (!Objects.equals(stats.getUseAnimation(), originalStats.getUseAnimation())) return true;
+        if (stats.isThrowable() != originalStats.isThrowable()) return true;
+        if (Math.abs(stats.getProjectileSpeed() - originalStats.getProjectileSpeed()) > EPSILON) return true;
+        if (Math.abs(stats.getProjectileGravity() - originalStats.getProjectileGravity()) > EPSILON) return true;
+        if (Math.abs(stats.getProjectileInaccuracy() - originalStats.getProjectileInaccuracy()) > EPSILON) return true;
+        if (stats.getProjectileDamage() != originalStats.getProjectileDamage()) return true;
+        if (stats.isConsumeOnUse() != originalStats.isConsumeOnUse()) return true;
+        if (!Objects.equals(stats.getRemainderItem(), originalStats.getRemainderItem())) return true;
         return false;
     }
 

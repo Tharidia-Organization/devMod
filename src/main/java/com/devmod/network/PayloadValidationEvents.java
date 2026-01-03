@@ -2,6 +2,7 @@ package com.devmod.network;
 
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.DevMod;
@@ -21,5 +22,10 @@ public final class PayloadValidationEvents {
             PayloadValidation.cleanupStaleEntries();
             IpRateLimiter.INSTANCE.cleanup();
         }
+    }
+
+    @SubscribeEvent
+    public static void onRegisterCommands(RegisterCommandsEvent event) {
+        NetworkCommand.register(event.getDispatcher());
     }
 }

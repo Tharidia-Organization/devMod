@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -72,8 +73,8 @@ public final class SearchController {
         SearchQuery.Builder queryBuilder = SearchQuery.builder()
             .playerUuid(playerUuid)
             .searchText(request.query())
-            .page(request.page() != null ? request.page() : 0)
-            .pageSize(request.pageSize() != null ? request.pageSize() : 20);
+            .page(Objects.requireNonNullElse(request.page(), 0))
+            .pageSize(Objects.requireNonNullElse(request.pageSize(), 20));
 
         MessageType messageType = parseEnum(request.messageType(), MessageType.class, "messageType");
         if (messageType != null) {
@@ -258,6 +259,7 @@ public final class SearchController {
     }
 
     private static SearchHitDto toSearchHitDto(SearchHit hit) {
+        Instant readAt = hit.readAt();
         return new SearchHitDto(
             hit.messageId().toString(),
             hit.senderName(),
@@ -265,7 +267,7 @@ public final class SearchController {
             hit.body(),
             hit.type().name(),
             hit.sentAt().toEpochMilli(),
-            hit.readAt() != null ? hit.readAt().toEpochMilli() : null,
+            readAt != null ? readAt.toEpochMilli() : null,
             hit.isRead(),
             hit.relevance(),
             hit.highlight()

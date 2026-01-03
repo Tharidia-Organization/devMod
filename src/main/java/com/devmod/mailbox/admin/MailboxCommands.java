@@ -509,7 +509,7 @@ public final class MailboxCommands {
     private static int listNews(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
 
-        CompletableFuture<?> newsFuture = NewsManager.INSTANCE.getAllNews()
+        CompletableFuture<?> newsFuture = NewsManager.getInstance().getAllNews()
             .thenAccept(articles -> {
                 source.sendSuccess(() -> Objects.requireNonNull(
                     Component.literal("§e=== News Articles (" + articles.size() + ") ===")
@@ -561,7 +561,7 @@ public final class MailboxCommands {
             .active(true)
             .build();
 
-        NewsManager.INSTANCE.createArticle(article)
+        NewsManager.getInstance().createArticle(article)
             .thenRun(() -> {
                 source.sendSuccess(() -> Objects.requireNonNull(
                     Component.literal("§aNews article created: " + article.id())
@@ -582,7 +582,7 @@ public final class MailboxCommands {
 
         UUID articleId = UuidArgument.getUuid(context, "id");
 
-        NewsManager.INSTANCE.deleteArticle(articleId)
+        NewsManager.getInstance().deleteArticle(articleId)
             .thenAccept(success -> {
                 if (success) {
                     source.sendSuccess(() -> Objects.requireNonNull(
@@ -609,7 +609,7 @@ public final class MailboxCommands {
 
         UUID articleId = UuidArgument.getUuid(context, "id");
 
-        NewsManager.INSTANCE.getArticle(articleId)
+        NewsManager.getInstance().getArticle(articleId)
             .thenCompose(opt -> {
                 if (opt.isEmpty()) {
                     source.sendFailure(Objects.requireNonNull(
@@ -626,7 +626,7 @@ public final class MailboxCommands {
                     return CompletableFuture.completedFuture(false);
                 }
 
-                return NewsManager.INSTANCE.updateArticle(article.withPublishedNow());
+                return NewsManager.getInstance().updateArticle(article.withPublishedNow());
             })
             .thenAccept(success -> {
                 if (success) {
@@ -665,12 +665,13 @@ public final class MailboxCommands {
 
     private static void observeFuture(
             CompletableFuture<?> future, CommandSourceStack source, String failureMessage) {
-        CompletableFuture<?> observed = future.exceptionally(e -> {
+        // Attach error handler - returned future intentionally discarded
+        // since we only need the side effect (error message to source)
+        future.exceptionally(e -> {
             source.sendFailure(Objects.requireNonNull(
                 Component.literal("§c" + failureMessage + ": " + e.getMessage())
             ));
             return null;
         });
-        observed.isCancelled();
     }
 }

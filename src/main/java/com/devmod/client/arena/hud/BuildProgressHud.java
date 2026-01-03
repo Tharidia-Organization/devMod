@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.arena.BuildPhase;
 import com.devmod.arena.network.BuildProgressPayload;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 public class BuildProgressHud {
 
@@ -26,17 +27,6 @@ public class BuildProgressHud {
     private static final int BAR_WIDTH = 200;
     private static final int BAR_HEIGHT = 12;
     private static final int BAR_BORDER = 2;
-
-    /** Colors */
-    private static final int COLOR_BACKGROUND = 0x80000000;
-    private static final int COLOR_BORDER = 0xFF404040;
-    private static final int COLOR_BAR_EMPTY = 0xFF202020;
-    private static final int COLOR_BAR_FILL = 0xFF00AA00;
-    private static final int COLOR_BAR_FILL_WARNING = 0xFFAAAA00;
-    private static final int COLOR_BAR_FILL_COMPLETE = 0xFF00FF00;
-    private static final int COLOR_BAR_FILL_FAILED = 0xFFFF0000;
-    private static final int COLOR_TEXT = 0xFFFFFFFF;
-    private static final int COLOR_TEXT_SHADOW = 0xFF000000;
 
     /** Animation settings */
     private static final float SMOOTH_SPEED = 0.1f;
@@ -144,22 +134,22 @@ public class BuildProgressHud {
         int panelY = y - 20;
         int panelHeight = BAR_HEIGHT + 30;
         graphics.fill(x - 5, panelY, x + BAR_WIDTH + 5, panelY + panelHeight,
-            applyAlpha(COLOR_BACKGROUND, alpha));
+            applyAlpha(BuildProgressHudTheme.Panel.BACKGROUND, alpha));
 
         // Phase text
         String phaseText = Objects.requireNonNull(getPhaseDisplayName(state.phase));
         int phaseWidth = font.width(phaseText);
         graphics.drawString(font, phaseText, x + (BAR_WIDTH - phaseWidth) / 2, panelY + 3,
-            applyAlpha(COLOR_TEXT, alpha), false);
+            applyAlpha(BuildProgressHudTheme.Panel.TEXT, alpha), false);
 
         // Progress bar border
         graphics.fill(x - BAR_BORDER, y - BAR_BORDER,
             x + BAR_WIDTH + BAR_BORDER, y + BAR_HEIGHT + BAR_BORDER,
-            applyAlpha(COLOR_BORDER, alpha));
+            applyAlpha(BuildProgressHudTheme.Panel.BORDER, alpha));
 
         // Progress bar background
         graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT,
-            applyAlpha(COLOR_BAR_EMPTY, alpha));
+            applyAlpha(BuildProgressHudTheme.Panel.BAR_EMPTY, alpha));
 
         // Progress bar fill
         int fillWidth = (int) (BAR_WIDTH * state.displayedProgress);
@@ -175,16 +165,16 @@ public class BuildProgressHud {
 
         // Shadow
         graphics.drawString(font, percentText, textX + 1, textY + 1,
-            applyAlpha(COLOR_TEXT_SHADOW, alpha), false);
+            applyAlpha(BuildProgressHudTheme.Panel.TEXT_SHADOW, alpha), false);
         // Text
         graphics.drawString(font, percentText, textX, textY,
-            applyAlpha(COLOR_TEXT, alpha), false);
+            applyAlpha(BuildProgressHudTheme.Panel.TEXT, alpha), false);
 
         // Block count text
         String blockText = Objects.requireNonNull(String.format("%,d / %,d blocks", state.blocksPlaced, state.totalBlocks));
         int blockWidth = font.width(blockText);
         graphics.drawString(font, blockText, x + (BAR_WIDTH - blockWidth) / 2, y + BAR_HEIGHT + 4,
-            applyAlpha(COLOR_TEXT, alpha), false);
+            applyAlpha(BuildProgressHudTheme.Panel.TEXT, alpha), false);
     }
 
     private String getPhaseDisplayName(BuildPhase phase) {
@@ -201,21 +191,21 @@ public class BuildProgressHud {
 
     private int getProgressColor(BuildProgressState state) {
         if (state.phase == BuildPhase.FAILED) {
-            return COLOR_BAR_FILL_FAILED;
+            return BuildProgressHudTheme.Progress.FAILED;
         }
         if (state.phase == BuildPhase.COMPLETE) {
-            return COLOR_BAR_FILL_COMPLETE;
+            return BuildProgressHudTheme.Progress.COMPLETE;
         }
         // Warning color if stuck (progress hasn't changed in a while)
         if (state.displayedProgress > 0.9 && state.displayedProgress < 1.0) {
-            return COLOR_BAR_FILL_WARNING;
+            return BuildProgressHudTheme.Progress.WARNING;
         }
-        return COLOR_BAR_FILL;
+        return BuildProgressHudTheme.Progress.NORMAL;
     }
 
     private int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     @Nullable

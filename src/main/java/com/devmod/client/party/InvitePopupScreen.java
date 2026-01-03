@@ -21,6 +21,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.devmod.client.ui.components.CountdownTimer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.endurance.QuestType;
 import com.devmod.notification.PartyInviteActionData;
 import com.devmod.party.InviteResponsePayload;
@@ -226,7 +227,7 @@ public class InvitePopupScreen extends Screen {
         // Send accept response to server
         PacketDistributor.sendToServer(new InviteResponsePayload(inviteId, true));
 
-        DesignTokens.Sound.success();
+        UiSounds.success();
         onClose();
     }
 
@@ -239,7 +240,7 @@ public class InvitePopupScreen extends Screen {
         // Send decline response to server
         PacketDistributor.sendToServer(new InviteResponsePayload(inviteId, false));
 
-        DesignTokens.Sound.click();
+        UiSounds.click();
         onClose();
     }
 

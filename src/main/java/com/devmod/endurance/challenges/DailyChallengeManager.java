@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.SplittableRandom;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -321,7 +321,7 @@ public class DailyChallengeManager {
 
         // Use day as seed for deterministic rotation
         long seed = day.toEpochDay();
-        Random dayRandom = new Random(seed);
+        SplittableRandom dayRandom = new SplittableRandom(seed);
 
         // Select challenges by difficulty tier
         // Slot 1: Easy (always)
@@ -355,7 +355,7 @@ public class DailyChallengeManager {
         }
 
         // Slot 3: Hard or Extreme
-        if (dayRandom.nextFloat() < 0.2f && !extremeChallenges.isEmpty()) {
+        if (dayRandom.nextDouble() < 0.2 && !extremeChallenges.isEmpty()) {
             activeChallenges.add(extremeChallenges.get(dayRandom.nextInt(extremeChallenges.size())));
         } else if (!hardChallenges.isEmpty()) {
             activeChallenges.add(hardChallenges.get(dayRandom.nextInt(hardChallenges.size())));
@@ -632,7 +632,7 @@ public class DailyChallengeManager {
 
             LOGGER.info("[DailyChallengeManager] Loaded progress for {} players, {} active challenges",
                     playerProgress.size(), activeChallenges.size());
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             LOGGER.error("[DailyChallengeManager] Failed to load progress", e);
         }
     }

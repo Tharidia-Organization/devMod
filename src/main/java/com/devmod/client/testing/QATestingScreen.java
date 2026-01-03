@@ -220,7 +220,7 @@ public class QATestingScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Draw solid opaque background directly - this covers the blurred world behind
-        graphics.fill(0, 0, this.width, this.height, 0xFF1A1A1A);
+        graphics.fill(0, 0, this.width, this.height, TestingUiTheme.Screen.BG);
 
         // Render content
         if (!sessionStarted) {
@@ -298,11 +298,11 @@ public class QATestingScreen extends Screen {
         int panelHeight = 160;
 
         // Panel background
-        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xE0202035);
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, TestingUiTheme.Panel.BG);
         AxiomRenderer.drawBorder(graphics, panelX, panelY, panelWidth, panelHeight, DesignTokens.Border.ACCENT());
 
         // Header
-        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 18, 0xFF303050);
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 18, TestingUiTheme.Panel.HEADER);
         graphics.drawString(font, "Tutorial Guide", panelX + 8, panelY + 5, DesignTokens.Text.TITLE(), false);
 
         int contentY = panelY + 24;
@@ -343,7 +343,7 @@ public class QATestingScreen extends Screen {
             String hintRaw = step.getHint();
             @Nonnull String hint = Objects.requireNonNull(hintRaw != null ? hintRaw : "", "hint");
             if (hint.length() > 30) hint = hint.substring(0, 27) + "...";
-            graphics.drawString(font, hint, panelX + 8, contentY, 0xFFFFAA00, false);
+            graphics.drawString(font, hint, panelX + 8, contentY, TestingUiTheme.Accent.GOLD, false);
         }
     }
 
@@ -358,12 +358,12 @@ public class QATestingScreen extends Screen {
         int panelHeight = 140;
 
         // Panel background
-        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xE0202035);
-        AxiomRenderer.drawBorder(graphics, panelX, panelY, panelWidth, panelHeight, 0xFFFFAA00);
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, TestingUiTheme.Panel.BG);
+        AxiomRenderer.drawBorder(graphics, panelX, panelY, panelWidth, panelHeight, TestingUiTheme.Accent.GOLD);
 
         // Header
-        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 18, 0xFF403020);
-        graphics.drawString(font, "Tester Stats", panelX + 8, panelY + 5, 0xFFFFAA00, false);
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 18, TestingUiTheme.Panel.HEADER_ALT);
+        graphics.drawString(font, "Tester Stats", panelX + 8, panelY + 5, TestingUiTheme.Accent.GOLD, false);
 
         int contentY = panelY + 24;
 
@@ -382,8 +382,9 @@ public class QATestingScreen extends Screen {
 
         // Progress bar
         int barWidth = panelWidth - 16;
-        graphics.fill(panelX + 8, contentY, panelX + 8 + barWidth, contentY + 8, 0xFF333344);
-        graphics.fill(panelX + 8, contentY, panelX + 8 + (int)(barWidth * levelProgress), contentY + 8, 0xFFFFAA00);
+        graphics.fill(panelX + 8, contentY, panelX + 8 + barWidth, contentY + 8, TestingUiTheme.Panel.XP_BG);
+        graphics.fill(panelX + 8, contentY, panelX + 8 + (int)(barWidth * levelProgress), contentY + 8,
+            TestingUiTheme.Accent.GOLD);
         contentY += 12;
 
         graphics.drawString(font, xpToNext + " XP to next level", panelX + 8, contentY, DesignTokens.Text.MUTED(), false);
@@ -610,7 +611,7 @@ public class QATestingScreen extends Screen {
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int width, int height,
                                   int scrollOffset, int maxScroll) {
         // Track background
-        graphics.fill(x, y, x + width, y + height, 0x40FFFFFF);
+        graphics.fill(x, y, x + width, y + height, TestingUiTheme.Scrollbar.TRACK);
 
         // Thumb size and position
         float scrollRatio = (float) scrollOffset / maxScroll;
@@ -618,7 +619,7 @@ public class QATestingScreen extends Screen {
         int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
 
         // Thumb
-        graphics.fill(x, thumbY, x + width, thumbY + thumbHeight, 0x80FFFFFF);
+        graphics.fill(x, thumbY, x + width, thumbY + thumbHeight, TestingUiTheme.Scrollbar.THUMB);
     }
 
     /**
@@ -808,8 +809,10 @@ public class QATestingScreen extends Screen {
             if (sessionStarted && copyReportButton != null && copyReportButton.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
-            if (closeButton != null && closeButton.mouseClicked(mouseX, mouseY, button)) {
-                closeButton.mouseReleased(mouseX, mouseY, button);
+            // Capture to local variable for null-safety
+            EditorButton localCloseButton = closeButton;
+            if (localCloseButton != null && localCloseButton.mouseClicked(mouseX, mouseY, button)) {
+                localCloseButton.mouseReleased(mouseX, mouseY, button);
                 return true;
             }
         }
@@ -907,32 +910,40 @@ public class QATestingScreen extends Screen {
     }
 
     private void handlePass(String reason) {
-        if (selectedTest == null) return;
-        selectedTest.markPassed(reason);
+        // Capture to local variable for null-safety
+        TestCase test = selectedTest;
+        if (test == null) return;
+        test.markPassed(reason);
         TestingSession.INSTANCE.markDirty();
-        TutorialManager.INSTANCE.awardTestXP(selectedTest, true);
+        TutorialManager.INSTANCE.awardTestXP(test, true);
         advanceToNextTest();
     }
 
     private void handleFail(String reason, String details) {
-        if (selectedTest == null) return;
-        selectedTest.markFailed(reason, details);
+        // Capture to local variable for null-safety
+        TestCase test = selectedTest;
+        if (test == null) return;
+        test.markFailed(reason, details);
         TestingSession.INSTANCE.markDirty();
-        TutorialManager.INSTANCE.awardTestXP(selectedTest, false);
+        TutorialManager.INSTANCE.awardTestXP(test, false);
     }
 
     private void handleSkip(String reason) {
-        if (selectedTest == null) return;
-        selectedTest.skip(reason);
+        // Capture to local variable for null-safety
+        TestCase test = selectedTest;
+        if (test == null) return;
+        test.skip(reason);
         TestingSession.INSTANCE.markDirty();
         advanceToNextTest();
     }
 
     private void handleAutoCheck() {
-        if (selectedTest == null || !selectedTest.hasAutoValidator()) return;
-        boolean passed = selectedTest.runAutoValidation();
+        // Capture to local variable for null-safety
+        TestCase test = selectedTest;
+        if (test == null || !test.hasAutoValidator()) return;
+        boolean passed = test.runAutoValidation();
         TestingSession.INSTANCE.markDirty();
-        TutorialManager.INSTANCE.awardTestXP(selectedTest, passed);
+        TutorialManager.INSTANCE.awardTestXP(test, passed);
         if (passed) {
             advanceToNextTest();
         }
@@ -1169,7 +1180,9 @@ public class QATestingScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (selectedTest != null && sessionStarted) {
+        // Capture to local variable for null-safety
+        TestCase test = selectedTest;
+        if (test != null && sessionStarted) {
             // 1 = Pass, 2 = Fail, 3 = Skip
             if (keyCode == 49) { // 1
                 return invokeAction(ActionIds.QA_TEST_PASS, "Keyboard pass", null);
@@ -1178,7 +1191,7 @@ public class QATestingScreen extends Screen {
             } else if (keyCode == 51) { // 3
                 return invokeAction(ActionIds.QA_TEST_SKIP, "Keyboard shortcut skip", null);
             } else if (keyCode == 257) { // Enter - auto-validate if available
-                if (selectedTest.hasAutoValidator()) {
+                if (test.hasAutoValidator()) {
                     return invokeAction(ActionIds.QA_TEST_AUTO);
                 }
             }
@@ -1240,7 +1253,7 @@ public class QATestingScreen extends Screen {
     public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Override to disable the default blurred background completely
         // Just fill with solid color, no blur
-        graphics.fill(0, 0, this.width, this.height, 0xFF1A1A1A);
+        graphics.fill(0, 0, this.width, this.height, TestingUiTheme.Screen.BG);
     }
 
     /**
@@ -1257,7 +1270,7 @@ public class QATestingScreen extends Screen {
     @Override
     protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
         // Just solid background, no dimming or blur
-        graphics.fill(0, 0, this.width, this.height, 0xFF1A1A1A);
+        graphics.fill(0, 0, this.width, this.height, TestingUiTheme.Screen.BG);
     }
 
     /**
@@ -1266,6 +1279,6 @@ public class QATestingScreen extends Screen {
     @Override
     public void renderTransparentBackground(@Nonnull GuiGraphics graphics) {
         // Solid color instead of transparent/blurred
-        graphics.fill(0, 0, this.width, this.height, 0xFF1A1A1A);
+        graphics.fill(0, 0, this.width, this.height, TestingUiTheme.Screen.BG);
     }
 }

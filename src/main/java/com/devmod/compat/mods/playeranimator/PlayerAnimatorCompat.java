@@ -192,12 +192,11 @@ public class PlayerAnimatorCompat implements CompatModule {
         }
 
         try {
-            // The player usually implements IAnimatedPlayer
-            Class<?> iAnimatedPlayer = Class.forName(
-                "dev.kosmx.playerAnim.api.layered.IAnimatedPlayer");
+            // The player typically implements IPlayer in the animation API
+            Class<?> iPlayer = Class.forName("dev.kosmx.playerAnim.api.IPlayer");
 
-            if (iAnimatedPlayer.isInstance(player)) {
-                Method method = iAnimatedPlayer.getMethod("getAnimationStack");
+            if (iPlayer.isInstance(player)) {
+                Method method = iPlayer.getMethod("getAnimationStack");
                 return method.invoke(player);
             }
 

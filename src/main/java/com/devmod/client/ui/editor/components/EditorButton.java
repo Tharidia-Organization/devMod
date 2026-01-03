@@ -3,6 +3,7 @@ package com.devmod.client.ui.editor.components;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
@@ -37,15 +38,18 @@ public class EditorButton {
      * Convenience: render as a vanilla Button for screens still using vanilla widgets.
      * This preserves our styling/state and delegates clicks back to this component.
      */
+    @Nonnull
     public net.minecraft.client.gui.components.Button asVanilla(int x, int y, int width, int height) {
         String safeLabel = Objects.requireNonNull(label, "label");
         var title = Objects.requireNonNull(net.minecraft.network.chat.Component.literal(safeLabel), "label component");
-        return net.minecraft.client.gui.components.Button.builder(title, btn -> {
-                if (!enabled) return;
-                if (onClick != null) onClick.run();
-            })
-            .bounds(x, y, width, height)
-            .build();
+        return Objects.requireNonNull(
+            net.minecraft.client.gui.components.Button.builder(title, btn -> {
+                    if (!enabled) return;
+                    if (onClick != null) onClick.run();
+                })
+                .bounds(x, y, width, height)
+                .build(),
+            "Button.builder().build() returned null");
     }
 
     /**
@@ -63,10 +67,10 @@ public class EditorButton {
     private static final int PRIMARY_MOUSE_BUTTON = 0;
     private static final int RING_INSET = 1;
     private static final int RING_EXPAND = 2;
-    private static final int RING_ALPHA = 0x40;
+    private static final int RING_ALPHA = DesignTokens.Alpha.A25;
     private static final int PRESSED_TEXT_OFFSET = 1;
     private static final int TEXT_SHADOW_OFFSET = 1;
-    private static final int TEXT_SHADOW_COLOR = 0xFF000000;
+    private static final int TEXT_SHADOW_COLOR = DesignTokens.Mask.ALPHA;
     private static final int SMALL_HEIGHT = 16;
     private static final int LARGE_HEIGHT = 24;
 

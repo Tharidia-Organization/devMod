@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.SplittableRandom;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -332,7 +332,7 @@ public class WeeklyChallengeManager {
 
         // Use week+year as seed for deterministic rotation
         long seed = (long) year * 100 + week;
-        Random weekRandom = new Random(seed);
+        SplittableRandom weekRandom = new SplittableRandom(seed);
 
         // Selection: 2 challenges per week
         // Slot 1: Standard (50%) or Epic (50%)
@@ -351,7 +351,7 @@ public class WeeklyChallengeManager {
                 .toList();
 
         // Slot 1: Standard or Epic
-        if (weekRandom.nextFloat() < 0.5f && !standardChallenges.isEmpty()) {
+        if (weekRandom.nextDouble() < 0.5 && !standardChallenges.isEmpty()) {
             activeChallenges.add(standardChallenges.get(weekRandom.nextInt(standardChallenges.size())));
         } else if (!epicChallenges.isEmpty()) {
             activeChallenges.add(epicChallenges.get(weekRandom.nextInt(epicChallenges.size())));
@@ -359,7 +359,7 @@ public class WeeklyChallengeManager {
 
         // Slot 2: Epic or Legendary (different from slot 1)
         List<WeeklyChallenge> slot2Pool = new ArrayList<>();
-        if (weekRandom.nextFloat() < 0.3f) {
+        if (weekRandom.nextDouble() < 0.3) {
             slot2Pool.addAll(legendaryChallenges);
         } else {
             slot2Pool.addAll(epicChallenges);
@@ -724,7 +724,7 @@ public class WeeklyChallengeManager {
 
             LOGGER.info("[WeeklyChallengeManager] Loaded progress for {} players, {} active challenges (week {}/{})",
                     playerProgress.size(), activeChallenges.size(), currentWeek, currentYear);
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             LOGGER.error("[WeeklyChallengeManager] Failed to load progress", e);
         }
     }

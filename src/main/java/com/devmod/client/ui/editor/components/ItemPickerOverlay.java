@@ -391,17 +391,17 @@ public class ItemPickerOverlay extends BaseOverlay {
             List<Component> tooltip = new ArrayList<>();
             tooltip.add(Component.literal("#" + tag.location()));
             tooltip.add(Component.literal(getTagItemCount(tag) + " items in tag")
-                .withStyle(s -> s.withColor(0x888888)));
+                .withStyle(s -> s.withColor(DesignTokens.Neutral.N550 & DesignTokens.Mask.RGB)));
 
             // Show first few items
             int count = 0;
             for (var holder : BuiltInRegistries.ITEM.getTagOrEmpty(tag)) {
                 if (count >= 5) {
-                    tooltip.add(Component.literal("...").withStyle(s -> s.withColor(0x666666)));
+                    tooltip.add(Component.literal("...").withStyle(s -> s.withColor(DesignTokens.Neutral.N650 & DesignTokens.Mask.RGB)));
                     break;
                 }
                 tooltip.add(Component.literal("  " + holder.value().getDescription().getString())
-                    .withStyle(s -> s.withColor(0xAAAAAA)));
+                    .withStyle(s -> s.withColor(DesignTokens.Neutral.N500 & DesignTokens.Mask.RGB)));
                 count++;
             }
 

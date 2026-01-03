@@ -77,6 +77,8 @@ public final class ActionIds {
     public static final String DEBUG_HEATMAP_CLEAR_ALL = "devmod.debug.heatmap.clear_all";
     public static final String DEBUG_ROOM_BOUNDS_TOGGLE = "devmod.debug.room_bounds.toggle";
     public static final String DEBUG_ROOM_BOUNDS_RELOAD = "devmod.debug.room_bounds.reload";
+    public static final String DEBUG_ROOM_BOUNDS_GAPS_TOGGLE = "devmod.debug.room_bounds.gaps.toggle";
+    public static final String DEBUG_ROOM_BOUNDS_CLEAR = "devmod.debug.room_bounds.clear";
     public static final String DEBUG_PATHFINDING_TOGGLE = "devmod.debug.pathfinding.toggle";
     public static final String DEBUG_LOS_TOGGLE = "devmod.debug.los.toggle";
     public static final String DEBUG_AGGRO_RANGE_TOGGLE = "devmod.debug.aggro_range.toggle";
@@ -102,6 +104,7 @@ public final class ActionIds {
 
     public static final String HUD_QUICK_HELP_TOGGLE = "devmod.hud.quick_help.toggle";
     public static final String HUD_IMPACT_TOGGLE = "devmod.hud.impact.toggle";
+    public static final String HUD_IMPACT_CONTROLLER_TOGGLE = "devmod.hud.impact.controller.toggle";
     public static final String HUD_IMPACT_3D_TOGGLE = "devmod.hud.impact_3d.toggle";
     public static final String HUD_IMPACT_DISPLAY_MODE_CYCLE = "devmod.hud.impact.display_mode.cycle";
     public static final String HUD_IMPACT_PRESET_MINIMAL = "devmod.hud.impact.preset.minimal";
@@ -111,6 +114,7 @@ public final class ActionIds {
     public static final String HUD_QUEST_TOGGLE = "devmod.hud.quest.toggle";
     public static final String HUD_ENDURANCE_TOGGLE = "devmod.endurance.hud.toggle";
     public static final String HUD_ENDURANCE_DETAILS_TOGGLE = "devmod.endurance.hud.details_toggle";
+    public static final String HUD_PARTY_TOGGLE = "devmod.hud.party.toggle";
 
     // Config toggles (client)
     public static final String CONFIG_BODY_PART_DETECTION_TOGGLE = "devmod.config.body_part_detection.toggle";

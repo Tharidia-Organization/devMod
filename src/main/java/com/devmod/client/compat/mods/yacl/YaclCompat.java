@@ -78,13 +78,14 @@ public class YaclCompat implements CompatModule {
 
             for (String pkg : packages) {
                 try {
-                    yaclClass = Class.forName(pkg + ".api.YetAnotherConfigLib");
+                    Class<?> foundYaclClass = Class.forName(pkg + ".api.YetAnotherConfigLib");
                     LOGGER.debug("[Compat:yacl] Found YACL at {}", pkg);
 
+                    yaclClass = foundYaclClass;
                     configCategoryClass = Class.forName(pkg + ".api.ConfigCategory");
                     optionDescriptionClass = Class.forName(pkg + ".api.OptionDescription");
 
-                    createBuilderMethod = yaclClass.getMethod("createBuilder");
+                    createBuilderMethod = foundYaclClass.getMethod("createBuilder");
                     break;
                 } catch (ClassNotFoundException e) {
                     LOGGER.debug("[Compat:yacl] Missing YACL API classes in {}", pkg);
@@ -133,12 +134,13 @@ public class YaclCompat implements CompatModule {
      */
     @Nullable
     public static Object createBuilder() {
-        if (!apiAvailable || createBuilderMethod == null) {
+        final Method method = createBuilderMethod;
+        if (!apiAvailable || method == null) {
             return null;
         }
 
         try {
-            return createBuilderMethod.invoke(null);
+            return method.invoke(null);
         } catch (Exception e) {
             LOGGER.debug("[Compat:yacl] Failed to create builder: {}", e.getMessage());
             return null;
@@ -192,13 +194,14 @@ public class YaclCompat implements CompatModule {
      */
     @Nullable
     public static Object createCategoryBuilder() {
-        if (!apiAvailable || configCategoryClass == null) {
+        final Class<?> categoryClass = configCategoryClass;
+        if (!apiAvailable || categoryClass == null) {
             return null;
         }
 
         try {
-            Method createBuilderMethod = configCategoryClass.getMethod("createBuilder");
-            return createBuilderMethod.invoke(null);
+            Method builderMethod = categoryClass.getMethod("createBuilder");
+            return builderMethod.invoke(null);
         } catch (Exception e) {
             LOGGER.debug("[Compat:yacl] Failed to create category builder: {}", e.getMessage());
             return null;
@@ -213,12 +216,13 @@ public class YaclCompat implements CompatModule {
      */
     @Nullable
     public static Object createDescription(Component text) {
-        if (!apiAvailable || optionDescriptionClass == null) {
+        final Class<?> descriptionClass = optionDescriptionClass;
+        if (!apiAvailable || descriptionClass == null) {
             return null;
         }
 
         try {
-            Method ofMethod = optionDescriptionClass.getMethod("of", Component.class);
+            Method ofMethod = descriptionClass.getMethod("of", Component.class);
             return ofMethod.invoke(null, text);
         } catch (Exception e) {
             LOGGER.debug("[Compat:yacl] Failed to create description: {}", e.getMessage());

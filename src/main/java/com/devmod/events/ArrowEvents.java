@@ -88,7 +88,7 @@ public class ArrowEvents {
                 HitHelper.HitResult hitResult = OBBHitHelper.useOBBSystem()
                     ? OBBHitHelper.rayTraceBodyPart(shooter, victim)
                     : HitHelper.rayTraceBodyPartWithHitPoint(shooter, victim);
-                HitHelper.BodyPart bodyPartEnum = hitResult != null ? hitResult.part() : HitHelper.BodyPart.BODY;
+                HitHelper.BodyPart bodyPartEnum = hitResult.part();
 
                 String bodyPartKey;
 

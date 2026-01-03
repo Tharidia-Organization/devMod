@@ -26,9 +26,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.mailbox.MessageType;
 import com.devmod.mailbox.attachment.MailAttachment;
 import com.devmod.mailbox.client.ClientMailboxCache;
+import com.devmod.mailbox.client.MailboxUiTheme;
 import com.devmod.mailbox.network.payload.MailboxActionPayload;
 import com.devmod.mailbox.network.payload.MailboxStatusPayload;
 import com.devmod.mailbox.network.payload.MailboxSyncPayload.MailboxMessageData;
@@ -179,7 +181,7 @@ public class MailboxScreen extends Screen {
 
     private void renderMainPanel(GuiGraphics graphics) {
         // Background with gradient
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xE8101820);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, MailboxUiTheme.Panel.BG);
 
         int contentTop = panelY + 45;
         int contentBottom = panelY + PANEL_HEIGHT - 45;
@@ -207,7 +209,7 @@ public class MailboxScreen extends Screen {
 
         // Divider between list and detail
         int dividerX = panelX + LIST_WIDTH + 10;
-        graphics.fill(dividerX, panelY + 50, dividerX + 1, panelY + PANEL_HEIGHT - 45, 0x40FFFFFF);
+        graphics.fill(dividerX, panelY + 50, dividerX + 1, panelY + PANEL_HEIGHT - 45, MailboxUiTheme.Divider.LINE);
     }
 
     private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -276,9 +278,9 @@ public class MailboxScreen extends Screen {
             // Selection/hover background
             boolean isSelected = msg.id().equals(selectedMessageId);
             if (isSelected) {
-                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + MESSAGE_HEIGHT - 2, 0x40007ACC);
+                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + MESSAGE_HEIGHT - 2, MailboxUiTheme.List.SELECTED_BG);
             } else if (isHovered) {
-                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + MESSAGE_HEIGHT - 2, 0x20FFFFFF);
+                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + MESSAGE_HEIGHT - 2, MailboxUiTheme.List.HOVER_BG);
             }
 
             // Unread indicator
@@ -301,7 +303,7 @@ public class MailboxScreen extends Screen {
             graphics.drawString(getFont(), senderText, textStartX, itemY + 4, textColor, false);
 
             // Subject preview
-            String subjectPreview = msg.subject() != null ? msg.subject() : "";
+            String subjectPreview = msg.subject();
             subjectPreview = truncateToWidth(subjectPreview, textMaxWidth);
             graphics.drawString(getFont(), subjectPreview, textStartX, itemY + 16, DesignTokens.Text.SECONDARY(), false);
 
@@ -320,8 +322,8 @@ public class MailboxScreen extends Screen {
             int thumbHeight = Math.max(20, scrollbarH * VISIBLE_MESSAGES / messages.size());
             int thumbY = listY + 2 + (scrollbarH - thumbHeight) * scrollOffset / Math.max(1, messages.size() - VISIBLE_MESSAGES);
 
-            graphics.fill(scrollbarX, listY + 2, scrollbarX + 3, listY + scrollbarH, 0x40FFFFFF);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, 0x80FFFFFF);
+            graphics.fill(scrollbarX, listY + 2, scrollbarX + 3, listY + scrollbarH, MailboxUiTheme.Scrollbar.TRACK);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, MailboxUiTheme.Scrollbar.THUMB);
         }
 
         return hovered;
@@ -368,7 +370,7 @@ public class MailboxScreen extends Screen {
         // Subject
         String subjectLabel = "Subject: ";
         int subjectLabelWidth = getFont().width(subjectLabel);
-        String subjectText = selected.subject() != null ? selected.subject() : "";
+        String subjectText = selected.subject();
         subjectText = truncateToWidth(subjectText, detailTextWidth - subjectLabelWidth);
         graphics.drawString(getFont(), subjectLabel, detailTextX, y, DesignTokens.Text.MUTED(), false);
         graphics.drawString(getFont(), subjectText, detailTextX + subjectLabelWidth, y, DesignTokens.Text.PRIMARY(), false);
@@ -445,14 +447,16 @@ public class MailboxScreen extends Screen {
             closeButton.render(graphics, panelX + 15, buttonY, 70, 22, mouseX, mouseY);
         }
 
-        if (claimAllButton != null) {
-            claimAllButton.enabled(ClientMailboxCache.hasUnclaimedAttachments());
-            claimAllButton.render(graphics, panelX + 95, buttonY, 70, 22, mouseX, mouseY);
+        EditorButton claimAll = claimAllButton;
+        if (claimAll != null) {
+            claimAll.enabled(ClientMailboxCache.hasUnclaimedAttachments());
+            claimAll.render(graphics, panelX + 95, buttonY, 70, 22, mouseX, mouseY);
         }
 
-        if (deleteReadButton != null) {
-            deleteReadButton.enabled(hasDeletableReadMessages());
-            deleteReadButton.render(graphics, panelX + 175, buttonY, 70, 22, mouseX, mouseY);
+        EditorButton deleteRead = deleteReadButton;
+        if (deleteRead != null) {
+            deleteRead.enabled(hasDeletableReadMessages());
+            deleteRead.render(graphics, panelX + 175, buttonY, 70, 22, mouseX, mouseY);
         }
 
         // Center - Compose
@@ -504,12 +508,12 @@ public class MailboxScreen extends Screen {
         MailboxMessageData selected = ClientMailboxCache.getMessage(selectedMessageId);
         if (selected == null) {
             setStatusMessage("Select a message", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
         if (selected.canClaimAttachment()) {
             setStatusMessage("Claim attachment before deleting", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
 
@@ -521,7 +525,7 @@ public class MailboxScreen extends Screen {
         List<MailboxMessageData> messages = ClientMailboxCache.getMessages();
         selectedMessageId = messages.isEmpty() ? null : messages.get(0).id();
 
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     private void onClaimClicked() {
@@ -530,12 +534,12 @@ public class MailboxScreen extends Screen {
         MailboxMessageData selected = ClientMailboxCache.getMessage(selectedMessageId);
         if (selected == null) {
             setStatusMessage("Select a message", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
         if (!selected.canClaimAttachment()) {
             setStatusMessage("No claimable attachment", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
 
@@ -543,14 +547,14 @@ public class MailboxScreen extends Screen {
         PacketDistributor.sendToServer(MailboxActionPayload.claim(selectedMessageId));
         ClientMailboxCache.markAttachmentClaimed(selectedMessageId);
 
-        DesignTokens.Sound.success();
+        UiSounds.success();
     }
 
     private void onClaimAllClicked() {
         List<MailboxMessageData> claimable = ClientMailboxCache.getUnclaimedAttachmentMessages();
         if (claimable.isEmpty()) {
             setStatusMessage("No attachments to claim", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
 
@@ -562,14 +566,14 @@ public class MailboxScreen extends Screen {
 
         setStatusMessage("Claimed " + claimable.size() + " attachment(s)", DesignTokens.Status.SUCCESS());
         ClientMailboxCache.suppressClaimStatus(STATUS_TTL_MS);
-        DesignTokens.Sound.success();
+        UiSounds.success();
     }
 
     private void onDeleteReadClicked() {
         List<MailboxMessageData> deletable = getDeletableReadMessages();
         if (deletable.isEmpty()) {
             setStatusMessage("No read messages to delete", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
 
@@ -592,20 +596,20 @@ public class MailboxScreen extends Screen {
 
         setStatusMessage("Deleted " + deletable.size() + " message(s)", DesignTokens.Status.SUCCESS());
         ClientMailboxCache.suppressDeleteStatus(STATUS_TTL_MS);
-        DesignTokens.Sound.delete();
+        UiSounds.delete();
     }
 
     private void onComposeClicked() {
         Minecraft mc = Minecraft.getInstance();
         mc.setScreen(new MailboxComposeScreen(this));
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     private void onRefreshClicked() {
         LOGGER.info("[MailboxScreen] Refresh clicked");
         PacketDistributor.sendToServer(MailboxActionPayload.refresh());
         setStatusMessage("Refreshing mailbox...", DesignTokens.Status.PENDING());
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     @Override
@@ -630,7 +634,7 @@ public class MailboxScreen extends Screen {
                     ClientMailboxCache.markAsRead(clicked.id());
                 }
 
-                DesignTokens.Sound.click();
+                UiSounds.click();
                 return true;
             }
         }

@@ -166,7 +166,7 @@ public class TestingHub extends Screen {
         detailPanel = new TestDetailPanel(
             hubX + categoryWidth + PANEL_GAP, contentY,
             detailWidth, contentHeight,
-            uiFont, state,
+            uiFont,
             this::onVerdictGiven
         );
 
@@ -189,8 +189,9 @@ public class TestingHub extends Screen {
         // Load previous state
         if (state.hasActiveTest()) {
             TestCase currentTest = state.getCurrentTest();
-            if (currentTest != null) {
-                detailPanel.setTest(currentTest);
+            TestDetailPanel detail = detailPanel;
+            if (currentTest != null && detail != null) {
+                detail.setTest(currentTest);
             }
         }
     }
@@ -266,25 +267,28 @@ public class TestingHub extends Screen {
         renderHeader(graphics, mouseX, mouseY);
 
         // Panels with focus indicator
-        if (categoryPanel != null) {
-            categoryPanel.render(graphics, mouseX, mouseY, partialTick);
+        CategoryPanel catPanel = categoryPanel;
+        if (catPanel != null) {
+            catPanel.render(graphics, mouseX, mouseY, partialTick);
             if (currentFocus == PanelFocus.CATEGORIES) {
-                renderFocusIndicator(graphics, categoryPanel.getX(), categoryPanel.getY(),
-                    categoryPanel.getWidth(), categoryPanel.getHeight());
+                renderFocusIndicator(graphics, catPanel.getX(), catPanel.getY(),
+                    catPanel.getWidth(), catPanel.getHeight());
             }
         }
-        if (detailPanel != null) {
-            detailPanel.render(graphics, mouseX, mouseY, partialTick);
+        TestDetailPanel detPanel = detailPanel;
+        if (detPanel != null) {
+            detPanel.render(graphics, mouseX, mouseY, partialTick);
             if (currentFocus == PanelFocus.DETAILS) {
-                renderFocusIndicator(graphics, detailPanel.getX(), detailPanel.getY(),
-                    detailPanel.getWidth(), detailPanel.getHeight());
+                renderFocusIndicator(graphics, detPanel.getX(), detPanel.getY(),
+                    detPanel.getWidth(), detPanel.getHeight());
             }
         }
-        if (toolsPanel != null) {
-            toolsPanel.render(graphics, mouseX, mouseY, partialTick);
+        QuickToolsPanel tPanel = toolsPanel;
+        if (tPanel != null) {
+            tPanel.render(graphics, mouseX, mouseY, partialTick);
             if (currentFocus == PanelFocus.TOOLS) {
-                renderFocusIndicator(graphics, toolsPanel.getX(), toolsPanel.getY(),
-                    toolsPanel.getWidth(), toolsPanel.getHeight());
+                renderFocusIndicator(graphics, tPanel.getX(), tPanel.getY(),
+                    tPanel.getWidth(), tPanel.getHeight());
             }
         }
 
@@ -418,21 +422,25 @@ public class TestingHub extends Screen {
         if (headerCloseButton.mouseClicked(mx, my, button)) return true;
         if (headerMinimizeButton.mouseClicked(mx, my, button)) return true;
 
-        // Panels
-        if (categoryPanel != null && categoryPanel.isMouseOver(mx, my)) {
+        // Panels - capture in local variables to satisfy null checker
+        CategoryPanel catPanel = categoryPanel;
+        if (catPanel != null && catPanel.isMouseOver(mx, my)) {
             currentFocus = PanelFocus.CATEGORIES;
-            return categoryPanel.mouseClicked(mouseX, mouseY, button);
+            return catPanel.mouseClicked(mouseX, mouseY, button);
         }
-        if (detailPanel != null && detailPanel.isMouseOver(mx, my)) {
+        TestDetailPanel detPanel = detailPanel;
+        if (detPanel != null && detPanel.isMouseOver(mx, my)) {
             currentFocus = PanelFocus.DETAILS;
-            return detailPanel.mouseClicked(mouseX, mouseY, button);
+            return detPanel.mouseClicked(mouseX, mouseY, button);
         }
-        if (toolsPanel != null && toolsPanel.isMouseOver(mx, my)) {
+        QuickToolsPanel tPanel = toolsPanel;
+        if (tPanel != null && tPanel.isMouseOver(mx, my)) {
             currentFocus = PanelFocus.TOOLS;
-            return toolsPanel.mouseClicked(mouseX, mouseY, button);
+            return tPanel.mouseClicked(mouseX, mouseY, button);
         }
-        if (footer != null && footer.isMouseOver(mx, my)) {
-            return footer.mouseClicked(mouseX, mouseY, button);
+        ProgressFooter foot = footer;
+        if (foot != null && foot.isMouseOver(mx, my)) {
+            return foot.mouseClicked(mouseX, mouseY, button);
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
@@ -466,17 +474,21 @@ public class TestingHub extends Screen {
         if (headerCloseButton.mouseReleased(mx, my, button)) return true;
         if (headerMinimizeButton.mouseReleased(mx, my, button)) return true;
 
-        if (categoryPanel != null && categoryPanel.isMouseOver(mx, my)) {
-            if (categoryPanel.mouseReleased(mouseX, mouseY, button)) return true;
+        CategoryPanel catPanel = categoryPanel;
+        if (catPanel != null && catPanel.isMouseOver(mx, my)) {
+            if (catPanel.mouseReleased(mouseX, mouseY, button)) return true;
         }
-        if (detailPanel != null && detailPanel.isMouseOver(mx, my)) {
-            if (detailPanel.mouseReleased(mouseX, mouseY, button)) return true;
+        TestDetailPanel detPanel = detailPanel;
+        if (detPanel != null && detPanel.isMouseOver(mx, my)) {
+            if (detPanel.mouseReleased(mouseX, mouseY, button)) return true;
         }
-        if (toolsPanel != null && toolsPanel.isMouseOver(mx, my)) {
-            if (toolsPanel.mouseReleased(mouseX, mouseY, button)) return true;
+        QuickToolsPanel tPanel = toolsPanel;
+        if (tPanel != null && tPanel.isMouseOver(mx, my)) {
+            if (tPanel.mouseReleased(mouseX, mouseY, button)) return true;
         }
-        if (footer != null && footer.isMouseOver(mx, my)) {
-            if (footer.mouseReleased(mouseX, mouseY, button)) return true;
+        ProgressFooter foot = footer;
+        if (foot != null && foot.isMouseOver(mx, my)) {
+            if (foot.mouseReleased(mouseX, mouseY, button)) return true;
         }
 
         return super.mouseReleased(mouseX, mouseY, button);
@@ -487,14 +499,17 @@ public class TestingHub extends Screen {
         int mx = (int) mouseX;
         int my = (int) mouseY;
 
-        if (categoryPanel != null && categoryPanel.isMouseOver(mx, my)) {
-            return categoryPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        CategoryPanel catPanel = categoryPanel;
+        if (catPanel != null && catPanel.isMouseOver(mx, my)) {
+            return catPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         }
-        if (detailPanel != null && detailPanel.isMouseOver(mx, my)) {
-            return detailPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        TestDetailPanel detPanel = detailPanel;
+        if (detPanel != null && detPanel.isMouseOver(mx, my)) {
+            return detPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         }
-        if (toolsPanel != null && toolsPanel.isMouseOver(mx, my)) {
-            return toolsPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        QuickToolsPanel tPanel = toolsPanel;
+        if (tPanel != null && tPanel.isMouseOver(mx, my)) {
+            return tPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         }
 
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -504,19 +519,22 @@ public class TestingHub extends Screen {
 
     private void onCategorySelected(String category) {
         state.setSelectedCategory(category);
-        if (detailPanel != null) {
-            detailPanel.clearTest();
+        TestDetailPanel detPanel = detailPanel;
+        if (detPanel != null) {
+            detPanel.clearTest();
         }
     }
 
     private void onTestSelected(TestCase test) {
         state.setCurrentTest(test);
-        if (detailPanel != null) {
-            detailPanel.setTest(test);
+        TestDetailPanel detPanel = detailPanel;
+        if (detPanel != null) {
+            detPanel.setTest(test);
         }
-        if (toolsPanel != null) {
+        QuickToolsPanel tPanel = toolsPanel;
+        if (tPanel != null) {
             Set<ToolType> required = TestingHubState.inferRequiredTools(test);
-            toolsPanel.highlightRequired(required);
+            tPanel.highlightRequired(required);
         }
     }
 
@@ -531,22 +549,31 @@ public class TestingHub extends Screen {
 
         TestingSession.INSTANCE.markDirty();
 
+        // Capture nullable fields in local variables
+        ProgressFooter foot = footer;
+        CategoryPanel catPanel = categoryPanel;
+        TestDetailPanel detPanel = detailPanel;
+        QuickToolsPanel tPanel = toolsPanel;
+
         // Refresh UI
-        if (footer != null) footer.refresh();
-        if (categoryPanel != null) categoryPanel.refresh();
+        if (foot != null) foot.refresh();
+        if (catPanel != null) catPanel.refresh();
 
         // Advance to next test
         state.advanceToNextTest();
         if (state.hasActiveTest()) {
-            if (detailPanel != null) {
+            if (detPanel != null) {
                 TestCase currentTest = state.getCurrentTest();
                 if (currentTest != null) {
-                    detailPanel.setTest(currentTest);
+                    detPanel.setTest(currentTest);
                 }
             }
         } else {
-            if (detailPanel != null) {
-                detailPanel.showCompletionMessage();
+            if (detPanel != null) {
+                detPanel.showCompletionMessage();
+            }
+            if (tPanel != null) {
+                tPanel.clearHighlights();
             }
         }
     }
@@ -554,9 +581,7 @@ public class TestingHub extends Screen {
     private void onToolToggled(ToolType tool, @Nullable Boolean enabled) {
         boolean isEnabled = Boolean.TRUE.equals(enabled);
         state.setToolEnabled(tool, isEnabled);
-        if (detailPanel != null) {
-            detailPanel.updateToolStatus(tool, isEnabled);
-        }
+        // Tool status is read fresh each render via tool.isEnabled() in renderRequiredTools()
     }
 
     private void onEditorOpened(EditorType editor) {

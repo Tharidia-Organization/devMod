@@ -6,8 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ArenaDebugState {
 
-    private static final ArenaDebugState INSTANCE = new ArenaDebugState();
-
     /** Permission required to see the debug HUD */
     public static final String PERMISSION_VIEW_HUD = "devmod.arena.debug.hud";
 
@@ -20,7 +18,11 @@ public class ArenaDebugState {
     private ArenaDebugState() {}
 
     public static ArenaDebugState getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final ArenaDebugState INSTANCE = new ArenaDebugState();
     }
 
     /**

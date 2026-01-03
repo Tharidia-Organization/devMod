@@ -505,9 +505,9 @@ public final class RecipeInjector {
     @Nullable
     private static RecipeHolder<?> createSmithingHolder(SmithingRecipeData data) {
         try {
-            Ingredient template = data.template() != null ? convertIngredient(data.template()) : Ingredient.EMPTY;
+            Ingredient template = convertIngredient(data.template());
             Ingredient base = convertIngredient(data.base());
-            Ingredient addition = data.addition() != null ? convertIngredient(data.addition()) : Ingredient.EMPTY;
+            Ingredient addition = convertIngredient(data.addition());
 
             if (base == null || base.isEmpty()) return null;
 
@@ -520,9 +520,9 @@ public final class RecipeInjector {
                 ItemStack result = resultData.toItemStack();
                 if (result.isEmpty()) return null;
                 SmithingTransformRecipe recipe = new SmithingTransformRecipe(
-                    Objects.requireNonNull(template != null ? template : Ingredient.EMPTY, "template"),
+                    Objects.requireNonNull(template, "template"),
                     Objects.requireNonNull(base, "base"),
-                    Objects.requireNonNull(addition != null ? addition : Ingredient.EMPTY, "addition"),
+                    Objects.requireNonNull(addition, "addition"),
                     result
                 );
                 return new RecipeHolder<>(Objects.requireNonNull(data.id(), "recipeId"), recipe);
@@ -573,7 +573,7 @@ public final class RecipeInjector {
     // HELPERS
     // ═══════════════════════════════════════════════════════════════
 
-    private static Ingredient convertIngredient(IngredientData data) {
+    private static Ingredient convertIngredient(@Nullable IngredientData data) {
         if (data == null || data.isEmpty()) return Ingredient.EMPTY;
 
         try {

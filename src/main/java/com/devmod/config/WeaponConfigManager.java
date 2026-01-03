@@ -210,24 +210,24 @@ public class WeaponConfigManager {
 
         // Apply durability components directly on the stack when provided
         try {
-            if (clamped.maxDurability > 0) {
-                stack.set(Objects.requireNonNull(net.minecraft.core.component.DataComponents.MAX_DAMAGE), clamped.maxDurability);
+            if (clamped.getMaxDurability() > 0) {
+                stack.set(Objects.requireNonNull(net.minecraft.core.component.DataComponents.MAX_DAMAGE), clamped.getMaxDurability());
             }
-            if (clamped.currentDamage > 0) {
-                stack.setDamageValue(clamped.currentDamage);
+            if (clamped.getCurrentDamage() > 0) {
+                stack.setDamageValue(clamped.getCurrentDamage());
             }
-            if (clamped.repairCost > 0) {
-                stack.set(Objects.requireNonNull(net.minecraft.core.component.DataComponents.REPAIR_COST), clamped.repairCost);
+            if (clamped.getRepairCost() > 0) {
+                stack.set(Objects.requireNonNull(net.minecraft.core.component.DataComponents.REPAIR_COST), clamped.getRepairCost());
             }
-            if (clamped.unbreakable) {
+            if (clamped.isUnbreakable()) {
                 stack.set(Objects.requireNonNull(net.minecraft.core.component.DataComponents.UNBREAKABLE), new net.minecraft.world.item.component.Unbreakable(true));
             } else {
                 // Clear if previously set
                 stack.remove(Objects.requireNonNull(net.minecraft.core.component.DataComponents.UNBREAKABLE));
             }
-            if (clamped.clearToolRules) {
+            if (clamped.isClearToolRules()) {
                 stack.remove(Objects.requireNonNull(net.minecraft.core.component.DataComponents.TOOL));
-            } else if (!clamped.toolRules.isEmpty() || clamped.toolDefaultMiningSpeed != 1.0f || clamped.toolDamagePerBlock != 1) {
+            } else if (!clamped.toolRules.isEmpty() || clamped.getToolDefaultMiningSpeed() != 1.0f || clamped.getToolDamagePerBlock() != 1) {
                 java.util.List<Tool.Rule> rules = new ArrayList<>();
                 for (WeaponStats.ToolRuleData ruleData : clamped.toolRules) {
                     if (ruleData == null || ruleData.isEmpty()) continue;
@@ -246,7 +246,7 @@ public class WeaponConfigManager {
                     }
                     rules.add(builtRule);
                 }
-                Tool tool = new Tool(rules, clamped.toolDefaultMiningSpeed, Math.max(0, clamped.toolDamagePerBlock));
+                Tool tool = new Tool(rules, clamped.getToolDefaultMiningSpeed(), Math.max(0, clamped.getToolDamagePerBlock()));
                 stack.set(Objects.requireNonNull(net.minecraft.core.component.DataComponents.TOOL), tool);
             }
         } catch (Exception e) {
@@ -274,17 +274,17 @@ public class WeaponConfigManager {
         PacketValidator security = PacketValidator.INSTANCE;
 
         // Vanilla attributes
-        float attackDamage = stats.attackDamage > 0 ? stats.attackDamage : 0;
-        if (stats.baseDamageBonus > 0) {
-            attackDamage += stats.baseDamageBonus;
+        float attackDamage = stats.getAttackDamage() > 0 ? stats.getAttackDamage() : 0;
+        if (stats.getBaseDamageBonus() > 0) {
+            attackDamage += stats.getBaseDamageBonus();
         }
         attackDamage = (float) security.validateDamage(attackDamage);
         // Preserve negative vanilla attack speed values (e.g., -2.4) instead of zeroing them out
-        float attackSpeed = (float) security.validateAttackSpeed(stats.attackSpeed);
-        float attackReach = (float) security.validateMultiplier(stats.attackReach > 0 ? stats.attackReach : 0);
-        float attackKnockback = (float) security.validateMultiplier(stats.attackKnockback > 0 ? stats.attackKnockback : 0);
-        float damageBonus = (float) security.validateSweeping(stats.damageBonus > 0 ? stats.damageBonus : 0);
-        float sweepingRatio = (float) security.validateSweeping(stats.sweepingRatio > 0 ? stats.sweepingRatio : 0);
+        float attackSpeed = (float) security.validateAttackSpeed(stats.getAttackSpeed());
+        float attackReach = (float) security.validateMultiplier(stats.getAttackReach() > 0 ? stats.getAttackReach() : 0);
+        float attackKnockback = (float) security.validateMultiplier(stats.getAttackKnockback() > 0 ? stats.getAttackKnockback() : 0);
+        float damageBonus = (float) security.validateSweeping(stats.getDamageBonus() > 0 ? stats.getDamageBonus() : 0);
+        float sweepingRatio = (float) security.validateSweeping(stats.getSweepingRatio() > 0 ? stats.getSweepingRatio() : 0);
 
         addModifier(entries, holder(Attributes.ATTACK_DAMAGE), attackDamage, AttributeModifier.Operation.ADD_VALUE, "attack_damage");
         addModifier(entries, holder(Attributes.ATTACK_SPEED), attackSpeed, AttributeModifier.Operation.ADD_VALUE, "attack_speed");
@@ -294,14 +294,14 @@ public class WeaponConfigManager {
         addModifier(entries, holder(Attributes.SWEEPING_DAMAGE_RATIO), sweepingRatio, AttributeModifier.Operation.ADD_VALUE, "sweeping_ratio");
 
         // Custom DevMod attributes (mapped to Pufferfish when available)
-        float critChance = (float) security.validateMultiplier(stats.critChance > 0 ? stats.critChance : 0);
-        float critMult = (float) security.validateMultiplier(stats.critDamage != 1.5f ? stats.critDamage : 0);
-        float armorShred = (float) security.validateArmorShred(stats.armorShred > 0 ? stats.armorShred : 0);
-        float lifesteal = (float) security.validateMultiplier(stats.lifesteal > 0 ? stats.lifesteal : 0);
-        float vsUndead = (float) security.validateDamageVs(stats.damageVsUndead > 0 ? stats.damageVsUndead : 0);
-        float vsArthro = (float) security.validateDamageVs(stats.damageVsArthropods > 0 ? stats.damageVsArthropods : 0);
-        float vsPlayers = (float) security.validateDamageVs(stats.damageVsPlayers > 0 ? stats.damageVsPlayers : 0);
-        float trueDmg = (float) security.validateTrueDamage(stats.trueDamagePercent > 0 ? stats.trueDamagePercent : 0);
+        float critChance = (float) security.validateMultiplier(stats.getCritChance() > 0 ? stats.getCritChance() : 0);
+        float critMult = (float) security.validateMultiplier(Float.compare(stats.getCritDamage(), 1.5f) != 0 ? stats.getCritDamage() : 0);
+        float armorShred = (float) security.validateArmorShred(stats.getArmorShred() > 0 ? stats.getArmorShred() : 0);
+        float lifesteal = (float) security.validateMultiplier(stats.getLifesteal() > 0 ? stats.getLifesteal() : 0);
+        float vsUndead = (float) security.validateDamageVs(stats.getDamageVsUndead() > 0 ? stats.getDamageVsUndead() : 0);
+        float vsArthro = (float) security.validateDamageVs(stats.getDamageVsArthropods() > 0 ? stats.getDamageVsArthropods() : 0);
+        float vsPlayers = (float) security.validateDamageVs(stats.getDamageVsPlayers() > 0 ? stats.getDamageVsPlayers() : 0);
+        float trueDmg = (float) security.validateTrueDamage(stats.getTrueDamagePercent() > 0 ? stats.getTrueDamagePercent() : 0);
 
         addModifier(entries, holder(ModAttributes.CRIT_CHANCE), critChance, AttributeModifier.Operation.ADD_VALUE, "crit_chance");
         addModifier(entries, holder(ModAttributes.CRIT_MULTIPLIER), critMult, AttributeModifier.Operation.ADD_VALUE, "crit_multiplier");
@@ -328,7 +328,7 @@ public class WeaponConfigManager {
     }
 
     private static void applyToolClearIfNeeded(ItemStack stack, WeaponStats stats) {
-        if (stats.clearToolRules) {
+        if (stats.isClearToolRules()) {
             try {
                 stack.remove(Objects.requireNonNull(DataComponents.TOOL));
             } catch (Exception e) {
@@ -343,27 +343,27 @@ public class WeaponConfigManager {
     public static WeaponStats clampStats(WeaponStats stats) {
         try {
             PacketValidator security = PacketValidator.INSTANCE;
-            stats.armorShred = (float) security.validateArmorShred(stats.armorShred);
-            stats.damageVsUndead = (float) security.validateDamageVs(stats.damageVsUndead);
-            stats.damageVsArthropods = (float) security.validateDamageVs(stats.damageVsArthropods);
-            stats.damageVsPlayers = (float) security.validateDamageVs(stats.damageVsPlayers);
-            stats.trueDamagePercent = (float) security.validateTrueDamage(stats.trueDamagePercent);
-            stats.damageBonus = (float) security.validateSweeping(stats.damageBonus);
-            stats.sweepingRatio = (float) security.validateSweeping(stats.sweepingRatio);
-            stats.lifesteal = (float) security.validateMultiplier(stats.lifesteal);
-            stats.fireDamageBonus = (float) security.validateMultiplier(stats.fireDamageBonus);
-            stats.magicDamageBonus = (float) security.validateMultiplier(stats.magicDamageBonus);
-            stats.attackDamage = (float) security.validateDamage(stats.attackDamage);
-            stats.attackSpeed = (float) security.validateAttackSpeed(stats.attackSpeed);
-            stats.attackReach = (float) security.validateMultiplier(stats.attackReach);
-            stats.attackKnockback = (float) security.validateMultiplier(stats.attackKnockback);
-            stats.armorPenetration = (float) security.validatePenetration(stats.armorPenetration);
-            stats.baseDamageBonus = (float) security.validateDamage(stats.baseDamageBonus);
-            stats.maxDurability = security.validateDurability(stats.maxDurability);
-            stats.currentDamage = security.validateDurability(stats.currentDamage);
-            stats.repairCost = security.validateRepairCost(stats.repairCost);
-            stats.toolDefaultMiningSpeed = (float) security.validateToolSpeed(stats.toolDefaultMiningSpeed);
-            stats.toolDamagePerBlock = security.validateToolDamagePerBlock(stats.toolDamagePerBlock);
+            stats.setArmorShred((float) security.validateArmorShred(stats.getArmorShred()));
+            stats.setDamageVsUndead((float) security.validateDamageVs(stats.getDamageVsUndead()));
+            stats.setDamageVsArthropods((float) security.validateDamageVs(stats.getDamageVsArthropods()));
+            stats.setDamageVsPlayers((float) security.validateDamageVs(stats.getDamageVsPlayers()));
+            stats.setTrueDamagePercent((float) security.validateTrueDamage(stats.getTrueDamagePercent()));
+            stats.setDamageBonus((float) security.validateSweeping(stats.getDamageBonus()));
+            stats.setSweepingRatio((float) security.validateSweeping(stats.getSweepingRatio()));
+            stats.setLifesteal((float) security.validateMultiplier(stats.getLifesteal()));
+            stats.setFireDamageBonus((float) security.validateMultiplier(stats.getFireDamageBonus()));
+            stats.setMagicDamageBonus((float) security.validateMultiplier(stats.getMagicDamageBonus()));
+            stats.setAttackDamage((float) security.validateDamage(stats.getAttackDamage()));
+            stats.setAttackSpeed((float) security.validateAttackSpeed(stats.getAttackSpeed()));
+            stats.setAttackReach((float) security.validateMultiplier(stats.getAttackReach()));
+            stats.setAttackKnockback((float) security.validateMultiplier(stats.getAttackKnockback()));
+            stats.setArmorPenetration((float) security.validatePenetration(stats.getArmorPenetration()));
+            stats.setBaseDamageBonus((float) security.validateDamage(stats.getBaseDamageBonus()));
+            stats.setMaxDurability(security.validateDurability(stats.getMaxDurability()));
+            stats.setCurrentDamage(security.validateDurability(stats.getCurrentDamage()));
+            stats.setRepairCost(security.validateRepairCost(stats.getRepairCost()));
+            stats.setToolDefaultMiningSpeed((float) security.validateToolSpeed(stats.getToolDefaultMiningSpeed()));
+            stats.setToolDamagePerBlock(security.validateToolDamagePerBlock(stats.getToolDamagePerBlock()));
         } catch (Exception e) {
             LOGGER.debug("[WeaponConfig] Failed to clamp stats: {}", e.getMessage());
         }
@@ -423,20 +423,20 @@ public class WeaponConfigManager {
             String path = id.getPath();
             double val = entry.modifier().amount();
             switch (path) {
-                case "weapon_editor_attack_damage" -> { stats.attackDamage = (float) val; found = true; }
-                case "weapon_editor_attack_speed" -> { stats.attackSpeed = (float) val; found = true; }
-                case "weapon_editor_attack_reach" -> { stats.attackReach = (float) val; found = true; }
-                case "weapon_editor_attack_knockback" -> { stats.attackKnockback = (float) val; found = true; }
-                case "weapon_editor_damage_bonus" -> { stats.damageBonus = (float) val; found = true; }
-                case "weapon_editor_sweeping_ratio" -> { stats.sweepingRatio = (float) val; found = true; }
-                case "weapon_editor_crit_chance" -> { stats.critChance = (float) val; found = true; }
-                case "weapon_editor_crit_multiplier" -> { stats.critDamage = (float) val; found = true; }
-                case "weapon_editor_armor_shred" -> { stats.armorShred = (float) val; found = true; }
-                case "weapon_editor_life_steal" -> { stats.lifesteal = (float) val; found = true; }
-                case "weapon_editor_vs_undead" -> { stats.damageVsUndead = (float) val; found = true; }
-                case "weapon_editor_vs_arthropods" -> { stats.damageVsArthropods = (float) val; found = true; }
-                case "weapon_editor_vs_players" -> { stats.damageVsPlayers = (float) val; found = true; }
-                case "weapon_editor_true_damage" -> { stats.trueDamagePercent = (float) val; found = true; }
+                case "weapon_editor_attack_damage" -> { stats.setAttackDamage((float) val); found = true; }
+                case "weapon_editor_attack_speed" -> { stats.setAttackSpeed((float) val); found = true; }
+                case "weapon_editor_attack_reach" -> { stats.setAttackReach((float) val); found = true; }
+                case "weapon_editor_attack_knockback" -> { stats.setAttackKnockback((float) val); found = true; }
+                case "weapon_editor_damage_bonus" -> { stats.setDamageBonus((float) val); found = true; }
+                case "weapon_editor_sweeping_ratio" -> { stats.setSweepingRatio((float) val); found = true; }
+                case "weapon_editor_crit_chance" -> { stats.setCritChance((float) val); found = true; }
+                case "weapon_editor_crit_multiplier" -> { stats.setCritDamage((float) val); found = true; }
+                case "weapon_editor_armor_shred" -> { stats.setArmorShred((float) val); found = true; }
+                case "weapon_editor_life_steal" -> { stats.setLifesteal((float) val); found = true; }
+                case "weapon_editor_vs_undead" -> { stats.setDamageVsUndead((float) val); found = true; }
+                case "weapon_editor_vs_arthropods" -> { stats.setDamageVsArthropods((float) val); found = true; }
+                case "weapon_editor_vs_players" -> { stats.setDamageVsPlayers((float) val); found = true; }
+                case "weapon_editor_true_damage" -> { stats.setTrueDamagePercent((float) val); found = true; }
                 default -> { /* ignore */ }
             }
         }
@@ -775,17 +775,17 @@ public class WeaponConfigManager {
                 }
                 try {
                     switch (key) {
-                        case "attackDamage" -> stats.attackDamage = parseFloat(val);
-                        case "attackSpeed" -> stats.attackSpeed = parseFloat(val);
-                        case "attackReach" -> stats.attackReach = parseFloat(val);
-                        case "attackKnockback" -> stats.attackKnockback = parseFloat(val);
-                        case "armorPenetration" -> stats.armorPenetration = parseClampedFloat(val);
-                        case "baseDamageBonus" -> stats.baseDamageBonus = parseFloat(val);
-                        case "critChance" -> stats.critChance = parseClampedFloat(val);
-                        case "critDamage" -> stats.critDamage = parseFloat(val);
-                        case "fireDamageBonus" -> stats.fireDamageBonus = parseFloat(val);
-                        case "magicDamageBonus" -> stats.magicDamageBonus = parseFloat(val);
-                        case "lifesteal" -> stats.lifesteal = parseClampedFloat(val);
+                        case "attackDamage" -> stats.setAttackDamage(parseFloat(val));
+                        case "attackSpeed" -> stats.setAttackSpeed(parseFloat(val));
+                        case "attackReach" -> stats.setAttackReach(parseFloat(val));
+                        case "attackKnockback" -> stats.setAttackKnockback(parseFloat(val));
+                        case "armorPenetration" -> stats.setArmorPenetration(parseClampedFloat(val));
+                        case "baseDamageBonus" -> stats.setBaseDamageBonus(parseFloat(val));
+                        case "critChance" -> stats.setCritChance(parseClampedFloat(val));
+                        case "critDamage" -> stats.setCritDamage(parseFloat(val));
+                        case "fireDamageBonus" -> stats.setFireDamageBonus(parseFloat(val));
+                        case "magicDamageBonus" -> stats.setMagicDamageBonus(parseFloat(val));
+                        case "lifesteal" -> stats.setLifesteal(parseClampedFloat(val));
                         default -> {}
                     }
                     loaded.put(currentItem, stats);
@@ -814,17 +814,17 @@ public class WeaponConfigManager {
         globalStats.forEach((item, stats) -> {
             ResourceLocation id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item));
             sb.append("[weapon.\"").append(id).append("\"]\n");
-            sb.append("attackDamage = ").append(stats.attackDamage).append("\n");
-            sb.append("attackSpeed = ").append(stats.attackSpeed).append("\n");
-            sb.append("attackReach = ").append(stats.attackReach).append("\n");
-            sb.append("attackKnockback = ").append(stats.attackKnockback).append("\n");
-            sb.append("armorPenetration = ").append(stats.armorPenetration).append("\n");
-            sb.append("baseDamageBonus = ").append(stats.baseDamageBonus).append("\n");
-            sb.append("critChance = ").append(stats.critChance).append("\n");
-            sb.append("critDamage = ").append(stats.critDamage).append("\n");
-            sb.append("fireDamageBonus = ").append(stats.fireDamageBonus).append("\n");
-            sb.append("magicDamageBonus = ").append(stats.magicDamageBonus).append("\n");
-            sb.append("lifesteal = ").append(stats.lifesteal).append("\n\n");
+            sb.append("attackDamage = ").append(stats.getAttackDamage()).append("\n");
+            sb.append("attackSpeed = ").append(stats.getAttackSpeed()).append("\n");
+            sb.append("attackReach = ").append(stats.getAttackReach()).append("\n");
+            sb.append("attackKnockback = ").append(stats.getAttackKnockback()).append("\n");
+            sb.append("armorPenetration = ").append(stats.getArmorPenetration()).append("\n");
+            sb.append("baseDamageBonus = ").append(stats.getBaseDamageBonus()).append("\n");
+            sb.append("critChance = ").append(stats.getCritChance()).append("\n");
+            sb.append("critDamage = ").append(stats.getCritDamage()).append("\n");
+            sb.append("fireDamageBonus = ").append(stats.getFireDamageBonus()).append("\n");
+            sb.append("magicDamageBonus = ").append(stats.getMagicDamageBonus()).append("\n");
+            sb.append("lifesteal = ").append(stats.getLifesteal()).append("\n\n");
         });
 
         try {

@@ -1,9 +1,11 @@
 package com.devmod.endurance;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
@@ -24,16 +26,16 @@ public final class WaveObjectiveState {
     private final String description;
 
     private final int targetTicks;
-    private int targetCount;
-    private int progressTicks;
-    private int progressCount;
+    private final AtomicInteger targetCount;
+    private final AtomicInteger progressTicks = new AtomicInteger();
+    private final AtomicInteger progressCount = new AtomicInteger();
 
-    private boolean complete;
-    private boolean failed;
+    private final AtomicBoolean complete = new AtomicBoolean(false);
+    private final AtomicBoolean failed = new AtomicBoolean(false);
 
     private BlockPos zoneCenter;
     private int zoneRadius;
-    private final Set<UUID> objectiveTargets = new HashSet<>();
+    private final Set<UUID> objectiveTargets = ConcurrentHashMap.newKeySet();
 
     private WaveObjectiveState(Type type,
                                String title,
@@ -44,7 +46,7 @@ public final class WaveObjectiveState {
         this.title = title;
         this.description = description;
         this.targetTicks = Math.max(0, targetTicks);
-        this.targetCount = Math.max(0, targetCount);
+        this.targetCount = new AtomicInteger(Math.max(0, targetCount));
     }
 
     public static WaveObjectiveState killAll(int totalMobs) {
@@ -105,11 +107,11 @@ public final class WaveObjectiveState {
     }
 
     public boolean isComplete() {
-        return complete;
+        return complete.get();
     }
 
     public boolean isFailed() {
-        return failed;
+        return failed.get();
     }
 
     public boolean shouldRespawnExternalDeaths() {
@@ -118,14 +120,14 @@ public final class WaveObjectiveState {
 
     public int getProgressForUi() {
         return type == Type.SURVIVE_TIME || type == Type.HOLD_ZONE
-            ? (int) Math.ceil(progressTicks / (double) TICKS_PER_SECOND)
-            : progressCount;
+            ? (int) Math.ceil(progressTicks.get() / (double) TICKS_PER_SECOND)
+            : progressCount.get();
     }
 
     public int getTargetForUi() {
         return type == Type.SURVIVE_TIME || type == Type.HOLD_ZONE
             ? (int) Math.ceil(targetTicks / (double) TICKS_PER_SECOND)
-            : targetCount;
+            : targetCount.get();
     }
 
     public Set<UUID> getObjectiveTargets() {
@@ -139,49 +141,48 @@ public final class WaveObjectiveState {
     }
 
     public void recordObjectiveKill(UUID mobId) {
-        if (mobId == null || complete || failed) {
+        if (mobId == null || complete.get() || failed.get()) {
             return;
         }
         if (type == Type.ELITE_HUNT && objectiveTargets.remove(mobId)) {
-            progressCount++;
-            if (progressCount >= targetCount) {
-                complete = true;
+            int newProgress = progressCount.incrementAndGet();
+            if (newProgress >= targetCount.get()) {
+                complete.set(true);
             }
         }
     }
 
     public void recordKill() {
-        if (complete || failed) {
+        if (complete.get() || failed.get()) {
             return;
         }
         if (type == Type.KILL_ALL) {
-            progressCount++;
-            if (progressCount >= targetCount) {
-                complete = true;
+            int newProgress = progressCount.incrementAndGet();
+            if (newProgress >= targetCount.get()) {
+                complete.set(true);
             }
         }
     }
 
     public void adjustKillTarget(int newTarget) {
         if (type == Type.KILL_ALL) {
-            targetCount = Math.max(0, newTarget);
-            if (targetCount == 0) {
-                complete = true;
-            } else if (progressCount >= targetCount) {
-                complete = true;
+            int adjustedTarget = Math.max(0, newTarget);
+            targetCount.set(adjustedTarget);
+            if (adjustedTarget == 0 || progressCount.get() >= adjustedTarget) {
+                complete.set(true);
             }
         }
     }
 
     public void tick(Player player) {
-        if (complete || failed) {
+        if (complete.get() || failed.get()) {
             return;
         }
         switch (type) {
             case SURVIVE_TIME -> {
-                progressTicks++;
-                if (progressTicks >= targetTicks) {
-                    complete = true;
+                int updatedTicks = progressTicks.incrementAndGet();
+                if (updatedTicks >= targetTicks) {
+                    complete.set(true);
                 }
             }
             case HOLD_ZONE -> {
@@ -193,13 +194,14 @@ public final class WaveObjectiveState {
                 double dz = pos.z - (zoneCenter.getZ() + 0.5);
                 double distSq = dx * dx + dz * dz;
                 double radiusSq = (double) zoneRadius * zoneRadius;
-                if (distSq <= radiusSq) {
-                    progressTicks++;
-                } else {
-                    progressTicks = Math.max(0, progressTicks - 2);
-                }
-                if (progressTicks >= targetTicks) {
-                    complete = true;
+                int updatedTicks = progressTicks.updateAndGet(currentTicks -> {
+                    if (distSq <= radiusSq) {
+                        return currentTicks + 1;
+                    }
+                    return Math.max(0, currentTicks - 2);
+                });
+                if (updatedTicks >= targetTicks) {
+                    complete.set(true);
                 }
             }
             case KILL_ALL, ELITE_HUNT -> {

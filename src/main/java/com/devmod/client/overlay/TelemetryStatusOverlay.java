@@ -124,7 +124,7 @@ public class TelemetryStatusOverlay {
         long time = System.currentTimeMillis();
         float pulse = (float) (Math.sin(time / 300.0) + 1) / 2;
         int alpha = (int) (150 + pulse * 105);
-        return (alpha << 24) | (0xFF << 16) | (0x44 << 8) | 0x44;
+        return OverlayTheme.withAlpha(RECORDING_COLOR, alpha);
     }
 
     private static String formatTime(long millis) {
@@ -160,5 +160,24 @@ public class TelemetryStatusOverlay {
      */
     public static void resetTimer() {
         recordingStartTime = System.currentTimeMillis();
+    }
+
+    /**
+     * Get a combined status summary for debug purposes.
+     * Includes telemetry status and impact system info.
+     *
+     * @return Formatted status summary string
+     */
+    public static String getStatusSummary() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Telemetry: ");
+        sb.append(TelemetryService.INSTANCE.isRecording() ? "Recording" : "Paused");
+        String room = TelemetryService.INSTANCE.getCurrentRoom();
+        if (room != null && !room.isEmpty()) {
+            sb.append(" [").append(room).append("]");
+        }
+        sb.append("\n");
+        sb.append(ImpactHudController.INSTANCE.getDebugInfo());
+        return sb.toString();
     }
 }

@@ -44,22 +44,22 @@ public class PartyScreenRenderer {
     private static final int COLOR_PANEL_HEADER = DesignTokens.Surface.LEVEL_1;
     private static final int COLOR_BORDER_SUBTLE = DesignTokens.Stroke.MUTED;
     private static final int COLOR_INPUT_BG = DesignTokens.Surface.LEVEL_0;
-    private static final int COLOR_TAB_ACTIVE = 0xFF1A2A4A;
+    private static final int COLOR_TAB_ACTIVE = DesignTokens.Party.TAB_ACTIVE;
     private static final int COLOR_TAB_HOVER = DesignTokens.Surface.LEVEL_1;
     private static final int COLOR_TAB_DEFAULT = DesignTokens.Surface.LEVEL_0;
-    private static final int COLOR_ROW_HOVER = 0x40FFFFFF;
-    private static final int COLOR_ROW_DEFAULT = 0x20FFFFFF;
-    private static final int COLOR_HINT_TEXT = 0x60FFFFFF;
+    private static final int COLOR_ROW_HOVER = DesignTokens.Party.ROW_HOVER;
+    private static final int COLOR_ROW_DEFAULT = DesignTokens.Party.ROW_DEFAULT;
+    private static final int COLOR_HINT_TEXT = DesignTokens.Party.HINT_TEXT;
 
     // Stat colors
-    private static final int COLOR_STAT_HP = 0xFFFF6666;
-    private static final int COLOR_STAT_DMG = 0xFFFFAA00;
-    private static final int COLOR_STAT_POINTS = 0xFFFFFF00;
-    private static final int COLOR_STAT_DIFFICULTY = 0xFFAA66FF;
+    private static final int COLOR_STAT_HP = DesignTokens.Party.STAT_HP;
+    private static final int COLOR_STAT_DMG = DesignTokens.Party.STAT_DMG;
+    private static final int COLOR_STAT_POINTS = DesignTokens.Party.STAT_POINTS;
+    private static final int COLOR_STAT_DIFFICULTY = DesignTokens.Party.STAT_DIFFICULTY;
 
     // Status glow colors
-    private static final int COLOR_READY_GLOW = 0x4000FF88;
-    private static final int COLOR_NOT_READY_GLOW = 0x40FF4466;
+    private static final int COLOR_READY_GLOW = DesignTokens.Party.READY_GLOW;
+    private static final int COLOR_NOT_READY_GLOW = DesignTokens.Party.NOT_READY_GLOW;
 
     private static final int MAX_VISIBLE_MOBS = 6;
     private static final int MAX_PREVIEW_WAVE = 20;
@@ -85,7 +85,7 @@ public class PartyScreenRenderer {
 
         // Outer glow effect
         int glowAlpha = (int) (30 + glowPulse * 20);
-        int glowColor = (glowAlpha << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF);
+        int glowColor = (glowAlpha << 24) | (COLOR_GLOW_BLUE & DesignTokens.Mask.RGB);
         graphics.fill(panelX - 4, panelY - 4, panelX + panelWidth + 4, panelY + panelHeight + 4, glowColor);
         graphics.fill(panelX - 2, panelY - 2, panelX + panelWidth + 2, panelY + panelHeight + 2, glowColor);
 
@@ -101,7 +101,7 @@ public class PartyScreenRenderer {
 
         // Animated border
         int borderAlpha = (int) (180 + glowPulse * 75);
-        int borderColor = (borderAlpha << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF);
+        int borderColor = (borderAlpha << 24) | (COLOR_GLOW_BLUE & DesignTokens.Mask.RGB);
         drawAnimatedBorder(graphics, panelX, panelY, panelWidth, panelHeight, borderColor);
 
         // Title with glow
@@ -111,10 +111,10 @@ public class PartyScreenRenderer {
         // Title glow
         int titleGlowAlpha = (int) (titleGlow * 100);
         net.minecraft.client.gui.Font f = getFont();
-        graphics.drawString(f, title, titleX - 1, panelY + 14, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
-        graphics.drawString(f, title, titleX + 1, panelY + 14, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
-        graphics.drawString(f, title, titleX, panelY + 13, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
-        graphics.drawString(f, title, titleX, panelY + 15, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
+        graphics.drawString(f, title, titleX - 1, panelY + 14, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & DesignTokens.Mask.RGB), false);
+        graphics.drawString(f, title, titleX + 1, panelY + 14, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & DesignTokens.Mask.RGB), false);
+        graphics.drawString(f, title, titleX, panelY + 13, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & DesignTokens.Mask.RGB), false);
+        graphics.drawString(f, title, titleX, panelY + 15, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & DesignTokens.Mask.RGB), false);
 
         // Main title
         graphics.drawString(f, title, titleX, panelY + 14, COLOR_GLOW_CYAN, false);
@@ -188,7 +188,7 @@ public class PartyScreenRenderer {
             if (isActive) {
                 int glowIntensity = (int) (150 + glowPulse * 50);
                 graphics.fill(tabX, tabY + tabHeight - 3, tabX + tabWidth - 4, tabY + tabHeight,
-                    (glowIntensity << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF));
+                    (glowIntensity << 24) | (COLOR_GLOW_BLUE & DesignTokens.Mask.RGB));
                 graphics.fill(tabX, tabY + tabHeight - 2, tabX + tabWidth - 4, tabY + tabHeight, COLOR_GLOW_BLUE);
             }
 
@@ -424,7 +424,7 @@ public class PartyScreenRenderer {
             if (isSelected) {
                 int selectGlow = (int) (100 + glowPulse * 50);
                 graphics.fill(panelLeft + 5, rowY, panelLeft + panelW - 5, rowY + rowH,
-                    (selectGlow << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF));
+                    (selectGlow << 24) | (COLOR_GLOW_BLUE & DesignTokens.Mask.RGB));
                 graphics.fill(panelLeft + 6, rowY + 1, panelLeft + panelW - 6, rowY + rowH - 1, COLOR_TAB_ACTIVE);
             } else if (isHovered) {
                 graphics.fill(panelLeft + 5, rowY, panelLeft + panelW - 5, rowY + rowH, COLOR_ROW_DEFAULT);
@@ -493,7 +493,7 @@ public class PartyScreenRenderer {
         // Platform glow
         for (int r = platformRadius; r > platformRadius - 5; r--) {
             int alpha = (int) ((1 - (platformRadius - r) / 5f) * (50 + glowPulse * 30));
-            int glowC = (alpha << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF);
+            int glowC = (alpha << 24) | (COLOR_GLOW_BLUE & DesignTokens.Mask.RGB);
             graphics.fill(centerX - r, platformY - 3, centerX + r, platformY, glowC);
         }
 
@@ -655,8 +655,8 @@ public class PartyScreenRenderer {
         String noParty = "NO ACTIVE PARTY";
 
         int glowAlpha = (int) (glowPulse * 80);
-        graphics.drawString(f, noParty, centerX - f.width(noParty) / 2 - 1, centerY - 70, (glowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
-        graphics.drawString(f, noParty, centerX - f.width(noParty) / 2 + 1, centerY - 70, (glowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
+        graphics.drawString(f, noParty, centerX - f.width(noParty) / 2 - 1, centerY - 70, (glowAlpha << 24) | (COLOR_GLOW_CYAN & DesignTokens.Mask.RGB), false);
+        graphics.drawString(f, noParty, centerX - f.width(noParty) / 2 + 1, centerY - 70, (glowAlpha << 24) | (COLOR_GLOW_CYAN & DesignTokens.Mask.RGB), false);
 
         graphics.drawCenteredString(f, noParty, centerX, centerY - 70, COLOR_GLOW_CYAN);
 
@@ -686,12 +686,12 @@ public class PartyScreenRenderer {
 
     public int getTierColor(MobTier tier) {
         return switch (tier) {
-            case TRIVIAL -> 0xFF666666;
-            case EASY -> 0xFF55FF55;
-            case MEDIUM -> 0xFFFFFF55;
-            case HARD -> 0xFFFF8800;
-            case ELITE -> 0xFFFF5555;
-            case BOSS -> 0xFFAA00FF;
+            case TRIVIAL -> DesignTokens.Party.DIFFICULTY_TRIVIAL;
+            case EASY -> DesignTokens.Party.DIFFICULTY_EASY;
+            case MEDIUM -> DesignTokens.Party.DIFFICULTY_MEDIUM;
+            case HARD -> DesignTokens.Party.DIFFICULTY_HARD;
+            case ELITE -> DesignTokens.Party.DIFFICULTY_ELITE;
+            case BOSS -> DesignTokens.Party.DIFFICULTY_BOSS;
         };
     }
 

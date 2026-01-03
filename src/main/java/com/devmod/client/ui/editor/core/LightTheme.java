@@ -26,52 +26,52 @@ public class LightTheme implements Theme {
 
     @Override
     public int panelBackground() {
-        return 0xE0F5F5F5;
+        return DesignTokens.EditorTheme.Light.PANEL_BG;
     }
 
     @Override
     public int panelBackgroundSolid() {
-        return 0xFFF5F5F5;
+        return DesignTokens.EditorTheme.Light.PANEL_BG_SOLID;
     }
 
     @Override
     public int inputBackground() {
-        return 0xFFFFFFFF;
+        return DesignTokens.EditorTheme.Light.INPUT_BG;
     }
 
     @Override
     public int hoverBackground() {
-        return 0xFFE8E8E8;
+        return DesignTokens.EditorTheme.Light.HOVER_BG;
     }
 
     @Override
     public int activeBackground() {
-        return 0xFFDDDDDD;
+        return DesignTokens.EditorTheme.Light.ACTIVE_BG;
     }
 
     @Override
     public int headerBackground() {
-        return 0xFFEEEEEE;
+        return DesignTokens.EditorTheme.Light.HEADER_BG;
     }
 
     @Override
     public int contentBackground() {
-        return 0xFFF0F0F0;
+        return DesignTokens.EditorTheme.Light.CONTENT_BG;
     }
 
     @Override
     public int tabInactiveBackground() {
-        return 0xFFE0E0E0;
+        return DesignTokens.EditorTheme.Light.TAB_INACTIVE_BG;
     }
 
     @Override
     public int tabActiveBackground() {
-        return 0xFFD0D0D0;
+        return DesignTokens.EditorTheme.Light.TAB_ACTIVE_BG;
     }
 
     @Override
     public int overlayBackground() {
-        return 0x60000000;
+        return DesignTokens.EditorTheme.Light.OVERLAY_BG;
     }
 
     // =========================================================================
@@ -80,27 +80,27 @@ public class LightTheme implements Theme {
 
     @Override
     public int borderDefault() {
-        return 0xFFCCCCCC;
+        return DesignTokens.EditorTheme.Light.BORDER_DEFAULT;
     }
 
     @Override
     public int borderMuted() {
-        return 0xFFDDDDDD;
+        return DesignTokens.EditorTheme.Light.BORDER_MUTED;
     }
 
     @Override
     public int borderAccent() {
-        return 0xFF0099CC;
+        return DesignTokens.EditorTheme.Light.BORDER_ACCENT;
     }
 
     @Override
     public int borderSeparator() {
-        return 0xFFD5D5D5;
+        return DesignTokens.EditorTheme.Light.BORDER_SEPARATOR;
     }
 
     @Override
     public int borderHover() {
-        return 0xFFAAAAAA;
+        return DesignTokens.EditorTheme.Light.BORDER_HOVER;
     }
 
     // =========================================================================
@@ -109,27 +109,27 @@ public class LightTheme implements Theme {
 
     @Override
     public int textPrimary() {
-        return 0xFF2A2A2A;
+        return DesignTokens.EditorTheme.Light.TEXT_PRIMARY;
     }
 
     @Override
     public int textSecondary() {
-        return 0xFF555555;
+        return DesignTokens.EditorTheme.Light.TEXT_SECONDARY;
     }
 
     @Override
     public int textMuted() {
-        return 0xFF888888;
+        return DesignTokens.EditorTheme.Light.TEXT_MUTED;
     }
 
     @Override
     public int textTitle() {
-        return 0xFF000000;
+        return DesignTokens.EditorTheme.Light.TEXT_TITLE;
     }
 
     @Override
     public int textDisabled() {
-        return 0xFFAAAAAA;
+        return DesignTokens.EditorTheme.Light.TEXT_DISABLED;
     }
 
     // =========================================================================
@@ -138,27 +138,27 @@ public class LightTheme implements Theme {
 
     @Override
     public int accentPrimary() {
-        return 0xFF0099CC;  // Slightly darker cyan
+        return DesignTokens.EditorTheme.Light.ACCENT_PRIMARY;
     }
 
     @Override
     public int accentSuccess() {
-        return 0xFF388E3C;  // Darker green
+        return DesignTokens.EditorTheme.Light.ACCENT_SUCCESS;
     }
 
     @Override
     public int accentWarning() {
-        return 0xFFE65100;  // Darker orange
+        return DesignTokens.EditorTheme.Light.ACCENT_WARNING;
     }
 
     @Override
     public int accentError() {
-        return 0xFFC62828;  // Darker red
+        return DesignTokens.EditorTheme.Light.ACCENT_ERROR;
     }
 
     @Override
     public int accentInfo() {
-        return 0xFF1565C0;  // Darker blue
+        return DesignTokens.EditorTheme.Light.ACCENT_INFO;
     }
 
     // =========================================================================
@@ -167,22 +167,22 @@ public class LightTheme implements Theme {
 
     @Override
     public int buttonNormal() {
-        return 0xFFE0E0E0;
+        return DesignTokens.EditorTheme.Light.BUTTON_NORMAL;
     }
 
     @Override
     public int buttonHover() {
-        return 0xFFD0D0D0;
+        return DesignTokens.EditorTheme.Light.BUTTON_HOVER;
     }
 
     @Override
     public int buttonPressed() {
-        return 0xFFC0C0C0;
+        return DesignTokens.EditorTheme.Light.BUTTON_PRESSED;
     }
 
     @Override
     public int buttonDisabled() {
-        return 0xFFEEEEEE;
+        return DesignTokens.EditorTheme.Light.BUTTON_DISABLED;
     }
 
     // =========================================================================
@@ -191,16 +191,16 @@ public class LightTheme implements Theme {
 
     @Override
     public int sliderTrack() {
-        return 0xFFD0D0D0;
+        return DesignTokens.EditorTheme.Light.SLIDER_TRACK;
     }
 
     @Override
     public int sliderThumb() {
-        return 0xFF888888;
+        return DesignTokens.EditorTheme.Light.SLIDER_THUMB;
     }
 
     @Override
     public int sliderThumbHover() {
-        return 0xFF666666;
+        return DesignTokens.EditorTheme.Light.SLIDER_THUMB_HOVER;
     }
 }

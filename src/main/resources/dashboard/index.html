@@ -12,10 +12,10 @@
         <header>
             <h1>DevMod Analytics</h1>
             <div class="header-controls">
-                <select id="player-filter" onchange="onPlayerFilterChange()">
+                <select id="player-filter" aria-label="Filter by player" onchange="onPlayerFilterChange()">
                     <option value="">All Players</option>
                 </select>
-                <select id="time-range" onchange="onTimeRangeChange()">
+                <select id="time-range" aria-label="Time range filter" onchange="onTimeRangeChange()">
                     <option value="1h">Last Hour</option>
                     <option value="6h">Last 6 Hours</option>
                     <option value="24h" selected>Last 24 Hours</option>
@@ -157,7 +157,7 @@
                     <div class="data-section">
                         <h3>Recent Combat Hits</h3>
                         <div class="controls">
-                            <input type="number" id="combat-hits-limit" value="50" min="1" max="500">
+                            <input type="number" id="combat-hits-limit" value="50" min="1" max="500" aria-label="Number of combat hits to load">
                             <button onclick="loadCombatHits()">Load</button>
                             <button onclick="exportData('combat-hits')" class="export-btn">Export CSV</button>
                         </div>
@@ -185,7 +185,7 @@
                     </div>
 
                     <!-- Player DPS Timeline -->
-                    <div class="chart-row" id="player-charts" style="display: none;">
+                    <div class="chart-row hidden" id="player-charts">
                         <div class="chart-container">
                             <h3>Player DPS Timeline</h3>
                             <canvas id="chart-player-dps"></canvas>
@@ -279,7 +279,7 @@
                     <div class="data-section">
                         <h3>Recent Dungeon Runs</h3>
                         <div class="controls">
-                            <input type="number" id="dungeons-limit" value="50" min="1" max="500">
+                            <input type="number" id="dungeons-limit" value="50" min="1" max="500" aria-label="Number of dungeon runs to load">
                             <button onclick="loadDungeonRuns()">Load</button>
                             <button onclick="exportData('dungeons')" class="export-btn">Export CSV</button>
                         </div>
@@ -345,12 +345,12 @@
                     <div class="data-section">
                         <h3>Heatmap Data</h3>
                         <div class="controls">
-                            <select id="spatial-heatmap-type">
+                            <select id="spatial-heatmap-type" aria-label="Heatmap type filter">
                                 <option value="">All Types</option>
                                 <option value="death">Deaths</option>
                                 <option value="damage">Damage</option>
                             </select>
-                            <input type="number" id="spatial-heatmaps-limit" value="500" min="1" max="5000">
+                            <input type="number" id="spatial-heatmaps-limit" value="500" min="1" max="5000" aria-label="Number of heatmap entries to load">
                             <button onclick="loadHeatmaps()">Load</button>
                             <button onclick="exportData('heatmaps')" class="export-btn">Export CSV</button>
                         </div>
@@ -382,7 +382,7 @@
                     <div class="data-section">
                         <h3>Recent Drops</h3>
                         <div class="controls">
-                            <input type="number" id="economy-drops-limit" value="100" min="1" max="1000">
+                            <input type="number" id="economy-drops-limit" value="100" min="1" max="1000" aria-label="Number of drops to load">
                             <button onclick="loadEconomyDrops()">Load</button>
                             <button onclick="exportData('drops')" class="export-btn">Export CSV</button>
                         </div>
@@ -422,8 +422,8 @@
 
                     <!-- Template Selector -->
                     <div class="controls arena-controls">
-                        <label>Template:</label>
-                        <select id="arena-template-filter" onchange="onArenaTemplateChange()">
+                        <label for="arena-template-filter">Template:</label>
+                        <select id="arena-template-filter" aria-label="Arena template filter" onchange="onArenaTemplateChange()">
                             <option value="">Select Template...</option>
                         </select>
                         <button onclick="loadArenaSection()" class="refresh-btn">Refresh</button>

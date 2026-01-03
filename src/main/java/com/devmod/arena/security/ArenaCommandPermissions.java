@@ -12,8 +12,6 @@ import net.minecraft.server.level.ServerPlayer;
 
 public class ArenaCommandPermissions {
 
-    private static final ArenaCommandPermissions INSTANCE = new ArenaCommandPermissions();
-
     /**
      * Permission levels for arena commands (ordered from lowest to highest)
      */
@@ -120,7 +118,11 @@ public class ArenaCommandPermissions {
     private ArenaCommandPermissions() {}
 
     public static ArenaCommandPermissions getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final ArenaCommandPermissions INSTANCE = new ArenaCommandPermissions();
     }
 
     /**

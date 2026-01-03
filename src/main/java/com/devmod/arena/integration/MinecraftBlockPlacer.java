@@ -81,10 +81,6 @@ public class MinecraftBlockPlacer implements ArenaBuilder.BlockPlacer {
         if (originalState == null) {
             // Fallback to state ID lookup
             originalState = Block.stateById(stateId);
-            if (originalState == null) {
-                LOGGER.warn("Cannot revert block at {}: unknown state ID {}", pos, stateId);
-                return false;
-            }
         }
 
         return level.setBlock(Objects.requireNonNull(pos), originalState, PLACEMENT_FLAGS);

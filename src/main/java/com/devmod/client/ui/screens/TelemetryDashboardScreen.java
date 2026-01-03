@@ -187,7 +187,9 @@ public class TelemetryDashboardScreen extends Screen {
         String hotkeyText = keyMapping.isUnbound()
             ? "unbound"
             : Objects.requireNonNull(keyMapping.getTranslatedKeyMessage().getString(), "hotkeyText");
-        int hotkeyColor = keyMapping.isUnbound() ? DesignTokens.Text.MUTED() & 0x88FFFFFF : DesignTokens.Text.MUTED();
+        int hotkeyColor = keyMapping.isUnbound()
+            ? DesignTokens.withAlpha(DesignTokens.Text.MUTED(), DesignTokens.Alpha.A53)
+            : DesignTokens.Text.MUTED();
         String hotkeyLabel = Objects.requireNonNull("(" + hotkeyText + ")", "hotkeyLabel");
         graphics.drawString(safeFont, hotkeyLabel, x + 10 + safeFont.width(safeName) + 6, y + 6, hotkeyColor, false);
 
@@ -460,7 +462,9 @@ public class TelemetryDashboardScreen extends Screen {
 
             // "Confirm" button
             boolean confirmHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, btnWidth, ROW_HEIGHT - 4);
-            int confirmBg = confirmHovered ? 0x80FF0000 : DesignTokens.Background.PANEL();
+            int confirmBg = confirmHovered
+                ? DesignTokens.TelemetryDashboard.CONFIRM_HOVER_BG
+                : DesignTokens.Background.PANEL();
             graphics.fill(x, y, x + btnWidth, y + ROW_HEIGHT - 4, confirmBg);
             graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, DesignTokens.Accent.RED());
             AxiomRenderer.drawBorder(graphics, x, y, btnWidth, ROW_HEIGHT - 4, DesignTokens.Accent.RED());
@@ -815,7 +819,7 @@ public class TelemetryDashboardScreen extends Screen {
     @Override
     public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Disable blur - just solid dimmed background
-        graphics.fill(0, 0, this.width, this.height, 0xC0101010);
+        graphics.fill(0, 0, this.width, this.height, DesignTokens.TelemetryDashboard.SCRIM);
     }
 
     @Override
@@ -825,6 +829,6 @@ public class TelemetryDashboardScreen extends Screen {
 
     @Override
     protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
-        graphics.fill(0, 0, this.width, this.height, 0xC0101010);
+        graphics.fill(0, 0, this.width, this.height, DesignTokens.TelemetryDashboard.SCRIM);
     }
 }

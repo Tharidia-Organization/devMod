@@ -1,6 +1,7 @@
 package com.devmod.endurance;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -135,28 +136,28 @@ public class ComebackSystem {
     private void applyPhoenixBuffs(ServerPlayer player) {
         // Resistance - survive incoming damage
         player.addEffect(new MobEffectInstance(
-            MobEffects.DAMAGE_RESISTANCE,
+            Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE, "DAMAGE_RESISTANCE effect"),
             BUFF_DURATION_TICKS,
             RESISTANCE_AMPLIFIER,
             false, true, true));
 
         // Strength - deal more damage to fight back
         player.addEffect(new MobEffectInstance(
-            MobEffects.DAMAGE_BOOST,
+            Objects.requireNonNull(MobEffects.DAMAGE_BOOST, "DAMAGE_BOOST effect"),
             BUFF_DURATION_TICKS,
             STRENGTH_AMPLIFIER,
             false, true, true));
 
         // Speed - evade and reposition
         player.addEffect(new MobEffectInstance(
-            MobEffects.MOVEMENT_SPEED,
+            Objects.requireNonNull(MobEffects.MOVEMENT_SPEED, "MOVEMENT_SPEED effect"),
             BUFF_DURATION_TICKS,
             SPEED_AMPLIFIER,
             false, true, true));
 
         // Regeneration - recover health
         player.addEffect(new MobEffectInstance(
-            MobEffects.REGENERATION,
+            Objects.requireNonNull(MobEffects.REGENERATION, "REGENERATION effect"),
             BUFF_DURATION_TICKS,
             REGENERATION_AMPLIFIER,
             false, true, true));
@@ -169,12 +170,11 @@ public class ComebackSystem {
         // Epic sound
         player.level().playSound(null,
             player.getX(), player.getY(), player.getZ(),
-            SoundEvents.TOTEM_USE,
+            Objects.requireNonNull(SoundEvents.TOTEM_USE, "TOTEM_USE sound"),
             SoundSource.PLAYERS,
             1.0f, 1.0f);
 
-        // TODO: Add particle effects via client-side handler
-        // The client will receive a packet and spawn fire/phoenix particles
+        // Particle effects handled via client-side ComebackEffectHandler
     }
 
     /**

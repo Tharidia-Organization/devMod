@@ -1,8 +1,10 @@
 package com.devmod.runtime.generator;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -163,10 +165,10 @@ public class ArenaFlatChunkGenerator extends ArenaChunkGenerator {
 
     @Override
     public CompletableFuture<ChunkAccess> fillFromNoise(
-            Blender blender,
-            RandomState random,
-            StructureManager structureManager,
-            ChunkAccess chunk
+            @Nonnull Blender blender,
+            @Nonnull RandomState random,
+            @Nonnull StructureManager structureManager,
+            @Nonnull ChunkAccess chunk
     ) {
         ChunkPos chunkPos = chunk.getPos();
 
@@ -227,7 +229,7 @@ public class ArenaFlatChunkGenerator extends ArenaChunkGenerator {
 
         for (BlockState state : layerStates) {
             pos.set(localX, y, localZ);
-            chunk.setBlockState(pos, state, false);
+            chunk.setBlockState(pos, Objects.requireNonNull(state, "layer state"), false);
 
             // Update heightmaps
             if (!state.isAir()) {
@@ -249,15 +251,15 @@ public class ArenaFlatChunkGenerator extends ArenaChunkGenerator {
     ) {
         // Place barrier at floor level only (not a full column)
         pos.set(localX, getFloorY() - 1, localZ);
-        chunk.setBlockState(pos, Blocks.BARRIER.defaultBlockState(), false);
+        chunk.setBlockState(pos, Objects.requireNonNull(Blocks.BARRIER.defaultBlockState(), "barrier state"), false);
     }
 
     @Override
     public int getBaseHeight(
             int x, int z,
-            Heightmap.Types type,
-            LevelHeightAccessor level,
-            RandomState random
+            @Nonnull Heightmap.Types type,
+            @Nonnull LevelHeightAccessor level,
+            @Nonnull RandomState random
     ) {
         if (!positionInArena(x, z)) {
             return getMinY();
@@ -266,89 +268,9 @@ public class ArenaFlatChunkGenerator extends ArenaChunkGenerator {
     }
 
     /**
-     * Gets the flat level settings.
-     */
-    @Nullable
-    public FlatLevelGeneratorSettings getFlatSettings() {
-        return flatSettings;
-    }
-
-    /**
      * Gets the floor Y level.
      */
     public int getFloorY() {
         return resolveFloorY();
-    }
-
-    /**
-     * Checks if this generator uses barriers outside the arena.
-     */
-    public boolean usesBarrierOutside() {
-        return useBarrierOutside;
-    }
-
-    // ============== Factory Methods ==============
-
-    /**
-     * Creates a generator for a rectangular arena.
-     */
-    public static ArenaFlatChunkGenerator rectangular(
-            ZoneBiomeSource biomeSource,
-            int minX, int minZ, int maxX, int maxZ,
-            FlatLevelGeneratorSettings settings
-    ) {
-        return new ArenaFlatChunkGenerator(
-                biomeSource,
-                ArenaBounds.rectangular(minX, minZ, maxX, maxZ),
-                ArenaZone.ZoneShape.RECTANGULAR,
-                settings
-        );
-    }
-
-    /**
-     * Creates a generator for a circular arena.
-     */
-    public static ArenaFlatChunkGenerator circular(
-            ZoneBiomeSource biomeSource,
-            int centerX, int centerZ, int radius,
-            FlatLevelGeneratorSettings settings
-    ) {
-        return new ArenaFlatChunkGenerator(
-                biomeSource,
-                ArenaBounds.circular(centerX, centerZ, radius),
-                ArenaZone.ZoneShape.CIRCULAR,
-                settings
-        );
-    }
-
-    /**
-     * Creates a generator for a ring-shaped arena.
-     */
-    public static ArenaFlatChunkGenerator ring(
-            ZoneBiomeSource biomeSource,
-            int centerX, int centerZ, int outerRadius, int innerRadius,
-            FlatLevelGeneratorSettings settings
-    ) {
-        return new ArenaFlatChunkGenerator(
-                biomeSource,
-                ArenaBounds.ring(centerX, centerZ, outerRadius, innerRadius),
-                ArenaZone.ZoneShape.RING,
-                settings
-        );
-    }
-
-    /**
-     * Creates a simple generator without bounds (generates everywhere).
-     */
-    public static ArenaFlatChunkGenerator unbounded(
-            ZoneBiomeSource biomeSource,
-            FlatLevelGeneratorSettings settings
-    ) {
-        return new ArenaFlatChunkGenerator(
-                biomeSource,
-                null,
-                ArenaZone.ZoneShape.RECTANGULAR,
-                settings
-        );
     }
 }

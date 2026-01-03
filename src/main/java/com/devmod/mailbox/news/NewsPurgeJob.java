@@ -23,7 +23,17 @@ public final class NewsPurgeJob {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NewsPurgeJob.class);
 
-    public static final NewsPurgeJob INSTANCE = new NewsPurgeJob();
+    private NewsPurgeJob() {
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "NewsPurgeJob");
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
+    public static NewsPurgeJob getInstance() {
+        return Holder.INSTANCE;
+    }
 
     /** Default purge interval (1 hour). */
     private static final Duration DEFAULT_INTERVAL = Duration.ofHours(1);
@@ -44,12 +54,8 @@ public final class NewsPurgeJob {
     private final AtomicLong lastPurgeTime = new AtomicLong(0);
     private final AtomicInteger lastPurgeCount = new AtomicInteger(0);
 
-    private NewsPurgeJob() {
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "NewsPurgeJob");
-            t.setDaemon(true);
-            return t;
-        });
+    private static final class Holder {
+        private static final NewsPurgeJob INSTANCE = new NewsPurgeJob();
     }
 
     // ============================================================================

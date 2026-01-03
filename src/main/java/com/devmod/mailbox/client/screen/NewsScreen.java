@@ -23,7 +23,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.mailbox.client.ClientNewsCache;
+import com.devmod.mailbox.client.MailboxUiTheme;
 import com.devmod.mailbox.network.payload.NewsReadPayload;
 import com.devmod.mailbox.network.payload.NewsSyncPayload.NewsArticleData;
 
@@ -41,16 +43,6 @@ public class NewsScreen extends Screen {
     // Date formatter
     private static final DateTimeFormatter DATE_FORMAT =
         DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.ROOT).withZone(ZoneId.systemDefault());
-
-    // Category colors
-    private static final int[] CATEGORY_COLORS = {
-        0xFF4CAF50,  // Patch Notes - Green
-        0xFFFF9800,  // Events - Orange
-        0xFF2196F3,  // Announcements - Blue
-        0xFFF44336,  // Maintenance - Red
-        0xFF9C27B0,  // Dev Blog - Purple
-        0xFF00BCD4   // Community - Cyan
-    };
 
     // UI state
     private int panelX, panelY;
@@ -149,7 +141,7 @@ public class NewsScreen extends Screen {
             selectedArticleId = articles.get(0).id();
         }
 
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     private List<NewsArticleData> getFilteredArticles() {
@@ -186,7 +178,7 @@ public class NewsScreen extends Screen {
 
     private void renderMainPanel(GuiGraphics graphics) {
         // Background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xE8101820);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, MailboxUiTheme.Panel.BG);
 
         // Border
         int borderColor = DesignTokens.Border.DEFAULT();
@@ -197,7 +189,7 @@ public class NewsScreen extends Screen {
 
         // Divider between list and detail
         int dividerX = panelX + LIST_WIDTH + 10;
-        graphics.fill(dividerX, panelY + 70, dividerX + 1, panelY + PANEL_HEIGHT - 45, 0x40FFFFFF);
+        graphics.fill(dividerX, panelY + 70, dividerX + 1, panelY + PANEL_HEIGHT - 45, MailboxUiTheme.Divider.LINE);
     }
 
     private void renderHeader(GuiGraphics graphics) {
@@ -285,9 +277,9 @@ public class NewsScreen extends Screen {
             // Selection/hover background
             boolean isSelected = article.id().equals(selectedArticleId);
             if (isSelected) {
-                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + ARTICLE_HEIGHT - 2, 0x40007ACC);
+                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + ARTICLE_HEIGHT - 2, MailboxUiTheme.List.SELECTED_BG);
             } else if (isHovered) {
-                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + ARTICLE_HEIGHT - 2, 0x20FFFFFF);
+                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + ARTICLE_HEIGHT - 2, MailboxUiTheme.List.HOVER_BG);
             }
 
             // Unread indicator
@@ -318,8 +310,8 @@ public class NewsScreen extends Screen {
             int thumbHeight = Math.max(20, scrollbarH * VISIBLE_ARTICLES / articles.size());
             int thumbY = listY + 2 + (scrollbarH - thumbHeight) * scrollOffset / Math.max(1, articles.size() - VISIBLE_ARTICLES);
 
-            graphics.fill(scrollbarX, listY + 2, scrollbarX + 3, listY + scrollbarH, 0x40FFFFFF);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, 0x80FFFFFF);
+            graphics.fill(scrollbarX, listY + 2, scrollbarX + 3, listY + scrollbarH, MailboxUiTheme.Scrollbar.TRACK);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, MailboxUiTheme.Scrollbar.THUMB);
         }
 
         return hovered;
@@ -345,11 +337,11 @@ public class NewsScreen extends Screen {
         int y = detailY;
 
         // Category badge
-        String category = selected.getCategoryName();
+        String category = Objects.requireNonNull(selected.getCategoryName(), "categoryName");
         int catColor = getCategoryColor(selected.categoryOrdinal());
         int catWidth = getFont().width(category) + 10;
         graphics.fill(detailX, y, detailX + catWidth, y + 14, catColor);
-        graphics.drawString(getFont(), category, detailX + 5, y + 3, 0xFFFFFFFF, false);
+        graphics.drawString(getFont(), category, detailX + 5, y + 3, DesignTokens.Text.PRIMARY(), false);
         y += 20;
 
         // Title
@@ -413,7 +405,7 @@ public class NewsScreen extends Screen {
                     ClientNewsCache.markAsRead(clicked.id());
                 }
 
-                DesignTokens.Sound.click();
+                UiSounds.click();
                 return true;
             }
         }
@@ -480,8 +472,9 @@ public class NewsScreen extends Screen {
     // ========== UTILITIES ==========
 
     private int getCategoryColor(int categoryOrdinal) {
-        if (categoryOrdinal >= 0 && categoryOrdinal < CATEGORY_COLORS.length) {
-            return CATEGORY_COLORS[categoryOrdinal];
+        int[] categoryColors = MailboxUiTheme.News.categoryColors();
+        if (categoryOrdinal >= 0 && categoryOrdinal < categoryColors.length) {
+            return categoryColors[categoryOrdinal];
         }
         return DesignTokens.Text.SECONDARY();
     }

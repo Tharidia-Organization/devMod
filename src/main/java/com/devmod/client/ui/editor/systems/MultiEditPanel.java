@@ -79,37 +79,37 @@ public class MultiEditPanel {
     private static final int FAILURE_LINE_TRUNCATE_LENGTH = 57;
     private static final String ELLIPSIS = "...";
 
-    private static final int HEADER_BG_HOVER = 0xFF333333;
-    private static final int HEADER_BG_DEFAULT = 0xFF2A2A2A;
-    private static final int TEXT_PRIMARY_COLOR = 0xFFFFFFFF;
-    private static final int TEXT_MUTED_COLOR = 0xFFAAAAAA;
-    private static final int TEXT_DIM_COLOR = 0xFF888888;
-    private static final int TEXT_FAINT_COLOR = 0xFF777777;
-    private static final int TEXT_HINT_COLOR = 0xFF555555;
-    private static final int TEXT_SECONDARY_COLOR = 0xFFCCCCCC;
-    private static final int EMPTY_STATE_BG = 0xFF161616;
-    private static final int PRESET_BG_OPEN = 0xFF2E2E2E;
-    private static final int PRESET_BG_CLOSED = 0xFF1E1E1E;
-    private static final int PRESET_LABEL_COLOR_ACTIVE = 0xFF88FF88;
-    private static final int DROPDOWN_BG = 0xFF111111;
-    private static final int DROPDOWN_BG_SELECTED = 0xFF1F4D3A;
-    private static final int DROPDOWN_BG_HOVER = 0xFF2A2A2A;
-    private static final int DROPDOWN_BG_DEFAULT = 0xFF1A1A1A;
-    private static final int DROPDOWN_TEXT_COLOR = 0xFFEFEFEF;
-    private static final int DROPDOWN_HINT_COLOR = 0xFF888888;
-    private static final int DROPDOWN_HOVER_COLOR = 0xFF99CCFF;
-    private static final int ITEM_BG_HOVER = 0xFF3A3A3A;
-    private static final int ITEM_BG_DEFAULT = 0xFF222222;
-    private static final int ITEM_REMOVE_HOVER_COLOR = 0xFFFF4444;
-    private static final int PREVIEW_MODE_COLOR = 0xFFFFB366;
-    private static final int ACTION_ROW_BG = 0xFF1A1A1A;
-    private static final int PROGRESS_BAR_BG = 0xFF1A1A1A;
-    private static final int PROGRESS_BAR_FILL = 0xFF4CAF50;
-    private static final int RESULT_BG = 0xFF101010;
-    private static final int RESULT_SUCCESS_COLOR = 0xFF66FF66;
-    private static final int RESULT_WARNING_COLOR = 0xFFFFC107;
-    private static final int FAILURE_TEXT_COLOR = 0xFFFF8888;
-    private static final int MORE_FAILURES_COLOR = 0xFFFFBB66;
+    private static final int HEADER_BG_HOVER = DesignTokens.MultiEdit.HEADER_BG_HOVER;
+    private static final int HEADER_BG_DEFAULT = DesignTokens.MultiEdit.HEADER_BG_DEFAULT;
+    private static final int TEXT_PRIMARY_COLOR = DesignTokens.MultiEdit.TEXT_PRIMARY;
+    private static final int TEXT_MUTED_COLOR = DesignTokens.MultiEdit.TEXT_MUTED;
+    private static final int TEXT_DIM_COLOR = DesignTokens.MultiEdit.TEXT_DIM;
+    private static final int TEXT_FAINT_COLOR = DesignTokens.MultiEdit.TEXT_FAINT;
+    private static final int TEXT_HINT_COLOR = DesignTokens.MultiEdit.TEXT_HINT;
+    private static final int TEXT_SECONDARY_COLOR = DesignTokens.MultiEdit.TEXT_SECONDARY;
+    private static final int EMPTY_STATE_BG = DesignTokens.MultiEdit.EMPTY_STATE_BG;
+    private static final int PRESET_BG_OPEN = DesignTokens.MultiEdit.PRESET_BG_OPEN;
+    private static final int PRESET_BG_CLOSED = DesignTokens.MultiEdit.PRESET_BG_CLOSED;
+    private static final int PRESET_LABEL_COLOR_ACTIVE = DesignTokens.MultiEdit.PRESET_LABEL_ACTIVE;
+    private static final int DROPDOWN_BG = DesignTokens.MultiEdit.DROPDOWN_BG;
+    private static final int DROPDOWN_BG_SELECTED = DesignTokens.MultiEdit.DROPDOWN_BG_SELECTED;
+    private static final int DROPDOWN_BG_HOVER = DesignTokens.MultiEdit.DROPDOWN_BG_HOVER;
+    private static final int DROPDOWN_BG_DEFAULT = DesignTokens.MultiEdit.DROPDOWN_BG_DEFAULT;
+    private static final int DROPDOWN_TEXT_COLOR = DesignTokens.MultiEdit.DROPDOWN_TEXT;
+    private static final int DROPDOWN_HINT_COLOR = DesignTokens.MultiEdit.DROPDOWN_HINT;
+    private static final int DROPDOWN_HOVER_COLOR = DesignTokens.MultiEdit.DROPDOWN_HOVER;
+    private static final int ITEM_BG_HOVER = DesignTokens.MultiEdit.ITEM_BG_HOVER;
+    private static final int ITEM_BG_DEFAULT = DesignTokens.MultiEdit.ITEM_BG_DEFAULT;
+    private static final int ITEM_REMOVE_HOVER_COLOR = DesignTokens.MultiEdit.ITEM_REMOVE_HOVER;
+    private static final int PREVIEW_MODE_COLOR = DesignTokens.MultiEdit.PREVIEW_MODE;
+    private static final int ACTION_ROW_BG = DesignTokens.MultiEdit.ACTION_ROW_BG;
+    private static final int PROGRESS_BAR_BG = DesignTokens.MultiEdit.PROGRESS_BAR_BG;
+    private static final int PROGRESS_BAR_FILL = DesignTokens.MultiEdit.PROGRESS_BAR_FILL;
+    private static final int RESULT_BG = DesignTokens.MultiEdit.RESULT_BG;
+    private static final int RESULT_SUCCESS_COLOR = DesignTokens.MultiEdit.RESULT_SUCCESS;
+    private static final int RESULT_WARNING_COLOR = DesignTokens.MultiEdit.RESULT_WARNING;
+    private static final int FAILURE_TEXT_COLOR = DesignTokens.MultiEdit.FAILURE_TEXT;
+    private static final int MORE_FAILURES_COLOR = DesignTokens.MultiEdit.MORE_FAILURES;
 
     // Item bounds for hover/click detection
     private final List<ResponsiveLayout.Rect> itemRects = new ArrayList<>();
@@ -286,15 +286,15 @@ public class MultiEditPanel {
         graphics.drawString(safeFont, countText, x + DesignTokens.Spacing.SM, y + HEADER_TEXT_Y, countColor, false);
 
         // Expand/collapse button
-        String expandIcon = expanded ? "▼" : "▶";
+        String expandIcon = isExpanded() ? "▼" : "▶";
         graphics.drawString(safeFont, expandIcon, x + width - HEADER_ICON_OFFSET_X, y + HEADER_TEXT_Y,
             headerHovered ? TEXT_PRIMARY_COLOR : TEXT_MUTED_COLOR, false);
 
-        if (!expanded || count == 0) {
+        if (!isExpanded() || count == 0) {
             presetDropdownOpen = false;
             showFailureDetails = false;
             showAllFailures = false;
-            if (!expanded) {
+            if (!isExpanded()) {
                 return headerHeight;
             }
             int emptyY = y + headerHeight + EMPTY_STATE_TOP_GAP;
@@ -306,7 +306,9 @@ public class MultiEditPanel {
         }
 
         List<ItemEditorDataManager.PresetData> presets = availablePresets();
-        persistAllowed = persistSupplier == null || persistSupplier.getAsBoolean();
+        // Local capture for null safety
+        java.util.function.BooleanSupplier supplier = persistSupplier;
+        persistAllowed = supplier == null || supplier.getAsBoolean();
         if (presets.isEmpty()) {
             selectedPresetIndex = -1;
             presetScrollOffset = 0;
@@ -497,28 +499,30 @@ public class MultiEditPanel {
             listY += progressBarHeight + DesignTokens.Spacing.SM;
         }
 
-        if (lastResult != null) {
+        // Local capture for null safety
+        BatchEditResult result = lastResult;
+        if (result != null) {
             int summaryHeight = SUMMARY_HEIGHT;
-            int maxVisibleFailures = showAllFailures ? Math.min(MAX_VISIBLE_FAILURES, lastResult.failureCount())
-                                                     : Math.min(DEFAULT_VISIBLE_FAILURES, lastResult.failureCount());
+            int maxVisibleFailures = showAllFailures ? Math.min(MAX_VISIBLE_FAILURES, result.failureCount())
+                                                     : Math.min(DEFAULT_VISIBLE_FAILURES, result.failureCount());
             int detailLines = showFailureDetails ? maxVisibleFailures : 0;
             int detailHeight = detailLines == 0 ? 0 : detailLines * FAILURE_DETAIL_LINE_HEIGHT + FAILURE_DETAIL_PADDING;
             int panelHeight = summaryHeight + detailHeight;
 
             graphics.fill(x, listY, x + width, listY + panelHeight, RESULT_BG);
-            String summary = "Last apply: " + lastResult.successCount() + " success";
-            if (lastResult.successCount() != 1) summary += "es";
-            if (lastResult.failureCount() > 0) {
-                summary += ", " + lastResult.failureCount() + " failed";
+            String summary = "Last apply: " + result.successCount() + " success";
+            if (result.successCount() != 1) summary += "es";
+            if (result.failureCount() > 0) {
+                summary += ", " + result.failureCount() + " failed";
             }
             // Show timing info for large batch operations
             if (lastApplyTiming != null) {
                 summary += " (" + lastApplyTiming + ")";
             }
-            int summaryColor = lastResult.failureCount() == 0 ? RESULT_SUCCESS_COLOR : RESULT_WARNING_COLOR;
+            int summaryColor = result.failureCount() == 0 ? RESULT_SUCCESS_COLOR : RESULT_WARNING_COLOR;
             graphics.drawString(safeFont, summary, x + TEXT_INSET, listY + DesignTokens.Spacing.SM, summaryColor, false);
 
-            if (lastResult.failureCount() > 0) {
+            if (result.failureCount() > 0) {
                 int failBtnH = FAILURE_BUTTON_HEIGHT;
                 failureToggleRect = new ResponsiveLayout.Rect(x + width - FAILURE_TOGGLE_OFFSET_X,
                     listY + FAILURE_BUTTON_Y_OFFSET, FAILURE_TOGGLE_WIDTH, failBtnH);
@@ -541,9 +545,9 @@ public class MultiEditPanel {
                 showAllFailures = false;
             }
 
-            if (showFailureDetails && lastResult.failureCount() > 0) {
+            if (showFailureDetails && result.failureCount() > 0) {
                 int detailY = listY + summaryHeight;
-                List<BatchEditResult.FailureDetail> details = lastResult.failureDetails();
+                List<BatchEditResult.FailureDetail> details = result.failureDetails();
                 int maxLines = Math.min(detailLines, details.size());
                 int maxFailureOffset = Math.max(0, details.size() - maxLines);
                 if (failureScrollOffset > maxFailureOffset) failureScrollOffset = maxFailureOffset;
@@ -584,7 +588,7 @@ public class MultiEditPanel {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (headerRect != null && headerRect.contains(mouseX, mouseY)) {
             expanded = !expanded;
-            if (!expanded) {
+            if (!isExpanded()) {
                 presetDropdownOpen = false;
                 showFailureDetails = false;
                 showAllFailures = false;
@@ -592,7 +596,7 @@ public class MultiEditPanel {
             return true;
         }
 
-        if (!expanded) return false;
+        if (!isExpanded()) return false;
 
         List<ItemEditorDataManager.PresetData> presets = availablePresets();
 
@@ -689,12 +693,14 @@ public class MultiEditPanel {
                 String presetName = presetData.name != null ? presetData.name : "Unnamed";
 
                 // If many items and not in preview mode, show confirmation dialog
-                if (itemCount > CONFIRM_THRESHOLD && !previewOnlyMode && showDialogCallback != null) {
+                // Local capture for null safety
+                java.util.function.Consumer<ConfirmDialog> dialogCallback = showDialogCallback;
+                if (itemCount > CONFIRM_THRESHOLD && !previewOnlyMode && dialogCallback != null) {
                     var dialog = ConfirmDialog.batchApply(itemCount, presetName,
                         () -> doApply(presetData),  // onConfirm
                         () -> {}                     // onCancel
                     );
-                    showDialogCallback.accept(dialog);
+                    dialogCallback.accept(dialog);
                 } else {
                     doApply(presetData);
                 }
@@ -706,7 +712,7 @@ public class MultiEditPanel {
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
-        if (!expanded) return false;
+        if (!isExpanded()) return false;
 
         // Scroll inside preset dropdown
         if (presetDropdownOpen && presetDropdownArea != null && presetDropdownArea.contains(mouseX, mouseY)) {
@@ -733,8 +739,10 @@ public class MultiEditPanel {
         }
 
         // Scroll inside failure details (separate from item list)
-        if (failureDetailsArea != null && failureDetailsArea.contains(mouseX, mouseY) && lastResult != null) {
-            int failureCount = lastResult.failureCount();
+        // Local capture for null safety
+        BatchEditResult result = lastResult;
+        if (failureDetailsArea != null && failureDetailsArea.contains(mouseX, mouseY) && result != null) {
+            int failureCount = result.failureCount();
             int maxVisibleFailures = showAllFailures ? Math.min(MAX_VISIBLE_FAILURES, failureCount)
                                                      : Math.min(DEFAULT_VISIBLE_FAILURES, failureCount);
             int maxOffset = Math.max(0, failureCount - maxVisibleFailures);
@@ -755,7 +763,9 @@ public class MultiEditPanel {
         var dataPreset = new DataPreset(presetData);
         var adapter = ItemEditorPresetManager.INSTANCE;
         // Respect previewOnlyMode: if true, never persist regardless of persistSupplier
-        boolean persist = !previewOnlyMode && (persistSupplier == null || persistSupplier.getAsBoolean());
+        // Local capture for null safety
+        java.util.function.BooleanSupplier supplier = persistSupplier;
+        boolean persist = !previewOnlyMode && (supplier == null || supplier.getAsBoolean());
         // Create undo snapshot before applying (for Ctrl+Z batch undo) - only if persisting
         if (persist) {
             String presetName = presetData.name != null ? presetData.name : "Unnamed";
@@ -791,10 +801,12 @@ public class MultiEditPanel {
     }
 
     private void copyFailuresToClipboard() {
-        if (lastResult == null || lastResult.failureCount() == 0) return;
+        // Local capture for null safety
+        BatchEditResult result = lastResult;
+        if (result == null || result.failureCount() == 0) return;
         try {
             StringBuilder sb = new StringBuilder();
-            for (BatchEditResult.FailureDetail d : lastResult.failureDetails()) {
+            for (BatchEditResult.FailureDetail d : result.failureDetails()) {
                 sb.append(java.util.Objects.requireNonNull(d.toString(), "failure detail cannot be null")).append("\n");
                 if (d.stackTrace != null) {
                     sb.append(d.stackTrace).append("\n");
@@ -811,11 +823,13 @@ public class MultiEditPanel {
     }
 
     private void exportFailuresToFile() {
-        if (lastResult == null || lastResult.failureCount() == 0) return;
+        // Local capture for null safety
+        BatchEditResult result = lastResult;
+        if (result == null || result.failureCount() == 0) return;
         try {
             java.nio.file.Path out = java.nio.file.Paths.get("multiedit_failures_" + System.currentTimeMillis() + ".log");
             try (java.io.BufferedWriter w = java.nio.file.Files.newBufferedWriter(out)) {
-                for (BatchEditResult.FailureDetail d : lastResult.failureDetails()) {
+                for (BatchEditResult.FailureDetail d : result.failureDetails()) {
                     w.write(d.toString()); w.newLine();
                     if (d.stackTrace != null) {
                         w.write(d.stackTrace); w.newLine();

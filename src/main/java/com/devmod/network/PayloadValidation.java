@@ -1,6 +1,7 @@
 package com.devmod.network;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -334,9 +335,9 @@ public final class PayloadValidation {
 
             // Disconnect the player with a message
             player.connection.disconnect(
-                net.minecraft.network.chat.Component.literal(
+                Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
                     "Disconnected: Too many invalid network requests. Please rejoin."
-                )
+                ))
             );
 
             // Clean up tracking state

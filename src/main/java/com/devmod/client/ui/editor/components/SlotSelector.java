@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
@@ -66,10 +67,10 @@ public final class SlotSelector {
     // ═══════════════════════════════════════════════════════════════
 
     public record SlotInfo(
-        EquipmentSlot slot,
-        String label,
-        String shortLabel,
-        ItemStack item
+        @Nonnull EquipmentSlot slot,
+        @Nonnull String label,
+        @Nonnull String shortLabel,
+        @Nonnull ItemStack item
     ) {}
 
     // ═══════════════════════════════════════════════════════════════
@@ -107,20 +108,23 @@ public final class SlotSelector {
         slots.clear();
         slotBounds.clear();
 
+        ItemStack empty = Objects.requireNonNull(ItemStack.EMPTY, "EMPTY cannot be null");
         if (type == SlotType.ARMOR) {
-            slots.add(new SlotInfo(EquipmentSlot.HEAD, LABEL_HELMET, SHORT_LABEL_HEAD, ItemStack.EMPTY));
-            slots.add(new SlotInfo(EquipmentSlot.CHEST, LABEL_CHESTPLATE, SHORT_LABEL_CHEST, ItemStack.EMPTY));
-            slots.add(new SlotInfo(EquipmentSlot.LEGS, LABEL_LEGGINGS, SHORT_LABEL_LEGS, ItemStack.EMPTY));
-            slots.add(new SlotInfo(EquipmentSlot.FEET, LABEL_BOOTS, SHORT_LABEL_FEET, ItemStack.EMPTY));
+            slots.add(new SlotInfo(EquipmentSlot.HEAD, LABEL_HELMET, SHORT_LABEL_HEAD, empty));
+            slots.add(new SlotInfo(EquipmentSlot.CHEST, LABEL_CHESTPLATE, SHORT_LABEL_CHEST, empty));
+            slots.add(new SlotInfo(EquipmentSlot.LEGS, LABEL_LEGGINGS, SHORT_LABEL_LEGS, empty));
+            slots.add(new SlotInfo(EquipmentSlot.FEET, LABEL_BOOTS, SHORT_LABEL_FEET, empty));
         } else {
-            slots.add(new SlotInfo(EquipmentSlot.MAINHAND, LABEL_MAIN_HAND, SHORT_LABEL_MAIN_HAND, ItemStack.EMPTY));
-            slots.add(new SlotInfo(EquipmentSlot.OFFHAND, LABEL_OFF_HAND, SHORT_LABEL_OFF_HAND, ItemStack.EMPTY));
+            slots.add(new SlotInfo(EquipmentSlot.MAINHAND, LABEL_MAIN_HAND, SHORT_LABEL_MAIN_HAND, empty));
+            slots.add(new SlotInfo(EquipmentSlot.OFFHAND, LABEL_OFF_HAND, SHORT_LABEL_OFF_HAND, empty));
         }
 
         selectedIndex = DEFAULT_SELECTED_INDEX;
     }
 
-    public void setSlotItem(EquipmentSlot slot, ItemStack item) {
+    public void setSlotItem(@Nonnull EquipmentSlot slot, @Nonnull ItemStack item) {
+        Objects.requireNonNull(slot, "slot cannot be null");
+        Objects.requireNonNull(item, "item cannot be null");
         for (int i = 0; i < slots.size(); i++) {
             if (slots.get(i).slot() == slot) {
                 SlotInfo old = slots.get(i);

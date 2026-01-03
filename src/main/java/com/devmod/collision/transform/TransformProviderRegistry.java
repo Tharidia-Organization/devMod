@@ -15,11 +15,6 @@ public final class TransformProviderRegistry {
     @Nullable
     private static volatile TransformProvider clientProvider;
     private static volatile boolean clientProviderChecked = false;
-    @Nonnull
-    private static final TransformProvider SERVER_PROVIDER = Objects.requireNonNull(
-        ServerTransformProvider.INSTANCE,
-        "ServerTransformProvider.INSTANCE"
-    );
 
     /**
      * Gets the transform provider for the current side.
@@ -28,7 +23,7 @@ public final class TransformProviderRegistry {
      */
     @Nonnull
     public static TransformProvider getProvider() {
-        return FMLEnvironment.dist.isClient() ? getClientProvider() : SERVER_PROVIDER;
+        return FMLEnvironment.dist.isClient() ? getClientProvider() : getServerProvider();
     }
 
     /**
@@ -39,7 +34,7 @@ public final class TransformProviderRegistry {
      */
     @Nonnull
     public static TransformProvider getServerProvider() {
-        return SERVER_PROVIDER;
+        return ServerTransformProvider.getInstance();
     }
 
     /**
@@ -62,7 +57,7 @@ public final class TransformProviderRegistry {
                         clientProvider = loadClientProvider();
                     } catch (Exception e) {
                         // Fallback to server provider if client provider fails to load
-                        clientProvider = SERVER_PROVIDER;
+                        clientProvider = getServerProvider();
                     }
                     clientProviderChecked = true;
                 }
@@ -70,7 +65,7 @@ public final class TransformProviderRegistry {
         }
         TransformProvider provider = clientProvider;
         if (provider == null) {
-            provider = SERVER_PROVIDER;
+            provider = getServerProvider();
         }
         return Objects.requireNonNull(provider, "ClientTransformProvider");
     }
@@ -93,7 +88,7 @@ public final class TransformProviderRegistry {
      * Call during world unload or entity cleanup.
      */
     public static void clearAllCaches() {
-        SERVER_PROVIDER.clearAllCaches();
+        getServerProvider().clearAllCaches();
         if (clientProviderChecked && clientProvider != null) {
             clientProvider.clearAllCaches();
         }
@@ -105,7 +100,7 @@ public final class TransformProviderRegistry {
      * @param entityId The entity ID
      */
     public static void clearCache(int entityId) {
-        SERVER_PROVIDER.clearCache(entityId);
+        getServerProvider().clearCache(entityId);
         if (clientProviderChecked && clientProvider != null) {
             clientProvider.clearCache(entityId);
         }

@@ -996,7 +996,7 @@ public class DuckDBBatchWriter {
         if (!running) return;
 
         // P2: Sampling - check if this event should be sampled out
-        if (DuckDBConfig.SAMPLING_ENABLED) {
+        if (DuckDBConfig.isSamplingEnabled()) {
             EventPriority priority = TABLE_PRIORITY.getOrDefault(tableName, EventPriority.NORMAL);
             if (!shouldSampleEvent(priority)) {
                 sampledOutCount.incrementAndGet();
@@ -1087,10 +1087,10 @@ public class DuckDBBatchWriter {
      */
     private boolean shouldSampleEvent(EventPriority priority) {
         double sampleRate = switch (priority) {
-            case CRITICAL -> DuckDBConfig.SAMPLE_RATE_CRITICAL;
-            case HIGH -> DuckDBConfig.SAMPLE_RATE_HIGH;
-            case NORMAL -> DuckDBConfig.SAMPLE_RATE_NORMAL;
-            case LOW -> DuckDBConfig.SAMPLE_RATE_LOW;
+            case CRITICAL -> DuckDBConfig.sampleRateCritical();
+            case HIGH -> DuckDBConfig.sampleRateHigh();
+            case NORMAL -> DuckDBConfig.sampleRateNormal();
+            case LOW -> DuckDBConfig.sampleRateLow();
         };
 
         // Fast path: always include if rate is 1.0
@@ -1283,7 +1283,10 @@ public class DuckDBBatchWriter {
             // Re-queue batch only for transient errors (permanent errors = data loss acceptable)
             if (errorType == DuckDBErrorClassifier.ErrorType.TRANSIENT && batch != null && !batch.isEmpty()) {
                 for (Object[] row : batch) {
-                    queue.offer(row);
+                    if (!queue.offer(row)) {
+                        droppedInserts.incrementAndGet();
+                        droppedByQueueFull.incrementAndGet();
+                    }
                 }
                 LOGGER.debug("[DuckDB] Re-queued {} rows after transient error", batch.size());
             }
@@ -1804,11 +1807,11 @@ public class DuckDBBatchWriter {
      */
     public SamplingConfig getSamplingConfig() {
         return new SamplingConfig(
-            DuckDBConfig.SAMPLING_ENABLED,
-            DuckDBConfig.SAMPLE_RATE_CRITICAL,
-            DuckDBConfig.SAMPLE_RATE_HIGH,
-            DuckDBConfig.SAMPLE_RATE_NORMAL,
-            DuckDBConfig.SAMPLE_RATE_LOW
+            DuckDBConfig.isSamplingEnabled(),
+            DuckDBConfig.sampleRateCritical(),
+            DuckDBConfig.sampleRateHigh(),
+            DuckDBConfig.sampleRateNormal(),
+            DuckDBConfig.sampleRateLow()
         );
     }
 

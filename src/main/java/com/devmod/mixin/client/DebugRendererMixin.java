@@ -38,39 +38,39 @@ public class DebugRendererMixin {
     void devmod_render(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource.BufferSource bufferSource,
                        double camX, double camY, double camZ, @Nonnull CallbackInfo ci) {
 
-        if (DebugRenderBools.ENTITY_PATHING && this.pathfindingRenderer != null) {
+        if (DebugRenderBools.isEntityPathing() && this.pathfindingRenderer != null) {
             this.pathfindingRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.ENTITY_GOALS && this.goalSelectorRenderer != null) {
+        if (DebugRenderBools.isEntityGoals() && this.goalSelectorRenderer != null) {
             this.goalSelectorRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.RAIDS && this.raidDebugRenderer != null) {
+        if (DebugRenderBools.isRaids() && this.raidDebugRenderer != null) {
             this.raidDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.ENTITY_BRAINS && this.brainDebugRenderer != null) {
+        if (DebugRenderBools.isEntityBrains() && this.brainDebugRenderer != null) {
             this.brainDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if ((DebugRenderBools.BEES || DebugRenderBools.BEE_HIVES) && this.beeDebugRenderer != null) {
+        if ((DebugRenderBools.isBees() || DebugRenderBools.isBeeHives()) && this.beeDebugRenderer != null) {
             this.beeDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.GAME_EVENTS && this.gameEventListenerRenderer != null) {
+        if (DebugRenderBools.isGameEvents() && this.gameEventListenerRenderer != null) {
             this.gameEventListenerRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.STRUCTURES && this.structureRenderer != null) {
+        if (DebugRenderBools.isStructures() && this.structureRenderer != null) {
             this.structureRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.POI && this.villageSectionsDebugRenderer != null) {
+        if (DebugRenderBools.isPoi() && this.villageSectionsDebugRenderer != null) {
             this.villageSectionsDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
 
-        if (DebugRenderBools.BREEZE && this.breezeDebugRenderer != null) {
+        if (DebugRenderBools.isBreeze() && this.breezeDebugRenderer != null) {
             this.breezeDebugRenderer.render(poseStack, bufferSource, camX, camY, camZ);
         }
     }

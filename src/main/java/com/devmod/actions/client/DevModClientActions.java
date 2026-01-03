@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
 import net.minecraft.network.chat.Component;
@@ -53,6 +54,7 @@ import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.overlay.ImpactHudPresets;
 import com.devmod.client.overlay.ImpactVFX;
 import com.devmod.client.overlay.OnboardingOverlay;
+import com.devmod.client.overlay.PartyHudOverlay;
 import com.devmod.client.overlay.QuickHelpOverlay;
 import com.devmod.client.overlay.SkillEfficacyOverlay;
 import com.devmod.client.panels.context.ContextDetector;
@@ -830,6 +832,22 @@ public final class DevModClientActions {
             })
             .build());
 
+        // Controller-level toggle (OFF vs user preferred mode)
+        ActionRegistry.register(RadialAction.builder(ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE)
+            .labelKey("devmod.action.impact_controller")
+            .descriptionKey("devmod.action.impact_controller.desc")
+            .category(ActionCategory.COMBAT)
+            .menuPath("Root/Combat/Impact HUD/Quick Toggle")
+            .icon(Items.LEVER)
+            .toggle(context -> ImpactHudController.INSTANCE.isEnabled())
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                ImpactHudController.INSTANCE.toggle();
+                String status = ImpactHudController.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                context.sendSuccess(I18n.translate("devmod.impact.controller_status", status), true);
+            })
+            .build());
+
         ActionRegistry.register(RadialAction.builder(ActionIds.HUD_IMPACT_3D_TOGGLE)
             .labelKey("devmod.action.impact_hud_3d")
             .descriptionKey("devmod.action.impact_hud_3d.desc")
@@ -921,16 +939,16 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Overlays/Body Parts")
             .icon(Items.ARMOR_STAND)
-            .toggle(context -> ModConfig.showBodyPartBoxes)
+            .toggle(context -> ModConfig.isShowBodyPartBoxes())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
-                ModConfig.showBodyPartBoxes = !ModConfig.showBodyPartBoxes;
-                Config.SHOW_BODY_PART_BOXES.set(ModConfig.showBodyPartBoxes);
-                if (ModConfig.showBodyPartBoxes && !ModConfig.showRender) {
-                    ModConfig.showRender = true;
+                ModConfig.setShowBodyPartBoxes(!ModConfig.isShowBodyPartBoxes());
+                Config.SHOW_BODY_PART_BOXES.set(ModConfig.isShowBodyPartBoxes());
+                if (ModConfig.isShowBodyPartBoxes() && !ModConfig.isShowRender()) {
+                    ModConfig.setShowRender(true);
                 }
                 SettingsManager.INSTANCE.markDirty();
-                String status = ModConfig.showBodyPartBoxes ? "§aON" : "§cOFF";
+                String status = ModConfig.isShowBodyPartBoxes() ? "§aON" : "§cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.body_parts_status", status), true);
             })
             .build());
@@ -961,10 +979,10 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Native/Entity Pathing")
             .icon(Items.LEAD)
-            .toggle(context -> DebugRenderBools.ENTITY_PATHING)
+            .toggle(context -> DebugRenderBools.isEntityPathing())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> DevModClientActions.toggleNativeDebug(context, DebugFeature.ENTITY_PATHING,
-                () -> DebugRenderBools.ENTITY_PATHING))
+                DebugRenderBools::isEntityPathing))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_NATIVE_ENTITY_GOALS_TOGGLE)
@@ -973,10 +991,10 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Native/Entity Goals")
             .icon(Items.WRITABLE_BOOK)
-            .toggle(context -> DebugRenderBools.ENTITY_GOALS)
+            .toggle(context -> DebugRenderBools.isEntityGoals())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> DevModClientActions.toggleNativeDebug(context, DebugFeature.ENTITY_GOALS,
-                () -> DebugRenderBools.ENTITY_GOALS))
+                DebugRenderBools::isEntityGoals))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_NATIVE_ENTITY_BRAINS_TOGGLE)
@@ -985,10 +1003,10 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Native/Entity Brains")
             .icon(Items.ENDER_PEARL)
-            .toggle(context -> DebugRenderBools.ENTITY_BRAINS)
+            .toggle(context -> DebugRenderBools.isEntityBrains())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> DevModClientActions.toggleNativeDebug(context, DebugFeature.ENTITY_BRAINS,
-                () -> DebugRenderBools.ENTITY_BRAINS))
+                DebugRenderBools::isEntityBrains))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_NATIVE_POI_TOGGLE)
@@ -997,10 +1015,10 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Native/POI")
             .icon(Items.BELL)
-            .toggle(context -> DebugRenderBools.POI)
+            .toggle(context -> DebugRenderBools.isPoi())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> DevModClientActions.toggleNativeDebug(context, DebugFeature.POI,
-                () -> DebugRenderBools.POI))
+                DebugRenderBools::isPoi))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_NATIVE_RAIDS_TOGGLE)
@@ -1009,10 +1027,10 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Native/Raids")
             .icon(Items.IRON_SWORD)
-            .toggle(context -> DebugRenderBools.RAIDS)
+            .toggle(context -> DebugRenderBools.isRaids())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> DevModClientActions.toggleNativeDebug(context, DebugFeature.RAIDS,
-                () -> DebugRenderBools.RAIDS))
+                DebugRenderBools::isRaids))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_NATIVE_BEES_TOGGLE)
@@ -1021,10 +1039,10 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Native/Bees")
             .icon(Items.HONEYCOMB)
-            .toggle(context -> DebugRenderBools.BEES)
+            .toggle(context -> DebugRenderBools.isBees())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> DevModClientActions.toggleNativeDebug(context, DebugFeature.BEES,
-                () -> DebugRenderBools.BEES))
+                DebugRenderBools::isBees))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_NATIVE_GAME_EVENTS_TOGGLE)
@@ -1033,10 +1051,10 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Native/Game Events")
             .icon(Items.SCULK_SENSOR)
-            .toggle(context -> DebugRenderBools.GAME_EVENTS)
+            .toggle(context -> DebugRenderBools.isGameEvents())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> DevModClientActions.toggleNativeDebug(context, DebugFeature.GAME_EVENTS,
-                () -> DebugRenderBools.GAME_EVENTS))
+                DebugRenderBools::isGameEvents))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_NATIVE_STRUCTURES_TOGGLE)
@@ -1045,10 +1063,10 @@ public final class DevModClientActions {
             .category(ActionCategory.DEBUG)
             .menuPath("Root/Debug/Native/Structures")
             .icon(Items.STRUCTURE_BLOCK)
-            .toggle(context -> DebugRenderBools.STRUCTURES)
+            .toggle(context -> DebugRenderBools.isStructures())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> DevModClientActions.toggleNativeDebug(context, DebugFeature.STRUCTURE_GENERATIONS,
-                () -> DebugRenderBools.STRUCTURES))
+                DebugRenderBools::isStructures))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE)
@@ -1067,7 +1085,7 @@ public final class DevModClientActions {
                     SettingsManager.INSTANCE.markDirty();
                     Component overlayName = I18n.translate("devmod.radial.item.light_levels");
                     Component warning = I18n.translate("devmod.render.overlay_perf_warning", overlayName)
-                        .withStyle(style -> style.withColor(0xFFAA00));
+                        .withStyle(ChatFormatting.GOLD);
                     context.sendSuccess(warning, true);
                     return;
                 }
@@ -1240,6 +1258,38 @@ public final class DevModClientActions {
                 RoomBoundsVisualizer.INSTANCE.reload();
                 int roomCount = RoomBoundsVisualizer.INSTANCE.getRoomCount();
                 context.sendSuccess(I18n.translate("devmod.render.room_bounds_reloaded", roomCount), true);
+            })
+            .build());
+
+        // Gap detection toggle for room bounds
+        ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_ROOM_BOUNDS_GAPS_TOGGLE)
+            .labelKey("devmod.action.room_bounds.gaps")
+            .descriptionKey("devmod.action.room_bounds.gaps.desc")
+            .category(ActionCategory.DEBUG)
+            .menuPath("Root/Debug/Spatial/Gap Detection")
+            .icon(Items.BARRIER)
+            .toggle(context -> RoomBoundsVisualizer.INSTANCE.isShowingGaps())
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                RoomBoundsVisualizer.INSTANCE.toggleGapDetection();
+                SettingsManager.INSTANCE.markDirty();
+                String status = RoomBoundsVisualizer.INSTANCE.isShowingGaps() ? "§aON" : "§cOFF";
+                int gapCount = RoomBoundsVisualizer.INSTANCE.getGapCount();
+                context.sendSuccess(I18n.translate("devmod.render.room_gaps_status", status, gapCount), true);
+            })
+            .build());
+
+        // Clear all rooms
+        ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_ROOM_BOUNDS_CLEAR)
+            .labelKey("devmod.action.room_bounds.clear")
+            .descriptionKey("devmod.action.room_bounds.clear.desc")
+            .category(ActionCategory.DEBUG)
+            .menuPath("Root/Debug/Spatial/Clear Rooms")
+            .icon(Items.TNT)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                RoomBoundsVisualizer.INSTANCE.clearRooms();
+                context.sendSuccess(I18n.translate("devmod.render.room_bounds_cleared"), true);
             })
             .build());
 
@@ -1434,7 +1484,7 @@ public final class DevModClientActions {
                     SettingsManager.INSTANCE.markDirty();
                     Component overlayName = I18n.translate("devmod.radial.item.spawnability");
                     Component warning = I18n.translate("devmod.render.overlay_perf_warning", overlayName)
-                        .withStyle(style -> style.withColor(0xFFAA00));
+                        .withStyle(ChatFormatting.GOLD);
                     context.sendSuccess(warning, true);
                     return;
                 }
@@ -1598,6 +1648,21 @@ public final class DevModClientActions {
                 EnduranceQuestOverlay.toggleDetails();
                 String detailStatus = EnduranceQuestOverlay.isShowingDetails() ? "§aDetailed" : "§7Compact";
                 context.sendSuccess(I18n.translate("devmod.render.endurance_details", detailStatus), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.HUD_PARTY_TOGGLE)
+            .labelKey("devmod.radial.item.party_hud")
+            .descriptionKey("devmod.radial.item.party_hud.desc")
+            .category(ActionCategory.ENDURANCE)
+            .menuPath("Root/Endurance/HUD")
+            .icon(Items.PLAYER_HEAD)
+            .toggle(context -> PartyHudOverlay.isEnabled())
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                PartyHudOverlay.toggle();
+                String status = PartyHudOverlay.isEnabled() ? "§aON" : "§cOFF";
+                context.sendSuccess(I18n.translate("devmod.render.party_hud_status", status), true);
             })
             .build());
     }
@@ -2007,13 +2072,14 @@ public final class DevModClientActions {
             .category(ActionCategory.CONFIG)
             .menuPath("Root/Config/Game Design/Systems/Resonance")
             .icon(Items.LIGHTNING_ROD)
-            .toggle(context -> configMgr.getGlobalConfig().resonance.enabled)
+            .toggle(context -> configMgr.getGlobalConfig().getResonance().enabled)
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var config = configMgr.getGlobalConfig();
-                config.resonance.enabled = !config.resonance.enabled;
+                var resonance = config.getResonance();
+                resonance.enabled = !resonance.enabled;
                 configMgr.markDirty();
-                String status = config.resonance.enabled ? "enabled" : "disabled";
+                String status = resonance.enabled ? "enabled" : "disabled";
                 context.sendSuccess(I18n.translate("devmod.gamedesign.resonance." + status), true);
             })
             .build());
@@ -2025,13 +2091,14 @@ public final class DevModClientActions {
             .category(ActionCategory.CONFIG)
             .menuPath("Root/Config/Game Design/Systems/Contracts")
             .icon(Items.PAPER)
-            .toggle(context -> configMgr.getGlobalConfig().contracts.enabled)
+            .toggle(context -> configMgr.getGlobalConfig().getContracts().enabled)
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var config = configMgr.getGlobalConfig();
-                config.contracts.enabled = !config.contracts.enabled;
+                var contracts = config.getContracts();
+                contracts.enabled = !contracts.enabled;
                 configMgr.markDirty();
-                String status = config.contracts.enabled ? "enabled" : "disabled";
+                String status = contracts.enabled ? "enabled" : "disabled";
                 context.sendSuccess(I18n.translate("devmod.gamedesign.contracts." + status), true);
             })
             .build());
@@ -2043,13 +2110,14 @@ public final class DevModClientActions {
             .category(ActionCategory.CONFIG)
             .menuPath("Root/Config/Game Design/Systems/Signature Weapons")
             .icon(Items.DIAMOND_SWORD)
-            .toggle(context -> configMgr.getGlobalConfig().signatureWeapons.enabled)
+            .toggle(context -> configMgr.getGlobalConfig().getSignatureWeapons().enabled)
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var config = configMgr.getGlobalConfig();
-                config.signatureWeapons.enabled = !config.signatureWeapons.enabled;
+                var signatureWeapons = config.getSignatureWeapons();
+                signatureWeapons.enabled = !signatureWeapons.enabled;
                 configMgr.markDirty();
-                String status = config.signatureWeapons.enabled ? "enabled" : "disabled";
+                String status = signatureWeapons.enabled ? "enabled" : "disabled";
                 context.sendSuccess(I18n.translate("devmod.gamedesign.signature_weapons." + status), true);
             })
             .build());
@@ -2061,13 +2129,14 @@ public final class DevModClientActions {
             .category(ActionCategory.CONFIG)
             .menuPath("Root/Config/Game Design/Systems/Nemesis")
             .icon(Items.WITHER_SKELETON_SKULL)
-            .toggle(context -> configMgr.getGlobalConfig().nemesis.enabled)
+            .toggle(context -> configMgr.getGlobalConfig().getNemesis().enabled)
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var config = configMgr.getGlobalConfig();
-                config.nemesis.enabled = !config.nemesis.enabled;
+                var nemesis = config.getNemesis();
+                nemesis.enabled = !nemesis.enabled;
                 configMgr.markDirty();
-                String status = config.nemesis.enabled ? "enabled" : "disabled";
+                String status = nemesis.enabled ? "enabled" : "disabled";
                 context.sendSuccess(I18n.translate("devmod.gamedesign.nemesis." + status), true);
             })
             .build());
@@ -2079,13 +2148,14 @@ public final class DevModClientActions {
             .category(ActionCategory.CONFIG)
             .menuPath("Root/Config/Game Design/Systems/Tide")
             .icon(Items.PRISMARINE_SHARD)
-            .toggle(context -> configMgr.getGlobalConfig().tide.enabled)
+            .toggle(context -> configMgr.getGlobalConfig().getTide().enabled)
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var config = configMgr.getGlobalConfig();
-                config.tide.enabled = !config.tide.enabled;
+                var tide = config.getTide();
+                tide.enabled = !tide.enabled;
                 configMgr.markDirty();
-                String status = config.tide.enabled ? "enabled" : "disabled";
+                String status = tide.enabled ? "enabled" : "disabled";
                 context.sendSuccess(I18n.translate("devmod.gamedesign.tide." + status), true);
             })
             .build());
@@ -2450,10 +2520,8 @@ public final class DevModClientActions {
 
     private static void playUiClick(float pitch) {
         Minecraft mc = Minecraft.getInstance();
-        net.minecraft.sounds.SoundEvent soundEvent = net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value();
-        if (soundEvent == null) {
-            return;
-        }
+        net.minecraft.sounds.SoundEvent soundEvent = java.util.Objects.requireNonNull(
+            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), "UI_BUTTON_CLICK sound");
         net.minecraft.client.resources.sounds.SoundInstance soundInstance =
             net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(soundEvent, 1.0f, pitch);
         if (soundInstance != null) {
@@ -2579,10 +2647,6 @@ public final class DevModClientActions {
 
     private static void openArenaQuickTestWizard(ActionContext context) {
         ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
-        if (registry == null) {
-            context.sendFailure(Component.translatable("devmod.action.arena.quick_test_wizard.missing_registry"));
-            return;
-        }
         com.devmod.client.arena.ui.ArenaTestWizard.open(registry, config -> {
             Integer playerCount = config.playerCountOverride();
             if (playerCount != null && playerCount > 0) {
@@ -2669,17 +2733,17 @@ public final class DevModClientActions {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() != null) {
             if (enabled) {
-                toggleNativeIfNeeded(DebugFeature.ENTITY_PATHING, DebugRenderBools.ENTITY_PATHING, true);
-                toggleNativeIfNeeded(DebugFeature.ENTITY_GOALS, DebugRenderBools.ENTITY_GOALS, true);
+                toggleNativeIfNeeded(DebugFeature.ENTITY_PATHING, DebugRenderBools.isEntityPathing(), true);
+                toggleNativeIfNeeded(DebugFeature.ENTITY_GOALS, DebugRenderBools.isEntityGoals(), true);
             } else {
-                toggleNativeIfNeeded(DebugFeature.ENTITY_PATHING, DebugRenderBools.ENTITY_PATHING, false);
-                toggleNativeIfNeeded(DebugFeature.ENTITY_GOALS, DebugRenderBools.ENTITY_GOALS, false);
-                toggleNativeIfNeeded(DebugFeature.ENTITY_BRAINS, DebugRenderBools.ENTITY_BRAINS, false);
-                toggleNativeIfNeeded(DebugFeature.POI, DebugRenderBools.POI, false);
-                toggleNativeIfNeeded(DebugFeature.RAIDS, DebugRenderBools.RAIDS, false);
-                toggleNativeIfNeeded(DebugFeature.BEES, DebugRenderBools.BEES, false);
-                toggleNativeIfNeeded(DebugFeature.GAME_EVENTS, DebugRenderBools.GAME_EVENTS, false);
-                toggleNativeIfNeeded(DebugFeature.STRUCTURE_GENERATIONS, DebugRenderBools.STRUCTURES, false);
+                toggleNativeIfNeeded(DebugFeature.ENTITY_PATHING, DebugRenderBools.isEntityPathing(), false);
+                toggleNativeIfNeeded(DebugFeature.ENTITY_GOALS, DebugRenderBools.isEntityGoals(), false);
+                toggleNativeIfNeeded(DebugFeature.ENTITY_BRAINS, DebugRenderBools.isEntityBrains(), false);
+                toggleNativeIfNeeded(DebugFeature.POI, DebugRenderBools.isPoi(), false);
+                toggleNativeIfNeeded(DebugFeature.RAIDS, DebugRenderBools.isRaids(), false);
+                toggleNativeIfNeeded(DebugFeature.BEES, DebugRenderBools.isBees(), false);
+                toggleNativeIfNeeded(DebugFeature.GAME_EVENTS, DebugRenderBools.isGameEvents(), false);
+                toggleNativeIfNeeded(DebugFeature.STRUCTURE_GENERATIONS, DebugRenderBools.isStructures(), false);
             }
         }
 

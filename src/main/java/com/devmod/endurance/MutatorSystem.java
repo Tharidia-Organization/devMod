@@ -40,10 +40,10 @@ public class MutatorSystem {
      * Mutator category determines reward scaling.
      */
     public enum MutatorCategory {
-        POSITIVE("Blessing", 0x4ade80, 0.8f),   // Easier, less rewards
-        NEGATIVE("Curse", 0xFF6B6B, 1.5f),       // Harder, more rewards
-        NEUTRAL("Twist", 0x60a5fa, 1.0f),        // Different, same rewards
-        CHAOTIC("Chaos", 0xFFAA00, 1.25f);       // Unpredictable
+        POSITIVE("Blessing", EnduranceColors.Mutator.POSITIVE, 0.8f),  // Easier, less rewards
+        NEGATIVE("Curse", EnduranceColors.Mutator.NEGATIVE, 1.5f),     // Harder, more rewards
+        NEUTRAL("Twist", EnduranceColors.Mutator.NEUTRAL, 1.0f),       // Different, same rewards
+        CHAOTIC("Chaos", EnduranceColors.Mutator.CHAOTIC, 1.25f);      // Unpredictable
 
         public final String displayName;
         public final int color;
@@ -199,6 +199,9 @@ public class MutatorSystem {
                 // Points
                 case "double_points" -> pointsMultiplier *= 2.0f;
                 case "half_points" -> pointsMultiplier *= 0.5f;
+                default -> {
+                    // Unknown mutator - no effect
+                }
             }
         }
 

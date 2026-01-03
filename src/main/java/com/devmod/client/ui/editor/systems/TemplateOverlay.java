@@ -58,7 +58,7 @@ public class TemplateOverlay extends BaseOverlay {
 
     // VirtualizedList for template list - uses standard scroll system
     private final VirtualizedList<ItemEditorDataManager.TemplateData> templateList =
-        new VirtualizedList<ItemEditorDataManager.TemplateData>("template_list")
+        new VirtualizedList<ItemEditorDataManager.TemplateData>()
             .rowHeight(LIST_ROW_HEIGHT)
             .onSelect(t -> {})  // Selection handled internally
             .onDoubleClick(t -> {
@@ -98,6 +98,8 @@ public class TemplateOverlay extends BaseOverlay {
         this.filterCategory = filterCategoryLabel;
         this.searchQuery = "";
         this.lastSearchQuery = "";
+        templateList.resetScroll();
+        templateList.clearSelection();
         updateFilteredList();
     }
 
@@ -124,6 +126,8 @@ public class TemplateOverlay extends BaseOverlay {
         this.searchQuery = "";
         this.lastSearchQuery = "";
         this.searchFocused = false;
+        templateList.clearSelection();
+        templateList.resetScroll();
         updateFilteredList();
     }
 
@@ -156,8 +160,11 @@ public class TemplateOverlay extends BaseOverlay {
         // Header
         Typography.drawText(graphics, font, TITLE_TEXT, panelX + ScaledCoord.scaleDim(DesignTokens.Spacing.LG),
             panelY + ScaledCoord.scaleDim(TITLE_OFFSET_Y), DesignTokens.Text.TITLE(), textScale);
-        // Filter label
+        // Filter label with item count
         String filterLabel = filterCategory == null ? FILTER_ALL_LABEL : (FILTER_PREFIX + filterCategory);
+        if (!templateList.isEmpty()) {
+            filterLabel += " (" + templateList.getItemCount() + ")";
+        }
         Typography.drawText(graphics, font, filterLabel, panelX + ScaledCoord.scaleDim(DesignTokens.Spacing.LG),
             panelY + ScaledCoord.scaleDim(DesignTokens.Spacing.XXL), DesignTokens.Text.SECONDARY(), textScale);
 

@@ -28,15 +28,15 @@ public class DebugPanel {
     private static final int PANEL_PADDING = 6;
     private static final int LINE_HEIGHT = 12;
     private static final int NBT_TOGGLE_WIDTH = 90;
-    private static final int NBT_TOGGLE_COLOR = 0x88CCFF;
-    private static final int NBT_SUMMARY_COLOR = 0xFFCCAA;
-    private static final int HEADER_TEXT_COLOR = 0xFFFFFF;
-    private static final int ITEM_TEXT_COLOR = 0xDDDDDD;
-    private static final int ITEM_DETAIL_COLOR = 0xCCCCCC;
-    private static final int NBT_COUNT_COLOR = 0x8899AA;
-    private static final int SOURCE_TEXT_COLOR = 0xCCDDFF;
-    private static final int LOG_TEXT_COLOR = 0xAAAAAA;
-    private static final int PANEL_BG = 0xE0101020;
+    private static final int NBT_TOGGLE_COLOR = DesignTokens.DebugPanel.NBT_TOGGLE;
+    private static final int NBT_SUMMARY_COLOR = DesignTokens.DebugPanel.NBT_SUMMARY;
+    private static final int HEADER_TEXT_COLOR = DesignTokens.DebugPanel.HEADER_TEXT;
+    private static final int ITEM_TEXT_COLOR = DesignTokens.DebugPanel.ITEM_TEXT;
+    private static final int ITEM_DETAIL_COLOR = DesignTokens.DebugPanel.ITEM_DETAIL;
+    private static final int NBT_COUNT_COLOR = DesignTokens.DebugPanel.NBT_COUNT;
+    private static final int SOURCE_TEXT_COLOR = DesignTokens.DebugPanel.SOURCE_TEXT;
+    private static final int LOG_TEXT_COLOR = DesignTokens.DebugPanel.LOG_TEXT;
+    private static final int PANEL_BG = DesignTokens.DebugPanel.PANEL_BG;
     private static final int LOG_TITLE_GAP = 6;
     private static final int LOG_MAX_LINES = 8;
     private static final int LOG_TRUNCATE_LIMIT = 60;
@@ -168,16 +168,16 @@ public class DebugPanel {
     public static List<StatDiff> buildWeaponDiffs(WeaponStats current, WeaponStats baseline) {
         if (current == null || baseline == null) return List.of();
         List<StatDiff> diffs = new ArrayList<>();
-        diffs.add(new StatDiff("attackDamage", baseline.attackDamage, current.attackDamage));
-        diffs.add(new StatDiff("attackSpeed", baseline.attackSpeed, current.attackSpeed));
-        diffs.add(new StatDiff("attackReach", baseline.attackReach, current.attackReach));
-        diffs.add(new StatDiff("attackKnockback", baseline.attackKnockback, current.attackKnockback));
-        diffs.add(new StatDiff("armorPenetration", baseline.armorPenetration, current.armorPenetration));
-        diffs.add(new StatDiff("critChance", baseline.critChance, current.critChance));
-        diffs.add(new StatDiff("critDamage", baseline.critDamage, current.critDamage));
-        diffs.add(new StatDiff("lifesteal", baseline.lifesteal, current.lifesteal));
-        diffs.add(new StatDiff("headMult", baseline.headMult, current.headMult));
-        diffs.add(new StatDiff("bodyMult", baseline.bodyMult, current.bodyMult));
+        diffs.add(new StatDiff("attackDamage", baseline.getAttackDamage(), current.getAttackDamage()));
+        diffs.add(new StatDiff("attackSpeed", baseline.getAttackSpeed(), current.getAttackSpeed()));
+        diffs.add(new StatDiff("attackReach", baseline.getAttackReach(), current.getAttackReach()));
+        diffs.add(new StatDiff("attackKnockback", baseline.getAttackKnockback(), current.getAttackKnockback()));
+        diffs.add(new StatDiff("armorPenetration", baseline.getArmorPenetration(), current.getArmorPenetration()));
+        diffs.add(new StatDiff("critChance", baseline.getCritChance(), current.getCritChance()));
+        diffs.add(new StatDiff("critDamage", baseline.getCritDamage(), current.getCritDamage()));
+        diffs.add(new StatDiff("lifesteal", baseline.getLifesteal(), current.getLifesteal()));
+        diffs.add(new StatDiff("headMult", baseline.getHeadMult(), current.getHeadMult()));
+        diffs.add(new StatDiff("bodyMult", baseline.getBodyMult(), current.getBodyMult()));
         return diffs;
     }
 
@@ -187,15 +187,15 @@ public class DebugPanel {
     public static List<StatDiff> buildArmorDiffs(ArmorStats current, ArmorStats baseline) {
         if (current == null || baseline == null) return List.of();
         List<StatDiff> diffs = new ArrayList<>();
-        diffs.add(new StatDiff("physicalReduction", baseline.physicalReduction, current.physicalReduction));
-        diffs.add(new StatDiff("fireReduction", baseline.fireReduction, current.fireReduction));
-        diffs.add(new StatDiff("magicReduction", baseline.magicReduction, current.magicReduction));
-        diffs.add(new StatDiff("explosionReduction", baseline.explosionReduction, current.explosionReduction));
-        diffs.add(new StatDiff("projectileReduction", baseline.projectileReduction, current.projectileReduction));
-        diffs.add(new StatDiff("armorBonus", baseline.armorBonus, current.armorBonus));
-        diffs.add(new StatDiff("toughnessBonus", baseline.toughnessBonus, current.toughnessBonus));
-        diffs.add(new StatDiff("knockbackResistance", baseline.knockbackResistance, current.knockbackResistance));
-        diffs.add(new StatDiff("thornsPercent", baseline.thornsPercent, current.thornsPercent));
+        diffs.add(new StatDiff("physicalReduction", baseline.getPhysicalReduction(), current.getPhysicalReduction()));
+        diffs.add(new StatDiff("fireReduction", baseline.getFireReduction(), current.getFireReduction()));
+        diffs.add(new StatDiff("magicReduction", baseline.getMagicReduction(), current.getMagicReduction()));
+        diffs.add(new StatDiff("explosionReduction", baseline.getExplosionReduction(), current.getExplosionReduction()));
+        diffs.add(new StatDiff("projectileReduction", baseline.getProjectileReduction(), current.getProjectileReduction()));
+        diffs.add(new StatDiff("armorBonus", baseline.getArmorBonus(), current.getArmorBonus()));
+        diffs.add(new StatDiff("toughnessBonus", baseline.getToughnessBonus(), current.getToughnessBonus()));
+        diffs.add(new StatDiff("knockbackResistance", baseline.getKnockbackResistance(), current.getKnockbackResistance()));
+        diffs.add(new StatDiff("thornsPercent", baseline.getThornsPercent(), current.getThornsPercent()));
         return diffs;
     }
 
@@ -227,10 +227,11 @@ public class DebugPanel {
 
         CompoundTag resolvedTag = null;
 
-        // Toggle hint for NBT view
-        nbtToggleRect = new ResponsiveLayout.Rect(x + pad, curY, NBT_TOGGLE_WIDTH, lineH);
-        graphics.drawString(font, showFullNbt ? NBT_FULL_LABEL : NBT_SUMMARY_LABEL, nbtToggleRect.x(),
-            nbtToggleRect.y(),
+        // Toggle hint for NBT view - use local capture for null safety
+        ResponsiveLayout.Rect toggleRect = new ResponsiveLayout.Rect(x + pad, curY, NBT_TOGGLE_WIDTH, lineH);
+        nbtToggleRect = toggleRect;
+        graphics.drawString(font, showFullNbt ? NBT_FULL_LABEL : NBT_SUMMARY_LABEL, toggleRect.x(),
+            toggleRect.y(),
             NBT_TOGGLE_COLOR, false);
         curY += lineH;
 
@@ -316,7 +317,7 @@ public class DebugPanel {
                 int diffCount = 0;
                 for (StatDiff diff : statDiffs) {
                     if (diffCount >= 6) break; // Limit display to avoid overflow
-                    int color = diff.isDifferent() ? 0xFFCC66 : 0x88FF88; // Yellow for diff, green for match
+                    int color = diff.isDifferent() ? DesignTokens.DebugPanel.DIFF : DesignTokens.DebugPanel.MATCH;
                     graphics.drawString(font, SOURCE_BULLET + diff.format(), x + pad + SUBITEM_INDENT, curY, color, false);
                     curY += lineH;
                     diffCount++;

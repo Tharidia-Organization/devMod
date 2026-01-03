@@ -99,10 +99,10 @@ public class CombatPanel extends FloatingPanel {
      * Gets color based on damage dealt.
      */
     private int getDamageColor(float damage) {
-        if (damage >= 15) return 0xFFFF4444; // Critical red
-        if (damage >= 8) return 0xFFFFAA00;  // High orange
-        if (damage >= 4) return 0xFFFFFF00;  // Medium yellow
-        return 0xFFFFFFFF;                    // Low white
+        if (damage >= 15) return CombatPanelTheme.Damage.CRITICAL;
+        if (damage >= 8) return CombatPanelTheme.Damage.HIGH;
+        if (damage >= 4) return CombatPanelTheme.Damage.MEDIUM;
+        return CombatPanelTheme.Damage.LOW;
     }
 
     @Override

@@ -123,7 +123,7 @@ public final class ContentFilter {
     /**
      * Add a prohibited regex pattern.
      */
-    public void addProhibitedPattern(String regex) {
+    public void addProhibitedPattern(@Nullable String regex) {
         if (regex == null || regex.isBlank()) {
             return;
         }

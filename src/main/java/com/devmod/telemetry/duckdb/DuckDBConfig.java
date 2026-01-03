@@ -1,5 +1,7 @@
 package com.devmod.telemetry.duckdb;
 
+import javax.annotation.Nullable;
+
 /**
  * Configuration for DuckDB telemetry storage.
  *
@@ -34,7 +36,7 @@ public final class DuckDBConfig {
      * If false, falls back to NDJSON only (legacy mode).
      * Override: -Ddevmod.duckdb.enabled=false or DEVMOD_DUCKDB_ENABLED=false
      */
-    public static boolean ENABLED = getBoolean("devmod.duckdb.enabled", "DEVMOD_DUCKDB_ENABLED", true);
+    public static final boolean ENABLED = getBoolean("devmod.duckdb.enabled", "DEVMOD_DUCKDB_ENABLED", true);
 
     /**
      * Enable NDJSON fallback/backup alongside DuckDB.
@@ -47,7 +49,15 @@ public final class DuckDBConfig {
      * - External tools that read NDJSON
      * - Debugging (human-readable format)
      */
-    public static boolean NDJSON_FALLBACK = getBoolean("devmod.duckdb.ndjson_fallback", "DEVMOD_DUCKDB_NDJSON_FALLBACK", false);
+    private static boolean ndjsonFallback = getBoolean("devmod.duckdb.ndjson_fallback", "DEVMOD_DUCKDB_NDJSON_FALLBACK", false);
+
+    public static boolean isNdjsonFallbackEnabled() {
+        return ndjsonFallback;
+    }
+
+    public static void setNdjsonFallbackEnabled(boolean enabled) {
+        ndjsonFallback = enabled;
+    }
 
     /**
      * Enable automatic NDJSON fallback when DuckDB circuit breaker triggers.
@@ -61,54 +71,54 @@ public final class DuckDBConfig {
      * When false and circuit breaker triggers, telemetry is disabled entirely
      * rather than silently enabling NDJSON (which would violate the "DuckDB only" config).
      */
-    public static boolean FALLBACK_ON_ERROR = getBoolean("devmod.duckdb.fallback_on_error", "DEVMOD_DUCKDB_FALLBACK_ON_ERROR", true);
+    public static final boolean FALLBACK_ON_ERROR = getBoolean("devmod.duckdb.fallback_on_error", "DEVMOD_DUCKDB_FALLBACK_ON_ERROR", true);
 
     // ============================================
     // PERFORMANCE TUNING
     // ============================================
 
     /** Number of events to batch before flushing to database */
-    public static int BATCH_SIZE = getInt("devmod.duckdb.batch_size", "DEVMOD_DUCKDB_BATCH_SIZE", 100);
+    public static final int BATCH_SIZE = getInt("devmod.duckdb.batch_size", "DEVMOD_DUCKDB_BATCH_SIZE", 100);
 
     /** Maximum time between flushes in milliseconds */
-    public static long FLUSH_INTERVAL_MS = getLong("devmod.duckdb.flush_interval_ms", "DEVMOD_DUCKDB_FLUSH_INTERVAL_MS", 5000);
+    public static final long FLUSH_INTERVAL_MS = getLong("devmod.duckdb.flush_interval_ms", "DEVMOD_DUCKDB_FLUSH_INTERVAL_MS", 5000);
 
     /** Maximum queue capacity per table (prevents memory overflow) */
-    public static int QUEUE_CAPACITY = getInt("devmod.duckdb.queue_capacity", "DEVMOD_DUCKDB_QUEUE_CAPACITY", 10000);
+    public static final int QUEUE_CAPACITY = getInt("devmod.duckdb.queue_capacity", "DEVMOD_DUCKDB_QUEUE_CAPACITY", 10000);
 
     /** Thread pool size for batch writer (1 is optimal for DuckDB single-writer) */
-    public static int WRITER_THREADS = 1;
+    public static final int WRITER_THREADS = 1;
 
     // ============================================
     // TIMEOUTS & RESILIENCE
     // ============================================
 
     /** Connection timeout in seconds (prevents infinite hang on lock) */
-    public static int CONNECTION_TIMEOUT_SECONDS = getInt("devmod.duckdb.connection_timeout", "DEVMOD_DUCKDB_CONNECTION_TIMEOUT", 30);
+    public static final int CONNECTION_TIMEOUT_SECONDS = getInt("devmod.duckdb.connection_timeout", "DEVMOD_DUCKDB_CONNECTION_TIMEOUT", 30);
 
     /** Query timeout for write operations in seconds */
-    public static int QUERY_TIMEOUT_SECONDS = getInt("devmod.duckdb.query_timeout", "DEVMOD_DUCKDB_QUERY_TIMEOUT", 10);
+    public static final int QUERY_TIMEOUT_SECONDS = getInt("devmod.duckdb.query_timeout", "DEVMOD_DUCKDB_QUERY_TIMEOUT", 10);
 
     /** Query timeout for analytics/read operations in seconds (longer for complex queries) */
-    public static int ANALYTICS_QUERY_TIMEOUT_SECONDS = getInt("devmod.duckdb.analytics_timeout", "DEVMOD_DUCKDB_ANALYTICS_TIMEOUT", 60);
+    public static final int ANALYTICS_QUERY_TIMEOUT_SECONDS = getInt("devmod.duckdb.analytics_timeout", "DEVMOD_DUCKDB_ANALYTICS_TIMEOUT", 60);
 
     /** Maximum connection retry attempts on lock errors */
-    public static int MAX_CONNECTION_RETRIES = getInt("devmod.duckdb.max_retries", "DEVMOD_DUCKDB_MAX_RETRIES", 5);
+    public static final int MAX_CONNECTION_RETRIES = getInt("devmod.duckdb.max_retries", "DEVMOD_DUCKDB_MAX_RETRIES", 5);
 
     /** Initial retry delay in milliseconds (doubles each retry, max 10s) */
-    public static long INITIAL_RETRY_DELAY_MS = getLong("devmod.duckdb.retry_delay_ms", "DEVMOD_DUCKDB_RETRY_DELAY_MS", 1000);
+    public static final long INITIAL_RETRY_DELAY_MS = getLong("devmod.duckdb.retry_delay_ms", "DEVMOD_DUCKDB_RETRY_DELAY_MS", 1000);
 
     /** Checkpoint interval in milliseconds (15 minutes default) */
-    public static long CHECKPOINT_INTERVAL_MS = getLong("devmod.duckdb.checkpoint_interval_ms", "DEVMOD_DUCKDB_CHECKPOINT_INTERVAL_MS", 15 * 60 * 1000);
+    public static final long CHECKPOINT_INTERVAL_MS = getLong("devmod.duckdb.checkpoint_interval_ms", "DEVMOD_DUCKDB_CHECKPOINT_INTERVAL_MS", 15 * 60 * 1000);
 
     /** Disk space check interval in milliseconds during runtime */
-    public static long DISK_CHECK_INTERVAL_MS = getLong("devmod.duckdb.disk_check_interval_ms", "DEVMOD_DUCKDB_DISK_CHECK_INTERVAL_MS", 60_000);
+    public static final long DISK_CHECK_INTERVAL_MS = getLong("devmod.duckdb.disk_check_interval_ms", "DEVMOD_DUCKDB_DISK_CHECK_INTERVAL_MS", 60_000);
 
     /** Maximum WAL size in bytes before forcing checkpoint (300MB) */
-    public static long MAX_WAL_SIZE_BYTES = getLong("devmod.duckdb.max_wal_size", "DEVMOD_DUCKDB_MAX_WAL_SIZE", 300 * 1024 * 1024);
+    public static final long MAX_WAL_SIZE_BYTES = getLong("devmod.duckdb.max_wal_size", "DEVMOD_DUCKDB_MAX_WAL_SIZE", 300 * 1024 * 1024);
 
     /** Minimum free disk space in bytes (100MB) */
-    public static long MIN_DISK_SPACE_BYTES = getLong("devmod.duckdb.min_disk_space", "DEVMOD_DUCKDB_MIN_DISK_SPACE", 100 * 1024 * 1024);
+    public static final long MIN_DISK_SPACE_BYTES = getLong("devmod.duckdb.min_disk_space", "DEVMOD_DUCKDB_MIN_DISK_SPACE", 100 * 1024 * 1024);
 
     // ============================================
     // FILE PATHS
@@ -121,49 +131,49 @@ public final class DuckDBConfig {
      * If the path is absolute, it's used directly.
      * If relative, it's resolved from TELEMETRY_DIR.
      */
-    public static String DB_FILENAME = getString("devmod.duckdb.path", "DEVMOD_DUCKDB_PATH", "devmod_telemetry.duckdb");
+    public static final String DB_FILENAME = getString("devmod.duckdb.path", "DEVMOD_DUCKDB_PATH", "devmod_telemetry.duckdb");
 
     /** Subdirectory within server folder for telemetry data */
-    public static String TELEMETRY_DIR = getString("devmod.duckdb.dir", "DEVMOD_DUCKDB_DIR", "telemetry");
+    public static final String TELEMETRY_DIR = getString("devmod.duckdb.dir", "DEVMOD_DUCKDB_DIR", "telemetry");
 
     // ============================================
     // NETWORK (MULTIPLAYER)
     // ============================================
 
     /** Maximum events per batch packet from client to server */
-    public static int MAX_EVENTS_PER_PACKET = 50;
+    public static final int MAX_EVENTS_PER_PACKET = 50;
 
     /** Client sync interval in ticks (200 = 10 seconds) */
-    public static int CLIENT_SYNC_INTERVAL_TICKS = 200;
+    public static final int CLIENT_SYNC_INTERVAL_TICKS = 200;
 
     /** Maximum events per second allowed from a single client (rate limiting) */
-    public static int MAX_EVENTS_PER_SECOND_PER_CLIENT = 100;
+    public static final int MAX_EVENTS_PER_SECOND_PER_CLIENT = 100;
 
     /** Client-side buffer capacity before oldest events are dropped */
-    public static int CLIENT_BUFFER_CAPACITY = 500;
+    public static final int CLIENT_BUFFER_CAPACITY = 500;
 
     // ============================================
     // SCHEMA VERSION
     // ============================================
 
     /** Current schema version for migration tracking */
-    public static int SCHEMA_VERSION = 11;  // V11: Fix arena_template_errors schema mismatch
+    public static final int SCHEMA_VERSION = 11;  // V11: Fix arena_template_errors schema mismatch
 
     // ============================================
     // DEBUG
     // ============================================
 
     /** Log batch insert timings for performance analysis */
-    public static boolean LOG_BATCH_TIMING = getBoolean("devmod.duckdb.log_batch_timing", "DEVMOD_DUCKDB_LOG_BATCH_TIMING", false);
+    public static final boolean LOG_BATCH_TIMING = getBoolean("devmod.duckdb.log_batch_timing", "DEVMOD_DUCKDB_LOG_BATCH_TIMING", false);
 
     /** Log individual insert operations (very verbose) */
-    public static boolean LOG_INSERTS = getBoolean("devmod.duckdb.log_inserts", "DEVMOD_DUCKDB_LOG_INSERTS", false);
+    public static final boolean LOG_INSERTS = getBoolean("devmod.duckdb.log_inserts", "DEVMOD_DUCKDB_LOG_INSERTS", false);
 
     /** Rate limit interval for warning logs in milliseconds (default 60s) */
-    public static long LOG_RATE_LIMIT_MS = getLong("devmod.duckdb.log_rate_limit_ms", "DEVMOD_DUCKDB_LOG_RATE_LIMIT_MS", 60_000);
+    public static final long LOG_RATE_LIMIT_MS = getLong("devmod.duckdb.log_rate_limit_ms", "DEVMOD_DUCKDB_LOG_RATE_LIMIT_MS", 60_000);
 
     /** Log every N backpressure drops (sampled logging, default 100) */
-    public static int LOG_BACKPRESSURE_SAMPLE_RATE = getInt("devmod.duckdb.log_backpressure_sample", "DEVMOD_DUCKDB_LOG_BACKPRESSURE_SAMPLE", 100);
+    public static final int LOG_BACKPRESSURE_SAMPLE_RATE = getInt("devmod.duckdb.log_backpressure_sample", "DEVMOD_DUCKDB_LOG_BACKPRESSURE_SAMPLE", 100);
 
     // ============================================
     // P2: SAMPLING CONTROLS
@@ -174,28 +184,28 @@ public final class DuckDBConfig {
      * When false, all events are recorded (no sampling).
      * When true, per-category sampling rates apply.
      */
-    public static boolean SAMPLING_ENABLED = getBoolean("devmod.duckdb.sampling_enabled", "DEVMOD_DUCKDB_SAMPLING_ENABLED", true);
+    public static final boolean SAMPLING_ENABLED = getBoolean("devmod.duckdb.sampling_enabled", "DEVMOD_DUCKDB_SAMPLING_ENABLED", true);
 
     /**
      * Sampling rate for LOW priority events (0.0-1.0).
      * Examples: player_snapshots, player_attribute_changes, spatial_heatmaps
      * Default: 10% (0.1) - these are high-volume, low-value events
      */
-    public static double SAMPLE_RATE_LOW = getDouble("devmod.duckdb.sample_rate_low", "DEVMOD_DUCKDB_SAMPLE_RATE_LOW", 0.1);
+    public static final double SAMPLE_RATE_LOW = getDouble("devmod.duckdb.sample_rate_low", "DEVMOD_DUCKDB_SAMPLE_RATE_LOW", 0.1);
 
     /**
      * Sampling rate for NORMAL priority events (0.0-1.0).
      * Examples: player_abilities, spatial_alerts, spatial_room_transitions
      * Default: 50% (0.5) - moderate volume
      */
-    public static double SAMPLE_RATE_NORMAL = getDouble("devmod.duckdb.sample_rate_normal", "DEVMOD_DUCKDB_SAMPLE_RATE_NORMAL", 0.5);
+    public static final double SAMPLE_RATE_NORMAL = getDouble("devmod.duckdb.sample_rate_normal", "DEVMOD_DUCKDB_SAMPLE_RATE_NORMAL", 0.5);
 
     /**
      * Sampling rate for HIGH priority events (0.0-1.0).
      * Examples: combat_spawns, combat_heals, endurance_combos
      * Default: 100% (1.0) - important gameplay events
      */
-    public static double SAMPLE_RATE_HIGH = getDouble("devmod.duckdb.sample_rate_high", "DEVMOD_DUCKDB_SAMPLE_RATE_HIGH", 1.0);
+    public static final double SAMPLE_RATE_HIGH = getDouble("devmod.duckdb.sample_rate_high", "DEVMOD_DUCKDB_SAMPLE_RATE_HIGH", 1.0);
 
     /**
      * Sampling rate for CRITICAL priority events (0.0-1.0).
@@ -203,7 +213,56 @@ public final class DuckDBConfig {
      * Default: 100% (1.0) - NEVER sample critical events
      * Note: This should always be 1.0 - configurable for edge cases only
      */
-    public static double SAMPLE_RATE_CRITICAL = getDouble("devmod.duckdb.sample_rate_critical", "DEVMOD_DUCKDB_SAMPLE_RATE_CRITICAL", 1.0);
+    public static final double SAMPLE_RATE_CRITICAL = getDouble("devmod.duckdb.sample_rate_critical", "DEVMOD_DUCKDB_SAMPLE_RATE_CRITICAL", 1.0);
+
+    @Nullable
+    private static volatile SamplingOverride samplingOverride;
+
+    static void overrideSamplingForTest(boolean enabled, double low, double normal, double high, double critical) {
+        samplingOverride = new SamplingOverride(
+            enabled,
+            clampSamplingRate(low),
+            clampSamplingRate(normal),
+            clampSamplingRate(high),
+            clampSamplingRate(critical)
+        );
+    }
+
+    static void clearSamplingOverride() {
+        samplingOverride = null;
+    }
+
+    static boolean isSamplingEnabled() {
+        SamplingOverride override = samplingOverride;
+        return override != null ? override.enabled() : SAMPLING_ENABLED;
+    }
+
+    static double sampleRateLow() {
+        SamplingOverride override = samplingOverride;
+        return override != null ? override.lowRate() : SAMPLE_RATE_LOW;
+    }
+
+    static double sampleRateNormal() {
+        SamplingOverride override = samplingOverride;
+        return override != null ? override.normalRate() : SAMPLE_RATE_NORMAL;
+    }
+
+    static double sampleRateHigh() {
+        SamplingOverride override = samplingOverride;
+        return override != null ? override.highRate() : SAMPLE_RATE_HIGH;
+    }
+
+    static double sampleRateCritical() {
+        SamplingOverride override = samplingOverride;
+        return override != null ? override.criticalRate() : SAMPLE_RATE_CRITICAL;
+    }
+
+    /**
+     * Enable NDJSON fallback for the current session (circuit-breaker path).
+     */
+    public static void enableNdjsonFallbackForSession() {
+        setNdjsonFallbackEnabled(true);
+    }
 
     // ============================================
     // CONFIG RESOLUTION HELPERS
@@ -295,4 +354,16 @@ public final class DuckDBConfig {
         }
         return defaultValue;
     }
+
+    private static double clampSamplingRate(double value) {
+        return Math.max(0.0, Math.min(1.0, value));
+    }
+
+    private record SamplingOverride(
+        boolean enabled,
+        double lowRate,
+        double normalRate,
+        double highRate,
+        double criticalRate
+    ) {}
 }

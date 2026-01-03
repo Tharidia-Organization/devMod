@@ -50,7 +50,7 @@ public class MobConfigScreenRenderer {
         int headerH = DesignTokens.Spacing.HEADER_HEIGHT;
         for (int i = 0; i < headerH; i++) {
             float t = (float) i / headerH;
-            int color = DesignTokens.lerp(0xFF2A2A42, DesignTokens.Background.HEADER(), t);
+            int color = DesignTokens.lerp(DesignTokens.MobConfig.HEADER_GRADIENT_START, DesignTokens.Background.HEADER(), t);
             graphics.fill(panelX, panelY + i, panelX + PANEL_WIDTH, panelY + i + 1, color);
         }
 
@@ -89,7 +89,7 @@ public class MobConfigScreenRenderer {
             graphics.fill(x, y, x + fillW, y + h, color);
         }
         AxiomRenderer.drawBorder(graphics, x, y, w, h, DesignTokens.Border.MUTED());
-        graphics.drawString(Objects.requireNonNull(font), "§c❤", x + 2, y + 1, 0xFFFFFFFF, false);
+        graphics.drawString(Objects.requireNonNull(font), "§c❤", x + 2, y + 1, DesignTokens.Text.WHITE, false);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -136,7 +136,7 @@ public class MobConfigScreenRenderer {
         // Background gradient
         for (int i = 0; i < boxH; i++) {
             float t = (float) i / boxH;
-            int color = DesignTokens.lerp(0xFF151525, 0xFF1A1A2E, t);
+            int color = DesignTokens.lerp(DesignTokens.MobConfig.SECTION_GRADIENT_START, DesignTokens.MobConfig.SECTION_GRADIENT_END, t);
             graphics.fill(x, y + i, x + boxW, y + i + 1, color);
         }
 
@@ -171,7 +171,7 @@ public class MobConfigScreenRenderer {
         try {
             InventoryScreen.renderEntityInInventory(
                 graphics, centerX, centerY, scale,
-                new Vector3f(0, 0, 0), rotation, null, mob
+                new Vector3f(0, 0, 0), Objects.requireNonNull(rotation, "rotation"), null, mob
             );
         } catch (Exception e) {
             graphics.drawString(safeFont, "Preview", centerX - 20, centerY - 40, DesignTokens.Text.MUTED(), false);
@@ -283,7 +283,7 @@ public class MobConfigScreenRenderer {
 
         float origPercent = maxVal > 0 ? (float) (original / maxVal) : 0f;
         int origMarkerX = trackX + (int) (trackW * Math.min(1, origPercent));
-        graphics.fill(origMarkerX - 1, sliderY, origMarkerX + 1, sliderY + trackH, 0x80FFFFFF);
+        graphics.fill(origMarkerX - 1, sliderY, origMarkerX + 1, sliderY + trackH, DesignTokens.MobConfig.MARKER);
 
         float percent = maxVal > 0 ? (float) (value / maxVal) : 0f;
         int fillW = (int) (trackW * Math.min(1, percent));
@@ -396,7 +396,7 @@ public class MobConfigScreenRenderer {
             int borderColor = selected ? colors.border() : DesignTokens.Border.MUTED();
             AxiomRenderer.drawBorder(graphics, px, py, presetW, presetH, borderColor);
 
-            String name = MobConfigScreenState.PRESET_NAMES.get(i);
+            String name = Objects.requireNonNull(MobConfigScreenState.PRESET_NAMES.get(i), "preset name");
             int textW = safeFont.width(name);
             int textColor = selected ? DesignTokens.Text.WHITE() : DesignTokens.Text.SECONDARY();
             graphics.drawString(safeFont, name, px + (presetW - textW) / 2, py + 4, textColor, false);
@@ -456,8 +456,8 @@ public class MobConfigScreenRenderer {
         }
     }
 
-    public void drawStyledButton(GuiGraphics graphics, int x, int y, int w, int h, String text,
-                                 boolean hovered, int accentColor, boolean enabled) {
+    private void drawStyledButton(GuiGraphics graphics, int x, int y, int w, int h, String text,
+                                  boolean hovered, int accentColor, boolean enabled) {
         int bgColor;
         int accent = accentColor;
         int borderColor;
@@ -496,14 +496,14 @@ public class MobConfigScreenRenderer {
         int bannerWidth = PANEL_WIDTH;
         int bannerHeight = 24;
 
-        int bgColor = DesignTokens.withAlpha(DesignTokens.Accent.ORANGE(), 0xEE);
+        int bgColor = DesignTokens.withAlpha(DesignTokens.Accent.ORANGE(), DesignTokens.Alpha.A93);
         int borderColor = DesignTokens.Accent.ORANGE();
         int textColor = DesignTokens.Accent.GOLD();
 
         long time = System.currentTimeMillis();
         float pulse = (float) (0.8 + 0.2 * Math.sin(time / 300.0));
         int pulseAlpha = (int) (255 * pulse);
-        int pulseBorder = (pulseAlpha << 24) | (borderColor & 0x00FFFFFF);
+        int pulseBorder = (pulseAlpha << 24) | (borderColor & DesignTokens.Mask.RGB);
 
         graphics.fill(x, y, x + bannerWidth, y + bannerHeight, bgColor);
 
@@ -556,7 +556,7 @@ public class MobConfigScreenRenderer {
     // ═══════════════════════════════════════════════════════════════
 
     public void drawConfirmDialog(GuiGraphics graphics, int screenWidth, int screenHeight, int mouseX, int mouseY) {
-        graphics.fill(0, 0, screenWidth, screenHeight, 0xA0000000);
+        graphics.fill(0, 0, screenWidth, screenHeight, DesignTokens.MobConfig.OVERLAY);
 
         int dx = (screenWidth - DIALOG_WIDTH) / 2;
         int dy = (screenHeight - DIALOG_HEIGHT) / 2;
@@ -589,7 +589,7 @@ public class MobConfigScreenRenderer {
     }
 
     public void drawSavePresetDialog(GuiGraphics graphics, int screenWidth, int screenHeight, int mouseX, int mouseY) {
-        graphics.fill(0, 0, screenWidth, screenHeight, 0xA0000000);
+        graphics.fill(0, 0, screenWidth, screenHeight, DesignTokens.MobConfig.OVERLAY);
 
         int dw = 200;
         int dh = 90;
@@ -641,7 +641,7 @@ public class MobConfigScreenRenderer {
     }
 
     public void drawDeletePresetDialog(GuiGraphics graphics, int screenWidth, int screenHeight, int mouseX, int mouseY) {
-        graphics.fill(0, 0, screenWidth, screenHeight, 0xA0000000);
+        graphics.fill(0, 0, screenWidth, screenHeight, DesignTokens.MobConfig.OVERLAY);
 
         int dw = 220;
         int dh = 80;

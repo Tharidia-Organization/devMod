@@ -195,7 +195,7 @@ public class QuickTestWizard extends Screen {
         // Header gradient
         for (int i = 0; i < 40; i++) {
             float t = i / 40f;
-            int color = DesignTokens.lerp(0xFF2A3A5E, DesignTokens.Background.HEADER, t);
+            int color = DesignTokens.lerp(DesignTokens.QuickTest.HEADER_GRADIENT_START, DesignTokens.Background.HEADER, t);
             graphics.fill(x, y + i, x + PANEL_WIDTH, y + i + 1, color);
         }
 
@@ -472,7 +472,7 @@ public class QuickTestWizard extends Screen {
 
         // Info box
         int infoY = y + 120;
-        graphics.fill(panelX + 20, infoY, panelX + PANEL_WIDTH - 20, infoY + 70, 0x40FFAA00);
+        graphics.fill(panelX + 20, infoY, panelX + PANEL_WIDTH - 20, infoY + 70, DesignTokens.QuickTest.INFO_BG);
         AxiomRenderer.drawBorder(graphics, panelX + 20, infoY, PANEL_WIDTH - 40, 70, DesignTokens.Semantic.WARNING);
 
         graphics.drawString(getFont(), "§6ℹ§r Overlays provide real-time feedback during testing:",
@@ -520,7 +520,8 @@ public class QuickTestWizard extends Screen {
 
         // Preset / waves
         graphics.drawString(getFont(), "Preset:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
-        String presetLabel = selectedPreset != null ? selectedPreset.name : "Custom";
+        PresetScenario localPreset = selectedPreset;
+        String presetLabel = localPreset != null ? localPreset.name : "Custom";
         graphics.drawString(getFont(), presetLabel, rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
         summaryY += 18;
 
@@ -577,7 +578,14 @@ public class QuickTestWizard extends Screen {
         }
 
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
-        if (backButton == null || nextButton == null || cancelButton == null || startButton == null) {
+
+        // Capture nullable fields in local variables for null safety
+        var localBackButton = backButton;
+        var localNextButton = nextButton;
+        var localCancelButton = cancelButton;
+        var localStartButton = startButton;
+
+        if (localBackButton == null || localNextButton == null || localCancelButton == null || localStartButton == null) {
             return super.mouseClicked(mouseX, mouseY, button);
         }
 
@@ -587,20 +595,20 @@ public class QuickTestWizard extends Screen {
         int panelY = (height - PANEL_HEIGHT) / 2;
         int contentY = panelY + 60;
 
-        if (currentStep > 0 && backButton.mouseClicked(mouseX, mouseY, button)) {
-            backButton.mouseReleased(mouseX, mouseY, button);
+        if (currentStep > 0 && localBackButton.mouseClicked(mouseX, mouseY, button)) {
+            localBackButton.mouseReleased(mouseX, mouseY, button);
             return true;
         }
-        if (currentStep < TOTAL_STEPS - 1 && nextButton.mouseClicked(mouseX, mouseY, button)) {
-            nextButton.mouseReleased(mouseX, mouseY, button);
+        if (currentStep < TOTAL_STEPS - 1 && localNextButton.mouseClicked(mouseX, mouseY, button)) {
+            localNextButton.mouseReleased(mouseX, mouseY, button);
             return true;
         }
-        if (currentStep == TOTAL_STEPS - 1 && startButton.mouseClicked(mouseX, mouseY, button)) {
-            startButton.mouseReleased(mouseX, mouseY, button);
+        if (currentStep == TOTAL_STEPS - 1 && localStartButton.mouseClicked(mouseX, mouseY, button)) {
+            localStartButton.mouseReleased(mouseX, mouseY, button);
             return true;
         }
-        if (cancelButton.mouseClicked(mouseX, mouseY, button)) {
-            cancelButton.mouseReleased(mouseX, mouseY, button);
+        if (localCancelButton.mouseClicked(mouseX, mouseY, button)) {
+            localCancelButton.mouseReleased(mouseX, mouseY, button);
             return true;
         }
 
@@ -645,14 +653,20 @@ public class QuickTestWizard extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (backButton == null || nextButton == null || cancelButton == null || startButton == null) {
+        // Capture nullable fields in local variables for null safety
+        var localBackButton = backButton;
+        var localNextButton = nextButton;
+        var localCancelButton = cancelButton;
+        var localStartButton = startButton;
+
+        if (localBackButton == null || localNextButton == null || localCancelButton == null || localStartButton == null) {
             return super.mouseReleased(mouseX, mouseY, button);
         }
         boolean handled = false;
-        handled |= backButton.mouseReleased(mouseX, mouseY, button);
-        handled |= nextButton.mouseReleased(mouseX, mouseY, button);
-        handled |= startButton.mouseReleased(mouseX, mouseY, button);
-        handled |= cancelButton.mouseReleased(mouseX, mouseY, button);
+        handled |= localBackButton.mouseReleased(mouseX, mouseY, button);
+        handled |= localNextButton.mouseReleased(mouseX, mouseY, button);
+        handled |= localStartButton.mouseReleased(mouseX, mouseY, button);
+        handled |= localCancelButton.mouseReleased(mouseX, mouseY, button);
         if (handled) return true;
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -769,7 +783,13 @@ public class QuickTestWizard extends Screen {
     }
 
     private void renderNavButtons(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (backButton == null || nextButton == null || cancelButton == null || startButton == null) {
+        // Capture nullable fields in local variables for null safety
+        var localBackButton = backButton;
+        var localNextButton = nextButton;
+        var localCancelButton = cancelButton;
+        var localStartButton = startButton;
+
+        if (localBackButton == null || localNextButton == null || localCancelButton == null || localStartButton == null) {
             return;
         }
         int panelWidth = Math.min(PANEL_WIDTH, width - 20);
@@ -779,26 +799,32 @@ public class QuickTestWizard extends Screen {
         int navY = panelY + panelHeight - 36;
 
         if (currentStep > 0) {
-            backButton.render(graphics, panelX + 20, navY, 80, 24, mouseX, mouseY);
+            localBackButton.render(graphics, panelX + 20, navY, 80, 24, mouseX, mouseY);
         }
         if (currentStep < TOTAL_STEPS - 1) {
-            nextButton.render(graphics, panelX + panelWidth - 100, navY, 80, 24, mouseX, mouseY);
+            localNextButton.render(graphics, panelX + panelWidth - 100, navY, 80, 24, mouseX, mouseY);
         }
         if (currentStep == TOTAL_STEPS - 1) {
-            startButton.render(graphics, panelX + panelWidth - 120, navY, 100, 24, mouseX, mouseY);
+            localStartButton.render(graphics, panelX + panelWidth - 120, navY, 100, 24, mouseX, mouseY);
         }
-        cancelButton.render(graphics, panelX + panelWidth / 2 - 40, navY, 80, 24, mouseX, mouseY);
+        localCancelButton.render(graphics, panelX + panelWidth / 2 - 40, navY, 80, 24, mouseX, mouseY);
     }
 
     private void updateNavButtonsVisibility() {
         boolean atFirstStep = currentStep == 0;
         boolean atLastStep = currentStep == TOTAL_STEPS - 1;
-        if (backButton == null || nextButton == null || startButton == null) {
+
+        // Capture nullable fields in local variables for null safety
+        var localBackButton = backButton;
+        var localNextButton = nextButton;
+        var localStartButton = startButton;
+
+        if (localBackButton == null || localNextButton == null || localStartButton == null) {
             return;
         }
-        backButton.setEnabled(!atFirstStep);
-        nextButton.setEnabled(!atLastStep);
-        startButton.setEnabled(atLastStep);
+        localBackButton.setEnabled(!atFirstStep);
+        localNextButton.setEnabled(!atLastStep);
+        localStartButton.setEnabled(atLastStep);
     }
 
     private void applyAutoConfig() {
@@ -868,7 +894,7 @@ public class QuickTestWizard extends Screen {
 
         // Configure additional overlays based on wizard selections
         if (enableDebugOverlay) {
-            com.devmod.ModConfig.showBodyPartBoxes = true;
+            com.devmod.ModConfig.setShowBodyPartBoxes(true);
         }
         if (enableBossPhase) {
             com.devmod.client.overlay.BossPhaseOverlay.setEnabled(true);

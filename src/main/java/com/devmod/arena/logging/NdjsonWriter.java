@@ -29,7 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
-public class NdjsonWriter implements AutoCloseable {
+public final class NdjsonWriter implements AutoCloseable {
 
     private static final Logger LOGGER = Logger.getLogger(NdjsonWriter.class.getName());
 

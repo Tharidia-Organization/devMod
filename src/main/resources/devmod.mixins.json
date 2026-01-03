@@ -17,7 +17,8 @@
     "client.LivingEntityRendererMixin",
     "client.DebugRendererMixin",
     "client.HexereiDynamicRegistriesMixin",
-    "client.ClientLevelTimeMixin"
+    "client.ClientLevelTimeMixin",
+    "client.LevelAccessorTimeMixin"
   ],
   "injectors": {
     "defaultRequire": 1

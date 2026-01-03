@@ -34,18 +34,20 @@ import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public class CraftingInfoPanel extends BaseOverlay {
 
-    public record IngredientValue(ItemStack item, int count, RarityTier rarity, int value) {}
+    // Package-private: internal value objects used by this panel only
+    record IngredientValue(ItemStack item, int count, RarityTier rarity, int value) {}
 
-    public record ItemValueAnalysis(List<IngredientValue> ingredients, int totalValue, RarityTier rarityTier) {}
+    record ItemValueAnalysis(List<IngredientValue> ingredients, int totalValue, RarityTier rarityTier) {}
 
     private record RecipeAnalysis(RecipeHolder<CraftingRecipe> recipe, ItemValueAnalysis analysis) {}
 
-    public enum RarityTier {
-        COMMON(1, 0xFF888888, "Common"),
-        UNCOMMON(5, 0xFF55FF55, "Uncommon"),
-        RARE(40, 0xFF5555FF, "Rare"),
-        EPIC(100, 0xFFAA00AA, "Epic"),
-        LEGENDARY(250, 0xFFFFAA00, "Legendary");
+    // Package-private: internal rarity classification used by this panel only
+    enum RarityTier {
+        COMMON(1, DesignTokens.Rarity.COMMON, "Common"),
+        UNCOMMON(5, DesignTokens.Rarity.UNCOMMON, "Uncommon"),
+        RARE(40, DesignTokens.Rarity.RARE, "Rare"),
+        EPIC(100, DesignTokens.Rarity.EPIC, "Epic"),
+        LEGENDARY(250, DesignTokens.Rarity.LEGENDARY, "Legendary");
 
         public final int baseValue;
         public final int color;
@@ -177,7 +179,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         // Buttons initialized lazily to avoid this-escape warning
     }
 
-    /** Ensures buttons are initialized (lazy init to avoid this-escape). */
+    // Ensures buttons are initialized (lazy init to avoid this-escape).
     private void ensureButtons() {
         if (!buttonsInitialized) {
             prevButton = new EditorButton("prev", "<")
@@ -337,9 +339,11 @@ public class CraftingInfoPanel extends BaseOverlay {
     }
 
     private ItemStack getIngredient(int row, int col) {
-        if (recipe == null) return ItemStack.EMPTY;
+        // Local capture for null safety - analyzer doesn't recognize field stability
+        var localRecipe = recipe;
+        if (localRecipe == null) return ItemStack.EMPTY;
 
-        CraftingRecipe value = recipe.value();
+        CraftingRecipe value = localRecipe.value();
         NonNullList<Ingredient> ingredients = value.getIngredients();
 
         int idx;
@@ -619,9 +623,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         this.selectedRecipeIndex = newIndex;
     }
 
-    /**
-     * Open the Recipe Editor for the current item.
-     */
+    // Open the Recipe Editor for the current item.
     private void openRecipeEditor() {
         if (targetItem.isEmpty()) return;
 

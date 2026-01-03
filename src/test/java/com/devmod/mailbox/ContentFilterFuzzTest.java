@@ -3,6 +3,7 @@ package com.devmod.mailbox;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -265,7 +266,7 @@ class ContentFilterFuzzTest {
         @DisplayName("Combining characters don't break matching")
         void combiningCharacters() {
             // "a" + combining acute accent = "á" in different forms
-            String withCombining = "b\u0061\u0301dword"; // a with combining accent
+            String withCombining = "ba\u0301dword"; // a with combining accent
             assertDoesNotThrow(() -> filter.check(withCombining));
         }
 
@@ -310,7 +311,7 @@ class ContentFilterFuzzTest {
             String censored = filter.censor("hello badword there");
             assertTrue(censored.contains("*"),
                 "Censored output should contain asterisks");
-            assertFalse(censored.toLowerCase().contains("badword"),
+            assertFalse(censored.toLowerCase(Locale.ROOT).contains("badword"),
                 "Censored output should not contain prohibited word");
         }
 

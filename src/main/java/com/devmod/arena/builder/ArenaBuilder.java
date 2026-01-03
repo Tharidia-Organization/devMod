@@ -539,39 +539,36 @@ public class ArenaBuilder {
             auditLevel = mcPlacer.getLevel();
         }
         if (auditLevel != null) {
-            net.minecraft.server.level.ServerLevel level = auditLevel;
-            if (level != null) {
-                int size = template.size();
-                PostBuildEntityAudit.AuditResult auditResult = new PostBuildEntityAudit()
-                    .audit(level, originX, originY, originZ,
-                           originX + size, originY + size, originZ + size);
-                if (auditResult.hasResiduals()) {
-                    telemetry.emit("arena.build.residual_entities", Map.of(
-                        "templateId", template.id(),
-                        "arenaId", arenaId.toString(),
-                        "residualCount", auditResult.residualEntities(),
-                        "itemsFound", auditResult.itemsFound(),
-                        "mobsFound", auditResult.mobsFound(),
-                        "auditDurationMs", auditResult.auditDurationMs()
-                    ));
-                }
+            int size = template.size();
+            PostBuildEntityAudit.AuditResult auditResult = new PostBuildEntityAudit()
+                .audit(auditLevel, originX, originY, originZ,
+                       originX + size, originY + size, originZ + size);
+            if (auditResult.hasResiduals()) {
+                telemetry.emit("arena.build.residual_entities", Map.of(
+                    "templateId", template.id(),
+                    "arenaId", arenaId.toString(),
+                    "residualCount", auditResult.residualEntities(),
+                    "itemsFound", auditResult.itemsFound(),
+                    "mobsFound", auditResult.mobsFound(),
+                    "auditDurationMs", auditResult.auditDurationMs()
+                ));
+            }
 
-                // P1: Block integrity verification
-                BlockIntegrityVerifier.VerificationResult integrityResult = new BlockIntegrityVerifier()
-                    .verify(level, originX, originY, originZ,
-                            originX + size, originY + size, originZ + size,
-                            transaction.getBlockCount());
-                if (integrityResult.hasIntegrityIssues()) {
-                    telemetry.emit("arena.build.integrity_issue", Map.of(
-                        "templateId", template.id(),
-                        "arenaId", arenaId.toString(),
-                        "expectedBlocks", integrityResult.expectedBlocks(),
-                        "actualBlocks", integrityResult.actualNonAirBlocks(),
-                        "integrityPercent", integrityResult.integrityPercent(),
-                        "sampleFailures", integrityResult.sampleFailures(),
-                        "verificationDurationMs", integrityResult.verificationDurationMs()
-                    ));
-                }
+            // P1: Block integrity verification
+            BlockIntegrityVerifier.VerificationResult integrityResult = new BlockIntegrityVerifier()
+                .verify(auditLevel, originX, originY, originZ,
+                        originX + size, originY + size, originZ + size,
+                        transaction.getBlockCount());
+            if (integrityResult.hasIntegrityIssues()) {
+                telemetry.emit("arena.build.integrity_issue", Map.of(
+                    "templateId", template.id(),
+                    "arenaId", arenaId.toString(),
+                    "expectedBlocks", integrityResult.expectedBlocks(),
+                    "actualBlocks", integrityResult.actualNonAirBlocks(),
+                    "integrityPercent", integrityResult.integrityPercent(),
+                    "sampleFailures", integrityResult.sampleFailures(),
+                    "verificationDurationMs", integrityResult.verificationDurationMs()
+                ));
             }
         }
 

@@ -228,8 +228,8 @@ public class WeaponModule extends AbstractEditorModule {
         }
         variants.saveVariantData(weaponStats, variant);
         DevMod.LOGGER.info("[Editor][Weapon][BuildPayload] item={} global={} dmg={} spd={} reach={} bonus={} pen={} shred={}",
-            item.getItem(), isGlobal, stats.attackDamage, stats.attackSpeed, stats.attackReach,
-            stats.baseDamageBonus, stats.armorPenetration, stats.armorShred);
+            item.getItem(), isGlobal, stats.getAttackDamage(), stats.getAttackSpeed(), stats.getAttackReach(),
+            stats.getBaseDamageBonus(), stats.getArmorPenetration(), stats.getArmorShred());
         // Send both legacy and component-friendly payloads
         statsTag.put(WeaponModuleCore.NBT_KEY, Objects.requireNonNull(weaponStats.copy()));
         statsTag.put("weapon_stats_component", Objects.requireNonNull(weaponStats));
@@ -249,8 +249,8 @@ public class WeaponModule extends AbstractEditorModule {
             CompoundTag variantTag = new CompoundTag();
             variants.saveVariantData(variantTag, variant);
             DevMod.LOGGER.info("[Editor][Weapon][ApplyPreview] item={} dmg={} spd={} reach={} bonus={} pen={} shred={}",
-                item.getItem(), stats.attackDamage, stats.attackSpeed, stats.attackReach,
-                stats.baseDamageBonus, stats.armorPenetration, stats.armorShred);
+                item.getItem(), stats.getAttackDamage(), stats.getAttackSpeed(), stats.getAttackReach(),
+                stats.getBaseDamageBonus(), stats.getArmorPenetration(), stats.getArmorShred());
             // Apply full stack edits to the preview copy (CustomData + component + attributes)
             com.devmod.config.WeaponConfigManager.setSpecificStats(copy, stats.copy(), variantTag);
             // Reload from the written stack to pick up server-side clamps/normalization

@@ -2,6 +2,7 @@ package com.devmod.endurance.challenges;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 
 import io.netty.buffer.ByteBuf;
 
@@ -17,12 +18,13 @@ public record ChallengeSyncPayload(
         List<ChallengeData> challenges
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
-    public static final Type<ChallengeSyncPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "challenge_sync"));
+    public static final ResourceLocation ID = Objects.requireNonNull(
+            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "challenge_sync"));
+    public static final Type<ChallengeSyncPayload> TYPE = new Type<>(Objects.requireNonNull(ID));
 
     public static final StreamCodec<ByteBuf, ChallengeSyncPayload> STREAM_CODEC =
             StreamCodec.composite(
-                    ChallengeData.LIST_CODEC,
+                    Objects.requireNonNull(ChallengeData.LIST_CODEC),
                     ChallengeSyncPayload::challenges,
                     ChallengeSyncPayload::new
             );
@@ -59,9 +61,9 @@ public record ChallengeSyncPayload(
         // Custom codec for 10 fields (StreamCodec.composite only supports up to 6)
         public static final StreamCodec<ByteBuf, ChallengeData> CODEC = StreamCodec.of(
                 (buf, data) -> {
-                    ByteBufCodecs.STRING_UTF8.encode(buf, data.id);
-                    ByteBufCodecs.STRING_UTF8.encode(buf, data.nameKey);
-                    ByteBufCodecs.STRING_UTF8.encode(buf, data.descriptionKey);
+                    ByteBufCodecs.STRING_UTF8.encode(buf, Objects.requireNonNull(data.id, "id"));
+                    ByteBufCodecs.STRING_UTF8.encode(buf, Objects.requireNonNull(data.nameKey, "nameKey"));
+                    ByteBufCodecs.STRING_UTF8.encode(buf, Objects.requireNonNull(data.descriptionKey, "descriptionKey"));
                     ByteBufCodecs.VAR_INT.encode(buf, data.difficulty);
                     ByteBufCodecs.VAR_INT.encode(buf, data.targetValue);
                     ByteBufCodecs.VAR_INT.encode(buf, data.currentValue);
@@ -71,9 +73,9 @@ public record ChallengeSyncPayload(
                     ByteBufCodecs.BOOL.encode(buf, data.rewarded);
                 },
                 buf -> new ChallengeData(
-                        ByteBufCodecs.STRING_UTF8.decode(buf),
-                        ByteBufCodecs.STRING_UTF8.decode(buf),
-                        ByteBufCodecs.STRING_UTF8.decode(buf),
+                        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf), "id"),
+                        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf), "nameKey"),
+                        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf), "descriptionKey"),
                         ByteBufCodecs.VAR_INT.decode(buf),
                         ByteBufCodecs.VAR_INT.decode(buf),
                         ByteBufCodecs.VAR_INT.decode(buf),
@@ -85,34 +87,7 @@ public record ChallengeSyncPayload(
         );
 
         public static final StreamCodec<ByteBuf, List<ChallengeData>> LIST_CODEC =
-                ChallengeData.CODEC.apply(ByteBufCodecs.list());
-    }
-
-    /**
-     * Create sync payload for a player.
-     */
-    public static ChallengeSyncPayload forPlayer(java.util.UUID playerId) {
-        List<ChallengeData> data = DailyChallengeManager.INSTANCE.getActiveChallenges().stream()
-                .map(challenge -> {
-                    DailyChallenge.ChallengeProgress progress =
-                            DailyChallengeManager.INSTANCE.getProgress(playerId, challenge.getId());
-
-                    return new ChallengeData(
-                            challenge.getId(),
-                            challenge.getNameKey(),
-                            challenge.getDescriptionKey(),
-                            challenge.getDifficulty().ordinal(),
-                            challenge.getTargetValue(),
-                            progress.getCurrentValue(),
-                            challenge.getTokenReward(),
-                            challenge.getPrestigeReward(),
-                            progress.isCompleted(),
-                            progress.isRewarded()
-                    );
-                })
-                .toList();
-
-        return new ChallengeSyncPayload(data);
+                ChallengeData.CODEC.apply(Objects.requireNonNull(ByteBufCodecs.list()));
     }
 
     private static int estimateChallengeSize(ChallengeData data) {

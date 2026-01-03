@@ -73,26 +73,26 @@ public final class DamageCalculator {
             LivingEntity victim,
             DamageSource source) {
 
-        float damage = (baseDamage + stats.baseDamageBonus) * bodyPartMultiplier;
+        float damage = (baseDamage + stats.getBaseDamageBonus()) * bodyPartMultiplier;
 
         // Damage bonus (additive)
-        if (stats.damageBonus > 0) {
-            damage += baseDamage * stats.damageBonus;
+        if (stats.getDamageBonus() > 0) {
+            damage += baseDamage * stats.getDamageBonus();
         }
 
         // Armor penetration + shred
         float armorPenBonus = 0f;
-        float targetArmor = Math.max(0f, victim.getArmorValue() - stats.armorShred);
-        if (stats.armorPenetration > 0) {
-            armorPenBonus = calculateArmorPenBonus(stats.armorPenetration, targetArmor, damage);
+        float targetArmor = Math.max(0f, victim.getArmorValue() - stats.getArmorShred());
+        if (stats.getArmorPenetration() > 0) {
+            armorPenBonus = calculateArmorPenBonus(stats.getArmorPenetration(), targetArmor, damage);
             damage += armorPenBonus;
         }
 
         // True damage calculation - extract portion that bypasses armor
         float trueDamagePortion = 0f;
-        if (stats.trueDamagePercent > 0) {
-            trueDamagePortion = damage * stats.trueDamagePercent;
-            damage = damage * (1f - stats.trueDamagePercent);
+        if (stats.getTrueDamagePercent() > 0) {
+            trueDamagePortion = damage * stats.getTrueDamagePercent();
+            damage = damage * (1f - stats.getTrueDamagePercent());
         }
 
         // Custom armor reduction (DevMod ArmorStats)
@@ -111,11 +111,11 @@ public final class DamageCalculator {
         damage = applyDamageTypeBonuses(damage, stats, victim);
 
         // Elemental bonuses
-        if (stats.fireDamageBonus > 0) {
-            damage *= (1f + stats.fireDamageBonus / 100f);
+        if (stats.getFireDamageBonus() > 0) {
+            damage *= (1f + stats.getFireDamageBonus() / 100f);
         }
-        if (stats.magicDamageBonus > 0) {
-            damage *= (1f + stats.magicDamageBonus / 100f);
+        if (stats.getMagicDamageBonus() > 0) {
+            damage *= (1f + stats.getMagicDamageBonus() / 100f);
         }
 
         return new CalculationResult(damage, armorPenBonus, trueDamagePortion, armorReduction, bodyPartMultiplier);
@@ -272,10 +272,10 @@ public final class DamageCalculator {
         }
 
         return switch (bodyPart) {
-            case HEAD -> stats.headMult;
-            case BODY -> stats.bodyMult;
-            case ARMS -> stats.armsMult;
-            case LEGS -> stats.legsMult;
+            case HEAD -> stats.getHeadMult();
+            case BODY -> stats.getBodyMult();
+            case ARMS -> stats.getArmsMult();
+            case LEGS -> stats.getLegsMult();
         };
     }
 
@@ -384,15 +384,15 @@ public final class DamageCalculator {
      */
     private static float applyDamageTypeBonuses(float damage, WeaponStats stats, LivingEntity victim) {
         if (victim instanceof Player) {
-            return damage * (1f + stats.damageVsPlayers);
+            return damage * (1f + stats.getDamageVsPlayers());
         }
 
         if (victim instanceof net.minecraft.world.entity.Mob) {
             try {
                 if (victim.getType().is(Objects.requireNonNull(net.minecraft.tags.EntityTypeTags.UNDEAD))) {
-                    return damage * (1f + stats.damageVsUndead);
+                    return damage * (1f + stats.getDamageVsUndead());
                 } else if (victim.getType().is(Objects.requireNonNull(net.minecraft.tags.EntityTypeTags.ARTHROPOD))) {
-                    return damage * (1f + stats.damageVsArthropods);
+                    return damage * (1f + stats.getDamageVsArthropods());
                 }
             } catch (Exception ignored) {
                 // Tag not available, no bonus

@@ -18,7 +18,6 @@ import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
-import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.client.ui.unified.persistence.SettingsData;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
@@ -64,11 +63,6 @@ public class VisualizersPage implements SettingsPage {
     private final EditorButton vdPlusBtn = new EditorButton("viz-vd-plus", "+");
 
     @Override
-    public SettingsCategory getCategory() {
-        return SettingsCategory.VISUALIZERS;
-    }
-
-    @Override
     public String getTitle() {
         return "Visualizers";
     }
@@ -80,7 +74,7 @@ public class VisualizersPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         // Decay slider pulse animations
         if (lightSliderPulse > 0) lightSliderPulse = Math.max(0, lightSliderPulse - 0.05f);
@@ -175,28 +169,28 @@ public class VisualizersPage implements SettingsPage {
 
             // Heatmap type toggles
             currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Death Heatmap", HeatmapType.DEATH, 0xFFFF0000);
+                    "Death Heatmap", HeatmapType.DEATH, DesignTokens.Heatmap.DEATH);
 
             currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Movement Heatmap", HeatmapType.MOVEMENT, 0xFF00FF00);
+                    "Movement Heatmap", HeatmapType.MOVEMENT, DesignTokens.Heatmap.MOVEMENT);
 
             currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Camping Detection", HeatmapType.CAMPING, 0xFFFFFF00);
+                    "Camping Detection", HeatmapType.CAMPING, DesignTokens.Heatmap.CAMPING);
 
             currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Stuck Points", HeatmapType.STUCK, 0xFFFF8000);
+                    "Stuck Points", HeatmapType.STUCK, DesignTokens.Heatmap.STUCK);
 
             currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Aggro Drop Points", HeatmapType.AGGRO_DROP, 0xFF8000FF);
+                    "Aggro Drop Points", HeatmapType.AGGRO_DROP, DesignTokens.Heatmap.AGGRO_DROP);
 
             currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Kiting Paths", HeatmapType.KITING, 0xFF00FFFF);
+                    "Kiting Paths", HeatmapType.KITING, DesignTokens.Heatmap.KITING);
 
             currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Light Spawnable", HeatmapType.LIGHT_SPAWNABLE, 0xFFFF0000);
+                    "Light Spawnable", HeatmapType.LIGHT_SPAWNABLE, DesignTokens.Heatmap.LIGHT_SPAWNABLE);
 
             currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Light Dark Areas", HeatmapType.LIGHT_DARK, 0xFFFF8800);
+                    "Light Dark Areas", HeatmapType.LIGHT_DARK, DesignTokens.Heatmap.LIGHT_DARK);
 
             // Separator
             currentY += 8;
@@ -668,11 +662,6 @@ public class VisualizersPage implements SettingsPage {
 
         SafeSpotVisualizer.INSTANCE.setEnabled(false);
         VerticalLevelsVisualizer.INSTANCE.setEnabled(false);
-    }
-
-    @Override
-    public int getContentHeight() {
-        return calculateContentHeight();
     }
 
     private boolean isMouseOverContent(double mouseX, double mouseY) {

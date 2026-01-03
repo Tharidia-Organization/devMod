@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -15,11 +16,14 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+import com.devmod.mob.MobRequirements;
+import com.devmod.mob.MobRequirementsRegistry;
 
 public class MowziesMobsCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(MowziesMobsCompat.class);
@@ -88,6 +92,65 @@ public class MowziesMobsCompat implements CompatModule {
 
         // Load API classes
         loadApi();
+
+        // Register mob requirements for Mowzie's Mobs bosses
+        registerMobRequirements();
+    }
+
+    /**
+     * Registers custom mob requirements for Mowzie's Mobs entities.
+     * Uses MobRequirementsRegistry.registerOverride() for programmatic registration.
+     */
+    private void registerMobRequirements() {
+        if (!MobRequirementsRegistry.INSTANCE.isInitialized()) {
+            LOGGER.debug("[Compat:mowziesmobs] MobRequirementsRegistry not initialized yet, skipping requirements registration");
+            return;
+        }
+
+        // Frostmaw - Ice boss, requires cold/snowy biome, dark conditions
+        registerBossRequirements("mowziesmobs:frostmaw", "snowy_plains", true, 3.0f, 4.0f);
+
+        // Ferrous Wroughtnaut - Underground boss, requires darkness
+        registerBossRequirements("mowziesmobs:ferrous_wroughtnaut", null, true, 2.5f, 3.5f);
+
+        // Naga - Savanna boss, day/night any
+        registerBossRequirements("mowziesmobs:naga", "savanna", false, 4.0f, 3.0f);
+
+        // Barako - Sun Chief, prefers day and savanna
+        registerBossRequirements("mowziesmobs:barako", "savanna", false, 2.0f, 3.0f);
+
+        LOGGER.info("[Compat:mowziesmobs] Registered mob requirements for {} boss types", BOSS_ENTITY_NAMES.size());
+    }
+
+    /**
+     * Helper to register boss requirements.
+     */
+    private void registerBossRequirements(String mobIdStr, @Nullable String preferredBiome,
+                                          boolean prefersDark, float width, float height) {
+        ResourceLocation mobId = ResourceLocation.parse(Objects.requireNonNull(mobIdStr));
+
+        MobRequirements.BiomeRequirement biome = preferredBiome != null
+            ? MobRequirements.BiomeRequirement.preferred(ResourceLocation.withDefaultNamespace(preferredBiome))
+            : MobRequirements.BiomeRequirement.ANY;
+
+        MobRequirements.LightRequirement light = prefersDark
+            ? MobRequirements.LightRequirement.DARK
+            : MobRequirements.LightRequirement.ANY;
+
+        MobRequirements requirements = new MobRequirements(
+            mobId,
+            biome,
+            light,
+            MobRequirements.FloorRequirement.SOLID_GROUND,
+            MobRequirements.SpaceRequirement.fromDimensions(width, height),
+            MobRequirements.TimeRequirement.ANY,
+            MobRequirements.BossRequirement.simpleBoss(),
+            MobRequirements.RequirementSource.AUTO_DETECTED,
+            0.9f  // High confidence from compat layer
+        );
+
+        MobRequirementsRegistry.INSTANCE.registerOverride(requirements);
+        LOGGER.debug("[Compat:mowziesmobs] Registered requirements for: {}", mobId);
     }
 
     /**

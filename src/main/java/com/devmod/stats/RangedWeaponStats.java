@@ -13,27 +13,183 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.component.CustomData;
 
+import com.devmod.DevMod;
+import com.devmod.ammo.AmmoSystem;
+
 public class RangedWeaponStats {
-    public float drawSpeed = 1.0f;
-    public float chargeTime = 1.0f;
-    public float accuracy = 1.0f;
-    public float range = 1.0f;
-    public float projectileSpeed = 1.0f;
-    public float projectileGravity = 0.05f;
-    public float projectileSpread = 1.0f;
-    public float baseDamage = 0.0f;
-    public int piercing = 0;
-    public int multishotCount = 1;
-    public boolean multishot = false;
-    public boolean infinityOverride = false;
-    public float critChance = 0.0f;
-    public float critDamage = 1.5f;
-    public String ammoFilter = "";
+    private static boolean componentReadFailedLogged = false;
+    private float drawSpeed = 1.0f;
+    private float chargeTime = 1.0f;
+    private float accuracy = 1.0f;
+    private float range = 1.0f;
+    private float projectileSpeed = 1.0f;
+    private float projectileGravity = 0.05f;
+    private float projectileSpread = 1.0f;
+    private float baseDamage = 0.0f;
+    private int piercing = 0;
+    private int multishotCount = 1;
+    private boolean multishot = false;
+    private boolean infinityOverride = false;
+    private float critChance = 0.0f;
+    private float critDamage = 1.5f;
+    private String ammoFilter = "";
     // Trident-specific
-    public float riptideDistance = 0.0f;
-    public float loyaltySpeed = 0.0f;
-    public boolean riptideRequiresWater = true;
-    public boolean channeling = false;
+    private float riptideDistance = 0.0f;
+    private float loyaltySpeed = 0.0f;
+    private boolean riptideRequiresWater = true;
+    private boolean channeling = false;
+
+    public float getDrawSpeed() {
+        return drawSpeed;
+    }
+
+    public void setDrawSpeed(float value) {
+        drawSpeed = value;
+    }
+
+    public float getChargeTime() {
+        return chargeTime;
+    }
+
+    public void setChargeTime(float value) {
+        chargeTime = value;
+    }
+
+    public float getAccuracy() {
+        return accuracy;
+    }
+
+    public void setAccuracy(float value) {
+        accuracy = value;
+    }
+
+    public float getRange() {
+        return range;
+    }
+
+    public void setRange(float value) {
+        range = value;
+    }
+
+    public float getProjectileSpeed() {
+        return projectileSpeed;
+    }
+
+    public void setProjectileSpeed(float value) {
+        projectileSpeed = value;
+    }
+
+    public float getProjectileGravity() {
+        return projectileGravity;
+    }
+
+    public void setProjectileGravity(float value) {
+        projectileGravity = value;
+    }
+
+    public float getProjectileSpread() {
+        return projectileSpread;
+    }
+
+    public void setProjectileSpread(float value) {
+        projectileSpread = value;
+    }
+
+    public float getBaseDamage() {
+        return baseDamage;
+    }
+
+    public void setBaseDamage(float value) {
+        baseDamage = value;
+    }
+
+    public int getPiercing() {
+        return piercing;
+    }
+
+    public void setPiercing(int value) {
+        piercing = value;
+    }
+
+    public int getMultishotCount() {
+        return multishotCount;
+    }
+
+    public void setMultishotCount(int value) {
+        multishotCount = value;
+    }
+
+    public boolean isMultishot() {
+        return multishot;
+    }
+
+    public void setMultishot(boolean value) {
+        multishot = value;
+    }
+
+    public boolean isInfinityOverride() {
+        return infinityOverride;
+    }
+
+    public void setInfinityOverride(boolean value) {
+        infinityOverride = value;
+    }
+
+    public float getCritChance() {
+        return critChance;
+    }
+
+    public void setCritChance(float value) {
+        critChance = value;
+    }
+
+    public float getCritDamage() {
+        return critDamage;
+    }
+
+    public void setCritDamage(float value) {
+        critDamage = value;
+    }
+
+    public String getAmmoFilter() {
+        return ammoFilter;
+    }
+
+    public void setAmmoFilter(String value) {
+        ammoFilter = value == null ? "" : value;
+    }
+
+    public float getRiptideDistance() {
+        return riptideDistance;
+    }
+
+    public void setRiptideDistance(float value) {
+        riptideDistance = value;
+    }
+
+    public float getLoyaltySpeed() {
+        return loyaltySpeed;
+    }
+
+    public void setLoyaltySpeed(float value) {
+        loyaltySpeed = value;
+    }
+
+    public boolean isRiptideRequiresWater() {
+        return riptideRequiresWater;
+    }
+
+    public void setRiptideRequiresWater(boolean value) {
+        riptideRequiresWater = value;
+    }
+
+    public boolean isChanneling() {
+        return channeling;
+    }
+
+    public void setChanneling(boolean value) {
+        channeling = value;
+    }
 
     public RangedWeaponStats copy() {
         var copy = new RangedWeaponStats();
@@ -129,9 +285,12 @@ public class RangedWeaponStats {
             Integer pierce = item.get(Objects.requireNonNull(com.devmod.components.RangedComponents.PIERCING_LEVEL.get()));
             if (pierce != null) stats.piercing = pierce;
             ResourceLocation ammoTag = item.get(Objects.requireNonNull(com.devmod.components.RangedComponents.AMMO_TAG_FILTER.get()));
-            if (ammoTag != null) stats.ammoFilter = ammoTag.toString();
-        } catch (Exception ignored) {
-            // graceful fallback to CustomData
+            if (ammoTag != null) stats.ammoFilter = AmmoSystem.formatAmmoFilter(ammoTag);
+        } catch (Exception e) {
+            if (!componentReadFailedLogged) {
+                componentReadFailedLogged = true;
+                DevMod.LOGGER.debug("[RangedWeaponStats] Failed to read ranged components, falling back to CustomData", e);
+            }
         }
 
         // Read from CustomData component if present

@@ -82,7 +82,7 @@ public class AbilityTelemetryService {
         }
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendAbilityUsageLine(json.toString());
         }
 
@@ -149,7 +149,7 @@ public class AbilityTelemetryService {
         }
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendAbilityUsageLine(json.toString());
         }
 
@@ -193,7 +193,7 @@ public class AbilityTelemetryService {
         }
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendAbilityUsageLine(json.toString());
         }
 
@@ -220,7 +220,7 @@ public class AbilityTelemetryService {
             null, null, context, null);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendAbilityUsageLine(json);
         }
 
@@ -248,7 +248,7 @@ public class AbilityTelemetryService {
             null, null, null, regenTimeMs);
 
         // NDJSON: Fallback only
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendAbilityUsageLine(json);
         }
     }
@@ -281,7 +281,7 @@ public class AbilityTelemetryService {
         );
 
         // NDJSON: Fallback only (no DuckDB mapping for session_summary yet)
-        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendAbilityUsageLine(json);
         }
         LOGGER.info("[AbilityTelemetry] Session summary exported for {}", playerId);

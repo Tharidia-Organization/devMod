@@ -18,7 +18,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.mailbox.client.ClientTicketCache;
+import com.devmod.mailbox.client.MailboxUiTheme;
 import com.devmod.mailbox.network.payload.TicketCreatePayload;
 import com.devmod.mailbox.ticket.TicketCategory;
 import com.devmod.mailbox.ticket.TicketPriority;
@@ -132,7 +134,7 @@ public class TicketCreateScreen extends Screen {
                 }
             }
         }
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     @Override
@@ -140,7 +142,7 @@ public class TicketCreateScreen extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Panel background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xE8101820);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, MailboxUiTheme.Panel.BG);
 
         // Border
         int borderColor = DesignTokens.Border.DEFAULT();
@@ -240,25 +242,25 @@ public class TicketCreateScreen extends Screen {
         // Validation
         if (subject.isEmpty()) {
             setStatusMessage("Please enter a subject", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
 
         if (subject.length() < 5) {
             setStatusMessage("Subject must be at least 5 characters", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
 
         if (description.isEmpty()) {
             setStatusMessage("Please enter a description", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
 
         if (description.length() < 20) {
             setStatusMessage("Description must be at least 20 characters", DesignTokens.Status.WARNING());
-            DesignTokens.Sound.warning();
+            UiSounds.warning();
             return;
         }
 
@@ -285,7 +287,7 @@ public class TicketCreateScreen extends Screen {
         ));
 
         setStatusMessage("Ticket submitted!", DesignTokens.Status.SUCCESS());
-        DesignTokens.Sound.success();
+        UiSounds.success();
 
         // Close after short delay
         Minecraft.getInstance().tell(() -> onCancelClicked());
@@ -294,7 +296,7 @@ public class TicketCreateScreen extends Screen {
     private void onCancelClicked() {
         Minecraft mc = Minecraft.getInstance();
         mc.setScreen(parentScreen);
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     private void setStatusMessage(String message, int color) {

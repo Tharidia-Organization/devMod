@@ -34,10 +34,10 @@ public class MomentumTracker {
      * Momentum states that affect gameplay.
      */
     public enum MomentumState {
-        STAGNANT("STAGNANT", 0xFF4444, "Too passive! Attack!"),
-        BUILDING("", 0xFFFFFF, ""),
-        HEATED("HEATED!", 0xFFAA00, "Keep it up!"),
-        OVERDRIVE("OVERDRIVE!", 0xFF00FF, "MAXIMUM POWER!");
+        STAGNANT("STAGNANT", EnduranceColors.Momentum.STAGNANT, "Too passive! Attack!"),
+        BUILDING("", EnduranceColors.Momentum.BUILDING, ""),
+        HEATED("HEATED!", EnduranceColors.Momentum.HEATED, "Keep it up!"),
+        OVERDRIVE("OVERDRIVE!", EnduranceColors.Momentum.OVERDRIVE, "MAXIMUM POWER!");
 
         public final String displayName;
         public final int color;

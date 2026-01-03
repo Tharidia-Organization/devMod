@@ -39,8 +39,6 @@ public final class LowConfidenceDetector extends BaseOverlay {
     private static final int BTN_TEXT_WHITELIST_X = 10;
     private static final int BTN_TEXT_CANCEL_X = 18;
 
-    private static final float MIN_CONFIDENCE_FOR_AUTO_EDIT = 0.8f;
-
     // State
     @Nullable
     private WeaponTypeDetector.DetectionResult pendingDetection = null;
@@ -98,10 +96,7 @@ public final class LowConfidenceDetector extends BaseOverlay {
             || activeModule instanceof RangedModule;
         if (!isWeaponPath) return;
 
-        float threshold = (float) Math.max(
-            EditorClientConfig.EDITOR_WEAPON_MIN_CONFIDENCE.get(),
-            (double) MIN_CONFIDENCE_FOR_AUTO_EDIT
-        );
+        float threshold = EditorClientConfig.EDITOR_WEAPON_MIN_CONFIDENCE.get().floatValue();
 
         if (detection.confidence() < threshold
             && EditorClientConfig.EDITOR_WEAPON_HEURISTIC_ENABLED.get()
@@ -170,7 +165,10 @@ public final class LowConfidenceDetector extends BaseOverlay {
     protected void renderContent(GuiGraphics graphics, Font font,
                                   int x, int y, int width, int height,
                                   int mouseX, int mouseY) {
-        if (pendingDetection == null || currentItem == null) return;
+        // Local capture for null safety - analyzer doesn't recognize field stability
+        WeaponTypeDetector.DetectionResult detection = pendingDetection;
+        ItemStack item = currentItem;
+        if (detection == null || item == null) return;
 
         Font safeFont = Objects.requireNonNull(font, "font");
 
@@ -179,7 +177,7 @@ public final class LowConfidenceDetector extends BaseOverlay {
             DesignTokens.Text.TITLE(), false);
 
         // Item info
-        var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(currentItem.getItem()));
+        var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item.getItem()));
         String itemId = id == null ? "<unknown>" : id.toString();
 
         int textX = x + PADDING;
@@ -190,13 +188,20 @@ public final class LowConfidenceDetector extends BaseOverlay {
         textY += TEXT_LINE_STEP;
 
         graphics.drawString(safeFont,
-            "Detected: " + pendingDetection.type() + " via " + pendingDetection.method(),
+            "Detected: " + detection.type() + " via " + detection.method(),
             textX, textY, DesignTokens.Text.SECONDARY(), false);
         textY += TEXT_LINE_STEP;
 
         graphics.drawString(safeFont,
-            "Confidence: " + String.format("%.0f%%", pendingDetection.confidence() * 100),
+            "Confidence: " + String.format("%.0f%%", detection.confidence() * 100),
             textX, textY, DesignTokens.Text.SECONDARY(), false);
+
+        String warning = detection.warning();
+        if (warning != null && !warning.isBlank()) {
+            textY += TEXT_LINE_STEP;
+            graphics.drawString(safeFont, "Note: " + warning, textX, textY,
+                DesignTokens.Text.MUTED(), false);
+        }
 
         // Hints
         textY = y + HINT_START_Y;
@@ -284,10 +289,12 @@ public final class LowConfidenceDetector extends BaseOverlay {
             if (!added) {
                 statusMessage = "Whitelist update failed. Check logs.";
             } else {
-                if (statusConsumer != null) {
+                // Local capture for null safety
+                BiConsumer<String, Integer> consumer = statusConsumer;
+                if (consumer != null) {
                     var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(safeItem.getItem()));
                     String label = id == null ? "<unknown>" : id.toString();
-                    statusConsumer.accept("Whitelisted " + label, DesignTokens.Accent.GREEN());
+                    consumer.accept("Whitelisted " + label, DesignTokens.Accent.GREEN());
                 }
                 reset();
             }
@@ -310,13 +317,16 @@ public final class LowConfidenceDetector extends BaseOverlay {
     // =========================================================================
 
     private boolean addItemToWhitelist() {
-        if (currentItem == null || currentItem.isEmpty()) {
+        // Local capture for null safety
+        ItemStack item = currentItem;
+        WeaponTypeDetector.DetectionResult detection = pendingDetection;
+        if (item == null || item.isEmpty()) {
             return false;
         }
         try {
-            WeaponTypeDetector.WeaponType type = pendingDetection == null
+            WeaponTypeDetector.WeaponType type = detection == null
                 ? WeaponTypeDetector.WeaponType.GENERIC_MELEE
-                : pendingDetection.type();
+                : detection.type();
 
             if (type == WeaponTypeDetector.WeaponType.UNKNOWN
                 || type == WeaponTypeDetector.WeaponType.NOT_A_WEAPON
@@ -325,7 +335,7 @@ public final class LowConfidenceDetector extends BaseOverlay {
             }
 
             return WeaponTypeDetector.addToWhitelist(
-                Objects.requireNonNull(currentItem.getItem()), type);
+                Objects.requireNonNull(item.getItem()), type);
         } catch (Exception e) {
             DevMod.LOGGER.warn("[LowConfidenceDetection] Failed to add to whitelist", e);
             return false;

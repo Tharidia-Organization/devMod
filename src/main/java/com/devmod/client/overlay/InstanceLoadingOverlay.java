@@ -62,7 +62,8 @@ public class InstanceLoadingOverlay {
         int panelY = (screenHeight - PANEL_HEIGHT) / 2;
 
         // Semi-transparent background overlay
-        graphics.fill(0, 0, screenWidth, screenHeight, OverlayTheme.withAlpha(0x000000, OverlayTheme.Alpha.SUBTLE));
+        graphics.fill(0, 0, screenWidth, screenHeight,
+            OverlayTheme.withAlpha(OverlayTheme.Utility.BLACK, OverlayTheme.Alpha.SUBTLE));
 
         // Panel background
         graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, DesignTokens.Stroke.DEFAULT);
@@ -78,7 +79,7 @@ public class InstanceLoadingOverlay {
             int dotX = spinnerCenterX + (int) (Math.cos(angle) * spinnerRadius);
             int dotY = spinnerCenterY + (int) (Math.sin(angle) * spinnerRadius);
             int alpha = 255 - (i * 28);
-            int dotColor = (alpha << 24) | (DesignTokens.Semantic.INFO & 0x00FFFFFF);
+            int dotColor = OverlayTheme.withAlpha(DesignTokens.Semantic.INFO, alpha);
             graphics.fill(dotX - 2, dotY - 2, dotX + 2, dotY + 2, dotColor);
         }
 

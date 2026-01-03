@@ -394,11 +394,20 @@ public class EnduranceQuestOverlay {
         // === Detailed Stats ===
         if (showDetails) {
             // Separator line
-            g.fill(x + 4, textY, x + width - 4, textY + 1, PANEL_BORDER & 0x55FFFFFF);
+            g.fill(x + 4, textY, x + width - 4, textY + 1,
+                OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
             textY += 4;
 
             g.drawString(font, "Run Stats", textX, textY, TEXT_ACCENT, false);
             textY += LINE_HEIGHT;
+
+            // Contract multiplier (if active)
+            if (ContractHudOverlay.INSTANCE.hasActiveContracts()) {
+                float contractMult = ContractHudOverlay.INSTANCE.getTotalMultiplier();
+                String contractText = String.format("\u2694 Contracts: %.1fx", contractMult);
+                g.drawString(font, contractText, textX, textY, OverlayTheme.Contract.MULTIPLIER_HIGH, false);
+                textY += LINE_HEIGHT;
+            }
 
             // Session timer + Kills on same line
             long duration = data.sessionDurationMs();
@@ -837,7 +846,7 @@ public class EnduranceQuestOverlay {
      */
     private static int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     /**
@@ -1063,7 +1072,7 @@ public class EnduranceQuestOverlay {
         // Screen edge glow red
         int edgeHeight = 15;
         int glowAlpha = (int) (pulse * 180);
-        int glowColor = (glowAlpha << 24) | (COLOR_BOSS_ALERT & 0x00FFFFFF);
+        int glowColor = OverlayTheme.withAlpha(COLOR_BOSS_ALERT, glowAlpha);
 
         // Top edge
         g.fill(0, 0, screenWidth, edgeHeight, glowColor);
@@ -1085,7 +1094,8 @@ public class EnduranceQuestOverlay {
         int boxPadding = 10;
         int boxX = centerX - textWidth / 2 - boxPadding;
         int boxY = centerY - 60;
-        g.fill(boxX, boxY, boxX + textWidth + boxPadding * 2, boxY + 32, 0xCC000000);
+        g.fill(boxX, boxY, boxX + textWidth + boxPadding * 2, boxY + 32,
+            OverlayTheme.withAlpha(OverlayTheme.Utility.BLACK, OverlayTheme.Alpha.STANDARD));
 
         // Border
         int borderColorAlert = applyAlpha(COLOR_BOSS_ALERT, pulse);
@@ -1096,7 +1106,7 @@ public class EnduranceQuestOverlay {
 
         // Text pulsating
         int textAlpha = (int) (pulse * 255);
-        int textColor = (textAlpha << 24) | (COLOR_BOSS_ALERT & 0x00FFFFFF);
+        int textColor = OverlayTheme.withAlpha(COLOR_BOSS_ALERT, textAlpha);
         g.drawCenteredString(font, warningText, centerX, boxY + 6, textColor);
 
         // Boss type below

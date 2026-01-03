@@ -45,7 +45,10 @@ public final class DamageTypeConfig {
 
         try {
             // Ensure config directory exists
-            Files.createDirectories(configFile.getParent());
+            Path parent = configFile.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
 
             if (Files.exists(configFile)) {
                 // Load existing config
@@ -199,7 +202,10 @@ public final class DamageTypeConfig {
     public void save() {
         try {
             Path configFile = ConfigPaths.getDamageTypesFile();
-            Files.createDirectories(configFile.getParent());
+            Path parent = configFile.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
             String json = GSON.toJson(damageLabels);
             Files.writeString(configFile, json);
             LOGGER.info("[DevMod] Saved damage type config");

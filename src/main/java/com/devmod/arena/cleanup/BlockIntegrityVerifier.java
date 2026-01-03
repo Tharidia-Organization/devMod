@@ -2,6 +2,7 @@ package com.devmod.arena.cleanup;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,7 +140,7 @@ public class BlockIntegrityVerifier {
             int volumeY = maxY - minY + 1;
             int volumeZ = maxZ - minZ + 1;
 
-            java.util.Random random = new java.util.Random();
+            ThreadLocalRandom random = ThreadLocalRandom.current();
 
             for (int i = 0; i < config.sampleSize(); i++) {
                 int x = minX + random.nextInt(volumeX);

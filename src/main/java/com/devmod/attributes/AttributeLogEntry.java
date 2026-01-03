@@ -15,32 +15,32 @@ public record AttributeLogEntry(
      */
     public enum Type {
         // Tracking
-        ENTITY_DETECTED("§a[+]", 0xFF00FF00),      // Green
-        ENTITY_LOST("§c[-]", 0xFFFF0000),          // Red
-        TARGET_CHANGED("§e[T]", 0xFFFFFF00),       // Yellow
+        ENTITY_DETECTED("§a[+]", AttributeLogColors.GREEN),
+        ENTITY_LOST("§c[-]", AttributeLogColors.RED),
+        TARGET_CHANGED("§e[T]", AttributeLogColors.YELLOW),
 
         // Combat
-        DAMAGE_DEALT("§c[DMG]", 0xFFFF5555),       // Light red
-        DAMAGE_RECEIVED("§4[HIT]", 0xFFAA0000),    // Dark red
-        KILL("§6[KILL]", 0xFFFFAA00),              // Orange
+        DAMAGE_DEALT("§c[DMG]", AttributeLogColors.LIGHT_RED),
+        DAMAGE_RECEIVED("§4[HIT]", AttributeLogColors.DARK_RED),
+        KILL("§6[KILL]", AttributeLogColors.ORANGE),
 
         // Status
-        HEALTH_LOW("§c[LOW]", 0xFFFF0000),         // Red
-        HEALTH_CRITICAL("§4[CRIT]", 0xFF550000),   // Dark red
-        HEALING("§a[HEAL]", 0xFF00FF00),           // Green
+        HEALTH_LOW("§c[LOW]", AttributeLogColors.RED),
+        HEALTH_CRITICAL("§4[CRIT]", AttributeLogColors.CRITICAL_RED),
+        HEALING("§a[HEAL]", AttributeLogColors.GREEN),
 
         // LoS
-        LOS_GAINED("§a[LoS+]", 0xFF55FF55),        // Light green
-        LOS_LOST("§7[LoS-]", 0xFFAAAAAA),          // Gray
+        LOS_GAINED("§a[LoS+]", AttributeLogColors.LIGHT_GREEN),
+        LOS_LOST("§7[LoS-]", AttributeLogColors.GRAY),
 
         // Movement
-        TELEPORT("§d[TP]", 0xFFFF55FF),            // Magenta
-        AGGRO("§c[AGGRO]", 0xFFFF0000),            // Red
+        TELEPORT("§d[TP]", AttributeLogColors.MAGENTA),
+        AGGRO("§c[AGGRO]", AttributeLogColors.RED),
 
         // System
-        INFO("§7[i]", 0xFFAAAAAA),                 // Gray
-        WARNING("§e[!]", 0xFFFFFF00),              // Yellow
-        ERROR("§c[X]", 0xFFFF0000);                // Red
+        INFO("§7[i]", AttributeLogColors.GRAY),
+        WARNING("§e[!]", AttributeLogColors.YELLOW),
+        ERROR("§c[X]", AttributeLogColors.RED);
 
         private final String prefix;
         private final int color;

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,67 +24,67 @@ class UISystemValidationTest {
     // ============================================================
 
     @Nested
-    @DisplayName("L1-01: UI Constants")
-    class UIConstantsTests {
+    @DisplayName("L1-01: Design Tokens")
+    class DesignTokensTests {
 
         @Test
         @DisplayName("Background colors are defined")
         void backgroundColorsDefined() {
-            assertTrue(UIConstants.Background.SCREEN != 0, "SCREEN background");
-            assertTrue(UIConstants.Background.PANEL != 0, "PANEL background");
-            assertTrue(UIConstants.Background.INPUT != 0, "INPUT background");
-            assertTrue(UIConstants.Background.HOVER != 0, "HOVER background");
+            assertTrue(DesignTokens.Background.SCREEN != 0, "SCREEN background");
+            assertTrue(DesignTokens.Background.PANEL != 0, "PANEL background");
+            assertTrue(DesignTokens.Background.INPUT != 0, "INPUT background");
+            assertTrue(DesignTokens.Background.HOVER != 0, "HOVER background");
         }
 
         @Test
         @DisplayName("Text colors are defined")
         void textColorsDefined() {
-            assertTrue(UIConstants.Text.PRIMARY != 0, "PRIMARY text color");
-            assertTrue(UIConstants.Text.SECONDARY != 0, "SECONDARY text color");
-            assertTrue(UIConstants.Text.MUTED != 0, "MUTED text color");
-            assertTrue(UIConstants.Text.TITLE != 0, "TITLE text color");
+            assertTrue(DesignTokens.Text.PRIMARY != 0, "PRIMARY text color");
+            assertTrue(DesignTokens.Text.SECONDARY != 0, "SECONDARY text color");
+            assertTrue(DesignTokens.Text.MUTED != 0, "MUTED text color");
+            assertTrue(DesignTokens.Text.TITLE != 0, "TITLE text color");
         }
 
         @Test
         @DisplayName("Border colors are defined")
         void borderColorsDefined() {
-            assertTrue(UIConstants.Border.DEFAULT != 0, "DEFAULT border");
-            assertTrue(UIConstants.Border.ACCENT != 0, "ACCENT border");
+            assertTrue(DesignTokens.Border.DEFAULT != 0, "DEFAULT border");
+            assertTrue(DesignTokens.Border.ACCENT != 0, "ACCENT border");
         }
 
         @Test
         @DisplayName("Status colors are defined")
         void statusColorsDefined() {
-            assertTrue(UIConstants.Status.SUCCESS != 0, "SUCCESS status");
-            assertTrue(UIConstants.Status.ERROR != 0, "ERROR status");
-            assertTrue(UIConstants.Status.WARNING != 0, "WARNING status");
-            assertTrue(UIConstants.Status.INFO != 0, "INFO status");
+            assertTrue(DesignTokens.Status.SUCCESS != 0, "SUCCESS status");
+            assertTrue(DesignTokens.Status.ERROR != 0, "ERROR status");
+            assertTrue(DesignTokens.Status.WARNING != 0, "WARNING status");
+            assertTrue(DesignTokens.Status.INFO != 0, "INFO status");
         }
 
         @Test
         @DisplayName("Toggle colors are defined")
         void toggleColorsDefined() {
-            assertTrue(UIConstants.Toggle.ON != 0, "Toggle ON");
-            assertTrue(UIConstants.Toggle.OFF != 0, "Toggle OFF");
+            assertTrue(DesignTokens.Toggle.ON != 0, "Toggle ON");
+            assertTrue(DesignTokens.Toggle.OFF != 0, "Toggle OFF");
         }
 
         @Test
         @DisplayName("Colors have correct alpha values")
         void colorsHaveAlpha() {
             // All colors should have alpha > 0 (not fully transparent)
-            int screenAlpha = (UIConstants.Background.SCREEN >> 24) & 0xFF;
+            int screenAlpha = (DesignTokens.Background.SCREEN >> 24) & 0xFF;
             assertTrue(screenAlpha > 0, "SCREEN should have alpha");
 
-            int panelAlpha = (UIConstants.Background.PANEL >> 24) & 0xFF;
+            int panelAlpha = (DesignTokens.Background.PANEL >> 24) & 0xFF;
             assertTrue(panelAlpha > 0, "PANEL should have alpha");
         }
 
         @Test
         @DisplayName("Accent colors are distinct from defaults")
         void accentColorsDistinct() {
-            assertNotEquals(UIConstants.Border.DEFAULT, UIConstants.Border.ACCENT,
+            assertNotEquals(DesignTokens.Border.DEFAULT, DesignTokens.Border.ACCENT,
                 "Accent border should differ from default");
-            assertNotEquals(UIConstants.Text.PRIMARY, UIConstants.Text.MUTED,
+            assertNotEquals(DesignTokens.Text.PRIMARY, DesignTokens.Text.MUTED,
                 "Primary text should differ from muted");
         }
     }
@@ -217,10 +217,10 @@ class UISystemValidationTest {
         @DisplayName("Status colors are visually distinct")
         void statusColorsDistinct() {
             Set<Integer> colors = new HashSet<>();
-            colors.add(UIConstants.Status.SUCCESS);
-            colors.add(UIConstants.Status.ERROR);
-            colors.add(UIConstants.Status.WARNING);
-            colors.add(UIConstants.Status.INFO);
+            colors.add(DesignTokens.Status.SUCCESS);
+            colors.add(DesignTokens.Status.ERROR);
+            colors.add(DesignTokens.Status.WARNING);
+            colors.add(DesignTokens.Status.INFO);
 
             assertEquals(4, colors.size(), "All status colors should be unique");
         }
@@ -244,7 +244,7 @@ class UISystemValidationTest {
             int maxHeight = 30;
 
             // Test that our constants fall in reasonable ranges
-            // These are placeholder tests - actual values from UIConstants
+            // These are placeholder tests - actual values from DesignTokens
             assertTrue(minWidth <= 100 && 100 <= maxWidth, "Button width in range");
             assertTrue(minHeight <= 20 && 20 <= maxHeight, "Button height in range");
         }

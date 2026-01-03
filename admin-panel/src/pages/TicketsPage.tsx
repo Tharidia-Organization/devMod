@@ -10,7 +10,6 @@ import {
   MessageSquare,
   Filter,
   RefreshCw,
-  ChevronDown,
   Send,
   X,
 } from 'lucide-react';
@@ -40,6 +39,13 @@ interface TicketDto {
   resolvedAtMillis: number | null;
   resolutionNotes: string | null;
   ageMillis: number;
+  // SLA information
+  responseSlaBreach: boolean;
+  resolutionSlaBreach: boolean;
+  timeUntilResponseSlaMillis: number | null;
+  timeUntilResolutionSlaMillis: number | null;
+  // Valid transitions for workflow
+  validTransitions: string[];
 }
 
 interface CommentDto {
@@ -82,6 +88,15 @@ const statusColors: Record<string, string> = {
   IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
   RESOLVED: 'bg-green-100 text-green-800',
   CLOSED: 'bg-gray-100 text-gray-800',
+};
+
+// Status display names for dropdown
+const statusDisplayNames: Record<string, string> = {
+  OPEN: 'Open',
+  ASSIGNED: 'Assigned',
+  IN_PROGRESS: 'In Progress',
+  RESOLVED: 'Resolved',
+  CLOSED: 'Closed',
 };
 
 const priorityColors: Record<string, string> = {
@@ -280,6 +295,17 @@ export default function TicketsPage() {
                         <span className="text-xs text-gray-400">
                           {ticket.categoryDisplay}
                         </span>
+                        {/* SLA Breach Warnings */}
+                        {ticket.responseSlaBreach && (
+                          <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700" title="Response SLA breached">
+                            SLA!
+                          </span>
+                        )}
+                        {ticket.resolutionSlaBreach && !ticket.responseSlaBreach && (
+                          <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-orange-100 text-orange-700" title="Resolution SLA breached">
+                            SLA
+                          </span>
+                        )}
                       </div>
                       <h3 className="font-medium text-gray-900 truncate">{ticket.subject}</h3>
                       <p className="text-sm text-gray-500 mt-1">
@@ -343,6 +369,17 @@ export default function TicketsPage() {
                   <span className={clsx('text-xs font-medium', priorityColors[ticketDetail.ticket.priority])}>
                     {ticketDetail.ticket.priorityDisplay}
                   </span>
+                  {/* SLA Status */}
+                  {ticketDetail.ticket.responseSlaBreach && (
+                    <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700">
+                      Response SLA Breached
+                    </span>
+                  )}
+                  {ticketDetail.ticket.resolutionSlaBreach && (
+                    <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-orange-100 text-orange-700">
+                      Resolution SLA Breached
+                    </span>
+                  )}
                 </div>
                 <h2 className="font-semibold text-gray-900">{ticketDetail.ticket.subject}</h2>
                 <p className="text-sm text-gray-500 mt-1">
@@ -351,6 +388,17 @@ export default function TicketsPage() {
                 <p className="text-xs text-gray-400">
                   {format(ticketDetail.ticket.createdAtMillis, 'PPpp')}
                 </p>
+                {/* SLA Time Remaining */}
+                {ticketDetail.ticket.timeUntilResponseSlaMillis !== null && ticketDetail.ticket.timeUntilResponseSlaMillis > 0 && (
+                  <p className="text-xs text-yellow-600 mt-1">
+                    Response SLA: {formatAge(ticketDetail.ticket.timeUntilResponseSlaMillis)} remaining
+                  </p>
+                )}
+                {ticketDetail.ticket.timeUntilResolutionSlaMillis !== null && ticketDetail.ticket.timeUntilResolutionSlaMillis > 0 && (
+                  <p className="text-xs text-yellow-600 mt-1">
+                    Resolution SLA: {formatAge(ticketDetail.ticket.timeUntilResolutionSlaMillis)} remaining
+                  </p>
+                )}
               </div>
 
               {/* Description */}
@@ -370,13 +418,23 @@ export default function TicketsPage() {
                   value={ticketDetail.ticket.status}
                   onChange={(e) => handleStatusChange(ticketDetail.ticket.id, e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 text-sm"
+                  disabled={ticketDetail.ticket.validTransitions.length === 0}
                 >
-                  <option value="OPEN">Open</option>
-                  <option value="ASSIGNED">Assigned</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="RESOLVED">Resolved</option>
-                  <option value="CLOSED">Closed</option>
+                  {/* Current status always shown */}
+                  <option value={ticketDetail.ticket.status}>{ticketDetail.ticket.statusDisplay}</option>
+                  {/* Valid transitions from TicketWorkflow */}
+                  {ticketDetail.ticket.validTransitions
+                    .filter(status => status !== ticketDetail.ticket.status)
+                    .map(status => (
+                      <option key={status} value={status}>
+                        {statusDisplayNames[status] || status}
+                      </option>
+                    ))
+                  }
                 </select>
+                {ticketDetail.ticket.validTransitions.length === 0 && (
+                  <p className="text-xs text-gray-400 mt-1">No transitions available</p>
+                )}
               </div>
 
               {/* Comments */}

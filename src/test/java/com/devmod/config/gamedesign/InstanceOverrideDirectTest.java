@@ -22,12 +22,12 @@ class InstanceOverrideDirectTest {
 
         GameDesignConfig result = override.applyTo(base.copy());
 
-        assertFalse(result.resonance.enabled);
-        assertEquals(900, result.resonance.duoWindowMs);
-        assertEquals(4, result.contracts.maxContractsPerWave);
-        assertEquals(0.42f, result.nemesis.projectileDeflectionChance, 0.0001f);
-        assertFalse(result.tide.enabled);
-        assertEquals(-25, result.tide.sssWave);
+        assertFalse(result.getResonance().enabled);
+        assertEquals(900, result.getResonance().duoWindowMs);
+        assertEquals(4, result.getContracts().maxContractsPerWave);
+        assertEquals(0.42f, result.getNemesis().projectileDeflectionChance, 0.0001f);
+        assertFalse(result.getTide().enabled);
+        assertEquals(-25, result.getTide().sssWave);
     }
 
     @Test
@@ -37,10 +37,10 @@ class InstanceOverrideDirectTest {
         GameDesignConfig result = override.applyTo(new GameDesignConfig().copy());
 
         assertEquals("Hard Mode", override.getInstanceName());
-        assertEquals(300, result.resonance.duoWindowMs);
-        assertEquals(200, result.resonance.trinityWindowMs);
-        assertEquals(100, result.resonance.apocalypseWindowMs);
-        assertEquals(3, result.tide.playerDeath);
-        assertEquals(0.50f, result.nemesis.projectileDeflectionChance, 0.0001f);
+        assertEquals(300, result.getResonance().duoWindowMs);
+        assertEquals(200, result.getResonance().trinityWindowMs);
+        assertEquals(100, result.getResonance().apocalypseWindowMs);
+        assertEquals(3, result.getTide().playerDeath);
+        assertEquals(0.50f, result.getNemesis().projectileDeflectionChance, 0.0001f);
     }
 }

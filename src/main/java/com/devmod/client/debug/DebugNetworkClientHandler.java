@@ -25,22 +25,22 @@ public final class DebugNetworkClientHandler {
 
         // Update the client-side render booleans
         switch (feature) {
-            case ENTITY_PATHING -> DebugRenderBools.ENTITY_PATHING = payload.enabled();
-            case ENTITY_GOALS -> DebugRenderBools.ENTITY_GOALS = payload.enabled();
-            case ENTITY_BRAINS -> DebugRenderBools.ENTITY_BRAINS = payload.enabled();
-            case POI -> DebugRenderBools.POI = payload.enabled();
-            case BLOCK_UPDATES -> DebugRenderBools.BLOCK_UPDATES = payload.enabled();
-            case STRUCTURE_GENERATIONS -> DebugRenderBools.STRUCTURES = payload.enabled();
-            case RAIDS -> DebugRenderBools.RAIDS = payload.enabled();
-            case GAME_EVENTS -> DebugRenderBools.GAME_EVENTS = payload.enabled();
-            case BEE_HIVES -> DebugRenderBools.BEE_HIVES = payload.enabled();
-            case BEES -> DebugRenderBools.BEES = payload.enabled();
-            case WATER -> DebugRenderBools.WATER = payload.enabled();
-            case HEIGHTMAP -> DebugRenderBools.HEIGHTMAP = payload.enabled();
-            case COLLISION -> DebugRenderBools.COLLISION = payload.enabled();
-            case LIGHT -> DebugRenderBools.LIGHT = payload.enabled();
-            case SOLID_FACES -> DebugRenderBools.SOLID_FACES = payload.enabled();
-            case CHUNK -> DebugRenderBools.CHUNK = payload.enabled();
+            case ENTITY_PATHING -> DebugRenderBools.setEntityPathing(payload.enabled());
+            case ENTITY_GOALS -> DebugRenderBools.setEntityGoals(payload.enabled());
+            case ENTITY_BRAINS -> DebugRenderBools.setEntityBrains(payload.enabled());
+            case POI -> DebugRenderBools.setPoi(payload.enabled());
+            case BLOCK_UPDATES -> DebugRenderBools.setBlockUpdates(payload.enabled());
+            case STRUCTURE_GENERATIONS -> DebugRenderBools.setStructures(payload.enabled());
+            case RAIDS -> DebugRenderBools.setRaids(payload.enabled());
+            case GAME_EVENTS -> DebugRenderBools.setGameEvents(payload.enabled());
+            case BEE_HIVES -> DebugRenderBools.setBeeHives(payload.enabled());
+            case BEES -> DebugRenderBools.setBees(payload.enabled());
+            case WATER -> DebugRenderBools.setWater(payload.enabled());
+            case HEIGHTMAP -> DebugRenderBools.setHeightmap(payload.enabled());
+            case COLLISION -> DebugRenderBools.setCollision(payload.enabled());
+            case LIGHT -> DebugRenderBools.setLight(payload.enabled());
+            case SOLID_FACES -> DebugRenderBools.setSolidFaces(payload.enabled());
+            case CHUNK -> DebugRenderBools.setChunk(payload.enabled());
             case SPAWN_CHUNKS -> {} // No specific renderer for this
         }
 

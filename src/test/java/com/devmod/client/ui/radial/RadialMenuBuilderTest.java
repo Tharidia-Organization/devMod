@@ -10,7 +10,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.devmod.client.ui.radial.config.VisibilitySupplierRegistry;
 import com.devmod.client.ui.radial.model.MacroCategory;
 
 /**
@@ -22,12 +21,9 @@ public class RadialMenuBuilderTest {
 
     @BeforeEach
     void setUp() {
-        // Register default visibility suppliers
-        VisibilitySupplierRegistry.registerDefaults();
-        // Initialize runtime registry if not already
-        if (!RadialMenuRuntimeRegistry.isInitialized()) {
-            RadialMenuRuntimeRegistry.initialize(null);
-        }
+        // Reset and initialize for test (does not require Minecraft)
+        RadialMenuRuntimeRegistry.reset();
+        RadialMenuRuntimeRegistry.initializeForTest();
     }
 
     @AfterEach
@@ -53,8 +49,23 @@ public class RadialMenuBuilderTest {
         @Test
         @DisplayName("forMacro with null throws NullPointerException")
         void testForMacroWithNullThrows() {
-            assertThrows(NullPointerException.class, () ->
-                RadialMenuBuilder.forMacro(null));
+            assertThrows(NullPointerException.class, () -> {
+                try {
+                    var method = RadialMenuBuilder.class.getDeclaredMethod("forMacro", MacroCategory.class);
+                    method.invoke(null, new Object[] { null });
+                } catch (java.lang.reflect.InvocationTargetException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof RuntimeException runtime) {
+                        throw runtime;
+                    }
+                    if (cause instanceof Error error) {
+                        throw error;
+                    }
+                    throw new RuntimeException(cause);
+                } catch (ReflectiveOperationException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
 
         @Test

@@ -45,8 +45,6 @@ public class GuildSystem {
     // Config manager reference
     private final EnduranceConfigManager config = EnduranceConfigManager.INSTANCE;
 
-    private static GuildSystem instance;
-
     // Guild storage
     private final Map<String, Guild> guilds = new ConcurrentHashMap<>();
     private final Map<UUID, String> playerGuildMap = new ConcurrentHashMap<>();
@@ -60,10 +58,11 @@ public class GuildSystem {
     }
 
     public static GuildSystem getInstance() {
-        if (instance == null) {
-            instance = new GuildSystem();
-        }
-        return instance;
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final GuildSystem INSTANCE = new GuildSystem();
     }
 
     // === Config-Aware Getters ===

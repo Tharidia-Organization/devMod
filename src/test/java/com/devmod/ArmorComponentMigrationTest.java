@@ -32,11 +32,11 @@ public class ArmorComponentMigrationTest {
         
         // Add legacy NBT stats
         ArmorStats originalStats = new ArmorStats();
-        originalStats.physicalReduction = 0.3f;
-        originalStats.fireReduction = 0.2f;
-        originalStats.armorBonus = 5.0f;
-        originalStats.thornsReflect = true;
-        originalStats.thornsPercent = 0.1f;
+        originalStats.setPhysicalReduction(0.3f);
+        originalStats.setFireReduction(0.2f);
+        originalStats.setArmorBonus(5.0f);
+        originalStats.setThornsReflect(true);
+        originalStats.setThornsPercent(0.1f);
         
         CompoundTag customTag = new CompoundTag();
         CompoundTag armorTag = new CompoundTag();
@@ -58,11 +58,11 @@ public class ArmorComponentMigrationTest {
         CompoundTag componentTag = helmet.get(armorComponent);
         ArmorStats componentStats = componentTag == null ? null : ArmorStats.load(componentTag.copy());
         assertNotNull(componentStats);
-        assertEquals(0.3f, componentStats.physicalReduction, 0.001f);
-        assertEquals(0.2f, componentStats.fireReduction, 0.001f);
-        assertEquals(5.0f, componentStats.armorBonus, 0.001f);
-        assertTrue(componentStats.thornsReflect);
-        assertEquals(0.1f, componentStats.thornsPercent, 0.001f);
+        assertEquals(0.3f, componentStats.getPhysicalReduction(), 0.001f);
+        assertEquals(0.2f, componentStats.getFireReduction(), 0.001f);
+        assertEquals(5.0f, componentStats.getArmorBonus(), 0.001f);
+        assertTrue(componentStats.isThornsReflect());
+        assertEquals(0.1f, componentStats.getThornsPercent(), 0.001f);
     }
     
     @Test
@@ -73,11 +73,11 @@ public class ArmorComponentMigrationTest {
         ItemStack chestplate = new ItemStack(requireNonNull(Items.NETHERITE_CHESTPLATE));
         
         ArmorStats original = new ArmorStats();
-        original.magicReduction = 0.4f;
-        original.explosionReduction = 0.3f;
-        original.knockbackResistance = 0.5f;
-        original.shieldBlockStrength = 0.8f;
-        original.shieldReflectProjectiles = true;
+        original.setMagicReduction(0.4f);
+        original.setExplosionReduction(0.3f);
+        original.setKnockbackResistance(0.5f);
+        original.setShieldBlockStrength(0.8f);
+        original.setShieldReflectProjectiles(true);
         
         // Set component
         CompoundTag tag = new CompoundTag();
@@ -89,11 +89,11 @@ public class ArmorComponentMigrationTest {
         ArmorStats retrieved = retrievedTag == null ? null : ArmorStats.load(retrievedTag.copy());
         
         assertNotNull(retrieved);
-        assertEquals(0.4f, retrieved.magicReduction, 0.001f);
-        assertEquals(0.3f, retrieved.explosionReduction, 0.001f);
-        assertEquals(0.5f, retrieved.knockbackResistance, 0.001f);
-        assertEquals(0.8f, retrieved.shieldBlockStrength, 0.001f);
-        assertTrue(retrieved.shieldReflectProjectiles);
+        assertEquals(0.4f, retrieved.getMagicReduction(), 0.001f);
+        assertEquals(0.3f, retrieved.getExplosionReduction(), 0.001f);
+        assertEquals(0.5f, retrieved.getKnockbackResistance(), 0.001f);
+        assertEquals(0.8f, retrieved.getShieldBlockStrength(), 0.001f);
+        assertTrue(retrieved.isShieldReflectProjectiles());
     }
     
     @Test

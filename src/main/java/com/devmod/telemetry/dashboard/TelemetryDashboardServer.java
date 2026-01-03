@@ -9,9 +9,12 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -43,6 +46,8 @@ public class TelemetryDashboardServer {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Splitter AMPERSAND_SPLITTER = Splitter.on('&');
     public static final TelemetryDashboardServer INSTANCE = new TelemetryDashboardServer();
+
+    public record SqlParam(@Nullable Object value, int sqlType) {}
 
     private static final int DEFAULT_PORT = 8642;
     private static final String BIND_ADDRESS = "127.0.0.1"; // localhost only for security
@@ -916,6 +921,33 @@ public class TelemetryDashboardServer {
         return value.replace("'", "''");
     }
 
+    @Nullable
+    private Timestamp parseTimestamp(@Nullable String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Timestamp.from(Instant.parse(value.trim()));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private Integer parseNullableInt(@Nullable String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        if (!value.matches("^-?\\d+$")) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private List<Map<String, Object>> queryWithFilter(String table, String column, String value, int limit) {
         String sql = "SELECT * FROM " + table + " WHERE " + column + " = '" + value +
                      "' ORDER BY ts DESC LIMIT " + limit;
@@ -923,7 +955,7 @@ public class TelemetryDashboardServer {
     }
 
     private List<Map<String, Object>> getWeaponStats(@Nullable Map<String, String> filters, @Nullable String from, @Nullable String to) {
-        StringBuilder sql = new StringBuilder("""
+        String sql = """
             SELECT
                 COALESCE(NULLIF(JSON_EXTRACT_STRING(attacker_state, '$.mainHand'), ''), 'fist') as weapon,
                 COUNT(*) as hit_count,
@@ -931,46 +963,48 @@ public class TelemetryDashboardServer {
                 ROUND(AVG(damage), 2) as avg_damage,
                 SUM(CASE WHEN is_miss THEN 1 ELSE 0 END) as misses
             FROM combat_hits
-            """);
-        List<String> conditions = new ArrayList<>();
-
-        if (from != null && !from.isBlank()) {
-            conditions.add("ts >= '" + escapeSql(from) + "'");
-        }
-        if (to != null && !to.isBlank()) {
-            conditions.add("ts <= '" + escapeSql(to) + "'");
-        }
-        if (from == null && to == null) {
-            conditions.add("ts >= NOW() - INTERVAL '1 hour'");
-        }
-
-        if (filters != null) {
-            for (Map.Entry<String, String> entry : filters.entrySet()) {
-                if (entry.getValue() == null || entry.getValue().isBlank()) {
-                    continue;
-                }
-                String column = entry.getKey();
-                String value = entry.getValue().trim();
-                if (value.matches("^-?\\d+$")) {
-                    conditions.add(column + " = " + value);
-                } else {
-                    conditions.add(column + " = '" + escapeSql(value) + "'");
-                }
-            }
-        }
-
-        conditions.add("attacker_name IS NOT NULL");
-
-        if (!conditions.isEmpty()) {
-            sql.append(" WHERE ").append(String.join(" AND ", conditions));
-        }
-
-        sql.append("""
+            WHERE (? IS NULL OR ts >= ?)
+              AND (? IS NULL OR ts <= ?)
+              AND attacker_name IS NOT NULL
+              AND (? IS NULL OR template_id = ?)
+              AND (? IS NULL OR template_version = ?)
+              AND (? IS NULL OR policy_id = ?)
+              AND (? IS NULL OR policy_version = ?)
+              AND (? IS NULL OR arena_id = ?)
             GROUP BY weapon
             ORDER BY total_damage DESC
             LIMIT 20
-            """);
-        return executeQuery(sql.toString());
+            """;
+
+        Timestamp fromTs = parseTimestamp(from);
+        Timestamp toTs = parseTimestamp(to);
+        if (fromTs == null && toTs == null) {
+            fromTs = Timestamp.from(Instant.now().minus(Duration.ofHours(1)));
+        }
+
+        String templateId = filters != null ? filters.get("template_id") : null;
+        Integer templateVersion = filters != null ? parseNullableInt(filters.get("template_version")) : null;
+        String policyId = filters != null ? filters.get("policy_id") : null;
+        Integer policyVersion = filters != null ? parseNullableInt(filters.get("policy_version")) : null;
+        String arenaId = filters != null ? filters.get("arena_id") : null;
+
+        List<SqlParam> params = List.of(
+            paramTimestamp(fromTs),
+            paramTimestamp(fromTs),
+            paramTimestamp(toTs),
+            paramTimestamp(toTs),
+            paramString(templateId),
+            paramString(templateId),
+            paramInt(templateVersion),
+            paramInt(templateVersion),
+            paramString(policyId),
+            paramString(policyId),
+            paramInt(policyVersion),
+            paramInt(policyVersion),
+            paramString(arenaId),
+            paramString(arenaId)
+        );
+        return executeQuery(sql, params);
     }
 
     private List<Map<String, Object>> getPerkStats() {
@@ -1005,24 +1039,48 @@ public class TelemetryDashboardServer {
             default -> "24 hours";
         };
     }
+
+    public Timestamp getRangeStart(HttpExchange exchange) {
+        Map<String, String> params = parseQueryParams(exchange);
+        String range = params.getOrDefault("range", "24h");
+        Duration duration = switch (range) {
+            case "1h" -> Duration.ofHours(1);
+            case "6h" -> Duration.ofHours(6);
+            case "24h" -> Duration.ofHours(24);
+            case "7d" -> Duration.ofDays(7);
+            case "all" -> Duration.ofDays(365L * 100);
+            default -> Duration.ofHours(24);
+        };
+        return Timestamp.from(Instant.now().minus(duration));
+    }
+
+    public SqlParam paramString(@Nullable String value) {
+        return new SqlParam(value, Types.VARCHAR);
+    }
+
+    public SqlParam paramInt(@Nullable Integer value) {
+        return new SqlParam(value, Types.INTEGER);
+    }
+
+    public SqlParam paramTimestamp(@Nullable Timestamp value) {
+        return new SqlParam(value, Types.TIMESTAMP);
+    }
     private List<Map<String, Object>> getHeatmapData(@Nullable String type, @Nullable String room, int limit) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM spatial_heatmaps");
-        List<String> conditions = new ArrayList<>();
-
-        if (type != null && !type.isBlank()) {
-            conditions.add("heatmap_type = '" + type + "'");
-        }
-        if (room != null && !room.isBlank()) {
-            conditions.add("room = '" + room + "'");
-        }
-
-        if (!conditions.isEmpty()) {
-            sql.append(" WHERE ").append(String.join(" AND ", conditions));
-        }
-
-        sql.append(" ORDER BY ts DESC LIMIT ").append(limit);
-
-        return executeQuery(sql.toString());
+        String sql = """
+            SELECT * FROM spatial_heatmaps
+            WHERE (? IS NULL OR heatmap_type = ?)
+              AND (? IS NULL OR room = ?)
+            ORDER BY ts DESC
+            LIMIT ?
+            """;
+        List<SqlParam> params = List.of(
+            paramString(type),
+            paramString(type),
+            paramString(room),
+            paramString(room),
+            paramInt(limit)
+        );
+        return executeQuery(sql, params);
     }
 
     private List<Map<String, Object>> getTableList() {
@@ -1033,6 +1091,52 @@ public class TelemetryDashboardServer {
             ORDER BY table_name
             """;
         return executeQuery(sql);
+    }
+
+    public List<Map<String, Object>> executeQuery(String sql, List<SqlParam> params) {
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        if (!DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            return results;
+        }
+
+        try {
+            Connection conn = DuckDBTelemetryService.INSTANCE.getConnection();
+            if (conn == null) {
+                return results;
+            }
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                int index = 1;
+                for (SqlParam param : params) {
+                    if (param.value() == null) {
+                        stmt.setNull(index, param.sqlType());
+                    } else {
+                        stmt.setObject(index, param.value(), param.sqlType());
+                    }
+                    index++;
+                }
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int columnCount = meta.getColumnCount();
+
+                    while (rs.next()) {
+                        Map<String, Object> row = new HashMap<>();
+                        for (int i = 1; i <= columnCount; i++) {
+                            String colName = meta.getColumnLabel(i);
+                            Object value = rs.getObject(i);
+                            row.put(colName, value);
+                        }
+                        results.add(row);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("[Dashboard] Query error: {} - SQL: {}", e.getMessage(), sql);
+        }
+
+        return results;
     }
 
     public List<Map<String, Object>> executeQuery(String sql) {
@@ -1180,16 +1284,17 @@ public class TelemetryDashboardServer {
             String contentType = getContentType(resourcePath);
             exchange.getResponseHeaders().add("Content-Type", contentType);
 
-            try (InputStream is = getClass().getResourceAsStream(fullResourcePath)) {
-                if (is == null) {
-                    String notFound = "File not found: " + fullResourcePath;
-                    exchange.sendResponseHeaders(404, notFound.length());
-                    try (OutputStream os = exchange.getResponseBody()) {
-                        os.write(notFound.getBytes(StandardCharsets.UTF_8));
-                    }
-                    return;
+            InputStream stream = getClass().getResourceAsStream(fullResourcePath);
+            if (stream == null) {
+                String notFound = "File not found: " + fullResourcePath;
+                exchange.sendResponseHeaders(404, notFound.length());
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(notFound.getBytes(StandardCharsets.UTF_8));
                 }
+                return;
+            }
 
+            try (InputStream is = stream) {
                 byte[] bytes = is.readAllBytes();
                 exchange.sendResponseHeaders(200, bytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {

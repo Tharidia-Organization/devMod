@@ -177,7 +177,7 @@ public record ArenaTemplate(
             .size(80)
             .arenaShape(ArenaShape.CIRCULAR)
             .floor(new Floor(64, 1, "minecraft:stone_bricks", "solid", "minecraft:polished_andesite", 0))
-            .walls(new Walls(true, "minecraft:barrier", 12, 1, 64, "solid"))
+            .walls(new Walls(true, "minecraft:barrier", 14, 1, 64, "solid"))
             .ceiling(new Ceiling(true, "minecraft:barrier", 76, 1))
             .underfloor(new Underfloor("minecraft:bedrock", 3, false))
             .palette(new Palette("minecraft:polished_andesite", "minecraft:glowstone", "minecraft:magma_block"))

@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 
 public class ArenaCommandAudit {
 
-    private static final ArenaCommandAudit INSTANCE = new ArenaCommandAudit();
-
     /** Separate logger for audit trail - configured in log4j2.xml as arena.audit */
     private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("arena.audit");
 
@@ -29,7 +27,11 @@ public class ArenaCommandAudit {
     private ArenaCommandAudit() {}
 
     public static ArenaCommandAudit getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final ArenaCommandAudit INSTANCE = new ArenaCommandAudit();
     }
 
     /**

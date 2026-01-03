@@ -124,7 +124,8 @@ public final class CollapsiblePanel implements UIPanel {
         lastHeaderWidth = width;
 
         // Header background
-        graphics.fill(x, y, x + width, y + HEADER_HEIGHT, 0x33FFFFFF);
+        graphics.fill(x, y, x + width, y + HEADER_HEIGHT,
+            DesignTokens.withAlpha(DesignTokens.Text.WHITE, DesignTokens.Alpha.A20));
 
         // Accent bar
         graphics.fill(x, y, x + 3, y + HEADER_HEIGHT, headerColor);
@@ -148,7 +149,7 @@ public final class CollapsiblePanel implements UIPanel {
     }
 
     private void renderCollapseIcon(GuiGraphics graphics, int x, int y) {
-        int iconColor = 0xFFAAAAAA;
+        int iconColor = DesignTokens.Neutral.N500;
         if (collapsed) {
             // Right arrow (>)
             for (int i = 0; i < 6; i++) {

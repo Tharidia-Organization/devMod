@@ -448,7 +448,7 @@ public final class ActiveContractManager {
     }
 
     @Nonnull
-    private static <T> T requireNonNull(@Nullable T value, String label) {
+    private static <T> T requireNonNull(T value, String label) {
         return Objects.requireNonNull(value, label);
     }
 }

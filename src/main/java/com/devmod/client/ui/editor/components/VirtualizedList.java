@@ -11,10 +11,26 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.DesignTokens;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.ScrollState;
 
+/**
+ * VirtualizedList - Generic virtualized scrolling list component.
+ *
+ * <p>Renders only visible rows for performance with large datasets.
+ * Supports keyboard navigation, mouse interaction, and custom row rendering.
+ *
+ * <h2>API CONTRACT (18 methods - 100% utilized)</h2>
+ * <ul>
+ *   <li><b>Configuration:</b> items, rowHeight, rowRenderer, onSelect, onDoubleClick</li>
+ *   <li><b>Rendering:</b> render</li>
+ *   <li><b>Input:</b> mouseClicked, mouseScrolled, keyPressed</li>
+ *   <li><b>Selection:</b> getSelectedIndex, setSelectedIndex, getSelectedItem, selectPrevious, selectNext, clearSelection</li>
+ *   <li><b>State:</b> getItemCount, isEmpty, resetScroll</li>
+ * </ul>
+ *
+ * @param <T> The type of items in the list
+ */
 public class VirtualizedList<T> {
 
     private static final int DEFAULT_ROW_HEIGHT = 24;
@@ -23,7 +39,6 @@ public class VirtualizedList<T> {
     private static final int FADE_LINE_HEIGHT = 1;
     private static final int MIN_PAGE_SIZE = 1;
 
-    private final String id;
     private List<T> items = new ArrayList<>();
     private int rowHeight = ScaledCoord.scaleDim(DEFAULT_ROW_HEIGHT);
     private int selectedIndex = -1;
@@ -60,8 +75,7 @@ public class VirtualizedList<T> {
         T item
     ) {}
 
-    public VirtualizedList(String id) {
-        this.id = id;
+    public VirtualizedList() {
     }
 
     // =========================================================================
@@ -179,13 +193,6 @@ public class VirtualizedList<T> {
     // =========================================================================
 
     /**
-     * Get the scroll state for external manipulation.
-     */
-    public ScrollState getScrollState() {
-        return scrollState;
-    }
-
-    /**
      * Reset scroll to top.
      */
     public void resetScroll() {
@@ -251,12 +258,13 @@ public class VirtualizedList<T> {
                                            : DesignTokens.Background.PANEL();
             graphics.fill(x, rowY, x + width, rowY + rowHeight, rowBg);
 
-            // Custom row rendering
-            if (rowRenderer != null) {
+            // Custom row rendering (local capture for null safety)
+            BiConsumer<RowRenderContext<T>, T> renderer = rowRenderer;
+            if (renderer != null) {
                 RowRenderContext<T> ctx = new RowRenderContext<>(
                     graphics, x, rowY, width, rowHeight, index, selected, hovered, item
                 );
-                rowRenderer.accept(ctx, item);
+                renderer.accept(ctx, item);
             }
         }
 
@@ -422,13 +430,6 @@ public class VirtualizedList<T> {
     }
 
     /**
-     * Get the list ID.
-     */
-    public String getId() {
-        return id;
-    }
-
-    /**
      * Get current item count.
      */
     public int getItemCount() {
@@ -440,12 +441,5 @@ public class VirtualizedList<T> {
      */
     public boolean isEmpty() {
         return items.isEmpty();
-    }
-
-    /**
-     * Get bounds for external use.
-     */
-    public ResponsiveLayout.Rect getBounds() {
-        return new ResponsiveLayout.Rect(x, y, width, height);
     }
 }

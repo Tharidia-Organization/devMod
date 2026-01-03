@@ -81,7 +81,8 @@ public class QuickHelpOverlay {
         y += LINE_HEIGHT + 6;
 
         // Separator
-        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, PANEL_BORDER & 0x55FFFFFF);
+        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1,
+            OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
         y += 6;
 
         // Core Controls

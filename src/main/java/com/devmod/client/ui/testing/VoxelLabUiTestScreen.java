@@ -127,7 +127,7 @@ public class VoxelLabUiTestScreen extends Screen {
         panelContainer.addPanel(
             new CollapsiblePanel("collapsible-pos", "HUD Position",
                 GridPanel.of("grid-position", "Select Position", impactButtons.positionButtons(), 2),
-                0xFFFFAA00)
+                DesignTokens.Testing.WARNING)
         );
 
         // Offset Section
@@ -202,7 +202,7 @@ public class VoxelLabUiTestScreen extends Screen {
         int offsetY = ImpactHudButtons.getOffsetY();
         String offsetStr = Objects.requireNonNull(String.format("Offset: X=%d Y=%d", offsetX, offsetY), "offset string");
         int offsetStrX = width - SIDEBAR_WIDTH - PADDING - font.width(offsetStr) - 20;
-        graphics.drawString(font, offsetStr, offsetStrX, PADDING + 12, 0xFFAAAAAA, false);
+        graphics.drawString(font, offsetStr, offsetStrX, PADDING + 12, DesignTokens.Neutral.N500, false);
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }

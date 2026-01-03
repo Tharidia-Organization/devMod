@@ -28,20 +28,20 @@ public class ActiveTestHudOverlay {
         ResourceLocation.fromNamespaceAndPath("devmod", "active_test_hud");
 
     // === Colors (matching QATestingScreen style) ===
-    private static final int PANEL_BG = 0xE0202030;           // Dark blue-purple
-    private static final int PANEL_BORDER = 0xFF5588FF;       // Light blue border
-    private static final int PANEL_HEADER_BG = 0xFF303050;    // Darker header
+    private static final int PANEL_BG = TestingUiTheme.Hud.PANEL_BG;
+    private static final int PANEL_BORDER = TestingUiTheme.Hud.PANEL_BORDER;
+    private static final int PANEL_HEADER_BG = TestingUiTheme.Hud.PANEL_HEADER_BG;
 
-    private static final int TEXT_TITLE = 0xFF00FFFF;         // Cyan
-    private static final int TEXT_PRIMARY = 0xFFFFFFFF;       // White
-    private static final int TEXT_SECONDARY = 0xFFBBBBBB;     // Light gray
-    private static final int TEXT_MUTED = 0xFF888888;         // Gray
-    private static final int TEXT_SUCCESS = 0xFF55FF55;       // Green
-    private static final int TEXT_WARNING = 0xFFFFAA00;       // Orange
+    private static final int TEXT_TITLE = TestingUiTheme.Hud.TEXT_TITLE;
+    private static final int TEXT_PRIMARY = TestingUiTheme.Hud.TEXT_PRIMARY;
+    private static final int TEXT_SECONDARY = TestingUiTheme.Hud.TEXT_SECONDARY;
+    private static final int TEXT_MUTED = TestingUiTheme.Hud.TEXT_MUTED;
+    private static final int TEXT_SUCCESS = TestingUiTheme.Hud.TEXT_SUCCESS;
+    private static final int TEXT_WARNING = TestingUiTheme.Hud.TEXT_WARNING;
 
-    private static final int PROGRESS_BG = 0xFF333344;
-    private static final int PROGRESS_FILL = 0xFF5588FF;
-    private static final int PROGRESS_COMPLETE = 0xFF55FF55;
+    private static final int PROGRESS_BG = TestingUiTheme.Hud.PROGRESS_BG;
+    private static final int PROGRESS_FILL = TestingUiTheme.Hud.PROGRESS_FILL;
+    private static final int PROGRESS_COMPLETE = TestingUiTheme.Hud.PROGRESS_COMPLETE;
 
     // === Layout ===
     private static final int PANEL_WIDTH = 280;
@@ -125,7 +125,7 @@ public class ActiveTestHudOverlay {
         int y = screenHeight - 30;
 
         String hint = "[F7] Open Testing Hub";
-        g.fill(x - 4, y - 4, x + font.width(hint) + 8, y + 12, 0x80000000);
+        g.fill(x - 4, y - 4, x + font.width(hint) + 8, y + 12, TestingUiTheme.Hud.HINT_BG);
         g.drawString(font, hint, x, y, TEXT_MUTED, false);
     }
 
@@ -219,7 +219,7 @@ public class ActiveTestHudOverlay {
                 // Glow effect
                 int glowAlpha = (int)(100 * (1f - animTime));
                 g.fill(x - 2, y - 2, x + PANEL_WIDTH + 4, y + height + 4,
-                       (glowAlpha << 24) | 0x5588FF);
+                       (glowAlpha << 24) | TestingUiTheme.Hud.NEW_TEST_GLOW_RGB);
             }
         }
 
@@ -229,8 +229,9 @@ public class ActiveTestHudOverlay {
                    activeTest.getStatus() == TestCase.TestStatus.IN_PROGRESS ? TEXT_WARNING : PANEL_BORDER);
 
         // Header with status color
-        int headerColor = activeTest.getStatus() == TestCase.TestStatus.IN_PROGRESS ?
-                          0xFF504020 : PANEL_HEADER_BG;
+        int headerColor = activeTest.getStatus() == TestCase.TestStatus.IN_PROGRESS
+            ? TestingUiTheme.Hud.HEADER_IN_PROGRESS
+            : PANEL_HEADER_BG;
         g.fill(x, y, x + PANEL_WIDTH, y + HEADER_HEIGHT, headerColor);
 
         // Status indicator dot

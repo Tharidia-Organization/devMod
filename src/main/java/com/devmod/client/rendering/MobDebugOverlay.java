@@ -51,8 +51,11 @@ public class MobDebugOverlay {
             lastUpdateTime = System.currentTimeMillis();
         }
 
+        // Capture to local variable for null-safety (field could change between checks)
+        Mob currentMob = trackedMob;
+
         // If we're not looking at any mob but have a recent tracked mob, continue showing the overlay
-        if (trackedMob != null) {
+        if (currentMob != null) {
             // Check timeout
             if (System.currentTimeMillis() - lastUpdateTime > TRACKING_TIMEOUT) {
                 trackedMob = null;
@@ -60,22 +63,22 @@ public class MobDebugOverlay {
             }
 
             // Check if the mob is still valid and alive
-            if (!trackedMob.isAlive() || trackedMob.isRemoved()) {
+            if (!currentMob.isAlive() || currentMob.isRemoved()) {
                 trackedMob = null;
                 return;
             }
 
             // Render main hitbox
-            renderMainHitbox(trackedMob);
+            renderMainHitbox(currentMob);
 
             // Render body parts
-            renderBodyParts(trackedMob);
+            renderBodyParts(currentMob);
 
             // Render aggro range sphere
-            renderAggroRange(trackedMob);
+            renderAggroRange(currentMob);
 
             // Render statistiche
-            renderStats(trackedMob);
+            renderStats(currentMob);
         }
     }
 
@@ -171,12 +174,12 @@ public class MobDebugOverlay {
      */
     private static String getLabelTextForBodyPart(BodyPartCalculator.BodyPartAABB bodyPart, WeaponStats stats) {
         return switch (bodyPart.part()) {
-            case HEAD -> stats.headMult >= 2.0f
-                ? String.format("Head [Crit x%.1f]", stats.headMult)
-                : String.format("Head [x%.2f]", stats.headMult);
-            case ARMS -> String.format("Arms [x%.2f]", stats.armsMult);
-            case BODY -> String.format("Torso [x%.2f]", stats.bodyMult);
-            case LEGS -> String.format("Legs [x%.2f]", stats.legsMult);
+            case HEAD -> stats.getHeadMult() >= 2.0f
+                ? String.format("Head [Crit x%.1f]", stats.getHeadMult())
+                : String.format("Head [x%.2f]", stats.getHeadMult());
+            case ARMS -> String.format("Arms [x%.2f]", stats.getArmsMult());
+            case BODY -> String.format("Torso [x%.2f]", stats.getBodyMult());
+            case LEGS -> String.format("Legs [x%.2f]", stats.getLegsMult());
         };
     }
 

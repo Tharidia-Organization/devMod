@@ -104,7 +104,6 @@ public class DashAbilitySystem {
 
         // Set cooldown
         data.cooldownTicks = data.maxCooldownTicks;
-        data.lastDashTime = System.currentTimeMillis();
         data.dashCount++;
 
         // Register with combo system for style points
@@ -239,7 +238,6 @@ public class DashAbilitySystem {
         public boolean isDashing = false;
         public int dashDurationTicks = 0;
         public int maxDashDurationTicks = DEFAULT_DASH_DURATION_TICKS;
-        public long lastDashTime = 0;
         public int dashCount = 0;
     }
 }

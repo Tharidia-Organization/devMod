@@ -35,6 +35,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class NativeDebugClientRenderer {
@@ -61,35 +62,35 @@ public class NativeDebugClientRenderer {
         Vec3 camPos = event.getCamera().getPosition();
 
         // Render each enabled feature
-        if (DebugRenderBools.ENTITY_PATHING) {
+        if (DebugRenderBools.isEntityPathing()) {
             renderEntityPathing(poseStack, bufferSource, camPos, mc);
         }
 
-        if (DebugRenderBools.ENTITY_GOALS) {
+        if (DebugRenderBools.isEntityGoals()) {
             renderEntityGoals(poseStack, bufferSource, camPos, mc);
         }
 
-        if (DebugRenderBools.ENTITY_BRAINS) {
+        if (DebugRenderBools.isEntityBrains()) {
             renderEntityBrains(poseStack, bufferSource, camPos, mc);
         }
 
-        if (DebugRenderBools.POI) {
+        if (DebugRenderBools.isPoi()) {
             renderPOI(poseStack, bufferSource, camPos, mc);
         }
 
-        if (DebugRenderBools.RAIDS) {
+        if (DebugRenderBools.isRaids()) {
             renderRaids(poseStack, bufferSource, camPos, mc);
         }
 
-        if (DebugRenderBools.BEES) {
+        if (DebugRenderBools.isBees()) {
             renderBees(poseStack, bufferSource, camPos, mc);
         }
 
-        if (DebugRenderBools.STRUCTURES) {
+        if (DebugRenderBools.isStructures()) {
             renderStructures(poseStack, bufferSource, camPos, mc);
         }
 
-        if (DebugRenderBools.GAME_EVENTS) {
+        if (DebugRenderBools.isGameEvents()) {
             renderGameEvents(poseStack, bufferSource, camPos, mc);
         }
 
@@ -97,14 +98,14 @@ public class NativeDebugClientRenderer {
     }
 
     private static boolean hasAnyEnabled() {
-        return DebugRenderBools.ENTITY_PATHING ||
-               DebugRenderBools.ENTITY_GOALS ||
-               DebugRenderBools.ENTITY_BRAINS ||
-               DebugRenderBools.POI ||
-               DebugRenderBools.RAIDS ||
-               DebugRenderBools.BEES ||
-               DebugRenderBools.STRUCTURES ||
-               DebugRenderBools.GAME_EVENTS;
+        return DebugRenderBools.isEntityPathing() ||
+               DebugRenderBools.isEntityGoals() ||
+               DebugRenderBools.isEntityBrains() ||
+               DebugRenderBools.isPoi() ||
+               DebugRenderBools.isRaids() ||
+               DebugRenderBools.isBees() ||
+               DebugRenderBools.isStructures() ||
+               DebugRenderBools.isGameEvents();
     }
 
     /**
@@ -286,9 +287,9 @@ public class NativeDebugClientRenderer {
         for (String line : goalLines) {
             String safeLine = Objects.requireNonNull(line);
             Matrix4f textMatrix = Objects.requireNonNull(poseStack.last().pose());
-            mc.font.drawInBatch(safeLine, -mc.font.width(safeLine) / 2.0f, yOffset, 0xFFFFFF,
-                    false, textMatrix, Objects.requireNonNull(bufferSource),
-                    net.minecraft.client.gui.Font.DisplayMode.NORMAL, 0x40000000, 15728880);
+            mc.font.drawInBatch(safeLine, -mc.font.width(safeLine) / 2.0f, yOffset,
+                    OverlayTheme.Text.PRIMARY, false, textMatrix, Objects.requireNonNull(bufferSource),
+                    net.minecraft.client.gui.Font.DisplayMode.NORMAL, OverlayTheme.Utility.SHADOW, 15728880);
             yOffset += 10;
         }
 
@@ -441,7 +442,6 @@ public class NativeDebugClientRenderer {
         if (serverLevel == null) return;
 
         Raids raids = serverLevel.getRaids();
-        if (raids == null) return;
 
         RenderType lineType = Objects.requireNonNull(RenderType.lines());
         VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);

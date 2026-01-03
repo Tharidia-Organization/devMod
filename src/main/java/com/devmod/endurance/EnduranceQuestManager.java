@@ -310,10 +310,6 @@ public class EnduranceQuestManager {
 
     private void initArenaTemplateIntegration(Path configDir) {
         arenaTemplateRegistry = DevMod.getArenaTemplateRegistry();
-        if (arenaTemplateRegistry == null) {
-            LOGGER.error("[EnduranceQuest] ArenaTemplateRegistry not available; Endurance now requires arena templates");
-            return;
-        }
         if (arenaTemplateConfig == null || !arenaTemplateConfig.arenaTemplateEnabled()) {
             LOGGER.error("[EnduranceQuest] Arena template system disabled; enable devmod.arena.templateEnabled");
             return;
@@ -476,6 +472,18 @@ public class EnduranceQuestManager {
                 tags.add("ranged");
             } else {
                 tags.add("melee");
+            }
+        }
+        if (settings != null) {
+            int arenaSize = settings.arenaSize;
+            if (arenaSize > 0) {
+                if (arenaSize <= 48) {
+                    tags.add("arena_small");
+                } else if (arenaSize <= 96) {
+                    tags.add("arena_medium");
+                } else {
+                    tags.add("arena_large");
+                }
             }
         }
         return tags;

@@ -2,6 +2,7 @@ package com.devmod.util;
 
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.Level;
@@ -27,7 +28,8 @@ public final class MixinLogFilter extends AbstractFilter {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MixinLogFilter.class);
 
     private static boolean installed = false;
-    private static int filteredCount = 0;
+    private static volatile MixinLogFilter installedFilter;
+    private final AtomicInteger filteredCount = new AtomicInteger();
 
     // Patterns to match mixin client-side warnings
     private static final Pattern MIXIN_TARGET_PATTERN = Pattern.compile(
@@ -90,7 +92,7 @@ public final class MixinLogFilter extends AbstractFilter {
         String message = event.getMessage().getFormattedMessage();
 
         if (shouldFilter(loggerName, message)) {
-            filteredCount++;
+            filteredCount.incrementAndGet();
             return Result.DENY;
         }
 
@@ -107,7 +109,7 @@ public final class MixinLogFilter extends AbstractFilter {
         String message = msg.getFormattedMessage();
 
         if (shouldFilter(loggerName, message)) {
-            filteredCount++;
+            filteredCount.incrementAndGet();
             return Result.DENY;
         }
 
@@ -123,7 +125,7 @@ public final class MixinLogFilter extends AbstractFilter {
         String loggerName = logger != null ? logger.getName() : "";
 
         if (shouldFilter(loggerName, msg)) {
-            filteredCount++;
+            filteredCount.incrementAndGet();
             return Result.DENY;
         }
 
@@ -140,7 +142,7 @@ public final class MixinLogFilter extends AbstractFilter {
         String message = msg.toString();
 
         if (shouldFilter(loggerName, message)) {
-            filteredCount++;
+            filteredCount.incrementAndGet();
             return Result.DENY;
         }
 
@@ -209,6 +211,7 @@ public final class MixinLogFilter extends AbstractFilter {
 
             context.updateLoggers();
 
+            installedFilter = filter;
             installed = true;
             LOGGER.info("[DevMod] Mixin log filter installed - client-side mixin warnings will be suppressed");
 
@@ -221,7 +224,8 @@ public final class MixinLogFilter extends AbstractFilter {
      * Get count of filtered messages.
      */
     public static int getFilteredCount() {
-        return filteredCount;
+        MixinLogFilter filter = installedFilter;
+        return filter != null ? filter.filteredCount.get() : 0;
     }
 
     /**
@@ -236,8 +240,12 @@ public final class MixinLogFilter extends AbstractFilter {
      * Call this periodically or at shutdown.
      */
     public static void logSummary() {
-        if (filteredCount > 0) {
-            LOGGER.info("[DevMod] Mixin log filter suppressed {} client-side mixin warnings", filteredCount);
+        MixinLogFilter filter = installedFilter;
+        if (filter != null) {
+            int count = filter.filteredCount.get();
+            if (count > 0) {
+                LOGGER.info("[DevMod] Mixin log filter suppressed {} client-side mixin warnings", count);
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
@@ -82,49 +83,47 @@ public final class TicketRepository {
         Connection conn = connMgr.getConnectionUnchecked();
 
         // Create tickets table
-        conn.createStatement().execute("""
-            CREATE TABLE IF NOT EXISTS tickets (
-                id VARCHAR PRIMARY KEY,
-                reporter_uuid VARCHAR NOT NULL,
-                reporter_name VARCHAR,
-                reported_uuid VARCHAR,
-                reported_name VARCHAR,
-                category VARCHAR NOT NULL,
-                priority VARCHAR DEFAULT 'NORMAL',
-                status VARCHAR DEFAULT 'OPEN',
-                subject VARCHAR NOT NULL,
-                description VARCHAR,
-                assigned_to VARCHAR,
-                assigned_to_name VARCHAR,
-                created_at TIMESTAMP NOT NULL,
-                updated_at TIMESTAMP,
-                resolved_at TIMESTAMP,
-                resolution_notes VARCHAR
-            )
-            """);
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS tickets (
+                    id VARCHAR PRIMARY KEY,
+                    reporter_uuid VARCHAR NOT NULL,
+                    reporter_name VARCHAR,
+                    reported_uuid VARCHAR,
+                    reported_name VARCHAR,
+                    category VARCHAR NOT NULL,
+                    priority VARCHAR DEFAULT 'NORMAL',
+                    status VARCHAR DEFAULT 'OPEN',
+                    subject VARCHAR NOT NULL,
+                    description VARCHAR,
+                    assigned_to VARCHAR,
+                    assigned_to_name VARCHAR,
+                    created_at TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMP,
+                    resolved_at TIMESTAMP,
+                    resolution_notes VARCHAR
+                )
+                """);
 
-        // Create ticket_comments table
-        conn.createStatement().execute("""
-            CREATE TABLE IF NOT EXISTS ticket_comments (
-                id VARCHAR PRIMARY KEY,
-                ticket_id VARCHAR NOT NULL,
-                author_uuid VARCHAR,
-                author_name VARCHAR,
-                content VARCHAR NOT NULL,
-                is_internal BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP NOT NULL
-            )
-            """);
+            // Create ticket_comments table
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS ticket_comments (
+                    id VARCHAR PRIMARY KEY,
+                    ticket_id VARCHAR NOT NULL,
+                    author_uuid VARCHAR,
+                    author_name VARCHAR,
+                    content VARCHAR NOT NULL,
+                    is_internal BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP NOT NULL
+                )
+                """);
 
-        // Create indexes
-        conn.createStatement().execute(
-            "CREATE INDEX IF NOT EXISTS idx_tickets_reporter ON tickets(reporter_uuid)");
-        conn.createStatement().execute(
-            "CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)");
-        conn.createStatement().execute(
-            "CREATE INDEX IF NOT EXISTS idx_tickets_assigned ON tickets(assigned_to)");
-        conn.createStatement().execute(
-            "CREATE INDEX IF NOT EXISTS idx_comments_ticket ON ticket_comments(ticket_id)");
+            // Create indexes
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_tickets_reporter ON tickets(reporter_uuid)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_tickets_assigned ON tickets(assigned_to)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_comments_ticket ON ticket_comments(ticket_id)");
+        }
 
         LOGGER.info("[TicketRepo] Schema initialized");
     }
@@ -438,32 +437,34 @@ public final class TicketRepository {
             try { Connection conn = connMgr.getConnectionUnchecked();
                 int total = 0, open = 0, assigned = 0, inProgress = 0, resolved = 0, closed = 0;
 
-                try (ResultSet rs = conn.createStatement().executeQuery(
-                        "SELECT status, COUNT(*) as cnt FROM tickets GROUP BY status")) {
-                    while (rs.next()) {
-                        String status = rs.getString("status");
-                        int cnt = rs.getInt("cnt");
-                        total += cnt;
-                        switch (TicketStatus.valueOf(status)) {
-                            case OPEN -> open = cnt;
-                            case ASSIGNED -> assigned = cnt;
-                            case IN_PROGRESS -> inProgress = cnt;
-                            case RESOLVED -> resolved = cnt;
-                            case CLOSED -> closed = cnt;
+                long avgResolutionMs = 0;
+                try (Statement stmt = conn.createStatement()) {
+                    try (ResultSet rs = stmt.executeQuery(
+                            "SELECT status, COUNT(*) as cnt FROM tickets GROUP BY status")) {
+                        while (rs.next()) {
+                            String status = rs.getString("status");
+                            int cnt = rs.getInt("cnt");
+                            total += cnt;
+                            switch (TicketStatus.valueOf(status)) {
+                                case OPEN -> open = cnt;
+                                case ASSIGNED -> assigned = cnt;
+                                case IN_PROGRESS -> inProgress = cnt;
+                                case RESOLVED -> resolved = cnt;
+                                case CLOSED -> closed = cnt;
+                            }
                         }
                     }
-                }
 
-                // Get average resolution time (for resolved tickets)
-                long avgResolutionMs = 0;
-                try (ResultSet rs = conn.createStatement().executeQuery("""
-                        SELECT AVG(EPOCH(resolved_at) - EPOCH(created_at)) * 1000 as avg_time
-                        FROM tickets WHERE resolved_at IS NOT NULL
-                        """)) {
-                    if (rs.next()) {
-                        double avgTime = rs.getDouble("avg_time");
-                        if (!rs.wasNull()) {
-                            avgResolutionMs = (long) avgTime;
+                    // Get average resolution time (for resolved tickets)
+                    try (ResultSet rs = stmt.executeQuery("""
+                            SELECT AVG(EPOCH(resolved_at) - EPOCH(created_at)) * 1000 as avg_time
+                            FROM tickets WHERE resolved_at IS NOT NULL
+                            """)) {
+                        if (rs.next()) {
+                            double avgTime = rs.getDouble("avg_time");
+                            if (!rs.wasNull()) {
+                                avgResolutionMs = (long) avgTime;
+                            }
                         }
                     }
                 }

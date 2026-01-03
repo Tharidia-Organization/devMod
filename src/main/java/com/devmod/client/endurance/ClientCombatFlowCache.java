@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceColors;
 import com.devmod.endurance.FlowStateTracker;
 import com.devmod.endurance.MomentumTracker;
 
@@ -69,7 +70,7 @@ public final class ClientCombatFlowCache {
 
         if (payload.isInOverdrive() && !currentState.isInOverdrive()) {
             overdriveJustStarted = true;
-            addAnnouncement("OVERDRIVE!", "MAXIMUM POWER!", 0xFF00FF, true);
+            addAnnouncement("OVERDRIVE!", "MAXIMUM POWER!", EnduranceColors.Momentum.OVERDRIVE, true);
         }
 
         // Add action announcement if present

@@ -104,22 +104,22 @@ public class DevModGameTests {
         WeaponStats stats = new WeaponStats();
 
         // Verify default multipliers are in acceptable range
-        helper.assertTrue(stats.headMult >= 1.0f && stats.headMult <= 3.0f,
-            "Head multiplier should be between 1.0 and 3.0, was: " + stats.headMult);
-        helper.assertTrue(stats.bodyMult >= 0.5f && stats.bodyMult <= 2.0f,
-            "Body multiplier should be between 0.5 and 2.0, was: " + stats.bodyMult);
-        helper.assertTrue(stats.armsMult >= 0.3f && stats.armsMult <= 1.5f,
-            "Arms multiplier should be between 0.3 and 1.5, was: " + stats.armsMult);
-        helper.assertTrue(stats.legsMult >= 0.3f && stats.legsMult <= 1.5f,
-            "Legs multiplier should be between 0.3 and 1.5, was: " + stats.legsMult);
+        helper.assertTrue(stats.getHeadMult() >= 1.0f && stats.getHeadMult() <= 3.0f,
+            "Head multiplier should be between 1.0 and 3.0, was: " + stats.getHeadMult());
+        helper.assertTrue(stats.getBodyMult() >= 0.5f && stats.getBodyMult() <= 2.0f,
+            "Body multiplier should be between 0.5 and 2.0, was: " + stats.getBodyMult());
+        helper.assertTrue(stats.getArmsMult() >= 0.3f && stats.getArmsMult() <= 1.5f,
+            "Arms multiplier should be between 0.3 and 1.5, was: " + stats.getArmsMult());
+        helper.assertTrue(stats.getLegsMult() >= 0.3f && stats.getLegsMult() <= 1.5f,
+            "Legs multiplier should be between 0.3 and 1.5, was: " + stats.getLegsMult());
 
         // Verify base damage bonus starts at 0
-        helper.assertTrue(Math.abs(stats.baseDamageBonus - 0.0f) < EPSILON,
-            "Base damage bonus should be 0.0, was: " + stats.baseDamageBonus);
+        helper.assertTrue(Math.abs(stats.getBaseDamageBonus() - 0.0f) < EPSILON,
+            "Base damage bonus should be 0.0, was: " + stats.getBaseDamageBonus());
 
         // Verify armor penetration starts at 0
-        helper.assertTrue(Math.abs(stats.armorPenetration - 0.0f) < EPSILON,
-            "Armor penetration should be 0.0, was: " + stats.armorPenetration);
+        helper.assertTrue(Math.abs(stats.getArmorPenetration() - 0.0f) < EPSILON,
+            "Armor penetration should be 0.0, was: " + stats.getArmorPenetration());
 
         helper.succeed();
     }
@@ -132,12 +132,12 @@ public class DevModGameTests {
     public static void weaponStatsNbtRoundTrip(GameTestHelper helper) {
         // Create stats with custom values
         WeaponStats original = new WeaponStats();
-        original.headMult = 2.5f;
-        original.bodyMult = 1.2f;
-        original.armsMult = 0.6f;
-        original.legsMult = 0.5f;
-        original.baseDamageBonus = 3.0f;
-        original.armorPenetration = 0.15f;
+        original.setHeadMult(2.5f);
+        original.setBodyMult(1.2f);
+        original.setArmsMult(0.6f);
+        original.setLegsMult(0.5f);
+        original.setBaseDamageBonus(3.0f);
+        original.setArmorPenetration(0.15f);
 
         // Save to CompoundTag
         CompoundTag tag = new CompoundTag();
@@ -147,17 +147,17 @@ public class DevModGameTests {
         WeaponStats loaded = WeaponStats.load(tag);
 
         // Verify all values match
-        helper.assertTrue(Math.abs(loaded.headMult - original.headMult) < EPSILON,
+        helper.assertTrue(Math.abs(loaded.getHeadMult() - original.getHeadMult()) < EPSILON,
             "Head multiplier mismatch after load");
-        helper.assertTrue(Math.abs(loaded.bodyMult - original.bodyMult) < EPSILON,
+        helper.assertTrue(Math.abs(loaded.getBodyMult() - original.getBodyMult()) < EPSILON,
             "Body multiplier mismatch after load");
-        helper.assertTrue(Math.abs(loaded.armsMult - original.armsMult) < EPSILON,
+        helper.assertTrue(Math.abs(loaded.getArmsMult() - original.getArmsMult()) < EPSILON,
             "Arms multiplier mismatch after load");
-        helper.assertTrue(Math.abs(loaded.legsMult - original.legsMult) < EPSILON,
+        helper.assertTrue(Math.abs(loaded.getLegsMult() - original.getLegsMult()) < EPSILON,
             "Legs multiplier mismatch after load");
-        helper.assertTrue(Math.abs(loaded.baseDamageBonus - original.baseDamageBonus) < EPSILON,
+        helper.assertTrue(Math.abs(loaded.getBaseDamageBonus() - original.getBaseDamageBonus()) < EPSILON,
             "Base damage bonus mismatch after load");
-        helper.assertTrue(Math.abs(loaded.armorPenetration - original.armorPenetration) < EPSILON,
+        helper.assertTrue(Math.abs(loaded.getArmorPenetration() - original.getArmorPenetration()) < EPSILON,
             "Armor penetration mismatch after load");
 
         helper.succeed();
@@ -173,10 +173,10 @@ public class DevModGameTests {
         float baseDamage = 10.0f;
         WeaponStats stats = new WeaponStats();
 
-        float headDamage = baseDamage * stats.headMult;
-        float bodyDamage = baseDamage * stats.bodyMult;
-        float armsDamage = baseDamage * stats.armsMult;
-        float legsDamage = baseDamage * stats.legsMult;
+        float headDamage = baseDamage * stats.getHeadMult();
+        float bodyDamage = baseDamage * stats.getBodyMult();
+        float armsDamage = baseDamage * stats.getArmsMult();
+        float legsDamage = baseDamage * stats.getLegsMult();
 
         // Verify ordering
         helper.assertTrue(headDamage >= bodyDamage,
@@ -202,13 +202,13 @@ public class DevModGameTests {
     @GameTest(template = TEMPLATE_EMPTY, batch = "core", required = true)
     public static void damageCalculationBasic(GameTestHelper helper) {
         WeaponStats stats = new WeaponStats();
-        stats.headMult = 2.0f;
-        stats.baseDamageBonus = 5.0f;
-        stats.armorPenetration = 0.0f;
+        stats.setHeadMult(2.0f);
+        stats.setBaseDamageBonus(5.0f);
+        stats.setArmorPenetration(0.0f);
 
         float originalDamage = 10.0f;
         // Formula: (originalDamage + baseDamageBonus) * multiplier
-        float expectedDamage = (originalDamage + stats.baseDamageBonus) * stats.headMult;
+        float expectedDamage = (originalDamage + stats.getBaseDamageBonus()) * stats.getHeadMult();
         // = (10 + 5) * 2.0 = 30.0
 
         helper.assertTrue(Math.abs(expectedDamage - 30.0f) < EPSILON,
@@ -224,11 +224,11 @@ public class DevModGameTests {
     @GameTest(template = TEMPLATE_EMPTY, batch = "core")
     public static void damageCalculationZeroDamage(GameTestHelper helper) {
         WeaponStats stats = new WeaponStats();
-        stats.headMult = 2.0f;
-        stats.baseDamageBonus = 3.0f;
+        stats.setHeadMult(2.0f);
+        stats.setBaseDamageBonus(3.0f);
 
         float originalDamage = 0.0f;
-        float calculatedDamage = (originalDamage + stats.baseDamageBonus) * stats.headMult;
+        float calculatedDamage = (originalDamage + stats.getBaseDamageBonus()) * stats.getHeadMult();
         // = (0 + 3) * 2.0 = 6.0
 
         helper.assertTrue(calculatedDamage >= 0,
@@ -501,17 +501,17 @@ public class DevModGameTests {
     public static void weaponConfigGlobalStats(GameTestHelper helper) {
         // Set custom global stats for diamond sword
         WeaponStats customStats = new WeaponStats();
-        customStats.headMult = 3.0f;
-        customStats.baseDamageBonus = 5.0f;
+        customStats.setHeadMult(3.0f);
+        customStats.setBaseDamageBonus(5.0f);
         WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.DIAMOND_SWORD), customStats);
 
         // Create item and get stats
         ItemStack sword = new ItemStack(Objects.requireNonNull(Items.DIAMOND_SWORD));
         WeaponStats retrieved = WeaponConfigManager.getStats(sword);
 
-        helper.assertTrue(Math.abs(retrieved.headMult - 3.0f) < EPSILON,
+        helper.assertTrue(Math.abs(retrieved.getHeadMult() - 3.0f) < EPSILON,
             "Global head multiplier should be 3.0");
-        helper.assertTrue(Math.abs(retrieved.baseDamageBonus - 5.0f) < EPSILON,
+        helper.assertTrue(Math.abs(retrieved.getBaseDamageBonus() - 5.0f) < EPSILON,
             "Global base damage bonus should be 5.0");
 
         // Cleanup
@@ -528,20 +528,20 @@ public class DevModGameTests {
     public static void weaponConfigSpecificStatsPriority(GameTestHelper helper) {
         // Set global stats for iron sword
         WeaponStats globalStats = new WeaponStats();
-        globalStats.headMult = 2.0f;
+        globalStats.setHeadMult(2.0f);
         WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.IRON_SWORD), globalStats);
 
         // Create item with specific NBT stats (higher priority)
         ItemStack sword = new ItemStack(Objects.requireNonNull(Items.IRON_SWORD));
         WeaponStats specificStats = new WeaponStats();
-        specificStats.headMult = 4.0f;
+        specificStats.setHeadMult(4.0f);
         WeaponConfigManager.setSpecificStats(sword, specificStats);
 
         // Get stats - should use specific NBT, not global
         WeaponStats retrieved = WeaponConfigManager.getStats(sword);
 
-        helper.assertTrue(Math.abs(retrieved.headMult - 4.0f) < EPSILON,
-            "Specific NBT stats should override global: expected 4.0, got " + retrieved.headMult);
+        helper.assertTrue(Math.abs(retrieved.getHeadMult() - 4.0f) < EPSILON,
+            "Specific NBT stats should override global: expected 4.0, got " + retrieved.getHeadMult());
 
         // Cleanup
         WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.IRON_SWORD), new WeaponStats());
@@ -561,26 +561,26 @@ public class DevModGameTests {
         // 1. No config set - should return defaults
         ItemStack goldenSword = new ItemStack(Objects.requireNonNull(Items.GOLDEN_SWORD));
         WeaponStats defaultStats = WeaponConfigManager.getStats(goldenSword);
-        helper.assertTrue(Math.abs(defaultStats.headMult - 1.5f) < EPSILON,
+        helper.assertTrue(Math.abs(defaultStats.getHeadMult() - 1.5f) < EPSILON,
             "Default head multiplier should be 1.5");
 
         // 2. Set global config - should override defaults
         WeaponStats globalStats = new WeaponStats();
-        globalStats.headMult = 2.5f;
+        globalStats.setHeadMult(2.5f);
         WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.GOLDEN_SWORD), globalStats);
 
         WeaponStats afterGlobal = WeaponConfigManager.getStats(goldenSword);
-        helper.assertTrue(Math.abs(afterGlobal.headMult - 2.5f) < EPSILON,
-            "Global config should override defaults: expected 2.5, got " + afterGlobal.headMult);
+        helper.assertTrue(Math.abs(afterGlobal.getHeadMult() - 2.5f) < EPSILON,
+            "Global config should override defaults: expected 2.5, got " + afterGlobal.getHeadMult());
 
         // 3. Set specific NBT - should override global
         WeaponStats specificStats = new WeaponStats();
-        specificStats.headMult = 3.5f;
+        specificStats.setHeadMult(3.5f);
         WeaponConfigManager.setSpecificStats(goldenSword, specificStats);
 
         WeaponStats afterSpecific = WeaponConfigManager.getStats(goldenSword);
-        helper.assertTrue(Math.abs(afterSpecific.headMult - 3.5f) < EPSILON,
-            "Specific NBT should override global: expected 3.5, got " + afterSpecific.headMult);
+        helper.assertTrue(Math.abs(afterSpecific.getHeadMult() - 3.5f) < EPSILON,
+            "Specific NBT should override global: expected 3.5, got " + afterSpecific.getHeadMult());
 
         helper.succeed();
     }

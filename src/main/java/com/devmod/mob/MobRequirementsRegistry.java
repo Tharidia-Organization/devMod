@@ -94,7 +94,8 @@ public class MobRequirementsRegistry {
      * @return true if reload succeeded, false if no override file exists
      */
     public boolean reloadSingle(ResourceLocation mobId) {
-        if (!initialized.get() || loader == null) {
+        MobRequirementsLoader currentLoader = loader;
+        if (!initialized.get() || currentLoader == null) {
             LOGGER.warn("Cannot reload single mob - registry not initialized");
             return false;
         }
@@ -103,13 +104,13 @@ public class MobRequirementsRegistry {
         cache.remove(mobId);
 
         // Try to load the override file for this mob
-        java.nio.file.Path configDir = loader.getConfigDirectory();
+        java.nio.file.Path configDir = currentLoader.getConfigDirectory();
         String filename = mobId.getNamespace() + "_" + mobId.getPath() + ".json";
         java.nio.file.Path filePath = configDir.resolve(filename);
 
         if (java.nio.file.Files.exists(filePath)) {
             try {
-                MobRequirements reqs = loader.loadFromFile(filePath);
+                MobRequirements reqs = currentLoader.loadFromFile(filePath);
                 if (reqs != null) {
                     overrides.put(mobId, reqs);
                     LOGGER.info("Reloaded override for: {}", mobId);
@@ -147,6 +148,10 @@ public class MobRequirementsRegistry {
 
     /**
      * Gets requirements for a mob by EntityType.
+     * Convenience method for use in spawn systems like WaveManager and BossWaveSystem.
+     *
+     * @param entityType The entity type to get requirements for
+     * @return Requirements for the mob (never null)
      */
     public MobRequirements get(EntityType<?> entityType) {
         ResourceLocation mobId = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
@@ -319,7 +324,8 @@ public class MobRequirementsRegistry {
      * Call this once to create starter config files.
      */
     public void generateExampleOverrides() {
-        if (loader == null) {
+        MobRequirementsLoader currentLoader = loader;
+        if (currentLoader == null) {
             LOGGER.warn("Cannot generate examples - registry not initialized");
             return;
         }
@@ -339,7 +345,7 @@ public class MobRequirementsRegistry {
 
         for (String mob : exampleMobs) {
             try {
-                loader.generateExample(ResourceLocation.parse(Objects.requireNonNull(mob)));
+                currentLoader.generateExample(ResourceLocation.parse(Objects.requireNonNull(mob)));
             } catch (Exception e) {
                 LOGGER.error("Failed to generate example for {}", mob, e);
             }

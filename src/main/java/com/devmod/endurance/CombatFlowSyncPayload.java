@@ -2,6 +2,8 @@ package com.devmod.endurance;
 
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -25,9 +27,16 @@ public record CombatFlowSyncPayload(
     int momentumPercent,
     int momentumStateOrdinal,
     long overdriveRemainingMs,
-    String lastActionName,
+    @Nonnull String lastActionName,
     int lastActionPoints
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
+
+    /**
+     * Compact constructor for null validation.
+     */
+    public CombatFlowSyncPayload {
+        Objects.requireNonNull(lastActionName, "lastActionName");
+    }
 
     public static final ResourceLocation ID = Objects.requireNonNull(
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "combat_flow_sync"));
@@ -55,7 +64,7 @@ public record CombatFlowSyncPayload(
         buf.writeByte(payload.momentumPercent);
         buf.writeByte(payload.momentumStateOrdinal);
         buf.writeVarLong(payload.overdriveRemainingMs);
-        buf.writeUtf(payload.lastActionName, 32);
+        buf.writeUtf(Objects.requireNonNull(payload.lastActionName), 32);
         buf.writeVarInt(payload.lastActionPoints);
     }
 
@@ -112,10 +121,6 @@ public record CombatFlowSyncPayload(
 
     public boolean isInOverdrive() {
         return overdriveRemainingMs > 0;
-    }
-
-    public boolean hasActiveCombo() {
-        return combo > 0;
     }
 
     public boolean isEmpty() {

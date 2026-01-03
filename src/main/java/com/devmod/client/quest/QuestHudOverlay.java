@@ -16,6 +16,8 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.quest.QuestData;
 import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
@@ -28,17 +30,17 @@ public class QuestHudOverlay {
         ResourceLocation.fromNamespaceAndPath("devmod", "quest_hud");
 
     // === UI Colors (consistent style with ImpactHudOverlay) ===
-    private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
-    private static final int PANEL_BORDER = 0xFF4CAF50;       // Green (for quest)
-    private static final int PANEL_BORDER_GLOW = 0x554CAF50;  // Glow border
+    private static final int PANEL_BG = OverlayTheme.Quest.PANEL_BG;
+    private static final int PANEL_BORDER = OverlayTheme.Quest.BORDER;
+    private static final int PANEL_BORDER_GLOW = OverlayTheme.Quest.BORDER_GLOW;
 
-    private static final int TEXT_TITLE = 0xFF81C784;         // Light green
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // White
-    private static final int TEXT_TASK = 0xFFFFD54F;          // Yellow/Gold (current task)
-    private static final int TEXT_NOTE = 0xFFB0BEC5;          // Light gray (note)
-    private static final int TEXT_PROGRESS = 0xFF64B5F6;      // Light blue (progress)
-    private static final int TEXT_COMPLETED = 0xFF4CAF50;     // Green (completed)
-    private static final int TEXT_HINT = 0xFF666666;          // Dark gray (hint)
+    private static final int TEXT_TITLE = OverlayTheme.Quest.TITLE;
+    private static final int TEXT_NORMAL = OverlayTheme.Quest.TEXT;
+    private static final int TEXT_TASK = OverlayTheme.Quest.TASK;
+    private static final int TEXT_NOTE = OverlayTheme.Quest.NOTE;
+    private static final int TEXT_PROGRESS = OverlayTheme.Quest.PROGRESS;
+    private static final int TEXT_COMPLETED = OverlayTheme.Quest.COMPLETED;
+    private static final int TEXT_HINT = OverlayTheme.Quest.HINT;
 
     // === Dimensions ===
     private static final int PANEL_PADDING = 6;
@@ -194,7 +196,7 @@ public class QuestHudOverlay {
         textY += LINE_HEIGHT + 2;
 
         // Separator line
-        g.fill(x + 4, textY, x + width - 4, textY + 1, PANEL_BORDER & 0x55FFFFFF);
+        g.fill(x + 4, textY, x + width - 4, textY + 1, OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
         textY += 4;
 
         // === Current Task ===
@@ -221,7 +223,7 @@ public class QuestHudOverlay {
             // Quest completed with animation
             long time = System.currentTimeMillis();
             int pulseAlpha = (int) (200 + 55 * Math.sin(time / 300.0));
-            int completedColor = (pulseAlpha << 24) | (TEXT_COMPLETED & 0x00FFFFFF);
+            int completedColor = (pulseAlpha << 24) | (TEXT_COMPLETED & DesignTokens.Mask.RGB);
             g.drawString(font, "\u2713 Quest completed!", textX, textY, completedColor, false);
             textY += LINE_HEIGHT;
         }
@@ -229,7 +231,8 @@ public class QuestHudOverlay {
         // === Quest Note (if present, at the bottom) ===
         if (quest.hasQuestNote()) {
             textY += 2;
-            g.fill(x + 4, textY, x + width - 4, textY + 1, PANEL_BORDER & 0x33FFFFFF);
+            g.fill(x + 4, textY, x + width - 4, textY + 1,
+                OverlayTheme.withAlpha(PANEL_BORDER, DesignTokens.Alpha.A20));
             textY += 4;
 
             String questNote = "\u270D " + truncateText(quest.getQuestNote(), font, width - PANEL_PADDING * 2 - 10);
@@ -321,7 +324,7 @@ public class QuestHudOverlay {
      */
     private static int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     // === Public API ===

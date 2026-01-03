@@ -58,6 +58,7 @@ public final class AuthMiddleware {
     @Nullable
     private static volatile SecretKey secretKey;
     private static final Object SECRET_LOCK = new Object();
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     // Admin credentials (should be loaded from config in production)
     private static final Map<String, AdminUser> ADMIN_USERS = new ConcurrentHashMap<>();
@@ -283,7 +284,7 @@ public final class AuthMiddleware {
 
     private static String hashPassword(String password) {
         byte[] salt = new byte[HASH_SALT_BYTES];
-        new SecureRandom().nextBytes(salt);
+        SECURE_RANDOM.nextBytes(salt);
         byte[] derived = pbkdf2(password.toCharArray(), salt, HASH_ITERATIONS, HASH_KEY_LENGTH_BITS);
         return HASH_PREFIX
             + HASH_ITERATIONS
@@ -360,13 +361,13 @@ public final class AuthMiddleware {
 
     private static SecretKey generateRandomKey() {
         byte[] keyBytes = new byte[32];
-        new SecureRandom().nextBytes(keyBytes);
+        SECURE_RANDOM.nextBytes(keyBytes);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
     private static String generateSecretString() {
         byte[] keyBytes = new byte[32];
-        new SecureRandom().nextBytes(keyBytes);
+        SECURE_RANDOM.nextBytes(keyBytes);
         return Base64.getEncoder().encodeToString(keyBytes);
     }
 
@@ -460,7 +461,10 @@ public final class AuthMiddleware {
         }
         synchronized (USER_STORE_LOCK) {
             try {
-                Files.createDirectories(filePath.getParent());
+                Path parent = filePath.getParent();
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                }
                 Path tempFile = filePath.resolveSibling(filePath.getFileName() + ".tmp");
                 Path backupFile = filePath.resolveSibling(filePath.getFileName() + ".bak");
                 AdminUserStore store = new AdminUserStore(new ArrayList<>(ADMIN_USERS.values()));

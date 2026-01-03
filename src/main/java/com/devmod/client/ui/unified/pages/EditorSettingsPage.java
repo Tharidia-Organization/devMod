@@ -14,7 +14,6 @@ import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.EditorScaleCalculator;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.scroll.Scrollbar;
-import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.config.EditorClientConfig;
 
@@ -51,11 +50,6 @@ public class EditorSettingsPage implements SettingsPage {
     private int lastContentX, lastContentY, lastContentWidth, lastContentHeight;
 
     @Override
-    public SettingsCategory getCategory() {
-        return SettingsCategory.EDITOR;
-    }
-
-    @Override
     public String getTitle() {
         return "Item Editor Settings";
     }
@@ -79,7 +73,7 @@ public class EditorSettingsPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         lastContentX = x;
         lastContentY = y;
         lastContentWidth = width;
@@ -468,11 +462,6 @@ public class EditorSettingsPage implements SettingsPage {
         currentSoundsEnabled = true;
     }
 
-    @Override
-    public int getContentHeight() {
-        return calculateContentHeight();
-    }
-
     private int calculateContentHeight() {
         int height = 0;
         // UI Scale
@@ -499,7 +488,8 @@ public class EditorSettingsPage implements SettingsPage {
     }
 
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
-        Scrollbar.render(graphics, x, y, barWidth, height,
+        @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
+        Scrollbar.render(safeGraphics, x, y, barWidth, height,
             scrollOffset, totalContentHeight, visibleHeight,
             false, isDraggingScrollbar);
     }

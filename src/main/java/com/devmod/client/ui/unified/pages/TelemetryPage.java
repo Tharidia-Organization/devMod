@@ -1,6 +1,7 @@
 package com.devmod.client.ui.unified.pages;
 
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
@@ -15,7 +16,6 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
-import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
@@ -50,17 +50,12 @@ public class TelemetryPage implements SettingsPage {
     private final EditorButton dashboardButton = new EditorButton("tele-dashboard", "Open Full Dashboard");
 
     @Override
-    public SettingsCategory getCategory() {
-        return SettingsCategory.TELEMETRY;
-    }
-
-    @Override
     public String getTitle() {
         return "Telemetry & Analytics";
     }
 
     @Override
-    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         lastContentX = x;
         lastContentY = y;
         lastContentWidth = width;
@@ -306,11 +301,6 @@ public class TelemetryPage implements SettingsPage {
         showStatus(I18n.translate(statusKey).getString());
     }
 
-    @Override
-    public int getContentHeight() {
-        return calculateContentHeight(true, true);
-    }
-
     private boolean shouldShowStatus() {
         return !statusMessage.isEmpty() && System.currentTimeMillis() - statusDisplayTime < 3000;
     }
@@ -343,7 +333,8 @@ public class TelemetryPage implements SettingsPage {
     }
 
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
-        Scrollbar.render(graphics, x, y, barWidth, height,
+        @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
+        Scrollbar.render(safeGraphics, x, y, barWidth, height,
             scrollOffset, totalContentHeight, visibleHeight,
             false, isDraggingScrollbar);
     }

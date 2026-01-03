@@ -351,11 +351,7 @@ public class NemesisEvolutionManager {
 
     private static ResourceLocation buildModifierId(NemesisAdaptation adaptation, String suffix) {
         String id = MODIFIER_PREFIX + adaptation.name().toLowerCase(Locale.ROOT) + "_" + suffix;
-        ResourceLocation location = ResourceLocation.fromNamespaceAndPath("devmod", id);
-        if (location == null) {
-            return ResourceLocation.fromNamespaceAndPath("devmod", MODIFIER_PREFIX + "invalid_" + suffix);
-        }
-        return location;
+        return ResourceLocation.fromNamespaceAndPath("devmod", id);
     }
 
     private static String normalizeWeaponType(@Nullable String weaponType) {

@@ -43,7 +43,7 @@ public class UsableModule extends AbstractEditorModule {
     /** Ensures delegates are initialized (lazy init to avoid this-escape). */
     private void ensureDelegates() {
         if (!delegatesInitialized) {
-            this.core = new UsableModuleCore(this);
+            this.core = new UsableModuleCore();
             this.ui = new UsableModuleUI(this, core);
             delegatesInitialized = true;
         }
@@ -116,7 +116,8 @@ public class UsableModule extends AbstractEditorModule {
         // Create UI components
         ui.createAllComponents(core.getDataSource());
 
-        // Add tabs based on variant
+        // Add tabs - Summary first to showcase ModuleSummarySection
+        addTab(ModuleTab.of("summary", "Summary", ui::getSummarySections));
         addTab(ModuleTab.of("timing", "Timing", ui::getTimingSections));
 
         if (variant == UsableVariant.THROWABLE) {
@@ -189,7 +190,7 @@ public class UsableModule extends AbstractEditorModule {
         stats.save(usableStats);
 
         DevMod.LOGGER.info("[Editor][Usable][BuildPayload] item={} global={} useDur={} cooldown={} throwable={}",
-            item.getItem(), isGlobal, stats.useDuration, stats.cooldownDuration, stats.isThrowable);
+            item.getItem(), isGlobal, stats.getUseDuration(), stats.getCooldownDuration(), stats.isThrowable());
 
         // Send both legacy and component-friendly payloads
         statsTag.put("UsableModStats", Objects.requireNonNull(usableStats.copy()));
@@ -208,7 +209,7 @@ public class UsableModule extends AbstractEditorModule {
         try {
             ItemStack copy = item.copy();
             DevMod.LOGGER.info("[Editor][Usable][ApplyPreview] item={} useDur={} cooldown={} throwable={}",
-                item.getItem(), stats.useDuration, stats.cooldownDuration, stats.isThrowable);
+                item.getItem(), stats.getUseDuration(), stats.getCooldownDuration(), stats.isThrowable());
             // Apply full stack edits to the preview copy
             com.devmod.config.UsableConfigManager.setSpecificStats(copy, stats.copy());
             // Reload from the written stack to pick up server-side clamps/normalization

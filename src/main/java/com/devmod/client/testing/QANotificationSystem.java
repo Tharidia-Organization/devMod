@@ -14,6 +14,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.testing.TestCase;
 import com.devmod.testing.TesterProfile;
 
@@ -32,13 +33,13 @@ public class QANotificationSystem {
     private static final long FADE_DURATION_MS = 500;
 
     public enum NotificationType {
-        TEST_PASSED(0xFF55FF55, "Test Passed"),
-        TEST_FAILED(0xFFFF5555, "Test Failed"),
-        ACHIEVEMENT(0xFFFFAA00, "Achievement Unlocked"),
-        LEVEL_UP(0xFFFF55FF, "Level Up!"),
-        BADGE(0xFFFFD700, "Badge Earned"),
-        STREAK(0xFF55FFFF, "Streak Bonus"),
-        XP_GAIN(0xFFAAFFAA, "+XP");
+        TEST_PASSED(TestingUiTheme.Notification.TEST_PASSED, "Test Passed"),
+        TEST_FAILED(TestingUiTheme.Notification.TEST_FAILED, "Test Failed"),
+        ACHIEVEMENT(TestingUiTheme.Notification.ACHIEVEMENT, "Achievement Unlocked"),
+        LEVEL_UP(TestingUiTheme.Notification.LEVEL_UP, "Level Up!"),
+        BADGE(TestingUiTheme.Notification.BADGE, "Badge Earned"),
+        STREAK(TestingUiTheme.Notification.STREAK, "Streak Bonus"),
+        XP_GAIN(TestingUiTheme.Notification.XP_GAIN, "+XP");
 
         private final int color;
         private final String prefix;
@@ -261,19 +262,19 @@ public class QANotificationSystem {
 
         // Background with alpha
         int bgAlpha = (int) (200 * alpha);
-        int bgColor = (bgAlpha << 24) | 0x202020;
+        int bgColor = (bgAlpha << 24) | TestingUiTheme.Notification.BG_RGB;
         graphics.fill(x, y, x + NOTIFICATION_WIDTH, y + NOTIFICATION_HEIGHT, bgColor);
 
         // Left accent bar
         int accentAlpha = (int) (255 * alpha);
-        int accentColor = (accentAlpha << 24) | (notif.type.getColor() & 0x00FFFFFF);
+        int accentColor = (accentAlpha << 24) | (notif.type.getColor() & DesignTokens.Mask.RGB);
         graphics.fill(x, y, x + 3, y + NOTIFICATION_HEIGHT, accentColor);
 
         // Text with alpha
         int textAlpha = (int) (255 * alpha);
-        int titleColor = (textAlpha << 24) | 0xFFFFFF;
-        int subtitleColor = (textAlpha << 24) | 0xAAAAAA;
-        int typeColor = (textAlpha << 24) | (notif.type.getColor() & 0x00FFFFFF);
+        int titleColor = (textAlpha << 24) | TestingUiTheme.Notification.TEXT_RGB;
+        int subtitleColor = (textAlpha << 24) | TestingUiTheme.Notification.TEXT_MUTED_RGB;
+        int typeColor = (textAlpha << 24) | (notif.type.getColor() & DesignTokens.Mask.RGB);
 
         Font fontNonNull = Objects.requireNonNull(font);
 

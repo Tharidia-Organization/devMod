@@ -247,17 +247,17 @@ public class ArmorConfigManager {
     public static ArmorStats clampStats(ArmorStats stats) {
         try {
             PacketValidator security = PacketValidator.INSTANCE;
-            stats.physicalReduction = (float) security.validateArmorReduction(stats.physicalReduction);
-            stats.fireReduction = (float) security.validateArmorReduction(stats.fireReduction);
-            stats.magicReduction = (float) security.validateArmorReduction(stats.magicReduction);
-            stats.explosionReduction = (float) security.validateArmorReduction(stats.explosionReduction);
-            stats.projectileReduction = (float) security.validateArmorReduction(stats.projectileReduction);
-            stats.armorBonus = (float) security.validateArmorBonus(stats.armorBonus);
-            stats.toughnessBonus = (float) security.validateToughnessBonus(stats.toughnessBonus);
-            stats.knockbackResistance = (float) security.validateKnockbackResistance(stats.knockbackResistance);
-            stats.thornsPercent = (float) security.validateThornsPercent(stats.thornsPercent);
-            stats.shieldBlockStrength = (float) security.validateShieldBlock(stats.shieldBlockStrength);
-            stats.shieldRecoverySpeed = (float) security.validateShieldRecovery(stats.shieldRecoverySpeed);
+            stats.setPhysicalReduction((float) security.validateArmorReduction(stats.getPhysicalReduction()));
+            stats.setFireReduction((float) security.validateArmorReduction(stats.getFireReduction()));
+            stats.setMagicReduction((float) security.validateArmorReduction(stats.getMagicReduction()));
+            stats.setExplosionReduction((float) security.validateArmorReduction(stats.getExplosionReduction()));
+            stats.setProjectileReduction((float) security.validateArmorReduction(stats.getProjectileReduction()));
+            stats.setArmorBonus((float) security.validateArmorBonus(stats.getArmorBonus()));
+            stats.setToughnessBonus((float) security.validateToughnessBonus(stats.getToughnessBonus()));
+            stats.setKnockbackResistance((float) security.validateKnockbackResistance(stats.getKnockbackResistance()));
+            stats.setThornsPercent((float) security.validateThornsPercent(stats.getThornsPercent()));
+            stats.setShieldBlockStrength((float) security.validateShieldBlock(stats.getShieldBlockStrength()));
+            stats.setShieldRecoverySpeed((float) security.validateShieldRecovery(stats.getShieldRecoverySpeed()));
         } catch (Exception e) {
             LOGGER.debug("[ArmorConfig] Failed to clamp stats: {}", e.getMessage());
         }
@@ -273,9 +273,9 @@ public class ArmorConfigManager {
             java.util.List<ItemAttributeModifiers.Entry> entries = new java.util.ArrayList<>(existing.modifiers());
             EquipmentSlotGroup group = resolveGroup(stack);
 
-            addModifier(entries, Attributes.ARMOR, stats.armorBonus, AttributeModifier.Operation.ADD_VALUE, "armor_bonus", group);
-            addModifier(entries, Attributes.ARMOR_TOUGHNESS, stats.toughnessBonus, AttributeModifier.Operation.ADD_VALUE, "armor_toughness", group);
-            addModifier(entries, Attributes.KNOCKBACK_RESISTANCE, stats.knockbackResistance, AttributeModifier.Operation.ADD_VALUE, "armor_kb_resist", group);
+            addModifier(entries, Attributes.ARMOR, stats.getArmorBonus(), AttributeModifier.Operation.ADD_VALUE, "armor_bonus", group);
+            addModifier(entries, Attributes.ARMOR_TOUGHNESS, stats.getToughnessBonus(), AttributeModifier.Operation.ADD_VALUE, "armor_toughness", group);
+            addModifier(entries, Attributes.KNOCKBACK_RESISTANCE, stats.getKnockbackResistance(), AttributeModifier.Operation.ADD_VALUE, "armor_kb_resist", group);
 
             stack.set(Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS), new ItemAttributeModifiers(entries, existing.showInTooltip()));
         } catch (Exception e) {
@@ -671,19 +671,19 @@ public class ArmorConfigManager {
                 }
                 try {
                     switch (key) {
-                        case "physicalReduction" -> stats.physicalReduction = parseClampedFloat(val);
-                        case "fireReduction" -> stats.fireReduction = parseClampedFloat(val);
-                        case "magicReduction" -> stats.magicReduction = parseClampedFloat(val);
-                        case "explosionReduction" -> stats.explosionReduction = parseClampedFloat(val);
-                        case "projectileReduction" -> stats.projectileReduction = parseClampedFloat(val);
-                        case "armorBonus" -> stats.armorBonus = parseFloat(val);
-                        case "toughnessBonus" -> stats.toughnessBonus = parseFloat(val);
-                        case "knockbackResistance" -> stats.knockbackResistance = parseFloat(val);
-                        case "thornsReflect" -> stats.thornsReflect = Boolean.parseBoolean(val);
-                        case "thornsPercent" -> stats.thornsPercent = parseFloat(val);
-                        case "shieldReflectProjectiles" -> stats.shieldReflectProjectiles = Boolean.parseBoolean(val);
-                        case "shieldBlockStrength" -> stats.shieldBlockStrength = parseClampedFloat(val);
-                        case "shieldRecoverySpeed" -> stats.shieldRecoverySpeed = parseClampedFloat2(val);
+                        case "physicalReduction" -> stats.setPhysicalReduction(parseClampedFloat(val));
+                        case "fireReduction" -> stats.setFireReduction(parseClampedFloat(val));
+                        case "magicReduction" -> stats.setMagicReduction(parseClampedFloat(val));
+                        case "explosionReduction" -> stats.setExplosionReduction(parseClampedFloat(val));
+                        case "projectileReduction" -> stats.setProjectileReduction(parseClampedFloat(val));
+                        case "armorBonus" -> stats.setArmorBonus(parseFloat(val));
+                        case "toughnessBonus" -> stats.setToughnessBonus(parseFloat(val));
+                        case "knockbackResistance" -> stats.setKnockbackResistance(parseFloat(val));
+                        case "thornsReflect" -> stats.setThornsReflect(Boolean.parseBoolean(val));
+                        case "thornsPercent" -> stats.setThornsPercent(parseFloat(val));
+                        case "shieldReflectProjectiles" -> stats.setShieldReflectProjectiles(Boolean.parseBoolean(val));
+                        case "shieldBlockStrength" -> stats.setShieldBlockStrength(parseClampedFloat(val));
+                        case "shieldRecoverySpeed" -> stats.setShieldRecoverySpeed(parseClampedFloat2(val));
                         default -> {}
                     }
                     loaded.put(currentItem, stats);
@@ -714,19 +714,19 @@ public class ArmorConfigManager {
             ResourceLocation id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item));
             String idString = Objects.requireNonNull(id, "item id cannot be null").toString();
             sb.append("[armor.\"").append(idString).append("\"]\n");
-            sb.append("physicalReduction = ").append(stats.physicalReduction).append("\n");
-            sb.append("fireReduction = ").append(stats.fireReduction).append("\n");
-            sb.append("magicReduction = ").append(stats.magicReduction).append("\n");
-            sb.append("explosionReduction = ").append(stats.explosionReduction).append("\n");
-            sb.append("projectileReduction = ").append(stats.projectileReduction).append("\n");
-            sb.append("armorBonus = ").append(stats.armorBonus).append("\n");
-            sb.append("toughnessBonus = ").append(stats.toughnessBonus).append("\n");
-            sb.append("knockbackResistance = ").append(stats.knockbackResistance).append("\n");
-            sb.append("thornsReflect = ").append(stats.thornsReflect).append("\n");
-            sb.append("thornsPercent = ").append(stats.thornsPercent).append("\n");
-            sb.append("shieldReflectProjectiles = ").append(stats.shieldReflectProjectiles).append("\n");
-            sb.append("shieldBlockStrength = ").append(stats.shieldBlockStrength).append("\n");
-            sb.append("shieldRecoverySpeed = ").append(stats.shieldRecoverySpeed).append("\n\n");
+            sb.append("physicalReduction = ").append(stats.getPhysicalReduction()).append("\n");
+            sb.append("fireReduction = ").append(stats.getFireReduction()).append("\n");
+            sb.append("magicReduction = ").append(stats.getMagicReduction()).append("\n");
+            sb.append("explosionReduction = ").append(stats.getExplosionReduction()).append("\n");
+            sb.append("projectileReduction = ").append(stats.getProjectileReduction()).append("\n");
+            sb.append("armorBonus = ").append(stats.getArmorBonus()).append("\n");
+            sb.append("toughnessBonus = ").append(stats.getToughnessBonus()).append("\n");
+            sb.append("knockbackResistance = ").append(stats.getKnockbackResistance()).append("\n");
+            sb.append("thornsReflect = ").append(stats.isThornsReflect()).append("\n");
+            sb.append("thornsPercent = ").append(stats.getThornsPercent()).append("\n");
+            sb.append("shieldReflectProjectiles = ").append(stats.isShieldReflectProjectiles()).append("\n");
+            sb.append("shieldBlockStrength = ").append(stats.getShieldBlockStrength()).append("\n");
+            sb.append("shieldRecoverySpeed = ").append(stats.getShieldRecoverySpeed()).append("\n\n");
         });
 
         try {

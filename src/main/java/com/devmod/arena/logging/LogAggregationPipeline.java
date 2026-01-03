@@ -333,7 +333,13 @@ public class LogAggregationPipeline implements AutoCloseable {
         private final NdjsonWriter writer;
 
         public NdjsonDestination(Path logPath) {
-            this.writer = new NdjsonWriter(logPath.getParent(), logPath.getFileName().toString());
+            Path parent = logPath.getParent();
+            if (parent == null) {
+                parent = Path.of(".");
+            }
+            Path fileName = logPath.getFileName();
+            String prefix = fileName != null ? fileName.toString() : "log";
+            this.writer = new NdjsonWriter(parent, prefix);
         }
 
         public NdjsonDestination(NdjsonWriter writer) {

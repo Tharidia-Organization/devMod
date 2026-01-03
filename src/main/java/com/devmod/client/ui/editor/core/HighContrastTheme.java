@@ -36,57 +36,57 @@ public class HighContrastTheme implements Theme {
 
     @Override
     public int panelBackground() {
-        return 0xFF000000; // Pure black
+        return DesignTokens.EditorTheme.HighContrast.PANEL_BG;
     }
 
     @Override
     public int panelBackgroundSolid() {
-        return 0xFF000000;
+        return DesignTokens.EditorTheme.HighContrast.PANEL_BG_SOLID;
     }
 
     @Override
     public int inputBackground() {
-        return 0xFF000000;
+        return DesignTokens.EditorTheme.HighContrast.INPUT_BG;
     }
 
     @Override
     public int hoverBackground() {
-        return 0xFF1A1A1A; // Slight highlight on hover
+        return DesignTokens.EditorTheme.HighContrast.HOVER_BG;
     }
 
     @Override
     public int activeBackground() {
-        return 0xFF333333; // More visible when active
+        return DesignTokens.EditorTheme.HighContrast.ACTIVE_BG;
     }
 
     @Override
     public int headerBackground() {
-        return 0xFF000000;
+        return DesignTokens.EditorTheme.HighContrast.HEADER_BG;
     }
 
     @Override
     public int contentBackground() {
-        return 0xFF000000;
+        return DesignTokens.EditorTheme.HighContrast.CONTENT_BG;
     }
 
     @Override
     public int tabInactiveBackground() {
-        return 0xFF000000;
+        return DesignTokens.EditorTheme.HighContrast.TAB_INACTIVE_BG;
     }
 
     @Override
     public int tabActiveBackground() {
-        return 0xFF1A1A1A;
+        return DesignTokens.EditorTheme.HighContrast.TAB_ACTIVE_BG;
     }
 
     @Override
     public int overlayBackground() {
-        return 0xE0000000; // Darker backdrop
+        return DesignTokens.EditorTheme.HighContrast.OVERLAY_BG;
     }
 
     @Override
     public int darkerBackground() {
-        return 0xFF000000;
+        return DesignTokens.EditorTheme.HighContrast.DARKER_BACKGROUND;
     }
 
     // =========================================================================
@@ -95,27 +95,27 @@ public class HighContrastTheme implements Theme {
 
     @Override
     public int borderDefault() {
-        return 0xFFFFFFFF; // White borders
+        return DesignTokens.EditorTheme.HighContrast.BORDER_DEFAULT;
     }
 
     @Override
     public int borderMuted() {
-        return 0xFFAAAAAA; // Slightly muted but still visible
+        return DesignTokens.EditorTheme.HighContrast.BORDER_MUTED;
     }
 
     @Override
     public int borderAccent() {
-        return 0xFFFFFF00; // Bright yellow for focus
+        return DesignTokens.EditorTheme.HighContrast.BORDER_ACCENT;
     }
 
     @Override
     public int borderSeparator() {
-        return 0xFFFFFFFF;
+        return DesignTokens.EditorTheme.HighContrast.BORDER_SEPARATOR;
     }
 
     @Override
     public int borderHover() {
-        return 0xFFFFFF00; // Yellow on hover
+        return DesignTokens.EditorTheme.HighContrast.BORDER_HOVER;
     }
 
     // =========================================================================
@@ -124,37 +124,37 @@ public class HighContrastTheme implements Theme {
 
     @Override
     public int textPrimary() {
-        return 0xFFFFFFFF; // Pure white
+        return DesignTokens.EditorTheme.HighContrast.TEXT_PRIMARY;
     }
 
     @Override
     public int textSecondary() {
-        return 0xFFFFFFFF; // White, not gray
+        return DesignTokens.EditorTheme.HighContrast.TEXT_SECONDARY;
     }
 
     @Override
     public int textMuted() {
-        return 0xFFCCCCCC; // Light gray but still readable
+        return DesignTokens.EditorTheme.HighContrast.TEXT_MUTED;
     }
 
     @Override
     public int textTitle() {
-        return 0xFFFFFFFF;
+        return DesignTokens.EditorTheme.HighContrast.TEXT_TITLE;
     }
 
     @Override
     public int textDisabled() {
-        return 0xFF888888; // Gray for disabled
+        return DesignTokens.EditorTheme.HighContrast.TEXT_DISABLED;
     }
 
     @Override
     public int textValue() {
-        return 0xFF00FFFF; // Bright cyan for values
+        return DesignTokens.EditorTheme.HighContrast.TEXT_VALUE;
     }
 
     @Override
     public int textFormula() {
-        return 0xFF00FF00; // Bright green for code
+        return DesignTokens.EditorTheme.HighContrast.TEXT_FORMULA;
     }
 
     // =========================================================================
@@ -163,27 +163,27 @@ public class HighContrastTheme implements Theme {
 
     @Override
     public int accentPrimary() {
-        return 0xFF00FFFF; // Bright cyan
+        return DesignTokens.EditorTheme.HighContrast.ACCENT_PRIMARY;
     }
 
     @Override
     public int accentSuccess() {
-        return 0xFF00FF00; // Bright green
+        return DesignTokens.EditorTheme.HighContrast.ACCENT_SUCCESS;
     }
 
     @Override
     public int accentWarning() {
-        return 0xFFFFFF00; // Bright yellow
+        return DesignTokens.EditorTheme.HighContrast.ACCENT_WARNING;
     }
 
     @Override
     public int accentError() {
-        return 0xFFFF0000; // Bright red
+        return DesignTokens.EditorTheme.HighContrast.ACCENT_ERROR;
     }
 
     @Override
     public int accentInfo() {
-        return 0xFF00AAFF; // Bright blue
+        return DesignTokens.EditorTheme.HighContrast.ACCENT_INFO;
     }
 
     // =========================================================================
@@ -192,22 +192,22 @@ public class HighContrastTheme implements Theme {
 
     @Override
     public int buttonNormal() {
-        return 0xFF000000; // Black with white border
+        return DesignTokens.EditorTheme.HighContrast.BUTTON_NORMAL;
     }
 
     @Override
     public int buttonHover() {
-        return 0xFF222222;
+        return DesignTokens.EditorTheme.HighContrast.BUTTON_HOVER;
     }
 
     @Override
     public int buttonPressed() {
-        return 0xFF444444;
+        return DesignTokens.EditorTheme.HighContrast.BUTTON_PRESSED;
     }
 
     @Override
     public int buttonDisabled() {
-        return 0xFF111111;
+        return DesignTokens.EditorTheme.HighContrast.BUTTON_DISABLED;
     }
 
     // =========================================================================
@@ -216,16 +216,16 @@ public class HighContrastTheme implements Theme {
 
     @Override
     public int sliderTrack() {
-        return 0xFF333333;
+        return DesignTokens.EditorTheme.HighContrast.SLIDER_TRACK;
     }
 
     @Override
     public int sliderThumb() {
-        return 0xFFFFFFFF; // White thumb
+        return DesignTokens.EditorTheme.HighContrast.SLIDER_THUMB;
     }
 
     @Override
     public int sliderThumbHover() {
-        return 0xFFFFFF00; // Yellow on hover
+        return DesignTokens.EditorTheme.HighContrast.SLIDER_THUMB_HOVER;
     }
 }

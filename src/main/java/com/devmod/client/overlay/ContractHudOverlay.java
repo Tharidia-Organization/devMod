@@ -2,12 +2,16 @@ package com.devmod.client.overlay;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.network.chat.Component;
@@ -15,6 +19,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 
@@ -70,7 +75,7 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
     }
 
     @Override
-    public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull DeltaTracker deltaTracker) {
         if (activeContracts.isEmpty()) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -78,6 +83,10 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
 
         // Don't render during screens
         if (mc.screen != null) return;
+
+        // Get font with null check
+        Font font = mc.font;
+        if (font == null) return;
 
         int screenWidth = graphics.guiWidth();
         float partialTicks = deltaTracker.getGameTimeDeltaPartialTick(true);
@@ -89,7 +98,10 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
         // Calculate panel width based on longest contract name
         int maxWidth = 0;
         for (var contract : activeContracts) {
-            int width = mc.font.width(Component.translatable(contract.nameKey()));
+            if (contract == null) continue;
+            String nameKey = contract.nameKey();
+            String translatedName = Component.translatable(nameKey).getString();
+            int width = font.width(Objects.requireNonNull(translatedName, "Translated name cannot be null"));
             if (width > maxWidth) maxWidth = width;
         }
         int panelWidth = maxWidth + ICON_SIZE + PADDING * 3 + 40; // Extra for multiplier
@@ -106,7 +118,7 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
 
         // Draw header
         String headerText = "BLOOD CONTRACTS";
-        graphics.drawString(mc.font, headerText, x, y, OverlayTheme.Contract.HEADER, true);
+        graphics.drawString(font, headerText, x, y, OverlayTheme.Contract.HEADER, true);
         y += LINE_HEIGHT + 2;
 
         // Violation flash effect
@@ -114,7 +126,8 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
 
         // Draw each contract
         for (var contract : activeContracts) {
-            renderContract(graphics, mc, contract, x, y, flashViolation);
+            if (contract == null) continue;
+            renderContract(graphics, font, contract, x, y, flashViolation);
             y += LINE_HEIGHT;
         }
 
@@ -130,17 +143,17 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
         if (totalMultiplier >= 2.0f) {
             float pulse = (float) Math.sin(pulsePhase) * 0.3f + 0.7f;
             int alpha = (int) (pulse * 255);
-            totalColor = (alpha << 24) | (totalColor & 0xFFFFFF);
+            totalColor = (alpha << 24) | (totalColor & DesignTokens.Mask.RGB);
         }
 
-        graphics.drawString(mc.font, totalText, x, y + 2, totalColor, true);
+        graphics.drawString(font, totalText, x, y + 2, totalColor, true);
     }
 
     /**
      * Render a single contract line.
      */
-    private void renderContract(GuiGraphics graphics, Minecraft mc,
-                                ContractSyncPayload.ContractData contract,
+    private void renderContract(@Nonnull GuiGraphics graphics, @Nonnull Font font,
+                                @Nonnull ContractSyncPayload.ContractData contract,
                                 int x, int y, boolean flashViolation) {
 
         int color = contract.color();
@@ -152,31 +165,36 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
             color = OverlayTheme.stripAlpha(OverlayTheme.Contract.VIOLATED);
         }
 
-        int fullColor = (alpha << 24) | (color & 0xFFFFFF);
+        int fullColor = (alpha << 24) | (color & DesignTokens.Mask.RGB);
 
         // Draw tier icon (colored square)
         graphics.fill(x, y + 1, x + ICON_SIZE, y + ICON_SIZE + 1, fullColor);
 
         // Draw contract name
-        String name = Component.translatable(contract.nameKey()).getString();
+        String nameKey = contract.nameKey();
+        String name = Objects.requireNonNull(
+            Component.translatable(nameKey).getString(),
+            "Contract name cannot be null");
         int nameX = x + ICON_SIZE + 4;
 
         if (contract.violated()) {
             // Strikethrough for violated
-            graphics.drawString(mc.font, name, nameX, y, OverlayTheme.Contract.VIOLATED, false);
-            int nameWidth = mc.font.width(name);
+            graphics.drawString(font, name, nameX, y, OverlayTheme.Contract.VIOLATED, false);
+            int nameWidth = font.width(name);
             graphics.fill(nameX, y + 4, nameX + nameWidth, y + 5, OverlayTheme.Contract.STRIKETHROUGH);
         } else {
-            graphics.drawString(mc.font, name, nameX, y, fullColor, true);
+            graphics.drawString(font, name, nameX, y, fullColor, true);
         }
 
         // Draw multiplier on right
-        String multiplierText = String.format("%.1fx", contract.multiplier());
-        int multiplierWidth = mc.font.width(multiplierText);
+        String multiplierText = Objects.requireNonNull(
+            String.format("%.1fx", contract.multiplier()),
+            "Multiplier text cannot be null");
+        int multiplierWidth = font.width(multiplierText);
         int multiplierX = graphics.guiWidth() - PADDING * 2 - multiplierWidth;
 
         int multiplierColor = contract.violated() ? OverlayTheme.Contract.VIOLATED_MUTED : OverlayTheme.Contract.MULTIPLIER_TEXT;
-        graphics.drawString(mc.font, multiplierText, multiplierX, y, multiplierColor, false);
+        graphics.drawString(font, multiplierText, multiplierX, y, multiplierColor, false);
     }
 
     /**

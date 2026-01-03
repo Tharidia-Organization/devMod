@@ -35,6 +35,8 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.arena.spawn.SpawnOccupancyTracker;
+import com.devmod.mob.MobRequirements;
+import com.devmod.mob.MobRequirementsRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 public class WaveManager {
@@ -61,7 +63,8 @@ public class WaveManager {
      * State of an active wave.
      */
     public static class WaveState {
-        private final UUID arenaId;
+        // Note: arenaId parameter kept in constructor for API stability but field removed
+        // The activeWaves map key serves as the authoritative arenaId
         private final EnduranceQuest quest;
         private final int waveNumber;
         private final List<UUID> spawnedMobs = java.util.Collections.synchronizedList(new ArrayList<>());
@@ -101,7 +104,7 @@ public class WaveManager {
                          @javax.annotation.Nullable SpawnContext spawnContext,
                          float rewardMultiplier,
                          @javax.annotation.Nullable String directiveId) {
-            this.arenaId = arenaId;
+            // arenaId parameter intentionally unused - the map key is the authoritative source
             this.quest = quest;
             this.waveNumber = waveNumber;
             this.playerCount = Math.max(1, playerCount);
@@ -132,7 +135,6 @@ public class WaveManager {
             );
         }
 
-        public UUID getArenaId() { return arenaId; }
         public EnduranceQuest getQuest() { return quest; }
         public int getWaveNumber() { return waveNumber; }
         public List<UUID> getSpawnedMobs() { return spawnedMobs; }
@@ -154,10 +156,6 @@ public class WaveManager {
         public List<WaveDirector.SpawnBatch> getSpawnPlan() { return spawnPlan; }
         public int getNextSpawnIndex() { return nextSpawnIndex; }
         public @javax.annotation.Nullable SpawnContext getSpawnContext() { return spawnContext; }
-
-        public int getRemainingMobs() {
-            return spawnedMobs.size() - killed;
-        }
 
         public void recordKill(UUID mobId) {
             killed++;
@@ -255,31 +253,6 @@ public class WaveManager {
         public boolean hasZones() {
             final SpawnContext ctx = spawnContext;
             return ctx != null && ctx.hasZones();
-        }
-
-        /**
-         * Sets the total spawn count (used when adjusting for spawn failures).
-         */
-        public void setTotalToSpawn(int newTotal) {
-            totalToSpawn = Math.max(1, newTotal);
-        }
-
-        /**
-         * Removes the affix mapping for a mob.
-         */
-        public void removeAffixForMob(UUID mobId) {
-            if (mobId != null) {
-                spawnAffixes.remove(mobId);
-            }
-        }
-
-        /**
-         * Sets the affix for a mob.
-         */
-        public void setAffixForMob(UUID mobId, SpawnAffix affix) {
-            if (mobId != null && affix != null) {
-                spawnAffixes.put(mobId, affix);
-            }
         }
     }
 
@@ -528,6 +501,15 @@ public class WaveManager {
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
         EntityType<?> entityType = mobConfig.entityType;
 
+        // Get mob requirements for spawn validation
+        MobRequirements mobReqs = MobRequirementsRegistry.INSTANCE.get(entityType);
+
+        // Log if time requirements are not met (non-blocking - arena should control time)
+        if (!mobReqs.time().isValidAt(level.getDayTime())) {
+            LOGGER.debug("[EnduranceQuest] Time requirement ({}) not optimal for {} at dayTime={}, spawning anyway",
+                mobReqs.time(), entityType.getDescriptionId(), level.getDayTime() % 24000);
+        }
+
         List<BlockPos> spawnPositions = spawnContext.positions;
         SpawnOccupancyTracker occupied = new SpawnOccupancyTracker();
         boolean allowReuse = spawnPositions.size() < count;
@@ -542,6 +524,13 @@ public class WaveManager {
         }
 
         for (int i = 0; i < count; i++) {
+            // Safety check: prevent entity overload
+            if (!spawnContext.canSpawnMore(successfulSpawns)) {
+                LOGGER.warn("[EnduranceQuest] Entity limit reached, stopping spawn at {}/{}",
+                    successfulSpawns, count);
+                break;
+            }
+
             Entity entity = entityType.create(Objects.requireNonNull(level));
             if (entity instanceof Mob mob) {
                 List<BlockPos> candidatePool = chooseSpawnPool(role, pools, mob);
@@ -626,6 +615,7 @@ public class WaveManager {
                 if (added && mob.isAlive()) {
                     waveState.addSpawnedMob(mob.getUUID(), appliedAffix, objectiveTarget);
                     successfulSpawns++;
+                    awakeMobAI(mob, level);
                     if (handle != null) {
                         EnduranceTelemetryService.INSTANCE.recordSpawnHeatmap(
                             waveState.quest.getQuestId(), handle, spawnPos);
@@ -693,6 +683,13 @@ public class WaveManager {
         int failedRespawns = 0;
 
         for (int i = 0; i < allowed; i++) {
+            // Safety check: prevent entity overload
+            if (!spawnContext.canSpawnMore(successfulRespawns)) {
+                LOGGER.warn("[EnduranceQuest] Entity limit reached, stopping respawn at {}/{}",
+                    successfulRespawns, allowed);
+                break;
+            }
+
             Entity entity = entityType.create(Objects.requireNonNull(level));
             if (!(entity instanceof Mob mob)) {
                 failedRespawns++;
@@ -786,6 +783,7 @@ public class WaveManager {
                 waveState.getSpawnedMobs().add(Objects.requireNonNull(mob.getUUID()));
                 waveState.spawnAffixes.put(mob.getUUID(), affix);
                 successfulRespawns++;
+                awakeMobAI(mob, level);
                 EnduranceTelemetryService.INSTANCE.recordSpawnHeatmap(
                     waveState.quest.getQuestId(), handle, spawnPos);
             } else {
@@ -1308,14 +1306,6 @@ public class WaveManager {
     }
 
     /**
-     * Check if wave is complete.
-     */
-    public boolean isWaveComplete(UUID arenaId) {
-        WaveState state = activeWaves.get(arenaId);
-        return state != null && state.isComplete();
-    }
-
-    /**
      * Clean up wave state for an arena.
      */
     public void cleanupWave(UUID arenaId, ServerLevel level) {
@@ -1331,23 +1321,6 @@ public class WaveManager {
         }
     }
 
-    /**
-     * Get wave progress percentage.
-     */
-    public float getWaveProgress(UUID arenaId) {
-        WaveState state = activeWaves.get(arenaId);
-        if (state == null || state.totalToSpawn == 0) return 0;
-        return (float) state.killed / state.totalToSpawn;
-    }
-
-    /**
-     * Get remaining mob count in wave.
-     */
-    public int getRemainingMobs(UUID arenaId) {
-        WaveState state = activeWaves.get(arenaId);
-        return state != null ? state.getRemainingMobs() : 0;
-    }
-
     // =========================================================================
     // DEPRECATED API ISOLATION
     // =========================================================================
@@ -1361,5 +1334,41 @@ public class WaveManager {
     private static void finalizeMobSpawn(Mob mob, ServerLevel level, BlockPos spawnPos) {
         mob.finalizeSpawn(level, Objects.requireNonNull(level.getCurrentDifficultyAt(Objects.requireNonNull(spawnPos))),
             MobSpawnType.MOB_SUMMONED, null);
+    }
+
+    /**
+     * Awakens AI for a spawned mob, registering custom targeting and attack goals.
+     * This ensures mobs actively target and attack players in Endurance Quests.
+     */
+    @SuppressWarnings("unchecked")
+    private void awakeMobAI(Mob mob, ServerLevel level) {
+        try {
+            // Register custom targeting goal
+            mob.targetSelector.addGoal(1, new com.devmod.endurance.ai.EnduranceTargetPlayerGoal(mob));
+
+            // Register custom attack goal
+            mob.goalSelector.addGoal(2, new com.devmod.endurance.ai.EnduranceMeleeAttackGoal(mob, 1.0, true));
+
+            // Tick sensing and selectors
+            mob.getSensing().tick();
+            mob.targetSelector.tick();
+            mob.goalSelector.tick();
+
+            // Tick brain for Brain API mobs
+            net.minecraft.world.entity.ai.Brain<Mob> brain =
+                (net.minecraft.world.entity.ai.Brain<Mob>) mob.getBrain();
+            brain.tick(Objects.requireNonNull(level, "level"), mob);
+
+            mob.setAggressive(true);
+
+            LOGGER.debug("[EnduranceQuest] Registered EnduranceAI for {} (target goals={}, behavior goals={})",
+                mob.getType().toString(),
+                mob.targetSelector.getAvailableGoals().size(),
+                mob.goalSelector.getAvailableGoals().size());
+
+        } catch (Exception e) {
+            LOGGER.warn("[EnduranceQuest] Failed to awaken AI for {}: {}",
+                mob.getType().toString(), e.getMessage());
+        }
     }
 }

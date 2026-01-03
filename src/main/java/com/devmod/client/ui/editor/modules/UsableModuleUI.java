@@ -16,6 +16,7 @@ import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.sections.ModuleSummarySection;
 import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
@@ -88,7 +89,7 @@ public class UsableModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Time in ticks to complete item use. 0 = instant, 32 = default food, 20 ticks = 1 second.")
-            .onChange(v -> { stats.useDuration = v.intValue(); module.markDirty("Use duration"); });
+            .onChange(v -> { stats.setUseDuration(v.intValue()); module.markDirty("Use duration"); });
 
         cooldownDurationSlider = new EditorSlider("cooldown", "Cooldown", 0, 600, 0)
             .step(1)
@@ -98,7 +99,7 @@ public class UsableModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Cooldown time after use in ticks. 20 ticks = 1 second, 600 ticks = 30 seconds (ender pearl default).")
-            .onChange(v -> { stats.cooldownDuration = v.intValue(); module.markDirty("Cooldown"); });
+            .onChange(v -> { stats.setCooldownDuration(v.intValue()); module.markDirty("Cooldown"); });
     }
 
     public List<EditorSection> getTimingSections() {
@@ -121,7 +122,7 @@ public class UsableModuleUI {
 
         isThrowableToggle = new EditorToggle("throwable", "Is Throwable", false)
             .source(dataSource)
-            .onChange(v -> { stats.isThrowable = v; module.markDirty("Throwable"); });
+            .onChange(v -> { stats.setThrowable(v); module.markDirty("Throwable"); });
 
         projectileSpeedSlider = new EditorSlider("projSpeed", "Projectile Speed", 0.5f, 5.0f, 1.5f)
             .step(0.1f)
@@ -130,7 +131,7 @@ public class UsableModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Base velocity of thrown projectile. 1.5 = snowball, 3.0 = arrow.")
-            .onChange(v -> { stats.projectileSpeed = v; module.markDirty("Projectile speed"); });
+            .onChange(v -> { stats.setProjectileSpeed(v); module.markDirty("Projectile speed"); });
 
         projectileGravitySlider = new EditorSlider("projGrav", "Projectile Gravity", 0.0f, 0.1f, 0.03f)
             .step(0.005f)
@@ -139,7 +140,7 @@ public class UsableModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Gravity factor affecting projectile arc. 0.03 = default, 0 = no drop.")
-            .onChange(v -> { stats.projectileGravity = v; module.markDirty("Projectile gravity"); });
+            .onChange(v -> { stats.setProjectileGravity(v); module.markDirty("Projectile gravity"); });
 
         projectileInaccuracySlider = new EditorSlider("projInacc", "Inaccuracy", 0.0f, 5.0f, 1.0f)
             .step(0.1f)
@@ -148,7 +149,7 @@ public class UsableModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Spread/inaccuracy of projectile. 0 = perfectly accurate, 1 = default.")
-            .onChange(v -> { stats.projectileInaccuracy = v; module.markDirty("Projectile inaccuracy"); });
+            .onChange(v -> { stats.setProjectileInaccuracy(v); module.markDirty("Projectile inaccuracy"); });
 
         projectileDamageSlider = new EditorSlider("projDmg", "Direct Damage", 0, 20, 0)
             .step(1)
@@ -157,7 +158,7 @@ public class UsableModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Damage dealt on direct hit. Snowballs deal 0, eggs deal 0, ender pearls deal 5.")
-            .onChange(v -> { stats.projectileDamage = v.intValue(); module.markDirty("Projectile damage"); });
+            .onChange(v -> { stats.setProjectileDamage(v.intValue()); module.markDirty("Projectile damage"); });
     }
 
     public List<EditorSection> getProjectileSections() {
@@ -185,7 +186,7 @@ public class UsableModuleUI {
 
         consumeOnUseToggle = new EditorToggle("consume", "Consume On Use", true)
             .source(dataSource)
-            .onChange(v -> { stats.consumeOnUse = v; module.markDirty("Consume on use"); });
+            .onChange(v -> { stats.setConsumeOnUse(v); module.markDirty("Consume on use"); });
     }
 
     public List<EditorSection> getConsumptionSections() {
@@ -215,25 +216,55 @@ public class UsableModuleUI {
             UsableStats original = core.getOriginalStats();
 
             // Show current values and whether they differ from original
-            String durChanged = stats.useDuration != original.useDuration ? " *" : "";
-            sections.add(new TextNoteSection("debug-dur", "Use Duration: " + stats.useDuration + durChanged));
+            String durChanged = stats.getUseDuration() != original.getUseDuration() ? " *" : "";
+            sections.add(new TextNoteSection("debug-dur", "Use Duration: " + stats.getUseDuration() + durChanged));
 
-            String cooldownChanged = stats.cooldownDuration != original.cooldownDuration ? " *" : "";
-            sections.add(new TextNoteSection("debug-cd", "Cooldown: " + stats.cooldownDuration + cooldownChanged));
+            String cooldownChanged = stats.getCooldownDuration() != original.getCooldownDuration() ? " *" : "";
+            sections.add(new TextNoteSection("debug-cd", "Cooldown: " + stats.getCooldownDuration() + cooldownChanged));
 
-            String throwChanged = stats.isThrowable != original.isThrowable ? " *" : "";
-            sections.add(new TextNoteSection("debug-throw", "Throwable: " + stats.isThrowable + throwChanged));
+            String throwChanged = stats.isThrowable() != original.isThrowable() ? " *" : "";
+            sections.add(new TextNoteSection("debug-throw", "Throwable: " + stats.isThrowable() + throwChanged));
 
-            String speedChanged = Math.abs(stats.projectileSpeed - original.projectileSpeed) > 0.001f ? " *" : "";
-            sections.add(new TextNoteSection("debug-speed", String.format("Proj. Speed: %.2f%s", stats.projectileSpeed, speedChanged)));
+            String speedChanged = Math.abs(stats.getProjectileSpeed() - original.getProjectileSpeed()) > 0.001f ? " *" : "";
+            sections.add(new TextNoteSection("debug-speed", String.format("Proj. Speed: %.2f%s", stats.getProjectileSpeed(), speedChanged)));
 
-            String consumeChanged = stats.consumeOnUse != original.consumeOnUse ? " *" : "";
-            sections.add(new TextNoteSection("debug-consume", "Consume: " + stats.consumeOnUse + consumeChanged));
+            String consumeChanged = stats.isConsumeOnUse() != original.isConsumeOnUse() ? " *" : "";
+            sections.add(new TextNoteSection("debug-consume", "Consume: " + stats.isConsumeOnUse() + consumeChanged));
 
             sections.add(new TextNoteSection("debug-legend", "* = modified from original"));
         }
 
         return sections;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SUMMARY TAB (uses ModuleSummarySection with StatEntry overload)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Get summary sections using ModuleSummarySection with addStat(StatEntry) overload.
+     * This demonstrates usage of the StatEntry direct add pattern.
+     */
+    public List<EditorSection> getSummarySections() {
+        UsableStats stats = core.getStats();
+
+        // Pre-build StatEntry objects to use addStat(StatEntry) overload
+        ModuleSummarySection.StatEntry useDur = new ModuleSummarySection.StatEntry(
+            "Use Duration", stats.getUseDuration(), "%.0f ticks");
+        ModuleSummarySection.StatEntry cooldown = new ModuleSummarySection.StatEntry(
+            "Cooldown", stats.getCooldownDuration(), "%.0f ticks");
+
+        // Build summary using addStat(StatEntry) overload
+        ModuleSummarySection summary = ModuleSummarySection.builder("usable-summary", "Usable Item Summary")
+            .accentColor(DesignTokens.Accent.PURPLE())
+            .addStat(useDur)                                                    // StatEntry overload
+            .addStat(cooldown)                                                  // StatEntry overload
+            .addStat("Throwable", stats.isThrowable() ? 1.0 : 0.0, stats.isThrowable() ? "Yes" : "No")
+            .addStat("Proj. Speed", stats.getProjectileSpeed(), "%.1f")              // 3-param overload
+            .addStat("Consume", stats.isConsumeOnUse() ? 1.0 : 0.0, stats.isConsumeOnUse() ? "Yes" : "No")
+            .build();
+
+        return List.of(summary);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -246,15 +277,15 @@ public class UsableModuleUI {
     public void updateSlidersFromStats() {
         UsableStats stats = core.getStats();
 
-        if (useDurationSlider != null) useDurationSlider.setValue(stats.useDuration);
-        if (cooldownDurationSlider != null) cooldownDurationSlider.setValue(stats.cooldownDuration);
+        if (useDurationSlider != null) useDurationSlider.setValue(stats.getUseDuration());
+        if (cooldownDurationSlider != null) cooldownDurationSlider.setValue(stats.getCooldownDuration());
 
-        if (isThrowableToggle != null) isThrowableToggle.setValue(stats.isThrowable);
-        if (projectileSpeedSlider != null) projectileSpeedSlider.setValue(stats.projectileSpeed);
-        if (projectileGravitySlider != null) projectileGravitySlider.setValue(stats.projectileGravity);
-        if (projectileInaccuracySlider != null) projectileInaccuracySlider.setValue(stats.projectileInaccuracy);
-        if (projectileDamageSlider != null) projectileDamageSlider.setValue(stats.projectileDamage);
+        if (isThrowableToggle != null) isThrowableToggle.setValue(stats.isThrowable());
+        if (projectileSpeedSlider != null) projectileSpeedSlider.setValue(stats.getProjectileSpeed());
+        if (projectileGravitySlider != null) projectileGravitySlider.setValue(stats.getProjectileGravity());
+        if (projectileInaccuracySlider != null) projectileInaccuracySlider.setValue(stats.getProjectileInaccuracy());
+        if (projectileDamageSlider != null) projectileDamageSlider.setValue(stats.getProjectileDamage());
 
-        if (consumeOnUseToggle != null) consumeOnUseToggle.setValue(stats.consumeOnUse);
+        if (consumeOnUseToggle != null) consumeOnUseToggle.setValue(stats.isConsumeOnUse());
     }
 }

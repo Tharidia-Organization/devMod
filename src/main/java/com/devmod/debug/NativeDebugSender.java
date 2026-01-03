@@ -180,7 +180,6 @@ public class NativeDebugSender {
      */
     private void sendRaidsDebug(ServerPlayer player, ServerLevel level) {
         Raids raids = level.getRaids();
-        if (raids == null) return;
 
         BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         Raid nearestRaid = raids.getNearbyRaid(playerPos, 128);

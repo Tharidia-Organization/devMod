@@ -12,27 +12,27 @@ class GameDesignConfigDirectTest {
     @DisplayName("copy creates independent config with the same primitive values")
     void copyCreatesIndependentConfig() {
         GameDesignConfig config = new GameDesignConfig();
-        config.resonance.duoWindowMs = 777;
-        config.contracts.maxContractsPerWave = 9;
-        config.tide.enabled = false;
+        config.getResonance().duoWindowMs = 777;
+        config.getContracts().maxContractsPerWave = 9;
+        config.getTide().enabled = false;
 
         GameDesignConfig copy = config.copy();
 
         assertNotSame(config, copy);
-        assertNotSame(config.resonance, copy.resonance);
-        assertNotSame(config.contracts, copy.contracts);
-        assertNotSame(config.tide, copy.tide);
+        assertNotSame(config.getResonance(), copy.getResonance());
+        assertNotSame(config.getContracts(), copy.getContracts());
+        assertNotSame(config.getTide(), copy.getTide());
 
-        assertEquals(777, copy.resonance.duoWindowMs);
-        assertEquals(9, copy.contracts.maxContractsPerWave);
-        assertEquals(false, copy.tide.enabled);
+        assertEquals(777, copy.getResonance().duoWindowMs);
+        assertEquals(9, copy.getContracts().maxContractsPerWave);
+        assertEquals(false, copy.getTide().enabled);
 
-        copy.resonance.duoWindowMs = 100;
-        copy.contracts.maxContractsPerWave = 1;
-        copy.tide.enabled = true;
+        copy.getResonance().duoWindowMs = 100;
+        copy.getContracts().maxContractsPerWave = 1;
+        copy.getTide().enabled = true;
 
-        assertEquals(777, config.resonance.duoWindowMs);
-        assertEquals(9, config.contracts.maxContractsPerWave);
-        assertEquals(false, config.tide.enabled);
+        assertEquals(777, config.getResonance().duoWindowMs);
+        assertEquals(9, config.getContracts().maxContractsPerWave);
+        assertEquals(false, config.getTide().enabled);
     }
 }

@@ -17,13 +17,13 @@ public class PrestigeMilestone {
      * Types of milestone rewards.
      */
     public enum MilestoneType {
-        PERK_SLOT("Extra Perk Slot", 0xFF55FF),
-        MUTATOR_UNLOCK("Mutator Unlock", 0xFF5555),
-        ARENA_UNLOCK("Arena Unlock", 0x5555FF),
-        COSMETIC_TITLE("Cosmetic Title", 0xFFAA00),
-        STARTING_BONUS("Starting Bonus", 0x55FF55),
-        TOKEN_MULTIPLIER("Token Multiplier", 0xFFD700),
-        EXCLUSIVE_PERK("Exclusive Perk", 0xFF00FF);
+        PERK_SLOT("Extra Perk Slot", EnduranceColors.Prestige.PERK_SLOT),
+        MUTATOR_UNLOCK("Mutator Unlock", EnduranceColors.Prestige.MUTATOR_UNLOCK),
+        ARENA_UNLOCK("Arena Unlock", EnduranceColors.Prestige.ARENA_UNLOCK),
+        COSMETIC_TITLE("Cosmetic Title", EnduranceColors.Prestige.COSMETIC_TITLE),
+        STARTING_BONUS("Starting Bonus", EnduranceColors.Prestige.STARTING_BONUS),
+        TOKEN_MULTIPLIER("Token Multiplier", EnduranceColors.Prestige.TOKEN_MULTIPLIER),
+        EXCLUSIVE_PERK("Exclusive Perk", EnduranceColors.Prestige.EXCLUSIVE_PERK);
 
         public final String displayName;
         public final int color;

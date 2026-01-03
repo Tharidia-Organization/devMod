@@ -32,7 +32,7 @@ public final class ColorTokenResolver {
     private static volatile boolean initialized = false;
 
     /** Default color when token is not found (white with full opacity) */
-    public static final int DEFAULT_COLOR = 0xFFFFFFFF;
+    public static final int DEFAULT_COLOR = DesignTokens.Text.WHITE;
 
     private ColorTokenResolver() {} // Utility class
 
@@ -65,7 +65,7 @@ public final class ColorTokenResolver {
      * If the value starts with "0x" or "#", it's parsed as hex.
      * Otherwise, it's treated as a token name.
      *
-     * @param colorOrToken Either a hex color (e.g., "0xFF4488FF") or a token name (e.g., "ANALYZE_DEBUG")
+     * @param colorOrToken Either a hex color (e.g., "#FF4488FF") or a token name (e.g., "ANALYZE_DEBUG")
      * @return The ARGB color value
      */
     public static int resolveColorOrToken(String colorOrToken) {
@@ -100,7 +100,7 @@ public final class ColorTokenResolver {
             // Handle both ARGB (8 chars) and RGB (6 chars) formats
             if (hex.length() == 6) {
                 // RGB -> add full opacity
-                return 0xFF000000 | (int) Long.parseLong(hex, 16);
+                return DesignTokens.Mask.ALPHA | (int) Long.parseLong(hex, 16);
             } else if (hex.length() == 8) {
                 // ARGB
                 return (int) Long.parseLong(hex, 16);

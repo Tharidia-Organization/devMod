@@ -38,7 +38,6 @@ import com.devmod.client.ui.radial.animation.RadialAnimator;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.config.VisibilitySupplierRegistry;
 import com.devmod.client.ui.radial.input.RadialSearchHandler;
-import com.devmod.client.ui.radial.RadialMenuRuntimeRegistry;
 import com.devmod.client.ui.radial.model.MacroCategory;
 import com.devmod.client.ui.radial.render.RadialCategoryRenderer;
 import com.devmod.client.ui.radial.render.RadialGeometry;

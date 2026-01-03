@@ -16,6 +16,7 @@ import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.sections.ModuleSummarySection;
 import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
@@ -78,7 +79,7 @@ public class FoodModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Hunger points restored. Each point = half drumstick. Steak = 8, Golden Apple = 4.")
-            .onChange(v -> { stats.nutrition = v.intValue(); module.markDirty("Nutrition"); });
+            .onChange(v -> { stats.setNutrition(v.intValue()); module.markDirty("Nutrition"); });
 
         saturationSlider = new EditorSlider("saturation", "Saturation", 0.0f, 2.0f, 0.0f)
             .step(0.1f)
@@ -87,7 +88,7 @@ public class FoodModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Saturation modifier. Actual saturation = nutrition * modifier * 2. Golden Apple = 1.2, Steak = 0.8.")
-            .onChange(v -> { stats.saturation = v; module.markDirty("Saturation"); });
+            .onChange(v -> { stats.setSaturation(v); module.markDirty("Saturation"); });
 
         consumptionTimeSlider = new EditorSlider("consumeTime", "Consumption Time", 1, 100, 32)
             .step(1)
@@ -97,11 +98,11 @@ public class FoodModuleUI {
             .showInput(true)
             .source(dataSource)
             .info("Time to eat in ticks. Default food = 32 (1.6s), Dried Kelp = 16. 20 ticks = 1 second.")
-            .onChange(v -> { stats.consumptionTime = v.intValue(); module.markDirty("Consumption time"); });
+            .onChange(v -> { stats.setConsumptionTime(v.intValue()); module.markDirty("Consumption time"); });
 
         canAlwaysEatToggle = new EditorToggle("canAlwaysEat", "Can Always Eat", false)
             .source(dataSource)
-            .onChange(v -> { stats.canAlwaysEat = v; module.markDirty("Can always eat"); });
+            .onChange(v -> { stats.setCanAlwaysEat(v); module.markDirty("Can always eat"); });
     }
 
     public List<EditorSection> getNutritionSections() {
@@ -128,11 +129,11 @@ public class FoodModuleUI {
         sections.add(new SimpleHeaderSection("effects-header", "Food Effects"));
 
         FoodStats stats = core.getStats();
-        if (stats.effects.isEmpty()) {
+        if (stats.getEffects().isEmpty()) {
             sections.add(new TextNoteSection("effects-empty", "No effects configured. Use commands to add effects."));
         } else {
-            for (int i = 0; i < stats.effects.size(); i++) {
-                FoodStats.FoodEffect effect = stats.effects.get(i);
+            for (int i = 0; i < stats.getEffects().size(); i++) {
+                FoodStats.FoodEffect effect = stats.getEffects().get(i);
                 String info = String.format("%d. %s (Lvl %d, %d ticks, %.0f%%)",
                     i + 1, effect.effectId, effect.amplifier + 1, effect.duration, effect.probability * 100);
                 sections.add(new TextNoteSection("effect-" + i, info));
@@ -152,11 +153,11 @@ public class FoodModuleUI {
 
         isMeatToggle = new EditorToggle("isMeat", "Is Meat", false)
             .source(dataSource)
-            .onChange(v -> { stats.isMeat = v; module.markDirty("Is meat"); });
+            .onChange(v -> { stats.setMeat(v); module.markDirty("Is meat"); });
 
         isFastFoodToggle = new EditorToggle("isFastFood", "Is Fast Food", false)
             .source(dataSource)
-            .onChange(v -> { stats.isFastFood = v; module.markDirty("Is fast food"); });
+            .onChange(v -> { stats.setFastFood(v); module.markDirty("Is fast food"); });
     }
 
     public List<EditorSection> getPropertiesSections() {
@@ -187,22 +188,51 @@ public class FoodModuleUI {
             FoodStats stats = core.getStats();
             FoodStats original = core.getOriginalStats();
 
-            String nutritionChanged = stats.nutrition != original.nutrition ? " *" : "";
-            sections.add(new TextNoteSection("debug-nutrition", "Nutrition: " + stats.nutrition + nutritionChanged));
+            String nutritionChanged = stats.getNutrition() != original.getNutrition() ? " *" : "";
+            sections.add(new TextNoteSection("debug-nutrition", "Nutrition: " + stats.getNutrition() + nutritionChanged));
 
-            String satChanged = Math.abs(stats.saturation - original.saturation) > 0.001f ? " *" : "";
-            sections.add(new TextNoteSection("debug-sat", String.format("Saturation: %.1f%s", stats.saturation, satChanged)));
+            String satChanged = Math.abs(stats.getSaturation() - original.getSaturation()) > 0.001f ? " *" : "";
+            sections.add(new TextNoteSection("debug-sat", String.format("Saturation: %.1f%s", stats.getSaturation(), satChanged)));
 
-            String timeChanged = stats.consumptionTime != original.consumptionTime ? " *" : "";
-            sections.add(new TextNoteSection("debug-time", "Consume Time: " + stats.consumptionTime + timeChanged));
+            String timeChanged = stats.getConsumptionTime() != original.getConsumptionTime() ? " *" : "";
+            sections.add(new TextNoteSection("debug-time", "Consume Time: " + stats.getConsumptionTime() + timeChanged));
 
-            String effectsChanged = stats.effects.size() != original.effects.size() ? " *" : "";
-            sections.add(new TextNoteSection("debug-effects", "Effects: " + stats.effects.size() + effectsChanged));
+            String effectsChanged = stats.getEffects().size() != original.getEffects().size() ? " *" : "";
+            sections.add(new TextNoteSection("debug-effects", "Effects: " + stats.getEffects().size() + effectsChanged));
 
             sections.add(new TextNoteSection("debug-legend", "* = modified from original"));
         }
 
         return sections;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SUMMARY TAB (uses ModuleSummarySection convenience overloads)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Get summary sections using ModuleSummarySection with convenience overloads.
+     * This demonstrates usage of the 2-param and 3-param addStat methods.
+     */
+    public List<EditorSection> getSummarySections() {
+        FoodStats stats = core.getStats();
+
+        // Calculate actual saturation value
+        double actualSaturation = stats.getNutrition() * stats.getSaturation() * 2.0;
+
+        // Build summary using convenience overloads:
+        // - addStat(label, value) for simple stats with defaults
+        // - addStat(label, value, format) for custom formatting
+        ModuleSummarySection summary = ModuleSummarySection.builder("food-summary", "Nutrition Summary")
+            .accentColor(DesignTokens.Accent.GREEN())
+            .addStat("Nutrition", stats.getNutrition())                          // 2-param overload
+            .addStat("Saturation Mod", stats.getSaturation(), "%.1fx")           // 3-param overload
+            .addStat("Actual Saturation", actualSaturation, "%.1f")         // 3-param overload
+            .addStat("Eat Time", stats.getConsumptionTime() / 20.0, "%.1fs")     // 3-param overload
+            .addStat("Effects", stats.getEffects().size())                       // 2-param overload
+            .build();
+
+        return List.of(summary);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -215,12 +245,12 @@ public class FoodModuleUI {
     public void updateComponentsFromStats() {
         FoodStats stats = core.getStats();
 
-        if (nutritionSlider != null) nutritionSlider.setValue(stats.nutrition);
-        if (saturationSlider != null) saturationSlider.setValue(stats.saturation);
-        if (consumptionTimeSlider != null) consumptionTimeSlider.setValue(stats.consumptionTime);
-        if (canAlwaysEatToggle != null) canAlwaysEatToggle.setValue(stats.canAlwaysEat);
+        if (nutritionSlider != null) nutritionSlider.setValue(stats.getNutrition());
+        if (saturationSlider != null) saturationSlider.setValue(stats.getSaturation());
+        if (consumptionTimeSlider != null) consumptionTimeSlider.setValue(stats.getConsumptionTime());
+        if (canAlwaysEatToggle != null) canAlwaysEatToggle.setValue(stats.isCanAlwaysEat());
 
-        if (isMeatToggle != null) isMeatToggle.setValue(stats.isMeat);
-        if (isFastFoodToggle != null) isFastFoodToggle.setValue(stats.isFastFood);
+        if (isMeatToggle != null) isMeatToggle.setValue(stats.isMeat());
+        if (isFastFoodToggle != null) isFastFoodToggle.setValue(stats.isFastFood());
     }
 }

@@ -31,9 +31,15 @@ public class NewsManager {
     // SINGLETON
     // ============================================================================
 
-    public static final NewsManager INSTANCE = new NewsManager();
-
     private NewsManager() {}
+
+    public static NewsManager getInstance() {
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final NewsManager INSTANCE = new NewsManager();
+    }
 
     // ============================================================================
     // STATE

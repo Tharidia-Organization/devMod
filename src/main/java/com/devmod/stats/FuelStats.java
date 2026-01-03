@@ -11,32 +11,96 @@ public class FuelStats {
     // ═══════════════════════════════════════════════════════════════
 
     /** Burn time in ticks (how long fuel burns). 200 = coal, 1600 = coal block */
-    public int burnTime = 0;
+    private int burnTime = 0;
 
     /** Whether to override vanilla burn time */
-    public boolean overrideDefault = false;
+    private boolean overrideDefault = false;
 
     /** Efficiency multiplier for burn time (0.1-3.0) */
-    public float efficiencyMultiplier = 1.0f;
+    private float efficiencyMultiplier = 1.0f;
 
     // ═══════════════════════════════════════════════════════════════
     // COOK TIME PROPERTIES (per furnace type)
     // ═══════════════════════════════════════════════════════════════
 
     /** Cook time in standard furnace (default 200 ticks = 10 seconds) */
-    public int furnaceCookTime = 200;
+    private int furnaceCookTime = 200;
 
     /** Cook time in blast furnace (default 100 ticks = 5 seconds) */
-    public int blastFurnaceCookTime = 100;
+    private int blastFurnaceCookTime = 100;
 
     /** Cook time in smoker (default 100 ticks = 5 seconds) */
-    public int smokerCookTime = 100;
+    private int smokerCookTime = 100;
 
     /** Cook time on campfire (default 600 ticks = 30 seconds) */
-    public int campfireCookTime = 600;
+    private int campfireCookTime = 600;
 
     /** Whether custom cook times are enabled */
-    public boolean customCookTimesEnabled = false;
+    private boolean customCookTimesEnabled = false;
+
+    public int getBurnTime() {
+        return burnTime;
+    }
+
+    public void setBurnTime(int value) {
+        burnTime = value;
+    }
+
+    public boolean isOverrideDefault() {
+        return overrideDefault;
+    }
+
+    public void setOverrideDefault(boolean value) {
+        overrideDefault = value;
+    }
+
+    public float getEfficiencyMultiplier() {
+        return efficiencyMultiplier;
+    }
+
+    public void setEfficiencyMultiplier(float value) {
+        efficiencyMultiplier = value;
+    }
+
+    public int getFurnaceCookTime() {
+        return furnaceCookTime;
+    }
+
+    public void setFurnaceCookTime(int value) {
+        furnaceCookTime = value;
+    }
+
+    public int getBlastFurnaceCookTime() {
+        return blastFurnaceCookTime;
+    }
+
+    public void setBlastFurnaceCookTime(int value) {
+        blastFurnaceCookTime = value;
+    }
+
+    public int getSmokerCookTime() {
+        return smokerCookTime;
+    }
+
+    public void setSmokerCookTime(int value) {
+        smokerCookTime = value;
+    }
+
+    public int getCampfireCookTime() {
+        return campfireCookTime;
+    }
+
+    public void setCampfireCookTime(int value) {
+        campfireCookTime = value;
+    }
+
+    public boolean isCustomCookTimesEnabled() {
+        return customCookTimesEnabled;
+    }
+
+    public void setCustomCookTimesEnabled(boolean value) {
+        customCookTimesEnabled = value;
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTORS
@@ -46,14 +110,14 @@ public class FuelStats {
 
     public FuelStats copy() {
         FuelStats copy = new FuelStats();
-        copy.burnTime = this.burnTime;
-        copy.overrideDefault = this.overrideDefault;
-        copy.efficiencyMultiplier = this.efficiencyMultiplier;
-        copy.furnaceCookTime = this.furnaceCookTime;
-        copy.blastFurnaceCookTime = this.blastFurnaceCookTime;
-        copy.smokerCookTime = this.smokerCookTime;
-        copy.campfireCookTime = this.campfireCookTime;
-        copy.customCookTimesEnabled = this.customCookTimesEnabled;
+        copy.setBurnTime(this.getBurnTime());
+        copy.setOverrideDefault(this.isOverrideDefault());
+        copy.setEfficiencyMultiplier(this.getEfficiencyMultiplier());
+        copy.setFurnaceCookTime(this.getFurnaceCookTime());
+        copy.setBlastFurnaceCookTime(this.getBlastFurnaceCookTime());
+        copy.setSmokerCookTime(this.getSmokerCookTime());
+        copy.setCampfireCookTime(this.getCampfireCookTime());
+        copy.setCustomCookTimesEnabled(this.isCustomCookTimesEnabled());
         return copy;
     }
 
@@ -126,14 +190,14 @@ public class FuelStats {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof FuelStats that)) return false;
-        return burnTime == that.burnTime &&
-               overrideDefault == that.overrideDefault &&
-               Float.compare(that.efficiencyMultiplier, efficiencyMultiplier) == 0 &&
-               furnaceCookTime == that.furnaceCookTime &&
-               blastFurnaceCookTime == that.blastFurnaceCookTime &&
-               smokerCookTime == that.smokerCookTime &&
-               campfireCookTime == that.campfireCookTime &&
-               customCookTimesEnabled == that.customCookTimesEnabled;
+        return burnTime == that.getBurnTime() &&
+               overrideDefault == that.isOverrideDefault() &&
+               Float.compare(that.getEfficiencyMultiplier(), efficiencyMultiplier) == 0 &&
+               furnaceCookTime == that.getFurnaceCookTime() &&
+               blastFurnaceCookTime == that.getBlastFurnaceCookTime() &&
+               smokerCookTime == that.getSmokerCookTime() &&
+               campfireCookTime == that.getCampfireCookTime() &&
+               customCookTimesEnabled == that.isCustomCookTimesEnabled();
     }
 
     @Override

@@ -76,7 +76,17 @@ public class PartyInvite {
      * @return true if expired, false otherwise
      */
     public boolean isExpired() {
-        return System.currentTimeMillis() - createdAt > TIMEOUT_MS;
+        return isExpiredAt(System.currentTimeMillis());
+    }
+
+    /**
+     * Check if this invite has expired at a given timestamp.
+     *
+     * @param nowMillis Current time in milliseconds
+     * @return true if expired, false otherwise
+     */
+    public boolean isExpiredAt(long nowMillis) {
+        return nowMillis - createdAt > TIMEOUT_MS;
     }
 
     /**
@@ -104,7 +114,7 @@ public class PartyInvite {
      * @return true if can still be responded to
      */
     public boolean canRespond() {
-        return status == InviteStatus.PENDING && !isExpired();
+        return status == InviteStatus.PENDING && !isExpiredAt(System.currentTimeMillis());
     }
 
     /**

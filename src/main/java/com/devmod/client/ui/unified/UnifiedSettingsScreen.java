@@ -492,12 +492,12 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Animate title with fade
         int titleAlpha = (int) (255 * categoryTransitionProgress);
-        int titleColor = (titleAlpha << 24) | (DesignTokens.Text.PRIMARY() & 0x00FFFFFF);
+        int titleColor = (titleAlpha << 24) | (DesignTokens.Text.PRIMARY() & DesignTokens.Mask.RGB);
         graphics.drawString(safeFont, pageTitle, contentX + animOffset, contentY, titleColor, false);
 
         // Description (animated)
         int descAlpha = (int) (255 * categoryTransitionProgress * 0.7f);
-        int descColor = (descAlpha << 24) | (DesignTokens.Text.MUTED() & 0x00FFFFFF);
+        int descColor = (descAlpha << 24) | (DesignTokens.Text.MUTED() & DesignTokens.Mask.RGB);
         String description = Objects.requireNonNullElse(currentCategory.getDescription(), "");
         graphics.drawString(safeFont, description, contentX + animOffset, contentY + 12, descColor, false);
 
@@ -962,6 +962,6 @@ public class UnifiedSettingsScreen extends Screen {
 
     private int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 }

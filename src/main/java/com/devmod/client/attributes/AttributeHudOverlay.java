@@ -19,6 +19,8 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.attributes.AttributeLogEntry;
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.util.I18n;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -30,16 +32,16 @@ public class AttributeHudOverlay {
         ResourceLocation.fromNamespaceAndPath("devmod", "attribute_monitor");
 
     // === UI Colors (Impact UI Style) ===
-    private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
-    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue Impact
-    private static final int BORDER_GLOW = 0x553D5AFE;        // Glow effect
-    private static final int TITLE_COLOR = 0xFF00FFFF;        // Cyan Impact
-    private static final int TEXT_WHITE = 0xFFFFFFFF;
-    private static final int TEXT_GREEN = 0xFF00FF00;         // Green Impact
-    private static final int TEXT_YELLOW = 0xFFFFD700;        // Gold Impact
-    private static final int TEXT_RED = 0xFFFF4444;           // Red Impact
-    private static final int TEXT_GRAY = 0xFFAAAAAA;          // Muted gray
-    private static final int TEXT_ORANGE = 0xFFFF9800;        // Orange
+    private static final int PANEL_BG = OverlayTheme.Attribute.PANEL_BG;
+    private static final int PANEL_BORDER = OverlayTheme.Attribute.BORDER;
+    private static final int BORDER_GLOW = OverlayTheme.Attribute.BORDER_GLOW;
+    private static final int TITLE_COLOR = OverlayTheme.Attribute.TITLE;
+    private static final int TEXT_WHITE = OverlayTheme.Attribute.TEXT;
+    private static final int TEXT_GREEN = OverlayTheme.Attribute.VALUE_GREEN;
+    private static final int TEXT_YELLOW = OverlayTheme.Attribute.VALUE_YELLOW;
+    private static final int TEXT_RED = OverlayTheme.Attribute.VALUE_RED;
+    private static final int TEXT_GRAY = OverlayTheme.Attribute.VALUE_GRAY;
+    private static final int TEXT_ORANGE = OverlayTheme.Attribute.VALUE_ORANGE;
 
     // === Layout ===
     private static final int PANEL_WIDTH = 220;
@@ -108,14 +110,16 @@ public class AttributeHudOverlay {
         }
 
         // Separator
-        graphics.fill(textX, y, textX + contentWidth, y + 1, PANEL_BORDER & 0x77FFFFFF);
+        graphics.fill(textX, y, textX + contentWidth, y + 1,
+            OverlayTheme.withAlpha(PANEL_BORDER, DesignTokens.Alpha.A47));
         y += SECTION_GAP;
 
         // === TRACKED ENTITIES ===
         y = renderTrackedListSection(graphics, font, textX, y);
 
         // Separator
-        graphics.fill(textX, y, textX + contentWidth, y + 1, PANEL_BORDER & 0x77FFFFFF);
+        graphics.fill(textX, y, textX + contentWidth, y + 1,
+            OverlayTheme.withAlpha(PANEL_BORDER, DesignTokens.Alpha.A47));
         y += SECTION_GAP;
 
         // === LOG HISTORY ===
@@ -169,7 +173,7 @@ public class AttributeHudOverlay {
         int barWidth = width - 4;
         int barHeight = 4;
         int barX = x + 2;
-        graphics.fill(barX, y, barX + barWidth, y + barHeight, 0xFF333333); // Background
+        graphics.fill(barX, y, barX + barWidth, y + barHeight, OverlayTheme.Progress.BG);
         int filledWidth = (int) (barWidth * (healthPercent / 100f));
         graphics.fill(barX, y, barX + filledWidth, y + barHeight, healthColor); // Fill
         y += barHeight + 4;
@@ -202,7 +206,7 @@ public class AttributeHudOverlay {
         if (target.hasPehkuiModification()) {
             Float scale = target.getPehkuiScale();
             String scaleStr = I18n.translate("devmod.attribute_monitor.pehkui_scale", scale != null ? scale : 1f).getString();
-            graphics.drawString(font, scaleStr, x, y, 0xFFFF55FF, false);
+            graphics.drawString(font, scaleStr, x, y, OverlayTheme.Attribute.SCALE, false);
             y += LINE_HEIGHT;
         }
 
@@ -265,7 +269,8 @@ public class AttributeHudOverlay {
         y += LINE_HEIGHT;
 
         if (logs.isEmpty()) {
-            graphics.drawString(font, I18n.translate("devmod.attribute_monitor.log.none").getString(), x + 4, y, 0xFF555555, false);
+            graphics.drawString(font, I18n.translate("devmod.attribute_monitor.log.none").getString(), x + 4, y,
+                OverlayTheme.Attribute.EMPTY_LOG, false);
         } else {
             int shown = 0;
             for (AttributeLogEntry log : logs) {
@@ -307,6 +312,6 @@ public class AttributeHudOverlay {
 
     private static int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 }

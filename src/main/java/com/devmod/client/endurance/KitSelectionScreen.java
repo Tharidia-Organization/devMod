@@ -84,17 +84,17 @@ public class KitSelectionScreen extends Screen {
     private static final int COLOR_ACCENT = DesignTokens.Accent.SECONDARY;
     private static final int COLOR_ACCENT_GREEN = DesignTokens.Semantic.SUCCESS;
     private static final int COLOR_ACCENT_ORANGE = DesignTokens.Semantic.WARNING;
-    private static final int COLOR_ACCENT_PURPLE = 0xFFA371F7;  // Kit-specific purple (no token equivalent)
+    private static final int COLOR_ACCENT_PURPLE = EnduranceUiTheme.KitSelection.ACCENT_PURPLE;  // Kit-specific purple (no token equivalent)
     private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
     private static final int COLOR_TEXT_DIM = DesignTokens.Text.MUTED;
     private static final int COLOR_TEXT_INVERSE = DesignTokens.Text.INVERSE;
-    private static final int COLOR_TEXT_WHITE = 0xFFFFFFFF;
+    private static final int COLOR_TEXT_WHITE = DesignTokens.Text.WHITE;
     private static final int COLOR_BORDER = DesignTokens.Stroke.DEFAULT;
 
     // Button success variants
-    private static final int COLOR_BTN_SUCCESS_HOVER = 0xFF2EA043;
-    private static final int COLOR_BTN_SUCCESS_BORDER_HOVER = 0xFF3FB950;
-    private static final int COLOR_BTN_SUCCESS_BORDER = 0xFF238636;
+    private static final int COLOR_BTN_SUCCESS_HOVER = EnduranceUiTheme.KitSelection.BTN_SUCCESS_HOVER;
+    private static final int COLOR_BTN_SUCCESS_BORDER_HOVER = EnduranceUiTheme.KitSelection.BTN_SUCCESS_BORDER_HOVER;
+    private static final int COLOR_BTN_SUCCESS_BORDER = EnduranceUiTheme.KitSelection.BTN_SUCCESS_BORDER;
 
     @Immutable
     @FunctionalInterface
@@ -102,22 +102,28 @@ public class KitSelectionScreen extends Screen {
 
     // Categories with icons
     private enum Category {
-        ALL("devmod.kit.category.all", "devmod.kit.category.all.tab", "◆", 0xFFE6EDF3, stack -> true),
-        ARMOR("devmod.kit.category.armor", "devmod.kit.category.armor.tab", "🛡", 0xFF58A6FF, stack -> stack.getItem() instanceof ArmorItem),
-        WEAPONS("devmod.kit.category.weapons", "devmod.kit.category.weapons.tab", "⚔", 0xFFF85149, stack -> stack.getItem() instanceof SwordItem ||
+        ALL("devmod.kit.category.all", "devmod.kit.category.all.tab", "◆", EnduranceUiTheme.KitCategory.ALL, stack -> true),
+        ARMOR("devmod.kit.category.armor", "devmod.kit.category.armor.tab", "🛡", EnduranceUiTheme.KitCategory.ARMOR,
+            stack -> stack.getItem() instanceof ArmorItem),
+        WEAPONS("devmod.kit.category.weapons", "devmod.kit.category.weapons.tab", "⚔", EnduranceUiTheme.KitCategory.WEAPONS,
+            stack -> stack.getItem() instanceof SwordItem ||
                                           stack.getItem() instanceof AxeItem ||
                                           stack.getItem() instanceof BowItem ||
                                           stack.getItem() instanceof CrossbowItem ||
                                           stack.getItem() instanceof TridentItem ||
                                           stack.getItem() instanceof MaceItem),
-        TOOLS("devmod.kit.category.tools", "devmod.kit.category.tools.tab", "⛏", 0xFFD29922, stack -> (stack.getItem() instanceof TieredItem) &&
+        TOOLS("devmod.kit.category.tools", "devmod.kit.category.tools.tab", "⛏", EnduranceUiTheme.KitCategory.TOOLS,
+            stack -> (stack.getItem() instanceof TieredItem) &&
                                        !(stack.getItem() instanceof SwordItem) &&
                                        !(stack.getItem() instanceof AxeItem)),
-        POTIONS("devmod.kit.category.potions", "devmod.kit.category.potions.tab", "🧪", 0xFFA371F7, stack -> stack.getItem() instanceof PotionItem ||
+        POTIONS("devmod.kit.category.potions", "devmod.kit.category.potions.tab", "🧪", EnduranceUiTheme.KitCategory.POTIONS,
+            stack -> stack.getItem() instanceof PotionItem ||
                                           stack.getItem() == Items.SPLASH_POTION ||
                                           stack.getItem() == Items.LINGERING_POTION),
-        FOOD("devmod.kit.category.food", "devmod.kit.category.food.tab", "🍖", 0xFF3FB950, stack -> stack.has(Objects.requireNonNull(net.minecraft.core.component.DataComponents.FOOD))),
-        COMBAT("devmod.kit.category.combat", "devmod.kit.category.combat.tab", "🏹", 0xFFFF7B72, stack -> stack.getItem() instanceof ShieldItem ||
+        FOOD("devmod.kit.category.food", "devmod.kit.category.food.tab", "🍖", EnduranceUiTheme.KitCategory.FOOD,
+            stack -> stack.has(Objects.requireNonNull(net.minecraft.core.component.DataComponents.FOOD))),
+        COMBAT("devmod.kit.category.combat", "devmod.kit.category.combat.tab", "🏹", EnduranceUiTheme.KitCategory.COMBAT,
+            stack -> stack.getItem() instanceof ShieldItem ||
                                          stack.getItem() == Items.ARROW ||
                                          stack.getItem() == Items.SPECTRAL_ARROW ||
                                          stack.getItem() == Items.TIPPED_ARROW ||
@@ -126,7 +132,8 @@ public class KitSelectionScreen extends Screen {
                                          stack.getItem() == Items.ENCHANTED_GOLDEN_APPLE ||
                                          stack.getItem() == Items.ENDER_PEARL ||
                                          stack.getItem() == Items.FIREWORK_ROCKET),
-        BLOCKS("devmod.kit.category.blocks", "devmod.kit.category.blocks.tab", "▣", 0xFF79C0FF, stack -> stack.getItem() instanceof BlockItem);
+        BLOCKS("devmod.kit.category.blocks", "devmod.kit.category.blocks.tab", "▣", EnduranceUiTheme.KitCategory.BLOCKS,
+            stack -> stack.getItem() instanceof BlockItem);
 
         final String nameKey;
         final String tabKey;
@@ -665,7 +672,7 @@ public class KitSelectionScreen extends Screen {
         int popupY = (height - popupH) / 2;
 
         // Darken background
-        graphics.fill(0, 0, width, height, 0xAA000000);
+        graphics.fill(0, 0, width, height, EnduranceUiTheme.KitSelection.SCRIM);
 
         // Popup background
         graphics.fill(popupX, popupY, popupX + popupW, popupY + popupH, COLOR_PANEL);
@@ -735,7 +742,7 @@ public class KitSelectionScreen extends Screen {
         int dialogY = (height - dialogH) / 2;
 
         // Darken background
-        graphics.fill(0, 0, width, height, 0xAA000000);
+        graphics.fill(0, 0, width, height, EnduranceUiTheme.KitSelection.SCRIM);
 
         // Dialog background
         graphics.fill(dialogX, dialogY, dialogX + dialogW, dialogY + dialogH, COLOR_PANEL);

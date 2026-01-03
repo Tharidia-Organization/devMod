@@ -137,7 +137,7 @@ public class PartyHudOverlay {
         graphics.drawString(Objects.requireNonNull(font), name, x + 8, y, nameColor);
 
         // Status label
-        String statusLabel = getStatusLabel(member);
+        String statusLabel = Objects.requireNonNull(getStatusLabel(member), "statusLabel");
         int statusWidth = font.width(statusLabel);
         int statusX = x + (PANEL_WIDTH - PADDING * 2) - statusWidth;
         graphics.drawString(Objects.requireNonNull(font), statusLabel, statusX, y, statusColor);

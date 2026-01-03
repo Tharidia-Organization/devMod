@@ -736,7 +736,7 @@ async function loadPlayerStats() {
     if (!selectedPlayer) {
         document.getElementById('player-stats-container').innerHTML =
             '<div class="player-select-prompt"><p>Select a player from the dropdown above to view detailed stats</p></div>';
-        document.getElementById('player-charts').style.display = 'none';
+        document.getElementById('player-charts').classList.add('hidden');
         return;
     }
 
@@ -776,7 +776,7 @@ async function loadPlayerStats() {
     `;
 
     // Show player charts
-    document.getElementById('player-charts').style.display = 'grid';
+    document.getElementById('player-charts').classList.remove('hidden');
 
     // Load player-specific charts
     if (data.dpsTimeline && data.dpsTimeline.length > 0) {

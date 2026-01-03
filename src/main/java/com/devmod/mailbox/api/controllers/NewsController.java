@@ -32,7 +32,7 @@ public final class NewsController {
         boolean activeOnly = ctx.queryParamAsClass("activeOnly", Boolean.class).getOrDefault(true);
         String categoryStr = ctx.queryParam("category");
 
-        NewsManager.INSTANCE.getActiveNews().thenAccept(articles -> {
+        NewsManager.getInstance().getActiveNews().thenAccept(articles -> {
             List<NewsArticleDto> dtos = articles.stream()
                 .filter(a -> !activeOnly || a.active())
                 .filter(a -> categoryStr == null || a.category().name().equalsIgnoreCase(categoryStr))
@@ -56,7 +56,7 @@ public final class NewsController {
             return;
         }
 
-        NewsManager.INSTANCE.getArticle(newsId).thenAccept(optArticle -> {
+        NewsManager.getInstance().getArticle(newsId).thenAccept(optArticle -> {
             if (optArticle.isEmpty()) {
                 ctx.status(HttpStatus.NOT_FOUND).json(errorResponse("Article not found"));
             } else {
@@ -118,7 +118,7 @@ public final class NewsController {
             .active(active != null ? active : true)
             .build();
 
-        NewsManager.INSTANCE.createArticle(article).thenAccept(v -> {
+        NewsManager.getInstance().createArticle(article).thenAccept(v -> {
             ctx.status(HttpStatus.CREATED).json(NewsArticleDto.from(article));
             AdminAuditLog.INSTANCE.log(AdminAuditLog.AuditEntry.builder()
                     .action(AdminAuditLog.Action.NEWS_CREATE)
@@ -152,7 +152,7 @@ public final class NewsController {
 
         UpdateNewsRequest request = ctx.bodyAsClass(UpdateNewsRequest.class);
 
-        NewsManager.INSTANCE.getArticle(newsId).<NewsArticle>thenCompose(optArticle -> {
+        NewsManager.getInstance().getArticle(newsId).<NewsArticle>thenCompose(optArticle -> {
             if (optArticle.isEmpty()) {
                 ctx.status(HttpStatus.NOT_FOUND).json(errorResponse("Article not found"));
                 return java.util.concurrent.CompletableFuture.completedFuture(null);
@@ -191,7 +191,7 @@ public final class NewsController {
                 .active(activeFlag != null ? activeFlag : existing.active())
                 .build();
 
-            return NewsManager.INSTANCE.updateArticle(updated)
+            return NewsManager.getInstance().updateArticle(updated)
                 .thenApply(success -> success ? updated : null);
         }).thenAccept(result -> {
             if (result != null) {
@@ -226,7 +226,7 @@ public final class NewsController {
             return;
         }
 
-        NewsManager.INSTANCE.deleteArticle(newsId).thenAccept(success -> {
+        NewsManager.getInstance().deleteArticle(newsId).thenAccept(success -> {
             if (success) {
                 ctx.status(HttpStatus.NO_CONTENT);
                 AdminAuditLog.INSTANCE.log(AdminAuditLog.AuditEntry.builder()

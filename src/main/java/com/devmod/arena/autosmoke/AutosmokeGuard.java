@@ -11,8 +11,6 @@ public class AutosmokeGuard {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeGuard.class);
 
-    private static final AutosmokeGuard INSTANCE = new AutosmokeGuard();
-
     /** Environment variable name for environment detection */
     public static final String ENV_VAR_NAME = "DEVMOD_ENV";
 
@@ -36,7 +34,11 @@ public class AutosmokeGuard {
     }
 
     public static AutosmokeGuard getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final AutosmokeGuard INSTANCE = new AutosmokeGuard();
     }
 
     /**

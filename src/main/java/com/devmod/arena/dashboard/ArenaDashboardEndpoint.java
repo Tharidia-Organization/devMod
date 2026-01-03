@@ -42,7 +42,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     /** DD36: Query timeout duration */
     private static final Duration QUERY_TIMEOUT = Duration.ofSeconds(10);
 
-    private static final ArenaDashboardEndpoint INSTANCE = new ArenaDashboardEndpoint();
+    private static final java.security.SecureRandom TOKEN_RANDOM = new java.security.SecureRandom();
 
     /** Active authentication tokens */
     private final Map<String, TokenInfo> validTokens = new ConcurrentHashMap<>();
@@ -102,7 +102,11 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     }
 
     public static ArenaDashboardEndpoint getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final ArenaDashboardEndpoint INSTANCE = new ArenaDashboardEndpoint();
     }
 
     /**
@@ -324,9 +328,8 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
      * Generates a secure random token
      */
     private String generateSecureToken() {
-        java.security.SecureRandom random = new java.security.SecureRandom();
         byte[] bytes = new byte[32];
-        random.nextBytes(bytes);
+        TOKEN_RANDOM.nextBytes(bytes);
 
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
@@ -1099,10 +1102,6 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         com.devmod.arena.registry.TemplateRegistryBootstrap bootstrap =
             com.devmod.DevMod.getArenaTemplateBootstrap();
 
-        if (bootstrap == null) {
-            return BootstrapStatusResponse.notConfigured();
-        }
-
         var lastResult = bootstrap.getLastLoadResult();
         int templateCount = lastResult != null ? lastResult.templates().size() : 0;
         int errorCount = lastResult != null ? lastResult.errors().size() : 0;
@@ -1241,7 +1240,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     private String buildMetricsToCsv(BuildMetricsResponse m) {
         StringBuilder csv = new StringBuilder();
         csv.append("template_id,total_builds,successful_builds,failed_builds,avg_build_time_ms,p95_build_time_ms,failure_rate,from,to\n");
-        csv.append(String.format("%s,%d,%d,%d,%.2f,%.2f,%.2f,%s,%s\n",
+        csv.append(String.format("%s,%d,%d,%d,%.2f,%.2f,%.2f,%s,%s%n",
             m.templateId(), m.totalBuilds(), m.successfulBuilds(), m.failedBuilds(),
             m.avgBuildTimeMs(), m.p95BuildTimeMs(), m.failureRate(),
             m.from(), m.to()
@@ -1263,7 +1262,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         StringBuilder csv = new StringBuilder();
         csv.append("template_id,timestamp,mspt,tps\n");
         for (PerformanceResponse.MsptSample sample : p.samples()) {
-            csv.append(String.format("%s,%s,%.2f,%.2f\n",
+            csv.append(String.format("%s,%s,%.2f,%.2f%n",
                 p.templateId(), sample.timestamp(), sample.mspt(), sample.tps()
             ));
         }
@@ -1292,7 +1291,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         StringBuilder csv = new StringBuilder();
         csv.append("template_id,wave_number,attempts,completions,completion_rate,avg_duration_seconds\n");
         for (WaveCorrelationResponse.WaveData wave : w.waves()) {
-            csv.append(String.format("%s,%d,%d,%d,%.2f,%.2f\n",
+            csv.append(String.format("%s,%d,%d,%d,%.2f,%.2f%n",
                 w.templateId(), wave.waveNumber(), wave.attempts(), wave.completions(),
                 wave.completionRate(), wave.avgDurationSeconds()
             ));

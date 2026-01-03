@@ -2,6 +2,7 @@ package com.devmod.ammo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -11,8 +12,10 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
@@ -21,6 +24,7 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.components.RangedComponents;
 
@@ -41,14 +45,9 @@ public final class AmmoSystem {
             return false;
         }
 
-        // Check for custom ammo filter from DevMod component
-        ResourceLocation customFilter = getAmmoFilter(weapon);
-        if (customFilter != null) {
-            TagKey<Item> ammoTag = TagKey.create(
-                Objects.requireNonNull(Registries.ITEM),
-                Objects.requireNonNull(customFilter)
-            );
-            return ammo.is(Objects.requireNonNull(ammoTag));
+        String customFilter = getAmmoFilterString(weapon);
+        if (customFilter != null && !customFilter.isBlank()) {
+            return matchesFilter(ammo, customFilter);
         }
 
         // Fallback to vanilla behavior
@@ -71,19 +70,10 @@ public final class AmmoSystem {
      */
     @Nullable
     public static ResourceLocation getAmmoFilter(ItemStack weapon) {
-        if (weapon.isEmpty()) {
-            return null;
-        }
-
-        try {
-            if (RangedComponents.AMMO_TAG_FILTER.isBound()) {
-                return weapon.get(Objects.requireNonNull(RangedComponents.AMMO_TAG_FILTER.get()));
-            }
-        } catch (Exception e) {
-            LOGGER.debug("[AmmoSystem] Failed to get ammo filter: {}", e.getMessage());
-        }
-
-        return null;
+        String filter = getAmmoFilterString(weapon);
+        if (filter == null || filter.isBlank()) return null;
+        String cleanFilter = filter.startsWith("#") ? filter.substring(1) : filter;
+        return ResourceLocation.tryParse(Objects.requireNonNull(cleanFilter));
     }
 
     /**
@@ -130,9 +120,9 @@ public final class AmmoSystem {
             return List.of();
         }
 
-        ResourceLocation customFilter = getAmmoFilter(weapon);
-        if (customFilter != null) {
-            return getItemsFromTag(customFilter);
+        String customFilter = getAmmoFilterString(weapon);
+        if (customFilter != null && !customFilter.isBlank()) {
+            return getItemsFromTagString(customFilter);
         }
 
         // Fallback to vanilla ammo
@@ -167,26 +157,35 @@ public final class AmmoSystem {
     }
 
     /**
-     * Get all items from a tag by string (e.g., "#minecraft:arrows" or "minecraft:arrows").
+     * Get items from a filter string (e.g., "#minecraft:arrows" or "minecraft:arrow").
      *
-     * @param tagString The tag string (with or without # prefix)
-     * @return List of ItemStacks matching the tag
+     * @param tagString The tag or item string (with or without # prefix)
+     * @return List of ItemStacks matching the filter
      */
     public static List<ItemStack> getItemsFromTagString(String tagString) {
         if (tagString == null || tagString.isBlank()) {
             return List.of();
         }
 
-        // Remove # prefix if present
-        String cleanTag = tagString.startsWith("#") ? tagString.substring(1) : tagString;
+        String trimmed = tagString.trim();
+        boolean isTag = trimmed.startsWith("#");
+        String cleanTag = isTag ? trimmed.substring(1) : trimmed;
         ResourceLocation tagId = ResourceLocation.tryParse(Objects.requireNonNull(cleanTag));
 
         if (tagId == null) {
-            LOGGER.debug("[AmmoSystem] Invalid tag string: {}", tagString);
+            LOGGER.debug("[AmmoSystem] Invalid ammo filter string: {}", tagString);
             return List.of();
         }
 
-        return getItemsFromTag(tagId);
+        if (isTag) {
+            return getItemsFromTag(tagId);
+        }
+
+        if (BuiltInRegistries.ITEM.containsKey(tagId)) {
+            return List.of(new ItemStack(Objects.requireNonNull(BuiltInRegistries.ITEM.get(tagId))));
+        }
+
+        return List.of();
     }
 
     /**
@@ -266,28 +265,97 @@ public final class AmmoSystem {
      * @return true if a custom filter is set
      */
     public static boolean hasCustomAmmoFilter(ItemStack weapon) {
-        return getAmmoFilter(weapon) != null;
+        String filter = getAmmoFilterString(weapon);
+        return filter != null && !filter.isBlank();
+    }
+
+    @Nullable
+    private static String getAmmoFilterString(ItemStack weapon) {
+        if (weapon.isEmpty()) {
+            return null;
+        }
+
+        String nbtFilter = readAmmoFilterFromNbt(weapon);
+        ResourceLocation componentFilter = readAmmoFilterFromComponent(weapon);
+        if (componentFilter != null) {
+            if (nbtFilter != null && !nbtFilter.isBlank()) {
+                return nbtFilter.trim();
+            }
+            return formatAmmoFilter(componentFilter);
+        }
+
+        return nbtFilter == null ? null : nbtFilter.trim();
+    }
+
+    @Nullable
+    private static ResourceLocation readAmmoFilterFromComponent(ItemStack weapon) {
+        try {
+            if (RangedComponents.AMMO_TAG_FILTER.isBound()) {
+                return weapon.get(Objects.requireNonNull(RangedComponents.AMMO_TAG_FILTER.get()));
+            }
+        } catch (Exception e) {
+            LOGGER.debug("[AmmoSystem] Failed to get ammo filter: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String readAmmoFilterFromNbt(ItemStack weapon) {
+        try {
+            CustomData custom = weapon.getOrDefault(
+                Objects.requireNonNull(DataComponents.CUSTOM_DATA),
+                Objects.requireNonNull(CustomData.EMPTY));
+            CompoundTag tag = custom.copyTag();
+            if (tag == null || !tag.contains("RangedStats")) {
+                return null;
+            }
+            CompoundTag ranged = tag.getCompound("RangedStats");
+            if (!ranged.contains("ammoFilter")) {
+                return null;
+            }
+            return ranged.getString("ammoFilter");
+        } catch (Exception e) {
+            LOGGER.debug("[AmmoSystem] Failed to read ammo filter from NBT: {}", e.getMessage());
+            return null;
+        }
     }
 
     /**
-     * Validate that a tag string is a valid ResourceLocation and exists in the registry.
+     * Check if a given ammo stack matches a filter string.
      *
-     * @param tagString The tag string to validate
-     * @return true if valid and exists
+     * @param ammo The ammo item stack
+     * @param filter The filter string (item id or #tag)
+     * @return true if the ammo matches the filter
      */
-    public static boolean isValidTagString(String tagString) {
-        if (tagString == null || tagString.isBlank()) {
-            return false;
+    public static boolean matchesFilter(ItemStack ammo, @Nullable String filter) {
+        if (ammo == null || ammo.isEmpty()) return false;
+        if (filter == null) return false;
+        String trimmed = filter.trim();
+        if (trimmed.isEmpty()) return false;
+        if (trimmed.startsWith("#")) {
+            return matchesTag(ammo, trimmed.substring(1));
         }
+        return matchesItemId(ammo, trimmed);
+    }
 
-        String cleanTag = tagString.startsWith("#") ? tagString.substring(1) : tagString;
-        ResourceLocation tagId = ResourceLocation.tryParse(Objects.requireNonNull(cleanTag));
+    private static boolean matchesTag(ItemStack ammo, String tagIdStr) {
+        ResourceLocation tagId = ResourceLocation.tryParse(Objects.requireNonNull(tagIdStr));
+        if (tagId == null) return false;
+        TagKey<Item> ammoTag = TagKey.create(
+            Objects.requireNonNull(Registries.ITEM),
+            Objects.requireNonNull(tagId)
+        );
+        return ammo.is(Objects.requireNonNull(ammoTag));
+    }
 
-        if (tagId == null) {
-            return false;
-        }
+    private static boolean matchesItemId(ItemStack ammo, String filter) {
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(ammo.getItem()));
+        String idStr = id.toString().toLowerCase(Locale.ROOT);
+        String normalized = filter.trim().toLowerCase(Locale.ROOT);
+        return idStr.equals(normalized) || idStr.endsWith(normalized);
+    }
 
-        // Check if tag exists (has any items)
+    private static boolean isTagDefined(ResourceLocation tagId) {
         try {
             TagKey<Item> tag = TagKey.create(
                 Objects.requireNonNull(Registries.ITEM),
@@ -297,6 +365,76 @@ public final class AmmoSystem {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Format a ResourceLocation as an ammo filter string, tagging if possible.
+     *
+     * @param filterId The item or tag id
+     * @return Filter string (#tag or item id)
+     */
+    public static String formatAmmoFilter(ResourceLocation filterId) {
+        Objects.requireNonNull(filterId, "filterId");
+        return isTagDefined(filterId) ? "#" + filterId : filterId.toString();
+    }
+
+    public enum FilterState {
+        BLANK,
+        INVALID_FORMAT,
+        MISSING_ITEM,
+        EMPTY_TAG,
+        VALID_ITEM,
+        VALID_TAG
+    }
+
+    /**
+     * Resolve a filter string into a typed state for UI/validation.
+     *
+     * @param filterString The filter string (item id or #tag)
+     * @return The resolved filter state
+     */
+    public static FilterState resolveFilterState(@Nullable String filterString) {
+        if (filterString == null || filterString.isBlank()) {
+            return FilterState.BLANK;
+        }
+
+        String trimmed = filterString.trim();
+        boolean isTag = trimmed.startsWith("#");
+        String clean = isTag ? trimmed.substring(1) : trimmed;
+        ResourceLocation id = ResourceLocation.tryParse(Objects.requireNonNull(clean));
+
+        if (id == null) {
+            return FilterState.INVALID_FORMAT;
+        }
+
+        if (isTag) {
+            return isTagDefined(id) ? FilterState.VALID_TAG : FilterState.EMPTY_TAG;
+        }
+
+        return BuiltInRegistries.ITEM.containsKey(id)
+            ? FilterState.VALID_ITEM
+            : FilterState.MISSING_ITEM;
+    }
+
+    /**
+     * Validate that a filter string is a valid ResourceLocation and exists.
+     *
+     * @param tagString The tag or item string to validate
+     * @return true if valid and exists
+     */
+    public static boolean isValidTagString(String tagString) {
+        return isValidFilterString(tagString);
+    }
+
+    /**
+     * Validate that a filter string resolves to a tag or item in the registry.
+     *
+     * @param filterString The filter string to validate
+     * @return true if it resolves to a known tag or item
+     */
+    public static boolean isValidFilterString(String filterString) {
+        FilterState state = resolveFilterState(filterString);
+        return state == FilterState.VALID_ITEM || state == FilterState.VALID_TAG;
     }
 
     /**

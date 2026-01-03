@@ -85,7 +85,7 @@ public class ClientChallengeCache {
         return switch (difficulty) {
             case 0 -> DesignTokens.Semantic.SUCCESS;  // Green - Easy
             case 1 -> DesignTokens.Semantic.WARNING;  // Yellow - Medium
-            case 2 -> 0xFFFF8800;                     // Orange - Hard
+            case 2 -> EnduranceUiTheme.Challenge.HARD;                     // Orange - Hard
             case 3 -> DesignTokens.Semantic.ERROR;    // Red - Extreme
             default -> DesignTokens.Text.MUTED;
         };

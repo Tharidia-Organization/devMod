@@ -83,7 +83,6 @@ public class StaminaSystem {
 
         data.currentStamina -= amount;
         data.regenDelayTicks = (int) (data.regenDelay * 20); // Convert seconds to ticks
-        data.lastUseTime = System.currentTimeMillis();
 
         LOGGER.debug("[Stamina] Player {} consumed {} stamina (now: {})",
             playerId, amount, data.currentStamina);
@@ -98,7 +97,6 @@ public class StaminaSystem {
         StaminaData data = getStaminaData(playerId);
         data.currentStamina = Math.max(-20, data.currentStamina - amount); // Cap negative at -20
         data.regenDelayTicks = (int) (data.regenDelay * 20);
-        data.lastUseTime = System.currentTimeMillis();
     }
 
     /**
@@ -239,7 +237,6 @@ public class StaminaSystem {
         public float regenRate = DEFAULT_REGEN_RATE;
         public float regenDelay = DEFAULT_REGEN_DELAY;
         public int regenDelayTicks = 0;
-        public long lastUseTime = 0;
 
         // Modifiers (from perks, effects, etc.)
         public float maxStaminaMultiplier = 1.0f;

@@ -70,7 +70,10 @@ public class DamageHandler {
                 // Enforce ammo filter defined by ranged stats, if any
                 if (!AmmoFilter.matches(weapon, arrow)) {
                     if (attacker instanceof ServerPlayer sp) {
-                        sp.displayClientMessage(Objects.requireNonNull(Component.literal("Ammo not allowed for this preset").withStyle(s -> s.withColor(0xFFAA00))), true);
+                        sp.displayClientMessage(Objects.requireNonNull(
+                            Component.literal("Ammo not allowed for this preset")
+                                .withStyle(s -> s.withColor(CombatColors.Text.WARNING))),
+                            true);
                     }
                     return; // Skip DevMod scaling; fall back to vanilla handling
                 }
@@ -85,9 +88,9 @@ public class DamageHandler {
                     arrow.setDeltaMovement(Objects.requireNonNull(normalized.scale(ranged.projectileSpeed)));
                     rangedSpeedOverride = ranged.projectileSpeed;
                 }
-                if (ranged.critChance > 0) {
-                    rangedCritChance = ranged.critChance;
-                    rangedCritDamage = ranged.critDamage;
+                if (ranged.getCritChance() > 0) {
+                    rangedCritChance = ranged.getCritChance();
+                    rangedCritDamage = ranged.getCritDamage();
                 }
             } else {
                 // MELEE: Use OBB raycast when enabled, fallback to AABB subdivision
@@ -178,14 +181,14 @@ public class DamageHandler {
 
     private static PartPresentation getPartPresentation(HitHelper.BodyPart part) {
         if (part == null) {
-            return new PartPresentation("devmod.bodypart.body", 0xFFFFFF);
+            return new PartPresentation("devmod.bodypart.body", CombatColors.BodyPart.DEFAULT);
         }
 
         return switch (part) {
-            case HEAD -> new PartPresentation("devmod.bodypart.head", 0xFF5555);
-            case BODY -> new PartPresentation("devmod.bodypart.body", 0x55FF55);
-            case ARMS -> new PartPresentation("devmod.bodypart.arms", 0xFFAA00);
-            case LEGS -> new PartPresentation("devmod.bodypart.legs", 0x55FFFF);
+            case HEAD -> new PartPresentation("devmod.bodypart.head", CombatColors.BodyPart.HEAD);
+            case BODY -> new PartPresentation("devmod.bodypart.body", CombatColors.BodyPart.BODY);
+            case ARMS -> new PartPresentation("devmod.bodypart.arms", CombatColors.BodyPart.ARMS);
+            case LEGS -> new PartPresentation("devmod.bodypart.legs", CombatColors.BodyPart.LEGS);
         };
     }
 
@@ -202,26 +205,26 @@ public class DamageHandler {
         }
 
         String dmgText = String.format("%.1f", newDamage);
-        String penText = stats.armorPenetration > 0 ? " [Pen]" : "";
+        String penText = stats.getArmorPenetration() > 0 ? " [Pen]" : "";
 
         MutableComponent hitLabel = Objects.requireNonNull(I18n.translate("devmod.message.hit")
-            .withStyle(s -> s.withColor(0xAAAAAA)));
+            .withStyle(s -> s.withColor(CombatColors.Text.MUTED)));
         MutableComponent hitSeparator = Objects.requireNonNull(Component.literal(": ")
-            .withStyle(s -> s.withColor(0xAAAAAA)));
+            .withStyle(s -> s.withColor(CombatColors.Text.MUTED)));
         MutableComponent partComponent = Objects.requireNonNull(I18n.translate(partKey)
             .withStyle(s -> s.withColor(color)));
         MutableComponent damageLabel = Objects.requireNonNull(I18n.translate("devmod.hud.damage")
-            .withStyle(s -> s.withColor(0xFFFFFF)));
+            .withStyle(s -> s.withColor(CombatColors.Text.PRIMARY)));
         MutableComponent damageSeparator = Objects.requireNonNull(Component.literal(": ")
-            .withStyle(s -> s.withColor(0xFFFFFF)));
+            .withStyle(s -> s.withColor(CombatColors.Text.PRIMARY)));
         MutableComponent damageValue = Objects.requireNonNull(Component.literal(dmgText + penText)
-            .withStyle(s -> s.withColor(0xFFFFFF)));
+            .withStyle(s -> s.withColor(CombatColors.Text.PRIMARY)));
         MutableComponent feedback = Objects.requireNonNull(Component.empty())
             .append(hitLabel)
             .append(hitSeparator)
             .append(partComponent)
             .append(Objects.requireNonNull(Component.literal(" ")
-                .withStyle(s -> s.withColor(0xFFFFFF))))
+                .withStyle(s -> s.withColor(CombatColors.Text.PRIMARY))))
             .append(damageLabel)
             .append(damageSeparator)
             .append(damageValue);
@@ -234,8 +237,8 @@ public class DamageHandler {
     }
 
     private static void applyPostHitEffects(LivingEntity attacker, WeaponStats stats, float damageDealt) {
-        if (stats.lifesteal > 0 && attacker.isAlive()) {
-            float heal = damageDealt * stats.lifesteal;
+        if (stats.getLifesteal() > 0 && attacker.isAlive()) {
+            float heal = damageDealt * stats.getLifesteal();
             attacker.heal(heal);
         }
     }
@@ -371,7 +374,7 @@ public class DamageHandler {
                     critChanceField = statsClass.getField("critChance");
                     critDamageField = statsClass.getField("critDamage");
                     available = true;
-                } catch (Exception e) {
+                } catch (ReflectiveOperationException | RuntimeException e) {
                     available = false;
                 } finally {
                     initialized = true;
@@ -393,7 +396,7 @@ public class DamageHandler {
                     critChanceField,
                     critDamageField
                 );
-            } catch (Exception e) {
+            } catch (ReflectiveOperationException | RuntimeException e) {
                 return RangedOverrides.defaults();
             }
         }
@@ -415,6 +418,14 @@ public class DamageHandler {
             this.projectileSpeed = projectileSpeed;
             this.critChance = critChance;
             this.critDamage = critDamage;
+        }
+
+        private float getCritChance() {
+            return critChance;
+        }
+
+        private float getCritDamage() {
+            return critDamage;
         }
 
         private static RangedOverrides defaults() {

@@ -921,8 +921,8 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         return new ArenaTemplate.Ceiling(
             child.enabled(),
             child.material() != null ? child.material() : parent.material(),
-            child.y() != 0 || parent == null ? child.y() : parent.y(),
-            child.thickness() != 0 || parent == null ? child.thickness() : parent.thickness()
+            child.y() != 0 ? child.y() : parent.y(),
+            child.thickness() != 0 ? child.thickness() : parent.thickness()
         );
     }
 
@@ -998,8 +998,8 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         if (child == null) return parent;
         if (parent == null) return child;
         return new ArenaTemplate.InstanceSettings(
-            child.chunkRadius() != 0 || parent == null ? child.chunkRadius() : parent.chunkRadius(),
-            child.tickDistance() != 0 || parent == null ? child.tickDistance() : parent.tickDistance(),
+            child.chunkRadius() != 0 ? child.chunkRadius() : parent.chunkRadius(),
+            child.tickDistance() != 0 ? child.tickDistance() : parent.tickDistance(),
             child.keepLoaded()
         );
     }
@@ -1009,9 +1009,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         if (child == null) return parent;
         if (parent == null) return child;
         return new ArenaTemplate.Limits(
-            child.maxBuildTimeMs() != 0 || parent == null ? child.maxBuildTimeMs() : parent.maxBuildTimeMs(),
-            child.maxBlocks() != 0 || parent == null ? child.maxBlocks() : parent.maxBlocks(),
-            child.maxEntities() != 0 || parent == null ? child.maxEntities() : parent.maxEntities()
+            child.maxBuildTimeMs() != 0 ? child.maxBuildTimeMs() : parent.maxBuildTimeMs(),
+            child.maxBlocks() != 0 ? child.maxBlocks() : parent.maxBlocks(),
+            child.maxEntities() != 0 ? child.maxEntities() : parent.maxEntities()
         );
     }
 

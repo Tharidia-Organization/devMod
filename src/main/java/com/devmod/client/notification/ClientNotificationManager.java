@@ -510,7 +510,7 @@ public class ClientNotificationManager {
 
         String announcement = notification.getParam("announcement", "RESONANCE!");
         int styleBonus = parseInt(notification.getParam("styleBonus", "0"), 0);
-        int color = parseInt(notification.getParam("color", "16777215"), 0xFFFFFF);
+        int color = parseInt(notification.getParam("color", "16777215"), NotificationUiTheme.RGB_WHITE);
         boolean isTrinity = parseBoolean(notification.getParam("isTrinity", "false"));
         boolean isApocalypse = parseBoolean(notification.getParam("isApocalypse", "false"));
 

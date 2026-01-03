@@ -183,6 +183,18 @@ public class NotificationSoundManager {
         soundConfigs.put("system.error", new SoundConfig(
                 SoundEvents.ANVIL_LAND, 0.8f, 0.5f));
 
+        // Epic Fight integration fallback sounds (used when EF sounds unavailable)
+        soundConfigs.put("epicfight.parry.perfect", new SoundConfig(
+                SoundEvents.PLAYER_LEVELUP, 1.8f, 0.9f));
+        soundConfigs.put("epicfight.parry.success", new SoundConfig(
+                SoundEvents.SHIELD_BLOCK, 1.4f, 0.6f));
+        soundConfigs.put("epicfight.guard.start", new SoundConfig(
+                Objects.requireNonNull(SoundEvents.ARMOR_EQUIP_IRON.value()), 1.0f, 0.4f));
+        soundConfigs.put("epicfight.guard.impact", new SoundConfig(
+                SoundEvents.SHIELD_BLOCK, 1.0f, 0.7f));
+        soundConfigs.put("epicfight.stamina.low", new SoundConfig(
+                SoundEvents.NOTE_BLOCK_BASS.value(), 0.6f, 0.5f));
+
         // Default fallback
         soundConfigs.put("default", new SoundConfig(
                 Objects.requireNonNull(SoundEvents.NOTE_BLOCK_PLING.value()), 1.0f, 0.5f));

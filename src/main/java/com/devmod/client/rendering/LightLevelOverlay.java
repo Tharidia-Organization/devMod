@@ -257,7 +257,7 @@ public class LightLevelOverlay {
         // Draw
         font.drawInBatch(safeText, xOffset, 0, color, false,
                 Objects.requireNonNull(poseStack.last().pose()), Objects.requireNonNull(mc.renderBuffers().bufferSource()),
-                net.minecraft.client.gui.Font.DisplayMode.NORMAL, 0x40000000, 15728880);
+                net.minecraft.client.gui.Font.DisplayMode.NORMAL, OverlayTheme.Utility.SHADOW, 15728880);
 
         poseStack.popPose();
     }

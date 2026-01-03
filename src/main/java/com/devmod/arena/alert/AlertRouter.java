@@ -376,7 +376,9 @@ public class AlertRouter implements AutoCloseable {
             for (RetryableAlert alert : toRetry) {
                 if (!alert.isReadyForRetry()) {
                     // Not ready yet, re-queue
-                    retryQueue.offer(alert);
+                    if (!retryQueue.offer(alert) && loggingEnabled) {
+                        LOGGER.warning("Retry queue full, dropping delayed retry for: " + alert.channelId());
+                    }
                     continue;
                 }
 

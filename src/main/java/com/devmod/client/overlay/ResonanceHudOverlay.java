@@ -3,12 +3,16 @@ package com.devmod.client.overlay;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.sounds.SoundEvents;
@@ -92,17 +96,18 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
 
         // Play additional client-side sound
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) {
+        final var player = mc.player;
+        if (player != null) {
             if (isApocalypse) {
-                mc.player.playSound(SoundEvents.WITHER_SPAWN, 0.5f, 1.5f);
+                player.playSound(Objects.requireNonNull(SoundEvents.WITHER_SPAWN), 0.5f, 1.5f);
             } else if (isTrinity) {
-                mc.player.playSound(SoundEvents.ENDER_DRAGON_GROWL, 0.3f, 2.0f);
+                player.playSound(Objects.requireNonNull(SoundEvents.ENDER_DRAGON_GROWL), 0.3f, 2.0f);
             }
         }
     }
 
     @Override
-    public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
@@ -121,7 +126,7 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
         // Render screen flash
         if (screenFlashAlpha > 0.01f) {
             int alpha = (int) (screenFlashAlpha * 255);
-            int flashColorWithAlpha = (alpha << 24) | (screenFlashColor & 0xFFFFFF);
+            int flashColorWithAlpha = OverlayTheme.withAlpha(screenFlashColor, alpha);
             graphics.fill(0, 0, screenWidth, screenHeight, flashColorWithAlpha);
             screenFlashAlpha *= 0.85f; // Decay
         }
@@ -153,6 +158,7 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
                                     int screenWidth, int screenHeight, int offsetY) {
         float progress = notif.getProgress();
         Minecraft mc = Minecraft.getInstance();
+        Font font = Objects.requireNonNull(mc.font, "font");
 
         // Calculate animation values
         float scale;
@@ -180,7 +186,8 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
         }
 
         // Calculate position (center of screen, offset up from center)
-        int textWidth = mc.font.width(notif.text);
+        String text = Objects.requireNonNull(notif.text, "text");
+        int textWidth = font.width(text);
         float x = screenWidth / 2f;
         float y = screenHeight / 3f + offsetY;
 
@@ -192,27 +199,27 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
         // Draw glow effect for higher tiers
         if (notif.isTrinity || notif.isApocalypse) {
             int glowAlpha = (int) (alpha * 100);
-            int glowColor = (glowAlpha << 24) | (notif.color & 0xFFFFFF);
+            int glowColor = OverlayTheme.withAlpha(notif.color, glowAlpha);
             for (int i = 3; i >= 1; i--) {
                 int offset = i * 2;
-                graphics.drawString(mc.font, notif.text, -textWidth / 2 - offset, -offset, glowColor, false);
-                graphics.drawString(mc.font, notif.text, -textWidth / 2 + offset, -offset, glowColor, false);
-                graphics.drawString(mc.font, notif.text, -textWidth / 2 - offset, offset, glowColor, false);
-                graphics.drawString(mc.font, notif.text, -textWidth / 2 + offset, offset, glowColor, false);
+                graphics.drawString(font, text, -textWidth / 2 - offset, -offset, glowColor, false);
+                graphics.drawString(font, text, -textWidth / 2 + offset, -offset, glowColor, false);
+                graphics.drawString(font, text, -textWidth / 2 - offset, offset, glowColor, false);
+                graphics.drawString(font, text, -textWidth / 2 + offset, offset, glowColor, false);
             }
         }
 
         // Draw main text
         int textAlpha = (int) (alpha * 255);
-        int textColor = (textAlpha << 24) | (notif.color & 0xFFFFFF);
-        graphics.drawString(mc.font, notif.text, -textWidth / 2, 0, textColor, true);
+        int textColor = OverlayTheme.withAlpha(notif.color, textAlpha);
+        graphics.drawString(font, text, -textWidth / 2, 0, textColor, true);
 
         // Draw style bonus below
         String bonusText = "+" + notif.styleBonus + " STYLE";
-        int bonusWidth = mc.font.width(bonusText);
+        int bonusWidth = font.width(bonusText);
         int bonusAlpha = (int) (alpha * 200);
         int bonusColor = OverlayTheme.withAlpha(OverlayTheme.Text.PRIMARY, bonusAlpha);
-        graphics.drawString(mc.font, bonusText, -bonusWidth / 2, 15, bonusColor, false);
+        graphics.drawString(font, bonusText, -bonusWidth / 2, 15, bonusColor, false);
 
         graphics.pose().popPose();
     }

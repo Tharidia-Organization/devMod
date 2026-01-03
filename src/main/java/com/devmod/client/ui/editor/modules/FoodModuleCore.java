@@ -81,7 +81,7 @@ public class FoodModuleCore {
         determineDataSource(item);
 
         DevMod.LOGGER.info("[Editor][Food] Loaded stats from {}: nutrition={} saturation={} effects={}",
-            sourcePrefix, stats.nutrition, stats.saturation, stats.effects.size());
+            sourcePrefix, stats.getNutrition(), stats.getSaturation(), stats.getEffects().size());
     }
 
     private void determineDataSource(ItemStack item) {
@@ -115,16 +115,23 @@ public class FoodModuleCore {
         try {
             FoodProperties food = item.get(Objects.requireNonNull(DataComponents.FOOD, "food component"));
             if (food != null) {
-                target.nutrition = food.nutrition();
-                target.saturation = food.saturation();
-                target.canAlwaysEat = food.canAlwaysEat();
+                int nutrition = food.nutrition();
+                target.setNutrition(nutrition);
+                float saturationModifier = 0.0f;
+                if (nutrition > 0) {
+                    saturationModifier = food.saturation() / (nutrition * 2.0f);
+                }
+                target.setSaturation(saturationModifier);
+                target.setCanAlwaysEat(food.canAlwaysEat());
+                target.setConsumptionTime(food.eatDurationTicks());
+            }
+            if (food == null) {
+                // Default consumption time
+                target.setConsumptionTime(32);
             }
 
-            // Default consumption time
-            target.consumptionTime = 32;
-
             DevMod.LOGGER.info("[Editor][Food] Vanilla defaults -> nutrition={} saturation={} canAlwaysEat={}",
-                target.nutrition, target.saturation, target.canAlwaysEat);
+                target.getNutrition(), target.getSaturation(), target.isCanAlwaysEat());
         } catch (Exception e) {
             DevMod.LOGGER.warn("[Editor][Food] Failed to apply vanilla defaults", e);
         }

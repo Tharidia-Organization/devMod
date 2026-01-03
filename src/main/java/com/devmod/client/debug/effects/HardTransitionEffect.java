@@ -16,6 +16,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.arena.zone.ArenaZone;
 import com.devmod.arena.zone.ZoneEnvironment;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 /**
  * Hard transition effect - clean lines with pulsing glow.
@@ -295,39 +296,39 @@ public class HardTransitionEffect implements TransitionEffect {
 
     private int getZoneColor(ZoneEnvironment env) {
         if (env == null || ZoneEnvironment.DEFAULT.equals(env)) {
-            return 0xFFFFFF;
+            return OverlayTheme.Debug.ZONE_ENV_DEFAULT;
         }
 
         var biome = env.biome();
         if (biome.isPresent()) {
             String path = biome.get().getPath().toLowerCase(java.util.Locale.ROOT);
             if (path.contains("nether") || path.contains("basalt") || path.contains("soul")) {
-                return 0xFF4444;
+                return OverlayTheme.Debug.ZONE_ENV_NETHER;
             }
             if (path.contains("end")) {
-                return 0xAA44FF;
+                return OverlayTheme.Debug.ZONE_ENV_END;
             }
             if (path.contains("snow") || path.contains("ice") || path.contains("frozen")) {
-                return 0x44FFFF;
+                return OverlayTheme.Debug.ZONE_ENV_ICE;
             }
             if (path.contains("desert") || path.contains("badlands")) {
-                return 0xFFFF44;
+                return OverlayTheme.Debug.ZONE_ENV_DESERT;
             }
             if (path.contains("ocean") || path.contains("river")) {
-                return 0x4444FF;
+                return OverlayTheme.Debug.ZONE_ENV_OCEAN;
             }
             if (path.contains("forest") || path.contains("jungle") || path.contains("taiga")) {
-                return 0x44FF44;
+                return OverlayTheme.Debug.ZONE_ENV_FOREST;
             }
         }
 
         if (env.time() == ZoneEnvironment.TimeConfig.NIGHT) {
-            return 0x6644AA;
+            return OverlayTheme.Debug.ZONE_ENV_NIGHT;
         }
         if (env.time() == ZoneEnvironment.TimeConfig.DAY) {
-            return 0xFFDD44;
+            return OverlayTheme.Debug.ZONE_ENV_DAY;
         }
 
-        return 0xCCCCCC;
+        return OverlayTheme.Debug.ZONE_ENV_FALLBACK;
     }
 }

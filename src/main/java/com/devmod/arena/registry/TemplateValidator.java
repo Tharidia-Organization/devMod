@@ -685,7 +685,7 @@ public class TemplateValidator {
             // Fallback path: validation without manifest (dev-friendly)
             if (dataProvider == null || structure.path() == null) {
                 errors.add("structureNbt present but manifest/provider not configured");
-                emitStructureRejected(structure != null ? structure.path() : "unknown", "NO_MANIFEST");
+                emitStructureRejected(structure.path(), "NO_MANIFEST");
                 return;
             }
             if (fallbackConfig == null) {

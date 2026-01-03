@@ -17,7 +17,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.runtime.InstanceState;
 import com.devmod.runtime.PlayerInstanceState;
 
@@ -125,48 +125,48 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
-    @DisplayName("L0-03: UI Constants")
-    class UIConstantsTests {
+    @DisplayName("L0-03: Design Tokens")
+    class DesignTokensTests {
 
         @Test
         @Order(1)
         @DisplayName("Background colors are defined")
         void backgroundColorsDefined() {
             // These are int constants, should be non-zero (assuming they have alpha)
-            assertNotEquals(0, UIConstants.Background.PANEL);
-            assertNotEquals(0, UIConstants.Background.HEADER);
+            assertNotEquals(0, DesignTokens.Background.PANEL);
+            assertNotEquals(0, DesignTokens.Background.HEADER);
         }
 
         @Test
         @Order(2)
         @DisplayName("Text colors are defined")
         void textColorsDefined() {
-            assertNotEquals(0, UIConstants.Text.PRIMARY);
-            assertNotEquals(0, UIConstants.Text.SECONDARY);
+            assertNotEquals(0, DesignTokens.Text.PRIMARY);
+            assertNotEquals(0, DesignTokens.Text.SECONDARY);
         }
 
         @Test
         @Order(3)
         @DisplayName("Border colors are defined")
         void borderColorsDefined() {
-            assertNotEquals(0, UIConstants.Border.DEFAULT);
-            assertNotEquals(0, UIConstants.Border.ACCENT);
+            assertNotEquals(0, DesignTokens.Border.DEFAULT);
+            assertNotEquals(0, DesignTokens.Border.ACCENT);
         }
 
         @Test
         @Order(4)
         @DisplayName("Status colors are defined")
         void statusColorsDefined() {
-            assertNotEquals(0, UIConstants.Status.SUCCESS);
-            assertNotEquals(0, UIConstants.Status.ERROR);
+            assertNotEquals(0, DesignTokens.Status.SUCCESS);
+            assertNotEquals(0, DesignTokens.Status.ERROR);
         }
 
         @Test
         @Order(5)
         @DisplayName("Toggle colors are defined")
         void toggleColorsDefined() {
-            assertNotEquals(0, UIConstants.Toggle.ON);
-            assertNotEquals(0, UIConstants.Toggle.OFF);
+            assertNotEquals(0, DesignTokens.Toggle.ON);
+            assertNotEquals(0, DesignTokens.Toggle.OFF);
         }
 
         @Test
@@ -174,7 +174,7 @@ public class L0SmokeBootTest {
         @DisplayName("Colors have proper alpha values")
         void colorsHaveProperAlpha() {
             // Extract alpha from ARGB
-            int panelAlpha = (UIConstants.Background.PANEL >> 24) & 0xFF;
+            int panelAlpha = (DesignTokens.Background.PANEL >> 24) & 0xFF;
             assertTrue(panelAlpha > 0, "Panel should have non-zero alpha");
         }
     }
@@ -275,7 +275,7 @@ public class L0SmokeBootTest {
         @DisplayName("UI system files exist")
         void uiSystemFilesExist() {
             String[] uiFiles = {
-                "client/ui/editor/core/UIConstants.java",
+                "client/ui/editor/core/DesignTokens.java",
                 "client/ui/AxiomRenderer.java",
                 "client/ui/unified/UnifiedSettingsScreen.java"
             };
@@ -330,10 +330,10 @@ public class L0SmokeBootTest {
 
         @Test
         @Order(3)
-        @DisplayName("UI Constants are compiled")
+        @DisplayName("Design Tokens are compiled")
         void uiConstantsCompiled() {
-            assertTrue(classFileExists("client/ui/editor/core/UIConstants.class"),
-                "UIConstants should be compiled");
+            assertTrue(classFileExists("client/ui/editor/core/DesignTokens.class"),
+                "DesignTokens should be compiled");
         }
 
         private boolean classFileExists(String relativePath) {

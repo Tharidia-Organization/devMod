@@ -27,12 +27,13 @@ public class ClasspathStructureDataProvider implements TemplateValidator.Structu
             return null;
         }
         String resourcePath = "data/" + rl.getNamespace() + "/structures/" + rl.getPath() + ".nbt";
-        try (InputStream in = resourceLoader.getResourceAsStream(resourcePath)) {
-            if (in == null) {
-                LOGGER.warn("Structure NBT not found at resource path: {}", resourcePath);
-                return null;
-            }
-            return in.readAllBytes();
+        InputStream in = resourceLoader.getResourceAsStream(resourcePath);
+        if (in == null) {
+            LOGGER.warn("Structure NBT not found at resource path: {}", resourcePath);
+            return null;
+        }
+        try (InputStream stream = in) {
+            return stream.readAllBytes();
         } catch (IOException e) {
             LOGGER.error("Failed to read structure NBT from {}", resourcePath, e);
             throw e;

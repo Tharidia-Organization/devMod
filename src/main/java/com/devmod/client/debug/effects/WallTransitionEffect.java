@@ -21,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.arena.zone.ArenaZone;
 import com.devmod.arena.zone.ZoneEnvironment;
+import com.devmod.client.ui.overlay.OverlayTheme;
 
 /**
  * Wall transition effect - vertical barrier with electric particles.
@@ -292,26 +293,26 @@ public class WallTransitionEffect implements TransitionEffect {
 
     private int getZoneColor(ZoneEnvironment env) {
         if (env == null || ZoneEnvironment.DEFAULT.equals(env)) {
-            return 0x44AAFF; // Blue for walls by default
+            return OverlayTheme.Debug.WALL; // Blue for walls by default
         }
 
         var biome = env.biome();
         if (biome.isPresent()) {
             String path = biome.get().getPath().toLowerCase(java.util.Locale.ROOT);
             if (path.contains("nether") || path.contains("basalt") || path.contains("soul")) {
-                return 0xFF4444;
+                return OverlayTheme.Debug.ZONE_ENV_NETHER;
             }
             if (path.contains("end")) {
-                return 0xAA44FF;
+                return OverlayTheme.Debug.ZONE_ENV_END;
             }
             if (path.contains("snow") || path.contains("ice") || path.contains("frozen")) {
-                return 0x44FFFF;
+                return OverlayTheme.Debug.ZONE_ENV_ICE;
             }
             if (path.contains("desert") || path.contains("mesa") || path.contains("badlands")) {
-                return 0xFFAA44;
+                return OverlayTheme.Debug.ZONE_ENV_DESERT_WALL;
             }
         }
 
-        return 0x44AAFF;
+        return OverlayTheme.Debug.WALL;
     }
 }

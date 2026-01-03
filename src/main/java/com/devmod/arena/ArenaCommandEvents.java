@@ -62,12 +62,13 @@ public final class ArenaCommandEvents {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaCommandEvents.class);
 
-    private static AutosmokeRunner autosmokeRunner;
-    private static AutosmokeScheduler autosmokeScheduler;
-    private static AutosmokeReportWriter autosmokeReportWriter;
-    private static AlertRouter alertRouter;
-    private static LogAggregationPipeline telemetryPipeline;
-    private static ForceTemplateCapability forceTemplateCapability;
+    private static final Object INIT_LOCK = new Object();
+    private static volatile AutosmokeRunner autosmokeRunner;
+    private static volatile AutosmokeScheduler autosmokeScheduler;
+    private static volatile AutosmokeReportWriter autosmokeReportWriter;
+    private static volatile AlertRouter alertRouter;
+    private static volatile LogAggregationPipeline telemetryPipeline;
+    private static volatile ForceTemplateCapability forceTemplateCapability;
     private static final AtomicReference<ArenaTemplateConfig.ConfigSnapshot> CONFIG_SNAPSHOT = new AtomicReference<>();
     private static final AsyncArenaBuildCoordinator ASYNC_COORDINATOR =
         new AsyncArenaBuildCoordinator(CONFIG_SNAPSHOT::get);
@@ -78,42 +79,46 @@ public final class ArenaCommandEvents {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         ensureTelemetryPipeline();
         ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
-        if (registry == null) {
-            LOGGER.warn("[ArenaCommands] Registry not initialized; skipping command registration");
-            return;
-        }
-
         TemplateRegistryBootstrap bootstrap = DevMod.getArenaTemplateBootstrap();
         ArenaTemplateConfig config = ArenaTemplateConfig.load();
-        ArenaTemplateConfig.ConfigSnapshot snapshot = bootstrap != null ? bootstrap.configSnapshot() : config.snapshot();
+        ArenaTemplateConfig.ConfigSnapshot snapshot = bootstrap.configSnapshot();
         CONFIG_SNAPSHOT.set(snapshot);
 
-        AutosmokeRunner runner = autosmokeRunner != null ? autosmokeRunner : new AutosmokeRunner(registry);
-        AutosmokeScheduler scheduler = autosmokeScheduler != null
-            ? autosmokeScheduler
-            : new AutosmokeScheduler(
-                runner,
-                AutosmokeScheduler.ScheduleConfig.fromCron(config.autosmokeSchedule()),
-                resolveZone(config.autosmokeTimezone())
-            );
-
-        autosmokeRunner = runner;
-        autosmokeScheduler = scheduler;
-        if (forceTemplateCapability == null) {
-            forceTemplateCapability = buildForceTemplateCapability();
+        AutosmokeRunner runner;
+        AutosmokeScheduler scheduler;
+        ForceTemplateCapability capability;
+        synchronized (INIT_LOCK) {
+            runner = autosmokeRunner;
+            if (runner == null) {
+                runner = new AutosmokeRunner(registry);
+                autosmokeRunner = runner;
+            }
+            scheduler = autosmokeScheduler;
+            if (scheduler == null) {
+                scheduler = new AutosmokeScheduler(
+                    runner,
+                    AutosmokeScheduler.ScheduleConfig.fromCron(config.autosmokeSchedule()),
+                    resolveZone(config.autosmokeTimezone())
+                );
+                autosmokeScheduler = scheduler;
+            }
+            if (forceTemplateCapability == null) {
+                forceTemplateCapability = buildForceTemplateCapability();
+            }
+            capability = forceTemplateCapability;
+            if (autosmokeReportWriter == null) {
+                autosmokeReportWriter = new AutosmokeReportWriter(Path.of("run", "autosmoke-reports"),
+                    resolveZone(config.autosmokeTimezone()), 30);
+                runner.addReportListener(autosmokeReportWriter::writeReport);
+            }
         }
-        if (forceTemplateCapability != null) {
-            autosmokeRunner.setForceTemplateCapability(forceTemplateCapability);
-            EnduranceQuestManager.INSTANCE.setForceTemplateCapability(forceTemplateCapability);
+        if (capability != null) {
+            runner.setForceTemplateCapability(capability);
+            EnduranceQuestManager.INSTANCE.setForceTemplateCapability(capability);
         }
         ensureAlertRouter();
         if (alertRouter != null) {
-            autosmokeScheduler.setAlertRouter(alertRouter);
-        }
-        if (autosmokeReportWriter == null) {
-            autosmokeReportWriter = new AutosmokeReportWriter(Path.of("run", "autosmoke-reports"),
-                resolveZone(config.autosmokeTimezone()), 30);
-            autosmokeRunner.addReportListener(autosmokeReportWriter::writeReport);
+            scheduler.setAlertRouter(alertRouter);
         }
 
         Path templateDir = snapshot != null ? snapshot.templateDirectory() : Path.of("config/devmod/arena_templates/");
@@ -187,48 +192,52 @@ public final class ArenaCommandEvents {
     }
 
     private static void ensureTelemetryPipeline() {
-        if (telemetryPipeline != null) {
-            return;
-        }
-        try {
-            NdjsonWriter ndjsonWriter = new NdjsonWriter(Path.of("run"), "arena-telemetry");
-            telemetryPipeline = LogAggregationPipeline.builder()
-                .addDestination(new LogAggregationPipeline.NdjsonDestination(ndjsonWriter))
-                .addDestination(new DuckDbDestination())
-                .addConsoleDestination()
-                .build();
-            telemetryPipeline.start();
-            ArenaTelemetry.setGlobalHandler(telemetryPipeline.asTelemetryConsumer());
-        } catch (Exception e) {
-            LOGGER.warn("[ArenaCommands] Failed to initialize telemetry pipeline: {}", e.getMessage());
+        synchronized (INIT_LOCK) {
+            if (telemetryPipeline != null) {
+                return;
+            }
+            try {
+                NdjsonWriter ndjsonWriter = new NdjsonWriter(Path.of("run"), "arena-telemetry");
+                telemetryPipeline = LogAggregationPipeline.builder()
+                    .addDestination(new LogAggregationPipeline.NdjsonDestination(ndjsonWriter))
+                    .addDestination(new DuckDbDestination())
+                    .addConsoleDestination()
+                    .build();
+                telemetryPipeline.start();
+                ArenaTelemetry.setGlobalHandler(telemetryPipeline.asTelemetryConsumer());
+            } catch (Exception e) {
+                LOGGER.warn("[ArenaCommands] Failed to initialize telemetry pipeline: {}", e.getMessage());
+            }
         }
     }
 
     private static void ensureAlertRouter() {
-        if (alertRouter != null) {
-            return;
-        }
-        ArenaTelemetry telemetry = new ArenaTelemetry();
-        AlertRouter router = new AlertRouter();
-        router.registerChannel(new ConsoleAlertChannel());
-        router.registerChannel(new LogAlertChannel());
-        router.registerChannel(new TelemetryAlertChannel(telemetry));
-        router.registerChannel(new MailboxAlertChannel());
-        router.setDeliveryRecorder(new DuckDbAlertRecorder());
+        synchronized (INIT_LOCK) {
+            if (alertRouter != null) {
+                return;
+            }
+            ArenaTelemetry telemetry = new ArenaTelemetry();
+            AlertRouter router = new AlertRouter();
+            router.registerChannel(new ConsoleAlertChannel());
+            router.registerChannel(new LogAlertChannel());
+            router.registerChannel(new TelemetryAlertChannel(telemetry));
+            router.registerChannel(new MailboxAlertChannel());
+            router.setDeliveryRecorder(new DuckDbAlertRecorder());
 
-        String webhookUrl = System.getenv("DEVMOD_ARENA_ALERT_WEBHOOK_URL");
-        String webhookAuth = System.getenv("DEVMOD_ARENA_ALERT_WEBHOOK_AUTH");
-        if (webhookUrl != null && !webhookUrl.isBlank()) {
-            router.registerChannel(new WebhookAlertChannel("webhook", webhookUrl, true, 5000, webhookAuth));
-        }
+            String webhookUrl = System.getenv("DEVMOD_ARENA_ALERT_WEBHOOK_URL");
+            String webhookAuth = System.getenv("DEVMOD_ARENA_ALERT_WEBHOOK_AUTH");
+            if (webhookUrl != null && !webhookUrl.isBlank()) {
+                router.registerChannel(new WebhookAlertChannel("webhook", webhookUrl, true, 5000, webhookAuth));
+            }
 
-        String discordUrl = System.getenv("DEVMOD_ARENA_ALERT_DISCORD_WEBHOOK_URL");
-        if (discordUrl != null && !discordUrl.isBlank()) {
-            router.registerChannel(new DiscordAlertChannel("discord", discordUrl, true, 5000, "Arena Alerts", null, null));
-        }
+            String discordUrl = System.getenv("DEVMOD_ARENA_ALERT_DISCORD_WEBHOOK_URL");
+            if (discordUrl != null && !discordUrl.isBlank()) {
+                router.registerChannel(new DiscordAlertChannel("discord", discordUrl, true, 5000, "Arena Alerts", null, null));
+            }
 
-        alertRouter = router;
-        AlertRouterRegistry.set(router);
+            alertRouter = router;
+            AlertRouterRegistry.set(router);
+        }
     }
 
     private static ForceTemplateCapability buildForceTemplateCapability() {

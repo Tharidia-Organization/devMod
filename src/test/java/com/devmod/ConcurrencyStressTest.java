@@ -45,6 +45,19 @@ public class ConcurrencyStressTest {
         public float armsMult = 0.75f;
         public float legsMult = 0.5f;
         public float armorPenetration = 0f;
+
+        public float getBaseDamageBonus() { return baseDamageBonus; }
+        public void setBaseDamageBonus(float v) { baseDamageBonus = v; }
+        public float getHeadMult() { return headMult; }
+        public void setHeadMult(float v) { headMult = v; }
+        public float getBodyMult() { return bodyMult; }
+        public void setBodyMult(float v) { bodyMult = v; }
+        public float getArmsMult() { return armsMult; }
+        public void setArmsMult(float v) { armsMult = v; }
+        public float getLegsMult() { return legsMult; }
+        public void setLegsMult(float v) { legsMult = v; }
+        public float getArmorPenetration() { return armorPenetration; }
+        public void setArmorPenetration(float v) { armorPenetration = v; }
     }
 
     @BeforeEach
@@ -78,14 +91,14 @@ public class ConcurrencyStressTest {
 
                     for (int action = 0; action < ACTIONS_PER_PLAYER; action++) {
                         MockWeaponStats stats = new MockWeaponStats();
-                        stats.baseDamageBonus = playerId * 0.1f;
-                        stats.headMult = 2.0f + (action * 0.01f);
-                        stats.bodyMult = 1.0f;
-                        stats.armsMult = 0.75f;
-                        stats.legsMult = 0.5f;
-                        stats.armorPenetration = 0.1f * (playerId % 10);
+                        stats.setBaseDamageBonus(playerId * 0.1f);
+                        stats.setHeadMult(2.0f + (action * 0.01f));
+                        stats.setBodyMult(1.0f);
+                        stats.setArmsMult(0.75f);
+                        stats.setLegsMult(0.5f);
+                        stats.setArmorPenetration(0.1f * (playerId % 10));
 
-                        if (stats.headMult < stats.bodyMult) {
+                        if (stats.getHeadMult() < stats.getBodyMult()) {
                             hasRaceCondition.set(true);
                             errors.add("Player " + playerId + ": headMult < bodyMult race condition");
                         }
@@ -198,13 +211,13 @@ public class ConcurrencyStressTest {
 
                         weaponConfigs.computeIfAbsent(weaponId, k -> {
                             MockWeaponStats stats = new MockWeaponStats();
-                            stats.baseDamageBonus = playerId * 0.5f;
+                            stats.setBaseDamageBonus(playerId * 0.5f);
                             return stats;
                         });
 
                         MockWeaponStats stats = weaponConfigs.get(weaponId);
                         if (stats != null) {
-                            float dmg = stats.baseDamageBonus;
+                            float dmg = stats.getBaseDamageBonus();
                             if (dmg < 0) {
                                 errorCount.incrementAndGet();
                                 errors.add("Player " + playerId + ": negative baseDamageBonus");
@@ -338,7 +351,7 @@ public class ConcurrencyStressTest {
                                 weaponConfigs.computeIfAbsent(weaponId, k -> new MockWeaponStats());
                                 MockWeaponStats s = weaponConfigs.get(weaponId);
                                 if (s != null) {
-                                    float dmg = s.baseDamageBonus;
+                                    float dmg = s.getBaseDamageBonus();
                                     if (dmg < 0) {
                                         errorCount.incrementAndGet();
                                         errors.add("Player " + playerId + ": negative baseDamageBonus");

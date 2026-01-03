@@ -34,8 +34,10 @@ public final class I18n {
     public static MutableComponent overlayStatus(String overlayKey, boolean enabled) {
         MutableComponent name = Objects.requireNonNull(Component.translatable("devmod.overlay." + overlayKey));
         MutableComponent status = enabled
-            ? Objects.requireNonNull(Objects.requireNonNull(Component.translatable("devmod.overlay.on")).withStyle(s -> s.withColor(0x55FF55)))
-            : Objects.requireNonNull(Objects.requireNonNull(Component.translatable("devmod.overlay.off")).withStyle(s -> s.withColor(0xFF5555)));
+            ? Objects.requireNonNull(Objects.requireNonNull(Component.translatable("devmod.overlay.on"))
+                .withStyle(s -> s.withColor(MessageColors.RGB_SUCCESS)))
+            : Objects.requireNonNull(Objects.requireNonNull(Component.translatable("devmod.overlay.off"))
+                .withStyle(s -> s.withColor(MessageColors.RGB_ERROR)));
         return Objects.requireNonNull(name.append(Objects.requireNonNull(Component.literal(": "))).append(status));
     }
 
@@ -50,7 +52,7 @@ public final class I18n {
         countText = Objects.requireNonNull(countText.append(Objects.requireNonNull(Component.literal(" "))));
         countText = Objects.requireNonNull(countText.append(Objects.requireNonNull(Component.translatable("devmod.overlay." + countKey))));
         countText = Objects.requireNonNull(countText.append(Objects.requireNonNull(Component.literal(")"))));
-        countText = Objects.requireNonNull(countText.withStyle(s -> s.withColor(0xAAAAAA)));
+        countText = Objects.requireNonNull(countText.withStyle(s -> s.withColor(MessageColors.RGB_MUTED)));
         return Objects.requireNonNull(base.append(countText));
     }
 
@@ -91,7 +93,8 @@ public final class I18n {
      */
     @Nonnull
     public static MutableComponent error(String messageKey) {
-        return Objects.requireNonNull(Objects.requireNonNull(Component.translatable("devmod." + messageKey)).withStyle(s -> s.withColor(0xFF5555)));
+        return Objects.requireNonNull(Objects.requireNonNull(Component.translatable("devmod." + messageKey))
+            .withStyle(s -> s.withColor(MessageColors.RGB_ERROR)));
     }
 
     /**
@@ -99,7 +102,8 @@ public final class I18n {
      */
     @Nonnull
     public static MutableComponent success(String messageKey) {
-        return Objects.requireNonNull(Objects.requireNonNull(Component.translatable("devmod." + messageKey)).withStyle(s -> s.withColor(0x55FF55)));
+        return Objects.requireNonNull(Objects.requireNonNull(Component.translatable("devmod." + messageKey))
+            .withStyle(s -> s.withColor(MessageColors.RGB_SUCCESS)));
     }
 
     /**

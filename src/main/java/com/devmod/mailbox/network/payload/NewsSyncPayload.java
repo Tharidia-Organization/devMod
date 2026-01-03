@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -135,13 +136,6 @@ public record NewsSyncPayload(
     }
 
     /**
-     * Create an empty sync payload.
-     */
-    public static NewsSyncPayload empty() {
-        return new NewsSyncPayload(List.of(), 0);
-    }
-
-    /**
      * Data structure for a single news article in the sync.
      */
     public record NewsArticleData(
@@ -157,6 +151,7 @@ public record NewsSyncPayload(
         /**
          * Get the category display name.
          */
+        @Nonnull
         public String getCategoryName() {
             // Map ordinal to category names
             return switch (categoryOrdinal) {

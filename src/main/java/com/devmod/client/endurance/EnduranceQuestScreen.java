@@ -65,8 +65,8 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     private static final int COLOR_TIER_TRIVIAL = DesignTokens.Text.MUTED;
     private static final int COLOR_TIER_EASY = DesignTokens.Semantic.SUCCESS;
     private static final int COLOR_TIER_MEDIUM = DesignTokens.Semantic.WARNING;
-    private static final int COLOR_TIER_HARD = 0xFFFF8C00;  // Orange - no direct token
-    private static final int COLOR_TIER_ELITE = 0xFFA371F7; // Purple - no direct token
+    private static final int COLOR_TIER_HARD = EnduranceUiTheme.QuestTier.HARD;  // Orange - no direct token
+    private static final int COLOR_TIER_ELITE = EnduranceUiTheme.QuestTier.ELITE; // Purple - no direct token
     private static final int COLOR_TIER_BOSS = DesignTokens.Semantic.ERROR;
     private static final Map<EnduranceQuestRegistry.MobTier, Integer> TIER_COLORS = Map.of(
         EnduranceQuestRegistry.MobTier.TRIVIAL, COLOR_TIER_TRIVIAL,
@@ -145,12 +145,6 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
 
     // Intro overlay for first-time users
     private boolean showIntroOverlay = false;
-
-    // Error feedback for no selection
-    @Nullable
-    private String questErrorMessage = null;
-    private long questErrorMessageTime = 0;
-    private static final long ERROR_DISPLAY_DURATION = 3000; // 3 seconds
 
     public EnduranceQuestScreen() {
         super(I18n.screenTitle("endurance_quests"), SCREEN_ID, "endurance");
@@ -322,6 +316,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     }
 
     private void openShop() {
+        playClickSound();
         ActionRegistry.invoke(ActionIds.UI_ENDURANCE_SHOP_OPEN,
             ClientActionContexts.forClient(ActionOrigin.UI));
     }
@@ -393,42 +388,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
 
         // Custom action buttons (rendered after panels to be on top)
         renderActionButtons(graphics, mouseX, mouseY);
-
-        // Error message feedback (rendered on top of buttons)
-        if (questErrorMessage != null) {
-            long elapsed = System.currentTimeMillis() - questErrorMessageTime;
-            if (elapsed < ERROR_DISPLAY_DURATION) {
-                // Fade out effect
-                float alpha = 1.0f - (elapsed / (float) ERROR_DISPLAY_DURATION);
-                int alphaInt = (int) (alpha * 255);
-
-                // Draw error message near the Start Quest button
-                var safeFont = Objects.requireNonNull(font);
-                int msgWidth = safeFont.width(Objects.requireNonNull(questErrorMessage));
-                int msgX;
-                int msgY;
-                var startBtn = startButton;
-                if (startBtn != null && !startBtn.getBounds().isEmpty()) {
-                    var bounds = startBtn.getBounds();
-                    msgX = bounds.centerX() - msgWidth / 2;
-                    msgY = bounds.y() - 18;
-                } else {
-                    msgX = width - 130 + 60 - msgWidth / 2; // Fallback
-                    msgY = height - 60;
-                }
-
-                // Background (darker version of danger color)
-                int bgColor = DesignTokens.withAlpha(COLOR_DANGER, alphaInt / 3);
-                graphics.fill(msgX - 6, msgY - 3, msgX + msgWidth + 6, msgY + 12, bgColor);
-                // Border (full danger color with alpha)
-                int borderColor = DesignTokens.withAlpha(COLOR_DANGER, alphaInt);
-                graphics.fill(msgX - 6, msgY - 3, msgX + msgWidth + 6, msgY - 2, borderColor);
-                // Text
-                graphics.drawString(safeFont, Objects.requireNonNull(questErrorMessage), msgX, msgY, (alphaInt << 24) | 0xFFFFFF);
-            } else {
-                questErrorMessage = null;
-            }
-        }
+        // Error messages are rendered by base class via showError()
     }
 
     /**
@@ -451,7 +411,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
 
         // Title
         graphics.drawCenteredString(safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.quest.intro.title").getString()),
-            centerX, y, 0xFFFFFFFF);
+            centerX, y, DesignTokens.Text.WHITE);
         y += 25;
 
         // Separator
@@ -462,7 +422,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         String[] lines = getIntroLines();
 
         for (String line : lines) {
-            graphics.drawString(safeFont, line, panelX + 25, y, 0xFFFFFFFF, false);
+            graphics.drawString(safeFont, line, panelX + 25, y, DesignTokens.Text.WHITE, false);
             y += 12;
         }
 
@@ -480,6 +440,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
      * Dismiss intro overlay and save preference.
      */
     private void dismissIntroOverlay() {
+        playClickSound();
         showIntroOverlay = false;
         SettingsManager.INSTANCE.getSettings().onboarding.hasSeenEnduranceIntro = true;
         SettingsManager.INSTANCE.markDirty();
@@ -572,7 +533,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             long count = ns.equals(ALL_NAMESPACE) ? allQuests.size() :
                 allQuests.stream().filter(q -> q.namespace.equals(ns)).count();
 
-            int textColor = isSelected ? 0xFFFFFFFF : COLOR_TEXT;
+            int textColor = isSelected ? DesignTokens.Text.WHITE : COLOR_TEXT;
             graphics.drawString(safeFont, displayName, 12, modY, textColor);
             String countStr = Objects.requireNonNull(String.valueOf(count));
             int countW = safeFont.width(countStr);
@@ -607,7 +568,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             graphics.fill(8, y - 1, SIDEBAR_WIDTH - 14, y + 12, DesignTokens.Surface.LEVEL_1);
         }
         graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.filters.all").getString(),
-            12, y, allTiersSelected ? 0xFFFFFFFF : COLOR_TEXT);
+            12, y, allTiersSelected ? DesignTokens.Text.WHITE : COLOR_TEXT);
         y += 14;
 
         for (EnduranceQuestRegistry.MobTier tier : EnduranceQuestRegistry.MobTier.values()) {
@@ -622,7 +583,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             }
 
             long count = allQuests.stream().filter(q -> q.tier == tier).count();
-            int textColor = isSelected ? 0xFFFFFFFF : tierColor;
+            int textColor = isSelected ? DesignTokens.Text.WHITE : tierColor;
             graphics.drawString(safeFont, getTierDisplayName(tier), 12, y, textColor);
             String countStr = Objects.requireNonNull(String.valueOf(count));
             int countW = safeFont.width(countStr);
@@ -686,7 +647,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         // Badge background
         int badgeColor = hasActiveFilters ? COLOR_WARNING : COLOR_SUCCESS;
         graphics.fill(badgeX, badgeY, badgeX + badgeW, badgeY + 16, badgeColor);
-        graphics.drawCenteredString(safeFont, Objects.requireNonNull(countBadge), badgeX + badgeW / 2, badgeY + 4, 0xFFFFFFFF);
+        graphics.drawCenteredString(safeFont, Objects.requireNonNull(countBadge), badgeX + badgeW / 2, badgeY + 4, DesignTokens.Text.WHITE);
     }
 
     private void renderQuestList(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -753,7 +714,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         int tierWidth = safeFont.width(tierText) + 6;
         int tierBadgeX = x + width - tierWidth - 6;
         graphics.fill(tierBadgeX - 1, y + 4, tierBadgeX + tierWidth + 1, y + 16, tierColor);
-        graphics.drawString(safeFont, tierText, tierBadgeX + 3, y + 6, 0xFFFFFFFF);
+        graphics.drawString(safeFont, tierText, tierBadgeX + 3, y + 6, DesignTokens.Text.WHITE);
 
         // Row 2: Namespace (mod name) - smaller and dimmer
         graphics.drawString(safeFont, "§8" + quest.namespace, contentX, y + 20, COLOR_TEXT_DIM);
@@ -1269,19 +1230,12 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     private void startSelectedQuest() {
         var currentQuest = selectedQuest;
         if (currentQuest == null) {
-            // Show error feedback
-            questErrorMessage = I18n.translate("devmod.endurance.quest.error.select_mob").getString();
-            questErrorMessageTime = System.currentTimeMillis();
-
-            // Play error sound
-            if (minecraft != null) {
-                minecraft.getSoundManager().play(
-                    Objects.requireNonNull(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                        Objects.requireNonNull(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value()), 0.5f)));
-            }
+            // Show error feedback using base class status message system
+            showError(I18n.translate("devmod.endurance.quest.error.select_mob").getString());
             return;
         }
 
+        playClickSound();
         // Send packet to server to start quest
         // Use "TEMPORARY" kit ID if using custom kit, otherwise use the preset name
         String kitId = (usingCustomKit && KitManager.INSTANCE.hasTemporaryKit())

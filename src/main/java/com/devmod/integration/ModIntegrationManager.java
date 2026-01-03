@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
@@ -255,19 +256,67 @@ public class ModIntegrationManager {
     }
 
     /**
-     * Gets the Epic Fight stamina percentage for a player.
-     * @return stamina percentage (0-1), or -1 if not available
-     */
-    public static float getEpicFightStaminaPercent(@Nullable Player player) {
-        if (player == null) return -1f;
-        return EpicFightCompat.getStaminaPercent(player);
-    }
-
-    /**
      * Checks if an entity is currently performing an Epic Fight action.
      */
     public static boolean isInEpicFightAction(@Nullable LivingEntity entity) {
         if (entity == null) return false;
         return EpicFightCompat.isInAction(entity);
+    }
+
+    /**
+     * Checks if a player is currently guarding in Epic Fight.
+     */
+    public static boolean isEpicFightGuarding(@Nullable Player player) {
+        if (player == null) return false;
+        return EpicFightCompat.isGuarding(player);
+    }
+
+    /**
+     * Checks if a player is currently parrying in Epic Fight.
+     */
+    public static boolean isEpicFightParrying(@Nullable Player player) {
+        if (player == null) return false;
+        return EpicFightCompat.isParrying(player);
+    }
+
+    /**
+     * Checks if a player is within the Epic Fight parry window.
+     */
+    public static boolean isEpicFightInParryWindow(@Nullable Player player) {
+        if (player == null) return false;
+        return EpicFightCompat.isInParryWindow(player);
+    }
+
+    /**
+     * Checks if a player executed a perfect parry in Epic Fight.
+     */
+    public static boolean isEpicFightPerfectParry(@Nullable Player player) {
+        if (player == null) return false;
+        return EpicFightCompat.isPerfectParry(player);
+    }
+
+    /**
+     * Gets the Epic Fight parry sound event.
+     */
+    @Nullable
+    public static SoundEvent getEpicFightParrySoundEvent() {
+        return EpicFightCompat.getParrySoundEvent();
+    }
+
+    /**
+     * Gets the Epic Fight guard impact sound event.
+     */
+    @Nullable
+    public static SoundEvent getEpicFightGuardSoundEvent() {
+        return EpicFightCompat.getGuardSoundEvent();
+    }
+
+    /**
+     * Gets the Epic Fight holding skill name for a player.
+     */
+    @Nullable
+    public static String getEpicFightHoldingSkillName(@Nullable Player player) {
+        if (player == null) return null;
+        return EpicFightCompat.getHoldingSkillName(player);
     }
 }

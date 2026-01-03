@@ -362,36 +362,36 @@ public class ArenaTestWizard extends Screen {
      * Gets a representative color for a material (simplified heuristic).
      */
     private int getMaterialColor(String material) {
-        if (material == null) return 0xFF808080;
+        if (material == null) return ArenaTestWizardColors.UNKNOWN;
         String m = material.toLowerCase(Locale.ROOT);
 
         // Common material colors
-        if (m.contains("stone") || m.contains("cobble")) return 0xFF808080;
-        if (m.contains("wood") || m.contains("oak") || m.contains("plank")) return 0xFFB87333;
-        if (m.contains("grass") || m.contains("moss")) return 0xFF4CAF50;
-        if (m.contains("sand")) return 0xFFE8D4A0;
-        if (m.contains("dirt") || m.contains("mud")) return 0xFF8B4513;
-        if (m.contains("brick")) return 0xFFB22222;
-        if (m.contains("iron") || m.contains("metal")) return 0xFFD3D3D3;
-        if (m.contains("gold")) return 0xFFFFD700;
-        if (m.contains("diamond")) return 0xFF00CED1;
-        if (m.contains("emerald")) return 0xFF50C878;
-        if (m.contains("obsidian")) return 0xFF1A1A2E;
-        if (m.contains("nether") || m.contains("crimson")) return 0xFF8B0000;
-        if (m.contains("end")) return 0xFFE8E8A0;
-        if (m.contains("prismarine")) return 0xFF5F9EA0;
-        if (m.contains("glass")) return 0x80FFFFFF;
+        if (m.contains("stone") || m.contains("cobble")) return ArenaTestWizardColors.STONE;
+        if (m.contains("wood") || m.contains("oak") || m.contains("plank")) return ArenaTestWizardColors.WOOD;
+        if (m.contains("grass") || m.contains("moss")) return ArenaTestWizardColors.GRASS;
+        if (m.contains("sand")) return ArenaTestWizardColors.SAND;
+        if (m.contains("dirt") || m.contains("mud")) return ArenaTestWizardColors.DIRT;
+        if (m.contains("brick")) return ArenaTestWizardColors.BRICK;
+        if (m.contains("iron") || m.contains("metal")) return ArenaTestWizardColors.IRON;
+        if (m.contains("gold")) return ArenaTestWizardColors.GOLD;
+        if (m.contains("diamond")) return ArenaTestWizardColors.DIAMOND;
+        if (m.contains("emerald")) return ArenaTestWizardColors.EMERALD;
+        if (m.contains("obsidian")) return ArenaTestWizardColors.OBSIDIAN;
+        if (m.contains("nether") || m.contains("crimson")) return ArenaTestWizardColors.NETHER;
+        if (m.contains("end")) return ArenaTestWizardColors.END;
+        if (m.contains("prismarine")) return ArenaTestWizardColors.PRISMARINE;
+        if (m.contains("glass")) return ArenaTestWizardColors.GLASS;
         if (m.contains("wool") || m.contains("concrete")) {
-            if (m.contains("white")) return 0xFFFFFFFF;
-            if (m.contains("black")) return 0xFF1A1A1A;
-            if (m.contains("red")) return 0xFFFF0000;
-            if (m.contains("blue")) return 0xFF0000FF;
-            if (m.contains("green")) return 0xFF00FF00;
-            if (m.contains("yellow")) return 0xFFFFFF00;
+            if (m.contains("white")) return ArenaTestWizardColors.WOOL_WHITE;
+            if (m.contains("black")) return ArenaTestWizardColors.WOOL_BLACK;
+            if (m.contains("red")) return ArenaTestWizardColors.WOOL_RED;
+            if (m.contains("blue")) return ArenaTestWizardColors.WOOL_BLUE;
+            if (m.contains("green")) return ArenaTestWizardColors.WOOL_GREEN;
+            if (m.contains("yellow")) return ArenaTestWizardColors.WOOL_YELLOW;
         }
 
         // Default gray
-        return 0xFF606060;
+        return ArenaTestWizardColors.FALLBACK;
     }
 
     @Override

@@ -118,6 +118,7 @@ public class IntegratedTestSession {
         // Enable status overlay
         TelemetryStatusOverlay.setEnabled(true);
         TelemetryStatusOverlay.resetTimer();
+        LOGGER.debug("[IntegratedTest] Status: {}", TelemetryStatusOverlay.getStatusSummary().replace("\n", " | "));
 
         // Mark linked test as in progress
         TestCase linkedTest = linkedTestCase;
@@ -251,7 +252,7 @@ public class IntegratedTestSession {
 
     private void saveOverlayStates() {
         previousOverlayState.clear();
-        previousOverlayState.put("debug", com.devmod.ModConfig.showBodyPartBoxes);
+        previousOverlayState.put("debug", com.devmod.ModConfig.isShowBodyPartBoxes());
         previousOverlayState.put("bossPhase", BossPhaseOverlay.isEnabled());
         previousOverlayState.put("telemetry", TelemetryStatusOverlay.isEnabled());
         previousOverlayState.put("entityDensity", EntityDensityOverlay.isEnabled());
@@ -260,7 +261,7 @@ public class IntegratedTestSession {
 
     private void restoreOverlayStates() {
         if (previousOverlayState.containsKey("debug")) {
-            com.devmod.ModConfig.showBodyPartBoxes = previousOverlayState.get("debug");
+            com.devmod.ModConfig.setShowBodyPartBoxes(previousOverlayState.get("debug"));
         }
         if (previousOverlayState.containsKey("bossPhase")) {
             BossPhaseOverlay.setEnabled(previousOverlayState.get("bossPhase"));
@@ -278,7 +279,7 @@ public class IntegratedTestSession {
 
     private void configureOverlaysForSession(TestSessionType type) {
         // Disable all first
-        com.devmod.ModConfig.showBodyPartBoxes = false;
+        com.devmod.ModConfig.setShowBodyPartBoxes(false);
         BossPhaseOverlay.setEnabled(false);
         EntityDensityOverlay.setEnabled(false);
 
@@ -289,11 +290,11 @@ public class IntegratedTestSession {
         // Enable specific overlays based on type
         switch (type) {
             case COMBAT_BASIC, COMBAT_ADVANCED, DAMAGE_VALIDATION -> {
-                com.devmod.ModConfig.showBodyPartBoxes = true;
+                com.devmod.ModConfig.setShowBodyPartBoxes(true);
             }
             case BOSS_FIGHT -> {
                 BossPhaseOverlay.setEnabled(true);
-                com.devmod.ModConfig.showBodyPartBoxes = true;
+                com.devmod.ModConfig.setShowBodyPartBoxes(true);
             }
             case PERFORMANCE_STRESS -> {
                 EntityDensityOverlay.setEnabled(true);

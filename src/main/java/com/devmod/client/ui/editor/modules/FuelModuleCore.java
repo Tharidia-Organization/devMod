@@ -108,18 +108,18 @@ public class FuelModuleCore {
         try {
             int vanillaBurnTime = FuelConfigManager.getVanillaBurnTime(item);
             if (vanillaBurnTime > 0) {
-                target.burnTime = vanillaBurnTime;
+                target.setBurnTime(vanillaBurnTime);
             }
 
             // Default cook times (vanilla values)
-            target.furnaceCookTime = 200;
-            target.blastFurnaceCookTime = 100;
-            target.smokerCookTime = 100;
-            target.campfireCookTime = 600;
+            target.setFurnaceCookTime(200);
+            target.setBlastFurnaceCookTime(100);
+            target.setSmokerCookTime(100);
+            target.setCampfireCookTime(600);
 
             DevMod.LOGGER.info("[Editor][Fuel] Vanilla defaults -> burnTime={} furnace={} blast={} smoker={} campfire={}",
-                target.burnTime, target.furnaceCookTime, target.blastFurnaceCookTime,
-                target.smokerCookTime, target.campfireCookTime);
+                target.getBurnTime(), target.getFurnaceCookTime(), target.getBlastFurnaceCookTime(),
+                target.getSmokerCookTime(), target.getCampfireCookTime());
         } catch (Exception e) {
             DevMod.LOGGER.warn("[Editor][Fuel] Failed to apply vanilla defaults", e);
         }
@@ -161,14 +161,14 @@ public class FuelModuleCore {
      * Check if current stats differ from original.
      */
     public boolean hasModifications() {
-        if (stats.burnTime != originalStats.burnTime) return true;
-        if (stats.overrideDefault != originalStats.overrideDefault) return true;
-        if (Math.abs(stats.efficiencyMultiplier - originalStats.efficiencyMultiplier) > EPSILON) return true;
-        if (stats.furnaceCookTime != originalStats.furnaceCookTime) return true;
-        if (stats.blastFurnaceCookTime != originalStats.blastFurnaceCookTime) return true;
-        if (stats.smokerCookTime != originalStats.smokerCookTime) return true;
-        if (stats.campfireCookTime != originalStats.campfireCookTime) return true;
-        if (stats.customCookTimesEnabled != originalStats.customCookTimesEnabled) return true;
+        if (stats.getBurnTime() != originalStats.getBurnTime()) return true;
+        if (stats.isOverrideDefault() != originalStats.isOverrideDefault()) return true;
+        if (Math.abs(stats.getEfficiencyMultiplier() - originalStats.getEfficiencyMultiplier()) > EPSILON) return true;
+        if (stats.getFurnaceCookTime() != originalStats.getFurnaceCookTime()) return true;
+        if (stats.getBlastFurnaceCookTime() != originalStats.getBlastFurnaceCookTime()) return true;
+        if (stats.getSmokerCookTime() != originalStats.getSmokerCookTime()) return true;
+        if (stats.getCampfireCookTime() != originalStats.getCampfireCookTime()) return true;
+        if (stats.isCustomCookTimesEnabled() != originalStats.isCustomCookTimesEnabled()) return true;
         return false;
     }
 

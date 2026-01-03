@@ -12,7 +12,6 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ThemeManager;
 import com.devmod.client.ui.scroll.Scrollbar;
-import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
@@ -48,18 +47,13 @@ public class GeneralSettingsPage implements SettingsPage {
 
     // Color presets
     private static final int[] COLOR_PRESETS = {
-            0xFFFF0000, // Red
-            0xFFFFFF00, // Yellow
-            0xFF00FF00, // Green
-            0xFF00FFFF, // Cyan
-            0xFF0000FF  // Blue
+            DesignTokens.Basic.RED,    // Red
+            DesignTokens.Basic.YELLOW, // Yellow
+            DesignTokens.Basic.GREEN,  // Green
+            DesignTokens.Basic.CYAN,   // Cyan
+            DesignTokens.Basic.BLUE    // Blue
     };
     private static final String[] COLOR_NAMES = {"Red", "Yellow", "Green", "Cyan", "Blue"};
-
-    @Override
-    public SettingsCategory getCategory() {
-        return SettingsCategory.GENERAL;
-    }
 
     @Override
     public String getTitle() {
@@ -69,10 +63,10 @@ public class GeneralSettingsPage implements SettingsPage {
     @Override
     public void init() {
         // Load current values from ModConfig
-        originalShowOverlay = ModConfig.showOverlay;
-        originalShowRender = ModConfig.showRender;
-        originalRenderAsBlocks = ModConfig.renderAsBlocks;
-        originalFollowRangeColor = ModConfig.followRangeColor;
+        originalShowOverlay = ModConfig.isShowOverlay();
+        originalShowRender = ModConfig.isShowRender();
+        originalRenderAsBlocks = ModConfig.isRenderAsBlocks();
+        originalFollowRangeColor = ModConfig.getFollowRangeColor();
 
         // Copy to current values
         showOverlay = originalShowOverlay;
@@ -82,7 +76,7 @@ public class GeneralSettingsPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         lastContentX = x;
         lastContentY = y;
         lastContentWidth = width;
@@ -245,7 +239,7 @@ public class GeneralSettingsPage implements SettingsPage {
         int textW = font.width(text);
         int textX = x + (w - textW) / 2;
         int textY = y + (h - 8) / 2;
-        graphics.drawString(font, text, textX, textY, hovered ? 0xFFFFFFFF : DesignTokens.Text.PRIMARY, false);
+        graphics.drawString(font, text, textX, textY, hovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY, false);
     }
 
     private void renderToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
@@ -300,7 +294,7 @@ public class GeneralSettingsPage implements SettingsPage {
         // Show Overlay toggle - click anywhere on the row
         if (isMouseOver((int) mouseX, (int) mouseY, contentX, currentY, effectiveWidth, ROW_HEIGHT)) {
             showOverlay = !showOverlay;
-            ModConfig.showOverlay = showOverlay;
+            ModConfig.setShowOverlay(showOverlay);
             return true;
         }
         currentY += ROW_HEIGHT;
@@ -308,7 +302,7 @@ public class GeneralSettingsPage implements SettingsPage {
         // Show World Render toggle - click anywhere on the row
         if (isMouseOver((int) mouseX, (int) mouseY, contentX, currentY, effectiveWidth, ROW_HEIGHT)) {
             showRender = !showRender;
-            ModConfig.showRender = showRender;
+            ModConfig.setShowRender(showRender);
             return true;
         }
         currentY += ROW_HEIGHT;
@@ -322,7 +316,7 @@ public class GeneralSettingsPage implements SettingsPage {
         // Render as Blocks toggle - click anywhere on the row
         if (isMouseOver((int) mouseX, (int) mouseY, contentX, currentY, effectiveWidth, ROW_HEIGHT)) {
             renderAsBlocks = !renderAsBlocks;
-            ModConfig.renderAsBlocks = renderAsBlocks;
+            ModConfig.setRenderAsBlocks(renderAsBlocks);
             return true;
         }
         currentY += ROW_HEIGHT;
@@ -341,7 +335,7 @@ public class GeneralSettingsPage implements SettingsPage {
         for (int i = 0; i < COLOR_PRESETS.length; i++) {
             if (isMouseOver((int) mouseX, (int) mouseY, colorX, currentY, COLOR_PREVIEW_SIZE + 4, COLOR_PREVIEW_SIZE + 4)) {
                 followRangeColor = COLOR_PRESETS[i];
-                ModConfig.followRangeColor = followRangeColor;
+                ModConfig.setFollowRangeColor(followRangeColor);
                 return true;
             }
             colorX += COLOR_PREVIEW_SIZE + 8;
@@ -462,18 +456,13 @@ public class GeneralSettingsPage implements SettingsPage {
         showOverlay = true;
         showRender = false;
         renderAsBlocks = false;
-        followRangeColor = 0xFFFF0000; // Red
+        followRangeColor = DesignTokens.Basic.RED; // Red
 
         // Apply to ModConfig
-        ModConfig.showOverlay = showOverlay;
-        ModConfig.showRender = showRender;
-        ModConfig.renderAsBlocks = renderAsBlocks;
-        ModConfig.followRangeColor = followRangeColor;
-    }
-
-    @Override
-    public int getContentHeight() {
-        return calculateContentHeight();
+        ModConfig.setShowOverlay(showOverlay);
+        ModConfig.setShowRender(showRender);
+        ModConfig.setRenderAsBlocks(renderAsBlocks);
+        ModConfig.setFollowRangeColor(followRangeColor);
     }
 
     private int calculateContentHeight() {
@@ -508,7 +497,7 @@ public class GeneralSettingsPage implements SettingsPage {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
     }
 
-    private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
+    private void renderScrollbar(@Nonnull GuiGraphics graphics, int x, int y, int barWidth, int height) {
         // Delegate to unified Scrollbar helper
         Scrollbar.render(graphics, x, y, barWidth, height,
             scrollOffset, totalContentHeight, visibleHeight,
@@ -526,6 +515,6 @@ public class GeneralSettingsPage implements SettingsPage {
                 return COLOR_NAMES[i];
             }
         }
-        return String.format("#%06X", color & 0xFFFFFF);
+        return String.format("#%06X", color & DesignTokens.Mask.RGB);
     }
 }

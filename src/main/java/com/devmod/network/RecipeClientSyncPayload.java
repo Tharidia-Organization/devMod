@@ -152,12 +152,19 @@ public record RecipeClientSyncPayload(
     }
 
     private static String getTypeDiscriminator(RecipeData recipe) {
-        return switch (recipe) {
-            case CraftingRecipeData c -> "crafting:" + c.craftingType().getId();
-            case SmeltingRecipeData s -> "smelting:" + s.smeltingType().getId();
-            case SmithingRecipeData sm -> "smithing:" + sm.smithingType().getId();
-            case StonecuttingRecipeData ignored -> "stonecutting";
-        };
+        if (recipe instanceof CraftingRecipeData c) {
+            return "crafting:" + c.craftingType().getId();
+        }
+        if (recipe instanceof SmeltingRecipeData s) {
+            return "smelting:" + s.smeltingType().getId();
+        }
+        if (recipe instanceof SmithingRecipeData sm) {
+            return "smithing:" + sm.smithingType().getId();
+        }
+        if (recipe instanceof StonecuttingRecipeData) {
+            return "stonecutting";
+        }
+        throw new IllegalArgumentException("Unknown recipe type: " + recipe);
     }
 
     // ═══════════════════════════════════════════════════════════════

@@ -184,7 +184,7 @@ public final class PayloadCodecRegistry {
             if (!expectedType.isInstance(decoded)) {
                 LOGGER.warn("[PayloadCodecRegistry] Decoded type mismatch for {} (expected {}, got {})",
                     type, expectedType.getName(),
-                    decoded != null ? decoded.getClass().getName() : "null");
+                    decoded.getClass().getName());
                 return null;
             }
             return expectedType.cast(decoded);

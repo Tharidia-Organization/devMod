@@ -11,6 +11,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.testing.VoxelLabTab;
 import com.devmod.client.ui.testing.panel.CollapsiblePanel;
 import com.devmod.client.ui.testing.panel.CompositePanel;
@@ -88,7 +89,7 @@ public class CombatPage extends AbstractVoxelLabPage {
                         0.25, 1.5, 0.05,
                         I18n.translate("devmod.testing.voxel_lab.format.multiplier_2").getString())
                 ),
-                0xFFFF5500)
+                DesignTokens.Testing.ALERT)
         );
 
         // Armor Penetration Section
@@ -110,7 +111,7 @@ public class CombatPage extends AbstractVoxelLabPage {
                         0.0, 10.0, 0.5,
                         I18n.translate("devmod.testing.voxel_lab.format.decimal_1").getString())
                 ),
-                0xFF00AAFF)
+                DesignTokens.Testing.TELEMETRY_ACCENT)
         );
 
         // Status Panel
@@ -138,12 +139,12 @@ public class CombatPage extends AbstractVoxelLabPage {
         showBodyPartBoxesToggle = new EditorButton("toggle-boxes",
             I18n.translate("devmod.testing.voxel_lab.combat.toggle.show_hit_boxes").getString())
             .toggleable(true)
-            .toggled(ModConfig.showBodyPartBoxes)
+            .toggled(ModConfig.isShowBodyPartBoxes())
             .style(EditorButton.Style.SUCCESS)
             .icon("\u25A1")
             .hotkeyHint("[Shift+G]")
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_BODY_PARTS_TOGGLE,
-                Boolean.TRUE.equals(v), ModConfig.showBodyPartBoxes));
+                Boolean.TRUE.equals(v), ModConfig.isShowBodyPartBoxes()));
     }
 
     @Override
@@ -153,7 +154,7 @@ public class CombatPage extends AbstractVoxelLabPage {
 
     private void syncButtonStates() {
         setToggle(bodyPartToggle, safeGetBool(Config.BODY_PART_DETECTION_ENABLED));
-        setToggle(showBodyPartBoxesToggle, ModConfig.showBodyPartBoxes);
+        setToggle(showBodyPartBoxesToggle, ModConfig.isShowBodyPartBoxes());
     }
 
     private static void setToggle(@Nullable EditorButton button, boolean value) {

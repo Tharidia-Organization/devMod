@@ -1,5 +1,7 @@
 package com.devmod.client.ui.components;
 
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
@@ -99,10 +101,12 @@ public final class CountdownTimer {
             return;
         }
         float pitch = Math.min(1.6f, 1.0f + (audioCueSeconds - remainingSeconds) * 0.06f);
-        mc.getSoundManager().play(SimpleSoundInstance.forUI(
-            SoundEvents.UI_BUTTON_CLICK.value(),
-            pitch,
-            0.6f
-        ));
+        mc.getSoundManager().play(Objects.requireNonNull(
+            SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value(), "UI_BUTTON_CLICK sound event"),
+                pitch,
+                0.6f
+            ),
+            "SimpleSoundInstance.forUI returned null"));
     }
 }

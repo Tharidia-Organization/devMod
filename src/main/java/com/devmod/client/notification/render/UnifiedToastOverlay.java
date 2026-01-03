@@ -26,6 +26,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.client.notification.NotificationSoundManager;
 import com.devmod.client.notification.NotificationUiTheme;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
@@ -249,14 +250,15 @@ public class UnifiedToastOverlay {
         int alpha = (int) (opacity * 255);
 
         // Background with hover effect
-        int bgAlpha = (alpha * 0xE0) / 255;
+        int bgAlpha = (alpha * DesignTokens.Alpha.A88) / 255;
         int top = NotificationUiTheme.withAlpha(hovered ? RGB_TOAST_HOVER_TOP : RGB_TOAST_TOP, bgAlpha);
         int bottom = NotificationUiTheme.withAlpha(hovered ? RGB_TOAST_HOVER_BOTTOM : RGB_TOAST_BOTTOM, bgAlpha);
         graphics.fillGradient(x, y, x + width, y + TOAST_HEIGHT, top, bottom);
-        graphics.fill(x, y, x + width, y + 1, NotificationUiTheme.withAlpha(0xFFFFFF, (alpha * 0x18) / 255));
+        graphics.fill(x, y, x + width, y + 1,
+            NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, (alpha * 24) / 255));
 
         // Accent glow on left edge
-        int glowAlpha = (alpha * 0xCC) / 255;
+        int glowAlpha = (alpha * DesignTokens.Alpha.A80) / 255;
         graphics.fill(x, y, x + 3, y + TOAST_HEIGHT, NotificationUiTheme.withAlpha(accentColor, glowAlpha));
 
         // Priority glow (for HIGH+ priority)
@@ -273,25 +275,25 @@ public class UnifiedToastOverlay {
         }
 
         // Subtle border
-        int borderAlpha = (alpha * 0x33) / 255;
-        graphics.fill(x, y, x + width, y + 1, NotificationUiTheme.withAlpha(0xFFFFFF, borderAlpha));
+        int borderAlpha = (alpha * DesignTokens.Alpha.A20) / 255;
+        graphics.fill(x, y, x + width, y + 1, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, borderAlpha));
         graphics.fill(x, y + TOAST_HEIGHT - 1, x + width, y + TOAST_HEIGHT,
-                NotificationUiTheme.withAlpha(0xFFFFFF, borderAlpha));
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, borderAlpha));
         graphics.fill(x + width - 1, y, x + width, y + TOAST_HEIGHT,
-                NotificationUiTheme.withAlpha(0xFFFFFF, borderAlpha));
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, borderAlpha));
 
         // Icon area
         int iconX = x + PADDING;
         int iconY = y + (TOAST_HEIGHT - ICON_SIZE) / 2;
 
         // Icon background circle
-        int iconBgAlpha = (alpha * 0x44) / 255;
+        int iconBgAlpha = (alpha * DesignTokens.Alpha.A27) / 255;
         renderCircle(graphics, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2, ICON_SIZE / 2 + 2,
                 NotificationUiTheme.withAlpha(accentColor, iconBgAlpha));
 
         // Icon
         String icon = Objects.requireNonNull(NotificationUiTheme.getCategoryIcon(notification.category()));
-        int iconTextAlpha = (alpha * 0xFF) / 255;
+        int iconTextAlpha = (alpha * DesignTokens.Alpha.A100) / 255;
         int iconWidth = font.width(icon);
         graphics.drawString(font, icon, iconX + (ICON_SIZE - iconWidth) / 2, iconY + 8,
                 NotificationUiTheme.withAlpha(accentColor, iconTextAlpha), false);
@@ -306,7 +308,7 @@ public class UnifiedToastOverlay {
         if (font.width(title) > contentWidth) {
             title = Objects.requireNonNull(font.plainSubstrByWidth(title, contentWidth - 10)) + "...";
         }
-        int titleAlpha = (alpha * 0xFF) / 255;
+        int titleAlpha = (alpha * DesignTokens.Alpha.A100) / 255;
         graphics.drawString(font, title, contentX, titleY,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, titleAlpha), true);
 
@@ -316,7 +318,7 @@ public class UnifiedToastOverlay {
         if (font.width(message) > contentWidth) {
             message = Objects.requireNonNull(font.plainSubstrByWidth(message, contentWidth - 10)) + "...";
         }
-        int msgAlpha = (alpha * 0xBB) / 255;
+        int msgAlpha = (alpha * 187) / 255;
         graphics.drawString(font, message, contentX, msgY,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, msgAlpha), false);
 
@@ -326,7 +328,7 @@ public class UnifiedToastOverlay {
         int catWidth = font.width(category);
         int catX = x + width - PADDING - catWidth;
         int catY = y + TOAST_HEIGHT - PADDING - 6;
-        int catAlpha = (alpha * 0x88) / 255;
+        int catAlpha = (alpha * DesignTokens.Alpha.A53) / 255;
         graphics.drawString(font, category, catX, catY,
                 NotificationUiTheme.withAlpha(accentColor, catAlpha), false);
 
@@ -342,12 +344,12 @@ public class UnifiedToastOverlay {
             int progressWidth = (int) (width * progress);
 
             // Progress background
-            int progressBgAlpha = (alpha * 0x22) / 255;
+            int progressBgAlpha = (alpha * DesignTokens.Alpha.A13) / 255;
             graphics.fill(x, progressY, x + width, y + TOAST_HEIGHT,
-                    NotificationUiTheme.withAlpha(0xFFFFFF, progressBgAlpha));
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, progressBgAlpha));
 
             // Progress fill
-            int progressAlpha = (alpha * 0x88) / 255;
+            int progressAlpha = (alpha * DesignTokens.Alpha.A53) / 255;
             graphics.fill(x, progressY, x + progressWidth, y + TOAST_HEIGHT,
                     NotificationUiTheme.withAlpha(accentColor, progressAlpha));
         }
@@ -356,7 +358,7 @@ public class UnifiedToastOverlay {
         if (hovered) {
             int closeX = x + width - 24;
             int closeY = y + 8;
-            int closeAlpha = (alpha * 0xAA) / 255;
+            int closeAlpha = (alpha * DesignTokens.Alpha.A67) / 255;
 
             // Close button background
             graphics.fill(closeX - 2, closeY - 2, closeX + 14, closeY + 14,

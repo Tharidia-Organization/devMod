@@ -276,12 +276,19 @@ public class DuckDBQueryAPI {
                                 stats.perfectDodges = total;
                                 stats.totalDamageNegated = damageNegated;
                             }
+                            default -> {
+                                // Unknown ability type - ignore
+                            }
                         }
                     }
                 }
             }
         } catch (SQLException e) {
             RATE_LIMITED.error("ability_stats", "[DuckDB] Failed to get ability stats: {}", safeMessage(e));
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[DuckDB] Ability stats for {}: avgDashCost={}, avgDodgeCost={}, perfectDodges={}, damageNegated={}",
+                playerId, stats.avgDashStaminaCost, stats.avgDodgeStaminaCost, stats.perfectDodges, stats.totalDamageNegated);
         }
         return stats;
     }
@@ -451,15 +458,15 @@ public class DuckDBQueryAPI {
     ) {}
 
     public static class AbilityStats {
-        public final UUID playerId;
-        public int dashAttempts = 0;
-        public int dashSuccesses = 0;
-        public double avgDashStaminaCost = 0;
-        public int dodgeAttempts = 0;
-        public int dodgeSuccesses = 0;
-        public double avgDodgeStaminaCost = 0;
-        public int perfectDodges = 0;
-        public double totalDamageNegated = 0;
+        final UUID playerId;
+        int dashAttempts = 0;
+        int dashSuccesses = 0;
+        double avgDashStaminaCost = 0;
+        int dodgeAttempts = 0;
+        int dodgeSuccesses = 0;
+        double avgDodgeStaminaCost = 0;
+        int perfectDodges = 0;
+        double totalDamageNegated = 0;
 
         public AbilityStats(UUID playerId) {
             this.playerId = playerId;

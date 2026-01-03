@@ -159,9 +159,14 @@ public class MobRequirementsLoader {
     public MobRequirements loadFromFile(Path path) throws IOException {
         try (Reader reader = Files.newBufferedReader(path)) {
             JsonObject json = GSON.fromJson(reader, JsonObject.class);
+            Path fileNamePath = path.getFileName();
+            String filename = fileNamePath != null ? fileNamePath.toString() : path.toString();
+            if (json == null) {
+                LOGGER.error("Skipping invalid JSON file: {} (empty or malformed)", filename);
+                return null;
+            }
 
             // Validate JSON structure before parsing
-            String filename = path.getFileName().toString();
             ValidationResult validation = validateJsonStructure(json, filename);
             if (!validation.valid()) {
                 LOGGER.error("Skipping invalid JSON file: {} (errors: {})", filename, validation.errors().size());

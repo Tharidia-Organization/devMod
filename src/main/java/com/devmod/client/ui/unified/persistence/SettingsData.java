@@ -2,6 +2,7 @@ package com.devmod.client.ui.unified.persistence;
 
 import java.util.Map;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.rendering.HeatmapType;
 
 public class SettingsData {
@@ -34,7 +35,8 @@ public class SettingsData {
         public boolean showOverlay = true;
         public boolean showRender = false;
         public boolean renderAsBlocks = false;
-        public int followRangeColor = 0xFFFF0000; // Red
+        public int followRangeColor = DesignTokens.Basic.RED; // Red
+        public boolean partyHudEnabled = true; // Party member HUD during quests
     }
 
     /**
@@ -47,6 +49,7 @@ public class SettingsData {
         public boolean lineOfSight = false;
         public boolean pathfinding = false;
         public boolean roomBounds = false;
+        public boolean showRoomGaps = true; // Show gap detection for room bounds (default on)
         public boolean bossPhaseOverlay = false;
         public boolean entityDensityOverlay = false;
         public boolean skillEfficacyOverlay = false;
@@ -158,6 +161,7 @@ public class SettingsData {
         copy.general.showRender = this.general.showRender;
         copy.general.renderAsBlocks = this.general.renderAsBlocks;
         copy.general.followRangeColor = this.general.followRangeColor;
+        copy.general.partyHudEnabled = this.general.partyHudEnabled;
 
         // Debug
         copy.debug.developerMode = this.debug.developerMode;
@@ -166,6 +170,7 @@ public class SettingsData {
         copy.debug.lineOfSight = this.debug.lineOfSight;
         copy.debug.pathfinding = this.debug.pathfinding;
         copy.debug.roomBounds = this.debug.roomBounds;
+        copy.debug.showRoomGaps = this.debug.showRoomGaps;
         copy.debug.bossPhaseOverlay = this.debug.bossPhaseOverlay;
         copy.debug.entityDensityOverlay = this.debug.entityDensityOverlay;
         copy.debug.skillEfficacyOverlay = this.debug.skillEfficacyOverlay;

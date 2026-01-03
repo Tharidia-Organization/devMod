@@ -2,6 +2,7 @@ package com.devmod.testing;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -33,11 +34,11 @@ public class TestCase {
     private float cachedProgress = 0f;
 
     public enum TestStatus {
-        PENDING("Pending", 0xFF888888),
-        IN_PROGRESS("In Progress", 0xFFFFAA00),
-        PASSED("Passed", 0xFF55FF55),
-        FAILED("Failed", 0xFFFF5555),
-        SKIPPED("Skipped", 0xFF888888);
+        PENDING("Pending", TestingColors.Status.PENDING),
+        IN_PROGRESS("In Progress", TestingColors.Status.IN_PROGRESS),
+        PASSED("Passed", TestingColors.Status.PASSED),
+        FAILED("Failed", TestingColors.Status.FAILED),
+        SKIPPED("Skipped", TestingColors.Status.SKIPPED);
 
         private final String displayName;
         private final int color;
@@ -52,10 +53,10 @@ public class TestCase {
     }
 
     public enum TestPriority {
-        CRITICAL("Critical", 0xFFFF0000, 1),
-        HIGH("High", 0xFFFF8800, 2),
-        MEDIUM("Medium", 0xFFFFFF00, 3),
-        LOW("Low", 0xFF88FF88, 4);
+        CRITICAL("Critical", TestingColors.Priority.CRITICAL, 1),
+        HIGH("High", TestingColors.Priority.HIGH, 2),
+        MEDIUM("Medium", TestingColors.Priority.MEDIUM, 3),
+        LOW("Low", TestingColors.Priority.LOW, 4);
 
         private final String displayName;
         private final int color;
@@ -169,13 +170,15 @@ public class TestCase {
      * Attempts auto-validation if validator is available.
      * @return true if passed, false if failed, null if no validator
      */
-    public Boolean tryAutoValidate() {
-        if (autoValidator == null) return null;
+    public Optional<Boolean> tryAutoValidate() {
+        if (autoValidator == null) {
+            return Optional.empty();
+        }
         try {
-            return autoValidator.get();
+            return Optional.of(autoValidator.get());
         } catch (Exception e) {
             errorLog = "Auto-validation error: " + e.getMessage();
-            return false;
+            return Optional.of(false);
         }
     }
 
@@ -269,11 +272,11 @@ public class TestCase {
      * @return true if test passed, false otherwise
      */
     public boolean runAutoValidation() {
-        Boolean result = tryAutoValidate();
-        if (result == null) {
+        Optional<Boolean> result = tryAutoValidate();
+        if (result.isEmpty()) {
             return false; // No validator
         }
-        if (result) {
+        if (result.get()) {
             autoValidatedOnce = true;
             markPassed("Auto-validated");
             return true;

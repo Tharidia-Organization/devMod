@@ -22,19 +22,32 @@ public class DamageCalculationTest {
         public float legsMult = 0.5f;
         public float armorPenetration = 0f;
 
+        public float getBaseDamageBonus() { return baseDamageBonus; }
+        public void setBaseDamageBonus(float v) { baseDamageBonus = v; }
+        public float getHeadMult() { return headMult; }
+        public void setHeadMult(float v) { headMult = v; }
+        public float getBodyMult() { return bodyMult; }
+        public void setBodyMult(float v) { bodyMult = v; }
+        public float getArmsMult() { return armsMult; }
+        public void setArmsMult(float v) { armsMult = v; }
+        public float getLegsMult() { return legsMult; }
+        public void setLegsMult(float v) { legsMult = v; }
+        public float getArmorPenetration() { return armorPenetration; }
+        public void setArmorPenetration(float v) { armorPenetration = v; }
+
         public static MockWeaponStats defaultStats() {
             return new MockWeaponStats();
         }
 
         public static MockWeaponStats withBonus(float bonus) {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = bonus;
+            stats.setBaseDamageBonus(bonus);
             return stats;
         }
 
         public static MockWeaponStats withArmorPen(float pen) {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.armorPenetration = pen;
+            stats.setArmorPenetration(pen);
             return stats;
         }
     }
@@ -64,41 +77,41 @@ public class DamageCalculationTest {
         @Test
         @DisplayName("Head shot should have 2.0x multiplier")
         void testHeadMultiplier() {
-            assertEquals(2.0f, defaultStats.headMult, 0.001f);
+            assertEquals(2.0f, defaultStats.getHeadMult(), 0.001f);
         }
 
         @Test
         @DisplayName("Body shot should have 1.0x multiplier")
         void testBodyMultiplier() {
-            assertEquals(1.0f, defaultStats.bodyMult, 0.001f);
+            assertEquals(1.0f, defaultStats.getBodyMult(), 0.001f);
         }
 
         @Test
         @DisplayName("Arms shot should have 0.75x multiplier")
         void testArmsMultiplier() {
-            assertEquals(0.75f, defaultStats.armsMult, 0.001f);
+            assertEquals(0.75f, defaultStats.getArmsMult(), 0.001f);
         }
 
         @Test
         @DisplayName("Legs shot should have 0.5x multiplier")
         void testLegsMultiplier() {
-            assertEquals(0.5f, defaultStats.legsMult, 0.001f);
+            assertEquals(0.5f, defaultStats.getLegsMult(), 0.001f);
         }
 
         @Test
         @DisplayName("Head multiplier should be highest")
         void testHeadIsHighestMultiplier() {
-            assertTrue(defaultStats.headMult > defaultStats.bodyMult);
-            assertTrue(defaultStats.headMult > defaultStats.armsMult);
-            assertTrue(defaultStats.headMult > defaultStats.legsMult);
+            assertTrue(defaultStats.getHeadMult() > defaultStats.getBodyMult());
+            assertTrue(defaultStats.getHeadMult() > defaultStats.getArmsMult());
+            assertTrue(defaultStats.getHeadMult() > defaultStats.getLegsMult());
         }
 
         @Test
         @DisplayName("Multiplier hierarchy: HEAD > BODY > ARMS > LEGS")
         void testMultiplierHierarchy() {
-            assertTrue(defaultStats.headMult > defaultStats.bodyMult);
-            assertTrue(defaultStats.bodyMult > defaultStats.armsMult);
-            assertTrue(defaultStats.armsMult > defaultStats.legsMult);
+            assertTrue(defaultStats.getHeadMult() > defaultStats.getBodyMult());
+            assertTrue(defaultStats.getBodyMult() > defaultStats.getArmsMult());
+            assertTrue(defaultStats.getArmsMult() > defaultStats.getLegsMult());
         }
     }
 
@@ -116,12 +129,12 @@ public class DamageCalculationTest {
          */
         float calculateDamage(float originalDamage, MockWeaponStats stats, BodyPart part) {
             float multiplier = switch (part) {
-                case HEAD -> stats.headMult;
-                case BODY -> stats.bodyMult;
-                case ARMS -> stats.armsMult;
-                case LEGS -> stats.legsMult;
+                case HEAD -> stats.getHeadMult();
+                case BODY -> stats.getBodyMult();
+                case ARMS -> stats.getArmsMult();
+                case LEGS -> stats.getLegsMult();
             };
-            return (originalDamage + stats.baseDamageBonus) * multiplier;
+            return (originalDamage + stats.getBaseDamageBonus()) * multiplier;
         }
 
         @Test
@@ -201,12 +214,12 @@ public class DamageCalculationTest {
 
         float calculateDamage(float originalDamage, MockWeaponStats stats, BodyPart part) {
             float multiplier = switch (part) {
-                case HEAD -> stats.headMult;
-                case BODY -> stats.bodyMult;
-                case ARMS -> stats.armsMult;
-                case LEGS -> stats.legsMult;
+                case HEAD -> stats.getHeadMult();
+                case BODY -> stats.getBodyMult();
+                case ARMS -> stats.getArmsMult();
+                case LEGS -> stats.getLegsMult();
             };
-            return (originalDamage + stats.baseDamageBonus) * multiplier;
+            return (originalDamage + stats.getBaseDamageBonus()) * multiplier;
         }
 
         @Test
@@ -254,16 +267,16 @@ public class DamageCalculationTest {
         float calculateDamageWithArmorPen(float baseDamage, MockWeaponStats stats,
                                           BodyPart part, float victimArmorValue) {
             float multiplier = switch (part) {
-                case HEAD -> stats.headMult;
-                case BODY -> stats.bodyMult;
-                case ARMS -> stats.armsMult;
-                case LEGS -> stats.legsMult;
+                case HEAD -> stats.getHeadMult();
+                case BODY -> stats.getBodyMult();
+                case ARMS -> stats.getArmsMult();
+                case LEGS -> stats.getLegsMult();
             };
 
-            float newDamage = (baseDamage + stats.baseDamageBonus) * multiplier;
+            float newDamage = (baseDamage + stats.getBaseDamageBonus()) * multiplier;
 
-            if (stats.armorPenetration > 0) {
-                float ignoredArmor = victimArmorValue * stats.armorPenetration;
+            if (stats.getArmorPenetration() > 0) {
+                float ignoredArmor = victimArmorValue * stats.getArmorPenetration();
                 newDamage += (ignoredArmor * 0.5f);
             }
 
@@ -346,27 +359,27 @@ public class DamageCalculationTest {
         @DisplayName("Custom multipliers should override defaults")
         void testCustomMultipliers() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.headMult = 3.0f;
-            stats.bodyMult = 1.5f;
-            stats.armsMult = 1.0f;
-            stats.legsMult = 0.75f;
+            stats.setHeadMult(3.0f);
+            stats.setBodyMult(1.5f);
+            stats.setArmsMult(1.0f);
+            stats.setLegsMult(0.75f);
 
-            assertEquals(3.0f, stats.headMult);
-            assertEquals(1.5f, stats.bodyMult);
-            assertEquals(1.0f, stats.armsMult);
-            assertEquals(0.75f, stats.legsMult);
+            assertEquals(3.0f, stats.getHeadMult());
+            assertEquals(1.5f, stats.getBodyMult());
+            assertEquals(1.0f, stats.getArmsMult());
+            assertEquals(0.75f, stats.getLegsMult());
         }
 
         @Test
         @DisplayName("Combined bonus and custom multiplier")
         void testCombinedBonusAndCustomMultiplier() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 10f;
-            stats.headMult = 3.0f;
+            stats.setBaseDamageBonus(10f);
+            stats.setHeadMult(3.0f);
 
             // (10 + 10) * 3.0 = 60
-            float multiplier = stats.headMult;
-            float result = (10f + stats.baseDamageBonus) * multiplier;
+            float multiplier = stats.getHeadMult();
+            float result = (10f + stats.getBaseDamageBonus()) * multiplier;
             assertEquals(60f, result, 0.001f);
         }
 
@@ -374,19 +387,19 @@ public class DamageCalculationTest {
         @DisplayName("All stats combined calculation")
         void testAllStatsCombined() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 5f;
-            stats.headMult = 2.5f;
-            stats.armorPenetration = 0.5f;
+            stats.setBaseDamageBonus(5f);
+            stats.setHeadMult(2.5f);
+            stats.setArmorPenetration(0.5f);
 
             float baseDamage = 10f;
             float victimArmor = 20f;
 
             // Step 1: Apply bonus and multiplier
-            float damage = (baseDamage + stats.baseDamageBonus) * stats.headMult;
+            float damage = (baseDamage + stats.getBaseDamageBonus()) * stats.getHeadMult();
             // (10 + 5) * 2.5 = 37.5
 
             // Step 2: Apply armor pen
-            float ignoredArmor = victimArmor * stats.armorPenetration;
+            float ignoredArmor = victimArmor * stats.getArmorPenetration();
             damage += (ignoredArmor * 0.5f);
             // 37.5 + (20 * 0.5 * 0.5) = 37.5 + 5 = 42.5
 
@@ -406,8 +419,8 @@ public class DamageCalculationTest {
         @DisplayName("Negative damage should be handled")
         void testNegativeDamage() {
             MockWeaponStats stats = MockWeaponStats.withBonus(-20f);
-            float multiplier = stats.bodyMult;
-            float result = (10f + stats.baseDamageBonus) * multiplier;
+            float multiplier = stats.getBodyMult();
+            float result = (10f + stats.getBaseDamageBonus()) * multiplier;
             // (10 - 20) * 1.0 = -10
             assertEquals(-10f, result, 0.001f);
         }
@@ -416,9 +429,9 @@ public class DamageCalculationTest {
         @DisplayName("Very small multiplier")
         void testVerySmallMultiplier() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.legsMult = 0.01f;
+            stats.setLegsMult(0.01f);
 
-            float result = 100f * stats.legsMult;
+            float result = 100f * stats.getLegsMult();
             assertEquals(1f, result, 0.001f);
         }
 
@@ -426,15 +439,15 @@ public class DamageCalculationTest {
         @DisplayName("Maximum reasonable values")
         void testMaximumValues() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 1000f;
-            stats.headMult = 10.0f;
-            stats.armorPenetration = 1.0f;
+            stats.setBaseDamageBonus(1000f);
+            stats.setHeadMult(10.0f);
+            stats.setArmorPenetration(1.0f);
 
             float baseDamage = 100f;
             float victimArmor = 100f;
 
-            float damage = (baseDamage + stats.baseDamageBonus) * stats.headMult;
-            damage += (victimArmor * stats.armorPenetration * 0.5f);
+            float damage = (baseDamage + stats.getBaseDamageBonus()) * stats.getHeadMult();
+            damage += (victimArmor * stats.getArmorPenetration() * 0.5f);
             // (100 + 1000) * 10 + (100 * 1.0 * 0.5) = 11000 + 50 = 11050
 
             assertEquals(11050f, damage, 0.001f);
@@ -444,10 +457,10 @@ public class DamageCalculationTest {
         @DisplayName("Float precision maintained")
         void testFloatPrecision() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 0.333f;
-            stats.headMult = 1.777f;
+            stats.setBaseDamageBonus(0.333f);
+            stats.setHeadMult(1.777f);
 
-            float result = (1.0f + stats.baseDamageBonus) * stats.headMult;
+            float result = (1.0f + stats.getBaseDamageBonus()) * stats.getHeadMult();
             // (1.0 + 0.333) * 1.777 ≈ 2.369
             assertTrue(result > 2.36f && result < 2.38f);
         }

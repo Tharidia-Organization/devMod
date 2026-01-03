@@ -9,6 +9,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.testing.VoxelLabTab;
 import com.devmod.client.ui.testing.panel.CollapsiblePanel;
 import com.devmod.client.ui.testing.panel.HeaderPanel;
@@ -69,7 +70,7 @@ public class TelemetryPage extends AbstractVoxelLabPage {
                         I18n.translate("devmod.testing.voxel_lab.telemetry.section.what_to_record").getString())
                     .addRow(hitsToggle, deathsToggle, spawnsToggle)
                     .build(),
-                0xFF00AAFF)
+                DesignTokens.Testing.TELEMETRY_ACCENT)
         );
 
         // Tick Interval Slider

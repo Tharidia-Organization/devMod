@@ -26,52 +26,52 @@ public class DarkTheme implements Theme {
 
     @Override
     public int panelBackground() {
-        return 0xE0181818;
+        return DesignTokens.EditorTheme.Dark.PANEL_BG;
     }
 
     @Override
     public int panelBackgroundSolid() {
-        return 0xFF181818;
+        return DesignTokens.EditorTheme.Dark.PANEL_BG_SOLID;
     }
 
     @Override
     public int inputBackground() {
-        return 0xFF252525;
+        return DesignTokens.EditorTheme.Dark.INPUT_BG;
     }
 
     @Override
     public int hoverBackground() {
-        return 0xFF353535;
+        return DesignTokens.EditorTheme.Dark.HOVER_BG;
     }
 
     @Override
     public int activeBackground() {
-        return 0xFF454545;
+        return DesignTokens.EditorTheme.Dark.ACTIVE_BG;
     }
 
     @Override
     public int headerBackground() {
-        return 0xFF1A1A1A;
+        return DesignTokens.EditorTheme.Dark.HEADER_BG;
     }
 
     @Override
     public int contentBackground() {
-        return 0xFF202020;
+        return DesignTokens.EditorTheme.Dark.CONTENT_BG;
     }
 
     @Override
     public int tabInactiveBackground() {
-        return 0xFF282828;
+        return DesignTokens.EditorTheme.Dark.TAB_INACTIVE_BG;
     }
 
     @Override
     public int tabActiveBackground() {
-        return 0xFF383838;
+        return DesignTokens.EditorTheme.Dark.TAB_ACTIVE_BG;
     }
 
     @Override
     public int overlayBackground() {
-        return 0x80000000;
+        return DesignTokens.EditorTheme.Dark.OVERLAY_BG;
     }
 
     // =========================================================================
@@ -80,27 +80,27 @@ public class DarkTheme implements Theme {
 
     @Override
     public int borderDefault() {
-        return 0xFF3A3A3A;
+        return DesignTokens.EditorTheme.Dark.BORDER_DEFAULT;
     }
 
     @Override
     public int borderMuted() {
-        return 0xFF2A2A2A;
+        return DesignTokens.EditorTheme.Dark.BORDER_MUTED;
     }
 
     @Override
     public int borderAccent() {
-        return 0xFF00D4FF;
+        return DesignTokens.EditorTheme.Dark.BORDER_ACCENT;
     }
 
     @Override
     public int borderSeparator() {
-        return 0xFF333333;
+        return DesignTokens.EditorTheme.Dark.BORDER_SEPARATOR;
     }
 
     @Override
     public int borderHover() {
-        return 0xFF5A5A5A;
+        return DesignTokens.EditorTheme.Dark.BORDER_HOVER;
     }
 
     // =========================================================================
@@ -109,27 +109,27 @@ public class DarkTheme implements Theme {
 
     @Override
     public int textPrimary() {
-        return 0xFFE0E0E0;
+        return DesignTokens.EditorTheme.Dark.TEXT_PRIMARY;
     }
 
     @Override
     public int textSecondary() {
-        return 0xFFAAAAAA;
+        return DesignTokens.EditorTheme.Dark.TEXT_SECONDARY;
     }
 
     @Override
     public int textMuted() {
-        return 0xFF666666;
+        return DesignTokens.EditorTheme.Dark.TEXT_MUTED;
     }
 
     @Override
     public int textTitle() {
-        return 0xFFFFFFFF;
+        return DesignTokens.EditorTheme.Dark.TEXT_TITLE;
     }
 
     @Override
     public int textDisabled() {
-        return 0xFF555555;
+        return DesignTokens.EditorTheme.Dark.TEXT_DISABLED;
     }
 
     // =========================================================================
@@ -138,22 +138,22 @@ public class DarkTheme implements Theme {
 
     @Override
     public int buttonNormal() {
-        return 0xFF2A2A2A;
+        return DesignTokens.EditorTheme.Dark.BUTTON_NORMAL;
     }
 
     @Override
     public int buttonHover() {
-        return 0xFF3A3A3A;
+        return DesignTokens.EditorTheme.Dark.BUTTON_HOVER;
     }
 
     @Override
     public int buttonPressed() {
-        return 0xFF1A1A1A;
+        return DesignTokens.EditorTheme.Dark.BUTTON_PRESSED;
     }
 
     @Override
     public int buttonDisabled() {
-        return 0xFF1A1A1A;
+        return DesignTokens.EditorTheme.Dark.BUTTON_DISABLED;
     }
 
     // =========================================================================
@@ -162,16 +162,16 @@ public class DarkTheme implements Theme {
 
     @Override
     public int sliderTrack() {
-        return 0xFF2A2A2A;
+        return DesignTokens.EditorTheme.Dark.SLIDER_TRACK;
     }
 
     @Override
     public int sliderThumb() {
-        return 0xFF5A5A5A;
+        return DesignTokens.EditorTheme.Dark.SLIDER_THUMB;
     }
 
     @Override
     public int sliderThumbHover() {
-        return 0xFF7A7A7A;
+        return DesignTokens.EditorTheme.Dark.SLIDER_THUMB_HOVER;
     }
 }

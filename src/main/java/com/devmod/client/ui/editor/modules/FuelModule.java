@@ -98,7 +98,8 @@ public class FuelModule extends AbstractEditorModule {
         // Create UI components
         ui.createAllComponents(core.getDataSource());
 
-        // Add tabs
+        // Add tabs - Summary first to showcase ModuleSummarySection
+        addTab(ModuleTab.of("summary", "Summary", ui::getSummarySections));
         addTab(ModuleTab.of("burntime", "Burn Time", ui::getBurnTimeSections));
         addTab(ModuleTab.of("cooktime", "Cook Time", ui::getCookTimeSections));
         addTab(ModuleTab.of("debug", "Debug", () -> ui.getDebugSections(item)));
@@ -166,7 +167,7 @@ public class FuelModule extends AbstractEditorModule {
         stats.save(fuelStats);
 
         DevMod.LOGGER.info("[Editor][Fuel][BuildPayload] item={} global={} burnTime={} efficiency={}",
-            item.getItem(), isGlobal, stats.burnTime, stats.efficiencyMultiplier);
+            item.getItem(), isGlobal, stats.getBurnTime(), stats.getEfficiencyMultiplier());
 
         // Send both legacy and component-friendly payloads
         statsTag.put("FuelModStats", Objects.requireNonNull(fuelStats.copy()));
@@ -184,7 +185,7 @@ public class FuelModule extends AbstractEditorModule {
         try {
             ItemStack copy = item.copy();
             DevMod.LOGGER.info("[Editor][Fuel][ApplyPreview] item={} burnTime={} efficiency={}",
-                item.getItem(), stats.burnTime, stats.efficiencyMultiplier);
+                item.getItem(), stats.getBurnTime(), stats.getEfficiencyMultiplier());
 
             com.devmod.config.FuelConfigManager.setSpecificStats(copy, stats.copy());
             FuelStats applied = com.devmod.config.FuelConfigManager.getStats(copy).copy();

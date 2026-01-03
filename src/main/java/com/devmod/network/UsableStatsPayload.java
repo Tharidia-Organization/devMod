@@ -51,6 +51,6 @@ public record UsableStatsPayload(
 
     @Override
     public int estimatedSize() {
-        return 256 + (statsTag != null ? statsTag.sizeInBytes() : 0);
+        return 256 + statsTag.sizeInBytes();
     }
 }

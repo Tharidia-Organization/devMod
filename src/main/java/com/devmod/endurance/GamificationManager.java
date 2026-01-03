@@ -20,9 +20,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -179,11 +179,11 @@ public class GamificationManager {
     }
 
     public enum BadgeRarity {
-        COMMON(0xFFAAAAAA, "Common"),
-        UNCOMMON(0xFF4ade80, "Uncommon"),
-        RARE(0xFF60a5fa, "Rare"),
-        EPIC(0xFFa855f7, "Epic"),
-        LEGENDARY(0xFFfbbf24, "Legendary");
+        COMMON(EnduranceColors.PerkRarity.COMMON, "Common"),
+        UNCOMMON(EnduranceColors.PerkRarity.UNCOMMON, "Uncommon"),
+        RARE(EnduranceColors.PerkRarity.RARE, "Rare"),
+        EPIC(EnduranceColors.PerkRarity.EPIC, "Epic"),
+        LEGENDARY(EnduranceColors.PerkRarity.LEGENDARY, "Legendary");
 
         public final int color;
         public final String displayName;
@@ -362,7 +362,7 @@ public class GamificationManager {
 
                 // Auto-publish news for top 3 leaderboard entries
                 if (newRank <= 3 && (oldRank < 0 || oldRank > 3)) {
-                    publishLeaderboardNews(playerName, this.name, newRank, points);
+                    publishLeaderboardNews(entry.playerName, this.name, newRank, points);
                 }
             }
         }
@@ -543,9 +543,6 @@ public class GamificationManager {
             return null;
         }
         ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
-        if (registry == null) {
-            return null;
-        }
         return registry.get(session.getTemplateId()).orElse(null);
     }
 
@@ -820,6 +817,8 @@ public class GamificationManager {
                 7, 60
             ));
         }
+
+        normalizeChallengeDescriptions(dailyChallenges);
     }
 
     private void generateWeeklyChallenges() {
@@ -871,14 +870,22 @@ public class GamificationManager {
             challenge.parameters.put("templateVersion", String.valueOf(bossTemplate.version()));
             weeklyChallenges.add(challenge);
         }
+
+        normalizeChallengeDescriptions(weeklyChallenges);
+    }
+
+    private void normalizeChallengeDescriptions(List<Challenge> challenges) {
+        for (Challenge challenge : challenges) {
+            String description = challenge.description;
+            if (description == null || description.isBlank()) {
+                challenge.description = challenge.name;
+            }
+        }
     }
 
     private @javax.annotation.Nullable ArenaTemplate pickTemplateForChallenge(
         java.util.function.Predicate<ArenaTemplate> predicate) {
         ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
-        if (registry == null) {
-            return null;
-        }
         List<ArenaTemplate> templates = registry.all().stream()
             .filter(Objects::nonNull)
             .filter(predicate)
@@ -886,7 +893,7 @@ public class GamificationManager {
         if (templates.isEmpty()) {
             return null;
         }
-        return templates.get(new Random().nextInt(templates.size()));
+        return templates.get(ThreadLocalRandom.current().nextInt(templates.size()));
     }
 
     // ========== Persistence ==========
@@ -1037,12 +1044,12 @@ public class GamificationManager {
 
             String title = playerName + " reaches " + ordinal + " place!";
             String content = String.format(
-                "%s has climbed to %s place on the %s leaderboard with %,d points!\n\n" +
+                "%s has climbed to %s place on the %s leaderboard with %,d points!%n%n" +
                 "Congratulations on this impressive achievement!",
                 playerName, ordinal, leaderboardName, points
             );
 
-            NewsManager.INSTANCE.publishNews(
+            NewsManager.getInstance().publishNews(
                     title,
                     content,
                     NewsCategory.EVENT,

@@ -248,10 +248,6 @@ public class BatchBlockPlacer implements ArenaBuilder.BlockPlacer {
         BlockState originalState = originalStates.remove(packedPos);
         if (originalState == null) {
             originalState = Block.stateById(stateId);
-            if (originalState == null) {
-                LOGGER.warn("Cannot revert block at {}: unknown state ID {}", pos, stateId);
-                return false;
-            }
         }
 
         return level.setBlock(pos, Objects.requireNonNull(originalState), PLACEMENT_FLAGS);

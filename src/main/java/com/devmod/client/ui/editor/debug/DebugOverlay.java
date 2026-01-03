@@ -12,6 +12,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.Bounds;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.RenderObjectPool;
 import com.devmod.client.ui.editor.core.StringBuilderCache;
 
@@ -25,15 +26,15 @@ public final class DebugOverlay {
     private static String perfLine = null;
     
     // Colors
-    private static final int COLOR_GRID = 0x40FFFFFF;        // White 25%
-    private static final int COLOR_ZONE_BOUNDARY = 0x80FFFF00; // Yellow 50%
-    private static final int COLOR_BBOX = 0x8000FFFF;        // Cyan 50%
-    private static final int COLOR_BBOX_HOVERED = 0xC000FFFF; // Cyan 75%
-    private static final int COLOR_WARNING = 0xFFFF4444;     // Red solid
-    private static final int COLOR_OVERFLOW = 0x80FF0000;    // Red 50%
-    private static final int COLOR_INFO_BG = 0xE0000000;     // Black 88%
-    private static final int COLOR_INFO_TEXT = 0xFFCCCCCC;   // Light gray
-    private static final int COLOR_GRID_MAJOR = 0x60FFFFFF;  // White 37%
+    private static final int COLOR_GRID = DesignTokens.DebugOverlay.GRID;
+    private static final int COLOR_ZONE_BOUNDARY = DesignTokens.DebugOverlay.ZONE_BOUNDARY;
+    private static final int COLOR_BBOX = DesignTokens.DebugOverlay.BBOX;
+    private static final int COLOR_BBOX_HOVERED = DesignTokens.DebugOverlay.BBOX_HOVERED;
+    private static final int COLOR_WARNING = DesignTokens.DebugOverlay.WARNING;
+    private static final int COLOR_OVERFLOW = DesignTokens.DebugOverlay.OVERFLOW;
+    private static final int COLOR_INFO_BG = DesignTokens.DebugOverlay.INFO_BG;
+    private static final int COLOR_INFO_TEXT = DesignTokens.DebugOverlay.INFO_TEXT;
+    private static final int COLOR_GRID_MAJOR = DesignTokens.DebugOverlay.GRID_MAJOR;
 
     // Layout constants
     private static final int GRID_SIZE = 4;
@@ -54,7 +55,7 @@ public final class DebugOverlay {
     private static final int REPORTER_LABEL_OFFSET = 2;
     private static final int REPORTER_DETAIL_OFFSET_Y = 12;
     private static final int WARNING_LABEL_OFFSET_Y = 10;
-    private static final int WARNING_OVERLAY_ALPHA = 0x40000000; // 25% alpha
+    private static final int WARNING_OVERLAY_ALPHA = DesignTokens.Alpha.A25 << 24;
     
     public enum DetailLevel {
         LOW,    // Only warnings
@@ -494,7 +495,7 @@ public final class DebugOverlay {
         Font safeFont = Objects.requireNonNull(font, "font");
         for (DebugWarning warning : collectedWarnings) {
             // Red/colored overlay on problem area
-            int overlayColor = (warning.type().getColor() & 0x00FFFFFF) | WARNING_OVERLAY_ALPHA;
+            int overlayColor = (warning.type().getColor() & DesignTokens.Mask.RGB) | WARNING_OVERLAY_ALPHA;
             graphics.fill(warning.x(), warning.y(),
                 warning.x() + warning.width(), warning.y() + warning.height(),
                 overlayColor);

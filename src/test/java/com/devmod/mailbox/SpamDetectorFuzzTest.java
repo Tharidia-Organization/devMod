@@ -334,7 +334,7 @@ class SpamDetectorFuzzTest {
 
             for (int t = 0; t < threadCount; t++) {
                 final int threadId = t;
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         for (int i = 0; i < messagesPerThread; i++) {
                             UUID recipient = UUID.randomUUID();
@@ -365,7 +365,7 @@ class SpamDetectorFuzzTest {
             AtomicInteger errors = new AtomicInteger(0);
 
             for (int t = 0; t < threadCount; t++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         UUID sender = UUID.randomUUID();
                         for (int i = 0; i < messagesPerThread; i++) {
@@ -398,7 +398,7 @@ class SpamDetectorFuzzTest {
 
             // Scoring threads
             for (int t = 0; t < threadCount; t++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         UUID sender = UUID.randomUUID();
                         for (int i = 0; i < 100; i++) {
@@ -414,7 +414,7 @@ class SpamDetectorFuzzTest {
             }
 
             // Cleanup thread
-            executor.submit(() -> {
+            executor.execute(() -> {
                 try {
                     for (int i = 0; i < 10; i++) {
                         detector.cleanup();

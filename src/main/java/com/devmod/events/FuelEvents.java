@@ -34,18 +34,18 @@ public class FuelEvents {
         FuelStats stats = FuelConfigManager.getStats(stack);
 
         // Only modify if override is enabled or we have custom component/global settings
-        if (!stats.overrideDefault && stats.burnTime == 0) {
+        if (!stats.isOverrideDefault() && stats.getBurnTime() == 0) {
             return; // Let vanilla handle it
         }
 
         // Apply custom burn time with efficiency multiplier
         int effectiveBurnTime = stats.getEffectiveBurnTime();
 
-        if (effectiveBurnTime > 0 || stats.overrideDefault) {
+        if (effectiveBurnTime > 0 || stats.isOverrideDefault()) {
             event.setBurnTime(effectiveBurnTime);
 
             LOGGER.debug("[FuelEvents] Set burn time to {} ticks for {} (base={}, efficiency={})",
-                effectiveBurnTime, stack.getItem(), stats.burnTime, stats.efficiencyMultiplier);
+                effectiveBurnTime, stack.getItem(), stats.getBurnTime(), stats.getEfficiencyMultiplier());
         }
     }
 }

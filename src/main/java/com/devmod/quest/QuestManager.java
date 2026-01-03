@@ -164,7 +164,10 @@ public class QuestManager {
 
         Path file = ConfigPaths.getQuestDataFile();
         try {
-            Files.createDirectories(file.getParent());
+            Path parent = file.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
 
             QuestSaveData saveData = new QuestSaveData();
             saveData.quests = quests;

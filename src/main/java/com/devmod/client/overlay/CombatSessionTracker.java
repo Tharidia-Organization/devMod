@@ -231,23 +231,11 @@ public final class CombatSessionTracker {
      * Calculates current DPS using a 5-second rolling window.
      */
     public float calculateCurrentDps() {
-        long now = System.currentTimeMillis();
-        long windowStart = now - 5000;
-
-        float windowDamage = 0f;
-        long oldestTime = now;
-
-        for (DpsSnapshot snap : dpsTimeline) {
-            if (snap.timestamp >= windowStart) {
-                // This is a bit imprecise, but we use cumulative damage difference
-                windowDamage = totalDamageDealt - (dpsTimeline.peekFirst() != null ?
-                    dpsTimeline.peekFirst().cumulativeDamage : 0f);
-                oldestTime = Math.min(oldestTime, snap.timestamp);
-            }
+        UUID playerId = getLocalPlayerUUID();
+        if (playerId == null) {
+            return 0f;
         }
-
-        // Fall back to ImpactDpsTracker for more accurate per-hit DPS
-        return ImpactDpsTracker.getCurrentDps(getLocalPlayerUUID());
+        return ImpactDpsTracker.getCurrentDps(playerId);
     }
 
     @Nullable

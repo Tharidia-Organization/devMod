@@ -11,6 +11,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 
+import com.devmod.DevMod;
+
 import static com.devmod.DevMod.MODID;
 
 @EventBusSubscriber(modid = MODID)
@@ -23,7 +25,6 @@ public class DamageTracker {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDamagePost(LivingDamageEvent.Post event) {
         LivingEntity entity = event.getEntity();
-        if (entity == null) return;
 
         int entityId = entity.getId();
 
@@ -76,6 +77,7 @@ public class DamageTracker {
     private static Method impactDpsRecordMethod;
     private static java.lang.reflect.Field attackerUUIDField;
     private static boolean clientMethodsInitialized = false;
+    private static boolean clientUpdateErrorLogged = false;
 
     /**
      * Updates ImpactData on client side using reflection to avoid class loading on server.
@@ -105,8 +107,11 @@ public class DamageTracker {
             if (attackerUUID != null && impactDpsRecordMethod != null) {
                 impactDpsRecordMethod.invoke(null, attackerUUID, actualDamage);
             }
-        } catch (Exception ignored) {
-            // Best effort - fail silently
+        } catch (Exception e) {
+            if (!clientUpdateErrorLogged) {
+                clientUpdateErrorLogged = true;
+                DevMod.LOGGER.debug("[DamageTracker] Failed to update ImpactData via reflection", e);
+            }
         }
     }
 
@@ -122,8 +127,8 @@ public class DamageTracker {
 
             Class<?> dpsTrackerClass = Class.forName("com.devmod.client.overlay.ImpactDpsTracker");
             impactDpsRecordMethod = dpsTrackerClass.getMethod("recordDamage", UUID.class, float.class);
-        } catch (Exception ignored) {
-            // Client classes not available
+        } catch (Exception e) {
+            DevMod.LOGGER.debug("[DamageTracker] ImpactData client hooks unavailable", e);
         }
     }
 }

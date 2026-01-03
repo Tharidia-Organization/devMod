@@ -23,6 +23,7 @@ public final class RangedProjectileHooks {
 
     private RangedProjectileHooks() {}
     private static Method SET_PIERCE;
+    private static boolean pierceReflectionErrorLogged = false;
 
     @SubscribeEvent
     public static void onProjectileSpawn(EntityJoinLevelEvent event) {
@@ -44,12 +45,12 @@ public final class RangedProjectileHooks {
         var stats = RangedWeaponStats.getStats(weapon);
         PacketValidator security = PacketValidator.INSTANCE;
 
-        float speed = (float) security.validateRangedSpeed(stats.projectileSpeed);
-        float gravity = (float) security.validateRangedGravity(stats.projectileGravity);
-        float baseDamage = (float) security.validateRangedBaseDamage(stats.baseDamage);
-        float loyaltySpeed = (float) security.validateRangedSpeed(stats.loyaltySpeed);
-        float riptideDistance = (float) security.validateRangedBaseDamage(stats.riptideDistance);
-        boolean riptideRequiresWater = stats.riptideRequiresWater;
+        float speed = (float) security.validateRangedSpeed(stats.getProjectileSpeed());
+        float gravity = (float) security.validateRangedGravity(stats.getProjectileGravity());
+        float baseDamage = (float) security.validateRangedBaseDamage(stats.getBaseDamage());
+        float loyaltySpeed = (float) security.validateRangedSpeed(stats.getLoyaltySpeed());
+        float riptideDistance = (float) security.validateRangedBaseDamage(stats.getRiptideDistance());
+        boolean riptideRequiresWater = stats.isRiptideRequiresWater();
 
         if (baseDamage > 0) {
             trident.setBaseDamage(baseDamage);
@@ -74,8 +75,8 @@ public final class RangedProjectileHooks {
             trident.setDeltaMovement(Objects.requireNonNull(normalized.scale(Math.max(current.length(), riptideDistance / 20.0))));
         }
         // Crit-like boost for riptide-inspired damage
-        if (stats.critChance > 0 && shooter.getRandom().nextFloat() < stats.critChance) {
-            trident.setBaseDamage(trident.getBaseDamage() * Math.max(1.0f, stats.critDamage));
+        if (stats.getCritChance() > 0 && shooter.getRandom().nextFloat() < stats.getCritChance()) {
+            trident.setBaseDamage(trident.getBaseDamage() * Math.max(1.0f, stats.getCritDamage()));
         }
     }
 
@@ -91,14 +92,14 @@ public final class RangedProjectileHooks {
         RangedWeaponStats stats = RangedWeaponStats.getStats(weapon);
         PacketValidator security = PacketValidator.INSTANCE;
 
-        float speed = (float) security.validateRangedSpeed(stats.projectileSpeed);
-        float gravity = (float) security.validateRangedGravity(stats.projectileGravity);
-        float spread = (float) security.validateRangedSpread(stats.projectileSpread);
-        float baseDamage = (float) security.validateRangedBaseDamage(stats.baseDamage);
-        float critChance = stats.critChance;
-        float critDamage = stats.critDamage <= 0 ? 1.0f : stats.critDamage;
-        byte pierceLevel = (byte) Math.max(0, Math.min(10, stats.piercing));
-        boolean infinity = stats.infinityOverride;
+        float speed = (float) security.validateRangedSpeed(stats.getProjectileSpeed());
+        float gravity = (float) security.validateRangedGravity(stats.getProjectileGravity());
+        float spread = (float) security.validateRangedSpread(stats.getProjectileSpread());
+        float baseDamage = (float) security.validateRangedBaseDamage(stats.getBaseDamage());
+        float critChance = stats.getCritChance();
+        float critDamage = stats.getCritDamage() <= 0 ? 1.0f : stats.getCritDamage();
+        byte pierceLevel = (byte) Math.max(0, Math.min(10, stats.getPiercing()));
+        boolean infinity = stats.isInfinityOverride();
 
         // Base damage override
         if (baseDamage > 0) {
@@ -142,8 +143,8 @@ public final class RangedProjectileHooks {
         }
 
         // Multishot (best-effort fan spread)
-        if (stats.multishotCount > 1) {
-            spawnExtraProjectiles(arrow, shooter, stats.multishotCount - 1, stats.projectileSpread, pierceLevel, critChance, critDamage, infinity);
+        if (stats.getMultishotCount() > 1) {
+            spawnExtraProjectiles(arrow, shooter, stats.getMultishotCount() - 1, stats.getProjectileSpread(), pierceLevel, critChance, critDamage, infinity);
         }
     }
 
@@ -155,8 +156,11 @@ public final class RangedProjectileHooks {
                 SET_PIERCE.setAccessible(true);
             }
             SET_PIERCE.invoke(arrow, pierceLevel);
-        } catch (Exception ignored) {
-            // best-effort
+        } catch (Exception e) {
+            if (!pierceReflectionErrorLogged) {
+                pierceReflectionErrorLogged = true;
+                DevMod.LOGGER.debug("[RangedProjectileHooks] Failed to apply pierce via reflection", e);
+            }
         }
     }
 

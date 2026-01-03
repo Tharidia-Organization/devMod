@@ -54,7 +54,7 @@ public class MobConfigScreenState {
         new PresetColors(DesignTokens.Accent.CYAN(), DesignTokens.Accent.BLUE()),
         new PresetColors(DesignTokens.Accent.RED(), DesignTokens.Accent.ORANGE()),
         new PresetColors(DesignTokens.Accent.GREEN(), DesignTokens.Accent.YELLOW()),
-        new PresetColors(0xFFAAAAAA, 0xFF888888),
+        new PresetColors(DesignTokens.Neutral.N500, DesignTokens.Neutral.N550),
         new PresetColors(DesignTokens.Accent.PURPLE(), DesignTokens.Accent.GOLD()),
         new PresetColors(DesignTokens.Border.DEFAULT(), DesignTokens.Border.LIGHT())
     );

@@ -130,9 +130,9 @@ public record ReportHeader(
         Builder builder = new Builder();
 
         if (Files.exists(propertiesPath)) {
-            try {
+            try (var input = Files.newInputStream(propertiesPath)) {
                 Properties props = new Properties();
-                props.load(Files.newInputStream(propertiesPath));
+                props.load(input);
 
                 builder.gitCommit(props.getProperty("git.commit", "unknown"));
                 builder.gitBranch(props.getProperty("git.branch", "unknown"));

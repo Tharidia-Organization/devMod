@@ -53,6 +53,6 @@ public record RangedWeaponStatsPayload(
     public int estimatedSize() {
         // ItemStack (~100-500 bytes) + CompoundTag (~50-200 bytes) + bool
         // Conservative estimate for NBT-heavy payloads
-        return 256 + (statsTag != null ? statsTag.sizeInBytes() : 0);
+        return 256 + statsTag.sizeInBytes();
     }
 }

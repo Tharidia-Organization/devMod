@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.combat.CombatColors;
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 
@@ -41,7 +42,7 @@ public class WeaponTraitRegistry {
         .adjective("Executioner's")
         .requiredStat(SoulImprint.ImprintStat.HEADSHOTS)
         .effect(WeaponTrait.TraitEffectType.HEADSHOT_BONUS, 0.15f) // +15% headshot damage
-        .color(0xFF4444)
+        .color(CombatColors.WeaponTrait.EXECUTIONER)
         .build();
 
     public static final WeaponTrait TYRANT_SLAYER = WeaponTrait.builder(
@@ -49,7 +50,7 @@ public class WeaponTraitRegistry {
         .adjective("Tyrant-Slaying")
         .requiredStat(SoulImprint.ImprintStat.BOSS_KILLS)
         .effect(WeaponTrait.TraitEffectType.BOSS_DAMAGE, 0.30f) // +30% vs bosses
-        .color(0x8844FF)
+        .color(CombatColors.WeaponTrait.TYRANT_SLAYER)
         .build();
 
     public static final WeaponTrait STYLISH = WeaponTrait.builder(
@@ -57,7 +58,7 @@ public class WeaponTraitRegistry {
         .adjective("Stylish")
         .requiredStat(SoulImprint.ImprintStat.SSS_WAVES)
         .effect(WeaponTrait.TraitEffectType.STYLE_GAIN, 0.20f) // +20% style gain
-        .color(0xFFAA00)
+        .color(CombatColors.WeaponTrait.STYLISH)
         .build();
 
     public static final WeaponTrait BLOODTHIRSTY = WeaponTrait.builder(
@@ -65,7 +66,7 @@ public class WeaponTraitRegistry {
         .adjective("Bloodthirsty")
         .requiredStat(SoulImprint.ImprintStat.TOTAL_KILLS)
         .effect(WeaponTrait.TraitEffectType.LIFESTEAL, 0.005f) // 0.5% lifesteal
-        .color(0xCC0000)
+        .color(CombatColors.WeaponTrait.BLOODTHIRSTY)
         .build();
 
     public static final WeaponTrait HARMONIC = WeaponTrait.builder(
@@ -73,7 +74,7 @@ public class WeaponTraitRegistry {
         .adjective("Harmonic")
         .requiredStat(SoulImprint.ImprintStat.PERFECT_RESONANCES)
         .effect(WeaponTrait.TraitEffectType.RESONANCE_BONUS, 0.50f) // +50% resonance damage
-        .color(0x44FFFF)
+        .color(CombatColors.WeaponTrait.HARMONIC)
         .build();
 
     public static final WeaponTrait PRECISION = WeaponTrait.builder(
@@ -81,7 +82,7 @@ public class WeaponTraitRegistry {
         .adjective("Precise")
         .requiredStat(SoulImprint.ImprintStat.CRITICAL_HITS)
         .effect(WeaponTrait.TraitEffectType.CRIT_CHANCE, 0.10f) // +10% crit chance
-        .color(0xFFFF44)
+        .color(CombatColors.WeaponTrait.PRECISION)
         .build();
 
     public static final WeaponTrait RELENTLESS = WeaponTrait.builder(
@@ -89,7 +90,7 @@ public class WeaponTraitRegistry {
         .adjective("Relentless")
         .requiredStat(SoulImprint.ImprintStat.HIGH_COMBOS)
         .effect(WeaponTrait.TraitEffectType.COMBO_DECAY, 0.20f) // -20% combo decay
-        .color(0xFF8800)
+        .color(CombatColors.WeaponTrait.RELENTLESS)
         .build();
 
     public static final WeaponTrait GUARDIAN = WeaponTrait.builder(
@@ -97,7 +98,7 @@ public class WeaponTraitRegistry {
         .adjective("Guardian's")
         .requiredStat(SoulImprint.ImprintStat.NO_HIT_WAVES)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_REDUCTION, 0.05f) // +5% damage reduction
-        .color(0x44FF44)
+        .color(CombatColors.WeaponTrait.GUARDIAN)
         .build();
 
     public static final WeaponTrait DEVASTATING = WeaponTrait.builder(
@@ -105,7 +106,7 @@ public class WeaponTraitRegistry {
         .adjective("Devastating")
         .requiredStat(SoulImprint.ImprintStat.TOTAL_DAMAGE)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.05f) // +5% all damage
-        .color(0xFF6644)
+        .color(CombatColors.WeaponTrait.DEVASTATING)
         .build();
 
     public static final WeaponTrait FINISHER = WeaponTrait.builder(
@@ -113,7 +114,7 @@ public class WeaponTraitRegistry {
         .adjective("Finishing")
         .requiredStat(SoulImprint.ImprintStat.EXECUTE_KILLS)
         .effect(WeaponTrait.TraitEffectType.EXECUTE_THRESHOLD, 0.10f) // Execute below 10% HP
-        .color(0xAA0000)
+        .color(CombatColors.WeaponTrait.FINISHER)
         .build();
 
     public static final WeaponTrait CLEAVING = WeaponTrait.builder(
@@ -121,7 +122,7 @@ public class WeaponTraitRegistry {
         .adjective("Cleaving")
         .requiredStat(SoulImprint.ImprintStat.MULTI_KILLS)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.03f) // +3% damage (area focus)
-        .color(0x8888FF)
+        .color(CombatColors.WeaponTrait.CLEAVING)
         .build();
 
     public static final WeaponTrait RETALIATING = WeaponTrait.builder(
@@ -129,7 +130,7 @@ public class WeaponTraitRegistry {
         .adjective("Retaliating")
         .requiredStat(SoulImprint.ImprintStat.PARRY_KILLS)
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.08f) // +8% damage (counter-attack focus)
-        .color(0xFFFFFF)
+        .color(CombatColors.WeaponTrait.RETALIATING)
         .build();
 
     private WeaponTraitRegistry() {
@@ -302,7 +303,7 @@ public class WeaponTraitRegistry {
     }
 
     @Nonnull
-    private static <T> T requireNonNull(@Nullable T value, String label) {
+    private static <T> T requireNonNull(T value, String label) {
         return Objects.requireNonNull(value, label);
     }
 

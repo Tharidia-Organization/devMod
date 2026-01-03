@@ -15,8 +15,6 @@ import net.minecraft.server.level.ServerPlayer;
 
 public class TemplateOverrideManager {
 
-    private static final TemplateOverrideManager INSTANCE = new TemplateOverrideManager();
-
     /** Session-based overrides (cleared on server restart) */
     private final Map<UUID, TemplateOverride> sessionOverrides = new ConcurrentHashMap<>();
 
@@ -26,7 +24,11 @@ public class TemplateOverrideManager {
     private TemplateOverrideManager() {}
 
     public static TemplateOverrideManager getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
+    }
+
+    private static final class Holder {
+        private static final TemplateOverrideManager INSTANCE = new TemplateOverrideManager();
     }
 
     /**

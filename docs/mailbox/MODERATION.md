@@ -126,21 +126,6 @@ AutoTransitionService.INSTANCE.setSlaEscalationEnabled(true);
 AutoTransitionService.INSTANCE.setAutoAssignEnabled(false);
 ```
 
-## Redaction
-
-### Field-Level Redaction
-
-Sensitive fields can be redacted for non-privileged viewers:
-
-```java
-TicketRedaction.redactForViewer(ticket, viewerRole);
-```
-
-Redacted fields by role:
-- `REPORTER`: Can see own ticket fully
-- `MODERATOR`: Can see all except internal notes
-- `PUBLIC`: Limited to public fields only
-
 ## Rate Limiting
 
 Per-IP and per-account rate limits protect against abuse:

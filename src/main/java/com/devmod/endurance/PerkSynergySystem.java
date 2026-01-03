@@ -26,10 +26,10 @@ public class PerkSynergySystem {
      * Synergy rating for UI display.
      */
     public enum SynergyStrength {
-        MINOR(1, 0x7FFF7F, "Minor"),      // Small bonus
-        MODERATE(2, 0xFFFF7F, "Good"),     // Noticeable improvement
-        STRONG(3, 0xFFA500, "Strong"),     // Significant combo
-        LEGENDARY(4, 0xFF55FF, "Legendary"); // Game-changing combo
+        MINOR(1, EnduranceColors.Synergy.MINOR, "Minor"),         // Small bonus
+        MODERATE(2, EnduranceColors.Synergy.MODERATE, "Good"),    // Noticeable improvement
+        STRONG(3, EnduranceColors.Synergy.STRONG, "Strong"),      // Significant combo
+        LEGENDARY(4, EnduranceColors.Synergy.LEGENDARY, "Legendary"); // Game-changing combo
 
         public final int value;
         public final int color;

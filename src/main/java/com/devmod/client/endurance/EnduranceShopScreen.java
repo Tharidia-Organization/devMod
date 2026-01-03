@@ -54,8 +54,8 @@ public class EnduranceShopScreen extends Screen {
 
     // Shop-specific colors (no direct tokens)
     private static final int COLOR_BLUE = DesignTokens.Semantic.INFO;
-    private static final int COLOR_PURPLE = 0xFFA371F7;
-    private static final int COLOR_YELLOW = 0xFFFFD700;
+    private static final int COLOR_PURPLE = EnduranceUiTheme.Accent.PURPLE;
+    private static final int COLOR_YELLOW = EnduranceUiTheme.Accent.GOLD;
     private static final int COLOR_CYAN = DesignTokens.Accent.PRIMARY;
 
     // Category colors matching ShopCategory
@@ -534,8 +534,9 @@ public class EnduranceShopScreen extends Screen {
         int purchaseW = 80;
         int purchaseH = DesignTokens.Component.BUTTON_HEIGHT_LG;
         int purchaseX = width - purchaseW - 10;
-        boolean canPurchase = selectedItem != null && canAfford(selectedItem)
-            && playerPurchases.getOrDefault(selectedItem.id, 0) < selectedItem.maxPurchases;
+        final var currentItem = selectedItem;
+        boolean canPurchase = currentItem != null && canAfford(currentItem)
+            && playerPurchases.getOrDefault(currentItem.id, 0) < currentItem.maxPurchases;
         boolean purchaseHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, purchaseX, buttonY, purchaseW, purchaseH);
         int purchaseColor = canPurchase ? COLOR_SUCCESS : DesignTokens.Text.MUTED;
         renderButton(graphics, purchaseX, buttonY, purchaseW, purchaseH,
@@ -551,26 +552,31 @@ public class EnduranceShopScreen extends Screen {
         AxiomRenderer.drawBorder(graphics, x, y, w, h, color);
         int textX = x + (w - Objects.requireNonNull(font).width(Objects.requireNonNull(text))) / 2;
         int textY = y + (h - 8) / 2;
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(text), textX, textY, hovered ? 0xFFFFFFFF : color, false);
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(text), textX, textY,
+            hovered ? DesignTokens.Text.WHITE : color, false);
     }
 
+    @Nonnull
     private String getCategoryLabel(RewardSystem.ShopCategory category) {
         return Objects.requireNonNull(I18n.translate("devmod.shop.category." + category.name().toLowerCase(Locale.ROOT)).getString());
     }
 
+    @Nonnull
     private String getCurrencyLabel(RewardSystem.Currency currency) {
         return Objects.requireNonNull(I18n.translate("devmod.currency." + currency.key).getString());
     }
 
+    @Nonnull
     private String getItemName(RewardSystem.ShopItem item) {
         return Objects.requireNonNull(I18n.translate("devmod.shop." + item.id).getString());
     }
 
+    @Nonnull
     private String getItemDescription(RewardSystem.ShopItem item) {
         return Objects.requireNonNull(I18n.translate("devmod.shop." + item.id + ".desc").getString());
     }
 
-    private List<String> wrapText(String text, int maxWidth) {
+    private List<String> wrapText(@Nonnull String text, int maxWidth) {
         List<String> lines = new ArrayList<>();
         StringBuilder currentLine = new StringBuilder();
 
@@ -709,17 +715,18 @@ public class EnduranceShopScreen extends Screen {
     }
 
     private void purchaseSelected() {
-        if (selectedItem == null) return;
+        final var item = selectedItem;
+        if (item == null) return;
 
-        int owned = playerPurchases.getOrDefault(selectedItem.id, 0);
-        if (owned >= selectedItem.maxPurchases) return;
-        if (!canAfford(selectedItem)) return;
+        int owned = playerPurchases.getOrDefault(item.id, 0);
+        if (owned >= item.maxPurchases) return;
+        if (!canAfford(item)) return;
 
         // Send purchase request to server
-        PacketDistributor.sendToServer(new ShopPurchasePayload(selectedItem.id));
+        PacketDistributor.sendToServer(new ShopPurchasePayload(item.id));
 
         // Optimistically update local state and cache
-        ClientShopCache.optimisticPurchase(selectedItem.id, selectedItem.currency, selectedItem.price);
+        ClientShopCache.optimisticPurchase(item.id, item.currency, item.price);
 
         // Update local display values from cache
         playerTokens = ClientShopCache.getTokens();

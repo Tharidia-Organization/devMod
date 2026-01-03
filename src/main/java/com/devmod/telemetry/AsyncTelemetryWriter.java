@@ -9,6 +9,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -18,15 +20,24 @@ public class AsyncTelemetryWriter {
     private static final int QUEUE_CAPACITY = 1000; // Max 1000 pending writes
 
     private final BlockingQueue<WriteTask> writeQueue;
-    private final Thread writerThread;
+    private @Nullable Thread writerThread;
     private volatile boolean running;
+    private volatile boolean started;
 
     public AsyncTelemetryWriter() {
         this.writeQueue = new LinkedBlockingQueue<>(QUEUE_CAPACITY);
         this.running = true;
-        this.writerThread = new Thread(this::writerLoop, "TelemetryWriter");
-        this.writerThread.setDaemon(true); // Don't prevent JVM shutdown
-        this.writerThread.start();
+        this.started = false;
+    }
+
+    public synchronized void start() {
+        if (started) {
+            return;
+        }
+        writerThread = new Thread(this::writerLoop, "TelemetryWriter");
+        writerThread.setDaemon(true); // Don't prevent JVM shutdown
+        writerThread.start();
+        started = true;
         LOGGER.info("AsyncTelemetryWriter started");
     }
 
@@ -37,6 +48,9 @@ public class AsyncTelemetryWriter {
         if (!running) {
             LOGGER.warn("AsyncTelemetryWriter is shutting down, ignoring write to {}", file);
             return;
+        }
+        if (!started) {
+            start();
         }
 
         WriteTask task = new WriteTask(file, line);
@@ -51,15 +65,19 @@ public class AsyncTelemetryWriter {
     /**
      * Shutdown the writer thread gracefully
      */
-    public void shutdown() {
+    public synchronized void shutdown() {
         LOGGER.info("Shutting down AsyncTelemetryWriter...");
         running = false;
-        writerThread.interrupt();
+        Thread thread = writerThread;
+        if (thread == null) {
+            return;
+        }
+        thread.interrupt();
 
         try {
             // Wait max 5 seconds for pending writes to complete
-            writerThread.join(5000);
-            if (writerThread.isAlive()) {
+            thread.join(5000);
+            if (thread.isAlive()) {
                 LOGGER.warn("AsyncTelemetryWriter did not finish in 5s, {} writes may be lost", writeQueue.size());
             } else {
                 LOGGER.info("AsyncTelemetryWriter shutdown complete");
@@ -103,7 +121,10 @@ public class AsyncTelemetryWriter {
     private void executeWrite(WriteTask task) {
         try {
             // Create parent directories if needed
-            Files.createDirectories(task.file.getParent());
+            Path parent = task.file.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
 
             // Append line to file (buffered for performance)
             try (BufferedWriter writer = Files.newBufferedWriter(

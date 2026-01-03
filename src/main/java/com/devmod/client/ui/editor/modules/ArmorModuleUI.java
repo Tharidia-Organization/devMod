@@ -143,7 +143,7 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Reduces physical damage (melee attacks, falls). Max 80%. Formula: Damage * (1 - Reduction%). Stacks with armor value.")
-            .onChange(v -> { stats.physicalReduction = v / 100f; module.markDirty("Physical reduction"); });
+            .onChange(v -> { stats.setPhysicalReduction(v / 100f); module.markDirty("Physical reduction"); });
 
         fireReductionSlider = new EditorSlider("fireRed", "Fire Reduction", 0f, 80f, 0f)
             .step(1f)
@@ -153,7 +153,7 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Reduces fire damage (burning, lava, Fire Aspect). Max 80%. Similar to Fire Protection enchant.")
-            .onChange(v -> { stats.fireReduction = v / 100f; module.markDirty("Fire reduction"); });
+            .onChange(v -> { stats.setFireReduction(v / 100f); module.markDirty("Fire reduction"); });
 
         magicReductionSlider = new EditorSlider("magicRed", "Magic Reduction", 0f, 80f, 0f)
             .step(1f)
@@ -163,7 +163,7 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Reduces magic damage (potions, Guardians, Evokers). Max 80%. Bypassed by true damage.")
-            .onChange(v -> { stats.magicReduction = v / 100f; module.markDirty("Magic reduction"); });
+            .onChange(v -> { stats.setMagicReduction(v / 100f); module.markDirty("Magic reduction"); });
 
         explosionReductionSlider = new EditorSlider("explRed", "Explosion Reduction", 0f, 80f, 0f)
             .step(1f)
@@ -173,7 +173,7 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Reduces explosion damage (Creepers, TNT, Ghast fireballs). Max 80%. Similar to Blast Protection.")
-            .onChange(v -> { stats.explosionReduction = v / 100f; module.markDirty("Explosion reduction"); });
+            .onChange(v -> { stats.setExplosionReduction(v / 100f); module.markDirty("Explosion reduction"); });
 
         projectileReductionSlider = new EditorSlider("projRed", "Projectile Reduction", 0f, 80f, 0f)
             .step(1f)
@@ -183,7 +183,7 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Reduces projectile damage (arrows, tridents, fireballs). Max 80%. Similar to Projectile Protection.")
-            .onChange(v -> { stats.projectileReduction = v / 100f; module.markDirty("Projectile reduction"); });
+            .onChange(v -> { stats.setProjectileReduction(v / 100f); module.markDirty("Projectile reduction"); });
     }
 
     private void createVanillaStatsComponents(SourceBadge.Source source) {
@@ -197,7 +197,7 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Adds to armor points (shields icon). Each point reduces damage by ~4% up to 80% cap. Uses minecraft:armor attribute.")
-            .onChange(v -> { stats.armorBonus = v; module.markDirty("Armor bonus"); });
+            .onChange(v -> { stats.setArmorBonus(v); module.markDirty("Armor bonus"); });
 
         toughnessBonusSlider = new EditorSlider("toughBon", "Toughness Bonus", 0f, 20f, 0f)
             .step(0.5f)
@@ -207,7 +207,7 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Reduces armor effectiveness loss from heavy hits. Diamond/Netherite have 2-3 base. Uses minecraft:armor_toughness.")
-            .onChange(v -> { stats.toughnessBonus = v; module.markDirty("Toughness bonus"); });
+            .onChange(v -> { stats.setToughnessBonus(v); module.markDirty("Toughness bonus"); });
 
         knockbackResistanceSlider = new EditorSlider("kbRes", "Knockback Resistance", 0f, 100f, 0f)
             .step(5f)
@@ -217,7 +217,7 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Reduces knockback from hits. 100% = no knockback. Netherite gives 10% per piece. Uses minecraft:knockback_resistance.")
-            .onChange(v -> { stats.knockbackResistance = v / 100f; module.markDirty("Knockback resistance"); });
+            .onChange(v -> { stats.setKnockbackResistance(v / 100f); module.markDirty("Knockback resistance"); });
     }
 
     private void createSpecialComponents(SourceBadge.Source source) {
@@ -226,7 +226,7 @@ public class ArmorModuleUI {
         thornsToggle = new EditorToggle("thorns", "Thorns Reflect", false)
             .source(source)
             .tooltip("Enable thorns damage reflection when hit")
-            .onChange(v -> { stats.thornsReflect = v; module.markDirty("Thorns enabled"); });
+            .onChange(v -> { stats.setThornsReflect(v); module.markDirty("Thorns enabled"); });
 
         thornsPercentSlider = new EditorSlider("thornsPct", "Thorns Damage", 0f, 50f, 0f)
             .step(1f)
@@ -236,18 +236,18 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Reflects damage back to attacker. 50% means attacker takes half the damage they dealt. Only works if Thorns Reflect is enabled.")
-            .onChange(v -> { stats.thornsPercent = v / 100f; module.markDirty("Thorns damage"); });
+            .onChange(v -> { stats.setThornsPercent(v / 100f); module.markDirty("Thorns damage"); });
     }
 
     private void createShieldComponents(SourceBadge.Source source) {
         ArmorStats stats = core.getStats();
 
-        shieldReflectToggle = new EditorToggle("shieldReflect", "Reflect Projectiles", stats.shieldReflectProjectiles)
+        shieldReflectToggle = new EditorToggle("shieldReflect", "Reflect Projectiles", stats.isShieldReflectProjectiles())
             .source(source)
             .tooltip("Enables reflecting arrows and projectiles back at attackers when blocking")
-            .onChange(v -> { stats.shieldReflectProjectiles = v; module.markDirty("Shield reflect projectiles"); });
+            .onChange(v -> { stats.setShieldReflectProjectiles(v); module.markDirty("Shield reflect projectiles"); });
 
-        shieldBlockStrengthSlider = new EditorSlider("shieldBlock", "Block Strength", 0f, 1.0f, stats.shieldBlockStrength)
+        shieldBlockStrengthSlider = new EditorSlider("shieldBlock", "Block Strength", 0f, 1.0f, stats.getShieldBlockStrength())
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
@@ -255,9 +255,9 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Damage blocked when shielding. 1.0 = full block, 0.5 = half damage still passes through.")
-            .onChange(v -> { stats.shieldBlockStrength = v; module.markDirty("Shield block strength"); });
+            .onChange(v -> { stats.setShieldBlockStrength(v); module.markDirty("Shield block strength"); });
 
-        shieldRecoverySlider = new EditorSlider("shieldRecovery", "Recovery Speed", 0f, 2.0f, stats.shieldRecoverySpeed)
+        shieldRecoverySlider = new EditorSlider("shieldRecovery", "Recovery Speed", 0f, 2.0f, stats.getShieldRecoverySpeed())
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
@@ -265,13 +265,13 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("How fast the shield recovers after being disabled by an axe. 2.0 = instant recovery, 0.5 = very slow.")
-            .onChange(v -> { stats.shieldRecoverySpeed = v; module.markDirty("Shield recovery"); });
+            .onChange(v -> { stats.setShieldRecoverySpeed(v); module.markDirty("Shield recovery"); });
     }
 
     private void createShieldVisualComponents(SourceBadge.Source source) {
         ArmorStats stats = core.getStats();
 
-        shieldOpacitySlider = new EditorSlider("shieldOpacity", "Shield Opacity", 0.1f, 1.0f, stats.shieldOpacity)
+        shieldOpacitySlider = new EditorSlider("shieldOpacity", "Shield Opacity", 0.1f, 1.0f, stats.getShieldOpacity())
             .step(0.05f)
             .format("%.0f")
             .suffix("%")
@@ -279,14 +279,14 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Base transparency of the energy shield. 1.0 = fully opaque, 0.1 = barely visible.")
-            .onChange(v -> { stats.shieldOpacity = v; module.markDirty("Shield opacity"); });
+            .onChange(v -> { stats.setShieldOpacity(v); module.markDirty("Shield opacity"); });
 
-        shieldGlowToggle = new EditorToggle("shieldGlow", "Edge Glow", stats.shieldGlowEnabled)
+        shieldGlowToggle = new EditorToggle("shieldGlow", "Edge Glow", stats.isShieldGlowEnabled())
             .source(source)
             .tooltip("Enable Fresnel edge glow effect for a sci-fi look")
-            .onChange(v -> { stats.shieldGlowEnabled = v; module.markDirty("Shield glow"); });
+            .onChange(v -> { stats.setShieldGlowEnabled(v); module.markDirty("Shield glow"); });
 
-        shieldGlowIntensitySlider = new EditorSlider("shieldGlowInt", "Glow Intensity", 0f, 2.0f, stats.shieldGlowIntensity)
+        shieldGlowIntensitySlider = new EditorSlider("shieldGlowInt", "Glow Intensity", 0f, 2.0f, stats.getShieldGlowIntensity())
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
@@ -294,9 +294,9 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Strength of the edge glow effect. Higher = brighter edges.")
-            .onChange(v -> { stats.shieldGlowIntensity = v; module.markDirty("Glow intensity"); });
+            .onChange(v -> { stats.setShieldGlowIntensity(v); module.markDirty("Glow intensity"); });
 
-        shieldNoiseIntensitySlider = new EditorSlider("shieldNoise", "Energy Intensity", 0f, 0.5f, stats.shieldNoiseIntensity)
+        shieldNoiseIntensitySlider = new EditorSlider("shieldNoise", "Energy Intensity", 0f, 0.5f, stats.getShieldNoiseIntensity())
             .step(0.05f)
             .format("%.2f")
             .suffix("x")
@@ -304,9 +304,9 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Animated energy field noise pattern intensity. 0 = smooth, 0.5 = very turbulent.")
-            .onChange(v -> { stats.shieldNoiseIntensity = v; module.markDirty("Energy intensity"); });
+            .onChange(v -> { stats.setShieldNoiseIntensity(v); module.markDirty("Energy intensity"); });
 
-        shieldPulseSpeedSlider = new EditorSlider("shieldPulse", "Animation Speed", 0.5f, 2.0f, stats.shieldPulseSpeed)
+        shieldPulseSpeedSlider = new EditorSlider("shieldPulse", "Animation Speed", 0.5f, 2.0f, stats.getShieldPulseSpeed())
             .step(0.1f)
             .format("%.1f")
             .suffix("x")
@@ -314,14 +314,14 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Speed of shield animation effects. 1.0 = normal, 2.0 = double speed.")
-            .onChange(v -> { stats.shieldPulseSpeed = v; module.markDirty("Animation speed"); });
+            .onChange(v -> { stats.setShieldPulseSpeed(v); module.markDirty("Animation speed"); });
     }
 
     private void createShieldDeflectionComponents(SourceBadge.Source source) {
         ArmorStats stats = core.getStats();
 
         // Convert radians to degrees for display (0.15 rad ≈ 8.6°)
-        float spreadDegrees = (float) Math.toDegrees(stats.shieldDeflectionSpread);
+        float spreadDegrees = (float) Math.toDegrees(stats.getShieldDeflectionSpread());
 
         shieldDeflectionSpreadSlider = new EditorSlider("deflectSpread", "Deflection Spread", 0f, 30f, spreadDegrees)
             .step(1f)
@@ -331,14 +331,14 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Maximum random angle for deflected projectiles. 0° = perfect reflection, 30° = very scattered.")
-            .onChange(v -> { stats.shieldDeflectionSpread = (float) Math.toRadians(v); module.markDirty("Deflection spread"); });
+            .onChange(v -> { stats.setShieldDeflectionSpread((float) Math.toRadians(v)); module.markDirty("Deflection spread"); });
 
-        shieldDeflectToOwnerToggle = new EditorToggle("deflectReturn", "Return to Sender", stats.shieldDeflectToOwner)
+        shieldDeflectToOwnerToggle = new EditorToggle("deflectReturn", "Return to Sender", stats.isShieldDeflectToOwner())
             .source(source)
             .tooltip("Deflect projectiles back toward the original shooter")
-            .onChange(v -> { stats.shieldDeflectToOwner = v; module.markDirty("Return to sender"); });
+            .onChange(v -> { stats.setShieldDeflectToOwner(v); module.markDirty("Return to sender"); });
 
-        shieldDeflectSpeedMultSlider = new EditorSlider("deflectSpeed", "Deflect Speed", 0.5f, 1.5f, stats.shieldDeflectSpeedMult)
+        shieldDeflectSpeedMultSlider = new EditorSlider("deflectSpeed", "Deflect Speed", 0.5f, 1.5f, stats.getShieldDeflectSpeedMult())
             .step(0.05f)
             .format("%.0f")
             .suffix("%")
@@ -346,13 +346,13 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Projectile speed after deflection. 100% = same speed, 50% = half speed, 150% = faster.")
-            .onChange(v -> { stats.shieldDeflectSpeedMult = v; module.markDirty("Deflect speed"); });
+            .onChange(v -> { stats.setShieldDeflectSpeedMult(v); module.markDirty("Deflect speed"); });
     }
 
     private void createShieldShatterComponents(SourceBadge.Source source) {
         ArmorStats stats = core.getStats();
 
-        shieldShatterThresholdSlider = new EditorSlider("shatterThresh", "Shatter Threshold", 5f, 50f, stats.shieldShatterThreshold)
+        shieldShatterThresholdSlider = new EditorSlider("shatterThresh", "Shatter Threshold", 5f, 50f, stats.getShieldShatterThreshold())
             .step(1f)
             .format("%.0f")
             .suffix(" dmg")
@@ -360,14 +360,14 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Damage required in a single hit to break the shield. Higher = more durable.")
-            .onChange(v -> { stats.shieldShatterThreshold = v; module.markDirty("Shatter threshold"); });
+            .onChange(v -> { stats.setShieldShatterThreshold(v); module.markDirty("Shatter threshold"); });
 
-        shieldAutoRegenerateToggle = new EditorToggle("autoRegen", "Auto Regenerate", stats.shieldAutoRegenerate)
+        shieldAutoRegenerateToggle = new EditorToggle("autoRegen", "Auto Regenerate", stats.isShieldAutoRegenerate())
             .source(source)
             .tooltip("Shield automatically regenerates after being shattered")
-            .onChange(v -> { stats.shieldAutoRegenerate = v; module.markDirty("Auto regenerate"); });
+            .onChange(v -> { stats.setShieldAutoRegenerate(v); module.markDirty("Auto regenerate"); });
 
-        shieldRegenDelaySlider = new EditorSlider("regenDelay", "Regen Delay", 1f, 10f, stats.shieldRegenDelay)
+        shieldRegenDelaySlider = new EditorSlider("regenDelay", "Regen Delay", 1f, 10f, stats.getShieldRegenDelay())
             .step(0.5f)
             .format("%.1f")
             .suffix("s")
@@ -375,7 +375,7 @@ public class ArmorModuleUI {
             .showInput(true)
             .source(source)
             .info("Seconds before shield starts regenerating after being shattered.")
-            .onChange(v -> { stats.shieldRegenDelay = v; module.markDirty("Regen delay"); });
+            .onChange(v -> { stats.setShieldRegenDelay(v); module.markDirty("Regen delay"); });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -385,38 +385,38 @@ public class ArmorModuleUI {
     public void updateComponentsFromStats() {
         ArmorStats stats = core.getStats();
 
-        if (physicalReductionSlider != null) physicalReductionSlider.setValue(stats.physicalReduction * 100);
-        if (fireReductionSlider != null) fireReductionSlider.setValue(stats.fireReduction * 100);
-        if (magicReductionSlider != null) magicReductionSlider.setValue(stats.magicReduction * 100);
-        if (explosionReductionSlider != null) explosionReductionSlider.setValue(stats.explosionReduction * 100);
-        if (projectileReductionSlider != null) projectileReductionSlider.setValue(stats.projectileReduction * 100);
+        if (physicalReductionSlider != null) physicalReductionSlider.setValue(stats.getPhysicalReduction() * 100);
+        if (fireReductionSlider != null) fireReductionSlider.setValue(stats.getFireReduction() * 100);
+        if (magicReductionSlider != null) magicReductionSlider.setValue(stats.getMagicReduction() * 100);
+        if (explosionReductionSlider != null) explosionReductionSlider.setValue(stats.getExplosionReduction() * 100);
+        if (projectileReductionSlider != null) projectileReductionSlider.setValue(stats.getProjectileReduction() * 100);
 
-        if (armorBonusSlider != null) armorBonusSlider.setValue(stats.armorBonus);
-        if (toughnessBonusSlider != null) toughnessBonusSlider.setValue(stats.toughnessBonus);
-        if (knockbackResistanceSlider != null) knockbackResistanceSlider.setValue(stats.knockbackResistance * 100);
+        if (armorBonusSlider != null) armorBonusSlider.setValue(stats.getArmorBonus());
+        if (toughnessBonusSlider != null) toughnessBonusSlider.setValue(stats.getToughnessBonus());
+        if (knockbackResistanceSlider != null) knockbackResistanceSlider.setValue(stats.getKnockbackResistance() * 100);
 
-        if (thornsToggle != null) thornsToggle.setValue(stats.thornsReflect);
-        if (thornsPercentSlider != null) thornsPercentSlider.setValue(stats.thornsPercent * 100);
-        if (shieldReflectToggle != null) shieldReflectToggle.setValue(stats.shieldReflectProjectiles);
-        if (shieldBlockStrengthSlider != null) shieldBlockStrengthSlider.setValue(stats.shieldBlockStrength);
-        if (shieldRecoverySlider != null) shieldRecoverySlider.setValue(stats.shieldRecoverySpeed);
+        if (thornsToggle != null) thornsToggle.setValue(stats.isThornsReflect());
+        if (thornsPercentSlider != null) thornsPercentSlider.setValue(stats.getThornsPercent() * 100);
+        if (shieldReflectToggle != null) shieldReflectToggle.setValue(stats.isShieldReflectProjectiles());
+        if (shieldBlockStrengthSlider != null) shieldBlockStrengthSlider.setValue(stats.getShieldBlockStrength());
+        if (shieldRecoverySlider != null) shieldRecoverySlider.setValue(stats.getShieldRecoverySpeed());
 
         // Shield Visual Tab
-        if (shieldOpacitySlider != null) shieldOpacitySlider.setValue(stats.shieldOpacity);
-        if (shieldGlowToggle != null) shieldGlowToggle.setValue(stats.shieldGlowEnabled);
-        if (shieldGlowIntensitySlider != null) shieldGlowIntensitySlider.setValue(stats.shieldGlowIntensity);
-        if (shieldNoiseIntensitySlider != null) shieldNoiseIntensitySlider.setValue(stats.shieldNoiseIntensity);
-        if (shieldPulseSpeedSlider != null) shieldPulseSpeedSlider.setValue(stats.shieldPulseSpeed);
+        if (shieldOpacitySlider != null) shieldOpacitySlider.setValue(stats.getShieldOpacity());
+        if (shieldGlowToggle != null) shieldGlowToggle.setValue(stats.isShieldGlowEnabled());
+        if (shieldGlowIntensitySlider != null) shieldGlowIntensitySlider.setValue(stats.getShieldGlowIntensity());
+        if (shieldNoiseIntensitySlider != null) shieldNoiseIntensitySlider.setValue(stats.getShieldNoiseIntensity());
+        if (shieldPulseSpeedSlider != null) shieldPulseSpeedSlider.setValue(stats.getShieldPulseSpeed());
 
         // Shield Deflection Tab
-        if (shieldDeflectionSpreadSlider != null) shieldDeflectionSpreadSlider.setValue((float) Math.toDegrees(stats.shieldDeflectionSpread));
-        if (shieldDeflectToOwnerToggle != null) shieldDeflectToOwnerToggle.setValue(stats.shieldDeflectToOwner);
-        if (shieldDeflectSpeedMultSlider != null) shieldDeflectSpeedMultSlider.setValue(stats.shieldDeflectSpeedMult);
+        if (shieldDeflectionSpreadSlider != null) shieldDeflectionSpreadSlider.setValue((float) Math.toDegrees(stats.getShieldDeflectionSpread()));
+        if (shieldDeflectToOwnerToggle != null) shieldDeflectToOwnerToggle.setValue(stats.isShieldDeflectToOwner());
+        if (shieldDeflectSpeedMultSlider != null) shieldDeflectSpeedMultSlider.setValue(stats.getShieldDeflectSpeedMult());
 
         // Shield Shatter Tab
-        if (shieldShatterThresholdSlider != null) shieldShatterThresholdSlider.setValue(stats.shieldShatterThreshold);
-        if (shieldAutoRegenerateToggle != null) shieldAutoRegenerateToggle.setValue(stats.shieldAutoRegenerate);
-        if (shieldRegenDelaySlider != null) shieldRegenDelaySlider.setValue(stats.shieldRegenDelay);
+        if (shieldShatterThresholdSlider != null) shieldShatterThresholdSlider.setValue(stats.getShieldShatterThreshold());
+        if (shieldAutoRegenerateToggle != null) shieldAutoRegenerateToggle.setValue(stats.isShieldAutoRegenerate());
+        if (shieldRegenDelaySlider != null) shieldRegenDelaySlider.setValue(stats.getShieldRegenDelay());
 
         // Update source badges to reflect current state
         updateSourceBadges();
@@ -590,24 +590,24 @@ public class ArmorModuleUI {
         ArmorStats serverStats = core.resolveServerStats(tag, item);
         ArmorStats baseline = originalStats == null ? new ArmorStats() : originalStats;
 
-        comparisons.add(makeComparison("Physical Reduction (%)", baseline.physicalReduction * 100, serverStats.physicalReduction * 100, stats.physicalReduction * 100, hasServerStats));
-        comparisons.add(makeComparison("Fire Reduction (%)", baseline.fireReduction * 100, serverStats.fireReduction * 100, stats.fireReduction * 100, hasServerStats));
-        comparisons.add(makeComparison("Magic Reduction (%)", baseline.magicReduction * 100, serverStats.magicReduction * 100, stats.magicReduction * 100, hasServerStats));
-        comparisons.add(makeComparison("Explosion Reduction (%)", baseline.explosionReduction * 100, serverStats.explosionReduction * 100, stats.explosionReduction * 100, hasServerStats));
-        comparisons.add(makeComparison("Projectile Reduction (%)", baseline.projectileReduction * 100, serverStats.projectileReduction * 100, stats.projectileReduction * 100, hasServerStats));
+        comparisons.add(makeComparison("Physical Reduction (%)", baseline.getPhysicalReduction() * 100, serverStats.getPhysicalReduction() * 100, stats.getPhysicalReduction() * 100, hasServerStats));
+        comparisons.add(makeComparison("Fire Reduction (%)", baseline.getFireReduction() * 100, serverStats.getFireReduction() * 100, stats.getFireReduction() * 100, hasServerStats));
+        comparisons.add(makeComparison("Magic Reduction (%)", baseline.getMagicReduction() * 100, serverStats.getMagicReduction() * 100, stats.getMagicReduction() * 100, hasServerStats));
+        comparisons.add(makeComparison("Explosion Reduction (%)", baseline.getExplosionReduction() * 100, serverStats.getExplosionReduction() * 100, stats.getExplosionReduction() * 100, hasServerStats));
+        comparisons.add(makeComparison("Projectile Reduction (%)", baseline.getProjectileReduction() * 100, serverStats.getProjectileReduction() * 100, stats.getProjectileReduction() * 100, hasServerStats));
 
-        comparisons.add(makeComparison("Armor Bonus", baseline.armorBonus, serverStats.armorBonus, stats.armorBonus, hasServerStats));
-        comparisons.add(makeComparison("Toughness Bonus", baseline.toughnessBonus, serverStats.toughnessBonus, stats.toughnessBonus, hasServerStats));
-        comparisons.add(makeComparison("Knockback Resist (%)", baseline.knockbackResistance * 100, serverStats.knockbackResistance * 100, stats.knockbackResistance * 100, hasServerStats));
+        comparisons.add(makeComparison("Armor Bonus", baseline.getArmorBonus(), serverStats.getArmorBonus(), stats.getArmorBonus(), hasServerStats));
+        comparisons.add(makeComparison("Toughness Bonus", baseline.getToughnessBonus(), serverStats.getToughnessBonus(), stats.getToughnessBonus(), hasServerStats));
+        comparisons.add(makeComparison("Knockback Resist (%)", baseline.getKnockbackResistance() * 100, serverStats.getKnockbackResistance() * 100, stats.getKnockbackResistance() * 100, hasServerStats));
 
-        comparisons.add(makeComparison("Thorns (%)", baseline.thornsPercent * 100, serverStats.thornsPercent * 100, stats.thornsPercent * 100, hasServerStats));
-        comparisons.add(makeComparison("Thorns reflect", baseline.thornsReflect ? 1 : 0, serverStats.thornsReflect ? 1 : 0, stats.thornsReflect ? 1 : 0, hasServerStats));
+        comparisons.add(makeComparison("Thorns (%)", baseline.getThornsPercent() * 100, serverStats.getThornsPercent() * 100, stats.getThornsPercent() * 100, hasServerStats));
+        comparisons.add(makeComparison("Thorns reflect", baseline.isThornsReflect() ? 1 : 0, serverStats.isThornsReflect() ? 1 : 0, stats.isThornsReflect() ? 1 : 0, hasServerStats));
 
         ArmorModule.ArmorVariant variant = module.getVariant();
         if (variant == ArmorModule.ArmorVariant.SHIELD) {
-            comparisons.add(makeComparison("Shield Block", baseline.shieldBlockStrength, serverStats.shieldBlockStrength, stats.shieldBlockStrength, hasServerStats));
-            comparisons.add(makeComparison("Shield Recovery", baseline.shieldRecoverySpeed, serverStats.shieldRecoverySpeed, stats.shieldRecoverySpeed, hasServerStats));
-            comparisons.add(makeComparison("Shield Reflect", baseline.shieldReflectProjectiles ? 1 : 0, serverStats.shieldReflectProjectiles ? 1 : 0, stats.shieldReflectProjectiles ? 1 : 0, hasServerStats));
+            comparisons.add(makeComparison("Shield Block", baseline.getShieldBlockStrength(), serverStats.getShieldBlockStrength(), stats.getShieldBlockStrength(), hasServerStats));
+            comparisons.add(makeComparison("Shield Recovery", baseline.getShieldRecoverySpeed(), serverStats.getShieldRecoverySpeed(), stats.getShieldRecoverySpeed(), hasServerStats));
+            comparisons.add(makeComparison("Shield Reflect", baseline.isShieldReflectProjectiles() ? 1 : 0, serverStats.isShieldReflectProjectiles() ? 1 : 0, stats.isShieldReflectProjectiles() ? 1 : 0, hasServerStats));
         }
         return comparisons;
     }

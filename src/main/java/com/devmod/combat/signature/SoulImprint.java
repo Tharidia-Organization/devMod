@@ -25,6 +25,8 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
+import com.devmod.combat.CombatColors;
+
 public class SoulImprint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SoulImprint.class);
@@ -185,7 +187,7 @@ public class SoulImprint {
     @Nonnull
     public Component getEvolvedName(ItemStack stack) {
         Component hoverName = stack.getHoverName();
-        String baseName = sanitizeName(hoverName != null ? hoverName.getString() : null, FALLBACK_WEAPON_NAME);
+        String baseName = sanitizeName(hoverName.getString(), FALLBACK_WEAPON_NAME);
         String ownerDisplayName = sanitizeName(ownerName, UNKNOWN_OWNER);
         Style baseStyle = requireNonNull(Style.EMPTY, "Style.EMPTY");
         String weaponType = getWeaponType(baseName);
@@ -195,21 +197,21 @@ public class SoulImprint {
             case 1 -> {
                 yield styledLiteral(
                     ownerDisplayName + "'s " + baseName,
-                    baseStyle.withColor(0xAAAAAA)
+                    baseStyle.withColor(CombatColors.ImprintStage.OWNER)
                 );
             }
             case 2 -> {
                 String adjective = resolvePrimaryAdjective("Enhanced");
                 yield styledLiteral(
                     ownerDisplayName + "'s " + adjective + " " + weaponType,
-                    baseStyle.withColor(0x55FF55)
+                    baseStyle.withColor(CombatColors.ImprintStage.ENHANCED)
                 );
             }
             case 3 -> {
                 String adjective = resolvePrimaryAdjective("Legendary");
                 yield styledLiteral(
                     ownerDisplayName + "'s " + adjective + " " + weaponType,
-                    baseStyle.withColor(0x5555FF).withBold(true)
+                    baseStyle.withColor(CombatColors.ImprintStage.LEGENDARY).withBold(true)
                 );
             }
             case 4 -> {
@@ -218,7 +220,7 @@ public class SoulImprint {
                 String title = generateTitle();
                 yield styledLiteral(
                     uniqueName + ", the " + title,
-                    baseStyle.withColor(0xFF55FF).withBold(true).withItalic(true)
+                    baseStyle.withColor(CombatColors.ImprintStage.ASCENDED).withBold(true).withItalic(true)
                 );
             }
             default -> Component.literal(baseName);
@@ -368,10 +370,8 @@ public class SoulImprint {
         // Save traits
         ListTag traitsList = new ListTag();
         for (WeaponTrait trait : unlockedTraits) {
-            String traitId = trait.getId() == null ? null : trait.getId().toString();
-            if (traitId != null) {
-                traitsList.add(StringTag.valueOf(traitId));
-            }
+            String traitId = trait.getId().toString();
+            traitsList.add(StringTag.valueOf(traitId));
         }
         tag.put(NBT_TRAITS, traitsList);
 

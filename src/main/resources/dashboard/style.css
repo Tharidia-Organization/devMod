@@ -186,6 +186,11 @@ main {
     animation: fadeIn 0.3s ease;
 }
 
+/* Utility class for hiding elements - toggled by JavaScript */
+.hidden {
+    display: none !important;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }

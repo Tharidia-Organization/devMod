@@ -3,6 +3,7 @@ package com.devmod.arena.builder;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,8 +65,8 @@ class ArenaBuilderIntegrationTest {
             ValidationResult result = validator.validate(template);
 
             assertFalse(result.valid());
-            assertTrue(result.errorsAsString().toLowerCase().contains("id") ||
-                       result.errorsAsString().toLowerCase().contains("null"),
+            assertTrue(result.errorsAsString().toLowerCase(Locale.ROOT).contains("id") ||
+                       result.errorsAsString().toLowerCase(Locale.ROOT).contains("null"),
                 "Error should mention missing id: " + result.errorsAsString());
         }
 
@@ -78,8 +79,8 @@ class ArenaBuilderIntegrationTest {
             ValidationResult result = validator.validate(template);
 
             assertFalse(result.valid());
-            assertTrue(result.errorsAsString().toLowerCase().contains("size") ||
-                       result.errorsAsString().toLowerCase().contains("min"),
+            assertTrue(result.errorsAsString().toLowerCase(Locale.ROOT).contains("size") ||
+                       result.errorsAsString().toLowerCase(Locale.ROOT).contains("min"),
                 "Error should mention size constraint: " + result.errorsAsString());
         }
 
@@ -92,8 +93,8 @@ class ArenaBuilderIntegrationTest {
             ValidationResult result = validator.validate(template);
 
             assertFalse(result.valid());
-            assertTrue(result.errorsAsString().toLowerCase().contains("size") ||
-                       result.errorsAsString().toLowerCase().contains("max"),
+            assertTrue(result.errorsAsString().toLowerCase(Locale.ROOT).contains("size") ||
+                       result.errorsAsString().toLowerCase(Locale.ROOT).contains("max"),
                 "Error should mention size constraint: " + result.errorsAsString());
         }
 
@@ -274,7 +275,7 @@ class ArenaBuilderIntegrationTest {
             ExecutorService executor = Executors.newFixedThreadPool(numTemplates);
 
             for (int i = 0; i < numTemplates; i++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         // Use the default template which is known to be valid
@@ -319,7 +320,7 @@ class ArenaBuilderIntegrationTest {
             ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
             for (int t = 0; t < numThreads; t++) {
-                executor.submit(() -> {
+                executor.execute(() -> {
                     try {
                         startLatch.await();
                         for (int i = 0; i < iterationsPerThread; i++) {
@@ -431,18 +432,6 @@ class ArenaBuilderIntegrationTest {
     // ========================================================================
     // Helper Methods - Template Creation
     // ========================================================================
-
-    private ArenaTemplate createValidTemplate(String id) {
-        // IDs must be lowercase alphanumeric with underscores only, max 32 chars
-        String validId = id.replaceAll("[^a-z0-9_]", "_").toLowerCase();
-        if (validId.length() > 32) validId = validId.substring(0, 32);
-        return ArenaTemplate.builder(validId)
-            .version(1)
-            .schemaVersion(1)
-            .size(32)
-            .floor(new ArenaTemplate.Floor(64, 1, "minecraft:stone_bricks", "solid", null, 0))
-            .build();
-    }
 
     private ArenaTemplate createTemplateWithoutId() {
         return ArenaTemplate.builder(null)

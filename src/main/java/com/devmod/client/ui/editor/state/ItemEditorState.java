@@ -1,9 +1,5 @@
 package com.devmod.client.ui.editor.state;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
 import javax.annotation.Nullable;
 
 import net.minecraft.world.item.ItemStack;
@@ -14,6 +10,12 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.client.ui.editor.EditorModule;
 import com.devmod.client.ui.editor.components.SlotSelector;
 
+/**
+ * Centralized state holder for ItemEditorScreen.
+ *
+ * <p>Manages: item state, module state, mode flags, slot selection.
+ * All methods are 100% utilized by ItemEditorScreen and ModeController.
+ */
 @OnlyIn(Dist.CLIENT)
 public final class ItemEditorState {
 
@@ -21,8 +23,7 @@ public final class ItemEditorState {
     // CORE ITEM STATE
     // ═══════════════════════════════════════════════════════════════
 
-    private ItemStack item;
-    private final ItemStack originalItem;
+    private final ItemStack item;
 
     // ═══════════════════════════════════════════════════════════════
     // MODULE STATE
@@ -46,12 +47,6 @@ public final class ItemEditorState {
     private SlotSelector.SlotInfo selectedSlot;
 
     // ═══════════════════════════════════════════════════════════════
-    // CHANGE LISTENERS
-    // ═══════════════════════════════════════════════════════════════
-
-    private final List<Consumer<ItemEditorState>> changeListeners = new ArrayList<>();
-
-    // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════
 
@@ -62,7 +57,6 @@ public final class ItemEditorState {
      */
     public ItemEditorState(ItemStack item) {
         this.item = item.copy();
-        this.originalItem = item.copy();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -74,28 +68,6 @@ public final class ItemEditorState {
      */
     public ItemStack getItem() {
         return item;
-    }
-
-    /**
-     * Get the original item (before any edits).
-     */
-    public ItemStack getOriginalItem() {
-        return originalItem;
-    }
-
-    /**
-     * Update the current item.
-     */
-    public void setItem(ItemStack newItem) {
-        this.item = newItem.copy();
-        notifyListeners();
-    }
-
-    /**
-     * Check if the item has been modified from original.
-     */
-    public boolean isDirty() {
-        return !ItemStack.matches(item, originalItem);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -115,7 +87,6 @@ public final class ItemEditorState {
      */
     public void setActiveModule(EditorModule module) {
         this.activeModule = module;
-        notifyListeners();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -134,7 +105,6 @@ public final class ItemEditorState {
      */
     public void setPreviewMode(boolean preview) {
         this.previewMode = preview;
-        notifyListeners();
     }
 
     /**
@@ -149,14 +119,6 @@ public final class ItemEditorState {
      */
     public void setGlobalMode(boolean global) {
         this.globalMode = global;
-        notifyListeners();
-    }
-
-    /**
-     * Toggle between preview and apply mode.
-     */
-    public void togglePreviewMode() {
-        setPreviewMode(!previewMode);
     }
 
     /**
@@ -183,39 +145,6 @@ public final class ItemEditorState {
      */
     public void setSelectedSlot(@Nullable SlotSelector.SlotInfo slot) {
         this.selectedSlot = slot;
-        notifyListeners();
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // CHANGE NOTIFICATION
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * Add a listener that is notified when state changes.
-     */
-    public void addChangeListener(Consumer<ItemEditorState> listener) {
-        changeListeners.add(listener);
-    }
-
-    /**
-     * Remove a change listener.
-     */
-    public void removeChangeListener(Consumer<ItemEditorState> listener) {
-        changeListeners.remove(listener);
-    }
-
-    /**
-     * Remove all change listeners.
-     * Call this on screen close to prevent memory leaks.
-     */
-    public void removeAllListeners() {
-        changeListeners.clear();
-    }
-
-    private void notifyListeners() {
-        for (Consumer<ItemEditorState> listener : changeListeners) {
-            listener.accept(this);
-        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -229,13 +158,5 @@ public final class ItemEditorState {
         String mode = previewMode ? "Preview" : "Apply";
         String scope = globalMode ? "Global" : "Specific";
         return mode + " / " + scope;
-    }
-
-    /**
-     * Reset item to original state.
-     */
-    public void resetToOriginal() {
-        this.item = originalItem.copy();
-        notifyListeners();
     }
 }

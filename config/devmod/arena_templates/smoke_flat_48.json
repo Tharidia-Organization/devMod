@@ -69,7 +69,7 @@
   "mobSpawnStrategy": "DISTRIBUTED",
   "forbiddenZones": [],
   "hazards": [],
-  "environment": { "particles": [], "ambientSound": null, "fog": { "enabled": false, "density": 0.0 } },
+  "environment": { "particles": [], "ambientSound": "minecraft:ambient.cave", "fog": { "enabled": false, "density": 0.0 } },
   "compat": { "minPlayers": 1, "maxPlayers": 4 },
   "instanceSettings": { "chunkRadius": 4, "tickDistance": 4, "keepLoaded": true },
   "structureNbt": null,

@@ -39,6 +39,7 @@ import com.devmod.client.testing.QAEventTracker;
 import com.devmod.client.testing.QANotificationSystem;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.testing.TutorialManager;
+import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.combat.HitHelper;
 import com.devmod.notification.Notification;
@@ -279,6 +280,7 @@ public class ClientModEvents {
         // Clear notifications
         QANotificationSystem.INSTANCE.clear();
         ClientNotificationManager.INSTANCE.clear();
+        com.devmod.client.overlay.ResonanceHudOverlay.INSTANCE.clear();
 
         // Reset QA event tracker state for next world load
         QAEventTracker.resetWorldState();
@@ -289,9 +291,13 @@ public class ClientModEvents {
         com.devmod.client.endurance.ClientCombatFlowCache.INSTANCE.clear();
         com.devmod.endurance.ClientShopCache.clear();
         com.devmod.client.overlay.EnduranceQuestOverlay.resetStateWatcher();
+        com.devmod.client.overlay.ContractHudOverlay.INSTANCE.clear();
 
         // Clear LVC telemetry cache
         com.devmod.client.telemetry.ClientLVCCache.INSTANCE.clear();
+
+        // Clear Season Pass cache
+        com.devmod.client.season.ClientSeasonPassCache.INSTANCE.clear();
 
         // Clear mailbox, news, and task caches
         com.devmod.mailbox.client.ClientMailboxCache.clear();
@@ -301,6 +307,7 @@ public class ClientModEvents {
 
         // Clear ImpactData cache (MULTIPLAYER-SAFE: clears all player entries)
         com.devmod.client.overlay.ImpactData.clearAll();
+        com.devmod.client.overlay.ImpactHudController.INSTANCE.reset();
 
         // Reset UI telemetry open timestamps
         com.devmod.client.telemetry.UiTelemetry.reset();
@@ -312,6 +319,9 @@ public class ClientModEvents {
 
         // Clear environment overrides (frozen time, biome) to prevent stale state on reconnect
         com.devmod.client.environment.ClientEnvironmentCache.clearAll();
+
+        // Clear Epic Fight client cache
+        com.devmod.client.compat.mods.epicfight.ClientEpicFightCache.INSTANCE.clear();
 
         LOGGER.debug("Caches cleared successfully");
     }
@@ -334,7 +344,7 @@ public class ClientModEvents {
 
         @Override
         public void render(@Nonnull GuiGraphics guiGraphics, @Nonnull DeltaTracker deltaTracker) {
-            if (!ModConfig.showOverlay) return;
+            if (!ModConfig.isShowOverlay()) return;
 
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.level == null || mc.font == null) return;
@@ -376,25 +386,28 @@ public class ClientModEvents {
             if (rawReach > 0) {
                 // If > 0, we modified it
                 reachText = I18n.translate("devmod.debug.entity.reach.modified", df.format(rawReach)).getString();
-                reachColor = 0xFFFF00; // Yellow
+                reachColor = OverlayTheme.Debug.ENTITY_REACH_MODIFIED;
             } else {
                 // If 0, it's vanilla value. Calculate it to show user.
                 double estimated = entity.getBbWidth() * 2.0 + 1.0;
                 reachText = I18n.translate("devmod.debug.entity.reach.vanilla", df.format(estimated)).getString();
-                reachColor = 0xAAAAAA; // Gray
+                reachColor = OverlayTheme.Debug.ENTITY_REACH_VANILLA;
             }
 
             // --- DRAWING ---
-            gui.drawString(font, I18n.translate("devmod.debug.entity.name", entity.getName().getString()).getString(), x, y, 0xFFFF00);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.name", entity.getName().getString()).getString(), x, y,
+                OverlayTheme.Debug.ENTITY_NAME);
             y += lineHeight;
 
-            gui.drawString(font, I18n.translate("devmod.debug.entity.hp", df.format(hp), df.format(maxHp)).getString(), x, y, 0xFF5555);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.hp", df.format(hp), df.format(maxHp)).getString(), x, y,
+                OverlayTheme.Debug.ENTITY_HP);
             y += lineHeight;
 
             // Armor
             float damageReduction = armor * 4.0f;
             if (damageReduction > 80.0f) damageReduction = 80.0f;
-            gui.drawString(font, I18n.translate("devmod.debug.entity.armor", armor, (int)damageReduction).getString(), x, y, 0x5555FF);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.armor", armor, (int)damageReduction).getString(), x, y,
+                OverlayTheme.Debug.ENTITY_ARMOR);
             y += lineHeight;
 
             // Damage
@@ -402,7 +415,8 @@ public class ClientModEvents {
             var dmgAttr = entity.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
             if (dmgAttr != null) dmg = dmgAttr.getValue();
             if (dmg > 0) {
-                gui.drawString(font, I18n.translate("devmod.debug.entity.damage", df.format(dmg), df.format(dmg/2.0)).getString(), x, y, 0xFFAAAA);
+                gui.drawString(font, I18n.translate("devmod.debug.entity.damage", df.format(dmg), df.format(dmg / 2.0)).getString(), x, y,
+                    OverlayTheme.Debug.ENTITY_DAMAGE);
                 y += lineHeight;
             }
 
@@ -410,7 +424,8 @@ public class ClientModEvents {
             double follow = 0;
             var followAttr = entity.getAttribute(Objects.requireNonNull(Attributes.FOLLOW_RANGE));
             if (followAttr != null) follow = followAttr.getValue();
-            gui.drawString(font, I18n.translate("devmod.debug.entity.follow_range", df.format(follow)).getString(), x, y, 0x00FF00);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.follow_range", df.format(follow)).getString(), x, y,
+                OverlayTheme.Debug.ENTITY_FOLLOW_RANGE);
             y += lineHeight;
 
             // REACH
@@ -423,7 +438,8 @@ public class ClientModEvents {
                 var tgt = mob.getTarget();
                 if (tgt != null) target = tgt.getName().getString();
             }
-            gui.drawString(font, I18n.translate("devmod.debug.entity.target", target).getString(), x, y, 0xFFA500);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.target", target).getString(), x, y,
+                OverlayTheme.Debug.ENTITY_TARGET);
         }
     }
 }

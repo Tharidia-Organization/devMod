@@ -76,16 +76,7 @@ public class RoomBoundsEditorScreen extends Screen {
     // === Widgets ===
     @Nullable
     private EditBox roomNameBox;
-    @Nullable
-    private EditorButton setPointAButton;
-    @Nullable
-    private EditorButton setPointBButton;
-    @Nullable
-    private EditorButton saveButton;
-    @Nullable
-    private EditorButton cancelButton;
-    @Nullable
-    private EditorButton deleteLastButton;
+    // Note: Button fields removed - not needed as buttons are managed by addRenderableWidget()
 
     // Modal overlays
     @Nullable
@@ -110,6 +101,16 @@ public class RoomBoundsEditorScreen extends Screen {
     protected void init() {
         super.init();
 
+        // Sync state from visualizer if local static fields are null
+        // This handles the case where pending points were set in a previous session
+        // but the static fields were cleared (e.g., after game restart)
+        if (pointA == null && RoomBoundsVisualizer.INSTANCE.getPendingPointA() != null) {
+            pointA = RoomBoundsVisualizer.INSTANCE.getPendingPointA();
+        }
+        if (pointB == null && RoomBoundsVisualizer.INSTANCE.getPendingPointB() != null) {
+            pointB = RoomBoundsVisualizer.INSTANCE.getPendingPointB();
+        }
+
         // Load existing rooms
         loadExistingRooms();
 
@@ -131,67 +132,59 @@ public class RoomBoundsEditorScreen extends Screen {
             "roomName"
         );
         pendingRoomName = roomName;
-        roomNameBox = new EditBox(safeFont, panelX + 90, panelY + 50, 200, 18, I18n.ui("room_name"));
-        roomNameBox.setMaxLength(64);
-        roomNameBox.setValue(roomName);
-        roomNameBox.setHint(I18n.ui("enter_room_name_hint"));
-        roomNameBox.setResponder(s -> pendingRoomName = s); // Salva mentre digita
-        addRenderableWidget(roomNameBox);
+        // Local capture for null safety - field is @Nullable but we just assigned it
+        EditBox nameBox = new EditBox(safeFont, panelX + 90, panelY + 50, 200, 18, I18n.ui("room_name"));
+        roomNameBox = nameBox;
+        nameBox.setMaxLength(64);
+        nameBox.setValue(roomName);
+        nameBox.setHint(I18n.ui("enter_room_name_hint"));
+        nameBox.setResponder(s -> pendingRoomName = s); // Salva mentre digita
+        addRenderableWidget(nameBox);
 
         // Set Point A Button
         String setPointALabel = Objects.requireNonNull(I18n.ui("set_point_a").getString(), "setPointALabel");
-        setPointAButton = EditorButton.builder("set-point-a", setPointALabel)
+        addRenderableWidget(EditorButton.builder("set-point-a", setPointALabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(() -> invokeAction(ActionIds.UI_ROOM_BOUNDS_POINT_A))
-            .build();
-        addRenderableWidget(Objects.requireNonNull(
-            setPointAButton.asVanilla(panelX + 20, panelY + 80, 130, 20),
-            "setPointA button"));
+            .build()
+            .asVanilla(panelX + 20, panelY + 80, 130, 20));
 
         // Set Point B Button
         String setPointBLabel = Objects.requireNonNull(I18n.ui("set_point_b").getString(), "setPointBLabel");
-        setPointBButton = EditorButton.builder("set-point-b", setPointBLabel)
+        addRenderableWidget(EditorButton.builder("set-point-b", setPointBLabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(() -> invokeAction(ActionIds.UI_ROOM_BOUNDS_POINT_B))
-            .build();
-        addRenderableWidget(Objects.requireNonNull(
-            setPointBButton.asVanilla(panelX + 170, panelY + 80, 130, 20),
-            "setPointB button"));
+            .build()
+            .asVanilla(panelX + 170, panelY + 80, 130, 20));
 
         // Save Button
         String saveLabel = Objects.requireNonNull(I18n.ui("save_room").getString(), "saveLabel");
-        saveButton = EditorButton.builder("save-room", saveLabel)
+        addRenderableWidget(EditorButton.builder("save-room", saveLabel)
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.MEDIUM)
             .onClick(() -> invokeAction(ActionIds.UI_ROOM_BOUNDS_SAVE))
-            .build();
-        addRenderableWidget(Objects.requireNonNull(
-            saveButton.asVanilla(panelX + 20, panelY + 200, 130, 20),
-            "save button"));
+            .build()
+            .asVanilla(panelX + 20, panelY + 200, 130, 20));
 
         // Cancel Button
         String cancelLabel = Objects.requireNonNull(I18n.ui("cancel").getString(), "cancelLabel");
-        cancelButton = EditorButton.builder("cancel", cancelLabel)
+        addRenderableWidget(EditorButton.builder("cancel", cancelLabel)
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
-            .build();
-        addRenderableWidget(Objects.requireNonNull(
-            cancelButton.asVanilla(panelX + 170, panelY + 200, 130, 20),
-            "cancel button"));
+            .build()
+            .asVanilla(panelX + 170, panelY + 200, 130, 20));
 
         // Delete Last Room Button
         String deleteLabel = Objects.requireNonNull(I18n.ui("delete_last").getString(), "deleteLabel");
-        deleteLastButton = EditorButton.builder("delete-last-room", deleteLabel)
+        addRenderableWidget(EditorButton.builder("delete-last-room", deleteLabel)
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::deleteLastRoom)
-            .build();
-        addRenderableWidget(Objects.requireNonNull(
-            deleteLastButton.asVanilla(panelX + 20, panelY + 230, 130, 20),
-            "delete button"));
+            .build()
+            .asVanilla(panelX + 20, panelY + 230, 130, 20));
 
         initDialogs();
     }
@@ -296,21 +289,24 @@ public class RoomBoundsEditorScreen extends Screen {
             return;
         }
 
-        if (pointA == null || pointB == null) {
+        // Local capture for null safety - static fields are @Nullable
+        BlockPos ptA = pointA;
+        BlockPos ptB = pointB;
+        if (ptA == null || ptB == null) {
             setStatus("Error: Set both Point A and Point B!", TEXT_ERROR);
             return;
         }
 
         // Calculate min/max
         BlockPos min = new BlockPos(
-                Math.min(pointA.getX(), pointB.getX()),
-                Math.min(pointA.getY(), pointB.getY()),
-                Math.min(pointA.getZ(), pointB.getZ())
+                Math.min(ptA.getX(), ptB.getX()),
+                Math.min(ptA.getY(), ptB.getY()),
+                Math.min(ptA.getZ(), ptB.getZ())
         );
         BlockPos max = new BlockPos(
-                Math.max(pointA.getX(), pointB.getX()),
-                Math.max(pointA.getY(), pointB.getY()),
-                Math.max(pointA.getZ(), pointB.getZ())
+                Math.max(ptA.getX(), ptB.getX()),
+                Math.max(ptA.getY(), ptB.getY()),
+                Math.max(ptA.getZ(), ptB.getZ())
         );
 
         // Create new room definition
@@ -348,10 +344,12 @@ public class RoomBoundsEditorScreen extends Screen {
             return;
         }
 
-        pendingDeleteRoom = existingRooms.get(existingRooms.size() - 1);
+        // Local capture for null safety - field is @Nullable
+        RoomDefinition roomToDelete = existingRooms.get(existingRooms.size() - 1);
+        pendingDeleteRoom = roomToDelete;
         ConfirmDialog deleteDialog = Objects.requireNonNull(this.deleteDialog, "deleteDialog");
         deleteDialog.configure(
-            "Delete room '" + pendingDeleteRoom.id() + "'?",
+            "Delete room '" + roomToDelete.id() + "'?",
             List.of(
                 "This will remove the most recently saved room.",
                 "This action cannot be undone."
@@ -419,11 +417,13 @@ public class RoomBoundsEditorScreen extends Screen {
         int pointBColor = pointB != null ? TEXT_ACCENT : TEXT_DIM;
         safeGraphics.drawString(safeFont, "Point B: " + pointBText, panelX + 20, panelY + 125, pointBColor);
 
-        // Room size preview
-        if (pointA != null && pointB != null) {
-            int sizeX = Math.abs(pointB.getX() - pointA.getX()) + 1;
-            int sizeY = Math.abs(pointB.getY() - pointA.getY()) + 1;
-            int sizeZ = Math.abs(pointB.getZ() - pointA.getZ()) + 1;
+        // Room size preview - local capture for null safety on static @Nullable fields
+        BlockPos ptA = pointA;
+        BlockPos ptB = pointB;
+        if (ptA != null && ptB != null) {
+            int sizeX = Math.abs(ptB.getX() - ptA.getX()) + 1;
+            int sizeY = Math.abs(ptB.getY() - ptA.getY()) + 1;
+            int sizeZ = Math.abs(ptB.getZ() - ptA.getZ()) + 1;
             String sizeText = String.format("Size: %dx%dx%d (%d blocks)", sizeX, sizeY, sizeZ, sizeX * sizeY * sizeZ);
             safeGraphics.drawString(safeFont, sizeText, panelX + 20, panelY + 145, TEXT_ACCENT);
         }
@@ -471,7 +471,7 @@ public class RoomBoundsEditorScreen extends Screen {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
         if (a < 0) a = 0;
         if (a > 255) a = 255;
-        return (a << 24) | (color & 0x00FFFFFF);
+        return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
     @Override
@@ -755,15 +755,17 @@ public class RoomBoundsEditorScreen extends Screen {
     }
 
     private void deletePendingRoom() {
-        if (pendingDeleteRoom == null) {
+        // Local capture for null safety - field is @Nullable
+        RoomDefinition roomToDelete = pendingDeleteRoom;
+        if (roomToDelete == null) {
             return;
         }
 
         List<RoomDefinition> backup = new ArrayList<>(existingRooms);
-        existingRooms.removeIf(room -> room.id().equals(pendingDeleteRoom.id()));
+        existingRooms.removeIf(room -> room.id().equals(roomToDelete.id()));
 
         if (saveRoomsToFile()) {
-            setStatus("Deleted room: " + pendingDeleteRoom.id(), TEXT_WARNING);
+            setStatus("Deleted room: " + roomToDelete.id(), TEXT_WARNING);
             RoomBoundsVisualizer.INSTANCE.reload();
         } else {
             existingRooms = backup;

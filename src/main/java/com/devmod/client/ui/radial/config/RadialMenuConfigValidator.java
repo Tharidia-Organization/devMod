@@ -6,8 +6,13 @@ import java.util.List;
 import java.util.Set;
 
 import com.devmod.actions.ActionRegistry;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.CategoryConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.MacroCategoryConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.MenuItemConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.RootConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.SubcategoryConfig;
+import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.ValidationResult;
 import com.devmod.client.ui.radial.model.MacroCategory;
-import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.*;
 
 /**
  * Validates radial menu configuration at load time.
@@ -122,8 +127,10 @@ public final class RadialMenuConfigValidator {
         }
 
         // Validate subcategories
-        if (cat.subcategories() != null) {
-            for (SubcategoryConfig sub : cat.subcategories()) {
+        // Local capture for null safety
+        List<SubcategoryConfig> subcats = cat.subcategories();
+        if (subcats != null) {
+            for (SubcategoryConfig sub : subcats) {
                 validateSubcategory(sub, cat.id(), subcategoryIds, errors, warnings, 1);
             }
         }
@@ -164,8 +171,10 @@ public final class RadialMenuConfigValidator {
         }
 
         // Recursive validation
-        if (sub.subcategories() != null) {
-            for (SubcategoryConfig nested : sub.subcategories()) {
+        // Local capture for null safety
+        List<SubcategoryConfig> nestedSubs = sub.subcategories();
+        if (nestedSubs != null) {
+            for (SubcategoryConfig nested : nestedSubs) {
                 validateSubcategory(nested, fullId, subcategoryIds, errors, warnings, depth + 1);
             }
         }
@@ -194,16 +203,21 @@ public final class RadialMenuConfigValidator {
         }
 
         // Validate visibility supplier reference
-        if (item.visibilitySupplier() != null && !item.visibilitySupplier().isEmpty()) {
-            if (!VisibilitySupplierRegistry.exists(item.visibilitySupplier())) {
-                warnings.add(context + " references unknown visibility supplier: " + item.visibilitySupplier());
+        // Local capture for null safety
+        String visSupplier = item.visibilitySupplier();
+        if (visSupplier != null && !visSupplier.isEmpty()) {
+            if (!VisibilitySupplierRegistry.exists(visSupplier)) {
+                warnings.add(context + " references unknown visibility supplier: " + visSupplier
+                    + ". Valid suppliers: " + VisibilitySupplierRegistry.getRegisteredIds());
             }
         }
 
         // Validate custom color format
-        if (item.customColor() != null && !item.customColor().isEmpty()) {
-            if (!isValidColorFormat(item.customColor())) {
-                warnings.add(context + " has invalid color format: " + item.customColor());
+        // Local capture for null safety
+        String customCol = item.customColor();
+        if (customCol != null && !customCol.isEmpty()) {
+            if (!isValidColorFormat(customCol)) {
+                warnings.add(context + " has invalid color format: " + customCol);
             }
         }
     }

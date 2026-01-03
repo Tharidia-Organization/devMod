@@ -19,6 +19,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.rendering.HeatmapType;
 
@@ -312,7 +313,7 @@ public class HeatmapVisualizer {
             b = 0;
         }
 
-        return 0xFF000000 | ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | (int)(b * 255);
+        return DesignTokens.Mask.ALPHA | ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
     }
 
     private void renderSolidBox(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose, AABB box,

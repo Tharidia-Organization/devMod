@@ -91,11 +91,11 @@ public class RewardSystem {
      * Currency types in the system.
      */
     public enum Currency {
-        TOKENS("Endurance Tokens", 0xFFD700, "tokens"),      // Main currency from quests
-        COINS("Coins", 0xC0C0C0, "coins"),                    // General-purpose currency
-        PRESTIGE("Prestige Points", 0xFF00FF, "prestige"),    // Earned from completing hard content
-        GEMS("Gems", 0x00B4FF, "gems"),                       // Premium currency
-        BLOOD_GEMS("Blood Gems", 0xFF3333, "blood_gems");     // Rare currency from bosses
+        TOKENS("Endurance Tokens", EnduranceColors.Currency.TOKENS, "tokens"),      // Main currency from quests
+        COINS("Coins", EnduranceColors.Currency.COINS, "coins"),                    // General-purpose currency
+        PRESTIGE("Prestige Points", EnduranceColors.Currency.PRESTIGE, "prestige"), // Earned from completing hard content
+        GEMS("Gems", EnduranceColors.Currency.GEMS, "gems"),                         // Premium currency
+        BLOOD_GEMS("Blood Gems", EnduranceColors.Currency.BLOOD_GEMS, "blood_gems"); // Rare currency from bosses
 
         public final String displayName;
         public final int color;
@@ -112,12 +112,12 @@ public class RewardSystem {
      * Loot rarity tiers.
      */
     public enum LootTier {
-        COMMON(0xAAAAAA, 60.0f, "Common"),
-        UNCOMMON(0x55FF55, 25.0f, "Uncommon"),
-        RARE(0x5555FF, 10.0f, "Rare"),
-        EPIC(0xAA00AA, 4.0f, "Epic"),
-        LEGENDARY(0xFFAA00, 1.0f, "Legendary"),
-        MYTHIC(0xFF5555, 0.0f, "Mythic"); // Never drops randomly, only from achievements
+        COMMON(EnduranceColors.LootTier.COMMON, 60.0f, "Common"),
+        UNCOMMON(EnduranceColors.LootTier.UNCOMMON, 25.0f, "Uncommon"),
+        RARE(EnduranceColors.LootTier.RARE, 10.0f, "Rare"),
+        EPIC(EnduranceColors.LootTier.EPIC, 4.0f, "Epic"),
+        LEGENDARY(EnduranceColors.LootTier.LEGENDARY, 1.0f, "Legendary"),
+        MYTHIC(EnduranceColors.LootTier.MYTHIC, 0.0f, "Mythic"); // Never drops randomly, only from achievements
 
         public final int color;
         public final float dropWeight;
@@ -215,7 +215,7 @@ public class RewardSystem {
         boolean hasHazards = false;
         if (templateId != null) {
             ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
-            ArenaTemplate template = registry != null ? registry.get(templateId).orElse(null) : null;
+            ArenaTemplate template = registry.get(templateId).orElse(null);
             hasHazards = template != null && template.hazards() != null && !template.hazards().isEmpty();
         }
 
@@ -558,7 +558,7 @@ public class RewardSystem {
             applyPurchaseEffects(player, item);
 
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.purchased", item.displayName)
-                .withStyle(style -> style.withColor(0x55FF55))));
+                .withStyle(style -> style.withColor(EnduranceColors.LootTier.UNCOMMON))));
 
             return new PurchaseResult(true, I18n.translate("devmod.reward.purchase_successful").getString());
         }
@@ -1121,10 +1121,10 @@ public class RewardSystem {
      * Shop categories.
      */
     public enum ShopCategory {
-        STATS("Stats", 0x55FF55),
-        PERKS("Perks", 0x5555FF),
-        UTILITY("Utility", 0xFFFF55),
-        COSMETICS("Cosmetics", 0xFF55FF);
+        STATS("Stats", EnduranceColors.RewardCategory.STATS),
+        PERKS("Perks", EnduranceColors.RewardCategory.PERKS),
+        UTILITY("Utility", EnduranceColors.RewardCategory.UTILITY),
+        COSMETICS("Cosmetics", EnduranceColors.RewardCategory.COSMETICS);
 
         public final String displayName;
         public final int color;

@@ -28,10 +28,12 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.ItemPickerOverlay;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.mailbox.MailboxConfig;
 import com.devmod.mailbox.attachment.CurrencyAttachment;
 import com.devmod.mailbox.attachment.ItemAttachment;
 import com.devmod.mailbox.attachment.MailAttachment;
+import com.devmod.mailbox.client.MailboxUiTheme;
 import com.devmod.mailbox.network.payload.MailboxSendPayload;
 
 /**
@@ -234,7 +236,7 @@ public class MailboxComposeScreen extends Screen {
             .onItemSelected(this::onItemPicked)
             .onTagSelected(tag -> {
                 errorMessage = "Tags are not supported for attachments";
-                DesignTokens.Sound.warning();
+                UiSounds.warning();
             });
     }
 
@@ -263,7 +265,7 @@ public class MailboxComposeScreen extends Screen {
     }
 
     private void renderPanel(GuiGraphics graphics) {
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xE8101820);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, MailboxUiTheme.Panel.BG);
 
         int borderColor = DesignTokens.Border.DEFAULT();
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 1, borderColor);
@@ -416,7 +418,7 @@ public class MailboxComposeScreen extends Screen {
         errorMessage = null;
         if (!MailboxConfig.INSTANCE.isItemAttachmentsEnabled()) {
             errorMessage = "Item attachments are disabled";
-            DesignTokens.Sound.error();
+            UiSounds.error();
             return;
         }
 
@@ -435,27 +437,27 @@ public class MailboxComposeScreen extends Screen {
 
         int count = parsePositiveInt(itemCount.box.getValue(), 1, "Item count");
         if (count <= 0) {
-            DesignTokens.Sound.error();
+            UiSounds.error();
             return;
         }
 
         ItemAttachment attachmentData = ItemAttachment.of(itemIdInput, count);
         if (attachmentData == null) {
             errorMessage = "Invalid item ID";
-            DesignTokens.Sound.error();
+            UiSounds.error();
             return;
         }
 
         attachment.box.setValue(Objects.requireNonNull(attachmentData.toJson().toString()));
         attachment.box.setFocused(true);
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     private void onUseCurrencyClicked() {
         errorMessage = null;
         if (!MailboxConfig.INSTANCE.isCurrencyAttachmentsEnabled()) {
             errorMessage = "Currency attachments are disabled";
-            DesignTokens.Sound.error();
+            UiSounds.error();
             return;
         }
 
@@ -481,14 +483,14 @@ public class MailboxComposeScreen extends Screen {
 
         int amount = parsePositiveInt(currencyAmount.box.getValue(), 10, "Amount");
         if (amount <= 0) {
-            DesignTokens.Sound.error();
+            UiSounds.error();
             return;
         }
 
         CurrencyAttachment attachmentData = new CurrencyAttachment(type, amount);
         attachment.box.setValue(Objects.requireNonNull(attachmentData.toJson().toString()));
         attachment.box.setFocused(true);
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     private void onClearAttachment() {
@@ -499,7 +501,7 @@ public class MailboxComposeScreen extends Screen {
         }
         attachment.box.setValue("");
         attachment.box.setFocused(true);
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     private void onItemPicked(ItemStack stack) {
@@ -519,7 +521,7 @@ public class MailboxComposeScreen extends Screen {
             return;
         }
         overlay.show();
-        DesignTokens.Sound.click();
+        UiSounds.click();
     }
 
     private void onSendClicked() {
@@ -584,7 +586,7 @@ public class MailboxComposeScreen extends Screen {
             attachmentInput
         ));
 
-        DesignTokens.Sound.success();
+        UiSounds.success();
         onClose();
     }
 

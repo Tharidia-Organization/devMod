@@ -132,7 +132,10 @@ public class MobPresetManager {
     public static void save() {
         Path file = ConfigPaths.getConfigDir().resolve(PRESETS_FILE);
         try {
-            Files.createDirectories(file.getParent());
+            Path parent = file.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
             try (Writer writer = Files.newBufferedWriter(file)) {
                 GSON.toJson(userPresets, writer);
             }

@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.abilities.StaminaSystem;
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 @OnlyIn(Dist.CLIENT)
 public class StaminaSystemEditor extends Screen {
@@ -28,12 +29,12 @@ public class StaminaSystemEditor extends Screen {
     private static final int FIELD_LINE_HEIGHT = 20;
     private static final int INSTRUCTIONS_OFFSET_Y = 20;
 
-    private static final int OVERLAY_BG = 0x80000000;
-    private static final int PANEL_BG = 0xFF2D2D30;
-    private static final int TITLE_TEXT_COLOR = 0xFFFFFFFF;
-    private static final int SELECTED_FIELD_COLOR = 0xFFFFFF00;
-    private static final int NORMAL_FIELD_COLOR = 0xFFCCCCCC;
-    private static final int INSTRUCTIONS_COLOR = 0xFF888888;
+    private static final int OVERLAY_BG = DesignTokens.StaminaEditor.OVERLAY_BG;
+    private static final int PANEL_BG = DesignTokens.StaminaEditor.PANEL_BG;
+    private static final int TITLE_TEXT_COLOR = DesignTokens.StaminaEditor.TITLE_TEXT;
+    private static final int SELECTED_FIELD_COLOR = DesignTokens.StaminaEditor.SELECTED_FIELD;
+    private static final int NORMAL_FIELD_COLOR = DesignTokens.StaminaEditor.NORMAL_FIELD;
+    private static final int INSTRUCTIONS_COLOR = DesignTokens.StaminaEditor.INSTRUCTIONS;
 
     private static final float ADJUST_STEP = 0.1f;
     private static final float VALUE_SCALE = 10.0f;

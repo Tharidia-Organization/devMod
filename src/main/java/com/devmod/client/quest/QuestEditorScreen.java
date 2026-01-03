@@ -58,35 +58,17 @@ public class QuestEditorScreen extends ModScreen {
     @Nullable
     private EditBox newTaskDescField;
 
-    // Buttons
-    @Nullable
-    private EditorButton addQuestBtn;
-    @Nullable
-    private Button addQuestBtnWidget;
-    @Nullable
-    private EditorButton deleteQuestBtn;
+    // Button widgets (only stored for state updates - active/enabled toggling)
     @Nullable
     private Button deleteQuestBtnWidget;
     @Nullable
-    private EditorButton addTaskBtn;
-    @Nullable
     private Button addTaskBtnWidget;
-    @Nullable
-    private EditorButton deleteTaskBtn;
     @Nullable
     private Button deleteTaskBtnWidget;
     @Nullable
-    private EditorButton completeTaskBtn;
-    @Nullable
     private Button completeTaskBtnWidget;
     @Nullable
-    private EditorButton setActiveBtn;
-    @Nullable
     private Button setActiveBtnWidget;
-    @Nullable
-    private EditorButton newEnduranceBtn;
-    @Nullable
-    private Button newEnduranceBtnWidget;
 
     // Change listener reference for cleanup
     @Nullable
@@ -103,24 +85,15 @@ public class QuestEditorScreen extends ModScreen {
     private boolean enduranceEndless = false;
     @Nullable
     private EditBox mobSearchField;
-    @Nullable
-    private EditorButton startEnduranceBtn;
+    // Modal button widgets (EditorButton instances are transient)
     @Nullable
     private Button startEnduranceBtnWidget;
     @Nullable
-    private EditorButton cancelEnduranceBtn;
-    @Nullable
     private Button cancelEnduranceBtnWidget;
-    @Nullable
-    private EditorButton wavesMinusBtn;
     @Nullable
     private Button wavesMinusBtnWidget;
     @Nullable
-    private EditorButton wavesPlusBtn;
-    @Nullable
     private Button wavesPlusBtnWidget;
-    @Nullable
-    private EditorButton endlessModeBtn;
     @Nullable
     private Button endlessModeBtnWidget;
 
@@ -156,112 +129,128 @@ public class QuestEditorScreen extends ModScreen {
         int noteFieldX = QUEST_LIST_WIDTH + TASK_LIST_WIDTH + PADDING * 3;
         int noteFieldWidth = width - noteFieldX - PADDING;
 
-        questNoteField = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 40, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.quest_note"));
-        questNoteField.setMaxLength(200);
-        questNoteField.setHint(I18n.translate("devmod.quest.quest_note_hint"));
-        if (selectedQuest != null && selectedQuest.hasQuestNote()) {
-            questNoteField.setValue(Objects.requireNonNull(selectedQuest.getQuestNote(), "questNote"));
+        EditBox questNoteBox = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 40, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.quest_note"));
+        questNoteBox.setMaxLength(200);
+        questNoteBox.setHint(I18n.translate("devmod.quest.quest_note_hint"));
+        QuestData currentQuest = selectedQuest;
+        if (currentQuest != null && currentQuest.hasQuestNote()) {
+            String questNote = currentQuest.getQuestNote();
+            if (questNote != null) {
+                questNoteBox.setValue(questNote);
+            }
         }
-        questNoteField.setResponder(this::onQuestNoteChanged);
-        this.addRenderableWidget(questNoteField);
+        questNoteBox.setResponder(this::onQuestNoteChanged);
+        this.questNoteField = questNoteBox;
+        this.addRenderableWidget(questNoteBox);
 
         // === Task Note Field ===
-        taskNoteField = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 120, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.task_note"));
-        taskNoteField.setMaxLength(200);
-        taskNoteField.setHint(I18n.translate("devmod.quest.task_note_hint"));
-        if (selectedTask != null && selectedTask.hasNote()) {
-            taskNoteField.setValue(Objects.requireNonNull(selectedTask.getNote(), "taskNote"));
+        EditBox taskNoteBox = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 120, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.task_note"));
+        taskNoteBox.setMaxLength(200);
+        taskNoteBox.setHint(I18n.translate("devmod.quest.task_note_hint"));
+        QuestTask currentTask = selectedTask;
+        if (currentTask != null && currentTask.hasNote()) {
+            String taskNote = currentTask.getNote();
+            if (taskNote != null) {
+                taskNoteBox.setValue(taskNote);
+            }
         }
-        taskNoteField.setResponder(this::onTaskNoteChanged);
-        this.addRenderableWidget(taskNoteField);
+        taskNoteBox.setResponder(this::onTaskNoteChanged);
+        this.taskNoteField = taskNoteBox;
+        this.addRenderableWidget(taskNoteBox);
 
         // === New Quest Name Field ===
-        newQuestNameField = new EditBox(Objects.requireNonNull(font), PADDING, height - 55, QUEST_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_quest"));
-        newQuestNameField.setMaxLength(50);
-        newQuestNameField.setHint(I18n.translate("devmod.quest.new_quest_hint"));
-        this.addRenderableWidget(newQuestNameField);
+        EditBox newQuestBox = new EditBox(Objects.requireNonNull(font), PADDING, height - 55, QUEST_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_quest"));
+        newQuestBox.setMaxLength(50);
+        newQuestBox.setHint(I18n.translate("devmod.quest.new_quest_hint"));
+        this.newQuestNameField = newQuestBox;
+        this.addRenderableWidget(newQuestBox);
 
         // === New Task Description Field ===
         int taskFieldX = QUEST_LIST_WIDTH + PADDING * 2;
-        newTaskDescField = new EditBox(Objects.requireNonNull(font), taskFieldX, height - 55, TASK_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_task"));
-        newTaskDescField.setMaxLength(100);
-        newTaskDescField.setHint(I18n.translate("devmod.quest.new_task_hint"));
-        this.addRenderableWidget(newTaskDescField);
+        EditBox newTaskBox = new EditBox(Objects.requireNonNull(font), taskFieldX, height - 55, TASK_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_task"));
+        newTaskBox.setMaxLength(100);
+        newTaskBox.setHint(I18n.translate("devmod.quest.new_task_hint"));
+        this.newTaskDescField = newTaskBox;
+        this.addRenderableWidget(newTaskBox);
 
         // === Buttons ===
-        // Add Quest Button (+)
-        addQuestBtn = EditorButton.builder("quest-add", I18n.ui("add_symbol").getString())
+        // Add Quest Button (+) - no state updates needed, just register
+        this.addRenderableWidget(EditorButton.builder("quest-add", I18n.ui("add_symbol").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.SMALL)
             .onClick(this::addNewQuest)
-            .build();
-        addQuestBtnWidget = Objects.requireNonNull(addQuestBtn.asVanilla(PADDING + QUEST_LIST_WIDTH - 22, height - 55, 20, 18));
-        this.addRenderableWidget(addQuestBtnWidget);
+            .build()
+            .asVanilla(PADDING + QUEST_LIST_WIDTH - 22, height - 55, 20, 18));
 
         // Delete Quest Button
-        deleteQuestBtn = EditorButton.builder("quest-delete", I18n.ui("delete_symbol").getString())
+        Button deleteQuestWidget = EditorButton.builder("quest-delete", I18n.ui("delete_symbol").getString())
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.SMALL)
             .onClick(this::deleteSelectedQuest)
-            .build();
-        deleteQuestBtnWidget = Objects.requireNonNull(deleteQuestBtn.asVanilla(PADDING + QUEST_LIST_WIDTH - 22, contentTop, 20, 18));
-        deleteQuestBtnWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_quest")));
-        this.addRenderableWidget(Objects.requireNonNull(deleteQuestBtnWidget));
+            .build()
+            .asVanilla(PADDING + QUEST_LIST_WIDTH - 22, contentTop, 20, 18);
+        deleteQuestWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_quest")));
+        this.deleteQuestBtnWidget = deleteQuestWidget;
+        this.addRenderableWidget(deleteQuestWidget);
 
         // Add Task Button (+)
-        addTaskBtn = EditorButton.builder("task-add", I18n.ui("add_symbol").getString())
+        Button addTaskWidget = EditorButton.builder("task-add", I18n.ui("add_symbol").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.SMALL)
             .onClick(this::addNewTask)
-            .build();
-        addTaskBtnWidget = Objects.requireNonNull(addTaskBtn.asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, height - 55, 20, 18));
-        this.addRenderableWidget(addTaskBtnWidget);
+            .build()
+            .asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, height - 55, 20, 18);
+        this.addTaskBtnWidget = addTaskWidget;
+        this.addRenderableWidget(addTaskWidget);
 
         // Delete Task Button
-        deleteTaskBtn = EditorButton.builder("task-delete", I18n.ui("delete_symbol").getString())
+        Button deleteTaskWidget = EditorButton.builder("task-delete", I18n.ui("delete_symbol").getString())
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.SMALL)
             .onClick(this::deleteSelectedTask)
-            .build();
-        deleteTaskBtnWidget = Objects.requireNonNull(deleteTaskBtn.asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, contentTop, 20, 18));
-        deleteTaskBtnWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_task")));
-        this.addRenderableWidget(Objects.requireNonNull(deleteTaskBtnWidget));
+            .build()
+            .asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, contentTop, 20, 18);
+        deleteTaskWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_task")));
+        this.deleteTaskBtnWidget = deleteTaskWidget;
+        this.addRenderableWidget(deleteTaskWidget);
 
         // Complete Task Button
-        completeTaskBtn = EditorButton.builder("task-complete", I18n.ui("complete_with_icon").getString())
+        Button completeTaskWidget = EditorButton.builder("task-complete", I18n.ui("complete_with_icon").getString())
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::completeSelectedTask)
-            .build();
-        completeTaskBtnWidget = Objects.requireNonNull(completeTaskBtn.asVanilla(noteFieldX, contentTop + 150, 100, 20));
-        this.addRenderableWidget(completeTaskBtnWidget);
+            .build()
+            .asVanilla(noteFieldX, contentTop + 150, 100, 20);
+        this.completeTaskBtnWidget = completeTaskWidget;
+        this.addRenderableWidget(completeTaskWidget);
 
         // Set Active Quest Button
-        setActiveBtn = EditorButton.builder("quest-set-active", I18n.ui("activate_with_icon").getString())
+        Button setActiveWidget = EditorButton.builder("quest-set-active", I18n.ui("activate_with_icon").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::setActiveQuest)
-            .build();
-        setActiveBtnWidget = Objects.requireNonNull(setActiveBtn.asVanilla(noteFieldX + 110, contentTop + 150, 80, 20));
-        this.addRenderableWidget(setActiveBtnWidget);
+            .build()
+            .asVanilla(noteFieldX + 110, contentTop + 150, 80, 20);
+        this.setActiveBtnWidget = setActiveWidget;
+        this.addRenderableWidget(setActiveWidget);
 
         // Close Button
-        this.addRenderableWidget(Objects.requireNonNull(EditorButton.builder("quest-close", I18n.ui("close").getString())
+        this.addRenderableWidget(EditorButton.builder("quest-close", I18n.ui("close").getString())
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build()
-            .asVanilla(width / 2 - 50, height - 28, 100, 20)));
+            .asVanilla(width / 2 - 50, height - 28, 100, 20));
 
-        // === NEW: Endurance Quest Button ===
-        newEnduranceBtn = EditorButton.builder("quest-endurance", I18n.ui("endurance_quest").getString())
+        // === NEW: Endurance Quest Button === (no state updates needed)
+        Button newEnduranceWidget = EditorButton.builder("quest-endurance", I18n.ui("endurance_quest").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::openEnduranceModal)
-            .build();
-        newEnduranceBtnWidget = Objects.requireNonNull(newEnduranceBtn.asVanilla(PADDING, height - 28, 90, 20));
-        newEnduranceBtnWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.create_endurance")));
-        this.addRenderableWidget(Objects.requireNonNull(newEnduranceBtnWidget));
+            .build()
+            .asVanilla(PADDING, height - 28, 90, 20);
+        newEnduranceWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.create_endurance")));
+        this.addRenderableWidget(newEnduranceWidget);
 
         // Initialize endurance modal components (hidden by default)
         initEnduranceModalComponents();
@@ -293,60 +282,66 @@ public class QuestEditorScreen extends ModScreen {
         int modalY = (height - modalHeight) / 2;
 
         // Search field
-        mobSearchField = new EditBox(Objects.requireNonNull(font), modalX + 10, modalY + 35, modalWidth - 20, 18, I18n.ui("search"));
-        mobSearchField.setHint(I18n.translate("devmod.quest.search_mobs"));
-        mobSearchField.setResponder(this::filterMobs);
-        mobSearchField.setVisible(false);
-        this.addRenderableWidget(mobSearchField);
+        EditBox searchBox = new EditBox(Objects.requireNonNull(font), modalX + 10, modalY + 35, modalWidth - 20, 18, I18n.ui("search"));
+        searchBox.setHint(I18n.translate("devmod.quest.search_mobs"));
+        searchBox.setResponder(this::filterMobs);
+        searchBox.setVisible(false);
+        this.mobSearchField = searchBox;
+        this.addRenderableWidget(searchBox);
 
         // Waves control buttons
-        wavesMinusBtn = EditorButton.builder("endurance-waves-minus", I18n.ui("minus_symbol").getString())
+        Button wavesMinusWidget = EditorButton.builder("endurance-waves-minus", I18n.ui("minus_symbol").getString())
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.SMALL)
             .onClick(() -> adjustWaves(-1))
-            .build();
-        wavesMinusBtnWidget = Objects.requireNonNull(wavesMinusBtn.asVanilla(modalX + modalWidth - 150, modalY + modalHeight - 70, 20, 20));
-        wavesMinusBtnWidget.visible = false;
-        this.addRenderableWidget(Objects.requireNonNull(wavesMinusBtnWidget));
+            .build()
+            .asVanilla(modalX + modalWidth - 150, modalY + modalHeight - 70, 20, 20);
+        wavesMinusWidget.visible = false;
+        this.wavesMinusBtnWidget = wavesMinusWidget;
+        this.addRenderableWidget(wavesMinusWidget);
 
-        wavesPlusBtn = EditorButton.builder("endurance-waves-plus", I18n.ui("plus_symbol").getString())
+        Button wavesPlusWidget = EditorButton.builder("endurance-waves-plus", I18n.ui("plus_symbol").getString())
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.SMALL)
             .onClick(() -> adjustWaves(1))
-            .build();
-        wavesPlusBtnWidget = Objects.requireNonNull(wavesPlusBtn.asVanilla(modalX + modalWidth - 80, modalY + modalHeight - 70, 20, 20));
-        wavesPlusBtnWidget.visible = false;
-        this.addRenderableWidget(Objects.requireNonNull(wavesPlusBtnWidget));
+            .build()
+            .asVanilla(modalX + modalWidth - 80, modalY + modalHeight - 70, 20, 20);
+        wavesPlusWidget.visible = false;
+        this.wavesPlusBtnWidget = wavesPlusWidget;
+        this.addRenderableWidget(wavesPlusWidget);
 
         // Endless mode toggle
-        endlessModeBtn = EditorButton.builder("endurance-endless-toggle", I18n.translate("devmod.endurance.endless_off").getString())
+        Button endlessModeWidget = EditorButton.builder("endurance-endless-toggle", I18n.translate("devmod.endurance.endless_off").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::toggleEndlessMode)
-            .build();
-        endlessModeBtnWidget = Objects.requireNonNull(endlessModeBtn.asVanilla(modalX + 10, modalY + modalHeight - 70, 100, 20));
-        endlessModeBtnWidget.visible = false;
-        this.addRenderableWidget(Objects.requireNonNull(endlessModeBtnWidget));
+            .build()
+            .asVanilla(modalX + 10, modalY + modalHeight - 70, 100, 20);
+        endlessModeWidget.visible = false;
+        this.endlessModeBtnWidget = endlessModeWidget;
+        this.addRenderableWidget(endlessModeWidget);
 
         // Start button
-        startEnduranceBtn = EditorButton.builder("endurance-start", I18n.ui("start_quest_with_icon").getString())
+        Button startEnduranceWidget = EditorButton.builder("endurance-start", I18n.ui("start_quest_with_icon").getString())
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.LARGE)
             .onClick(this::startEnduranceQuest)
-            .build();
-        startEnduranceBtnWidget = Objects.requireNonNull(startEnduranceBtn.asVanilla(modalX + modalWidth - 110, modalY + modalHeight - 35, 100, 25));
-        startEnduranceBtnWidget.visible = false;
-        this.addRenderableWidget(Objects.requireNonNull(startEnduranceBtnWidget));
+            .build()
+            .asVanilla(modalX + modalWidth - 110, modalY + modalHeight - 35, 100, 25);
+        startEnduranceWidget.visible = false;
+        this.startEnduranceBtnWidget = startEnduranceWidget;
+        this.addRenderableWidget(startEnduranceWidget);
 
         // Cancel button
-        cancelEnduranceBtn = EditorButton.builder("endurance-cancel", I18n.ui("cancel").getString())
+        Button cancelEnduranceWidget = EditorButton.builder("endurance-cancel", I18n.ui("cancel").getString())
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::closeEnduranceModal)
-            .build();
-        cancelEnduranceBtnWidget = Objects.requireNonNull(cancelEnduranceBtn.asVanilla(modalX + 10, modalY + modalHeight - 35, 80, 25));
-        cancelEnduranceBtnWidget.visible = false;
-        this.addRenderableWidget(Objects.requireNonNull(cancelEnduranceBtnWidget));
+            .build()
+            .asVanilla(modalX + 10, modalY + modalHeight - 35, 80, 25);
+        cancelEnduranceWidget.visible = false;
+        this.cancelEnduranceBtnWidget = cancelEnduranceWidget;
+        this.addRenderableWidget(cancelEnduranceWidget);
     }
 
     @Override
@@ -423,9 +418,11 @@ public class QuestEditorScreen extends ModScreen {
                                mouseY >= itemY && mouseY < itemY + LINE_HEIGHT;
 
             if (isSelected) {
-                g.fill(x + 2, itemY, x + QUEST_LIST_WIDTH - 2, itemY + LINE_HEIGHT, 0x44FFFFFF);
+                g.fill(x + 2, itemY, x + QUEST_LIST_WIDTH - 2, itemY + LINE_HEIGHT,
+                    DesignTokens.withAlpha(DesignTokens.Text.WHITE, DesignTokens.Alpha.A27));
             } else if (isHovered) {
-                g.fill(x + 2, itemY, x + QUEST_LIST_WIDTH - 2, itemY + LINE_HEIGHT, 0x22FFFFFF);
+                g.fill(x + 2, itemY, x + QUEST_LIST_WIDTH - 2, itemY + LINE_HEIGHT,
+                    DesignTokens.withAlpha(DesignTokens.Text.WHITE, DesignTokens.Alpha.A13));
             }
 
             // Quest name with status icon
@@ -453,13 +450,15 @@ public class QuestEditorScreen extends ModScreen {
         // Header
         g.drawString(Objects.requireNonNull(font, "font"), "Task", x + 5, y + 5, DesignTokens.Text.TITLE(), false);
 
-        if (selectedQuest == null) {
+        // Local capture for null safety
+        QuestData quest = selectedQuest;
+        if (quest == null) {
             g.drawString(Objects.requireNonNull(font, "font"), "Select a quest", x + 10, y + 30, DesignTokens.Text.MUTED(), false);
             return;
         }
 
         // Task list
-        List<QuestTask> tasks = selectedQuest.getTasks();
+        List<QuestTask> tasks = quest.getTasks();
         int listY = y + 22;
         int maxVisible = (panelHeight - 25) / LINE_HEIGHT;
 
@@ -469,14 +468,16 @@ public class QuestEditorScreen extends ModScreen {
 
             // Highlight selected/current
             boolean isSelected = task == selectedTask;
-            boolean isCurrent = task == selectedQuest.getCurrentTask();
+            boolean isCurrent = task == quest.getCurrentTask();
             boolean isHovered = mouseX >= x + 2 && mouseX < x + TASK_LIST_WIDTH - 2 &&
                                mouseY >= itemY && mouseY < itemY + LINE_HEIGHT;
 
             if (isSelected) {
-                g.fill(x + 2, itemY, x + TASK_LIST_WIDTH - 2, itemY + LINE_HEIGHT, 0x44FFFFFF);
+                g.fill(x + 2, itemY, x + TASK_LIST_WIDTH - 2, itemY + LINE_HEIGHT,
+                    DesignTokens.withAlpha(DesignTokens.Text.WHITE, DesignTokens.Alpha.A27));
             } else if (isHovered) {
-                g.fill(x + 2, itemY, x + TASK_LIST_WIDTH - 2, itemY + LINE_HEIGHT, 0x22FFFFFF);
+                g.fill(x + 2, itemY, x + TASK_LIST_WIDTH - 2, itemY + LINE_HEIGHT,
+                    DesignTokens.withAlpha(DesignTokens.Text.WHITE, DesignTokens.Alpha.A13));
             }
 
             // Task with status
@@ -501,13 +502,15 @@ public class QuestEditorScreen extends ModScreen {
         // Section: Task Note
         g.drawString(Objects.requireNonNull(font, "font"), "Task Note:", x, y + 105, DesignTokens.Text.MUTED(), false);
 
-        // Current selection info
-        if (selectedQuest != null) {
-            g.drawString(Objects.requireNonNull(font, "font"), "Quest: " + selectedQuest.getName(), x, y + 5, DesignTokens.Text.TITLE(), false);
+        // Current selection info (local captures for null safety)
+        QuestData quest = selectedQuest;
+        if (quest != null) {
+            g.drawString(Objects.requireNonNull(font, "font"), "Quest: " + quest.getName(), x, y + 5, DesignTokens.Text.TITLE(), false);
         }
 
-        if (selectedTask != null) {
-            g.drawString(Objects.requireNonNull(font, "font"), "Task: " + truncate(selectedTask.getDescription(), panelWidth / 6), x, y + 85, DesignTokens.Text.TITLE(), false);
+        QuestTask task = selectedTask;
+        if (task != null) {
+            g.drawString(Objects.requireNonNull(font, "font"), "Task: " + truncate(task.getDescription(), panelWidth / 6), x, y + 85, DesignTokens.Text.TITLE(), false);
         }
 
         // Help text
@@ -540,8 +543,9 @@ public class QuestEditorScreen extends ModScreen {
                 int clickedIndex = (int) ((mouseY - contentTop - 22) / LINE_HEIGHT) + questListScroll;
                 List<QuestData> quests = QuestManager.INSTANCE.getAllQuests();
                 if (clickedIndex >= 0 && clickedIndex < quests.size()) {
-                    selectedQuest = quests.get(clickedIndex);
-                    selectedTask = selectedQuest.getCurrentTask();
+                    QuestData clickedQuest = quests.get(clickedIndex);
+                    selectedQuest = clickedQuest;
+                    selectedTask = clickedQuest.getCurrentTask();
                     updateFieldsFromSelection();
                     updateButtonStates();
                     return true;
@@ -550,10 +554,11 @@ public class QuestEditorScreen extends ModScreen {
 
             // Click on task list
             int taskListX = QUEST_LIST_WIDTH + PADDING * 2;
+            QuestData quest = selectedQuest;
             if (mouseX >= taskListX && mouseX < taskListX + TASK_LIST_WIDTH &&
-                mouseY >= contentTop + 22 && mouseY < contentTop + panelHeight && selectedQuest != null) {
+                mouseY >= contentTop + 22 && mouseY < contentTop + panelHeight && quest != null) {
                 int clickedIndex = (int) ((mouseY - contentTop - 22) / LINE_HEIGHT) + taskListScroll;
-                List<QuestTask> tasks = selectedQuest.getTasks();
+                List<QuestTask> tasks = quest.getTasks();
                 if (clickedIndex >= 0 && clickedIndex < tasks.size()) {
                     selectedTask = tasks.get(clickedIndex);
                     updateFieldsFromSelection();
@@ -579,10 +584,11 @@ public class QuestEditorScreen extends ModScreen {
             return true;
         }
 
-        // Scroll task list
+        // Scroll task list (local capture for null safety)
         int taskListX = QUEST_LIST_WIDTH + PADDING * 2;
-        if (mouseX >= taskListX && mouseX < taskListX + TASK_LIST_WIDTH && selectedQuest != null) {
-            int maxScroll = Math.max(0, selectedQuest.getTasks().size() - 10);
+        QuestData quest = selectedQuest;
+        if (mouseX >= taskListX && mouseX < taskListX + TASK_LIST_WIDTH && quest != null) {
+            int maxScroll = Math.max(0, quest.getTasks().size() - 10);
             taskListScroll = Math.max(0, Math.min(maxScroll, taskListScroll - (int) scrollY));
             return true;
         }
@@ -602,10 +608,11 @@ public class QuestEditorScreen extends ModScreen {
     // === Actions ===
 
     private void addNewQuest() {
-        if (newQuestNameField == null) {
+        EditBox questNameBox = newQuestNameField;
+        if (questNameBox == null) {
             return;
         }
-        String name = newQuestNameField.getValue().trim();
+        String name = questNameBox.getValue().trim();
         if (name.isEmpty()) {
             name = "New Quest " + (QuestManager.INSTANCE.getAllQuests().size() + 1);
         }
@@ -614,62 +621,71 @@ public class QuestEditorScreen extends ModScreen {
         QuestManager.INSTANCE.addQuest(newQuest);
         selectedQuest = newQuest;
         selectedTask = newQuest.getCurrentTask();
-        newQuestNameField.setValue("");
+        questNameBox.setValue("");
         updateFieldsFromSelection();
         updateButtonStates();
     }
 
     private void deleteSelectedQuest() {
-        if (selectedQuest != null) {
-            QuestManager.INSTANCE.removeQuest(selectedQuest.getId());
-            selectedQuest = QuestManager.INSTANCE.getActiveQuest();
-            selectedTask = selectedQuest != null ? selectedQuest.getCurrentTask() : null;
-            updateFieldsFromSelection();
-            updateButtonStates();
+        QuestData quest = selectedQuest;
+        if (quest == null) {
+            return;
         }
+        QuestManager.INSTANCE.removeQuest(quest.getId());
+        QuestData newActiveQuest = QuestManager.INSTANCE.getActiveQuest();
+        selectedQuest = newActiveQuest;
+        selectedTask = newActiveQuest != null ? newActiveQuest.getCurrentTask() : null;
+        updateFieldsFromSelection();
+        updateButtonStates();
     }
 
     private void addNewTask() {
-        if (selectedQuest != null) {
-            if (newTaskDescField == null) {
-                return;
-            }
-            String desc = newTaskDescField.getValue().trim();
-            if (desc.isEmpty()) {
-                desc = "Task " + (selectedQuest.getTasks().size() + 1);
-            }
-            QuestTask newTask = new QuestTask("task_" + System.currentTimeMillis(), desc);
-            selectedQuest.addTask(newTask);
-            selectedTask = newTask;
-            newTaskDescField.setValue("");
-            QuestManager.INSTANCE.markDirty();
-            updateFieldsFromSelection();
-            updateButtonStates();
+        QuestData quest = selectedQuest;
+        EditBox taskDescBox = newTaskDescField;
+        if (quest == null || taskDescBox == null) {
+            return;
         }
+        String desc = taskDescBox.getValue().trim();
+        if (desc.isEmpty()) {
+            desc = "Task " + (quest.getTasks().size() + 1);
+        }
+        QuestTask newTask = new QuestTask("task_" + System.currentTimeMillis(), desc);
+        quest.addTask(newTask);
+        selectedTask = newTask;
+        taskDescBox.setValue("");
+        QuestManager.INSTANCE.markDirty();
+        updateFieldsFromSelection();
+        updateButtonStates();
     }
 
     private void deleteSelectedTask() {
-        if (selectedQuest != null && selectedTask != null) {
-            selectedQuest.getTasks().remove(selectedTask);
-            selectedTask = selectedQuest.getCurrentTask();
-            QuestManager.INSTANCE.markDirty();
-            updateFieldsFromSelection();
-            updateButtonStates();
+        QuestData quest = selectedQuest;
+        QuestTask task = selectedTask;
+        if (quest == null || task == null) {
+            return;
         }
+        quest.getTasks().remove(task);
+        selectedTask = quest.getCurrentTask();
+        QuestManager.INSTANCE.markDirty();
+        updateFieldsFromSelection();
+        updateButtonStates();
     }
 
     private void completeSelectedTask() {
-        if (selectedTask != null && !selectedTask.isCompleted()) {
-            selectedTask.setCompleted(true);
-            if (selectedQuest != null) {
-                // Move to next task if this was current
-                if (selectedTask == selectedQuest.getCurrentTask()) {
-                    selectedQuest.advanceToNextTask();
-                }
-            }
-            QuestManager.INSTANCE.markDirty();
-            updateButtonStates();
+        QuestTask task = selectedTask;
+        if (task == null || task.isCompleted()) {
+            return;
         }
+        task.setCompleted(true);
+        QuestData quest = selectedQuest;
+        if (quest != null) {
+            // Move to next task if this was current
+            if (task == quest.getCurrentTask()) {
+                quest.advanceToNextTask();
+            }
+        }
+        QuestManager.INSTANCE.markDirty();
+        updateButtonStates();
     }
 
     private void setActiveQuest() {
@@ -696,22 +712,26 @@ public class QuestEditorScreen extends ModScreen {
     private void onQuestDataChanged() {
         // Called when QuestManager notifies changes (from HUD actions)
         // Refresh our view
-        if (selectedQuest != null) {
+        QuestData quest = selectedQuest;
+        if (quest != null) {
             // Check if our selected quest still exists
             boolean found = false;
+            String questId = quest.getId();
             for (QuestData q : QuestManager.INSTANCE.getAllQuests()) {
-                if (q.getId().equals(selectedQuest.getId())) {
+                if (q.getId().equals(questId)) {
                     selectedQuest = q;
+                    quest = q;
                     found = true;
                     break;
                 }
             }
             if (!found) {
                 selectedQuest = QuestManager.INSTANCE.getActiveQuest();
+                quest = selectedQuest;
             }
         }
-        if (selectedQuest != null) {
-            selectedTask = selectedQuest.getCurrentTask();
+        if (quest != null) {
+            selectedTask = quest.getCurrentTask();
         } else {
             selectedTask = null;
         }
@@ -720,29 +740,56 @@ public class QuestEditorScreen extends ModScreen {
     }
 
     private void updateFieldsFromSelection() {
-        if (questNoteField != null) {
-            questNoteField.setValue(Objects.requireNonNull(selectedQuest != null && selectedQuest.hasQuestNote() ? selectedQuest.getQuestNote() : "", "questNoteValue"));
+        EditBox questNoteBox = questNoteField;
+        if (questNoteBox != null) {
+            QuestData quest = selectedQuest;
+            String questNoteValue = "";
+            if (quest != null && quest.hasQuestNote()) {
+                String note = quest.getQuestNote();
+                if (note != null) {
+                    questNoteValue = note;
+                }
+            }
+            questNoteBox.setValue(questNoteValue);
         }
-        if (taskNoteField != null) {
-            taskNoteField.setValue(Objects.requireNonNull(selectedTask != null && selectedTask.hasNote() ? selectedTask.getNote() : "", "taskNoteValue"));
+        EditBox taskNoteBox = taskNoteField;
+        if (taskNoteBox != null) {
+            QuestTask task = selectedTask;
+            String taskNoteValue = "";
+            if (task != null && task.hasNote()) {
+                String note = task.getNote();
+                if (note != null) {
+                    taskNoteValue = note;
+                }
+            }
+            taskNoteBox.setValue(taskNoteValue);
         }
     }
 
     private void updateButtonStates() {
-        if (deleteQuestBtnWidget != null) {
-            deleteQuestBtnWidget.active = selectedQuest != null;
+        // Local captures for null safety
+        QuestData quest = selectedQuest;
+        QuestTask task = selectedTask;
+
+        Button deleteQuestBtn = deleteQuestBtnWidget;
+        if (deleteQuestBtn != null) {
+            deleteQuestBtn.active = quest != null;
         }
-        if (addTaskBtnWidget != null) {
-            addTaskBtnWidget.active = selectedQuest != null;
+        Button addTaskBtn = addTaskBtnWidget;
+        if (addTaskBtn != null) {
+            addTaskBtn.active = quest != null;
         }
-        if (deleteTaskBtnWidget != null) {
-            deleteTaskBtnWidget.active = selectedTask != null;
+        Button deleteTaskBtn = deleteTaskBtnWidget;
+        if (deleteTaskBtn != null) {
+            deleteTaskBtn.active = task != null;
         }
-        if (completeTaskBtnWidget != null) {
-            completeTaskBtnWidget.active = selectedTask != null && !selectedTask.isCompleted();
+        Button completeTaskBtn = completeTaskBtnWidget;
+        if (completeTaskBtn != null) {
+            completeTaskBtn.active = task != null && !task.isCompleted();
         }
-        if (setActiveBtnWidget != null) {
-            setActiveBtnWidget.active = selectedQuest != null && selectedQuest != QuestManager.INSTANCE.getActiveQuest();
+        Button setActiveBtn = setActiveBtnWidget;
+        if (setActiveBtn != null) {
+            setActiveBtn.active = quest != null && quest != QuestManager.INSTANCE.getActiveQuest();
         }
     }
 
@@ -774,8 +821,9 @@ public class QuestEditorScreen extends ModScreen {
         availableMobs.sort(Comparator.comparing(m -> m.displayName));
         filteredMobs = new ArrayList<>(availableMobs);
 
-        if (mobSearchField != null) {
-            mobSearchField.setValue("");
+        EditBox searchField = mobSearchField;
+        if (searchField != null) {
+            searchField.setValue("");
         }
         updateEnduranceButtonStates();
     }
@@ -786,12 +834,19 @@ public class QuestEditorScreen extends ModScreen {
     }
 
     private void setEnduranceModalVisible(boolean visible) {
-        if (mobSearchField != null) mobSearchField.setVisible(visible);
-        if (wavesMinusBtnWidget != null) wavesMinusBtnWidget.visible = visible;
-        if (wavesPlusBtnWidget != null) wavesPlusBtnWidget.visible = visible;
-        if (endlessModeBtnWidget != null) endlessModeBtnWidget.visible = visible;
-        if (startEnduranceBtnWidget != null) startEnduranceBtnWidget.visible = visible;
-        if (cancelEnduranceBtnWidget != null) cancelEnduranceBtnWidget.visible = visible;
+        // Local captures for null safety
+        EditBox searchField = mobSearchField;
+        if (searchField != null) searchField.setVisible(visible);
+        Button wavesMinusBtn = wavesMinusBtnWidget;
+        if (wavesMinusBtn != null) wavesMinusBtn.visible = visible;
+        Button wavesPlusBtn = wavesPlusBtnWidget;
+        if (wavesPlusBtn != null) wavesPlusBtn.visible = visible;
+        Button endlessModeBtn = endlessModeBtnWidget;
+        if (endlessModeBtn != null) endlessModeBtn.visible = visible;
+        Button startEnduranceBtn = startEnduranceBtnWidget;
+        if (startEnduranceBtn != null) startEnduranceBtn.visible = visible;
+        Button cancelEnduranceBtn = cancelEnduranceBtnWidget;
+        if (cancelEnduranceBtn != null) cancelEnduranceBtn.visible = visible;
     }
 
     private void filterMobs(String query) {
@@ -815,24 +870,27 @@ public class QuestEditorScreen extends ModScreen {
 
     private void toggleEndlessMode() {
         enduranceEndless = !enduranceEndless;
-        if (endlessModeBtnWidget != null) {
-            endlessModeBtnWidget.setMessage(I18n.translate(enduranceEndless ? "devmod.endurance.endless_on" : "devmod.endurance.endless_off"));
+        Button endlessModeBtn = endlessModeBtnWidget;
+        if (endlessModeBtn != null) {
+            endlessModeBtn.setMessage(I18n.translate(enduranceEndless ? "devmod.endurance.endless_on" : "devmod.endurance.endless_off"));
         }
     }
 
     private void updateEnduranceButtonStates() {
-        if (startEnduranceBtnWidget != null) {
-            startEnduranceBtnWidget.active = selectedMob != null;
+        Button startEnduranceBtn = startEnduranceBtnWidget;
+        if (startEnduranceBtn != null) {
+            startEnduranceBtn.active = selectedMob != null;
         }
     }
 
     private void startEnduranceQuest() {
-        if (selectedMob == null) return;
+        EnduranceQuestRegistry.MobQuestConfig mob = selectedMob;
+        if (mob == null) return;
 
         // Create QuestData for the endurance quest
         QuestData enduranceQuest = QuestData.createEnduranceQuest(
-            selectedMob.mobId.toString(),
-            selectedMob.displayName,
+            mob.mobId.toString(),
+            mob.displayName,
             enduranceWaves,
             enduranceEndless
         );
@@ -843,7 +901,7 @@ public class QuestEditorScreen extends ModScreen {
 
         // Send network packet to server to actually start the quest
         PacketDistributor.sendToServer(new StartQuestPayload(
-            selectedMob.mobId.toString(),
+            mob.mobId.toString(),
             enduranceWaves,
             enduranceEndless
         ));
@@ -867,7 +925,8 @@ public class QuestEditorScreen extends ModScreen {
         int modalY = (height - modalHeight) / 2;
 
         // Darken background
-        graphics.fill(0, 0, width, height, 0xAA000000);
+        graphics.fill(0, 0, width, height,
+            DesignTokens.withAlpha(DesignTokens.Mask.NONE, DesignTokens.Alpha.A67));
 
         // Modal background
         graphics.fill(modalX, modalY, modalX + modalWidth, modalY + modalHeight, DesignTokens.Background.PANEL_SOLID());
@@ -934,9 +993,10 @@ public class QuestEditorScreen extends ModScreen {
         graphics.drawString(Objects.requireNonNull(font, "font"), waveText, modalX + modalWidth - 125, modalY + modalHeight - 65, DesignTokens.Text.PRIMARY(), false);
 
         // Selected mob info
-        if (selectedMob != null) {
+        EnduranceQuestRegistry.MobQuestConfig currentMob = selectedMob;
+        if (currentMob != null) {
             int infoY = modalY + modalHeight - 95;
-            graphics.drawString(Objects.requireNonNull(font, "font"), "Selected: " + selectedMob.displayName, listX, infoY, DesignTokens.Accent.GREEN(), false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), "Selected: " + currentMob.displayName, listX, infoY, DesignTokens.Accent.GREEN(), false);
         }
     }
 

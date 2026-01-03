@@ -411,14 +411,18 @@ public class RecoverySystem {
     private void cleanupOrphanedDimensionFolders(MinecraftServer server) {
         // This will be implemented when DynamicDimensionManager is ready
         // For now, just log what we would do
-        Path dimensionsDir = server.getWorldPath(Objects.requireNonNull(net.minecraft.world.level.storage.LevelResource.ROOT))
-            .resolve("dimensions").resolve("devmod");
+        Path worldPath = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
+        Path dimensionsDir = worldPath.resolve("dimensions").resolve("devmod");
 
         if (!Files.exists(dimensionsDir)) return;
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dimensionsDir, "instance_*")) {
             for (Path instanceDir : stream) {
-                String dirName = instanceDir.getFileName().toString();
+                Path dirNamePath = instanceDir.getFileName();
+                if (dirNamePath == null) {
+                    continue;
+                }
+                String dirName = dirNamePath.toString();
                 String uuidStrWithoutDashes = dirName.replace("instance_", "");
 
                 try {

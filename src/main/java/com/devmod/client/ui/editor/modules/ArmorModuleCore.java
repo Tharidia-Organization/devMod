@@ -138,18 +138,18 @@ public class ArmorModuleCore {
             }
 
             if (armor != 0) {
-                target.armorBonus = (float) armor;
+                target.setArmorBonus((float) armor);
                 float reduction = Math.min(0.8f, (float) armor / 30f);
-                target.physicalReduction = reduction;
-                target.projectileReduction = reduction;
+                target.setPhysicalReduction(reduction);
+                target.setProjectileReduction(reduction);
                 DevMod.LOGGER.info("[Editor][Armor] Attr armor={} -> reduction set to {}", armor, reduction);
             }
-            if (toughness != 0) target.toughnessBonus = (float) toughness;
-            if (kb != 0) target.knockbackResistance = (float) kb;
+            if (toughness != 0) target.setToughnessBonus((float) toughness);
+            if (kb != 0) target.setKnockbackResistance((float) kb);
 
             if (item.getItem() instanceof net.minecraft.world.item.ShieldItem) {
-                target.shieldBlockStrength = 1.0f;
-                target.shieldRecoverySpeed = 1.0f;
+                target.setShieldBlockStrength(1.0f);
+                target.setShieldRecoverySpeed(1.0f);
                 DevMod.LOGGER.info("[Editor][Armor] Shield defaults applied: blockStrength=1, recovery=1");
             }
         } catch (Exception e) {
@@ -237,7 +237,7 @@ public class ArmorModuleCore {
     // ═══════════════════════════════════════════════════════════════
 
     public float calculateEHP() {
-        float totalReduction = stats.physicalReduction;
+        float totalReduction = stats.getPhysicalReduction();
         float cappedReduction = Math.min(totalReduction, 0.8f);
         return 1f / (1f - cappedReduction);
     }
@@ -251,34 +251,34 @@ public class ArmorModuleCore {
     }
 
     boolean statsEquals(ArmorStats a, ArmorStats b) {
-        return Float.compare(a.physicalReduction, b.physicalReduction) == 0
-            && Float.compare(a.fireReduction, b.fireReduction) == 0
-            && Float.compare(a.magicReduction, b.magicReduction) == 0
-            && Float.compare(a.explosionReduction, b.explosionReduction) == 0
-            && Float.compare(a.projectileReduction, b.projectileReduction) == 0
-            && Float.compare(a.armorBonus, b.armorBonus) == 0
-            && Float.compare(a.toughnessBonus, b.toughnessBonus) == 0
-            && Float.compare(a.knockbackResistance, b.knockbackResistance) == 0
-            && Float.compare(a.thornsPercent, b.thornsPercent) == 0
-            && a.thornsReflect == b.thornsReflect
-            && Float.compare(a.shieldBlockStrength, b.shieldBlockStrength) == 0
-            && Float.compare(a.shieldRecoverySpeed, b.shieldRecoverySpeed) == 0
-            && a.shieldReflectProjectiles == b.shieldReflectProjectiles
+        return Float.compare(a.getPhysicalReduction(), b.getPhysicalReduction()) == 0
+            && Float.compare(a.getFireReduction(), b.getFireReduction()) == 0
+            && Float.compare(a.getMagicReduction(), b.getMagicReduction()) == 0
+            && Float.compare(a.getExplosionReduction(), b.getExplosionReduction()) == 0
+            && Float.compare(a.getProjectileReduction(), b.getProjectileReduction()) == 0
+            && Float.compare(a.getArmorBonus(), b.getArmorBonus()) == 0
+            && Float.compare(a.getToughnessBonus(), b.getToughnessBonus()) == 0
+            && Float.compare(a.getKnockbackResistance(), b.getKnockbackResistance()) == 0
+            && Float.compare(a.getThornsPercent(), b.getThornsPercent()) == 0
+            && a.isThornsReflect() == b.isThornsReflect()
+            && Float.compare(a.getShieldBlockStrength(), b.getShieldBlockStrength()) == 0
+            && Float.compare(a.getShieldRecoverySpeed(), b.getShieldRecoverySpeed()) == 0
+            && a.isShieldReflectProjectiles() == b.isShieldReflectProjectiles()
             // Shield Visual
-            && a.shieldColor == b.shieldColor
-            && Float.compare(a.shieldOpacity, b.shieldOpacity) == 0
-            && a.shieldGlowEnabled == b.shieldGlowEnabled
-            && Float.compare(a.shieldGlowIntensity, b.shieldGlowIntensity) == 0
-            && Float.compare(a.shieldNoiseIntensity, b.shieldNoiseIntensity) == 0
-            && Float.compare(a.shieldPulseSpeed, b.shieldPulseSpeed) == 0
+            && a.getShieldColor() == b.getShieldColor()
+            && Float.compare(a.getShieldOpacity(), b.getShieldOpacity()) == 0
+            && a.isShieldGlowEnabled() == b.isShieldGlowEnabled()
+            && Float.compare(a.getShieldGlowIntensity(), b.getShieldGlowIntensity()) == 0
+            && Float.compare(a.getShieldNoiseIntensity(), b.getShieldNoiseIntensity()) == 0
+            && Float.compare(a.getShieldPulseSpeed(), b.getShieldPulseSpeed()) == 0
             // Shield Deflection
-            && Float.compare(a.shieldDeflectionSpread, b.shieldDeflectionSpread) == 0
-            && a.shieldDeflectToOwner == b.shieldDeflectToOwner
-            && Float.compare(a.shieldDeflectSpeedMult, b.shieldDeflectSpeedMult) == 0
+            && Float.compare(a.getShieldDeflectionSpread(), b.getShieldDeflectionSpread()) == 0
+            && a.isShieldDeflectToOwner() == b.isShieldDeflectToOwner()
+            && Float.compare(a.getShieldDeflectSpeedMult(), b.getShieldDeflectSpeedMult()) == 0
             // Shield Shatter
-            && Float.compare(a.shieldShatterThreshold, b.shieldShatterThreshold) == 0
-            && a.shieldAutoRegenerate == b.shieldAutoRegenerate
-            && Float.compare(a.shieldRegenDelay, b.shieldRegenDelay) == 0;
+            && Float.compare(a.getShieldShatterThreshold(), b.getShieldShatterThreshold()) == 0
+            && a.isShieldAutoRegenerate() == b.isShieldAutoRegenerate()
+            && Float.compare(a.getShieldRegenDelay(), b.getShieldRegenDelay()) == 0;
     }
 
     // ═══════════════════════════════════════════════════════════════

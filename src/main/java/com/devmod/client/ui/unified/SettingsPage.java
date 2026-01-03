@@ -8,11 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 public interface SettingsPage {
 
     /**
-     * Gets the category of this page.
-     */
-    SettingsCategory getCategory();
-
-    /**
      * Gets the page title.
      */
     String getTitle();
@@ -34,7 +29,7 @@ public interface SettingsPage {
      * @param mouseX Mouse X position
      * @param mouseY Mouse Y position
      */
-    void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY);
+    void render(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY);
 
     /**
      * Handles a mouse click.
@@ -103,11 +98,4 @@ public interface SettingsPage {
      * Resets to default values.
      */
     default void resetToDefaults() {}
-
-    /**
-     * Gets the total content height (for scrolling).
-     */
-    default int getContentHeight() {
-        return 200;
-    }
 }

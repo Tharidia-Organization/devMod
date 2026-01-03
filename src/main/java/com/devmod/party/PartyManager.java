@@ -9,6 +9,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -38,6 +40,9 @@ public class PartyManager {
     /** Listeners for party events */
     private final List<PartyEventListener> listeners = new ArrayList<>();
 
+    /** Earliest invite expiration timestamp to skip unnecessary scans. */
+    private final AtomicLong nextInviteExpiryAt = new AtomicLong(Long.MAX_VALUE);
+
     private PartyManager() {
     }
 
@@ -53,15 +58,13 @@ public class PartyManager {
      */
     @Nullable
     public PartyData createParty(UUID leaderId, String leaderName, QuestType questType) {
-        // Check if player is already in a party
-        if (playerToParty.containsKey(leaderId)) {
+        PartyData party = new PartyData(leaderId, leaderName, questType);
+        UUID existingPartyId = playerToParty.putIfAbsent(leaderId, party.getPartyId());
+        if (existingPartyId != null) {
             LOGGER.debug("[PartyManager] Player {} is already in a party", leaderId);
             return null;
         }
-
-        PartyData party = new PartyData(leaderId, leaderName, questType);
         parties.put(party.getPartyId(), party);
-        playerToParty.put(leaderId, party.getPartyId());
 
         LOGGER.info("[PartyManager] Party created partyId={} leaderId={} leaderName={} questType={}",
                 party.getPartyId(), leaderId, leaderName, questType);
@@ -143,7 +146,8 @@ public class PartyManager {
         }
 
         // Track invite for target player
-        playerPendingInvites.computeIfAbsent(targetId, k -> new ArrayList<>()).add(invite);
+        playerPendingInvites.computeIfAbsent(targetId, k -> new CopyOnWriteArrayList<>()).add(invite);
+        updateNextInviteExpiry(invite.getExpiresAt());
 
         LOGGER.info("[PartyManager] Invite sent partyId={} senderId={} targetId={} targetName={}",
                 party.getPartyId(), senderId, targetId, targetName);
@@ -481,30 +485,65 @@ public class PartyManager {
      * Should be called periodically (e.g., every second).
      */
     public void tick() {
+        long nowMillis = System.currentTimeMillis();
+        if (nowMillis < nextInviteExpiryAt.get()) {
+            return;
+        }
+
+        long nextExpiry = Long.MAX_VALUE;
+
         // Cleanup expired invites in parties
         for (PartyData party : parties.values()) {
-            int expired = party.cleanupExpiredInvites();
-            if (expired > 0) {
+            PartyData.InviteCleanupResult cleanup = party.cleanupExpiredInvites(nowMillis);
+            if (cleanup.expiredCount() > 0) {
                 LOGGER.debug("[PartyManager] Cleaned up {} expired invites from party {}",
-                        expired, party.getPartyId());
+                        cleanup.expiredCount(), party.getPartyId());
+            }
+            if (cleanup.nextExpiryAt() < nextExpiry) {
+                nextExpiry = cleanup.nextExpiryAt();
             }
         }
 
         // Cleanup expired invites in player tracking
+        List<UUID> emptyInviteLists = new ArrayList<>();
         for (Map.Entry<UUID, List<PartyInvite>> entry : playerPendingInvites.entrySet()) {
             List<PartyInvite> invites = entry.getValue();
-            invites.removeIf(invite -> {
-                if (invite.isExpired()) {
+            if (invites.isEmpty()) {
+                emptyInviteLists.add(entry.getKey());
+                continue;
+            }
+
+            List<PartyInvite> expiredInvites = null;
+            for (PartyInvite invite : invites) {
+                if (invite.isExpiredAt(nowMillis)) {
                     invite.markExpired();
                     notifyListeners(listener -> listener.onInviteExpired(invite));
-                    return true;
+                    if (expiredInvites == null) {
+                        expiredInvites = new ArrayList<>();
+                    }
+                    expiredInvites.add(invite);
+                } else {
+                    long expiresAt = invite.getExpiresAt();
+                    if (expiresAt < nextExpiry) {
+                        nextExpiry = expiresAt;
+                    }
                 }
-                return false;
-            });
+            }
+
+            if (expiredInvites != null) {
+                invites.removeAll(expiredInvites);
+            }
+
+            if (invites.isEmpty()) {
+                emptyInviteLists.add(entry.getKey());
+            }
         }
 
-        // Remove empty invite lists
-        playerPendingInvites.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+        for (UUID playerId : emptyInviteLists) {
+            playerPendingInvites.remove(playerId);
+        }
+
+        nextInviteExpiryAt.set(nextExpiry);
     }
 
     /**
@@ -547,6 +586,7 @@ public class PartyManager {
         parties.clear();
         playerToParty.clear();
         playerPendingInvites.clear();
+        nextInviteExpiryAt.set(Long.MAX_VALUE);
         LOGGER.info("[PartyManager] Reset all party data");
     }
 
@@ -612,7 +652,7 @@ public class PartyManager {
                 )
                 .exceptionally(error -> {
                     LOGGER.error("[PartyManager] Failed to send mailbox party invite notification to {}", targetId, error);
-                    return null;
+                    return Optional.empty();
                 });
 
             LOGGER.debug("[PartyManager] Sent mailbox party invite notification to {}", targetId);
@@ -732,7 +772,8 @@ public class PartyManager {
         }
 
         // Track for target player
-        playerPendingInvites.computeIfAbsent(targetId, k -> new ArrayList<>()).add(invite);
+        playerPendingInvites.computeIfAbsent(targetId, k -> new CopyOnWriteArrayList<>()).add(invite);
+        updateNextInviteExpiry(invite.getExpiresAt());
 
         LOGGER.info("[PartyManager] Invite sent partyId={} senderId={} senderName={} targetId={} targetName={} questType={}",
                 party.getPartyId(), senderId, senderName, targetId, targetName, questType);
@@ -746,6 +787,10 @@ public class PartyManager {
 
         notifyListeners(listener -> listener.onInviteSent(invite));
         return InviteResult.success(invite.getInviteId(), invite.getExpiresAt());
+    }
+
+    private void updateNextInviteExpiry(long expiresAt) {
+        nextInviteExpiryAt.updateAndGet(current -> Math.min(current, expiresAt));
     }
 
     /**

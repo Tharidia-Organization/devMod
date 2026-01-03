@@ -243,11 +243,12 @@ public class MobEquipmentScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         // Draw red border around error field (after widgets render)
-        if (errorField != null && errorDisplayTicks > 0) {
-            int fx = errorField.getX() - 1;
-            int fy = errorField.getY() - 1;
-            int fw = errorField.getWidth() + 2;
-            int fh = errorField.getHeight() + 2;
+        EditBox localErrorField = errorField;
+        if (localErrorField != null && errorDisplayTicks > 0) {
+            int fx = localErrorField.getX() - 1;
+            int fy = localErrorField.getY() - 1;
+            int fw = localErrorField.getWidth() + 2;
+            int fh = localErrorField.getHeight() + 2;
             // Draw red border
             graphics.fill(fx, fy, fx + fw, fy + 1, DesignTokens.Accent.RED()); // top
             graphics.fill(fx, fy + fh - 1, fx + fw, fy + fh, DesignTokens.Accent.RED()); // bottom
@@ -325,8 +326,16 @@ public class MobEquipmentScreen extends Screen {
     }
 
     private void save() {
-        if (mainHand == null || offHand == null || head == null ||
-            chest == null || legs == null || feet == null) {
+        // Capture nullable fields in local variables for null safety
+        EditBox localMainHand = mainHand;
+        EditBox localOffHand = offHand;
+        EditBox localHead = head;
+        EditBox localChest = chest;
+        EditBox localLegs = legs;
+        EditBox localFeet = feet;
+
+        if (localMainHand == null || localOffHand == null || localHead == null ||
+            localChest == null || localLegs == null || localFeet == null) {
             return;
         }
 
@@ -335,7 +344,7 @@ public class MobEquipmentScreen extends Screen {
         errorMessage = null;
 
         // Validate each field - empty is allowed, but non-empty must be valid item ID
-        EditBox[] fields = {mainHand, offHand, head, chest, legs, feet};
+        EditBox[] fields = {localMainHand, localOffHand, localHead, localChest, localLegs, localFeet};
         String[] names = {"Main Hand", "Off Hand", "Head", "Chest", "Legs", "Feet"};
 
         for (int i = 0; i < fields.length; i++) {
@@ -351,12 +360,12 @@ public class MobEquipmentScreen extends Screen {
         // All valid - send to server
         PacketDistributor.sendToServer(new EquipMobPayload(
             mob.getId(),
-            mainHand.getValue().trim(),
-            offHand.getValue().trim(),
-            head.getValue().trim(),
-            chest.getValue().trim(),
-            legs.getValue().trim(),
-            feet.getValue().trim()
+            localMainHand.getValue().trim(),
+            localOffHand.getValue().trim(),
+            localHead.getValue().trim(),
+            localChest.getValue().trim(),
+            localLegs.getValue().trim(),
+            localFeet.getValue().trim()
         ));
 
         // Show success feedback to user
@@ -423,7 +432,8 @@ public class MobEquipmentScreen extends Screen {
     @Override
     public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Disable blur - just solid dimmed background
-        graphics.fill(0, 0, this.width, this.height, 0xC0101010);
+        graphics.fill(0, 0, this.width, this.height,
+            DesignTokens.withAlpha(DesignTokens.Neutral.N950, DesignTokens.Alpha.A75));
     }
 
     @Override
@@ -433,7 +443,8 @@ public class MobEquipmentScreen extends Screen {
 
     @Override
     protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
-        graphics.fill(0, 0, this.width, this.height, 0xC0101010);
+        graphics.fill(0, 0, this.width, this.height,
+            DesignTokens.withAlpha(DesignTokens.Neutral.N950, DesignTokens.Alpha.A75));
     }
 
     @Override
@@ -457,29 +468,45 @@ public class MobEquipmentScreen extends Screen {
     }
 
     private boolean hasUnsavedChanges() {
-        if (mainHand == null || offHand == null || head == null ||
-            chest == null || legs == null || feet == null) {
+        // Capture nullable fields in local variables for null safety
+        EditBox localMainHand = mainHand;
+        EditBox localOffHand = offHand;
+        EditBox localHead = head;
+        EditBox localChest = chest;
+        EditBox localLegs = legs;
+        EditBox localFeet = feet;
+
+        if (localMainHand == null || localOffHand == null || localHead == null ||
+            localChest == null || localLegs == null || localFeet == null) {
             return false;
         }
-        return !normalize(mainHand.getValue()).equals(originalMainHand) ||
-            !normalize(offHand.getValue()).equals(originalOffHand) ||
-            !normalize(head.getValue()).equals(originalHead) ||
-            !normalize(chest.getValue()).equals(originalChest) ||
-            !normalize(legs.getValue()).equals(originalLegs) ||
-            !normalize(feet.getValue()).equals(originalFeet);
+        return !normalize(localMainHand.getValue()).equals(originalMainHand) ||
+            !normalize(localOffHand.getValue()).equals(originalOffHand) ||
+            !normalize(localHead.getValue()).equals(originalHead) ||
+            !normalize(localChest.getValue()).equals(originalChest) ||
+            !normalize(localLegs.getValue()).equals(originalLegs) ||
+            !normalize(localFeet.getValue()).equals(originalFeet);
     }
 
     private void syncOriginalValues() {
-        if (mainHand == null || offHand == null || head == null ||
-            chest == null || legs == null || feet == null) {
+        // Capture nullable fields in local variables for null safety
+        EditBox localMainHand = mainHand;
+        EditBox localOffHand = offHand;
+        EditBox localHead = head;
+        EditBox localChest = chest;
+        EditBox localLegs = legs;
+        EditBox localFeet = feet;
+
+        if (localMainHand == null || localOffHand == null || localHead == null ||
+            localChest == null || localLegs == null || localFeet == null) {
             return;
         }
-        originalMainHand = normalize(mainHand.getValue());
-        originalOffHand = normalize(offHand.getValue());
-        originalHead = normalize(head.getValue());
-        originalChest = normalize(chest.getValue());
-        originalLegs = normalize(legs.getValue());
-        originalFeet = normalize(feet.getValue());
+        originalMainHand = normalize(localMainHand.getValue());
+        originalOffHand = normalize(localOffHand.getValue());
+        originalHead = normalize(localHead.getValue());
+        originalChest = normalize(localChest.getValue());
+        originalLegs = normalize(localLegs.getValue());
+        originalFeet = normalize(localFeet.getValue());
     }
 
     private static String normalize(@Nullable String value) {
@@ -493,7 +520,8 @@ public class MobEquipmentScreen extends Screen {
     }
 
     private void renderConfirmDialog(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.fill(0, 0, this.width, this.height, 0xA0000000);
+        graphics.fill(0, 0, this.width, this.height,
+            DesignTokens.withAlpha(DesignTokens.Mask.NONE, DesignTokens.Alpha.A63));
 
         int dx = (this.width - DIALOG_WIDTH) / 2;
         int dy = (this.height - DIALOG_HEIGHT) / 2;
