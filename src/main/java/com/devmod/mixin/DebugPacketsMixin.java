@@ -43,8 +43,6 @@ public class DebugPacketsMixin {
      */
     @Inject(method = "sendPathFindingPacket", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendPathFindingPacket(Level level, Mob mob, Path path, float maxDistanceToWaypoint, CallbackInfo ci) {
-        Objects.requireNonNull(ci, "CallbackInfo required by Mixin");
-
         // Cancel vanilla method - use our custom payload instead
         ci.cancel();
 
@@ -100,7 +98,6 @@ public class DebugPacketsMixin {
      */
     @Inject(method = "sendGoalSelector", at = @At("HEAD"))
     private static void devmod_sendGoalSelector(Level level, Mob mob, GoalSelector goalSelector, CallbackInfo ci) {
-        Objects.requireNonNull(ci, "CallbackInfo required by Mixin");
         if (!(level instanceof ServerLevel serverLevel)) return;
 
         List<GoalDebugPayload.DebugGoal> goals = new ArrayList<>();
@@ -127,7 +124,6 @@ public class DebugPacketsMixin {
      */
     @Inject(method = "sendPoiRemovedPacket", at = @At("HEAD"))
     private static void devmod_sendPoiRemovedPacket(ServerLevel level, BlockPos pos, CallbackInfo ci) {
-        Objects.requireNonNull(ci, "CallbackInfo required by Mixin");
         PoiRemovedDebugPayload payload = new PoiRemovedDebugPayload(Objects.requireNonNull(pos, "pos"));
         sendToPlayers(level, payload, DebugFeature.POI);
     }
@@ -137,7 +133,6 @@ public class DebugPacketsMixin {
      */
     @Inject(method = "sendRaids", at = @At("HEAD"))
     private static void devmod_sendRaids(ServerLevel level, Collection<Raid> raids, CallbackInfo ci) {
-        Objects.requireNonNull(ci, "CallbackInfo required by Mixin");
         List<BlockPos> raidCenters = new ArrayList<>();
         for (Raid raid : raids) {
             if (raid.isActive()) {
@@ -156,7 +151,6 @@ public class DebugPacketsMixin {
      */
     @Inject(method = "sendNeighborsUpdatePacket", at = @At("HEAD"))
     private static void devmod_sendNeighborsUpdatePacket(Level level, BlockPos pos, CallbackInfo ci) {
-        Objects.requireNonNull(ci, "CallbackInfo required by Mixin");
         if (!(level instanceof ServerLevel serverLevel)) return;
 
         NeighborUpdatesDebugPayload payload = new NeighborUpdatesDebugPayload(

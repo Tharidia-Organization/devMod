@@ -1,5 +1,6 @@
 package com.devmod.client.overlay;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -44,6 +45,7 @@ public class QuestSequenceOverlay {
     private String title = "";
     private String subtitle = "";
     private List<String> infoLines = List.of();
+    private static final String I18N_PREFIX = "i18n:";
 
     // Track if we've sent arrival confirmation
     private boolean arrivalConfirmed = false;
@@ -90,9 +92,9 @@ public class QuestSequenceOverlay {
         this.secondsRemaining = payload.secondsRemaining();
         this.totalMembers = payload.totalMembers();
         this.arrivedMembers = payload.arrivedMembers();
-        this.title = payload.title();
-        this.subtitle = payload.subtitle();
-        this.infoLines = payload.infoLines();
+        this.title = resolveText(payload.title());
+        this.subtitle = resolveText(payload.subtitle());
+        this.infoLines = resolveInfoLines(payload.infoLines());
         this.fadingOut = false;
         this.fadeOutTicks = 0;
 
@@ -142,6 +144,62 @@ public class QuestSequenceOverlay {
             arrivalConfirmed = true;
             PacketDistributor.sendToServer(new ArrivalConfirmPayload(activePartyId));
         }
+    }
+
+    private String resolveText(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        if (!raw.startsWith(I18N_PREFIX)) {
+            return raw;
+        }
+        String payload = raw.substring(I18N_PREFIX.length());
+        if (payload.isEmpty()) {
+            return raw;
+        }
+        String[] parts = payload.split("\\|", -1);
+        String key = parts[0];
+        Object[] args = new Object[Math.max(0, parts.length - 1)];
+        for (int i = 1; i < parts.length; i++) {
+            args[i - 1] = parseArg(parts[i]);
+        }
+        return Component.translatable(key, args).getString();
+    }
+
+    private Object parseArg(String raw) {
+        String resolved = resolveText(raw);
+        if (resolved.isEmpty()) {
+            return "";
+        }
+        if (resolved.matches("^-?\\d+$")) {
+            try {
+                return Integer.parseInt(resolved);
+            } catch (NumberFormatException ignored) {
+                return resolved;
+            }
+        }
+        if (resolved.matches("^-?\\d+\\.\\d+$")) {
+            try {
+                return Double.parseDouble(resolved);
+            } catch (NumberFormatException ignored) {
+                return resolved;
+            }
+        }
+        return resolved;
+    }
+
+    private List<String> resolveInfoLines(List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return List.of();
+        }
+        List<String> resolved = new ArrayList<>(lines.size());
+        for (String line : lines) {
+            String value = resolveText(line);
+            if (value != null && !value.isBlank()) {
+                resolved.add(value);
+            }
+        }
+        return resolved;
     }
 
     /**

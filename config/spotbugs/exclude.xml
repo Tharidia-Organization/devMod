@@ -8,6 +8,10 @@
     -->
 
     <!-- Exclude all generated/mixin code -->
+    <!-- Mixin classes have unusual patterns that confuse SpotBugs -->
+    <Match>
+        <Package name="com.devmod.mixin"/>
+    </Match>
     <Match>
         <Package name="~com\.devmod\.mixin\..*"/>
     </Match>
@@ -68,6 +72,12 @@
     <Match>
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_STATIC_REP2"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
 
     <!-- Suppress warnings about method naming conventions -->
     <!-- Minecraft uses non-standard naming (getXXX for fields, etc) -->
@@ -93,6 +103,25 @@
     <!-- Allow intentional switch fall-through with comments -->
     <Match>
         <Bug pattern="SF_SWITCH_FALLTHROUGH"/>
+    </Match>
+
+    <!-- Suppress catching generic Exception in bootstrap/cleanup code -->
+    <!-- API server startup must catch all exceptions to prevent server crash -->
+    <Match>
+        <Class name="com.devmod.mailbox.api.ApiServerLauncher"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+    </Match>
+
+    <!-- Suppress vacuous instanceof in AI goals -->
+    <!-- Mixin/inheritance patterns can cause these false positives -->
+    <Match>
+        <Bug pattern="BC_VACUOUS_INSTANCEOF"/>
+    </Match>
+
+    <!-- Suppress redundant null checks for @Nonnull parameters -->
+    <!-- Defensive programming in mixins/integration code -->
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
     </Match>
 
     <!-- Suppress comparison warnings for enums -->

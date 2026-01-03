@@ -6,7 +6,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 
 /**
@@ -22,8 +21,9 @@ public abstract class MobDespawnMixin {
 
     @Inject(method = "checkDespawn", at = @At("HEAD"), cancellable = true)
     void devmod$preventEnduranceMobDespawn(CallbackInfo ci) {
-        // getPersistentData() is defined in Entity (NeoForge), not Mob, so we cast
-        Entity self = (Entity) (Object) this;
+        // In mixin context, 'this' is the target class (Mob), which extends Entity.
+        // We cast to Mob (which this IS at runtime) to access getPersistentData() from Entity superclass.
+        Mob self = (Mob) (Object) this;
         CompoundTag data = self.getPersistentData();
 
         // If this mob was spawned by our endurance quest system, never despawn

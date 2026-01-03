@@ -758,6 +758,16 @@ public class EnduranceEventHandler {
     }
 
     /**
+     * Restore per-player synced kit data on login.
+     */
+    @SubscribeEvent
+    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            KitManager.INSTANCE.restoreSyncedKits(player);
+        }
+    }
+
+    /**
      * Handle player logout - cleanup quest session.
      */
     @SubscribeEvent

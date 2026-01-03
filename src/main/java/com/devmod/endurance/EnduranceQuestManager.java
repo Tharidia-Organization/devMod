@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -121,6 +122,7 @@ public class EnduranceQuestManager {
     public static final int BRIEFING_TICKS = 80;
     public static final int SAFE_WINDOW_TICKS = 60;
     public static final int BOSS_INTRO_TICKS = 20;
+    private static final String I18N_PREFIX = "i18n:";
     private static final String FALLBACK_TEMPLATE_ID = "default_flat_64";
     private static final CircuitBreaker BUILD_FALLBACK_CIRCUIT = new CircuitBreaker();
     private static final FallbackMetrics BUILD_FALLBACK_METRICS = new FallbackMetrics();
@@ -207,6 +209,7 @@ public class EnduranceQuestManager {
 
         // Initialize persistence
         persistence.initialize(dataDirectory);
+        KitManager.INSTANCE.initializeSyncPersistence(dataDirectory);
 
         // Initialize arena manager
         // Legacy overworld arenas are deprecated; instance-only flow enforced.
@@ -456,25 +459,119 @@ public class EnduranceQuestManager {
     }
 
     private List<String> buildBriefingLines(EnduranceQuest quest,
-                                            ResolvedArena resolved,
                                             ActiveQuestSession session) {
         List<String> lines = new ArrayList<>();
-        if (resolved != null) {
-            lines.add("Template: " + resolved.template().id() + " v" + resolved.template().version());
-            lines.add("Policy: " + resolved.policy().id() + " v" + resolved.policy().version());
-        }
-        if (session != null) {
-            String difficulty = session.getDifficultyLabel();
-            if (difficulty != null && !difficulty.isBlank()) {
-                lines.add("Difficulty: " + difficulty);
+        if (quest != null) {
+            if (quest.isEndlessMode() || quest.getTotalWaves() <= 0) {
+                lines.add(i18nToken("devmod.endurance.briefing.objective",
+                    i18nToken("devmod.endurance.briefing.objective.endless")));
+            } else {
+                int waves = Math.max(1, quest.getTotalWaves());
+                lines.add(i18nToken("devmod.endurance.briefing.objective",
+                    i18nToken("devmod.endurance.briefing.objective.waves", waves)));
             }
         }
-        lines.add("Goal: Survive waves");
-        lines.add("Rewards: Tokens + loot drops");
-        if (quest != null && quest.getQuestId() != null) {
-            lines.add("Run ID: " + quest.getQuestId());
+
+        String kitLabel = resolveKitLabel(session);
+        if (!kitLabel.isBlank()) {
+            lines.add(i18nToken("devmod.endurance.briefing.kit", kitLabel));
+        }
+
+        String difficultyKey = resolveDifficultyKey(session);
+        if (difficultyKey != null) {
+            lines.add(i18nToken("devmod.endurance.briefing.difficulty", i18nToken(difficultyKey)));
+        }
+
+        String modeKey = resolveModeKey(quest, session);
+        if (modeKey != null) {
+            lines.add(i18nToken("devmod.endurance.briefing.mode", i18nToken(modeKey)));
+        }
+
+        if (session == null || !session.isPracticeMode()) {
+            lines.add(i18nToken("devmod.endurance.briefing.rewards"));
         }
         return lines;
+    }
+
+    private String resolveDifficultyKey(@javax.annotation.Nullable ActiveQuestSession session) {
+        if (session == null) {
+            return null;
+        }
+        String difficulty = session.getDifficultyLabel();
+        if (difficulty == null || difficulty.isBlank()) {
+            return null;
+        }
+        if ("hard".equalsIgnoreCase(difficulty)) {
+            return "devmod.endurance.difficulty.hard";
+        }
+        return "devmod.endurance.difficulty.normal";
+    }
+
+    private String resolveModeKey(@javax.annotation.Nullable EnduranceQuest quest,
+                                  @javax.annotation.Nullable ActiveQuestSession session) {
+        if (session != null && session.isPracticeMode()) {
+            return "devmod.endurance.briefing.mode.practice";
+        }
+        if (quest != null && quest.isEndlessMode()) {
+            return "devmod.endurance.briefing.mode.endless";
+        }
+        return "devmod.endurance.briefing.mode.standard";
+    }
+
+    private String resolveKitLabel(@javax.annotation.Nullable ActiveQuestSession session) {
+        if (session == null) {
+            return "";
+        }
+        String kitId = session.getKitId();
+        if (kitId == null || kitId.isBlank()) {
+            return "";
+        }
+
+        if ("TEMPORARY".equals(kitId)) {
+            String name = KitManager.INSTANCE.getTemporaryKitName(session.getPlayerId());
+            if (name != null && !name.isBlank()) {
+                return name;
+            }
+            return i18nToken("devmod.endurance.briefing.kit.temporary");
+        }
+
+        if (kitId.length() == 8) {
+            Optional<CustomKit> syncedKit = KitManager.INSTANCE.getSyncedCustomKit(session.getPlayerId(), kitId);
+            if (syncedKit.isPresent()) {
+                return syncedKit.get().getName();
+            }
+            Optional<CustomKit> savedKit = KitManager.INSTANCE.getCustomKit(kitId);
+            if (savedKit.isPresent()) {
+                return savedKit.get().getName();
+            }
+            return i18nToken("devmod.endurance.briefing.kit.custom");
+        }
+
+        KitPreset preset = KitManager.INSTANCE.getKitById(kitId);
+        if (preset != null) {
+            String key = "devmod.endurance.briefing.kit.preset." + preset.name().toLowerCase(Locale.ROOT);
+            return i18nToken(key);
+        }
+
+        return kitId;
+    }
+
+    private String i18nToken(String key, Object... args) {
+        StringBuilder builder = new StringBuilder(I18N_PREFIX).append(key != null ? key : "");
+        if (args != null) {
+            for (Object arg : args) {
+                builder.append('|').append(sanitizeTokenArg(arg));
+            }
+        }
+        return builder.toString();
+    }
+
+    private String sanitizeTokenArg(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String text = String.valueOf(value);
+        return text.replace("|", "/");
     }
 
     private Set<String> resolveTags(QuestSettings settings, EnduranceQuestRegistry.MobQuestConfig mobConfig) {
@@ -1905,7 +2002,7 @@ public class EnduranceQuestManager {
         pendingSession.scheduleInstanceStart(mobId, settings, resolved, PRE_TELEPORT_COUNTDOWN_TICKS);
 
         int briefingSeconds = (int) Math.ceil(BRIEFING_TICKS / 20.0);
-        List<String> briefingLines = buildBriefingLines(quest, resolved, pendingSession);
+        List<String> briefingLines = buildBriefingLines(quest, pendingSession);
         pendingSession.setBriefingLines(briefingLines);
         sendSoloSequenceUpdate(
             player,
@@ -1913,7 +2010,7 @@ public class EnduranceQuestManager {
             QuestSequencePayload.Phase.BRIEFING,
             briefingSeconds,
             quest.getDisplayName(),
-            "Endurance briefing",
+            i18nToken("devmod.endurance.briefing.subtitle"),
             briefingLines
         );
         pendingSession.setLastBriefingSeconds(briefingSeconds);

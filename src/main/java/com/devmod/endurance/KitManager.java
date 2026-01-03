@@ -13,6 +13,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Equipable;
@@ -30,10 +31,20 @@ public final class KitManager {
     // Per-player synced kits for dedicated server usage
     private final Map<UUID, TemporaryKit> syncedTemporaryKits = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, CustomKit>> syncedCustomKits = new ConcurrentHashMap<>();
+    @Nullable
+    private KitSyncPersistence syncPersistence;
 
     private KitManager() {
         // Load custom kits on initialization
         KitPersistence.loadKits();
+    }
+
+    public void initializeSyncPersistence(@Nullable java.nio.file.Path dataDirectory) {
+        if (syncPersistence != null || dataDirectory == null) {
+            return;
+        }
+        syncPersistence = new KitSyncPersistence();
+        syncPersistence.initialize(dataDirectory);
     }
 
     /**
@@ -269,14 +280,25 @@ public final class KitManager {
      * Set a temporary kit for a specific player (dedicated server sync).
      */
     public void setTemporaryKit(UUID playerId, List<ItemStack> items, String name) {
+        setTemporaryKit(playerId, items, name, null);
+    }
+
+    public void setTemporaryKit(UUID playerId, List<ItemStack> items, String name,
+                                @Nullable RegistryAccess registryAccess) {
         if (playerId == null) {
             return;
         }
         if (items == null || items.isEmpty()) {
             syncedTemporaryKits.remove(playerId);
+            if (syncPersistence != null) {
+                syncPersistence.clearTemporaryKit(playerId);
+            }
             return;
         }
-        syncedTemporaryKits.put(playerId, new TemporaryKit(new ArrayList<>(items), name));
+        cacheTemporaryKit(playerId, new ArrayList<>(items), name);
+        if (syncPersistence != null) {
+            syncPersistence.setTemporaryKit(playerId, name, toKitItems(items, registryAccess));
+        }
         LOGGER.info("[KitManager] Synced temporary kit for {}: {} ({} items)",
             playerId, name, items.size());
     }
@@ -300,6 +322,27 @@ public final class KitManager {
         syncedCustomKits.remove(playerId);
     }
 
+    public void restoreSyncedKits(ServerPlayer player) {
+        if (player == null || syncPersistence == null) {
+            return;
+        }
+        UUID playerId = player.getUUID();
+        syncPersistence.getPlayerSnapshot(playerId).ifPresent(snapshot -> {
+            KitSyncPersistence.TemporaryKitSnapshot temporary = snapshot.temporaryKit();
+            if (temporary != null && temporary.items() != null && !temporary.items().isEmpty()) {
+                List<ItemStack> items = toItemStacks(temporary.items(), player.registryAccess());
+                if (!items.isEmpty()) {
+                    cacheTemporaryKit(playerId, items, temporary.name());
+                }
+            }
+            if (snapshot.customKits() != null) {
+                for (CustomKit kit : snapshot.customKits()) {
+                    cacheCustomKit(playerId, kit);
+                }
+            }
+        });
+    }
+
     /**
      * Check if a temporary kit is set.
      */
@@ -320,6 +363,18 @@ public final class KitManager {
      */
     @Nullable
     public String getTemporaryKitName() {
+        return temporaryKitName;
+    }
+
+    @Nullable
+    public String getTemporaryKitName(@Nullable UUID playerId) {
+        if (playerId == null) {
+            return temporaryKitName;
+        }
+        TemporaryKit kit = syncedTemporaryKits.get(playerId);
+        if (kit != null && kit.name != null && !kit.name.isBlank()) {
+            return kit.name;
+        }
         return temporaryKitName;
     }
 
@@ -349,8 +404,10 @@ public final class KitManager {
         if (playerId == null || kit == null) {
             return;
         }
-        syncedCustomKits.computeIfAbsent(playerId, id -> new ConcurrentHashMap<>())
-            .put(kit.getId(), kit);
+        cacheCustomKit(playerId, kit);
+        if (syncPersistence != null) {
+            syncPersistence.setCustomKit(playerId, kit);
+        }
     }
 
     /**
@@ -411,6 +468,45 @@ public final class KitManager {
             this.items = items;
             this.name = name;
         }
+    }
+
+    private void cacheTemporaryKit(UUID playerId, List<ItemStack> items, String name) {
+        syncedTemporaryKits.put(playerId, new TemporaryKit(items, name));
+    }
+
+    private void cacheCustomKit(UUID playerId, CustomKit kit) {
+        syncedCustomKits.computeIfAbsent(playerId, id -> new ConcurrentHashMap<>())
+            .put(kit.getId(), kit);
+    }
+
+    private List<CustomKit.KitItem> toKitItems(List<ItemStack> items, @Nullable RegistryAccess registryAccess) {
+        List<CustomKit.KitItem> kitItems = new ArrayList<>();
+        if (items == null) {
+            return kitItems;
+        }
+        for (ItemStack stack : items) {
+            if (stack != null && !stack.isEmpty()) {
+                kitItems.add(CustomKit.KitItem.fromItemStack(stack, registryAccess));
+            }
+        }
+        return kitItems;
+    }
+
+    private List<ItemStack> toItemStacks(List<CustomKit.KitItem> kitItems, RegistryAccess registryAccess) {
+        List<ItemStack> items = new ArrayList<>();
+        if (kitItems == null) {
+            return items;
+        }
+        for (CustomKit.KitItem kitItem : kitItems) {
+            if (kitItem == null) {
+                continue;
+            }
+            ItemStack stack = kitItem.toItemStackWithEnchantments(registryAccess);
+            if (!stack.isEmpty()) {
+                items.add(stack);
+            }
+        }
+        return items;
     }
 
     /**

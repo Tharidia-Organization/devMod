@@ -404,7 +404,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
 
                     if (parseFailures > 0) {
                         String message = "Kit sync rejected (" + parseFailures + " invalid item"
-                            + (parseFailures == 1 ? "" : "s") + ")";
+                            + (parseFailures == 1 ? "" : "s") + "). Check that the server has the same mods/data packs.";
                         player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", message));
                         sendPacket(player, KitSyncConfirmPayload.failure(
                             payload.temporary(),
@@ -425,7 +425,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                     }
 
                     if (payload.temporary()) {
-                        KitManager.INSTANCE.setTemporaryKit(player.getUUID(), items, payload.name());
+                        KitManager.INSTANCE.setTemporaryKit(player.getUUID(), items, payload.name(), registryAccess);
                         LOGGER.debug("[EnduranceKit] Synced temporary kit '{}' for {} ({} items)",
                             payload.name(), player.getName().getString(), items.size());
                         sendPacket(player, KitSyncConfirmPayload.success(true, payload.kitId(),
