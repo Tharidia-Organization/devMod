@@ -8,8 +8,8 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -99,7 +99,7 @@ public class ArenaSelectionPanel {
     }
 
     public boolean isAutoSelected() {
-        return selectedTemplateId == null || selectedTemplateId.equals(autoSelectedTemplateId);
+        return selectedTemplateId == null || Objects.equals(selectedTemplateId, autoSelectedTemplateId);
     }
 
     @Nullable

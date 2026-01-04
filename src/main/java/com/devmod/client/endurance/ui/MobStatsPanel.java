@@ -175,6 +175,10 @@ public class MobStatsPanel {
             || Math.abs(eliteChance - config.eliteChance()) > 0.001f;
     }
 
+    public boolean isSliderActive() {
+        return activeSlider >= 0;
+    }
+
     // ========== Actions ==========
 
     /**

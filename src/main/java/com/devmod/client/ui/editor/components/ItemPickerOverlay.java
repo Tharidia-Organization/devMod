@@ -21,10 +21,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.search.ItemSearchQuery;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.search.ItemSearchQuery;
 
 public class ItemPickerOverlay extends BaseOverlay {
 

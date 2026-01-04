@@ -20,15 +20,15 @@ import net.minecraft.world.entity.Mob;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.arena.api.ArenaHandle;
+import com.devmod.compat.mods.easydiet.EasyDietCompat;
 import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
+import com.devmod.endurance.nutrition.NutritionBridgeSystem;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.runtime.environment.DimensionEnvironmentManager;
 import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
-import com.devmod.compat.mods.easydiet.EasyDietCompat;
-import com.devmod.endurance.nutrition.NutritionBridgeSystem;
 
 public class EnduranceEventTick {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventTick.class);

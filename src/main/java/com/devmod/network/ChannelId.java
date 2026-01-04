@@ -149,6 +149,8 @@ public enum ChannelId {
     // Reserved for future compat module network channels
     // ============================================================================
     NUTRITION_SYNC(130, Direction.SERVER_TO_CLIENT, "NutritionSyncPayload"),
+    REQUEST_MOB_POOL_CONFIG(131, Direction.CLIENT_TO_SERVER, "RequestMobPoolConfigPayload"),
+    MOB_POOL_CONFIG_SYNC(132, Direction.SERVER_TO_CLIENT, "MobPoolConfigSyncPayload"),
     ;
 
     // ============================================================================

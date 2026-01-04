@@ -18,6 +18,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.ui.editor.components.EditorButton;
@@ -29,8 +30,6 @@ import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
-
-import net.neoforged.neoforge.network.PacketDistributor;
 
 @OnlyIn(Dist.CLIENT)
 public class EnduranceSettingsScreen extends Screen {

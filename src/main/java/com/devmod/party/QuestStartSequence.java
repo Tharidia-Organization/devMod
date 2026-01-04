@@ -20,8 +20,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import com.devmod.endurance.EnduranceQuest;
 import com.devmod.arena.api.ArenaHandle;
+import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.InstanceArenaManager;
 import com.devmod.endurance.PartyQuestSession;

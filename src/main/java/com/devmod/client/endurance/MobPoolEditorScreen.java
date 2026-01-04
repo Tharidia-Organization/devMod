@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -23,10 +24,15 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.devmod.client.endurance.ui.MobListPanel;
 import com.devmod.client.endurance.ui.MobStatsPanel;
 import com.devmod.client.notification.ClientNotificationManager;
+import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceMobConfigSyncPayload;
+import com.devmod.endurance.MobPoolConfigSyncPayload;
+import com.devmod.endurance.RequestMobPoolConfigPayload;
 import com.devmod.endurance.SpawnAffix;
+import com.devmod.endurance.EnduranceQuestRegistry;
+import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
 import com.devmod.endurance.config.ConfigScope;
 import com.devmod.endurance.config.EnduranceMobConfig;
 import com.devmod.endurance.config.EnduranceMobPoolConfig;
@@ -34,6 +40,9 @@ import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
+import com.devmod.client.endurance.ClientMobPoolConfigCache;
+import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.party.ClientPartyCache;
 
 /**
  * Screen for editing the Endurance mob pool configuration.
@@ -62,7 +71,14 @@ public class MobPoolEditorScreen extends Screen {
 
     private static final int HEADER_HEIGHT = 36;
     private static final int FOOTER_HEIGHT = 50;
-    private static final int GLOBAL_SECTION_HEIGHT = 60;
+    private static final int GLOBAL_SECTION_HEIGHT = 96;
+    private static final int FILTER_BAR_HEIGHT = 42;
+    private static final int FILTER_ROW_HEIGHT = 18;
+    private static final int FILTER_ROW_PADDING = 2;
+    private static final int FILTER_ROW_GAP = 2;
+    private static final int AFFIX_COLUMNS = 3;
+    private static final int AFFIX_LABEL_WIDTH = 54;
+    private static final int AFFIX_VALUE_WIDTH = 34;
     private static final int PADDING = 8;
     private static final int LEFT_PANEL_WIDTH = 200;
 
@@ -76,6 +92,10 @@ public class MobPoolEditorScreen extends Screen {
 
     // Modified mob configs (tracked by mob ID)
     private final Map<ResourceLocation, EnduranceMobConfig> modifiedConfigs = new HashMap<>();
+    // Baseline mob configs received from server (explicit overrides only)
+    private final Map<ResourceLocation, EnduranceMobConfig> baseConfigs = new HashMap<>();
+    // Configs for mobs not present in the local registry (preserved on save)
+    private final Map<ResourceLocation, EnduranceMobConfig> orphanedConfigs = new HashMap<>();
 
     // Global multipliers
     private float globalHealthMult = 1.0f;
@@ -88,10 +108,23 @@ public class MobPoolEditorScreen extends Screen {
 
     // Filter state
     private String namespaceFilter = "all";
+    @Nullable
+    private MobTier tierFilter = null;
+    private String searchQuery = "";
+    private boolean searchFocused = false;
 
     // UI State
     private int activeGlobalSlider = -1;
+    private int activeAffixSlider = -1;
     private boolean hasChanges = false;
+    private boolean tierDropdownOpen = false;
+    @Nullable
+    private ConfirmDialog confirmDialog;
+    @Nullable
+    private MobPoolConfigSyncPayload pendingServerConfig;
+    private boolean awaitingSessionConfig = false;
+    private boolean awaitingGlobalConfig = false;
+    private boolean initialConfigApplied = false;
 
     // Buttons
     @Nullable
@@ -153,8 +186,12 @@ public class MobPoolEditorScreen extends Screen {
             LEFT_PANEL_WIDTH,
             contentHeight
         );
+        listPanel.setTopInset(FILTER_BAR_HEIGHT);
         listPanel.setOnMobSelected(this::onMobSelected);
         listPanel.setOnMobToggled(this::onMobToggled);
+        listPanel.setNamespaceFilter(namespaceFilter);
+        listPanel.setTierFilter(tierFilter);
+        listPanel.setSearchQuery(searchQuery);
         availableNamespaces = listPanel.getAvailableNamespaces();
         mobListPanel = listPanel;
 
@@ -176,31 +213,33 @@ public class MobPoolEditorScreen extends Screen {
         if (preselectedMobId != null && mobListPanel != null) {
             mobListPanel.selectAndScrollTo(preselectedMobId);
         }
+
+        requestInitialMobPoolConfig();
     }
 
     private void initButtons() {
         backButton = EditorButton.builder("back", "< " + I18n.ui("back").getString())
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.MEDIUM)
-            .onClick(this::onClose)
+            .onClick(this::attemptClose)
             .build();
 
         applyGlobalButton = EditorButton.builder("apply-global", I18n.translate("devmod.settings.button.apply_global").getString())
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.SMALL)
-            .onClick(() -> applyChanges(ConfigScope.GLOBAL))
+            .onClick(() -> attemptApplyChanges(ConfigScope.GLOBAL))
             .build();
 
         proposeButton = EditorButton.builder("propose", I18n.translate("devmod.settings.button.propose").getString())
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.SMALL)
-            .onClick(() -> applyChanges(ConfigScope.PROPOSAL))
+            .onClick(() -> attemptApplyChanges(ConfigScope.PROPOSAL))
             .build();
 
         applySessionButton = EditorButton.builder("apply-session", I18n.translate("devmod.settings.button.apply_session").getString())
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.SMALL)
-            .onClick(() -> applyChanges(ConfigScope.SESSION))
+            .onClick(() -> attemptApplyChanges(ConfigScope.SESSION))
             .build();
 
         selectAllButton = EditorButton.builder("select-all", I18n.translate("devmod.endurance.mob_editor.select_all").getString())
@@ -230,8 +269,11 @@ public class MobPoolEditorScreen extends Screen {
             // Check if we have a modified config for this mob
             EnduranceMobConfig config = modifiedConfigs.get(mobId);
             if (config == null) {
-                // Use default from registry
-                config = EnduranceMobConfig.fromRegistryOrDefault(mobId);
+                // Fall back to baseline override or registry default
+                config = baseConfigs.get(mobId);
+                if (config == null) {
+                    config = EnduranceMobConfig.fromRegistryOrDefault(mobId);
+                }
             }
             statsPanel.setMobConfig(config);
         }
@@ -243,10 +285,18 @@ public class MobPoolEditorScreen extends Screen {
     }
 
     private void onMobConfigChanged(EnduranceMobConfig config) {
-        if (config != null) {
-            modifiedConfigs.put(config.mobId(), config);
-            hasChanges = true;
+        if (config == null) {
+            return;
         }
+        ResourceLocation mobId = config.mobId();
+        EnduranceMobConfig baseline = getBaselineConfig(mobId).withEnabled(true);
+        EnduranceMobConfig normalized = config.withEnabled(true);
+        if (normalized.equals(baseline)) {
+            modifiedConfigs.remove(mobId);
+        } else {
+            modifiedConfigs.put(mobId, normalized);
+        }
+        hasChanges = true;
     }
 
     // ========== Actions ==========
@@ -266,53 +316,157 @@ public class MobPoolEditorScreen extends Screen {
     }
 
     private void resetAll() {
-        modifiedConfigs.clear();
-        globalHealthMult = 1.0f;
-        globalDamageMult = 1.0f;
-        globalSpeedMult = 1.0f;
-        globalEliteChanceMult = 1.0f;
-        for (SpawnAffix affix : SpawnAffix.values()) {
-            affixWeights.put(affix, 1.0f);
+        pendingServerConfig = null;
+        ConfigScope scope = ClientQuestCache.hasActiveQuest() ? ConfigScope.SESSION : ConfigScope.GLOBAL;
+        MobPoolConfigSyncPayload cached = ClientMobPoolConfigCache.get(scope);
+        if (cached != null) {
+            applyServerConfig(cached, true);
+        } else {
+            applyPoolConfig(null);
         }
-
-        // Reload panels
-        var listPanel = mobListPanel;
-        var statsPanel = mobStatsPanel;
-        if (listPanel != null && statsPanel != null) {
-            ResourceLocation selectedMob = listPanel.getSelectedMobId();
-            if (selectedMob != null) {
-                statsPanel.setMobConfig(EnduranceMobConfig.fromRegistryOrDefault(selectedMob));
-            }
-        }
-
-        hasChanges = false;
+        requestMobPoolConfig(scope);
 
         Notification notification = Notification.builder(NotificationCategory.SYSTEM)
             .titleKey("devmod.settings.reset.title")
-            .messageKey("devmod.settings.reset.all")
+            .messageKey("devmod.endurance.mob_editor.reset.server")
             .priority(NotificationPriority.NORMAL)
             .displayDurationMs(2000)
             .build();
         ClientNotificationManager.INSTANCE.handleNotification(notification);
     }
 
-    private void applyChanges(ConfigScope scope) {
+    private void resetToDefaults() {
+        pendingServerConfig = null;
+        applyPoolConfig(null);
+        hasChanges = true;
+
+        Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+            .titleKey("devmod.settings.reset.title")
+            .messageKey("devmod.endurance.mob_editor.reset.defaults")
+            .priority(NotificationPriority.NORMAL)
+            .displayDurationMs(2000)
+            .build();
+        ClientNotificationManager.INSTANCE.handleNotification(notification);
+    }
+
+    private void attemptApplyChanges(ConfigScope scope) {
         if (!hasChanges && modifiedConfigs.isEmpty()) {
             return;
         }
+        if (isInitialSyncPending()) {
+            return;
+        }
+        ConfirmDialog dialog = confirmDialog;
+        if (dialog != null && dialog.isVisible()) {
+            return;
+        }
+        if (pendingServerConfig != null) {
+            MobPoolConfigSyncPayload pending = pendingServerConfig;
+            String title = I18n.translate("devmod.endurance.mob_editor.conflict.title").getString();
+            String applyLabel = I18n.translate("devmod.endurance.mob_editor.conflict.apply_local").getString();
+            String reviewLabel = I18n.translate("devmod.endurance.mob_editor.conflict.review_server").getString();
+            String line1 = I18n.translate("devmod.endurance.mob_editor.conflict.body").getString();
+            String line2 = I18n.translate("devmod.endurance.mob_editor.conflict.prompt").getString();
+            confirmDialog = ConfirmDialog.create(
+                title,
+                applyLabel,
+                reviewLabel,
+                ConfirmDialog.Style.WARNING,
+                () -> {
+                    confirmDialog = null;
+                    pendingServerConfig = null;
+                    attemptApplyChanges(scope);
+                },
+                () -> {
+                    confirmDialog = null;
+                    pendingServerConfig = null;
+                    applyServerConfig(pending, true);
+                },
+                line1,
+                line2
+            );
+            confirmDialog.show();
+            return;
+        }
+        if (!orphanedConfigs.isEmpty()) {
+            String title = I18n.translate("devmod.endurance.mob_editor.orphaned.apply.title").getString();
+            String keepLabel = I18n.translate("devmod.endurance.mob_editor.orphaned.apply.keep").getString();
+            String dropLabel = I18n.translate("devmod.endurance.mob_editor.orphaned.apply.drop").getString();
+            String line1 = I18n.translate("devmod.endurance.mob_editor.orphaned.apply.body",
+                String.valueOf(orphanedConfigs.size())).getString();
+            String line2 = I18n.translate("devmod.endurance.mob_editor.orphaned.apply.prompt").getString();
+            confirmDialog = ConfirmDialog.create(
+                title,
+                keepLabel,
+                dropLabel,
+                ConfirmDialog.Style.WARNING,
+                () -> {
+                    confirmDialog = null;
+                    applyChanges(scope, true);
+                },
+                () -> {
+                    confirmDialog = null;
+                    applyChanges(scope, false);
+                },
+                line1,
+                line2
+            );
+            confirmDialog.show();
+            return;
+        }
+        applyChanges(scope, true);
+    }
+
+    private void applyChanges(ConfigScope scope, boolean includeOrphans) {
+        if (!hasChanges && modifiedConfigs.isEmpty()) {
+            return;
+        }
+        pendingServerConfig = null;
 
         // Build the pool config
         EnduranceMobPoolConfig poolConfig = new EnduranceMobPoolConfig();
 
-        // Add modified mob configs
-        for (EnduranceMobConfig config : modifiedConfigs.values()) {
-            poolConfig.setMobConfig(config);
+        var listPanel = mobListPanel;
+
+        // Start from baseline overrides to preserve existing settings
+        for (EnduranceMobConfig config : baseConfigs.values()) {
+            EnduranceMobConfig resolved = config;
+            if (listPanel != null) {
+                boolean enabled = listPanel.isMobEnabled(config.mobId());
+                if (enabled != config.enabled()) {
+                    resolved = config.withEnabled(enabled);
+                }
+            }
+            poolConfig.setMobConfig(resolved);
         }
 
-        // Set disabled mobs from the list panel
-        if (mobListPanel != null) {
-            for (ResourceLocation mobId : mobListPanel.getDisabledMobs()) {
-                poolConfig.disableMob(mobId);
+        // Apply modified mob configs (override baseline)
+        for (EnduranceMobConfig config : modifiedConfigs.values()) {
+            EnduranceMobConfig resolved = config;
+            if (listPanel != null) {
+                boolean enabled = listPanel.isMobEnabled(config.mobId());
+                if (enabled != config.enabled()) {
+                    resolved = config.withEnabled(enabled);
+                }
+            }
+            poolConfig.setMobConfig(resolved);
+        }
+
+        if (includeOrphans) {
+            // Preserve configs for mobs not present in the local registry
+            for (EnduranceMobConfig config : orphanedConfigs.values()) {
+                poolConfig.setMobConfig(config);
+            }
+        }
+
+        // Ensure disabled mobs are represented in payload
+        if (listPanel != null) {
+            for (ResourceLocation mobId : listPanel.getDisabledMobs()) {
+                if (poolConfig.getMobConfigOrNull(mobId) == null) {
+                    EnduranceMobConfig baseConfig = EnduranceMobConfig.fromRegistryOrDefault(mobId)
+                        .withEnabled(false);
+                    poolConfig.setMobConfig(baseConfig);
+                }
             }
         }
 
@@ -338,7 +492,7 @@ public class MobPoolEditorScreen extends Screen {
         Notification notification = Notification.builder(NotificationCategory.SYSTEM)
             .titleKey("devmod.settings.applied.title")
             .messageKey(messageKey)
-            .param("count", String.valueOf(modifiedConfigs.size() + (mobListPanel != null ? mobListPanel.getDisabledMobs().size() : 0)))
+            .param("count", String.valueOf(poolConfig.getConfiguredMobCount()))
             .priority(NotificationPriority.NORMAL)
             .displayDurationMs(2500)
             .build();
@@ -348,6 +502,240 @@ public class MobPoolEditorScreen extends Screen {
         if (scope == ConfigScope.SESSION) {
             hasChanges = false;
         }
+    }
+
+    private void requestInitialMobPoolConfig() {
+        if (initialConfigApplied) {
+            return;
+        }
+        ConfigScope scope = ClientQuestCache.hasActiveQuest() ? ConfigScope.SESSION : ConfigScope.GLOBAL;
+        MobPoolConfigSyncPayload cached = ClientMobPoolConfigCache.get(scope);
+        if (cached != null) {
+            applyServerConfig(cached);
+        }
+        requestMobPoolConfig(scope);
+    }
+
+    private void requestMobPoolConfig(ConfigScope scope) {
+        if (scope == ConfigScope.SESSION) {
+            awaitingSessionConfig = true;
+        } else {
+            awaitingGlobalConfig = true;
+        }
+        PacketDistributor.sendToServer(new RequestMobPoolConfigPayload(scope));
+    }
+
+    public void applyServerConfig(MobPoolConfigSyncPayload payload) {
+        applyServerConfig(payload, false);
+    }
+
+    private void applyServerConfig(MobPoolConfigSyncPayload payload, boolean force) {
+        if (payload == null || payload.data() == null) {
+            return;
+        }
+        if (!force && hasChanges) {
+            pendingServerConfig = payload;
+            ConfigScope scope = payload.data().scope();
+            if (scope == ConfigScope.SESSION) {
+                awaitingSessionConfig = false;
+            } else {
+                awaitingGlobalConfig = false;
+            }
+            initialConfigApplied = true;
+            return;
+        }
+        pendingServerConfig = null;
+        ConfigScope scope = payload.data().scope();
+        if (scope == ConfigScope.SESSION) {
+            awaitingSessionConfig = false;
+        } else {
+            awaitingGlobalConfig = false;
+        }
+        applyPoolConfig(payload.data().toPoolConfig());
+        if (scope == ConfigScope.SESSION && !payload.hasConfig()) {
+            Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+                .titleKey("devmod.endurance.mob_editor.session_fallback.title")
+                .messageKey("devmod.endurance.mob_editor.session_fallback.body")
+                .priority(NotificationPriority.LOW)
+                .displayDurationMs(2200)
+                .build();
+            ClientNotificationManager.INSTANCE.handleNotification(notification);
+        }
+        initialConfigApplied = true;
+    }
+
+    private void maybeShowPendingServerUpdate() {
+        if (pendingServerConfig == null) {
+            return;
+        }
+        if (isEditingActive()) {
+            return;
+        }
+        ConfirmDialog dialog = confirmDialog;
+        if (dialog != null && dialog.isVisible()) {
+            return;
+        }
+        MobPoolConfigSyncPayload pending = pendingServerConfig;
+        if (pending == null) {
+            return;
+        }
+        String title = I18n.translate("devmod.endurance.mob_editor.sync.title").getString();
+        String applyLabel = I18n.translate("devmod.endurance.mob_editor.sync.apply").getString();
+        String keepLabel = I18n.translate("devmod.endurance.mob_editor.sync.keep").getString();
+        String line1 = I18n.translate("devmod.endurance.mob_editor.sync.body").getString();
+        String line2 = I18n.translate("devmod.endurance.mob_editor.sync.prompt").getString();
+        confirmDialog = ConfirmDialog.create(
+            title,
+            applyLabel,
+            keepLabel,
+            ConfirmDialog.Style.WARNING,
+            () -> {
+                confirmDialog = null;
+                pendingServerConfig = null;
+                applyServerConfig(pending, true);
+            },
+            () -> {
+                confirmDialog = null;
+                pendingServerConfig = null;
+            },
+            line1,
+            line2
+        );
+        confirmDialog.show();
+    }
+
+    private void applyPoolConfig(@Nullable EnduranceMobPoolConfig poolConfig) {
+        EnduranceMobPoolConfig resolved = poolConfig != null ? poolConfig.copy() : new EnduranceMobPoolConfig();
+
+        baseConfigs.clear();
+        modifiedConfigs.clear();
+        orphanedConfigs.clear();
+
+        Set<ResourceLocation> disabled = Set.copyOf(resolved.getDisabledMobs());
+        for (ResourceLocation mobId : disabled) {
+            if (resolved.getMobConfigOrNull(mobId) == null) {
+                EnduranceMobConfig baseConfig = EnduranceMobConfig.fromRegistryOrDefault(mobId)
+                    .withEnabled(false);
+                resolved.setMobConfig(baseConfig);
+            }
+        }
+
+        for (EnduranceMobConfig config : resolved.getAllMobConfigs()) {
+            if (EnduranceQuestRegistry.INSTANCE.getMobConfig(config.mobId()).isPresent()) {
+                baseConfigs.put(config.mobId(), config);
+            } else {
+                orphanedConfigs.put(config.mobId(), config);
+            }
+        }
+
+        globalHealthMult = resolved.getGlobalHealthMult();
+        globalDamageMult = resolved.getGlobalDamageMult();
+        globalSpeedMult = resolved.getGlobalSpeedMult();
+        globalEliteChanceMult = resolved.getGlobalEliteChanceMult();
+        for (SpawnAffix affix : SpawnAffix.values()) {
+            affixWeights.put(affix, resolved.getAffixWeight(affix));
+        }
+
+        var listPanel = mobListPanel;
+        var statsPanel = mobStatsPanel;
+        if (listPanel != null) {
+            listPanel.reloadMobs();
+            availableNamespaces = listPanel.getAvailableNamespaces();
+            if (!availableNamespaces.contains(namespaceFilter)) {
+                namespaceFilter = "all";
+            }
+            listPanel.setNamespaceFilter(namespaceFilter);
+            listPanel.setTierFilter(tierFilter);
+            listPanel.setSearchQuery(searchQuery);
+            listPanel.applyPoolConfig(resolved);
+            if (statsPanel != null) {
+                ResourceLocation selectedMob = listPanel.getSelectedMobId();
+                if (selectedMob != null) {
+                    EnduranceMobConfig config = baseConfigs.get(selectedMob);
+                    if (config == null) {
+                        config = EnduranceMobConfig.fromRegistryOrDefault(selectedMob);
+                    }
+                    statsPanel.setMobConfig(config);
+                }
+            }
+        }
+
+        if (!orphanedConfigs.isEmpty()) {
+            Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+                .titleKey("devmod.endurance.mob_editor.orphaned.title")
+                .messageKey("devmod.endurance.mob_editor.orphaned.body")
+                .param("count", String.valueOf(orphanedConfigs.size()))
+                .priority(NotificationPriority.NORMAL)
+                .displayDurationMs(2600)
+                .build();
+            ClientNotificationManager.INSTANCE.handleNotification(notification);
+        }
+
+        hasChanges = false;
+    }
+
+    private EnduranceMobConfig getBaselineConfig(ResourceLocation mobId) {
+        EnduranceMobConfig config = baseConfigs.get(mobId);
+        return config != null ? config : EnduranceMobConfig.fromRegistryOrDefault(mobId);
+    }
+
+    private void setSearchQuery(String query) {
+        searchQuery = query != null ? query : "";
+        if (mobListPanel != null) {
+            mobListPanel.setSearchQuery(searchQuery);
+        }
+    }
+
+    private boolean canApplySession() {
+        if (!ClientQuestCache.hasActiveQuest()) {
+            return false;
+        }
+        var mc = minecraft;
+        if (mc == null || mc.player == null) {
+            return false;
+        }
+        if (!ClientPartyCache.isInParty()) {
+            return true;
+        }
+        return ClientPartyCache.isLeader(mc.player.getUUID());
+    }
+
+    private boolean isInitialSyncPending() {
+        return !initialConfigApplied && (awaitingGlobalConfig || awaitingSessionConfig);
+    }
+
+    private boolean isEditingActive() {
+        if (activeGlobalSlider >= 0 || activeAffixSlider >= 0) {
+            return true;
+        }
+        var statsPanel = mobStatsPanel;
+        return statsPanel != null && statsPanel.isSliderActive();
+    }
+
+    private void notifySessionApplyDisabled() {
+        String titleKey = "devmod.endurance.mob_editor.session_disabled.title";
+        String messageKey = null;
+        if (isInitialSyncPending()) {
+            messageKey = "devmod.endurance.mob_editor.syncing";
+        } else if (!ClientQuestCache.hasActiveQuest()) {
+            messageKey = "devmod.endurance.mob_editor.session_disabled.no_quest";
+        } else {
+            var mc = minecraft;
+            if (mc != null && mc.player != null && ClientPartyCache.isInParty()
+                && !ClientPartyCache.isLeader(mc.player.getUUID())) {
+                messageKey = "devmod.endurance.mob_editor.session_disabled.not_leader";
+            }
+        }
+        if (messageKey == null) {
+            return;
+        }
+        Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+            .titleKey(titleKey)
+            .messageKey(messageKey)
+            .priority(NotificationPriority.LOW)
+            .displayDurationMs(2200)
+            .build();
+        ClientNotificationManager.INSTANCE.handleNotification(notification);
     }
 
     // ========== Rendering ==========
@@ -380,12 +768,20 @@ public class MobPoolEditorScreen extends Screen {
         // Footer buttons
         renderFooter(graphics, mouseX, mouseY);
 
-        // Namespace dropdown (render last to be on top)
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        // Dropdowns and modal overlays on top
         if (namespaceDropdownOpen) {
             renderNamespaceDropdown(graphics, mouseX, mouseY);
         }
-
-        super.render(graphics, mouseX, mouseY, partialTick);
+        if (tierDropdownOpen) {
+            renderTierDropdown(graphics, mouseX, mouseY);
+        }
+        maybeShowPendingServerUpdate();
+        ConfirmDialog dialog = confirmDialog;
+        if (dialog != null && dialog.isVisible() && font != null) {
+            dialog.render(graphics, font, width, height, mouseX, mouseY);
+        }
     }
 
     private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -414,37 +810,57 @@ public class MobPoolEditorScreen extends Screen {
     private void renderFilterControls(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = font;
         if (safeFont == null) return;
+        FilterLayout layout = getFilterLayout();
 
-        int filterY = HEADER_HEIGHT - 24;
-        int filterX = PADDING;
+        // Filter bar background
+        graphics.fill(layout.panelX, layout.panelY, layout.panelX + layout.panelWidth,
+            layout.panelY + layout.panelHeight, DesignTokens.Surface.LEVEL_1);
+        graphics.hLine(layout.panelX, layout.panelX + layout.panelWidth,
+            layout.panelY + layout.panelHeight - 1, DesignTokens.Border.DEFAULT);
 
         // Namespace dropdown button
-        int dropdownWidth = 80;
-        int dropdownHeight = 18;
-
-        // Check hover state for dropdown button
-        boolean dropdownHovered = mouseX >= filterX && mouseX < filterX + dropdownWidth
-            && mouseY >= filterY && mouseY < filterY + dropdownHeight;
-
+        boolean dropdownHovered = mouseX >= layout.namespaceX && mouseX < layout.namespaceX + layout.namespaceW
+            && mouseY >= layout.namespaceY && mouseY < layout.namespaceY + layout.namespaceH;
         int bgColor = dropdownHovered ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_1;
         int borderColor = dropdownHovered ? DesignTokens.Border.LIGHT : DesignTokens.Border.DEFAULT;
+        graphics.fill(layout.namespaceX, layout.namespaceY, layout.namespaceX + layout.namespaceW,
+            layout.namespaceY + layout.namespaceH, bgColor);
+        graphics.renderOutline(layout.namespaceX, layout.namespaceY, layout.namespaceW, layout.namespaceH, borderColor);
 
-        graphics.fill(filterX, filterY, filterX + dropdownWidth, filterY + dropdownHeight, bgColor);
-        graphics.renderOutline(filterX, filterY, dropdownWidth, dropdownHeight, borderColor);
-
-        String displayNs = namespaceFilter.length() > 8 ? namespaceFilter.substring(0, 7) + ".." : namespaceFilter;
+        String nsLabel = "all".equals(namespaceFilter)
+            ? I18n.translate("devmod.endurance.mob_editor.filter_all").getString()
+            : namespaceFilter;
+        nsLabel = safeFont.plainSubstrByWidth(nsLabel, layout.namespaceW - 14);
         int textColor = dropdownHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-        graphics.drawString(safeFont, displayNs, filterX + 4, filterY + 5, textColor, false);
-        graphics.drawString(safeFont, "\u25BC", filterX + dropdownWidth - 12, filterY + 5,
+        graphics.drawString(safeFont, nsLabel, layout.namespaceX + 4, layout.namespaceY + 5, textColor, false);
+        graphics.drawString(safeFont, "\u25BC", layout.namespaceX + layout.namespaceW - 12, layout.namespaceY + 5,
             dropdownHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY, false);
 
-        // Tier filter buttons (below namespace)
-        // This is simplified - just show count
-        int countX = filterX + dropdownWidth + 8;
+        // Search box
+        renderSearchBox(graphics, safeFont, layout.searchX, layout.searchY, layout.searchW, layout.searchH,
+            mouseX, mouseY);
+
+        // Tier dropdown button
+        boolean tierHovered = mouseX >= layout.tierX && mouseX < layout.tierX + layout.tierW
+            && mouseY >= layout.tierY && mouseY < layout.tierY + layout.tierH;
+        int tierBg = tierHovered ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_1;
+        int tierBorder = tierHovered ? DesignTokens.Border.LIGHT : DesignTokens.Border.DEFAULT;
+        graphics.fill(layout.tierX, layout.tierY, layout.tierX + layout.tierW,
+            layout.tierY + layout.tierH, tierBg);
+        graphics.renderOutline(layout.tierX, layout.tierY, layout.tierW, layout.tierH, tierBorder);
+
+        String tierLabel = formatTierLabel(tierFilter);
+        tierLabel = safeFont.plainSubstrByWidth(tierLabel, layout.tierW - 14);
+        int tierColor = tierHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
+        graphics.drawString(safeFont, tierLabel, layout.tierX + 4, layout.tierY + 5, tierColor, false);
+        graphics.drawString(safeFont, "\u25BC", layout.tierX + layout.tierW - 12, layout.tierY + 5,
+            tierHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY, false);
+
         var listPanel = mobListPanel;
         if (listPanel != null) {
             String countText = listPanel.getFilteredMobCount() + "/" + listPanel.getTotalMobCount();
-            graphics.drawString(safeFont, countText, countX, filterY + 5, DesignTokens.Text.SECONDARY, false);
+            int countX = layout.panelX + layout.panelWidth - safeFont.width(countText) - 4;
+            graphics.drawString(safeFont, countText, countX, layout.tierY + 5, DesignTokens.Text.SECONDARY, false);
         }
     }
 
@@ -452,9 +868,10 @@ public class MobPoolEditorScreen extends Screen {
         var safeFont = font;
         if (safeFont == null) return;
 
-        int dropdownX = PADDING;
-        int dropdownY = HEADER_HEIGHT - 6;
-        int dropdownWidth = 100;
+        FilterLayout layout = getFilterLayout();
+        int dropdownX = layout.namespaceX;
+        int dropdownY = layout.namespaceY + layout.namespaceH;
+        int dropdownWidth = layout.namespaceW;
         int itemHeight = 16;
         int dropdownHeight = availableNamespaces.size() * itemHeight + 4;
 
@@ -479,6 +896,165 @@ public class MobPoolEditorScreen extends Screen {
 
             int textColor = selected ? DesignTokens.Accent.PRIMARY : DesignTokens.Text.PRIMARY;
             graphics.drawString(safeFont, ns, dropdownX + 6, itemY + 4, textColor, false);
+        }
+    }
+
+    private void renderTierDropdown(GuiGraphics graphics, int mouseX, int mouseY) {
+        var safeFont = font;
+        if (safeFont == null) return;
+
+        FilterLayout layout = getFilterLayout();
+        int dropdownX = layout.tierX;
+        int dropdownY = layout.tierY + layout.tierH;
+        int dropdownWidth = layout.tierW;
+        int itemHeight = 16;
+        int itemCount = MobTier.values().length + 1;
+        int dropdownHeight = itemCount * itemHeight + 4;
+
+        graphics.fill(dropdownX, dropdownY, dropdownX + dropdownWidth, dropdownY + dropdownHeight,
+            DesignTokens.Surface.LEVEL_2);
+        graphics.renderOutline(dropdownX, dropdownY, dropdownWidth, dropdownHeight, DesignTokens.Border.DEFAULT);
+
+        int itemY = dropdownY + 2;
+        for (int i = 0; i < itemCount; i++) {
+            MobTier option = i == 0 ? null : MobTier.values()[i - 1];
+            boolean selected = Objects.equals(option, tierFilter);
+            boolean hovered = mouseX >= dropdownX && mouseX < dropdownX + dropdownWidth
+                && mouseY >= itemY && mouseY < itemY + itemHeight;
+
+            if (hovered || selected) {
+                graphics.fill(dropdownX + 2, itemY, dropdownX + dropdownWidth - 2, itemY + itemHeight - 1,
+                    DesignTokens.Surface.LEVEL_1);
+            }
+
+            String label = formatTierLabel(option);
+            int textColor = selected ? DesignTokens.Accent.PRIMARY : DesignTokens.Text.PRIMARY;
+            graphics.drawString(safeFont, label, dropdownX + 6, itemY + 4, textColor, false);
+            itemY += itemHeight;
+        }
+    }
+
+    private void renderSearchBox(GuiGraphics graphics, Font safeFont, int x, int y, int width, int height,
+            int mouseX, int mouseY) {
+        boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+        boolean active = searchFocused;
+        int bgColor = (hovered || active) ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_1;
+        int borderColor = active ? DesignTokens.Accent.PRIMARY
+            : (hovered ? DesignTokens.Border.LIGHT : DesignTokens.Border.DEFAULT);
+        graphics.fill(x, y, x + width, y + height, bgColor);
+        graphics.renderOutline(x, y, width, height, borderColor);
+
+        boolean showPlaceholder = searchQuery.isEmpty() && !searchFocused;
+        String text = showPlaceholder ? I18n.ui("search").getString() : searchQuery;
+        int textColor = showPlaceholder ? DesignTokens.Text.MUTED : DesignTokens.Text.PRIMARY;
+        String displayText = safeFont.plainSubstrByWidth(text, width - 20);
+        graphics.drawString(safeFont, displayText, x + 4, y + 5, textColor, false);
+
+        if (!searchQuery.isEmpty()) {
+            int clearWidth = 14;
+            int clearX = x + width - clearWidth;
+            boolean clearHover = mouseX >= clearX && mouseX < x + width && mouseY >= y && mouseY < y + height;
+            int clearBg = clearHover ? DesignTokens.withAlpha(DesignTokens.Semantic.ERROR, 0x33)
+                : DesignTokens.withAlpha(DesignTokens.Surface.LEVEL_1, 0x55);
+            graphics.fill(clearX, y + 1, x + width - 1, y + height - 1, clearBg);
+            int clearColor = clearHover ? DesignTokens.Semantic.ERROR : DesignTokens.Text.SECONDARY;
+            graphics.drawString(safeFont, "x", clearX + 4, y + 5, clearColor, false);
+        }
+    }
+
+    private String formatTierLabel(@Nullable MobTier tier) {
+        if (tier == null) {
+            return I18n.translate("devmod.endurance.mob_editor.filter_all_tiers").getString();
+        }
+        String key = switch (tier) {
+            case TRIVIAL -> "devmod.endurance.quest.tier.trivial";
+            case EASY -> "devmod.endurance.quest.tier.easy";
+            case MEDIUM -> "devmod.endurance.quest.tier.medium";
+            case HARD -> "devmod.endurance.quest.tier.hard";
+            case ELITE -> "devmod.endurance.quest.tier.elite";
+            case BOSS -> "devmod.endurance.quest.tier.boss";
+        };
+        return I18n.translate(key).getString();
+    }
+
+    private FilterLayout getFilterLayout() {
+        int panelX = PADDING;
+        int panelY = HEADER_HEIGHT;
+        int panelWidth = LEFT_PANEL_WIDTH;
+        int panelHeight = FILTER_BAR_HEIGHT;
+
+        int innerX = panelX + 4;
+        int innerWidth = panelWidth - 8;
+
+        int rowHeight = FILTER_ROW_HEIGHT;
+        int row1Y = panelY + FILTER_ROW_PADDING;
+        int row2Y = row1Y + rowHeight + FILTER_ROW_GAP;
+
+        int namespaceW = Math.min(84, innerWidth - 40);
+        int searchW = innerWidth - namespaceW - 4;
+        if (searchW < 40) {
+            searchW = Math.max(24, searchW);
+            namespaceW = innerWidth - searchW - 4;
+        }
+
+        int countReserve = 0;
+        var listPanel = mobListPanel;
+        if (font != null && listPanel != null) {
+            String countText = listPanel.getFilteredMobCount() + "/" + listPanel.getTotalMobCount();
+            countReserve = font.width(countText) + 6;
+        }
+
+        int tierW = Math.max(60, innerWidth - countReserve);
+        if (tierW > innerWidth) {
+            tierW = innerWidth;
+        }
+
+        return new FilterLayout(
+            panelX, panelY, panelWidth, panelHeight,
+            innerX, row1Y, namespaceW, rowHeight,
+            innerX + namespaceW + 4, row1Y, searchW, rowHeight,
+            innerX, row2Y, tierW, rowHeight
+        );
+    }
+
+    private static final class FilterLayout {
+        final int panelX;
+        final int panelY;
+        final int panelWidth;
+        final int panelHeight;
+        final int namespaceX;
+        final int namespaceY;
+        final int namespaceW;
+        final int namespaceH;
+        final int searchX;
+        final int searchY;
+        final int searchW;
+        final int searchH;
+        final int tierX;
+        final int tierY;
+        final int tierW;
+        final int tierH;
+
+        private FilterLayout(int panelX, int panelY, int panelWidth, int panelHeight,
+                             int namespaceX, int namespaceY, int namespaceW, int namespaceH,
+                             int searchX, int searchY, int searchW, int searchH,
+                             int tierX, int tierY, int tierW, int tierH) {
+            this.panelX = panelX;
+            this.panelY = panelY;
+            this.panelWidth = panelWidth;
+            this.panelHeight = panelHeight;
+            this.namespaceX = namespaceX;
+            this.namespaceY = namespaceY;
+            this.namespaceW = namespaceW;
+            this.namespaceH = namespaceH;
+            this.searchX = searchX;
+            this.searchY = searchY;
+            this.searchW = searchW;
+            this.searchH = searchH;
+            this.tierX = tierX;
+            this.tierY = tierY;
+            this.tierW = tierW;
+            this.tierH = tierH;
         }
     }
 
@@ -517,6 +1093,24 @@ public class MobPoolEditorScreen extends Screen {
         renderGlobalSlider(graphics, safeFont, PADDING + sliderWidth + PADDING, sliderY, sliderWidth, 1, "DMG", globalDamageMult, mouseX, mouseY);
         renderGlobalSlider(graphics, safeFont, PADDING + (sliderWidth + PADDING) * 2, sliderY, sliderWidth, 2, "SPD", globalSpeedMult, mouseX, mouseY);
         renderGlobalSlider(graphics, safeFont, PADDING + (sliderWidth + PADDING) * 3, sliderY, sliderWidth, 3, "Elite", globalEliteChanceMult, mouseX, mouseY);
+
+        // Affix weights
+        int affixLabelY = sliderY + 20;
+        graphics.drawString(safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.mob_editor.affix_weights").getString()),
+            PADDING, affixLabelY, DesignTokens.Text.SECONDARY, false);
+
+        int affixY = affixLabelY + 12;
+        int affixWidth = (width - PADDING * (AFFIX_COLUMNS + 1)) / AFFIX_COLUMNS;
+        int rowHeight = 16;
+        SpawnAffix[] affixes = SpawnAffix.values();
+        for (int i = 0; i < affixes.length; i++) {
+            int col = i % AFFIX_COLUMNS;
+            int row = i / AFFIX_COLUMNS;
+            int x = PADDING + col * (affixWidth + PADDING);
+            int y = affixY + row * rowHeight;
+            float value = affixWeights.getOrDefault(affixes[i], 1.0f);
+            renderAffixSlider(graphics, safeFont, x, y, affixWidth, affixes[i], value, i, mouseX, mouseY);
+        }
     }
 
     private void renderGlobalSlider(GuiGraphics graphics, @Nonnull Font safeFont, int x, int y, int sliderWidth, int sliderId,
@@ -540,10 +1134,10 @@ public class MobPoolEditorScreen extends Screen {
         int trackBgColor = isHovered ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_0;
         graphics.fill(trackX, trackY, trackX + trackW, trackY + trackH, trackBgColor);
 
-        // Slider fill (0.1 to 3.0 range, center at 1.0)
-        float minVal = 0.1f;
-        float maxVal = 3.0f;
-        float ratio = (value - minVal) / (maxVal - minVal);
+        // Slider fill
+        float minVal = getGlobalSliderMin(sliderId);
+        float maxVal = getGlobalSliderMax(sliderId);
+        float ratio = Math.max(0f, Math.min(1f, (value - minVal) / (maxVal - minVal)));
         int fillW = (int) (ratio * trackW);
         int fillColor = Math.abs(value - 1.0f) < 0.01f ? DesignTokens.Text.SECONDARY : DesignTokens.Accent.PRIMARY;
         graphics.fill(trackX, trackY, trackX + fillW, trackY + trackH, fillColor);
@@ -557,6 +1151,70 @@ public class MobPoolEditorScreen extends Screen {
         String valueStr = String.format("%.1fx", value);
         int valueColor = (isHovered || isActive) ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY;
         graphics.drawString(safeFont, valueStr, trackX + trackW + 4, y, valueColor, false);
+    }
+
+    private void renderAffixSlider(GuiGraphics graphics, @Nonnull Font safeFont, int x, int y, int width,
+            SpawnAffix affix, float value, int sliderIndex, int mouseX, int mouseY) {
+        int labelWidth = AFFIX_LABEL_WIDTH;
+        int valueWidth = AFFIX_VALUE_WIDTH;
+        int trackX = x + labelWidth;
+        int trackW = Math.max(10, width - labelWidth - valueWidth - 8);
+        int trackY = y + 3;
+        int trackH = 6;
+
+        boolean hovered = mouseX >= trackX && mouseX < trackX + trackW
+            && mouseY >= trackY - 4 && mouseY < trackY + trackH + 4;
+        boolean active = activeAffixSlider == sliderIndex;
+
+        String label = formatAffixLabel(affix);
+        int labelColor = (hovered || active) ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
+        graphics.drawString(safeFont, label, x, y, labelColor, false);
+
+        int trackBg = hovered ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_0;
+        graphics.fill(trackX, trackY, trackX + trackW, trackY + trackH, trackBg);
+
+        float minVal = 0.0f;
+        float maxVal = 5.0f;
+        float ratio = Math.max(0f, Math.min(1f, (value - minVal) / (maxVal - minVal)));
+        int fillW = (int) (ratio * trackW);
+        int fillColor = Math.abs(value - 1.0f) < 0.01f ? DesignTokens.Text.SECONDARY : DesignTokens.Accent.PRIMARY;
+        graphics.fill(trackX, trackY, trackX + fillW, trackY + trackH, fillColor);
+
+        int handleX = trackX + fillW - 2;
+        int handleColor = (active || hovered) ? DesignTokens.Text.WHITE : DesignTokens.Border.LIGHT;
+        graphics.fill(handleX, trackY - 2, handleX + 4, trackY + trackH + 2, handleColor);
+
+        String valueStr = (value <= 0.01f && !hovered && !active) ? "OFF" : String.format("%.2fx", value);
+        int valueColor = (hovered || active) ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY;
+        graphics.drawString(safeFont, valueStr, trackX + trackW + 4, y, valueColor, false);
+    }
+
+    private String formatAffixLabel(SpawnAffix affix) {
+        return switch (affix) {
+            case BASE -> "Base";
+            case RUSH -> "Rush";
+            case BRUTE -> "Brute";
+            case SNIPER -> "Sniper";
+            case ELITE -> "Elite";
+            case OBJECTIVE_ELITE -> "ObjElite";
+        };
+    }
+
+    private float getGlobalSliderMin(int sliderId) {
+        return switch (sliderId) {
+            case 0, 1, 2 -> 0.1f;
+            case 3 -> 0.0f;
+            default -> 0.1f;
+        };
+    }
+
+    private float getGlobalSliderMax(int sliderId) {
+        return switch (sliderId) {
+            case 0, 1 -> 10.0f;
+            case 2 -> 5.0f;
+            case 3 -> 5.0f;
+            default -> 10.0f;
+        };
     }
 
     private void renderFooter(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -574,18 +1232,22 @@ public class MobPoolEditorScreen extends Screen {
 
         // Right-aligned buttons
         int btnX = width - PADDING - btnWidth;
+        boolean canApply = !isInitialSyncPending();
 
         if (applySessionButton != null) {
+            applySessionButton.setEnabled(canApply && canApplySession());
             applySessionButton.render(graphics, btnX, btnY, btnWidth, btnHeight, mouseX, mouseY);
         }
         btnX -= btnWidth + spacing;
 
         if (proposeButton != null) {
+            proposeButton.setEnabled(canApply);
             proposeButton.render(graphics, btnX, btnY, btnWidth, btnHeight, mouseX, mouseY);
         }
         btnX -= btnWidth + spacing;
 
         if (applyGlobalButton != null) {
+            applyGlobalButton.setEnabled(canApply);
             applyGlobalButton.render(graphics, btnX, btnY, btnWidth, btnHeight, mouseX, mouseY);
         }
 
@@ -593,6 +1255,18 @@ public class MobPoolEditorScreen extends Screen {
         if (resetButton != null) {
             resetButton.render(graphics, PADDING, btnY, 80, btnHeight, mouseX, mouseY);
         }
+
+        if (canApply) {
+            return;
+        }
+        var safeFont = font;
+        if (safeFont == null) {
+            return;
+        }
+        String syncing = I18n.translate("devmod.endurance.mob_editor.syncing").getString();
+        int syncX = PADDING + 88;
+        int syncY = btnY + 7;
+        graphics.drawString(safeFont, syncing, syncX, syncY, DesignTokens.Text.MUTED, false);
     }
 
     // ========== Input Handling ==========
@@ -601,12 +1275,25 @@ public class MobPoolEditorScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
-        // Close namespace dropdown if clicking outside
+        ConfirmDialog dialog = confirmDialog;
+        if (dialog != null && dialog.isVisible() && dialog.mouseClicked(mouseX, mouseY, width, height)) {
+            return true;
+        }
+
+        FilterLayout layout = getFilterLayout();
+
+        // Close dropdowns if clicking outside
         if (namespaceDropdownOpen) {
             if (handleNamespaceDropdownClick(mouseX, mouseY)) {
                 return true;
             }
             namespaceDropdownOpen = false;
+        }
+        if (tierDropdownOpen) {
+            if (handleTierDropdownClick(mouseX, mouseY)) {
+                return true;
+            }
+            tierDropdownOpen = false;
         }
 
         // Header buttons
@@ -615,9 +1302,33 @@ public class MobPoolEditorScreen extends Screen {
         }
 
         // Namespace dropdown toggle
-        int filterY = HEADER_HEIGHT - 24;
-        if (mouseX >= PADDING && mouseX < PADDING + 80 && mouseY >= filterY && mouseY < filterY + 18) {
+        if (mouseX >= layout.namespaceX && mouseX < layout.namespaceX + layout.namespaceW
+            && mouseY >= layout.namespaceY && mouseY < layout.namespaceY + layout.namespaceH) {
             namespaceDropdownOpen = !namespaceDropdownOpen;
+            tierDropdownOpen = false;
+            searchFocused = false;
+            return true;
+        }
+
+        // Search box focus / clear
+        if (mouseX >= layout.searchX && mouseX < layout.searchX + layout.searchW
+            && mouseY >= layout.searchY && mouseY < layout.searchY + layout.searchH) {
+            searchFocused = true;
+            if (!searchQuery.isEmpty()) {
+                int clearX = layout.searchX + layout.searchW - 14;
+                if (mouseX >= clearX) {
+                    setSearchQuery("");
+                }
+            }
+            return true;
+        }
+        searchFocused = false;
+
+        // Tier dropdown toggle
+        if (mouseX >= layout.tierX && mouseX < layout.tierX + layout.tierW
+            && mouseY >= layout.tierY && mouseY < layout.tierY + layout.tierH) {
+            tierDropdownOpen = !tierDropdownOpen;
+            namespaceDropdownOpen = false;
             return true;
         }
 
@@ -646,6 +1357,29 @@ public class MobPoolEditorScreen extends Screen {
             }
         }
 
+        // Affix sliders
+        int affixLabelY = sliderY + 20;
+        int affixY = affixLabelY + 12;
+        int affixWidth = (width - PADDING * (AFFIX_COLUMNS + 1)) / AFFIX_COLUMNS;
+        int rowHeight = 16;
+        SpawnAffix[] affixes = SpawnAffix.values();
+        for (int i = 0; i < affixes.length; i++) {
+            int col = i % AFFIX_COLUMNS;
+            int row = i / AFFIX_COLUMNS;
+            int x = PADDING + col * (affixWidth + PADDING);
+            int y = affixY + row * rowHeight;
+            int trackX = x + AFFIX_LABEL_WIDTH;
+            int trackW = Math.max(10, affixWidth - AFFIX_LABEL_WIDTH - AFFIX_VALUE_WIDTH - 8);
+            int trackY = y + 3;
+            int trackH = 6;
+            if (mouseX >= trackX && mouseX <= trackX + trackW
+                && mouseY >= trackY - 4 && mouseY <= trackY + trackH + 4) {
+                activeAffixSlider = i;
+                updateAffixSlider(mouseX, trackX, trackW, affixes[i]);
+                return true;
+            }
+        }
+
         // Footer buttons
         if (applyGlobalButton != null && applyGlobalButton.mouseClicked(mouseX, mouseY, button)) {
             return true;
@@ -653,11 +1387,23 @@ public class MobPoolEditorScreen extends Screen {
         if (proposeButton != null && proposeButton.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
-        if (applySessionButton != null && applySessionButton.mouseClicked(mouseX, mouseY, button)) {
-            return true;
+        if (applySessionButton != null) {
+            if (!applySessionButton.isEnabled() && applySessionButton.getBounds().contains(mouseX, mouseY)) {
+                notifySessionApplyDisabled();
+                return true;
+            }
+            if (applySessionButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
         }
-        if (resetButton != null && resetButton.mouseClicked(mouseX, mouseY, button)) {
-            return true;
+        if (resetButton != null) {
+            if (resetButton.getBounds().contains(mouseX, mouseY) && hasShiftDown()) {
+                resetToDefaults();
+                return true;
+            }
+            if (resetButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
         }
 
         // Panels
@@ -672,9 +1418,10 @@ public class MobPoolEditorScreen extends Screen {
     }
 
     private boolean handleNamespaceDropdownClick(double mouseX, double mouseY) {
-        int dropdownX = PADDING;
-        int dropdownY = HEADER_HEIGHT - 6;
-        int dropdownWidth = 100;
+        FilterLayout layout = getFilterLayout();
+        int dropdownX = layout.namespaceX;
+        int dropdownY = layout.namespaceY + layout.namespaceH;
+        int dropdownWidth = layout.namespaceW;
         int itemHeight = 16;
 
         for (int i = 0; i < availableNamespaces.size(); i++) {
@@ -686,6 +1433,29 @@ public class MobPoolEditorScreen extends Screen {
                     mobListPanel.setNamespaceFilter(namespaceFilter);
                 }
                 namespaceDropdownOpen = false;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean handleTierDropdownClick(double mouseX, double mouseY) {
+        FilterLayout layout = getFilterLayout();
+        int dropdownX = layout.tierX;
+        int dropdownY = layout.tierY + layout.tierH;
+        int dropdownWidth = layout.tierW;
+        int itemHeight = 16;
+        int itemCount = MobTier.values().length + 1;
+
+        for (int i = 0; i < itemCount; i++) {
+            int itemY = dropdownY + 2 + i * itemHeight;
+            if (mouseX >= dropdownX && mouseX < dropdownX + dropdownWidth
+                && mouseY >= itemY && mouseY < itemY + itemHeight) {
+                tierFilter = (i == 0) ? null : MobTier.values()[i - 1];
+                if (mobListPanel != null) {
+                    mobListPanel.setTierFilter(tierFilter);
+                }
+                tierDropdownOpen = false;
                 return true;
             }
         }
@@ -708,6 +1478,10 @@ public class MobPoolEditorScreen extends Screen {
             activeGlobalSlider = -1;
             return true;
         }
+        if (activeAffixSlider >= 0) {
+            activeAffixSlider = -1;
+            return true;
+        }
 
         // Panels
         if (mobStatsPanel != null && mobStatsPanel.mouseReleased(mouseX, mouseY, button)) {
@@ -723,9 +1497,27 @@ public class MobPoolEditorScreen extends Screen {
         if (activeGlobalSlider >= 0) {
             int sliderWidth = (width - PADDING * 5) / 4;
             int sliderX = PADDING + activeGlobalSlider * (sliderWidth + PADDING) + 35;
-            int trackW = sliderWidth - 70;
+            int trackW = Math.max(10, sliderWidth - 70);
             updateGlobalSlider(mouseX, sliderX, trackW);
             return true;
+        }
+
+        if (activeAffixSlider >= 0) {
+            int sectionY = height - FOOTER_HEIGHT - GLOBAL_SECTION_HEIGHT;
+            int sliderY = sectionY + 22;
+            int affixLabelY = sliderY + 20;
+            int affixY = affixLabelY + 12;
+            int affixWidth = (width - PADDING * (AFFIX_COLUMNS + 1)) / AFFIX_COLUMNS;
+            int col = activeAffixSlider % AFFIX_COLUMNS;
+            int row = activeAffixSlider / AFFIX_COLUMNS;
+            int x = PADDING + col * (affixWidth + PADDING);
+            int trackX = x + AFFIX_LABEL_WIDTH;
+            int trackW = Math.max(10, affixWidth - AFFIX_LABEL_WIDTH - AFFIX_VALUE_WIDTH - 8);
+            SpawnAffix[] affixes = SpawnAffix.values();
+            if (activeAffixSlider < affixes.length) {
+                updateAffixSlider(mouseX, trackX, trackW, affixes[activeAffixSlider]);
+                return true;
+            }
         }
 
         // Stats panel
@@ -737,8 +1529,8 @@ public class MobPoolEditorScreen extends Screen {
     }
 
     private void updateGlobalSlider(double mouseX, int sliderX, int trackW) {
-        float minVal = 0.1f;
-        float maxVal = 3.0f;
+        float minVal = getGlobalSliderMin(activeGlobalSlider);
+        float maxVal = getGlobalSliderMax(activeGlobalSlider);
         float ratio = (float) Math.max(0, Math.min(1, (mouseX - sliderX) / trackW));
         float newValue = minVal + ratio * (maxVal - minVal);
 
@@ -751,8 +1543,21 @@ public class MobPoolEditorScreen extends Screen {
         hasChanges = true;
     }
 
+    private void updateAffixSlider(double mouseX, int sliderX, int trackW, SpawnAffix affix) {
+        float minVal = 0.0f;
+        float maxVal = 5.0f;
+        float ratio = (float) Math.max(0, Math.min(1, (mouseX - sliderX) / trackW));
+        float newValue = minVal + ratio * (maxVal - minVal);
+        affixWeights.put(affix, newValue);
+        hasChanges = true;
+    }
+
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        ConfirmDialog dialog = confirmDialog;
+        if (dialog != null && dialog.isVisible() && dialog.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
+            return true;
+        }
         if (mobListPanel != null && mobListPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
             return true;
         }
@@ -763,7 +1568,92 @@ public class MobPoolEditorScreen extends Screen {
     }
 
     @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        ConfirmDialog dialog = confirmDialog;
+        if (dialog != null && dialog.isVisible() && dialog.keyPressed(keyCode)) {
+            return true;
+        }
+
+        if (searchFocused) {
+            if (keyCode == 259) { // Backspace
+                if (!searchQuery.isEmpty()) {
+                    setSearchQuery(searchQuery.substring(0, searchQuery.length() - 1));
+                }
+                return true;
+            }
+            if (keyCode == 256) { // Escape
+                searchFocused = false;
+                return true;
+            }
+            if (keyCode == 257 || keyCode == 335) { // Enter
+                searchFocused = false;
+                return true;
+            }
+        }
+
+        if (keyCode == 256) {
+            attemptClose();
+            return true;
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        ConfirmDialog dialog = confirmDialog;
+        if (dialog != null && dialog.isVisible() && dialog.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+
+        if (searchFocused && !Character.isISOControl(codePoint)) {
+            if (searchQuery.length() < 32) {
+                setSearchQuery(searchQuery + codePoint);
+            }
+            return true;
+        }
+
+        return super.charTyped(codePoint, modifiers);
+    }
+
+    @Override
     public void onClose() {
+        attemptClose();
+    }
+
+    private void attemptClose() {
+        ConfirmDialog dialog = confirmDialog;
+        if (dialog != null && dialog.isVisible()) {
+            return;
+        }
+
+        if (hasChanges) {
+            String title = I18n.translate("devmod.ui.unsaved.title").getString();
+            String confirmLabel = I18n.translate("devmod.ui.unsaved.discard").getString();
+            String cancelLabel = I18n.ui("cancel").getString();
+            String line1 = I18n.translate("devmod.ui.unsaved.body").getString();
+            String line2 = I18n.translate("devmod.ui.unsaved.prompt").getString();
+            confirmDialog = ConfirmDialog.create(
+                title,
+                confirmLabel,
+                cancelLabel,
+                ConfirmDialog.Style.DANGER,
+                () -> {
+                    confirmDialog = null;
+                    closeScreen();
+                },
+                () -> confirmDialog = null,
+                line1,
+                line2
+            );
+            confirmDialog.show();
+            return;
+        }
+
+        closeScreen();
+    }
+
+    private void closeScreen() {
         if (minecraft != null) {
             minecraft.setScreen(parent);
         }

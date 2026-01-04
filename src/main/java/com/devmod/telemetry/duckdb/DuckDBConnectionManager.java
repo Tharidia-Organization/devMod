@@ -196,21 +196,56 @@ public class DuckDBConnectionManager implements AutoCloseable {
     /**
      * Ensure DuckDB native library path is set before driver initialization.
      * This fixes NPE in NeoForge environment where DuckDB can't determine temp directory.
+     *
+     * DuckDB's native loader can fail with NPE when:
+     * - java.io.tmpdir is null or invalid
+     * - The classloader environment doesn't have proper temp directory access
+     * - NeoForge's FML classloader interferes with path resolution
+     *
+     * This method sets multiple fallback paths to maximize compatibility.
      */
     private void ensureNativeLibraryPath(@Nullable Path preferredDir) {
-        // Only set if not already configured
-        if (System.getProperty("org.duckdb.library_path") != null) {
-            return;
-        }
-
         try {
-            Path libPath;
-            if (preferredDir != null && Files.exists(preferredDir)) {
-                // Use the database parent directory
-                libPath = preferredDir.resolve("native");
-            } else {
-                // Fallback to system temp directory
-                libPath = Path.of(System.getProperty("java.io.tmpdir"), "duckdb-native");
+            // Ensure java.io.tmpdir is set (DuckDB uses this as fallback)
+            String tmpDir = System.getProperty("java.io.tmpdir");
+            if (tmpDir == null || tmpDir.isEmpty()) {
+                // Set a sensible default if missing
+                tmpDir = System.getProperty("user.home", ".") + "/.devmod/tmp";
+                System.setProperty("java.io.tmpdir", tmpDir);
+                LOGGER.warn("[DuckDB] java.io.tmpdir was null/empty, set to: {}", tmpDir);
+            }
+
+            // Only set DuckDB library path if not already configured
+            if (System.getProperty("org.duckdb.library_path") != null) {
+                LOGGER.debug("[DuckDB] Native library path already set: {}",
+                    System.getProperty("org.duckdb.library_path"));
+                return;
+            }
+
+            Path libPath = null;
+
+            // Priority 1: Use the database parent directory (most reliable)
+            if (preferredDir != null) {
+                try {
+                    if (Files.exists(preferredDir) || Files.createDirectories(preferredDir) != null) {
+                        libPath = preferredDir.resolve("native");
+                    }
+                } catch (IOException ignored) {
+                    // Fall through to next option
+                }
+            }
+
+            // Priority 2: Use user home directory (always available)
+            if (libPath == null) {
+                String userHome = System.getProperty("user.home");
+                if (userHome != null && !userHome.isEmpty()) {
+                    libPath = Path.of(userHome, ".devmod", "duckdb-native");
+                }
+            }
+
+            // Priority 3: Use java.io.tmpdir
+            if (libPath == null) {
+                libPath = Path.of(tmpDir, "duckdb-native");
             }
 
             // Ensure the directory exists
@@ -219,11 +254,12 @@ public class DuckDBConnectionManager implements AutoCloseable {
             }
 
             // Set the system property for DuckDB native library extraction
-            System.setProperty("org.duckdb.library_path", libPath.toAbsolutePath().toString());
-            LOGGER.info("[DuckDB] Native library path set to: {}", libPath);
+            String libPathStr = libPath.toAbsolutePath().toString();
+            System.setProperty("org.duckdb.library_path", libPathStr);
+            LOGGER.info("[DuckDB] Native library path set to: {}", libPathStr);
 
-        } catch (IOException e) {
-            LOGGER.warn("[DuckDB] Could not set native library path, using defaults", e);
+        } catch (IOException | SecurityException e) {
+            LOGGER.warn("[DuckDB] Could not set native library path, DuckDB may fail to initialize", e);
         }
     }
 
@@ -244,7 +280,27 @@ public class DuckDBConnectionManager implements AutoCloseable {
             ensureNativeLibraryPath(parentDir);
 
             // Load DuckDB driver explicitly
-            Class.forName("org.duckdb.DuckDBDriver");
+            // CRITICAL: Wrap in try-catch for native library initialization errors
+            // DuckDB's native loader can throw NoClassDefFoundError/ExceptionInInitializerError
+            // when it fails to determine the temp directory path (null path bug)
+            try {
+                Class.forName("org.duckdb.DuckDBDriver");
+            } catch (ExceptionInInitializerError e) {
+                // Native library static initializer failed (common cause: null path in NeoForge)
+                LOGGER.error("[DuckDB] Native library initialization failed. This is often caused by " +
+                    "DuckDB being unable to determine the temp directory path in modded environments.", e);
+                throw new SQLException("DuckDB native library initialization failed: " + e.getMessage(), e);
+            } catch (NoClassDefFoundError e) {
+                // Class couldn't be initialized due to previous failure
+                LOGGER.error("[DuckDB] DuckDB native class not found/initialized. " +
+                    "The native library may have failed to load.", e);
+                throw new SQLException("DuckDB native class initialization failed: " + e.getMessage(), e);
+            } catch (UnsatisfiedLinkError e) {
+                // Native library couldn't be loaded (missing .so/.dll/.dylib)
+                LOGGER.error("[DuckDB] Failed to load DuckDB native library. " +
+                    "Ensure DuckDB JDBC is included with native binaries.", e);
+                throw new SQLException("DuckDB native library load failed: " + e.getMessage(), e);
+            }
 
             // Create connection
             String jdbcUrl = "jdbc:duckdb:" + dbPath.toAbsolutePath();
@@ -258,6 +314,9 @@ public class DuckDBConnectionManager implements AutoCloseable {
 
         } catch (ClassNotFoundException e) {
             throw new SQLException("DuckDB JDBC driver not found", e);
+        } catch (SQLException e) {
+            // Re-throw SQLException (already wrapped native errors)
+            throw e;
         } catch (Exception e) {
             throw new SQLException("Failed to create DuckDB connection: " + e.getMessage(), e);
         }

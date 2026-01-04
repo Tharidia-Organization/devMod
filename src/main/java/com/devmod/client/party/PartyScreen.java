@@ -30,9 +30,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.endurance.KitSelectionScreen;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UiSounds;
-import com.devmod.client.endurance.KitSelectionScreen;
 import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;

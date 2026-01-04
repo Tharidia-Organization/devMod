@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.endurance.config.EffectiveConfig;
 import com.google.common.base.Splitter;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -29,6 +28,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+
+import com.devmod.endurance.config.EffectiveConfig;
 
 public class EnduranceQuestRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestRegistry.class);

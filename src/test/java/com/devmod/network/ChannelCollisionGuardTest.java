@@ -65,6 +65,7 @@ class ChannelCollisionGuardTest {
 
             // ENDURANCE: 5-25 (QUEST_SEQUENCE excluded - it's in PARTY range)
             // REQUEST_SEASON_PASS excluded - it's in NOTIFICATION CENTER range
+            // REQUEST_MOB_POOL_CONFIG excluded - it's in NUTRITION range
             if ((name.startsWith("START_QUEST") || name.startsWith("QUEST_") ||
                 name.startsWith("SHOP_") || name.startsWith("PERK_") ||
                 name.startsWith("PERSONAL_") || name.startsWith("REQUEST_") ||
@@ -73,9 +74,17 @@ class ChannelCollisionGuardTest {
                 name.startsWith("COMBO_") || name.startsWith("INSTANCE_") ||
                 name.startsWith("WAVE_") || name.equals("MOB_CONFIG_CONFIRM"))
                 && !name.equals("QUEST_SEQUENCE")
-                && !name.equals("REQUEST_SEASON_PASS")) {
+                && !name.equals("REQUEST_SEASON_PASS")
+                && !name.equals("REQUEST_MOB_POOL_CONFIG")) {
                 assertTrue(id >= 5 && id <= 25,
                     "ENDURANCE channel out of range (5-25): " + name + " = " + id);
+            }
+
+            // NUTRITION/MOB_POOL: 130-139
+            if (name.startsWith("NUTRITION_") || name.startsWith("MOB_POOL_") ||
+                name.equals("REQUEST_MOB_POOL_CONFIG")) {
+                assertTrue(id >= 130 && id <= 139,
+                    "NUTRITION/MOB_POOL channel out of range (130-139): " + name + " = " + id);
             }
 
             // PARTY: 26-35

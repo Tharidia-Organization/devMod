@@ -14,6 +14,7 @@ import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.endurance.InstanceLoadingPayload;
 import com.devmod.endurance.KitSyncConfirmPayload;
+import com.devmod.endurance.MobPoolConfigSyncPayload;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PersonalRecordsSyncPayload;
 import com.devmod.endurance.QuestCompletionPayload;
@@ -88,6 +89,11 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     @Override
     public void handleConfigMobConfigConfirm(MobConfigConfirmPayload payload) {
         ClientConfigHandlers.handleMobConfigConfirm(payload);
+    }
+
+    @Override
+    public void handleMobPoolConfigSync(MobPoolConfigSyncPayload payload) {
+        ClientEnduranceHandlers.handleMobPoolConfigSync(payload);
     }
 
     @Override

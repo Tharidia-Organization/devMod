@@ -18,9 +18,9 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.network.ClientTensionCache;
 import com.devmod.client.party.ClientPartyCache;
 import com.devmod.client.ui.editor.core.DesignTokens;
-import com.devmod.client.network.ClientTensionCache;
 import com.devmod.endurance.EnduranceQuestState;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.WaveObjectiveState;

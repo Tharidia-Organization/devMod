@@ -24,6 +24,7 @@ import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobQuestConfig;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
 import com.devmod.endurance.config.EnduranceMobConfig;
+import com.devmod.endurance.config.EnduranceMobPoolConfig;
 import com.devmod.util.I18n;
 
 /**
@@ -48,6 +49,7 @@ public class MobListPanel {
     private int y;
     private int width;
     private int height;
+    private int topInset = 0;
 
     // Mob data
     private final List<MobListEntry> allMobs = new ArrayList<>();
@@ -90,6 +92,7 @@ public class MobListPanel {
     private void loadMobs() {
         allMobs.clear();
         availableNamespaces.clear();
+        enabledMobs.clear();
 
         Set<String> namespaces = new HashSet<>();
 
@@ -105,6 +108,26 @@ public class MobListPanel {
         availableNamespaces.addAll(namespaces.stream().sorted().toList());
 
         applyFilters();
+    }
+
+    /**
+     * Reload all mob entries from the registry.
+     * Preserves the current selection if still available.
+     */
+    public void reloadMobs() {
+        ResourceLocation previousSelection = selectedMobId;
+        loadMobs();
+        if (previousSelection != null) {
+            for (MobListEntry entry : allMobs) {
+                if (entry.config.mobId().equals(previousSelection)) {
+                    selectedMobId = previousSelection;
+                    if (onMobSelected != null) {
+                        onMobSelected.accept(previousSelection);
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     /**
@@ -147,6 +170,10 @@ public class MobListPanel {
         this.y = y;
         this.width = width;
         this.height = height;
+    }
+
+    public void setTopInset(int inset) {
+        this.topInset = Math.max(0, inset);
     }
 
     public void setNamespaceFilter(String namespace) {
@@ -308,7 +335,10 @@ public class MobListPanel {
         selectedMobId = mobId;
 
         // Scroll to make it visible (center it if possible)
-        int contentHeight = height - PADDING * 2;
+        int contentHeight = height - PADDING * 2 - topInset;
+        if (contentHeight <= 0) {
+            contentHeight = ITEM_HEIGHT;
+        }
         int visibleItems = contentHeight / ITEM_HEIGHT;
         int targetScroll = Math.max(0, index - visibleItems / 2);
         int maxScroll = Math.max(0, filteredMobs.size() - visibleItems);
@@ -330,7 +360,10 @@ public class MobListPanel {
         graphics.renderOutline(x, y, width, height, DesignTokens.Border.DEFAULT);
 
         // Calculate visible range
-        int contentHeight = height - PADDING * 2;
+        int contentHeight = height - PADDING * 2 - topInset;
+        if (contentHeight <= 0) {
+            contentHeight = ITEM_HEIGHT;
+        }
         int visibleItems = contentHeight / ITEM_HEIGHT;
         int maxScroll = Math.max(0, filteredMobs.size() - visibleItems);
         scrollOffset = Math.min(scrollOffset, maxScroll);
@@ -339,7 +372,7 @@ public class MobListPanel {
         hoveredIndex = -1;
 
         // Render items
-        int itemY = y + PADDING;
+        int itemY = y + PADDING + topInset;
         for (int i = 0; i < visibleItems && (i + scrollOffset) < filteredMobs.size(); i++) {
             int index = i + scrollOffset;
             MobListEntry entry = filteredMobs.get(index);
@@ -369,7 +402,8 @@ public class MobListPanel {
             String emptyText = I18n.translate(emptyKey).getString();
             if (emptyText != null) {
                 int textWidth = font.width(emptyText);
-                graphics.drawString(font, emptyText, x + (width - textWidth) / 2, y + height / 2 - 4,
+                int centerY = y + topInset + (height - topInset) / 2 - 4;
+                graphics.drawString(font, emptyText, x + (width - textWidth) / 2, centerY,
                     DesignTokens.Text.MUTED, false);
             }
         }
@@ -434,8 +468,11 @@ public class MobListPanel {
 
     private void renderScrollbar(GuiGraphics graphics, int visibleItems, int maxScroll) {
         int scrollbarX = x + width - 6;
-        int scrollbarHeight = height - PADDING * 2;
-        int scrollbarY = y + PADDING;
+        int scrollbarHeight = height - PADDING * 2 - topInset;
+        if (scrollbarHeight <= 0) {
+            scrollbarHeight = ITEM_HEIGHT;
+        }
+        int scrollbarY = y + PADDING + topInset;
 
         // Track
         graphics.fill(scrollbarX, scrollbarY, scrollbarX + 4, scrollbarY + scrollbarHeight,
@@ -467,6 +504,10 @@ public class MobListPanel {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return false;
         if (mouseX < x || mouseX >= x + width || mouseY < y || mouseY >= y + height) {
+            return false;
+        }
+        int contentTop = y + PADDING + topInset;
+        if (mouseY < contentTop) {
             return false;
         }
 
@@ -504,13 +545,35 @@ public class MobListPanel {
         if (mouseX < x || mouseX >= x + width || mouseY < y || mouseY >= y + height) {
             return false;
         }
+        int contentTop = y + PADDING + topInset;
+        if (mouseY < contentTop) {
+            return false;
+        }
 
-        int contentHeight = height - PADDING * 2;
+        int contentHeight = height - PADDING * 2 - topInset;
+        if (contentHeight <= 0) {
+            contentHeight = ITEM_HEIGHT;
+        }
         int visibleItems = contentHeight / ITEM_HEIGHT;
         int maxScroll = Math.max(0, filteredMobs.size() - visibleItems);
 
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) deltaY));
         return true;
+    }
+
+    public void applyPoolConfig(@Nullable EnduranceMobPoolConfig poolConfig) {
+        enabledMobs.clear();
+        if (poolConfig == null) {
+            for (MobListEntry entry : allMobs) {
+                enabledMobs.add(entry.config.mobId());
+            }
+            return;
+        }
+        for (MobListEntry entry : allMobs) {
+            if (poolConfig.isEnabled(entry.config.mobId())) {
+                enabledMobs.add(entry.config.mobId());
+            }
+        }
     }
 
     // ========== Entry Class ==========

@@ -24,6 +24,7 @@ import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.MobPoolConfigSyncPayload;
 import com.devmod.endurance.InstanceLoadingPayload;
 import com.devmod.endurance.KitSyncConfirmPayload;
 import com.devmod.endurance.KitSyncPayload;
@@ -37,6 +38,7 @@ import com.devmod.endurance.QuestDeathPayload;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.RequestPersonalRecordsPayload;
 import com.devmod.endurance.RequestShopSyncPayload;
+import com.devmod.endurance.RequestMobPoolConfigPayload;
 import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.ShopPurchasePayload;
 import com.devmod.endurance.ShopSyncPayload;
@@ -104,6 +106,7 @@ import static com.devmod.network.ChannelId.MAILBOX_SEND;
 import static com.devmod.network.ChannelId.MAILBOX_STATUS;
 import static com.devmod.network.ChannelId.MAILBOX_SYNC;
 import static com.devmod.network.ChannelId.MOB_CONFIG_CONFIRM;
+import static com.devmod.network.ChannelId.MOB_POOL_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.MOB_STATS;
 import static com.devmod.network.ChannelId.MODIFY_ITEM;
 import static com.devmod.network.ChannelId.NAMED_INVITE;
@@ -125,6 +128,7 @@ import static com.devmod.network.ChannelId.RANGED_WEAPON_STATS;
 import static com.devmod.network.ChannelId.RECIPE_CLIENT_SYNC;
 import static com.devmod.network.ChannelId.RECIPE_SYNC;
 import static com.devmod.network.ChannelId.REQUEST_ARENA_SUGGESTIONS;
+import static com.devmod.network.ChannelId.REQUEST_MOB_POOL_CONFIG;
 import static com.devmod.network.ChannelId.REQUEST_PERSONAL_RECORDS;
 import static com.devmod.network.ChannelId.REQUEST_SEASON_PASS;
 import static com.devmod.network.ChannelId.REQUEST_SHOP_SYNC;
@@ -176,6 +180,8 @@ public class NetworkHandler {
         void handleMobConfigConfirm(MobConfigConfirmPayload payload);
 
         void handleConfigMobConfigConfirm(MobConfigConfirmPayload payload);
+
+        void handleMobPoolConfigSync(MobPoolConfigSyncPayload payload);
 
         void handleQuestSync(QuestSyncPayload payload);
 
@@ -567,6 +573,18 @@ public class NetworkHandler {
                 nn(EnduranceMobConfigSyncPayload.TYPE),
                 nn(EnduranceMobConfigSyncPayload.STREAM_CODEC),
                 validated(EnduranceNetworkHandler::handleMobConfigSync, PayloadLimits.MEDIUM)
+        );
+        // REQUEST_MOB_POOL_CONFIG (131): Client -> Server request for mob pool config
+        event.registrar(REQUEST_MOB_POOL_CONFIG.asString()).playToServer(
+                nn(RequestMobPoolConfigPayload.TYPE),
+                nn(RequestMobPoolConfigPayload.STREAM_CODEC),
+                validated(EnduranceNetworkHandler::handleRequestMobPoolConfig, PayloadLimits.SMALL)
+        );
+        // MOB_POOL_CONFIG_SYNC (132): Server -> Client mob pool config response
+        event.registrar(MOB_POOL_CONFIG_SYNC.asString()).playToClient(
+                nn(MobPoolConfigSyncPayload.TYPE),
+                nn(MobPoolConfigSyncPayload.STREAM_CODEC),
+                validated(EnduranceNetworkHandler::handleMobPoolConfigSync, PayloadLimits.SYNC_MEDIUM)
         );
 
         // ===================================================================

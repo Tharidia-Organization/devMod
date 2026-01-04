@@ -25,8 +25,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.arena.api.ArenaHandle;
-import com.devmod.endurance.EnduranceTags;
 import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.EnduranceTags;
 import com.devmod.telemetry.boss.BossPhaseService;
 import com.devmod.telemetry.combat.FightSessionService;
 import com.devmod.telemetry.damage.DamageTrackingService;

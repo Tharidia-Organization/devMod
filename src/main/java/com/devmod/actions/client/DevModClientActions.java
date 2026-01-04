@@ -37,7 +37,6 @@ import com.devmod.client.endurance.QuestCompletionScreen;
 import com.devmod.client.endurance.QuestDeathScreen;
 import com.devmod.client.endurance.QuestExitConfirmScreen;
 import com.devmod.client.endurance.WaveCheckpointScreen;
-import com.devmod.shared.SharedColorTokens;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.notification.ui.NotificationCenterScreen;
 import com.devmod.client.overlay.BossPhaseOverlay;
@@ -105,6 +104,7 @@ import com.devmod.notification.PartyInviteActionData;
 import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
 import com.devmod.rendering.HeatmapType;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
 

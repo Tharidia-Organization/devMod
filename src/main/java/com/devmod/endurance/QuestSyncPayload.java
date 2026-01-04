@@ -173,18 +173,35 @@ public record QuestSyncPayload(
             }
         }
 
+        // Combo system data
         int currentCombo = buf.readVarInt();
         int maxCombo = buf.readVarInt();
         int styleScore = buf.readVarInt();
         int styleRankOrdinal = buf.readVarInt();
-        int flowStateOrdinal = buf.readVarInt();
-        float virtuosoProgress = buf.readFloat();
-        float staleRisk = buf.readFloat();
-        int uniqueActionCount = buf.readVarInt();
-        int momentumPercent = buf.readVarInt();
-        int momentumStateOrdinal = buf.readVarInt();
-        boolean isOverdrive = buf.readBoolean();
-        long overdriveRemaining = buf.readLong();
+
+        // Flow State data (added later - check if readable for backward compat)
+        int flowStateOrdinal = 1; // Default: NEUTRAL
+        float virtuosoProgress = 0f;
+        float staleRisk = 0f;
+        int uniqueActionCount = 0;
+        if (buf.isReadable()) {
+            flowStateOrdinal = buf.readVarInt();
+            virtuosoProgress = buf.readFloat();
+            staleRisk = buf.readFloat();
+            uniqueActionCount = buf.readVarInt();
+        }
+
+        // Momentum data (added later - check if readable for backward compat)
+        int momentumPercent = 50; // Default: 50%
+        int momentumStateOrdinal = 1; // Default: BUILDING
+        boolean isOverdrive = false;
+        long overdriveRemaining = 0;
+        if (buf.isReadable()) {
+            momentumPercent = buf.readVarInt();
+            momentumStateOrdinal = buf.readVarInt();
+            isOverdrive = buf.readBoolean();
+            overdriveRemaining = buf.readLong();
+        }
 
         return new QuestSyncPayload(
             hasActiveQuest, questId, questName, templateId, templateVersion, policyId, policyVersion,

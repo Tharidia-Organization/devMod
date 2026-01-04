@@ -10,16 +10,19 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.endurance.ClientChallengeCache;
+import com.devmod.client.endurance.ClientMobPoolConfigCache;
 import com.devmod.client.endurance.ClientPartyStatsCache;
 import com.devmod.client.endurance.ClientPersonalRecordsCache;
 import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.client.endurance.EnduranceQuestScreen;
 import com.devmod.client.endurance.EnduranceUiCache;
+import com.devmod.client.endurance.MobPoolEditorScreen;
 import com.devmod.client.endurance.QuestDeathScreen;
-import com.devmod.client.party.PartyScreen;
 import com.devmod.client.overlay.InstanceLoadingOverlay;
+import com.devmod.client.party.PartyScreen;
 import com.devmod.endurance.ClientShopCache;
 import com.devmod.endurance.KitSyncConfirmPayload;
+import com.devmod.endurance.MobPoolConfigSyncPayload;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PersonalRecordsSyncPayload;
 import com.devmod.endurance.QuestCompletionPayload;
@@ -40,6 +43,14 @@ public final class ClientEnduranceHandlers {
 
     public static void handleShopSync(ShopSyncPayload payload) {
         ClientShopCache.update(payload);
+    }
+
+    public static void handleMobPoolConfigSync(MobPoolConfigSyncPayload payload) {
+        ClientMobPoolConfigCache.update(payload);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null && mc.screen instanceof MobPoolEditorScreen screen) {
+            screen.applyServerConfig(payload);
+        }
     }
 
     public static void handlePerkChoices(PerkChoicesPayload payload) {

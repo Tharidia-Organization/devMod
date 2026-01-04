@@ -3,6 +3,7 @@ package com.devmod.network.handlers;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,8 +24,11 @@ import com.devmod.endurance.ArenaSuggestionsPayload;
 import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceConfigSyncPayload;
+import com.devmod.endurance.MobPoolConfigSyncPayload;
 import com.devmod.endurance.config.ConfigProposalManager;
 import com.devmod.endurance.config.ConfigScope;
+import com.devmod.endurance.config.EnduranceMobConfig;
+import com.devmod.endurance.config.EnduranceMobPoolConfig;
 import com.devmod.endurance.config.GlobalMobConfigStorage;
 import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.EnduranceQuestManager;
@@ -43,6 +47,7 @@ import com.devmod.endurance.QuestCompletionPayload;
 import com.devmod.endurance.QuestDeathPayload;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.RequestArenaSuggestionsPayload;
+import com.devmod.endurance.RequestMobPoolConfigPayload;
 import com.devmod.endurance.RequestPersonalRecordsPayload;
 import com.devmod.endurance.RequestShopSyncPayload;
 import com.devmod.endurance.RewardSystem;
@@ -251,6 +256,20 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
             nn(com.devmod.endurance.EnduranceMobConfigSyncPayload.TYPE),
             nn(com.devmod.endurance.EnduranceMobConfigSyncPayload.STREAM_CODEC),
             validated(EnduranceNetworkHandler::handleMobConfigSync, PayloadLimits.LARGE)
+        );
+
+        // REQUEST_MOB_POOL_CONFIG: Client -> Server request for mob pool config
+        event.registrar(ChannelId.REQUEST_MOB_POOL_CONFIG.asString()).playToServer(
+            nn(RequestMobPoolConfigPayload.TYPE),
+            nn(RequestMobPoolConfigPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleRequestMobPoolConfig, PayloadLimits.SMALL)
+        );
+
+        // MOB_POOL_CONFIG_SYNC: Server -> Client mob pool config response
+        event.registrar(ChannelId.MOB_POOL_CONFIG_SYNC.asString()).playToClient(
+            nn(MobPoolConfigSyncPayload.TYPE),
+            nn(MobPoolConfigSyncPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleMobPoolConfigSync, PayloadLimits.SYNC_MEDIUM)
         );
 
         // PARTY_STATS_SYNC: Server -> Client party wave stats (for party debrief tab)
@@ -1299,6 +1318,68 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
         LOGGER.info("[MobConfig] {} applied session mob config: {} mobs, HP={}x, DMG={}x",
             player.getName().getString(), mobCount,
             overrides.healthMult(), overrides.damageMult());
+    }
+
+    // =================================================================================
+    // MOB POOL CONFIG REQUEST (server-side) + SYNC (client-side)
+    // =================================================================================
+
+    public static void handleRequestMobPoolConfig(RequestMobPoolConfigPayload payload, IPayloadContext context) {
+        enqueueWork(context, () -> {
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return;
+            }
+
+            ConfigScope scope = payload.scope();
+            EnduranceMobPoolConfig poolConfig = null;
+            boolean hasConfig = false;
+
+            switch (scope) {
+                case SESSION -> {
+                    var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player);
+                    if (sessionOpt.isPresent()) {
+                        var session = sessionOpt.get();
+                        if (session.hasMobPoolConfig()) {
+                            poolConfig = session.getMobPoolConfig();
+                            hasConfig = true;
+                        }
+                    }
+                    if (poolConfig == null) {
+                        poolConfig = GlobalMobConfigStorage.load().orElse(null);
+                    }
+                }
+                case GLOBAL, PROPOSAL -> {
+                    poolConfig = GlobalMobConfigStorage.load().orElse(null);
+                    hasConfig = poolConfig != null && poolConfig.hasModifications();
+                }
+            }
+
+            EnduranceMobPoolConfig normalized = normalizePoolConfig(poolConfig);
+            var data = com.devmod.endurance.EnduranceMobConfigSyncPayload.fromPoolConfig(normalized, scope);
+            MobPoolConfigSyncPayload response = new MobPoolConfigSyncPayload(hasConfig, data);
+            sendPacket(player, response);
+        });
+    }
+
+    public static void handleMobPoolConfigSync(MobPoolConfigSyncPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            enqueueWork(context, () ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleMobPoolConfigSync(payload)));
+        }
+    }
+
+    private static EnduranceMobPoolConfig normalizePoolConfig(EnduranceMobPoolConfig poolConfig) {
+        EnduranceMobPoolConfig normalized = poolConfig != null
+            ? poolConfig.copy()
+            : new EnduranceMobPoolConfig();
+        Set<ResourceLocation> disabledMobs = new HashSet<>(normalized.getDisabledMobs());
+        for (ResourceLocation mobId : disabledMobs) {
+            if (normalized.getMobConfigOrNull(mobId) == null) {
+                EnduranceMobConfig baseConfig = EnduranceMobConfig.fromRegistryOrDefault(mobId).withEnabled(false);
+                normalized.setMobConfig(baseConfig);
+            }
+        }
+        return normalized;
     }
 
     /**

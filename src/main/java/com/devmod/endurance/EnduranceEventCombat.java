@@ -24,11 +24,11 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.combat.signature.SoulImprintManager;
 import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
+import com.devmod.compat.mods.easydiet.EasyDietCompat;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.challenges.DailyChallengeManager;
 import com.devmod.endurance.nutrition.NutritionBridgeSystem;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-import com.devmod.compat.mods.easydiet.EasyDietCompat;
 
 public class EnduranceEventCombat {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventCombat.class);

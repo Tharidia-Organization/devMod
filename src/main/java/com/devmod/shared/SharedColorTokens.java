@@ -2,8 +2,9 @@ package com.devmod.shared;
 
 import javax.annotation.Nonnull;
 
-import com.devmod.client.ui.editor.core.DesignTokens;
 import net.minecraft.ChatFormatting;
+
+import com.devmod.client.ui.editor.core.DesignTokens;
 
 /**
  * Shared color tokens for common (client/server-safe) usage.

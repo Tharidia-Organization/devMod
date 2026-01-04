@@ -31,12 +31,12 @@ import net.minecraft.world.item.Items;
 
 import com.devmod.DevMod;
 import com.devmod.arena.api.ArenaHandle;
-import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
-import com.devmod.endurance.config.EffectiveConfig;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.arena.spawn.SpawnOccupancyTracker;
+import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
+import com.devmod.endurance.config.EffectiveConfig;
 import com.devmod.mob.MobRequirements;
 import com.devmod.mob.MobRequirementsRegistry;
 import com.devmod.shared.SharedColorTokens;

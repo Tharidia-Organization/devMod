@@ -21,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
@@ -28,10 +29,10 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.ui.BaseDevModScreen;
-import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
 import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.KitManager;
@@ -45,8 +46,6 @@ import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
-
-import net.neoforged.neoforge.network.PacketDistributor;
 
 @OnlyIn(Dist.CLIENT)
 public class EnduranceQuestScreen extends BaseDevModScreen {
@@ -250,10 +249,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         int arenaPanelY = HEADER_HEIGHT + 200; // Below kit selector
         arenaPanel = new ArenaSelectionPanel(rightPanelX, arenaPanelY, RIGHT_PANEL_WIDTH - 20, 40);
         arenaPanel.setOnSelectionChanged(selection -> {
-            var panel = arenaPanel;
-            if (panel == null) {
-                return;
-            }
+            var panel = Objects.requireNonNull(arenaPanel);
             boolean auto = panel.isAutoSelected();
             String label = panel.getSelectedTemplateLabel();
             Notification notification = Notification.builder(NotificationCategory.QUEST)
@@ -298,7 +294,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             .toggleable(true)
             .toggled(endlessMode)
             .size(EditorButton.Size.MEDIUM)
-            .onToggle(this::setEndlessMode)
+            .onToggle(enabled -> setEndlessMode(Boolean.TRUE.equals(enabled)))
             .build();
 
         // Practice mode toggle (only shown if Dummmmmmy mod is available)
@@ -307,7 +303,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             .toggleable(true)
             .toggled(practiceMode)
             .size(EditorButton.Size.SMALL)
-            .onToggle(this::setPracticeMode)
+            .onToggle(enabled -> setPracticeMode(Boolean.TRUE.equals(enabled)))
             .build();
 
         introDismissButton = EditorButton.builder("intro-dismiss", I18n.ui("got_it").getString())
@@ -873,13 +869,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         graphics.enableScissor(listX, listY, listX + listWidth, listY + listHeight);
 
         if (filteredQuests.isEmpty()) {
-            String title = I18n.translate("devmod.endurance.quest.empty.title").getString();
-            String subtitle = I18n.translate("devmod.endurance.quest.empty.subtitle").getString();
-            int titleX = listX + (listWidth - safeFont.width(title)) / 2;
-            int titleY = listY + (listHeight / 2) - 8;
-            graphics.drawString(safeFont, title, titleX, titleY, COLOR_TEXT_DIM);
-            int subtitleX = listX + (listWidth - safeFont.width(subtitle)) / 2;
-            graphics.drawString(safeFont, subtitle, subtitleX, titleY + 12, COLOR_TEXT_DIM);
+            renderEmptyQuestList(graphics, safeFont, listX, listY, listWidth, listHeight);
             graphics.disableScissor();
             return;
         }
@@ -901,6 +891,20 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, DesignTokens.Stroke.MUTED);
             graphics.fill(listX + listWidth - 5, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, COLOR_ACCENT);
         }
+    }
+
+    @SuppressWarnings("null")
+    private void renderEmptyQuestList(GuiGraphics graphics, net.minecraft.client.gui.Font safeFont,
+                                       int listX, int listY, int listWidth, int listHeight) {
+        String title = Objects.requireNonNullElse(
+            I18n.translate("devmod.endurance.quest.empty.title").getString(), "");
+        String subtitle = Objects.requireNonNullElse(
+            I18n.translate("devmod.endurance.quest.empty.subtitle").getString(), "");
+        int titleX = listX + (listWidth - safeFont.width(title)) / 2;
+        int titleY = listY + (listHeight / 2) - 8;
+        graphics.drawString(safeFont, title, titleX, titleY, COLOR_TEXT_DIM);
+        int subtitleX = listX + (listWidth - safeFont.width(subtitle)) / 2;
+        graphics.drawString(safeFont, subtitle, subtitleX, titleY + 12, COLOR_TEXT_DIM);
     }
 
     private void renderQuestCard(GuiGraphics graphics, EnduranceQuestRegistry.MobQuestConfig quest,
@@ -1230,9 +1234,10 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         int configBtnW = 22;
         int configBtnH = 16;
         int configBtnX = panelX + RIGHT_PANEL_WIDTH - configBtnW - 16;
-        if (configButton != null) {
-            configButton.setEnabled(!kitSyncInFlight);
-            configButton.render(graphics, configBtnX, configButtonY, configBtnW, configBtnH, mouseX, mouseY);
+        var cfgBtn = configButton;
+        if (cfgBtn != null) {
+            cfgBtn.setEnabled(!kitSyncInFlight);
+            cfgBtn.render(graphics, configBtnX, configButtonY, configBtnW, configBtnH, mouseX, mouseY);
         }
 
         // === CONFIGURE MOB BUTTON (in mob details section, only when quest selected) ===
@@ -1292,18 +1297,21 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         int kitBtnH = 22;
         int editBtnW = 40;
         boolean kitControlsEnabled = !kitSyncInFlight;
-        if (prevKitButton != null) {
-            prevKitButton.setEnabled(kitControlsEnabled);
-            prevKitButton.render(graphics, controlX, kitControlY, kitBtnW, kitBtnH, mouseX, mouseY);
+        var prevKit = prevKitButton;
+        if (prevKit != null) {
+            prevKit.setEnabled(kitControlsEnabled);
+            prevKit.render(graphics, controlX, kitControlY, kitBtnW, kitBtnH, mouseX, mouseY);
         }
-        if (nextKitButton != null) {
-            nextKitButton.setEnabled(kitControlsEnabled);
-            nextKitButton.render(graphics, controlX + controlW - kitBtnW - editBtnW - 4, kitControlY, kitBtnW, kitBtnH, mouseX, mouseY);
+        var nextKit = nextKitButton;
+        if (nextKit != null) {
+            nextKit.setEnabled(kitControlsEnabled);
+            nextKit.render(graphics, controlX + controlW - kitBtnW - editBtnW - 4, kitControlY, kitBtnW, kitBtnH, mouseX, mouseY);
         }
         // Edit button to open kit editor
-        if (editKitButton != null) {
-            editKitButton.setEnabled(kitControlsEnabled);
-            editKitButton.render(graphics, controlX + controlW - editBtnW, kitControlY, editBtnW, kitBtnH, mouseX, mouseY);
+        var editKit = editKitButton;
+        if (editKit != null) {
+            editKit.setEnabled(kitControlsEnabled);
+            editKit.render(graphics, controlX + controlW - editBtnW, kitControlY, editBtnW, kitBtnH, mouseX, mouseY);
         }
 
         // === START QUEST BUTTON (bottom of right panel) ===
@@ -1324,23 +1332,26 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             graphics.drawString(safeFont, message, startX, startButtonY - 24, COLOR_TEXT_DIM, false);
             String lockedMsg = I18n.translate("devmod.endurance.quest.sync.locked").getString();
             graphics.drawString(safeFont, lockedMsg, startX, startButtonY - 12, COLOR_TEXT_DIM, false);
-        } else if (selectedQuest == null) {
-            var safeFont = Objects.requireNonNull(font);
-            String hint = I18n.translate("devmod.endurance.quest.hint.select_mob").getString();
-            graphics.drawString(safeFont, hint, startX, startButtonY - 12, COLOR_TEXT_DIM, false);
         } else {
-            var safeFont = Objects.requireNonNull(font);
-            String ready = I18n.translate("devmod.endurance.quest.ready").getString();
-            graphics.drawString(safeFont, ready, startX, startButtonY - 24, COLOR_SUCCESS, false);
-            String waveLabel = endlessMode ? "∞" : String.valueOf(questWaves);
-            String kitLabel = resolveKitSummaryLabel();
-            String arenaLabel = resolveArenaSummaryLabel();
-            String summary = I18n.translate("devmod.endurance.quest.summary_line",
-                truncateLabel(selectedQuest.displayName, 12),
-                waveLabel,
-                truncateLabel(kitLabel, 12),
-                truncateLabel(arenaLabel, 12)).getString();
-            graphics.drawString(safeFont, summary, startX, startButtonY - 12, COLOR_TEXT_DIM, false);
+            var quest = selectedQuest;
+            if (quest == null) {
+                var safeFont = Objects.requireNonNull(font);
+                String hint = I18n.translate("devmod.endurance.quest.hint.select_mob").getString();
+                graphics.drawString(safeFont, hint, startX, startButtonY - 12, COLOR_TEXT_DIM, false);
+            } else {
+                var safeFont = Objects.requireNonNull(font);
+                String ready = I18n.translate("devmod.endurance.quest.ready").getString();
+                graphics.drawString(safeFont, ready, startX, startButtonY - 24, COLOR_SUCCESS, false);
+                String waveLabel = endlessMode ? "∞" : String.valueOf(questWaves);
+                String kitLabel = resolveKitSummaryLabel();
+                String arenaLabel = resolveArenaSummaryLabel();
+                String summary = I18n.translate("devmod.endurance.quest.summary_line",
+                    truncateLabel(quest.displayName, 12),
+                    waveLabel,
+                    truncateLabel(kitLabel, 12),
+                    truncateLabel(arenaLabel, 12)).getString();
+                graphics.drawString(safeFont, summary, startX, startButtonY - 12, COLOR_TEXT_DIM, false);
+            }
         }
 
         // === SHOP BUTTON (bottom of sidebar, above search) ===
@@ -1348,9 +1359,10 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         int shopH = 24;
         int shopX = 10;
         int shopY = height - 65;  // Above search box
-        if (shopButton != null) {
-            shopButton.setEnabled(!kitSyncInFlight);
-            shopButton.render(graphics, shopX, shopY, shopW, shopH, mouseX, mouseY);
+        var shop = shopButton;
+        if (shop != null) {
+            shop.setEnabled(!kitSyncInFlight);
+            shop.render(graphics, shopX, shopY, shopW, shopH, mouseX, mouseY);
         }
     }
 
@@ -1411,9 +1423,10 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                 var quest = filteredQuests.get(index);
                 selectedQuest = quest;
                 // Request arena suggestions for the selected mob
-                if (arenaPanel != null) {
-                    arenaPanel.clear();
-                    arenaPanel.requestSuggestions(quest.mobId.toString());
+                var panel = arenaPanel;
+                if (panel != null) {
+                    panel.clear();
+                    panel.requestSuggestions(quest.mobId.toString());
                 }
                 playClickSound();
                 return true;
@@ -1421,7 +1434,8 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         }
 
         // Arena panel click handling
-        if (arenaPanel != null && arenaPanel.mouseClicked(mouseX, mouseY, button)) {
+        var aPanel = arenaPanel;
+        if (aPanel != null && aPanel.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 

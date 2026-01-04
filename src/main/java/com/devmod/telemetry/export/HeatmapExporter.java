@@ -23,8 +23,8 @@ import com.mojang.logging.LogUtils;
 
 import net.minecraft.core.BlockPos;
 
-import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.shared.SharedColorTokens;
+import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.PathSanitizer;
 
