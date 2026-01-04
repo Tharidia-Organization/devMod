@@ -80,6 +80,11 @@ public class InstanceOverride {
         return this;
     }
 
+    public InstanceOverride setNemesisPracticeEnabled(boolean enabled) {
+        overrides.put("nemesis.practiceEnabled", enabled);
+        return this;
+    }
+
     public InstanceOverride setProjectileDeflectionChance(float chance) {
         overrides.put("nemesis.projectileDeflectionChance", chance);
         return this;
@@ -97,6 +102,11 @@ public class InstanceOverride {
         return this;
     }
 
+    public InstanceOverride setTidePracticeEnabled(boolean enabled) {
+        overrides.put("tide.practiceEnabled", enabled);
+        return this;
+    }
+
     public InstanceOverride setPlayerDeathTide(int value) {
         overrides.put("tide.playerDeath", value);
         return this;
@@ -104,6 +114,18 @@ public class InstanceOverride {
 
     public InstanceOverride setSSSWaveTide(int value) {
         overrides.put("tide.sssWave", value);
+        return this;
+    }
+
+    // ========== Signature Weapons Overrides ==========
+
+    public InstanceOverride setSignatureWeaponsEnabled(boolean enabled) {
+        overrides.put("signatureWeapons.enabled", enabled);
+        return this;
+    }
+
+    public InstanceOverride setSignatureWeaponsPracticeEnabled(boolean enabled) {
+        overrides.put("signatureWeapons.practiceEnabled", enabled);
         return this;
     }
 
@@ -131,6 +153,7 @@ public class InstanceOverride {
     public GameDesignConfig applyTo(GameDesignConfig config) {
         GameDesignConfig.ResonanceConfig resonance = config.getResonance();
         GameDesignConfig.ContractsConfig contracts = config.getContracts();
+        GameDesignConfig.SignatureWeaponsConfig signatureWeapons = config.getSignatureWeapons();
         GameDesignConfig.NemesisConfig nemesis = config.getNemesis();
         GameDesignConfig.TideConfig tide = config.getTide();
 
@@ -168,9 +191,20 @@ public class InstanceOverride {
             contracts.maxContractsPerWave = ((Number) get("contracts.maxContractsPerWave")).intValue();
         }
 
+        // Signature weapons overrides
+        if (has("signatureWeapons.enabled")) {
+            signatureWeapons.enabled = (Boolean) get("signatureWeapons.enabled");
+        }
+        if (has("signatureWeapons.practiceEnabled")) {
+            signatureWeapons.practiceEnabled = (Boolean) get("signatureWeapons.practiceEnabled");
+        }
+
         // Nemesis overrides
         if (has("nemesis.enabled")) {
             nemesis.enabled = (Boolean) get("nemesis.enabled");
+        }
+        if (has("nemesis.practiceEnabled")) {
+            nemesis.practiceEnabled = (Boolean) get("nemesis.practiceEnabled");
         }
         if (has("nemesis.projectileDeflectionChance")) {
             nemesis.projectileDeflectionChance = ((Number) get("nemesis.projectileDeflectionChance")).floatValue();
@@ -182,6 +216,9 @@ public class InstanceOverride {
         // Tide overrides
         if (has("tide.enabled")) {
             tide.enabled = (Boolean) get("tide.enabled");
+        }
+        if (has("tide.practiceEnabled")) {
+            tide.practiceEnabled = (Boolean) get("tide.practiceEnabled");
         }
         if (has("tide.playerDeath")) {
             tide.playerDeath = ((Number) get("tide.playerDeath")).intValue();

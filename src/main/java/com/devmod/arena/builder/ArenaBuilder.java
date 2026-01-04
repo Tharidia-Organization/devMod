@@ -436,12 +436,26 @@ public class ArenaBuilder {
                 }
             }
 
+            // Q10 FIX: Skip ceiling/underfloor for dynamic terrain
+            // With natural worldgen, ceiling would cover terrain and underfloor would be below surface
+            var terrainSettings = template.terrainSettings();
+            boolean isDynamicTerrain = terrainSettings != null &&
+                terrainSettings.type() == ArenaTemplate.TerrainSettings.TerrainType.DYNAMIC;
+
             if (template.ceiling() != null && template.ceiling().enabled()) {
-                buildCeiling(template, originX, originZ, transaction);
+                if (isDynamicTerrain) {
+                    LOGGER.debug("Skipping ceiling for '{}' - dynamic terrain mode", template.id());
+                } else {
+                    buildCeiling(template, originX, originZ, transaction);
+                }
             }
 
             if (template.underfloor() != null) {
-                buildUnderfloor(template, originX, originZ, transaction);
+                if (isDynamicTerrain) {
+                    LOGGER.debug("Skipping underfloor for '{}' - dynamic terrain mode", template.id());
+                } else {
+                    buildUnderfloor(template, originX, originZ, transaction);
+                }
             }
 
             if (template.hazards() != null && !template.hazards().isEmpty()) {
@@ -809,6 +823,13 @@ public class ArenaBuilder {
     private void buildFloor(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         if (template.floor() == null) return;
 
+        // Check if dynamic terrain is enabled - apply combat ring mask
+        var terrainSettings = template.terrainSettings();
+        if (terrainSettings != null && terrainSettings.type() == ArenaTemplate.TerrainSettings.TerrainType.DYNAMIC) {
+            buildDynamicTerrainFloor(template, originX, originZ, terrainSettings, tx);
+            return;
+        }
+
         // Check if zone-aware floor building is needed
         var zoneSettings = template.zoneSettings();
         if (zoneSettings != null && zoneSettings.enabled() && !zoneSettings.zones().isEmpty()) {
@@ -826,6 +847,121 @@ public class ArenaBuilder {
 
         // Fall back to template-level floor
         buildTemplateFloor(template, originX, originZ, tx);
+    }
+
+    /**
+     * Builds floor for dynamic terrain mode.
+     * Only places floor blocks inside the combat ring, with edge blending.
+     * Outside the combat ring, natural worldgen terrain is preserved.
+     *
+     * @param template The arena template
+     * @param originX World X coordinate for origin
+     * @param originZ World Z coordinate for origin
+     * @param terrainSettings The terrain settings with dynamic config
+     * @param tx Build transaction
+     */
+    private void buildDynamicTerrainFloor(ArenaTemplate template, int originX, int originZ,
+                                          ArenaTemplate.TerrainSettings terrainSettings, BuildTransaction tx) {
+        var floor = template.floor();
+        if (floor == null) return;
+
+        var dynamicSettings = terrainSettings.dynamic();
+        if (dynamicSettings == null) {
+            dynamicSettings = ArenaTemplate.TerrainSettings.DynamicSettings.proxyOverworld();
+        }
+
+        // Q6 FIX: Validate combatRingRadius against template size
+        // Combat ring should not exceed arena bounds
+        int templateRadius = Math.max(getSizeX(template), getSizeZ(template)) / 2;
+        int combatRadius = Math.min(dynamicSettings.combatRingRadius(), templateRadius);
+        int blendRadius = dynamicSettings.blendRadius();
+
+        // Warn if clamped
+        if (combatRadius < dynamicSettings.combatRingRadius()) {
+            LOGGER.warn("Template '{}': combatRingRadius {} exceeds template size {}, clamped to {}",
+                template.id(), dynamicSettings.combatRingRadius(), templateRadius * 2, combatRadius);
+            telemetry.emit("arena.floor.combat_radius_clamped", Map.of(
+                "templateId", template.id(),
+                "requested", dynamicSettings.combatRingRadius(),
+                "clamped", combatRadius,
+                "templateRadius", templateRadius
+            ));
+        }
+
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
+        // Iterate only within the combat ring + blend zone
+        int maxRadius = combatRadius + blendRadius;
+
+        int blocksPlaced = 0;
+        int blendedBlocks = 0;
+
+        for (int dx = -maxRadius; dx <= maxRadius; dx++) {
+            for (int dz = -maxRadius; dz <= maxRadius; dz++) {
+                // Calculate distance from center
+                double dist = Math.sqrt(dx * dx + dz * dz);
+
+                // Skip if outside blend zone entirely
+                if (dist > maxRadius) {
+                    continue;
+                }
+
+                // Determine blend factor (1.0 = full floor, 0.0 = no floor)
+                double blendFactor = 1.0;
+                if (dist > combatRadius) {
+                    // In blend zone - calculate blend factor
+                    blendFactor = 1.0 - ((dist - combatRadius) / blendRadius);
+                    blendFactor = Math.max(0.0, Math.min(1.0, blendFactor));
+                }
+
+                // For blend zone, use probabilistic placement based on blend factor
+                // This creates a natural-looking transition
+                if (blendFactor < 1.0) {
+                    // Use deterministic "random" based on position for consistency
+                    // Note: & 0xFFFF always gives positive value in range [0, 65535]
+                    // Divide by 65536.0 (not 65535.0) to get proper [0, 1) range
+                    long posHash = ((long) dx * 31 + dz) ^ template.id().hashCode();
+                    double threshold = (posHash & 0xFFFF) / 65536.0;
+                    if (threshold > blendFactor) {
+                        continue; // Skip this block - preserve natural terrain
+                    }
+                    blendedBlocks++;
+                }
+
+                for (int dy = 0; dy < floor.thickness(); dy++) {
+                    int worldX = originX + dx;
+                    int worldY = floor.y() + dy;
+                    int worldZ = originZ + dz;
+
+                    String material = floor.material();
+
+                    // Border check - only apply if inside combat ring
+                    if (dist <= combatRadius && floor.borderMaterial() != null && floor.borderWidth() > 0) {
+                        // Check if on combat ring edge
+                        if (dist >= combatRadius - floor.borderWidth()) {
+                            material = floor.borderMaterial();
+                        }
+                    }
+
+                    placeBlock(worldX, worldY, worldZ, material, tx);
+                    blocksPlaced++;
+                }
+            }
+        }
+
+        LOGGER.debug("Built dynamic terrain floor for '{}': combatRadius={}, blendRadius={}, blocks={}, blended={}",
+            template.id(), combatRadius, blendRadius, blocksPlaced, blendedBlocks);
+
+        telemetry.emit("arena.floor.dynamic_terrain", Map.of(
+            "templateId", template.id(),
+            "combatRadius", combatRadius,
+            "blendRadius", blendRadius,
+            "blocksPlaced", blocksPlaced,
+            "blendedBlocks", blendedBlocks
+        ));
     }
 
     /**

@@ -188,7 +188,17 @@ public class ClientQuestCache {
     }
 
     public static float getWaveProgress() {
-        var data = cachedData;
+        return getWaveProgress(cachedData);
+    }
+
+    /**
+     * FIX AUDIT2 #4: Compute wave progress from a specific payload snapshot.
+     * Use this overload when you need frame-consistent rendering with a pre-captured snapshot.
+     *
+     * @param data the quest data snapshot (may be null)
+     * @return progress 0.0-1.0, or 0 if data is null or no target
+     */
+    public static float getWaveProgress(@Nullable QuestSyncPayload data) {
         if (data == null) return 0;
         WaveObjectiveState.Type type = data.getObjectiveType();
         int target = type == WaveObjectiveState.Type.KILL_ALL

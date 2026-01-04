@@ -3,12 +3,16 @@ package com.devmod.compat.mods.dummmmmmy;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -18,16 +22,21 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+import com.devmod.endurance.EnduranceTags;
 
 public class DummmmmmyCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(DummmmmmyCompat.class);
@@ -43,11 +52,14 @@ public class DummmmmmyCompat implements CompatModule {
     private static Method resetDamageMethod;
     private static Method getDpsMethod;
 
-    // Track spawned dummies for Arena
-    private static final Map<String, UUID> spawnedDummies = new HashMap<>();
+    // Track spawned dummies for Arena and debug commands
+    private static final Map<UUID, DummyRecord> trackedDummies = new HashMap<>();
+    private static final Map<String, Set<UUID>> dummiesById = new HashMap<>();
     private static final String DEVMOD_TAG = "devmod_arena_dummy";
+    private static final String DEVMOD_TAG_PREFIX = DEVMOD_TAG + "_";
     private static final ResourceLocation DUMMY_ENTITY_ID =
         ResourceLocation.fromNamespaceAndPath(MOD_ID, "dummy");
+    private record DummyRecord(String id, ResourceKey<Level> dimension) {}
 
     @Override
     public String modId() {
@@ -134,8 +146,28 @@ public class DummmmmmyCompat implements CompatModule {
                     LOGGER.trace("[Compat:dummmmmmy] getDps not available", e);
                 }
 
-                apiAvailable = true;
-                LOGGER.info("[Compat:dummmmmmy] Dummmmmmy API loaded");
+                if (getTotalDamageMethod != null && !isNumericReturn(getTotalDamageMethod)) {
+                    LOGGER.debug("[Compat:dummmmmmy] getTotalDamage has unexpected return type {}",
+                        getTotalDamageMethod.getReturnType());
+                    getTotalDamageMethod = null;
+                }
+                if (getDpsMethod != null && !isNumericReturn(getDpsMethod)) {
+                    LOGGER.debug("[Compat:dummmmmmy] getDps has unexpected return type {}",
+                        getDpsMethod.getReturnType());
+                    getDpsMethod = null;
+                }
+                if (resetDamageMethod != null && !isResetReturn(resetDamageMethod)) {
+                    LOGGER.debug("[Compat:dummmmmmy] resetDamage has unexpected return type {}",
+                        resetDamageMethod.getReturnType());
+                    resetDamageMethod = null;
+                }
+
+                apiAvailable = getTotalDamageMethod != null || getDpsMethod != null || resetDamageMethod != null;
+                if (apiAvailable) {
+                    LOGGER.info("[Compat:dummmmmmy] Dummmmmmy API loaded");
+                } else {
+                    LOGGER.warn("[Compat:dummmmmmy] Dummmmmmy API not accessible (methods missing)");
+                }
             }
 
         } catch (Exception e) {
@@ -152,7 +184,8 @@ public class DummmmmmyCompat implements CompatModule {
     @Override
     public void shutdown() {
         // Clean up spawned dummies
-        spawnedDummies.clear();
+        trackedDummies.clear();
+        dummiesById.clear();
     }
 
     @Override
@@ -181,10 +214,22 @@ public class DummmmmmyCompat implements CompatModule {
      * @return true if entity is a dummy
      */
     public static boolean isDummy(Entity entity) {
-        if (!available || entity == null || dummyEntityClass == null) {
+        if (entity == null) {
             return false;
         }
-        return dummyEntityClass.isInstance(entity);
+        if (entity.getTags().contains(DEVMOD_TAG)) {
+            return true;
+        }
+        if (dummyEntityClass != null && dummyEntityClass.isInstance(entity)) {
+            return true;
+        }
+        ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(java.util.Objects.requireNonNull(entity.getType()));
+        if (DUMMY_ENTITY_ID.equals(typeId)) {
+            return true;
+        }
+        return typeId != null
+            && MOD_ID.equals(typeId.getNamespace())
+            && typeId.getPath().contains("dummy");
     }
 
     /**
@@ -197,6 +242,20 @@ public class DummmmmmyCompat implements CompatModule {
      */
     @Nullable
     public static UUID spawnDummy(ServerLevel level, BlockPos pos, String dummyId) {
+        return spawnDummy(level, pos, dummyId, null);
+    }
+
+    /**
+     * Spawn a training dummy at a position with optional initializer.
+     *
+     * @param level The server level
+     * @param pos The position
+     * @param dummyId Unique identifier for tracking
+     * @param initializer Optional callback to tag/configure entity before spawn
+     * @return The spawned entity's UUID, or null if failed
+     */
+    @Nullable
+    public static UUID spawnDummy(ServerLevel level, BlockPos pos, String dummyId, @Nullable Consumer<Entity> initializer) {
         if (!available || level == null || pos == null || dummyId == null) {
             return null;
         }
@@ -210,7 +269,7 @@ public class DummmmmmyCompat implements CompatModule {
             ResourceKey<Registry<EntityType<?>>> registryKey =
                 requireNonNull(Registries.ENTITY_TYPE, "entity type registry key");
             Registry<EntityType<?>> entityRegistry = level.registryAccess().registryOrThrow(registryKey);
-            Optional<EntityType<?>> entityTypeOpt = entityRegistry.getOptional(DUMMY_ENTITY_ID);
+            Optional<EntityType<?>> entityTypeOpt = findDummyEntityType(entityRegistry);
 
             if (entityTypeOpt.isEmpty()) {
                 LOGGER.debug("[Compat:dummmmmmy] Could not find dummy entity type");
@@ -228,11 +287,14 @@ public class DummmmmmyCompat implements CompatModule {
             // Add tag for tracking
             dummy.addTag(DEVMOD_TAG);
             dummy.addTag(DEVMOD_TAG + "_" + normalizedId);
+            if (initializer != null) {
+                initializer.accept(dummy);
+            }
 
             // Spawn the entity
             if (level.addFreshEntity(dummy)) {
                 UUID uuid = requireNonNull(dummy.getUUID(), "dummy uuid");
-                spawnedDummies.put(normalizedId, uuid);
+                trackDummy(normalizedId, uuid, level.dimension());
                 LOGGER.debug("[Compat:dummmmmmy] Spawned dummy at {} with UUID {}", pos, uuid);
                 return uuid;
             }
@@ -319,31 +381,44 @@ public class DummmmmmyCompat implements CompatModule {
      * @return true if removed
      */
     public static boolean removeDummy(ServerLevel level, String dummyId) {
-        if (dummyId == null) {
-            return false;
+        return removeDummyCount(level, dummyId) > 0;
+    }
+
+    /**
+     * Remove dummies by ID in the current dimension.
+     *
+     * @return number of dummies removed
+     */
+    public static int removeDummyCount(ServerLevel level, String dummyId) {
+        return removeDummyCount(level, dummyId, false);
+    }
+
+    /**
+     * Remove dummies by ID, optionally across all dimensions.
+     */
+    public static int removeDummyCount(ServerLevel level, String dummyId, boolean includeAllLevels) {
+        if (level == null || dummyId == null) {
+            return 0;
         }
         String normalizedId = dummyId.trim();
         if (normalizedId.isEmpty()) {
-            return false;
+            return 0;
         }
-        UUID uuid = spawnedDummies.remove(normalizedId);
-        if (uuid == null || level == null) {
-            return false;
-        }
-
-        try {
-            UUID dummyUuid = Objects.requireNonNull(uuid, "dummy uuid");
-            Entity entity = level.getEntity(dummyUuid);
-            if (entity != null) {
-                entity.discard();
-                LOGGER.debug("[Compat:dummmmmmy] Removed dummy: {}", dummyId);
-                return true;
+        int removed = 0;
+        if (includeAllLevels) {
+            var server = level.getServer();
+            if (server != null) {
+                for (ServerLevel target : server.getAllLevels()) {
+                    removed += removeDummyCountInLevel(target, normalizedId);
+                }
             }
-        } catch (Exception e) {
-            LOGGER.debug("[Compat:dummmmmmy] Error removing dummy: {}", e.getMessage());
+        } else {
+            removed += removeDummyCountInLevel(level, normalizedId);
         }
-
-        return false;
+        if (removed > 0) {
+            LOGGER.debug("[Compat:dummmmmmy] Removed {} dummy/dummies: {}", removed, dummyId);
+        }
+        return removed;
     }
 
     /**
@@ -352,25 +427,101 @@ public class DummmmmmyCompat implements CompatModule {
      * @param level The server level (null to just clear tracking)
      */
     public static void removeAllDummies(@Nullable ServerLevel level) {
-        if (level != null) {
-            for (UUID uuid : spawnedDummies.values()) {
-                try {
-                    if (uuid == null) {
-                        continue;
-                    }
-                    Entity entity = level.getEntity(uuid);
-                    if (entity != null) {
-                        entity.discard();
-                    }
-                } catch (Exception e) {
-                    LOGGER.debug("[Compat:dummmmmmy] Error removing dummy: {}", e.getMessage());
-                }
-            }
+        if (level == null) {
+            trackedDummies.clear();
+            dummiesById.clear();
+            return;
         }
 
-        int count = spawnedDummies.size();
-        spawnedDummies.clear();
-        LOGGER.debug("[Compat:dummmmmmy] Removed {} tracked dummies", count);
+        int removed = removeTaggedDummies(level, null, null);
+        LOGGER.debug("[Compat:dummmmmmy] Removed {} dummies from {}", removed, level.dimension().location());
+    }
+
+    /**
+     * Remove DevMod-spawned dummies scoped to an arena and optional bounds.
+     *
+     * @return number of dummies removed
+     */
+    public static int removeArenaDummies(@Nullable ServerLevel level,
+                                         @Nullable UUID arenaId,
+                                         @Nullable AABB bounds) {
+        if (level == null) {
+            return 0;
+        }
+        int removed = removeTaggedDummies(level, bounds, arenaId);
+        if (removed > 0) {
+            String scope = arenaId != null ? arenaId.toString() : "unknown";
+            LOGGER.debug("[Compat:dummmmmmy] Removed {} dummies for arena {}", removed, scope);
+        }
+        return removed;
+    }
+
+    private static int removeDummyCountInLevel(ServerLevel level, String normalizedId) {
+        if (level == null || normalizedId == null || normalizedId.isEmpty()) {
+            return 0;
+        }
+        String idTag = DEVMOD_TAG_PREFIX + normalizedId;
+        int removed = 0;
+        for (Entity entity : level.getAllEntities()) {
+            if (!entity.getTags().contains(DEVMOD_TAG) || !entity.getTags().contains(idTag)) {
+                continue;
+            }
+            if (!isDummy(entity)) {
+                continue;
+            }
+            UUID uuid = entity.getUUID();
+            entity.discard();
+            removed++;
+            untrackDummy(uuid);
+        }
+        pruneTrackingForDimension(level);
+        return removed;
+    }
+
+    private static int removeTaggedDummies(ServerLevel level, @Nullable AABB bounds, @Nullable UUID arenaId) {
+        Iterable<Entity> entities = bounds != null
+            ? level.getEntities((Entity) null, bounds)
+            : level.getAllEntities();
+        int removed = 0;
+        for (Entity entity : entities) {
+            if (!entity.getTags().contains(DEVMOD_TAG) || !isDummy(entity)) {
+                continue;
+            }
+            if (arenaId != null) {
+                CompoundTag data = entity.getPersistentData();
+                if (!data.hasUUID(EnduranceTags.ARENA_ID)
+                    || !arenaId.equals(data.getUUID(EnduranceTags.ARENA_ID))) {
+                    continue;
+                }
+            }
+            UUID uuid = entity.getUUID();
+            entity.discard();
+            removed++;
+            untrackDummy(uuid);
+        }
+        pruneTrackingForDimension(level);
+        return removed;
+    }
+
+    private static Optional<EntityType<?>> findDummyEntityType(Registry<EntityType<?>> entityRegistry) {
+        Optional<EntityType<?>> direct = entityRegistry.getOptional(DUMMY_ENTITY_ID);
+        if (direct.isPresent()) {
+            return direct;
+        }
+        for (ResourceLocation id : entityRegistry.keySet()) {
+            if (!MOD_ID.equals(id.getNamespace())) {
+                continue;
+            }
+            if (!id.getPath().contains("dummy")) {
+                continue;
+            }
+            Optional<EntityType<?>> candidate = entityRegistry.getOptional(id);
+            if (candidate.isPresent()) {
+                LOGGER.debug("[Compat:dummmmmmy] Using fallback dummy entity type {}", id);
+                return candidate;
+            }
+        }
+        return Optional.empty();
     }
 
     /**
@@ -427,10 +578,56 @@ public class DummmmmmyCompat implements CompatModule {
     }
 
     /**
+     * Rebuild tracking from tagged dummies in a level.
+     *
+     * @return number of newly tracked dummies
+     */
+    public static int refreshTracking(@Nullable ServerLevel level) {
+        return refreshTracking(level, false);
+    }
+
+    /**
+     * Rebuild tracking from tagged dummies in a level (or all levels).
+     */
+    public static int refreshTracking(@Nullable ServerLevel level, boolean includeAllLevels) {
+        if (level == null) {
+            return 0;
+        }
+        int added = 0;
+        if (includeAllLevels) {
+            var server = level.getServer();
+            if (server != null) {
+                for (ServerLevel target : server.getAllLevels()) {
+                    added += refreshTrackingInLevel(target);
+                }
+                return added;
+            }
+        }
+        return refreshTrackingInLevel(level);
+    }
+
+    /**
      * Get the count of active spawned dummies.
      */
     public static int getSpawnedDummyCount() {
-        return spawnedDummies.size();
+        return trackedDummies.size();
+    }
+
+    /**
+     * Get the count of tracked dummies in a level.
+     */
+    public static int getTrackedDummyCount(@Nullable ServerLevel level) {
+        if (level == null) {
+            return 0;
+        }
+        ResourceKey<Level> dimension = level.dimension();
+        int count = 0;
+        for (DummyRecord record : trackedDummies.values()) {
+            if (record != null && record.dimension().equals(dimension)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -447,8 +644,126 @@ public class DummmmmmyCompat implements CompatModule {
         return String.format("Dummmmmmy: %d active dummy/dummies", count);
     }
 
+    /**
+     * Get the count of dummies tagged in a level.
+     */
+    public static int getArenaDummyCount(@Nullable ServerLevel level) {
+        if (level == null) {
+            return 0;
+        }
+        return getArenaDummies(level).size();
+    }
+
+    private static int refreshTrackingInLevel(ServerLevel level) {
+        if (level == null) {
+            return 0;
+        }
+        pruneTrackingForDimension(level);
+        int added = 0;
+        for (Entity entity : level.getAllEntities()) {
+            if (!entity.getTags().contains(DEVMOD_TAG) || !isDummy(entity)) {
+                continue;
+            }
+            String id = extractDummyId(entity.getTags());
+            if (id == null || id.isBlank()) {
+                continue;
+            }
+            UUID uuid = entity.getUUID();
+            if (!trackedDummies.containsKey(uuid)) {
+                added++;
+            }
+            trackDummy(id, uuid, level.dimension());
+        }
+        return added;
+    }
+
+    private static @Nullable String extractDummyId(Set<String> tags) {
+        if (tags == null) {
+            return null;
+        }
+        for (String tag : tags) {
+            if (tag != null && tag.startsWith(DEVMOD_TAG_PREFIX)) {
+                return tag.substring(DEVMOD_TAG_PREFIX.length());
+            }
+        }
+        return null;
+    }
+
+    private static void pruneTrackingForDimension(ServerLevel level) {
+        if (level == null) {
+            return;
+        }
+        ResourceKey<Level> dimension = level.dimension();
+        for (Iterator<Map.Entry<UUID, DummyRecord>> iterator = trackedDummies.entrySet().iterator();
+             iterator.hasNext();) {
+            Map.Entry<UUID, DummyRecord> entry = iterator.next();
+            DummyRecord record = entry.getValue();
+            if (record == null || !record.dimension().equals(dimension)) {
+                continue;
+            }
+            if (level.getEntity(java.util.Objects.requireNonNull(entry.getKey())) != null) {
+                continue;
+            }
+            Set<UUID> ids = dummiesById.get(record.id());
+            if (ids != null) {
+                ids.remove(entry.getKey());
+                if (ids.isEmpty()) {
+                    dummiesById.remove(record.id());
+                }
+            }
+            iterator.remove();
+        }
+    }
+
+    private static boolean isNumericReturn(Method method) {
+        if (method == null) {
+            return false;
+        }
+        Class<?> type = method.getReturnType();
+        if (type == null) {
+            return false;
+        }
+        if (type.isPrimitive()) {
+            return type == int.class
+                || type == long.class
+                || type == float.class
+                || type == double.class
+                || type == short.class
+                || type == byte.class;
+        }
+        return Number.class.isAssignableFrom(type);
+    }
+
+    private static boolean isResetReturn(Method method) {
+        if (method == null) {
+            return false;
+        }
+        Class<?> type = method.getReturnType();
+        return type == void.class || type == boolean.class || type == Boolean.class;
+    }
+
     @Nonnull
     private static <T> T requireNonNull(@Nullable T value, String label) {
         return Objects.requireNonNull(value, label);
     }
+
+    private static void trackDummy(String id, UUID uuid, ResourceKey<Level> dimension) {
+        trackedDummies.put(uuid, new DummyRecord(id, dimension));
+        dummiesById.computeIfAbsent(id, key -> new LinkedHashSet<>()).add(uuid);
+    }
+
+    private static void untrackDummy(UUID uuid) {
+        DummyRecord record = trackedDummies.remove(uuid);
+        if (record == null) {
+            return;
+        }
+        Set<UUID> ids = dummiesById.get(record.id());
+        if (ids != null) {
+            ids.remove(uuid);
+            if (ids.isEmpty()) {
+                dummiesById.remove(record.id());
+            }
+        }
+    }
+
 }

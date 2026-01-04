@@ -191,7 +191,9 @@ public class DimensionEnvironmentManager {
             var biomeTag = reqs.biome().biomeTag();
 
             if (biomeTag.isPresent()) {
-                var tag = Objects.requireNonNull(biomeTag.get());
+                // requireNonNull satisfies IDE @Nonnull checker; Error Prone flags as redundant
+                @SuppressWarnings("ImpossibleNullComparison")
+                var tag = java.util.Objects.requireNonNull(biomeTag.get());
                 // Get first biome from the tag
                 var taggedBiomes = biomeRegistry.getTag(tag);
                 if (taggedBiomes.isPresent()) {

@@ -1,12 +1,18 @@
 package com.devmod.stats;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+
+import com.devmod.endurance.nutrition.NutritionCategory;
 
 public class FoodStats {
 
@@ -42,6 +48,17 @@ public class FoodStats {
 
     /** List of effects applied when consuming this food */
     private List<FoodEffect> effects = new ArrayList<>();
+
+    // ═══════════════════════════════════════════════════════════════
+    // EASY-DIET INTEGRATION (optional)
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Nutrition profile for Easy-Diet mod (category -> value 0.0-1.0) */
+    private Map<NutritionCategory, Float> nutritionProfile = new EnumMap<>(NutritionCategory.class);
+
+    /** Primary nutrition category for this food (used for display/sorting) */
+    @Nullable
+    private NutritionCategory primaryCategory = null;
 
     public int getNutrition() {
         return nutrition;
@@ -97,6 +114,77 @@ public class FoodStats {
 
     public void setEffects(List<FoodEffect> value) {
         effects = value == null ? new ArrayList<>() : new ArrayList<>(value);
+    }
+
+    // Easy-Diet getters/setters
+
+    /**
+     * Get the nutrition profile map for Easy-Diet integration.
+     * @return unmodifiable view of the nutrition profile
+     */
+    public Map<NutritionCategory, Float> getNutritionProfile() {
+        return java.util.Collections.unmodifiableMap(nutritionProfile);
+    }
+
+    /**
+     * Get value for a specific nutrition category.
+     * @param category the category
+     * @return value 0.0-1.0, or 0 if not set
+     */
+    public float getNutritionValue(NutritionCategory category) {
+        return nutritionProfile.getOrDefault(category, 0f);
+    }
+
+    /**
+     * Set value for a specific nutrition category.
+     * @param category the category
+     * @param value value 0.0-1.0
+     */
+    public void setNutritionValue(NutritionCategory category, float value) {
+        if (value <= 0f) {
+            nutritionProfile.remove(category);
+        } else {
+            nutritionProfile.put(category, Math.min(1.0f, value));
+        }
+    }
+
+    /**
+     * Set the entire nutrition profile.
+     * @param profile map of category to value
+     */
+    public void setNutritionProfile(Map<NutritionCategory, Float> profile) {
+        nutritionProfile.clear();
+        if (profile != null) {
+            for (Map.Entry<NutritionCategory, Float> entry : profile.entrySet()) {
+                if (entry.getValue() > 0f) {
+                    nutritionProfile.put(entry.getKey(), Math.min(1.0f, entry.getValue()));
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if this food has any Easy-Diet nutrition values.
+     */
+    public boolean hasNutritionProfile() {
+        return !nutritionProfile.isEmpty();
+    }
+
+    /**
+     * Get the primary nutrition category.
+     * @return primary category, or null if not set
+     */
+    @Nullable
+    public NutritionCategory getPrimaryCategory() {
+        return primaryCategory;
+    }
+
+    /**
+     * Set the primary nutrition category.
+     * @param category the primary category
+     */
+    public void setPrimaryCategory(@Nullable NutritionCategory category) {
+        this.primaryCategory = category;
     }
 
     /**
@@ -180,6 +268,9 @@ public class FoodStats {
         for (FoodEffect effect : this.effects) {
             copy.effects.add(effect.copy());
         }
+        // Copy nutrition profile
+        copy.nutritionProfile = new EnumMap<>(this.nutritionProfile);
+        copy.primaryCategory = this.primaryCategory;
         return copy;
     }
 
@@ -201,6 +292,22 @@ public class FoodStats {
             effectsList.add(effect.save());
         }
         tag.put("effects", effectsList);
+
+        // Save Easy-Diet nutrition profile
+        if (!nutritionProfile.isEmpty()) {
+            CompoundTag dietTag = new CompoundTag();
+            for (Map.Entry<NutritionCategory, Float> entry : nutritionProfile.entrySet()) {
+                NutritionCategory category = entry.getKey();
+                if (category != null) {
+                    dietTag.putFloat(category.key, entry.getValue());
+                }
+            }
+            tag.put("nutritionProfile", dietTag);
+        }
+        NutritionCategory primary = primaryCategory;
+        if (primary != null) {
+            tag.putString("primaryCategory", primary.key);
+        }
     }
 
     public void load(CompoundTag tag) {
@@ -218,6 +325,26 @@ public class FoodStats {
             for (int i = 0; i < effectsList.size(); i++) {
                 effects.add(FoodEffect.load(effectsList.getCompound(i)));
             }
+        }
+
+        // Load Easy-Diet nutrition profile
+        nutritionProfile.clear();
+        if (tag.contains("nutritionProfile", Tag.TAG_COMPOUND)) {
+            CompoundTag dietTag = tag.getCompound("nutritionProfile");
+            for (NutritionCategory cat : NutritionCategory.VALUES) {
+                String catKey = cat.key;
+                if (dietTag.contains(catKey)) {
+                    float value = dietTag.getFloat(catKey);
+                    if (value > 0f) {
+                        nutritionProfile.put(cat, value);
+                    }
+                }
+            }
+        }
+        if (tag.contains("primaryCategory")) {
+            primaryCategory = NutritionCategory.byKey(tag.getString("primaryCategory"));
+        } else {
+            primaryCategory = null;
         }
     }
 
@@ -242,12 +369,15 @@ public class FoodStats {
                canAlwaysEat == that.isCanAlwaysEat() &&
                isMeat == that.isMeat() &&
                isFastFood == that.isFastFood() &&
-               Objects.equals(effects, that.effects);
+               Objects.equals(effects, that.effects) &&
+               Objects.equals(nutritionProfile, that.nutritionProfile) &&
+               primaryCategory == that.primaryCategory;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(nutrition, saturation, consumptionTime, canAlwaysEat, isMeat, isFastFood, effects);
+        return Objects.hash(nutrition, saturation, consumptionTime, canAlwaysEat, isMeat, isFastFood,
+                effects, nutritionProfile, primaryCategory);
     }
 
     @Override
@@ -260,6 +390,8 @@ public class FoodStats {
                ", isMeat=" + isMeat +
                ", isFastFood=" + isFastFood +
                ", effects=" + effects.size() +
+               ", nutritionProfile=" + nutritionProfile.size() +
+               ", primaryCategory=" + primaryCategory +
                '}';
     }
 }

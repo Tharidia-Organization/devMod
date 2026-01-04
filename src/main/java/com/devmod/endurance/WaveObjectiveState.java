@@ -174,6 +174,16 @@ public final class WaveObjectiveState {
         }
     }
 
+    public void adjustEliteTargetCount(int newTarget) {
+        if (type == Type.ELITE_HUNT) {
+            int adjustedTarget = Math.max(0, newTarget);
+            targetCount.set(adjustedTarget);
+            if (adjustedTarget == 0 || progressCount.get() >= adjustedTarget) {
+                complete.set(true);
+            }
+        }
+    }
+
     public void tick(Player player) {
         if (complete.get() || failed.get()) {
             return;

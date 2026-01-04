@@ -207,6 +207,10 @@ public class ComboSystem {
         private float totalDamage = 0;
         private float damageTakenThisWave = 0;
 
+        // FIX UX #3: Grace period after wave start (reduced combo penalty)
+        private long waveStartTime = 0;
+        private static final long WAVE_GRACE_PERIOD_MS = 2000; // 2 seconds grace
+
         // Perfect timing tracking
         private int perfectDodges = 0;
         private int parries = 0;
@@ -382,6 +386,7 @@ public class ComboSystem {
 
         /**
          * Called when player takes damage - affects style.
+         * FIX UX #3: Reduced penalty during grace period after wave start.
          */
         public void onDamageTaken(float damage) {
             damageTakenThisWave += damage;
@@ -390,12 +395,24 @@ public class ComboSystem {
             StyleRank previousRank = currentRank;
             int previousCombo = currentCombo;
 
-            // Style penalty for getting hit
+            // FIX UX #3: Check if we're in grace period after wave start
+            long now = System.currentTimeMillis();
+            boolean inGracePeriod = (now - waveStartTime) < WAVE_GRACE_PERIOD_MS;
+
+            // Style penalty for getting hit (reduced during grace period)
             int penalty = (int) (damage * 10);
+            if (inGracePeriod) {
+                penalty = penalty / 4; // 75% reduction during grace
+            }
             styleScore = Math.max(0, styleScore - penalty);
 
-            // Combo penalty
-            currentCombo = Math.max(0, currentCombo / 2);
+            // Combo penalty (reduced during grace period)
+            if (inGracePeriod) {
+                // Only lose 25% of combo during grace period instead of 50%
+                currentCombo = Math.max(0, currentCombo * 3 / 4);
+            } else {
+                currentCombo = Math.max(0, currentCombo / 2);
+            }
 
             // Update rank using config thresholds
             currentRank = StyleRank.fromScore(styleScore, questId);
@@ -475,9 +492,11 @@ public class ComboSystem {
 
         /**
          * Start new wave.
+         * FIX UX #3: Record wave start time for grace period.
          */
         public void startNewWave() {
             damageTakenThisWave = 0;
+            waveStartTime = System.currentTimeMillis();
         }
 
         /**

@@ -184,6 +184,9 @@ public class GameDesignConfig {
         @SerializedName("enabled")
         public boolean enabled = true;
 
+        @SerializedName("practice_enabled")
+        public boolean practiceEnabled = false;
+
         // Trait unlock thresholds
         @SerializedName("headshot_threshold")
         public int headshotThreshold = 100;
@@ -264,6 +267,9 @@ public class GameDesignConfig {
         @SerializedName("enabled")
         public boolean enabled = true;
 
+        @SerializedName("practice_enabled")
+        public boolean practiceEnabled = false;
+
         // Adaptation trigger thresholds (percentage of behavior)
         @SerializedName("ranged_attack_threshold")
         public float rangedAttackThreshold = 0.70f;
@@ -324,6 +330,9 @@ public class GameDesignConfig {
     public static class TideConfig {
         @SerializedName("enabled")
         public boolean enabled = true;
+
+        @SerializedName("practice_enabled")
+        public boolean practiceEnabled = false;
 
         @SerializedName("max_tide")
         public int maxTide = 1000;
@@ -449,6 +458,7 @@ public class GameDesignConfig {
     private static SignatureWeaponsConfig copySignatureWeapons(SignatureWeaponsConfig src) {
         SignatureWeaponsConfig copy = new SignatureWeaponsConfig();
         copy.enabled = src.enabled;
+        copy.practiceEnabled = src.practiceEnabled;
         copy.headshotThreshold = src.headshotThreshold;
         copy.bossKillsThreshold = src.bossKillsThreshold;
         copy.sssWavesThreshold = src.sssWavesThreshold;
@@ -478,6 +488,7 @@ public class GameDesignConfig {
     private static NemesisConfig copyNemesis(NemesisConfig src) {
         NemesisConfig copy = new NemesisConfig();
         copy.enabled = src.enabled;
+        copy.practiceEnabled = src.practiceEnabled;
         copy.rangedAttackThreshold = src.rangedAttackThreshold;
         copy.dodgeDirectionThreshold = src.dodgeDirectionThreshold;
         copy.fastKillThresholdSeconds = src.fastKillThresholdSeconds;
@@ -496,6 +507,7 @@ public class GameDesignConfig {
     private static TideConfig copyTide(TideConfig src) {
         TideConfig copy = new TideConfig();
         copy.enabled = src.enabled;
+        copy.practiceEnabled = src.practiceEnabled;
         copy.maxTide = src.maxTide;
         copy.playerDeath = src.playerDeath;
         copy.questFailedEarly = src.questFailedEarly;

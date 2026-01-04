@@ -52,6 +52,7 @@ public enum ChannelId {
     ARRIVAL_CONFIRM(31, Direction.CLIENT_TO_SERVER, "ArrivalConfirmPayload"),
     CANCEL_SEQUENCE(32, Direction.CLIENT_TO_SERVER, "CancelSequencePayload"),
     INVITE_RESPONSE(33, Direction.CLIENT_TO_SERVER, "InviteResponsePayload"),
+    PARTY_STATS_SYNC(34, Direction.SERVER_TO_CLIENT, "PartyStatsSyncPayload"),
 
     // ============================================================================
     // CONFIG/TELEMETRY CHANNELS (36-45)
@@ -147,6 +148,7 @@ public enum ChannelId {
     // COMPAT MODULE CHANNELS (130-139)
     // Reserved for future compat module network channels
     // ============================================================================
+    NUTRITION_SYNC(130, Direction.SERVER_TO_CLIENT, "NutritionSyncPayload"),
     ;
 
     // ============================================================================

@@ -54,6 +54,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -61,6 +62,9 @@ import com.devmod.client.ui.search.ItemSearchQuery;
 import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.KitManager;
 import com.devmod.endurance.KitPersistence;
+import com.devmod.notification.Notification;
+import com.devmod.notification.NotificationCategory;
+import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
@@ -200,6 +204,7 @@ public class KitSelectionScreen extends Screen {
     private int selectedSlot = -1;
     private boolean needsSearchTabRefresh = false;
     private int searchTabRetryTicks = 0;
+    private boolean initialKitLoad = false;
 
     // Popup state
     private boolean showEnchantPopup = false;
@@ -249,7 +254,10 @@ public class KitSelectionScreen extends Screen {
     protected void init() {
         super.init();
         loadAllItems();
-        loadExistingKit();
+        if (!initialKitLoad) {
+            loadExistingKit();
+            initialKitLoad = true;
+        }
         initSearchBox();
         filterItems();
     }
@@ -281,22 +289,43 @@ public class KitSelectionScreen extends Screen {
             var mc = Minecraft.getInstance();
             var registryAccess = mc.level != null ? mc.level.registryAccess() : null;
             List<ItemStack> items = kit.toItemStacks(registryAccess);
-            int slot = 5;
-            for (ItemStack stack : items) {
-                if (!stack.isEmpty()) {
-                    int equipSlot = getKitSlotIndex(stack);
-                    if (equipSlot >= 0 && !kitSlots.containsKey(equipSlot)) {
-                        kitSlots.put(equipSlot, stack.copy());
-                        continue;
-                    }
-                    while (slot <= 13 && kitSlots.containsKey(slot)) slot++;
-                    if (slot <= 13) {
-                        kitSlots.put(slot, stack.copy());
-                        slot++;
-                    }
-                }
-            }
+            populateKitSlots(items);
             kitNameInput = kit.getName();
+            return;
+        }
+
+        if (KitManager.INSTANCE.hasTemporaryKit()) {
+            List<ItemStack> items = KitManager.INSTANCE.getTemporaryKitItems();
+            populateKitSlots(items);
+            String tempName = KitManager.INSTANCE.getTemporaryKitName();
+            if (tempName != null && !tempName.isBlank()) {
+                kitNameInput = tempName;
+            }
+            return;
+        }
+
+        kitNameInput = "";
+    }
+
+    private void populateKitSlots(List<ItemStack> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        int slot = 5;
+        for (ItemStack stack : items) {
+            if (stack == null || stack.isEmpty()) {
+                continue;
+            }
+            int equipSlot = getKitSlotIndex(stack);
+            if (equipSlot >= 0 && !kitSlots.containsKey(equipSlot)) {
+                kitSlots.put(equipSlot, stack.copy());
+                continue;
+            }
+            while (slot <= 13 && kitSlots.containsKey(slot)) slot++;
+            if (slot <= 13) {
+                kitSlots.put(slot, stack.copy());
+                slot++;
+            }
         }
     }
 
@@ -1256,6 +1285,7 @@ public class KitSelectionScreen extends Screen {
             I18n.translate("devmod.kit.instructions.add").getString(),
             I18n.translate("devmod.kit.instructions.remove").getString(),
             I18n.translate("devmod.kit.instructions.stack").getString(),
+            I18n.translate("devmod.kit.instructions.stack_exact").getString(),
             I18n.translate("devmod.kit.instructions.slot").getString(),
             I18n.translate("devmod.kit.instructions.actions").getString()
         };
@@ -1374,7 +1404,16 @@ public class KitSelectionScreen extends Screen {
             }
 
             if (selectedSlot >= 0) {
-                kitSlots.put(selectedSlot, stack);
+                if (selectedSlot >= 5) {
+                    int merged = mergeIntoSlot(selectedSlot, stack);
+                    if (merged > 0 && !stack.isEmpty()) {
+                        addItemToKit(stack);
+                    } else if (merged == 0) {
+                        kitSlots.put(selectedSlot, stack);
+                    }
+                } else {
+                    kitSlots.put(selectedSlot, stack);
+                }
             } else {
                 addItemToKit(stack);
             }
@@ -1635,12 +1674,53 @@ public class KitSelectionScreen extends Screen {
             kitSlots.put(equipSlot, stack);
             return;
         }
+        if (tryStackIntoHotbar(stack)) {
+            return;
+        }
         for (int slot = 5; slot <= 13; slot++) {
             if (!kitSlots.containsKey(slot) || kitSlots.get(slot).isEmpty()) {
                 kitSlots.put(slot, stack);
                 return;
             }
         }
+    }
+
+    private boolean tryStackIntoHotbar(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || stack.getMaxStackSize() <= 1) {
+            return false;
+        }
+        for (int slot = 5; slot <= 13; slot++) {
+            int merged = mergeIntoSlot(slot, stack);
+            if (merged > 0 && stack.isEmpty()) {
+                return true;
+            }
+        }
+        return stack.isEmpty();
+    }
+
+    private int mergeIntoSlot(int slot, ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return 0;
+        }
+        ItemStack existing = kitSlots.get(slot);
+        if (existing == null || existing.isEmpty()) {
+            return 0;
+        }
+        if (existing.getMaxStackSize() <= 1 || !ItemStack.isSameItemSameComponents(existing, stack)) {
+            return 0;
+        }
+        int max = Math.min(existing.getMaxStackSize(), stack.getMaxStackSize());
+        int room = max - existing.getCount();
+        if (room <= 0) {
+            return 0;
+        }
+        int toAdd = Math.min(room, stack.getCount());
+        if (toAdd <= 0) {
+            return 0;
+        }
+        existing.setCount(existing.getCount() + toAdd);
+        stack.shrink(toAdd);
+        return toAdd;
     }
 
     private void applyQuickSet(int setIndex) {
@@ -1704,8 +1784,16 @@ public class KitSelectionScreen extends Screen {
         // Create callback to receive the edited item
         java.util.function.Consumer<ItemStack> onItemEdited = editedStack -> {
             if (editedStack != null && !editedStack.isEmpty()) {
-                kitSlots.put(slot, editedStack);
+                kitSlots.put(slot, editedStack.copy());
                 LOGGER.debug("Kit slot {} updated with edited item: {}", slot, editedStack.getHoverName().getString());
+                Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+                    .titleKey("devmod.kit.notification.item_saved.title")
+                    .messageKey("devmod.kit.notification.item_saved.message")
+                    .param("item", editedStack.getHoverName().getString())
+                    .priority(NotificationPriority.NORMAL)
+                    .displayDurationMs(2000)
+                    .build();
+                ClientNotificationManager.INSTANCE.handleNotification(notification);
             }
         };
 
@@ -1813,11 +1901,33 @@ public class KitSelectionScreen extends Screen {
             }
         }
 
-        KitPersistence.saveKit(kit);
-        LOGGER.info("[KitSelectionScreen] Saved kit: {} with {} items", kit.getName(), kit.getItemCount());
+        boolean saved = KitPersistence.saveKit(kit);
+        if (!saved) {
+            Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+                .titleKey("devmod.kit.notification.save_failed.title")
+                .messageKey("devmod.kit.notification.save_failed.message")
+                .priority(NotificationPriority.HIGH)
+                .displayDurationMs(3000)
+                .build();
+            ClientNotificationManager.INSTANCE.handleNotification(notification);
+            playRemoveSound();
+            return;
+        }
+
+        int itemCount = kit.getItemCount();
+        LOGGER.info("[KitSelectionScreen] Saved kit: {} with {} items", kit.getName(), itemCount);
         if (onKitSaved != null) {
             onKitSaved.accept(kit);
         }
+        Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+            .titleKey("devmod.kit.notification.saved.title")
+            .messageKey("devmod.kit.notification.saved.message")
+            .param("name", kit.getName())
+            .param("count", itemCount)
+            .priority(NotificationPriority.NORMAL)
+            .displayDurationMs(2500)
+            .build();
+        ClientNotificationManager.INSTANCE.handleNotification(notification);
 
         closeNameDialog();
         playSuccessSound();
@@ -1842,6 +1952,15 @@ public class KitSelectionScreen extends Screen {
 
         String name = kitNameInput.isEmpty() ? getDefaultKitNameSimple() : kitNameInput;
         KitManager.INSTANCE.setTemporaryKit(items, name);
+        Notification notification = Notification.builder(NotificationCategory.SYSTEM)
+            .titleKey("devmod.kit.notification.temporary.title")
+            .messageKey("devmod.kit.notification.temporary.message")
+            .param("name", name)
+            .param("count", items.size())
+            .priority(NotificationPriority.NORMAL)
+            .displayDurationMs(2200)
+            .build();
+        ClientNotificationManager.INSTANCE.handleNotification(notification);
 
         if (onKitSelected != null) {
             onKitSelected.accept(items);

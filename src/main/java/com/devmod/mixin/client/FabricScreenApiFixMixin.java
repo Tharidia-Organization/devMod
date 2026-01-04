@@ -11,8 +11,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
+import com.devmod.client.endurance.ClientQuestCache;
 
 /**
  * Workaround for Fabric Screen API bug in forgified-fabric-api.
@@ -24,6 +27,7 @@ import net.minecraft.network.chat.Component;
  * temporarily sets a dummy screen if null, preventing the NPE.
  */
 @Mixin(value = Minecraft.class, priority = 500)
+@SuppressWarnings({"UnusedMethod", "UnusedVariable"}) // Mixin methods are invoked via bytecode injection
 public class FabricScreenApiFixMixin {
 
     @Shadow
@@ -65,12 +69,23 @@ public class FabricScreenApiFixMixin {
     /**
      * Before Fabric's mixin runs, ensure screen is not null.
      * This prevents ScreenEvents.remove(null) from throwing NPE.
+     *
+     * Also intercepts vanilla DeathScreen during active quests - the server
+     * will send our custom QuestDeathScreen via network packet instead.
      */
     @Inject(
         method = "setScreen",
-        at = @At("HEAD")
+        at = @At("HEAD"),
+        cancellable = true
     )
     private void devmod$preventNullScreenForFabric(Screen newScreen, CallbackInfo ci) {
+        // Suppress vanilla DeathScreen when player is in an active Endurance Quest
+        // Our custom QuestDeathScreen is sent via network packet from server
+        if (newScreen instanceof DeathScreen && ClientQuestCache.hasActiveQuest()) {
+            ci.cancel();
+            return;
+        }
+
         if (this.screen == null) {
             // Temporarily set a dummy screen so Fabric's ScreenEvents.remove() doesn't NPE
             this.screen = devmod$getDummyScreen();

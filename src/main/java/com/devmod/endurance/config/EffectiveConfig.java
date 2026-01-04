@@ -308,7 +308,7 @@ public final class EffectiveConfig {
 
     /**
      * Get effective mob config for a specific mob type.
-     * Priority: session mobPoolConfig > registry default
+     * Priority: session mobPoolConfig > global config > registry default
      *
      * @param session Optional session for override lookup
      * @param mobId The mob's ResourceLocation
@@ -317,6 +317,7 @@ public final class EffectiveConfig {
     public static EnduranceMobConfig getEffectiveMobConfig(
             @Nullable EnduranceQuestManager.ActiveQuestSession session,
             net.minecraft.resources.ResourceLocation mobId) {
+        // Priority 1: Session-specific override
         if (session != null) {
             EnduranceMobPoolConfig poolConfig = session.getMobPoolConfig();
             if (poolConfig != null) {
@@ -327,29 +328,48 @@ public final class EffectiveConfig {
                 }
             }
         }
-        // Fallback to registry defaults
+
+        // Priority 2: Global config from GlobalMobConfigStorage (null-check for hot path performance)
+        EnduranceMobPoolConfig globalConfig = GlobalMobConfigStorage.getCachedOrNull();
+        if (globalConfig != null) {
+            EnduranceMobConfig globalOverride = globalConfig.getMobConfigOrNull(mobId);
+            if (globalOverride != null) {
+                LOGGER.debug("[EffectiveConfig] Using global mob config for {}", mobId);
+                return globalOverride;
+            }
+        }
+
+        // Priority 3: Registry defaults
         return EnduranceMobConfig.fromRegistryOrDefault(mobId);
     }
 
     /**
      * Check if a mob type is enabled for spawning.
-     * Priority: session mobPoolConfig > default (enabled)
+     * Priority: session mobPoolConfig > global config > default (enabled)
      */
     public static boolean isMobEnabled(
             @Nullable EnduranceQuestManager.ActiveQuestSession session,
             net.minecraft.resources.ResourceLocation mobId) {
+        // Priority 1: Session-specific override
         if (session != null) {
             EnduranceMobPoolConfig poolConfig = session.getMobPoolConfig();
             if (poolConfig != null) {
                 return poolConfig.isEnabled(mobId);
             }
         }
+
+        // Priority 2: Global config (null-check for hot path performance)
+        EnduranceMobPoolConfig globalConfig = GlobalMobConfigStorage.getCachedOrNull();
+        if (globalConfig != null) {
+            return globalConfig.isEnabled(mobId);
+        }
+
         return true; // Default: all mobs enabled
     }
 
     /**
-     * Get effective global health multiplier from session.
-     * Default: 1.0 (no multiplier)
+     * Get effective global health multiplier.
+     * Priority: session mobPoolConfig > global config > default (1.0)
      */
     public static float getGlobalHealthMult(@Nullable EnduranceQuestManager.ActiveQuestSession session) {
         if (session != null) {
@@ -358,12 +378,16 @@ public final class EffectiveConfig {
                 return poolConfig.getGlobalHealthMult();
             }
         }
+        EnduranceMobPoolConfig globalConfig = GlobalMobConfigStorage.getCachedOrNull();
+        if (globalConfig != null) {
+            return globalConfig.getGlobalHealthMult();
+        }
         return 1.0f;
     }
 
     /**
-     * Get effective global damage multiplier from session.
-     * Default: 1.0 (no multiplier)
+     * Get effective global damage multiplier.
+     * Priority: session mobPoolConfig > global config > default (1.0)
      */
     public static float getGlobalDamageMult(@Nullable EnduranceQuestManager.ActiveQuestSession session) {
         if (session != null) {
@@ -372,12 +396,16 @@ public final class EffectiveConfig {
                 return poolConfig.getGlobalDamageMult();
             }
         }
+        EnduranceMobPoolConfig globalConfig = GlobalMobConfigStorage.getCachedOrNull();
+        if (globalConfig != null) {
+            return globalConfig.getGlobalDamageMult();
+        }
         return 1.0f;
     }
 
     /**
-     * Get effective global speed multiplier from session.
-     * Default: 1.0 (no multiplier)
+     * Get effective global speed multiplier.
+     * Priority: session mobPoolConfig > global config > default (1.0)
      */
     public static float getGlobalSpeedMult(@Nullable EnduranceQuestManager.ActiveQuestSession session) {
         if (session != null) {
@@ -386,12 +414,16 @@ public final class EffectiveConfig {
                 return poolConfig.getGlobalSpeedMult();
             }
         }
+        EnduranceMobPoolConfig globalConfig = GlobalMobConfigStorage.getCachedOrNull();
+        if (globalConfig != null) {
+            return globalConfig.getGlobalSpeedMult();
+        }
         return 1.0f;
     }
 
     /**
-     * Get effective global elite chance multiplier from session.
-     * Default: 1.0 (no multiplier)
+     * Get effective global elite chance multiplier.
+     * Priority: session mobPoolConfig > global config > default (1.0)
      */
     public static float getGlobalEliteChanceMult(@Nullable EnduranceQuestManager.ActiveQuestSession session) {
         if (session != null) {
@@ -400,12 +432,16 @@ public final class EffectiveConfig {
                 return poolConfig.getGlobalEliteChanceMult();
             }
         }
+        EnduranceMobPoolConfig globalConfig = GlobalMobConfigStorage.getCachedOrNull();
+        if (globalConfig != null) {
+            return globalConfig.getGlobalEliteChanceMult();
+        }
         return 1.0f;
     }
 
     /**
      * Get affix weight for a specific spawn affix.
-     * Default: 1.0 (standard weight)
+     * Priority: session mobPoolConfig > global config > default (1.0)
      */
     public static float getAffixWeight(
             @Nullable EnduranceQuestManager.ActiveQuestSession session,
@@ -415,6 +451,10 @@ public final class EffectiveConfig {
             if (poolConfig != null) {
                 return poolConfig.getAffixWeight(affix);
             }
+        }
+        EnduranceMobPoolConfig globalConfig = GlobalMobConfigStorage.getCachedOrNull();
+        if (globalConfig != null) {
+            return globalConfig.getAffixWeight(affix);
         }
         return 1.0f;
     }

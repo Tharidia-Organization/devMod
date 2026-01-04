@@ -590,8 +590,9 @@ public class BossWaveSystem {
         }
         tag.putString("endurance_variant", variantName);
         tag.putString("endurance_boss_name", generatedName);
-        tag.putUUID("endurance_arena_id", arenaId);
-        tag.putUUID("endurance_quest_id", safeQuestId);
+        tag.putUUID(EnduranceTags.ARENA_ID, arenaId);
+        tag.putUUID(EnduranceTags.QUEST_ID, safeQuestId);
+        tag.putString(EnduranceTags.MOB_ID, mobConfig.mobId.toString());
 
         if (handle != null) {
             String templateId = handle.templateId();
@@ -984,7 +985,7 @@ public class BossWaveSystem {
                 UUID fightArenaId = Objects.requireNonNull(fight.arenaId);
                 CompoundTag tag = minionMob.getPersistentData();
                 tag.putBoolean("endurance_minion", true);
-                tag.putUUID("endurance_arena_id", fightArenaId);
+                tag.putUUID(EnduranceTags.ARENA_ID, fightArenaId);
                 CompoundTag bossTag = boss.getPersistentData();
                 if (bossTag.contains("endurance_template_id")) {
                     String templateId = bossTag.getString("endurance_template_id");

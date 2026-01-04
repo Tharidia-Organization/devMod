@@ -297,14 +297,38 @@ public class GameDesignConfigManager {
     }
 
     public boolean isSignatureWeaponsEnabled() {
-        return getGlobalConfig().getSignatureWeapons().enabled;
+        return isSignatureWeaponsEnabled(null, false);
+    }
+
+    public boolean isSignatureWeaponsEnabled(@Nullable UUID instanceId, boolean practiceMode) {
+        GameDesignConfig.SignatureWeaponsConfig config = getSignatureWeaponsConfig(instanceId);
+        if (!config.enabled) {
+            return false;
+        }
+        return !practiceMode || config.practiceEnabled;
     }
 
     public boolean isNemesisEnabled(@Nullable UUID instanceId) {
-        return getNemesisConfig(instanceId).enabled;
+        return isNemesisEnabled(instanceId, false);
+    }
+
+    public boolean isNemesisEnabled(@Nullable UUID instanceId, boolean practiceMode) {
+        GameDesignConfig.NemesisConfig config = getNemesisConfig(instanceId);
+        if (!config.enabled) {
+            return false;
+        }
+        return !practiceMode || config.practiceEnabled;
     }
 
     public boolean isTideEnabled() {
-        return getGlobalConfig().getTide().enabled;
+        return isTideEnabled(null, false);
+    }
+
+    public boolean isTideEnabled(@Nullable UUID instanceId, boolean practiceMode) {
+        GameDesignConfig.TideConfig config = getTideConfig(instanceId);
+        if (!config.enabled) {
+            return false;
+        }
+        return !practiceMode || config.practiceEnabled;
     }
 }

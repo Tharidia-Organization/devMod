@@ -98,6 +98,19 @@ public class ArenaSelectionPanel {
         return selectedTemplateId;
     }
 
+    public boolean isAutoSelected() {
+        return selectedTemplateId == null || selectedTemplateId.equals(autoSelectedTemplateId);
+    }
+
+    @Nullable
+    public String getSelectedTemplateLabel() {
+        TemplateSuggestion current = getCurrentSuggestion();
+        if (current != null) {
+            return current.templateName();
+        }
+        return selectedTemplateId;
+    }
+
     /**
      * Gets the override template ID (null if using auto-selection).
      */

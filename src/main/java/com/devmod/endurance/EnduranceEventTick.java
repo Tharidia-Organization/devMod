@@ -27,6 +27,8 @@ import com.devmod.runtime.environment.DimensionEnvironmentManager;
 import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
+import com.devmod.compat.mods.easydiet.EasyDietCompat;
+import com.devmod.endurance.nutrition.NutritionBridgeSystem;
 
 public class EnduranceEventTick {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventTick.class);
@@ -88,30 +90,34 @@ public class EnduranceEventTick {
                 EnduranceQuestManager.ActiveQuestSession session = entry.getValue();
                 ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
                 if (player != null) {
-                    PerkSystem.INSTANCE.tick(player);
+                    boolean spectator = session.isPartySpectator();
                     ArenaContext arena = session.getArena();
-                    if (arena != null) {
+                    if (!spectator && arena != null) {
                         UUID arenaId = arena.getId();
                         if (arenaId != null && tickedArenas.add(arenaId)) {
                             WaveManager.INSTANCE.tickWave(session, player);
                         }
                     }
+                    if (!spectator) {
+                        PerkSystem.INSTANCE.tick(player);
 
-                    // Tick execution system for this player
-                    com.devmod.combat.ExecutionSystem.INSTANCE.tickPlayer(player);
+                        // Tick nutrition system for Easy-Diet integration
+                        if (EasyDietCompat.isAvailable()) {
+                            NutritionBridgeSystem.INSTANCE.tick(player);
+                        }
 
-                    // Tick Devil's Bargain curse effects
-                    UUID questId = session.getQuest().getQuestId();
-                    com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.tickPlayer(player, questId);
+                        com.devmod.combat.ExecutionSystem.INSTANCE.tickPlayer(player);
 
-                    // Tick Arena Hazards (environmental effects)
-                    if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
-                        com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.tick(serverLevel, questId, player);
-                    }
+                        UUID questId = session.getQuest().getQuestId();
+                        com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.tickPlayer(player, questId);
 
-                    // Check arena boundaries every 10 ticks (0.5 seconds)
-                    if (tickCounter % 10 == 0) {
-                        enforceArenaConfinement(player);
+                        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                            com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.tick(serverLevel, questId, player);
+                        }
+
+                        if (tickCounter % 10 == 0) {
+                            enforceArenaConfinement(player);
+                        }
                     }
                 }
             }
@@ -227,11 +233,15 @@ public class EnduranceEventTick {
         java.util.Set<UUID> startedArenas = new java.util.HashSet<>();
         for (EnduranceQuestManager.ActiveQuestSession session :
                 EnduranceQuestManager.INSTANCE.getActiveSessions().values()) {
-            if (!session.isWaveStartPending()) {
+            // Check if any countdown is pending (wave, safe window, or boss intro)
+            // We need to process all of these, not just wave start
+            if (!session.isWaveStartPending() && !session.isSafeWindowPending() && !session.isBossIntroPending()) {
                 continue;
             }
             if (session.getQuest().getState() != EnduranceQuestState.IN_PROGRESS) {
                 session.clearPendingWaveStart();
+                session.clearPendingBossIntro();
+                session.clearPendingSafeWindow();
                 session.setRespawnCountdownActive(false);
                 continue;
             }
@@ -281,6 +291,14 @@ public class EnduranceEventTick {
             }
 
             if (session.isBossIntroPending()) {
+                if (session.isPracticeMode()) {
+                    session.clearPendingBossIntro();
+                    if (!session.isWaveStartPending()) {
+                        session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
+                        session.setLastWaveCountdownSeconds(-1);
+                    }
+                    continue;
+                }
                 int ticksRemaining = session.tickBossIntroCountdown();
                 int secondsRemaining = (int) Math.ceil(ticksRemaining / 20.0);
                 if (secondsRemaining > 0 && secondsRemaining != session.getLastBossIntroSeconds()) {
@@ -299,8 +317,7 @@ public class EnduranceEventTick {
                         List.of("Boss: " + session.getQuest().getMobConfig().displayName));
                 }
                 if (ticksRemaining <= 0) {
-                    LOGGER.info("[BossDebug] Boss intro finished for wave {}",
-                        session.getQuest().getCurrentWave());
+                    int bossWaveNumber = session.getQuest().getCurrentWave();
                     session.clearPendingBossIntro();
                     session.setRespawnCountdownActive(false);
                     UUID arenaId = arena.getId();
@@ -309,15 +326,14 @@ public class EnduranceEventTick {
                     if (arenaId != null) {
                         boolean cleared = WaveManager.INSTANCE.clearCompletedWaveState(arenaId);
                         if (cleared) {
-                            LOGGER.info("[BossDebug] Cleared completed wave state for arena {} before boss spawn", arenaId);
+                            LOGGER.debug("[BossDebug] Cleared completed wave state for arena {} before boss spawn", arenaId);
                         }
                     }
 
                     boolean hasExistingWaveState = arenaId != null && WaveManager.INSTANCE.getWaveState(arenaId).isPresent();
-                    LOGGER.info("[BossDebug] Checking existing wave state: arenaId={}, hasState={}",
-                        arenaId, hasExistingWaveState);
                     if (hasExistingWaveState) {
-                        LOGGER.warn("[BossDebug] BLOCKED! Existing wave state prevents boss spawn (wave not complete yet)");
+                        LOGGER.warn("[BossDebug] Boss intro finished for wave {} but BLOCKED by existing wave state",
+                            bossWaveNumber);
                         session.clearPendingWaveStart();
                         continue;
                     }
@@ -332,6 +348,8 @@ public class EnduranceEventTick {
                         EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
                             QuestSequencePayload.Phase.STARTED, 0);
                         WaveManager.INSTANCE.startWave(session);
+                        LOGGER.info("[BossDebug] Boss wave {} started successfully (party mode)", bossWaveNumber);
+                        boolean applyShared = true;
                         for (UUID memberId : partySession.getMembers()) {
                             EnduranceQuestManager.ActiveQuestSession memberSession =
                                 EnduranceQuestManager.INSTANCE.getActiveSession(memberId).orElse(null);
@@ -340,7 +358,8 @@ public class EnduranceEventTick {
                                 Objects.requireNonNull(memberId, "memberId cannot be null"));
                             if (member != null) {
                                 EnduranceEventHandler.onWaveStart(member, memberSession,
-                                    memberSession.getQuest().getCurrentWave());
+                                    memberSession.getQuest().getCurrentWave(), applyShared);
+                                applyShared = false;
                             }
                         }
                         continue;
@@ -348,6 +367,7 @@ public class EnduranceEventTick {
                     EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
                         QuestSequencePayload.Phase.STARTED, 0);
                     WaveManager.INSTANCE.startWave(session);
+                    LOGGER.info("[BossDebug] Boss wave {} started successfully", bossWaveNumber);
                     EnduranceEventHandler.onWaveStart(player, session, session.getQuest().getCurrentWave());
                 }
                 continue;
@@ -358,7 +378,20 @@ public class EnduranceEventTick {
 
             if (secondsRemaining > 0 && secondsRemaining != session.getLastWaveCountdownSeconds()) {
                 if (session.getLastWaveCountdownSeconds() < 0) {
-                    EnduranceTelemetryService.INSTANCE.recordCountdownStarted(session.getQuest().getQuestId());
+                    boolean shouldRecord = true;
+                    if (session.getPartyId() != null) {
+                        PartyQuestSession partySession = EnduranceQuestManager.INSTANCE
+                            .getPartySession(session.getPartyId())
+                            .orElse(null);
+                        if (partySession != null && partySession.isActive()) {
+                            shouldRecord = partySession.markCountdownWave(session.getQuest().getCurrentWave());
+                        }
+                    }
+                    if (shouldRecord) {
+                        if (!session.isPracticeMode()) {
+                            EnduranceTelemetryService.INSTANCE.recordCountdownStarted(session.getQuest().getQuestId());
+                        }
+                    }
                 }
                 session.setLastWaveCountdownSeconds(secondsRemaining);
                 EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
@@ -379,7 +412,8 @@ public class EnduranceEventTick {
                 session.setRespawnCountdownActive(false);
                 UUID questId = session.getQuest().getQuestId();
                 int currentWave = session.getQuest().getCurrentWave();
-                boolean isBoss = BossWaveSystem.INSTANCE.isBossWave(currentWave, questId);
+                boolean isBoss = !session.isPracticeMode()
+                    && BossWaveSystem.INSTANCE.isBossWave(currentWave, questId);
                 LOGGER.info("[BossDebug] Wave countdown finished. Wave={}, isBossWave={}, questId={}",
                     currentWave, isBoss, questId);
                 if (isBoss) {
@@ -404,6 +438,7 @@ public class EnduranceEventTick {
                         QuestSequencePayload.Phase.STARTED, 0);
                     player.playSound(Objects.requireNonNull(SoundEvents.NOTE_BLOCK_PLING.value()), 0.9f, 1.1f);
                     WaveManager.INSTANCE.startWave(session);
+                    boolean applyShared = true;
                     for (UUID memberId : partySession.getMembers()) {
                         EnduranceQuestManager.ActiveQuestSession memberSession =
                             EnduranceQuestManager.INSTANCE.getActiveSession(memberId).orElse(null);
@@ -412,7 +447,8 @@ public class EnduranceEventTick {
                             Objects.requireNonNull(memberId, "memberId cannot be null"));
                         if (member != null) {
                             EnduranceEventHandler.onWaveStart(member, memberSession,
-                                memberSession.getQuest().getCurrentWave());
+                                memberSession.getQuest().getCurrentWave(), applyShared);
+                            applyShared = false;
                         }
                     }
                     continue;
@@ -495,6 +531,7 @@ public class EnduranceEventTick {
             boolean objectiveComplete = objective != null && objective.isComplete();
             boolean objectiveFailed = objective != null && objective.isFailed();
 
+            String questId = quest.getQuestId().toString();
             String templateId = session.getTemplateId() != null ? session.getTemplateId() : "";
             Integer templateVersion = session.getTemplateVersion();
             int templateVersionValue = templateVersion != null ? templateVersion.intValue() : 0;
@@ -509,6 +546,7 @@ public class EnduranceEventTick {
             // Create sync payload
             QuestSyncPayload payload = new QuestSyncPayload(
                 true,
+                questId,
                 quest.getDisplayName(),
                 templateId,
                 templateVersionValue,
@@ -683,9 +721,9 @@ public class EnduranceEventTick {
                     CompoundTag data = mob.getPersistentData();
 
                     // Check if this mob belongs to our quest
-                    boolean isQuestMob = data.contains("endurance_quest_id") &&
-                        data.contains("endurance_arena_id") &&
-                        Objects.requireNonNull(data.getUUID("endurance_arena_id")).equals(arena.getId());
+                    boolean isQuestMob = data.contains(EnduranceTags.QUEST_ID) &&
+                        data.contains(EnduranceTags.ARENA_ID) &&
+                        Objects.requireNonNull(data.getUUID(EnduranceTags.ARENA_ID)).equals(arena.getId());
 
                     if (!isQuestMob) {
                         // This is an external mob - remove it

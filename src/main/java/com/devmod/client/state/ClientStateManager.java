@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.endurance.ClientPartyStatsCache;
 import com.devmod.client.state.stores.ConfigStateStore;
 import com.devmod.client.state.stores.MailboxStateStore;
 import com.devmod.client.state.stores.NotificationStateStore;
@@ -146,6 +147,8 @@ public final class ClientStateManager {
         configStore.clear();
         mailboxStore.clear();
         notificationStore.clear();
+        // FIX #9: Clear party stats cache on disconnect
+        ClientPartyStatsCache.clear();
     }
 
     /**

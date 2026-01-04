@@ -1,7 +1,9 @@
 package com.devmod.client.ui.editor.modules;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -21,6 +23,8 @@ import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
+import com.devmod.compat.mods.easydiet.EasyDietCompat;
+import com.devmod.endurance.nutrition.NutritionCategory;
 import com.devmod.stats.FoodStats;
 
 public class FoodModuleUI {
@@ -50,6 +54,13 @@ public class FoodModuleUI {
     @Nullable
     EditorToggle isFastFoodToggle;
 
+    // ═══════════════════════════════════════════════════════════════
+    // UI COMPONENTS - Easy-Diet Tab
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Sliders for each nutrition category (only created if Easy-Diet available). */
+    private final Map<NutritionCategory, EditorSlider> dietSliders = new EnumMap<>(NutritionCategory.class);
+
     public FoodModuleUI(FoodModule module, FoodModuleCore core) {
         this.module = module;
         this.core = core;
@@ -62,6 +73,7 @@ public class FoodModuleUI {
     public void createAllComponents(SourceBadge.Source dataSource) {
         createNutritionComponents(dataSource);
         createPropertiesComponents(dataSource);
+        createEasyDietComponents(dataSource);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -160,6 +172,98 @@ public class FoodModuleUI {
             .onChange(v -> { stats.setFastFood(v); module.markDirty("Is fast food"); });
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // EASY-DIET TAB
+    // ═══════════════════════════════════════════════════════════════
+
+    private void createEasyDietComponents(SourceBadge.Source dataSource) {
+        // Always create the components (UI available even without mod runtime)
+        FoodStats stats = core.getStats();
+        dietSliders.clear();
+
+        for (NutritionCategory cat : NutritionCategory.VALUES) {
+            EditorSlider slider = new EditorSlider(
+                "diet_" + cat.key,
+                cat.displayName,
+                0, 100, 0 // Use 0-100 range for percentage display
+            )
+                .step(5)
+                .format("%.0f")
+                .suffix("%")
+                .trackColor(cat.color)
+                .showInput(true)
+                .source(dataSource)
+                .info(getCategoryDescription(cat))
+                .onChange(v -> {
+                    // Convert 0-100 to 0.0-1.0 for storage
+                    stats.setNutritionValue(cat, v / 100f);
+                    module.markDirty(cat.displayName + " nutrition");
+                });
+
+            dietSliders.put(cat, slider);
+        }
+    }
+
+    private String getCategoryDescription(NutritionCategory cat) {
+        return switch (cat) {
+            case GRAIN -> "Cereals, bread, pasta, grains. Provides sustained energy.";
+            case PROTEIN -> "Meat, fish, eggs, legumes. Builds strength and endurance.";
+            case VEGETABLE -> "Vegetables, greens, roots. Boosts defense and healing.";
+            case FRUIT -> "Fruits, berries. Improves speed and agility.";
+            case SUGAR -> "Sweets, honey. Quick energy burst but short-lived.";
+            case WATER -> "Water, drinks, soups. Essential for all body functions.";
+        };
+    }
+
+    /**
+     * Check if Easy-Diet tab should be shown.
+     * Tab is available when Easy-Diet mod is loaded.
+     */
+    public boolean isEasyDietAvailable() {
+        return EasyDietCompat.isAvailable();
+    }
+
+    public List<EditorSection> getEasyDietSections() {
+        List<EditorSection> sections = new ArrayList<>();
+
+        if (!isEasyDietAvailable()) {
+            sections.add(new SimpleHeaderSection("diet-header", "Easy-Diet Integration"));
+            sections.add(new TextNoteSection("diet-unavailable",
+                "Easy-Diet mod is not installed. Install it to enable nutrition profiles."));
+            return sections;
+        }
+
+        sections.add(new SimpleHeaderSection("diet-header", "Nutrition Profile"));
+
+        // Add slider for each category
+        for (NutritionCategory cat : NutritionCategory.VALUES) {
+            EditorSlider slider = dietSliders.get(cat);
+            if (slider != null) {
+                sections.add(new SliderSectionAdapter(slider));
+            }
+        }
+
+        // Add info note
+        FoodStats stats = core.getStats();
+        if (stats.hasNutritionProfile()) {
+            int count = NutritionCategory.VALUES.length;
+            int configured = 0;
+            for (NutritionCategory cat : NutritionCategory.VALUES) {
+                if (stats.getNutritionValue(cat) > 0) configured++;
+            }
+            sections.add(new TextNoteSection("diet-status",
+                String.format("Configured: %d/%d categories", configured, count)));
+        } else {
+            sections.add(new TextNoteSection("diet-note",
+                "Set values above to define this food's nutritional contribution."));
+        }
+
+        sections.add(new TextNoteSection("diet-info",
+            "Nutrition affects combat in Endurance quests: well-fed = +15% damage, malnourished = -25% damage."));
+
+        return sections;
+    }
+
     public List<EditorSection> getPropertiesSections() {
         EditorToggle isMeat = Objects.requireNonNull(isMeatToggle, "isMeatToggle");
         EditorToggle isFastFood = Objects.requireNonNull(isFastFoodToggle, "isFastFoodToggle");
@@ -252,5 +356,14 @@ public class FoodModuleUI {
 
         if (isMeatToggle != null) isMeatToggle.setValue(stats.isMeat());
         if (isFastFoodToggle != null) isFastFoodToggle.setValue(stats.isFastFood());
+
+        // Update Easy-Diet sliders (convert 0.0-1.0 to 0-100 for display)
+        for (NutritionCategory cat : NutritionCategory.VALUES) {
+            EditorSlider slider = dietSliders.get(cat);
+            if (slider != null) {
+                float value = stats.getNutritionValue(cat);
+                slider.setValue(value * 100f);
+            }
+        }
     }
 }

@@ -39,9 +39,9 @@ public final class GlobalMobConfigStorage {
         .disableHtmlEscaping()
         .create();
 
-    // Cached global config
-    private static EnduranceMobPoolConfig cachedConfig = null;
-    private static boolean loaded = false;
+    // Cached global config - volatile for thread-safe visibility across server/render threads
+    private static volatile EnduranceMobPoolConfig cachedConfig = null;
+    private static volatile boolean loaded = false;
 
     private GlobalMobConfigStorage() {}
 
@@ -132,9 +132,22 @@ public final class GlobalMobConfigStorage {
 
     /**
      * Get the cached config if loaded.
+     * @deprecated since 1.0. Use {@link #getCachedOrNull()} in hot paths to avoid Optional allocation.
+     *             This method will be removed in a future version.
      */
+    @Deprecated(since = "1.0", forRemoval = true)
     public static Optional<EnduranceMobPoolConfig> getCached() {
         return Optional.ofNullable(cachedConfig);
+    }
+
+    /**
+     * Get the cached config directly without Optional wrapper.
+     * Preferred for hot paths (e.g., mob spawning) to avoid allocation overhead.
+     *
+     * @return The cached config, or null if not loaded
+     */
+    public static @javax.annotation.Nullable EnduranceMobPoolConfig getCachedOrNull() {
+        return cachedConfig;
     }
 
     /**

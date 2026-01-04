@@ -28,6 +28,8 @@ public record PartySyncPayload(
     // Security limits
     private static final int MAX_MEMBERS = 20;
     private static final int MAX_NAME_LENGTH = 64;
+    private static final int MAX_KIT_ID_LENGTH = 32;
+    private static final int MAX_KIT_LABEL_LENGTH = 64;
 
     public static final Type<PartySyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "party_sync"))
@@ -51,6 +53,9 @@ public record PartySyncPayload(
             buf.writeBoolean(member.isReady);
             buf.writeBoolean(member.isLeader);
             buf.writeBoolean(member.isOnline);
+            buf.writeBoolean(member.isSpectator);
+            buf.writeUtf(member.kitId() != null ? member.kitId() : "");
+            buf.writeUtf(member.kitLabel() != null ? member.kitLabel() : "");
         }
 
         buf.writeVarInt(payload.questTypeOrdinal);
@@ -76,7 +81,11 @@ public record PartySyncPayload(
             boolean isReady = buf.readBoolean();
             boolean isLeader = buf.readBoolean();
             boolean isOnline = buf.readBoolean();
-            members.add(new PartyMemberInfo(playerId, playerName, isReady, isLeader, isOnline));
+            boolean isSpectator = buf.readBoolean();
+            String kitId = buf.readUtf(MAX_KIT_ID_LENGTH);
+            String kitLabel = buf.readUtf(MAX_KIT_LABEL_LENGTH);
+            members.add(new PartyMemberInfo(playerId, playerName, isReady, isLeader, isOnline, isSpectator,
+                kitId.isBlank() ? null : kitId, kitLabel.isBlank() ? null : kitLabel));
         }
 
         int questTypeOrdinal = buf.readVarInt();
@@ -121,7 +130,9 @@ public record PartySyncPayload(
     private static int estimateMemberSize(PartyMemberInfo member) {
         int size = 16; // UUID
         size += estimatedUtfSize(member.playerName);
-        size += 3; // isReady, isLeader, isOnline
+        size += 4; // isReady, isLeader, isOnline, isSpectator
+        size += estimatedUtfSize(member.kitId());
+        size += estimatedUtfSize(member.kitLabel());
         return size;
     }
 
@@ -249,16 +260,21 @@ public record PartySyncPayload(
      * @param onlineChecker Function to check if a player is online
      * @return The sync payload
      */
-    public static PartySyncPayload fromParty(PartyData party, java.util.function.Predicate<UUID> onlineChecker) {
+    public static PartySyncPayload fromParty(PartyData party, java.util.function.Predicate<UUID> onlineChecker,
+                                             java.util.function.Predicate<UUID> spectatorChecker,
+                                             java.util.function.Predicate<UUID> readyChecker) {
         List<PartyMemberInfo> memberInfos = new ArrayList<>();
 
         for (UUID memberId : party.getMembers()) {
             String name = party.getMemberName(memberId);
-            boolean isReady = party.isReady(memberId);
+            boolean isReady = readyChecker != null ? readyChecker.test(memberId) : party.isReady(memberId);
             boolean isLeader = party.isLeader(memberId);
             boolean isOnline = onlineChecker != null ? onlineChecker.test(memberId) : true;
+            boolean isSpectator = spectatorChecker != null && spectatorChecker.test(memberId);
+            String kitId = party.getMemberKitId(memberId);
+            String kitLabel = resolveKitLabel(memberId, kitId);
 
-            memberInfos.add(new PartyMemberInfo(memberId, name, isReady, isLeader, isOnline));
+            memberInfos.add(new PartyMemberInfo(memberId, name, isReady, isLeader, isOnline, isSpectator, kitId, kitLabel));
         }
 
         // Get selected mob ID as string (or null)
@@ -277,6 +293,15 @@ public record PartySyncPayload(
         );
     }
 
+    public static PartySyncPayload fromParty(PartyData party, java.util.function.Predicate<UUID> onlineChecker) {
+        return fromParty(party, onlineChecker, null, null);
+    }
+
+    public static PartySyncPayload fromParty(PartyData party, java.util.function.Predicate<UUID> onlineChecker,
+                                             java.util.function.Predicate<UUID> spectatorChecker) {
+        return fromParty(party, onlineChecker, spectatorChecker, null);
+    }
+
     /**
      * Information about a single party member.
      */
@@ -285,16 +310,46 @@ public record PartySyncPayload(
         String playerName,
         boolean isReady,
         boolean isLeader,
-        boolean isOnline
+        boolean isOnline,
+        boolean isSpectator,
+        @javax.annotation.Nullable String kitId,
+        @javax.annotation.Nullable String kitLabel
     ) {
         /**
          * Get display status string.
          */
         public String getStatusDisplay() {
             if (!isOnline) return "§7[OFFLINE]";
+            if (isSpectator) return "§7[SPECTATOR]";
             if (isLeader) return "§6[LEADER]";
             if (isReady) return "§a[READY]";
             return "§c[NOT READY]";
         }
+    }
+
+    private static String resolveKitLabel(UUID memberId, String kitId) {
+        if (kitId == null || kitId.isBlank()) {
+            return null;
+        }
+        if ("TEMPORARY".equals(kitId)) {
+            String name = com.devmod.endurance.KitManager.INSTANCE.getTemporaryKitName(memberId);
+            return name != null && !name.isBlank() ? name : "Temporary Kit";
+        }
+        if (kitId.length() == 8) {
+            var synced = com.devmod.endurance.KitManager.INSTANCE.getSyncedCustomKit(memberId, kitId);
+            if (synced.isPresent()) {
+                return synced.get().getName();
+            }
+            var saved = com.devmod.endurance.KitManager.INSTANCE.getCustomKit(kitId);
+            if (saved.isPresent()) {
+                return saved.get().getName();
+            }
+            return "Custom Kit";
+        }
+        var preset = com.devmod.endurance.KitManager.INSTANCE.getKitById(kitId);
+        if (preset != null) {
+            return preset.getDisplayName();
+        }
+        return kitId;
     }
 }

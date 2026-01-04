@@ -215,7 +215,7 @@ public class UsableModule extends AbstractEditorModule {
             // Reload from the written stack to pick up server-side clamps/normalization
             UsableStats applied = com.devmod.config.UsableConfigManager.getStats(copy).copy();
             core.setStats(applied.copy());
-            ui.updateSlidersFromStats();
+            withDirtyTrackingDisabled(ui::updateSlidersFromStats);
             // Store the preview copy in the base class so UI can render it without mutating the real item
             setPreviewItem(copy);
             // Also advance our working item/original stats so subsequent edits start from the latest applied state

@@ -117,4 +117,18 @@ public class GeneralModule extends AbstractEditorModule {
     public @Nullable CustomPacketPayload buildPayload(boolean isGlobal) {
         return null;
     }
+
+    @Override
+    public void applyPreview() {
+        GeneralModuleUI uiRef = requireUi();
+        try {
+            var copy = item.copy();
+            uiRef.applyQuickSettingsToItem(copy);
+            setPreviewItem(copy);
+            this.item = copy;
+            withDirtyTrackingDisabled(() -> uiRef.updateSlidersFromItem(copy));
+        } catch (Exception ignored) {
+            clearPreview();
+        }
+    }
 }

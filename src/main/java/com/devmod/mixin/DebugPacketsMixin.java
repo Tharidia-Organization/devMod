@@ -34,6 +34,7 @@ import com.devmod.debug.DebugManager;
 import com.devmod.debug.EntityPathingPayload;
 
 @Mixin(DebugPackets.class)
+@SuppressWarnings({"UnusedMethod", "UnusedVariable"}) // Mixin methods are invoked via bytecode injection
 public class DebugPacketsMixin {
 
     /**

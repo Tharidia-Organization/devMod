@@ -104,6 +104,7 @@ class InheritanceResolutionTest {
             base.limits(),
             base.buildSettings(),
             base.zoneSettings(),
+            base.terrainSettings(),
             tags
         );
     }

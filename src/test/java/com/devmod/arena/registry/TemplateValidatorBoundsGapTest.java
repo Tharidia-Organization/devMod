@@ -125,6 +125,7 @@ class TemplateValidatorBoundsGapTest {
             base.limits(),
             base.buildSettings(),
             base.zoneSettings(),
+            base.terrainSettings(),
             base.tags()
         );
     }

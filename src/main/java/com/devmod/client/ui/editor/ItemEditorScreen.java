@@ -1072,6 +1072,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void refreshMultiEditSelection() {
+        if (localOnlyMode) {
+            return;
+        }
         var manager = multiEditManager;
         if (manager == null) return;
         manager.clearSelection();
@@ -1337,6 +1340,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
      */
     private boolean handleHotbarClickInternal(double mouseX, double mouseY, int button, boolean placeOnly) {
         if (button != 0) return false;
+        if (localOnlyMode) return false;
         var player = Minecraft.getInstance().player;
         if (player == null) return false;
 
@@ -2078,6 +2082,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private boolean persistMultiEditItem(ItemStack item, int slot) {
+        if (localOnlyMode) {
+            showStatus("MultiEdit disabled in kit edit", DesignTokens.Semantic.WARNING);
+            return false;
+        }
         DebugPanel panel = debugPanel;
         try {
             var mc = Minecraft.getInstance();
@@ -2156,6 +2164,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void toggleMultiEditPanel() {
+        if (localOnlyMode) {
+            showStatus("MultiEdit disabled in kit edit", DesignTokens.Semantic.WARNING);
+            return;
+        }
         this.showMultiEditPanel = !this.showMultiEditPanel;
     }
 

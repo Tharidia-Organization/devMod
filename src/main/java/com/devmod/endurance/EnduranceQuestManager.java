@@ -263,11 +263,19 @@ public class EnduranceQuestManager {
 
         LOGGER.info("[EnduranceQuest] Shutting down with {} active sessions", activeSessions.size());
 
+        java.util.Map<UUID, Integer> questIdCounts = new java.util.HashMap<>();
+        for (ActiveQuestSession session : activeSessions.values()) {
+            UUID questId = session.getQuest().getQuestId();
+            questIdCounts.put(questId, questIdCounts.getOrDefault(questId, 0) + 1);
+        }
+        java.util.Set<UUID> sharedCleanup = new java.util.HashSet<>();
         // Force-end all active sessions with partial rewards
         for (ActiveQuestSession session : activeSessions.values()) {
             try {
                 EnduranceQuest quest = session.quest;
                 UUID playerId = session.getPlayerId();
+                int questRefs = questIdCounts.getOrDefault(quest.getQuestId(), 1);
+                boolean cleanupShared = questRefs <= 1 || sharedCleanup.add(quest.getQuestId());
 
                 // Award partial tokens based on waves completed (50% of normal rate)
                 int wavesCompleted = quest.getCurrentWave();
@@ -284,7 +292,7 @@ public class EnduranceQuestManager {
                     quest.fail(true); // Mark as abandoned
                 } finally {
                     // Flush telemetry/stats and cleanup systems without granting full rewards
-                    handleForcedShutdownCleanup(session);
+                    handleForcedShutdownCleanup(session, cleanupShared);
                 }
             } catch (Exception e) {
                 LOGGER.error("[EnduranceQuest] Error cleaning up session for player {}", session.getPlayerId(), e);
@@ -1898,22 +1906,37 @@ public class EnduranceQuestManager {
             updateSnapshotArenaTemplate(player, arenaHandle);
             session.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
             session.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
-            session.setKitId(settings.kitId);
+            session.setKitId(settings.resolveKitId(playerId));
             session.setPracticeMode(settings.practiceMode);
             activeSessions.put(playerId, session); // Replaces placeholder
 
-            // Apply arena policy config overrides and sync to client
-            applyAndSyncArenaOverrides(player, session);
+            try {
+                // Apply arena policy config overrides and sync to client
+                applyAndSyncArenaOverrides(player, session);
 
-            // Prepare player (save state, give kit - NO TELEPORT, already done)
-            EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
+                // Prepare player (save state, give kit - NO TELEPORT, already done)
+                EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
 
-            // Initialize all subsystems
-            EnduranceEventHandler.onQuestStart(player, session);
+                // Initialize all subsystems
+                EnduranceEventHandler.onQuestStart(player, session);
+            } catch (Exception e) {
+                LOGGER.error("[EnduranceQuest] Failed to start quest for player {}", player.getName().getString(), e);
+                activeSessions.remove(playerId);
+                RecoverySystem.INSTANCE.loadSnapshot(playerId).ifPresent(snapshot ->
+                    RecoverySystem.INSTANCE.performRecovery(player, snapshot, "Quest start failed"));
+                results.put(playerId, new StartQuestResult(false, "Quest start failed", null));
+                continue;
+            }
 
-            // Start telemetry
-            String dungeonId = "endurance_party_" + mobId.toString().replace(":", "_");
-            TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
+            if (!session.isPracticeMode()) {
+                // Start telemetry
+                String dungeonId = "endurance_party_" + mobId.toString().replace(":", "_");
+                try {
+                    TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
+                } catch (Exception e) {
+                    LOGGER.warn("[EnduranceQuest] Failed to start telemetry for player {}", player.getName().getString(), e);
+                }
+            }
 
             results.put(playerId, new StartQuestResult(true, "Quest started!", session));
 
@@ -1928,9 +1951,11 @@ public class EnduranceQuestManager {
                 WaveManager.INSTANCE.startWave(result.session());
 
                 // Notify all players that wave 1 started
+                boolean applyShared = true;
                 for (ServerPlayer player : players) {
                     if (player != null && results.get(player.getUUID()) != null && results.get(player.getUUID()).success()) {
-                        EnduranceEventHandler.onWaveStart(player, result.session(), 1);
+                        EnduranceEventHandler.onWaveStart(player, result.session(), 1, applyShared);
+                        applyShared = false;
                     }
                 }
                 break;
@@ -2047,7 +2072,7 @@ public class EnduranceQuestManager {
         pendingSession.setPending(true);
         pendingSession.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
         pendingSession.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
-        pendingSession.setKitId(settings.kitId);
+        pendingSession.setKitId(settings.resolveKitId(playerId));
         pendingSession.setPracticeMode(settings.practiceMode);
         pendingSession.scheduleBriefing(BRIEFING_TICKS);
         pendingSession.scheduleInstanceStart(mobId, settings, resolved, PRE_TELEPORT_COUNTDOWN_TICKS);
@@ -2419,7 +2444,7 @@ public class EnduranceQuestManager {
         } else {
             session.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
             session.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
-            session.setKitId(settings.kitId);
+            session.setKitId(settings.resolveKitId(effectivePlayerId));
             session.setPracticeMode(settings.practiceMode);
         }
         activeSessions.put(effectivePlayerId, session);
@@ -2431,8 +2456,10 @@ public class EnduranceQuestManager {
 
         EnduranceEventHandler.onQuestStart(player, session);
 
-        String dungeonId = "endurance_instance_" + mobId.toString().replace(":", "_");
-        TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
+        if (!session.isPracticeMode()) {
+            String dungeonId = "endurance_instance_" + mobId.toString().replace(":", "_");
+            TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
+        }
 
         session.scheduleSafeWindow(SAFE_WINDOW_TICKS);
         session.scheduleWaveStart(WAVE_START_COUNTDOWN_TICKS);
@@ -2635,8 +2662,12 @@ public class EnduranceQuestManager {
         }
     }
 
-    public void continuePartyToNextWave(UUID partyId) {
-        PartyQuestSession partySession = partySessions.get(partyId);
+    public void requestPartyContinue(UUID playerId) {
+        ActiveQuestSession session = activeSessions.get(playerId);
+        if (session == null || session.getPartyId() == null) {
+            return;
+        }
+        PartyQuestSession partySession = partySessions.get(session.getPartyId());
         if (partySession == null || !partySession.isActive()) {
             return;
         }
@@ -2644,7 +2675,32 @@ public class EnduranceQuestManager {
         if (quest.getState() != EnduranceQuestState.WAVE_COMPLETE) {
             return;
         }
+        partySession.markWaveReady(playerId);
+        syncPartyState(partySession.getPartyId());
+        if (partySession.isReadyForNextWave()) {
+            advancePartyToNextWave(partySession);
+        }
+    }
+
+    private void advancePartyToNextWave(PartyQuestSession partySession) {
+        if (partySession == null || !partySession.isActive()) {
+            return;
+        }
+        EnduranceQuest quest = partySession.getQuest();
+        if (quest.getState() != EnduranceQuestState.WAVE_COMPLETE) {
+            return;
+        }
+        int waveNumber = quest.getCurrentWave();
+        if (!partySession.markWaveAdvance(waveNumber)) {
+            return;
+        }
+        partySession.clearWaveReady();
+        UUID arenaId = partySession.getArenaId();
+        if (arenaId != null) {
+            WaveManager.INSTANCE.clearCompletedWaveState(arenaId);
+        }
         quest.continueToNextWave();
+        updatePartyPlayerCount(partySession);
 
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         for (UUID memberId : partySession.getMembers()) {
@@ -2703,8 +2759,10 @@ public class EnduranceQuestManager {
 
                 if (player != null) {
                     EnduranceEventHandler.onQuestEnd(player, session, completed);
-                    com.devmod.telemetry.TelemetryService.INSTANCE.endDungeonSession(
-                        player, completed ? "completed" : (reason != null ? reason : "failed"));
+                    if (!session.isPracticeMode()) {
+                        com.devmod.telemetry.TelemetryService.INSTANCE.endDungeonSession(
+                            player, completed ? "completed" : (reason != null ? reason : "failed"));
+                    }
                     net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
                         player, Objects.requireNonNull(QuestSyncPayload.empty()));
                     EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
@@ -2726,9 +2784,24 @@ public class EnduranceQuestManager {
             EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(cleanupSession, completed);
         }
 
-        com.devmod.party.PartyManager.INSTANCE.finishQuest(partySession.getPartyId());
+        com.devmod.party.PartyManager.INSTANCE.finishQuest(java.util.Objects.requireNonNull(partySession.getPartyId()));
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
+            var party = com.devmod.party.PartyManager.INSTANCE.getParty(java.util.Objects.requireNonNull(partySession.getPartyId()));
+            if (party != null) {
+                UUID leaderId = party.getLeaderId();
+                ServerPlayer leaderPlayer = server.getPlayerList().getPlayer(java.util.Objects.requireNonNull(leaderId));
+                if (leaderPlayer == null) {
+                    UUID newLeader = party.getMembers().stream()
+                        .filter(id -> !id.equals(leaderId))
+                        .filter(id -> server.getPlayerList().getPlayer(java.util.Objects.requireNonNull(id)) != null)
+                        .findFirst()
+                        .orElse(null);
+                    if (newLeader != null) {
+                        com.devmod.party.PartyManager.INSTANCE.transferLeadership(leaderId, newLeader);
+                    }
+                }
+            }
             com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, partySession.getPartyId());
         }
 
@@ -2815,6 +2888,11 @@ public class EnduranceQuestManager {
         }
         partySessions.put(session.getPartyId(), session);
         questToParty.put(session.getQuestId(), session.getPartyId());
+        var party = com.devmod.party.PartyManager.INSTANCE.getParty(session.getPartyId());
+        if (party != null && party.getState() != com.devmod.party.PartyData.PartyState.IN_QUEST) {
+            com.devmod.party.PartyManager.INSTANCE.forceStartQuest(session.getPartyId(), session.getInstanceId());
+        }
+        updatePartyPlayerCount(session);
         return session;
     }
 
@@ -2864,12 +2942,16 @@ public class EnduranceQuestManager {
         }
         session.setPartySpectator(true);
         partySession.markSpectator(playerId);
+        updatePartyPlayerCount(partySession);
+        syncPartyState(partySession.getPartyId());
 
         if (partySession.isWiped()) {
             EnduranceQuest quest = partySession.getQuest();
             quest.fail(false);
             endPartyRun(partySession, false, reason != null ? reason : "party_wipe");
+            return;
         }
+        tryAdvancePartyWave(partySession);
     }
 
     public void markPartyMemberActive(UUID playerId) {
@@ -2883,6 +2965,149 @@ public class EnduranceQuestManager {
         }
         session.setPartySpectator(false);
         partySession.markActive(playerId);
+        updatePartyPlayerCount(partySession);
+        syncPartyState(partySession.getPartyId());
+    }
+
+    private void updatePartyPlayerCount(PartyQuestSession partySession) {
+        if (partySession == null) {
+            return;
+        }
+        int playerCount = Math.max(1, partySession.getActiveMemberCount());
+        for (UUID memberId : partySession.getMembers()) {
+            ActiveQuestSession session = activeSessions.get(memberId);
+            if (session != null) {
+                session.setPlayerCount(playerCount);
+            }
+        }
+    }
+
+    private void tryAdvancePartyWave(PartyQuestSession partySession) {
+        if (partySession == null || !partySession.isActive()) {
+            return;
+        }
+        EnduranceQuest quest = partySession.getQuest();
+        if (quest.getState() != EnduranceQuestState.WAVE_COMPLETE) {
+            return;
+        }
+        if (!partySession.isReadyForNextWave()) {
+            return;
+        }
+        advancePartyToNextWave(partySession);
+    }
+
+    private void syncPartyState(UUID partyId) {
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+            com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, partyId);
+        }
+    }
+
+    public boolean attachPartyMemberSession(ServerPlayer player, PartyQuestSession partySession) {
+        if (player == null || partySession == null || !partySession.isActive()) {
+            return false;
+        }
+        UUID playerId = player.getUUID();
+        if (activeSessions.containsKey(playerId)) {
+            return false;
+        }
+
+        ActiveQuestSession templateSession = null;
+        for (UUID memberId : partySession.getMembers()) {
+            ActiveQuestSession existing = activeSessions.get(memberId);
+            if (existing != null) {
+                templateSession = existing;
+                break;
+            }
+        }
+        ArenaContext arena = templateSession != null ? templateSession.getArena() : null;
+        ArenaHandle arenaHandle = templateSession != null ? templateSession.getArenaHandle() : null;
+        if (arena == null) {
+            arena = partySession.getArena();
+        }
+        if (arenaHandle == null) {
+            arenaHandle = partySession.getArenaHandle();
+        }
+        if (arena == null || arenaHandle == null) {
+            return false;
+        }
+
+        ActiveQuestSession placeholder = new ActiveQuestSession(playerId, partySession.getQuest(), null, System.currentTimeMillis());
+        ActiveQuestSession existing = activeSessions.putIfAbsent(playerId, placeholder);
+        if (existing != null) {
+            return false;
+        }
+
+        UUID instanceId = partySession.getInstanceId();
+        if (instanceId != null && !prepareLateJoinInstance(player, instanceId, partySession)) {
+            activeSessions.remove(playerId);
+            return false;
+        }
+
+        EnduranceQuest quest = partySession.getQuest();
+        ActiveQuestSession session = new ActiveQuestSession(
+            playerId,
+            quest,
+            arena,
+            System.currentTimeMillis(),
+            partySession.getPartyId(),
+            partySession.getQuestType(),
+            Math.max(1, partySession.getActiveMemberCount())
+        );
+        if (instanceId != null) {
+            session.setInstanceId(instanceId);
+        }
+        session.setArenaHandle(arenaHandle);
+        updateSnapshotArenaTemplate(player, arenaHandle);
+        if (templateSession != null) {
+            session.setDifficultyLabel(templateSession.getDifficultyLabel());
+            session.setQuestTypeLabel(templateSession.getQuestTypeLabel());
+            session.setKitId(templateSession.getKitId());
+            session.setPracticeMode(templateSession.isPracticeMode());
+            for (var entry : templateSession.getConfigOverrides().entrySet()) {
+                session.setConfigOverride(entry.getKey(), entry.getValue());
+            }
+            session.setMobPoolConfig(templateSession.getMobPoolConfig());
+        }
+        session.setPartySpectator(true);
+        activeSessions.put(playerId, session);
+
+        applyAndSyncArenaOverrides(player, session);
+        EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
+        EnduranceEventHandler.onQuestStart(player, session);
+        if (!session.isPracticeMode()) {
+            String dungeonId = "endurance_party_" + quest.getMobId().toString().replace(":", "_");
+            TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
+        }
+
+        partySession.markSpectator(playerId);
+        updatePartyPlayerCount(partySession);
+        syncPartyState(partySession.getPartyId());
+        return true;
+    }
+
+    private boolean prepareLateJoinInstance(ServerPlayer player, UUID instanceId, PartyQuestSession partySession) {
+        Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+        if (instanceOpt.isEmpty()) {
+            return false;
+        }
+        InstanceData instance = instanceOpt.get();
+        if (!instance.addPlayer(player.getUUID())) {
+            return false;
+        }
+        InstanceRegistry.INSTANCE.save();
+        var snapshot = RecoverySystem.INSTANCE.createSnapshotFromPlayer(player, instance);
+        snapshot.setState(com.devmod.runtime.PlayerInstanceState.PREPARING);
+        var party = com.devmod.party.PartyManager.INSTANCE.getParty(partySession.getPartyId());
+        if (party != null) {
+            snapshot.setPartyLeaderId(party.getLeaderId());
+            snapshot.setPartyMembers(new java.util.HashSet<>(party.getMembers()));
+        } else {
+            snapshot.setPartyMembers(new java.util.HashSet<>(partySession.getMembers()));
+        }
+        RecoverySystem.INSTANCE.saveSnapshot(snapshot);
+        InstanceRegistry.INSTANCE.mapPlayer(player.getUUID(), instanceId);
+        return true;
     }
 
     public boolean rejoinPartyMember(ServerPlayer player) {
@@ -2904,6 +3129,7 @@ public class EnduranceQuestManager {
         boolean teleported = false;
         UUID instanceId = session.getInstanceId();
         if (instanceId != null) {
+            RecoverySystem.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.IN_TRANSIT);
             teleported = com.devmod.runtime.DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
         }
         if (teleported && session.getArena() != null) {
@@ -2915,9 +3141,14 @@ public class EnduranceQuestManager {
             EndurancePlayerStateManager.INSTANCE.resetQuestLoadout(player, session);
             EndurancePlayerStateManager.INSTANCE.applySafeWindowEffects(player, SAFE_WINDOW_TICKS);
             markPartyMemberActive(player.getUUID());
+            if (instanceId != null) {
+                RecoverySystem.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.IN_INSTANCE);
+            }
             player.sendSystemMessage(Objects.requireNonNull(
                 net.minecraft.network.chat.Component.literal("[DevMod] Rejoined party run.")
                     .withStyle(SharedColorTokens.Chat.GREEN)));
+        } else if (instanceId != null) {
+            RecoverySystem.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.PREPARING);
         }
 
         return teleported;
@@ -2966,14 +3197,15 @@ public class EnduranceQuestManager {
      * Cleanup path used only during server shutdown to avoid dangling state
      * and to ensure telemetry/stats are flushed without granting full rewards.
      */
-    private void handleForcedShutdownCleanup(ActiveQuestSession session) {
+    private void handleForcedShutdownCleanup(ActiveQuestSession session, boolean cleanupShared) {
         try {
             EnduranceQuest quest = session.quest;
             UUID questId = quest.getQuestId();
             UUID playerId = session.getPlayerId();
 
-            // Cleanup config overrides for this quest
-            EnduranceConfigManager.INSTANCE.cleanupQuest(questId);
+            if (cleanupShared) {
+                EnduranceConfigManager.INSTANCE.cleanupQuest(questId);
+            }
 
             // Record end-of-session telemetry and stats (abandoned outcome)
             EnduranceTelemetryService.INSTANCE.recordQuestEnd(
@@ -2987,17 +3219,21 @@ public class EnduranceQuestManager {
             );
             persistence.updatePlayerStats(playerId, quest, false);
 
-            // Stop trackers and sessions to avoid leaks
-            CombatTracker.INSTANCE.stopTracking(questId);
+            if (cleanupShared) {
+                CombatTracker.INSTANCE.stopTracking(questId);
+            }
             ComboSystem.INSTANCE.endSession(playerId);
             EnduranceEventCombat.removeComboSession(playerId);
-            MutatorSystem.INSTANCE.endSession(questId);
-            EnduranceEventCombat.removeMutatorSession(questId);
+            if (cleanupShared) {
+                MutatorSystem.INSTANCE.endSession(questId);
+                EnduranceEventCombat.removeMutatorSession(questId);
+            }
             PerkSystem.INSTANCE.endSession(playerId);
 
-            // Cleanup arena/boss state (handles both legacy and instance modes)
-            EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
-            EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, false);
+            if (cleanupShared) {
+                EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
+                EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, false);
+            }
         } catch (Exception e) {
             LOGGER.warn("[EnduranceQuest] Failed shutdown cleanup for session {}", session.getPlayerId(), e);
         }
@@ -3017,6 +3253,7 @@ public class EnduranceQuestManager {
         public QuestType questType = QuestType.PVE_COOP;
         public UUID partyId = null;
         public java.util.List<UUID> partyMemberIds = java.util.List.of();
+        public java.util.Map<UUID, String> partyKitIds = java.util.Map.of();
 
         // Kit selection
         public String kitId = "STARTER";
@@ -3058,6 +3295,11 @@ public class EnduranceQuestManager {
             return this;
         }
 
+        public QuestSettings partyKits(java.util.Map<UUID, String> kitIds) {
+            this.partyKitIds = kitIds != null ? kitIds : java.util.Map.of();
+            return this;
+        }
+
         public QuestSettings forceTemplate(@javax.annotation.Nullable String templateId) {
             this.forceTemplateId = templateId;
             return this;
@@ -3069,6 +3311,16 @@ public class EnduranceQuestManager {
 
         public int getPlayerCount() {
             return Math.max(1, partyMemberIds.size());
+        }
+
+        public String resolveKitId(@javax.annotation.Nullable UUID playerId) {
+            if (playerId != null && partyKitIds != null) {
+                String kit = partyKitIds.get(playerId);
+                if (kit != null && !kit.isBlank()) {
+                    return kit;
+                }
+            }
+            return kitId != null ? kitId : "STARTER";
         }
     }
 

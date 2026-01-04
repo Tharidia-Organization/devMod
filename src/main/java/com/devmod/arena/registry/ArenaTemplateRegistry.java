@@ -810,6 +810,8 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             mergeRequiredByStrategy("buildSettings", child.buildSettings(), parent.buildSettings(), this::mergeBuildSettings),
             // OVERRIDE for zoneSettings (complete replacement)
             mergeByStrategy("zoneSettings", child.zoneSettings(), parent.zoneSettings(), null),
+            // OVERRIDE for terrainSettings (complete replacement)
+            mergeByStrategy("terrainSettings", child.terrainSettings(), parent.terrainSettings(), null),
             // OVERRIDE for arrays
             mergeListByStrategy("tags", child.tags(), parent.tags())
         );

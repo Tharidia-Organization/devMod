@@ -180,7 +180,18 @@ public class PartyManager {
                 .findFirst()
                 .orElse(null);
 
-        if (invite == null || !invite.canRespond()) {
+        if (invite == null) {
+            LOGGER.debug("[PartyManager] Invite {} not found or cannot respond", inviteId);
+            return false;
+        }
+
+        if (!invite.canRespond()) {
+            invite.markExpired();
+            invites.remove(invite);
+            PartyData party = parties.get(invite.getPartyId());
+            if (party != null) {
+                party.removeInvite(inviteId, false);
+            }
             LOGGER.debug("[PartyManager] Invite {} not found or cannot respond", inviteId);
             return false;
         }
@@ -190,6 +201,9 @@ public class PartyManager {
         if (party == null || party.getState() == PartyData.PartyState.DISBANDED) {
             invite.cancel();
             invites.remove(invite);
+            if (party != null) {
+                party.removeInvite(inviteId, false);
+            }
             return false;
         }
 
@@ -197,6 +211,17 @@ public class PartyManager {
             // Check if player joined another party while invite was pending
             if (playerToParty.containsKey(playerId)) {
                 invite.decline();
+                invites.remove(invite);
+                party.removeInvite(inviteId, false);
+                return false;
+            }
+            if (party.getState() == PartyData.PartyState.IN_QUEST) {
+                party.removeInvite(inviteId, true);
+                invites.remove(invite);
+                return false;
+            }
+            if (party.getState() != PartyData.PartyState.FORMING) {
+                party.removeInvite(inviteId, true);
                 invites.remove(invite);
                 return false;
             }
@@ -207,6 +232,7 @@ public class PartyManager {
                 String playerName = "Player"; // This will be set by the network handler
                 if (party.addMember(playerId, playerName)) {
                     playerToParty.put(playerId, party.getPartyId());
+                    party.removeInvite(inviteId, false);
                     LOGGER.info("[PartyManager] Member joined partyId={} playerId={} playerName={}",
                             party.getPartyId(), playerId, playerName);
 
@@ -223,6 +249,7 @@ public class PartyManager {
             }
         } else {
             invite.decline();
+            party.removeInvite(inviteId, false);
             LOGGER.info("[PartyManager] Invite declined partyId={} playerId={}",
                     party.getPartyId(), playerId);
 
@@ -256,7 +283,16 @@ public class PartyManager {
                 .findFirst()
                 .orElse(null);
 
-        if (invite == null || !invite.canRespond()) {
+        if (invite == null) {
+            return false;
+        }
+        if (!invite.canRespond()) {
+            invite.markExpired();
+            invites.remove(invite);
+            PartyData party = parties.get(invite.getPartyId());
+            if (party != null) {
+                party.removeInvite(inviteId, false);
+            }
             return false;
         }
 
@@ -264,6 +300,9 @@ public class PartyManager {
         if (party == null || party.getState() == PartyData.PartyState.DISBANDED) {
             invite.cancel();
             invites.remove(invite);
+            if (party != null) {
+                party.removeInvite(inviteId, false);
+            }
             return false;
         }
 
@@ -271,12 +310,24 @@ public class PartyManager {
         if (playerToParty.containsKey(playerId)) {
             invite.decline();
             invites.remove(invite);
+            party.removeInvite(inviteId, false);
+            return false;
+        }
+        if (party.getState() == PartyData.PartyState.IN_QUEST) {
+            party.removeInvite(inviteId, true);
+            invites.remove(invite);
+            return false;
+        }
+        if (party.getState() != PartyData.PartyState.FORMING) {
+            party.removeInvite(inviteId, true);
+            invites.remove(invite);
             return false;
         }
 
         if (invite.accept() && party.addMember(playerId, playerName)) {
             playerToParty.put(playerId, party.getPartyId());
             invites.remove(invite);
+            party.removeInvite(inviteId, false);
             LOGGER.info("[PartyManager] Member joined partyId={} playerId={} playerName={}",
                     party.getPartyId(), playerId, playerName);
 
@@ -458,10 +509,24 @@ public class PartyManager {
         }
 
         if (party.startQuest(instanceId)) {
+            cancelPendingInvites(party);
             notifyListeners(listener -> listener.onQuestStarted(party, instanceId));
             return true;
         }
 
+        return false;
+    }
+
+    public boolean forceStartQuest(UUID partyId, UUID instanceId) {
+        PartyData party = parties.get(partyId);
+        if (party == null) {
+            return false;
+        }
+        if (party.forceStartQuest(instanceId)) {
+            cancelPendingInvites(party);
+            notifyListeners(listener -> listener.onQuestStarted(party, instanceId));
+            return true;
+        }
         return false;
     }
 
@@ -475,6 +540,22 @@ public class PartyManager {
         if (party != null) {
             party.finishQuest();
             notifyListeners(listener -> listener.onQuestFinished(party));
+        }
+    }
+
+    private void cancelPendingInvites(PartyData party) {
+        List<PartyInvite> invites = party.clearPendingInvites();
+        if (invites.isEmpty()) {
+            return;
+        }
+        for (PartyInvite invite : invites) {
+            List<PartyInvite> receiverInvites = playerPendingInvites.get(invite.getReceiverId());
+            if (receiverInvites != null) {
+                receiverInvites.remove(invite);
+                if (receiverInvites.isEmpty()) {
+                    playerPendingInvites.remove(invite.getReceiverId());
+                }
+            }
         }
     }
 
@@ -820,8 +901,13 @@ public class PartyManager {
         }
 
         if (!invite.canRespond()) {
+            invite.markExpired();
             invites.remove(invite);
-            return ResponseResult.failure("Invite expired or already responded");
+            PartyData party = parties.get(invite.getPartyId());
+            if (party != null) {
+                party.removeInvite(inviteId, false);
+            }
+            return ResponseResult.failure("devmod.party.invite_expired");
         }
 
         // Get the party
@@ -829,6 +915,9 @@ public class PartyManager {
         if (party == null || party.getState() == PartyData.PartyState.DISBANDED) {
             invite.cancel();
             invites.remove(invite);
+            if (party != null) {
+                party.removeInvite(inviteId, false);
+            }
             return ResponseResult.failure("Party no longer exists");
         }
 
@@ -839,13 +928,25 @@ public class PartyManager {
             if (playerToParty.containsKey(playerId)) {
                 invite.decline();
                 invites.remove(invite);
+                party.removeInvite(inviteId, false);
                 return ResponseResult.failure("You are already in a party");
+            }
+            if (party.getState() == PartyData.PartyState.IN_QUEST) {
+                party.removeInvite(inviteId, true);
+                invites.remove(invite);
+                return ResponseResult.failure("devmod.party.invite_party_in_quest");
+            }
+            if (party.getState() != PartyData.PartyState.FORMING) {
+                party.removeInvite(inviteId, true);
+                invites.remove(invite);
+                return ResponseResult.failure("devmod.party.invite_party_not_accepting");
             }
 
             // Accept and join
-            if (invite.accept() && party.addMember(playerId, playerName)) {
+            if (party.addMember(playerId, playerName) && invite.accept()) {
                 playerToParty.put(playerId, party.getPartyId());
                 invites.remove(invite);
+                party.removeInvite(inviteId, false);
 
                 // Clear all other pending invites for this player
                 invites.clear();
@@ -864,12 +965,21 @@ public class PartyManager {
                 notifyListeners(listener -> listener.onMemberJoined(party, playerId));
 
                 return ResponseResult.success(party.getPartyId(), senderId);
-            } else {
-                return ResponseResult.failure("Failed to join party - may be full");
             }
+            if (party.hasMember(playerId) && invite.getStatus() != PartyInvite.InviteStatus.ACCEPTED) {
+                party.removeMember(playerId);
+            }
+            if (!invite.canRespond()) {
+                invite.markExpired();
+                invites.remove(invite);
+                party.removeInvite(inviteId, false);
+                return ResponseResult.failure("devmod.party.invite_expired");
+            }
+            return ResponseResult.failure("Failed to join party - may be full");
         } else {
             invite.decline();
             invites.remove(invite);
+            party.removeInvite(inviteId, false);
             LOGGER.info("[PartyManager] Invite declined partyId={} playerId={} playerName={}",
                     party.getPartyId(), playerId, playerName);
 

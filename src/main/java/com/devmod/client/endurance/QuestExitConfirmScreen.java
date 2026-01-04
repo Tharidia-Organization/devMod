@@ -34,7 +34,7 @@ public class QuestExitConfirmScreen extends Screen {
     protected void init() {
         super.init();
 
-        exitDialog = ConfirmDialog.create(
+        ConfirmDialog dialog = ConfirmDialog.create(
             I18n.screenTitle("exit_quest_confirm").getString(),
             I18n.ui("yes_exit_quest").getString(),
             I18n.ui("cancel").getString(),
@@ -44,14 +44,16 @@ public class QuestExitConfirmScreen extends Screen {
             "You will lose all progress for this run!",
             "Points earned will be saved."
         );
-        exitDialog.show();
+        dialog.show();
+        exitDialog = dialog;
     }
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
-        if (exitDialog != null && exitDialog.isVisible()) {
-            exitDialog.render(graphics, font, width, height, mouseX, mouseY);
+        ConfirmDialog dialog = exitDialog;
+        if (dialog != null && dialog.isVisible()) {
+            dialog.render(graphics, font, width, height, mouseX, mouseY);
         }
     }
 

@@ -8,6 +8,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Mob;
 
+import com.devmod.endurance.EnduranceTags;
+
 /**
  * Mixin to prevent despawning of mobs spawned by our endurance quest system.
  *
@@ -27,7 +29,7 @@ public abstract class MobDespawnMixin {
         CompoundTag data = self.getPersistentData();
 
         // If this mob was spawned by our endurance quest system, never despawn
-        if (data.contains("endurance_quest_id") || data.contains("endurance_arena_id")) {
+        if (data.contains(EnduranceTags.QUEST_ID) || data.contains(EnduranceTags.ARENA_ID)) {
             ci.cancel();
         }
     }

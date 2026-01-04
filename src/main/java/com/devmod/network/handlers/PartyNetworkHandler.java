@@ -29,6 +29,7 @@ import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.KitManager;
 import com.devmod.endurance.PartyQuestSession;
 import com.devmod.util.I18n;
 
@@ -139,6 +140,25 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                 case TOGGLE_READY -> {
                     PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
                     if (party != null) {
+                        if (isPartyRunActive(party)) {
+                            var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player);
+                            if (sessionOpt.isPresent()) {
+                                var session = sessionOpt.get();
+                                if (session.isPartySpectator()) {
+                                    EnduranceQuestManager.INSTANCE.rejoinPartyMember(player);
+                                } else {
+                                    EnduranceQuestManager.INSTANCE.requestPartyContinue(playerId);
+                                }
+                            } else {
+                                var partySessionOpt = EnduranceQuestManager.INSTANCE.getPartySession(party.getPartyId());
+                                if (partySessionOpt.isPresent()) {
+                                    if (EnduranceQuestManager.INSTANCE.attachPartyMemberSession(player, partySessionOpt.get())) {
+                                        EnduranceQuestManager.INSTANCE.rejoinPartyMember(player);
+                                    }
+                                }
+                            }
+                            return;
+                        }
                         boolean currentReady = party.isReady(playerId);
                         party.setReady(playerId, !currentReady);
                         LOGGER.debug("[Party] {} toggled ready: {}", playerName, !currentReady);
@@ -169,6 +189,10 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                 case KICK_MEMBER -> {
                     if (payload.targetPlayerId() != null) {
                         PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
+                        if (party != null && isPartyRunActive(party)) {
+                            player.sendSystemMessage(I18n.translate("devmod.party.cannot_kick_in_quest"));
+                            return;
+                        }
                         if (party != null && PartyManager.INSTANCE.kickMember(playerId, payload.targetPlayerId())) {
                             UUID partyId = party.getPartyId();
                             String kickedName = party.getMemberName(payload.targetPlayerId());
@@ -187,6 +211,10 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                 case SET_QUEST_TYPE -> {
                     PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
                     if (party != null && party.isLeader(playerId)) {
+                        if (isPartyRunActive(party)) {
+                            player.sendSystemMessage(I18n.translate("devmod.party.cannot_change_in_quest"));
+                            return;
+                        }
                         var newType = payload.getQuestType();
                         if (party.setQuestType(newType)) {
                             LOGGER.info("[Party] {} changed quest type to {} in party {}",
@@ -199,6 +227,10 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                 case SET_MOB_TYPE -> {
                     PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
                     if (party != null && party.isLeader(playerId)) {
+                        if (isPartyRunActive(party)) {
+                            player.sendSystemMessage(I18n.translate("devmod.party.cannot_change_in_quest"));
+                            return;
+                        }
                         ResourceLocation mobId = payload.getMobResourceLocation();
                         if (mobId != null) {
                             var mobConfig = com.devmod.endurance.EnduranceQuestRegistry.INSTANCE.getMobConfig(mobId);
@@ -219,6 +251,10 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                 case DISBAND_PARTY -> {
                     PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
                     if (party != null && party.isLeader(playerId)) {
+                        if (isPartyRunActive(party)) {
+                            player.sendSystemMessage(I18n.translate("devmod.party.cannot_disband_in_quest"));
+                            return;
+                        }
                         UUID partyId = party.getPartyId();
                         var members = new ArrayList<>(party.getMembers());
                         if (PartyManager.INSTANCE.disbandParty(playerId)) {
@@ -239,6 +275,10 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                 case START_QUEST -> {
                     PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
                     if (party != null && party.isLeader(playerId) && party.canStartQuest()) {
+                        if (isPartyRunActive(party)) {
+                            player.sendSystemMessage(I18n.translate("devmod.party.cannot_start"));
+                            return;
+                        }
                         LOGGER.info("[Party] {} starting quest for party {}", playerName, party.getPartyId());
 
                         QuestStartSequence.ValidationResult result = QuestStartSequence.INSTANCE.startSequence(
@@ -256,6 +296,27 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                         }
                     } else {
                         player.sendSystemMessage(I18n.translate("devmod.party.cannot_start"));
+                    }
+                }
+
+                case SET_KIT -> {
+                    PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
+                    if (party == null) {
+                        return;
+                    }
+                    if (isPartyRunActive(party)) {
+                        player.sendSystemMessage(I18n.translate("devmod.party.cannot_change_in_quest"));
+                        return;
+                    }
+                    String kitId = payload.kitId();
+                    if (!isValidKitSelection(player, kitId)) {
+                        player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                            "[DevMod] Invalid kit selection")));
+                        return;
+                    }
+                    if (party.setMemberKit(playerId, kitId)) {
+                        LOGGER.info("[Party] {} selected kit {} in party {}", playerName, kitId, party.getPartyId());
+                        syncPartyToAllMembers(player.server, party.getPartyId());
                     }
                 }
             }
@@ -296,8 +357,13 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                         LOGGER.info("[Party] {} declined invite {}", playerName, inviteId);
                 }
             } else {
-                String errorMsg = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
-                player.sendSystemMessage(I18n.translate("devmod.party.invite_error", errorMsg));
+                String rawMsg = result.errorMessage();
+                String errorMsg = rawMsg != null ? rawMsg : "Unknown error";
+                if (errorMsg.startsWith("devmod.")) {
+                    player.sendSystemMessage(I18n.translate(errorMsg));
+                } else {
+                    player.sendSystemMessage(I18n.translate("devmod.party.invite_error", errorMsg));
+                }
             }
         }), "invite response");
     }
@@ -353,6 +419,10 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
 
             if (!party.getLeaderId().equals(playerId)) {
                 player.sendSystemMessage(I18n.translate("devmod.party.not_leader"));
+                return;
+            }
+            if (isPartyRunActive(party)) {
+                player.sendSystemMessage(I18n.translate("devmod.party.cannot_invite_in_quest"));
                 return;
             }
 
@@ -435,8 +505,18 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
         PartySyncPayload payload;
 
         if (partyOpt.isPresent()) {
-            payload = PartySyncPayload.fromParty(partyOpt.get(),
-                uuid -> player.server.getPlayerList().getPlayer(nn(uuid)) != null);
+            PartyData party = partyOpt.get();
+            var partySession = EnduranceQuestManager.INSTANCE.getPartySession(party.getPartyId()).orElse(null);
+            java.util.function.Predicate<UUID> spectatorChecker = partySession != null && partySession.isActive()
+                ? partySession::isSpectator
+                : null;
+            java.util.function.Predicate<UUID> readyChecker = partySession != null && partySession.isActive()
+                ? partySession::isWaveReady
+                : null;
+            payload = PartySyncPayload.fromParty(party,
+                uuid -> player.server.getPlayerList().getPlayer(nn(uuid)) != null,
+                spectatorChecker,
+                readyChecker);
         } else {
             payload = PartySyncPayload.empty();
         }
@@ -449,8 +529,17 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
         if (partyOpt.isEmpty()) return;
 
         var party = partyOpt.get();
+        var partySession = EnduranceQuestManager.INSTANCE.getPartySession(party.getPartyId()).orElse(null);
+        java.util.function.Predicate<UUID> spectatorChecker = partySession != null && partySession.isActive()
+            ? partySession::isSpectator
+            : null;
+        java.util.function.Predicate<UUID> readyChecker = partySession != null && partySession.isActive()
+            ? partySession::isWaveReady
+            : null;
         PartySyncPayload payload = PartySyncPayload.fromParty(party,
-            uuid -> server.getPlayerList().getPlayer(nn(uuid)) != null);
+            uuid -> server.getPlayerList().getPlayer(nn(uuid)) != null,
+            spectatorChecker,
+            readyChecker);
 
         for (UUID memberId : party.getMembers()) {
             ServerPlayer member = server.getPlayerList().getPlayer(nn(memberId));
@@ -458,6 +547,33 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                 sendPacket(member, payload);
             }
         }
+    }
+
+    private static boolean isPartyRunActive(PartyData party) {
+        if (party == null) {
+            return false;
+        }
+        if (party.getState() == PartyData.PartyState.IN_QUEST) {
+            return true;
+        }
+        return EnduranceQuestManager.INSTANCE.getPartySession(party.getPartyId())
+            .map(PartyQuestSession::isActive)
+            .orElse(false);
+    }
+
+    private static boolean isValidKitSelection(ServerPlayer player, String kitId) {
+        if (player == null || kitId == null || kitId.isBlank()) {
+            return false;
+        }
+        if ("TEMPORARY".equals(kitId)) {
+            return KitManager.INSTANCE.hasTemporaryKit(player.getUUID());
+        }
+        if (kitId.length() == 8) {
+            UUID playerId = player.getUUID();
+            return KitManager.INSTANCE.getSyncedCustomKit(playerId, kitId).isPresent()
+                || KitManager.INSTANCE.getCustomKit(kitId).isPresent();
+        }
+        return KitManager.INSTANCE.getKitById(kitId) != null;
     }
 
 }

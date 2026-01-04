@@ -29,7 +29,7 @@ import net.minecraft.world.phys.AABB;
  *
  * Usage:
  *   /dummy spawn [id]    - Spawn a training dummy nearby
- *   /dummy remove <id>   - Remove a specific dummy
+ *   /dummy remove <id> [global] - Remove a specific dummy
  *   /dummy clear         - Remove all DevMod-spawned dummies
  *   /dummy list          - List active dummies
  *   /dummy stats         - Show stats for nearest dummy
@@ -52,18 +52,22 @@ public final class DummmmmmyCommands {
      * Register the /dummy command tree.
      */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        StringArgumentType dummyIdArg = Objects.requireNonNull(StringArgumentType.word());
+
         dispatcher.register(
             Commands.literal("dummy")
                 .requires(source -> source.hasPermission(2))
                 // /dummy spawn [id]
                 .then(Commands.literal("spawn")
                     .executes(ctx -> spawnDummy(ctx, "default"))
-                    .then(Commands.argument("id", StringArgumentType.word())
+                    .then(Commands.argument("id", dummyIdArg)
                         .executes(ctx -> spawnDummy(ctx, StringArgumentType.getString(ctx, "id")))))
                 // /dummy remove <id>
                 .then(Commands.literal("remove")
-                    .then(Commands.argument("id", StringArgumentType.word())
-                        .executes(ctx -> removeDummy(ctx, StringArgumentType.getString(ctx, "id")))))
+                    .then(Commands.argument("id", dummyIdArg)
+                        .executes(ctx -> removeDummy(ctx, StringArgumentType.getString(ctx, "id"), false))
+                        .then(Commands.literal("global")
+                            .executes(ctx -> removeDummy(ctx, StringArgumentType.getString(ctx, "id"), true)))))
                 // /dummy clear
                 .then(Commands.literal("clear")
                     .executes(DummmmmmyCommands::clearAllDummies))
@@ -93,7 +97,9 @@ public final class DummmmmmyCommands {
 
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         ServerLevel level = player.serverLevel();
-        BlockPos pos = player.blockPosition().relative(player.getDirection(), 3);
+        // Direction is guaranteed non-null for ServerPlayer (always has facing)
+        var direction = Objects.requireNonNull(player.getDirection());
+        BlockPos pos = player.blockPosition().relative(direction, 3);
 
         UUID uuid = DummmmmmyCompat.spawnDummy(level, pos, id);
         if (uuid != null) {
@@ -111,7 +117,7 @@ public final class DummmmmmyCommands {
     /**
      * Remove a specific dummy by ID.
      */
-    private static int removeDummy(CommandContext<CommandSourceStack> ctx, String id) throws CommandSyntaxException {
+    private static int removeDummy(CommandContext<CommandSourceStack> ctx, String id, boolean global) throws CommandSyntaxException {
         if (!DummmmmmyCompat.isAvailable()) {
             ctx.getSource().sendFailure(msg("Dummmmmmy mod not installed", ChatFormatting.RED));
             return 0;
@@ -120,9 +126,11 @@ public final class DummmmmmyCommands {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         ServerLevel level = player.serverLevel();
 
-        if (DummmmmmyCompat.removeDummy(level, id)) {
+        int removed = DummmmmmyCompat.removeDummyCount(level, id, global);
+        if (removed > 0) {
+            String scope = global ? " (global)" : "";
             ctx.getSource().sendSuccess(() ->
-                msg("Removed dummy '" + id + "'", ChatFormatting.YELLOW), true);
+                msg("Removed " + removed + " dummy/dummies '" + id + "'" + scope, ChatFormatting.YELLOW), true);
             return 1;
         }
 
@@ -139,9 +147,8 @@ public final class DummmmmmyCommands {
             return 0;
         }
 
-        ServerPlayer player = ctx.getSource().getPlayerOrException();
-        ServerLevel level = player.serverLevel();
-        int count = DummmmmmyCompat.getSpawnedDummyCount();
+        ServerLevel level = ctx.getSource().getLevel();
+        int count = DummmmmmyCompat.getArenaDummyCount(level);
 
         DummmmmmyCompat.removeAllDummies(level);
 
@@ -159,9 +166,14 @@ public final class DummmmmmyCommands {
             return 0;
         }
 
-        int count = DummmmmmyCompat.getSpawnedDummyCount();
+        ServerLevel level = ctx.getSource().getLevel();
+        DummmmmmyCompat.refreshTracking(level);
+        int trackedInLevel = DummmmmmyCompat.getTrackedDummyCount(level);
+        int trackedTotal = DummmmmmyCompat.getSpawnedDummyCount();
+        int count = DummmmmmyCompat.getArenaDummyCount(level);
+        String suffix = trackedInLevel == count ? "" : " (tracked: " + trackedInLevel + "/" + trackedTotal + ")";
         ctx.getSource().sendSuccess(() ->
-            msg("Active dummies: " + count, ChatFormatting.AQUA), false);
+            msg("Active dummies: " + count + suffix, ChatFormatting.AQUA), false);
         return count;
     }
 
@@ -243,7 +255,11 @@ public final class DummmmmmyCommands {
             DummmmmmyCompat.isAvailable() ? ChatFormatting.GREEN : ChatFormatting.RED), false);
         ctx.getSource().sendSuccess(() -> msg("API Available: " + DummmmmmyCompat.isApiAvailable(),
             DummmmmmyCompat.isApiAvailable() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        ServerLevel level = ctx.getSource().getLevel();
+        DummmmmmyCompat.refreshTracking(level, true);
         ctx.getSource().sendSuccess(() -> msg("Tracked Dummies: " + DummmmmmyCompat.getSpawnedDummyCount(), ChatFormatting.WHITE), false);
+        ctx.getSource().sendSuccess(() -> msg("World Dummies: " + DummmmmmyCompat.getArenaDummyCount(level), ChatFormatting.WHITE), false);
+        ctx.getSource().sendSuccess(() -> msg("World Tracked: " + DummmmmmyCompat.getTrackedDummyCount(level), ChatFormatting.WHITE), false);
 
         return 1;
     }
@@ -253,13 +269,15 @@ public final class DummmmmmyCommands {
      */
     private static Entity findNearestDummy(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        AABB searchBox = player.getBoundingBox().inflate(10);
+        // All entities have bounding boxes; inflate() always returns non-null AABB
+        AABB searchBox = Objects.requireNonNull(Objects.requireNonNull(player.getBoundingBox()).inflate(10));
 
         Entity nearest = null;
         double nearestDist = Double.MAX_VALUE;
 
         for (Entity entity : level.getEntities(player, searchBox)) {
-            if (DummmmmmyCompat.isDummy(entity)) {
+            // getEntities() guarantees non-null entities in list
+            if (DummmmmmyCompat.isDummy(Objects.requireNonNull(entity))) {
                 double dist = player.distanceToSqr(entity);
                 if (dist < nearestDist) {
                     nearest = entity;

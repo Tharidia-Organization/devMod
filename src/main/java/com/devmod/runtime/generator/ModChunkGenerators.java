@@ -28,9 +28,9 @@ public class ModChunkGenerators {
     public static final Supplier<MapCodec<? extends ChunkGenerator>> ARENA_FLAT =
             CHUNK_GENERATORS.register("arena_flat", () -> ArenaFlatChunkGenerator.CODEC);
 
-    // Future: Arena natural chunk generator
-    // public static final Supplier<MapCodec<? extends ChunkGenerator>> ARENA_NATURAL =
-    //         CHUNK_GENERATORS.register("arena_natural", () -> ArenaNaturalChunkGenerator.CODEC);
+    /** Dynamic arena chunk generator with proxy/controlled natural terrain */
+    public static final Supplier<MapCodec<? extends ChunkGenerator>> ARENA_DYNAMIC =
+            CHUNK_GENERATORS.register("arena_dynamic", () -> DynamicArenaChunkGenerator.CODEC);
 
     /**
      * Registers the chunk generators with the event bus.
@@ -45,5 +45,12 @@ public class ModChunkGenerators {
      */
     public static ResourceLocation getArenaFlatId() {
         return ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "arena_flat");
+    }
+
+    /**
+     * Gets the resource location for the dynamic arena generator.
+     */
+    public static ResourceLocation getArenaDynamicId() {
+        return ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "arena_dynamic");
     }
 }

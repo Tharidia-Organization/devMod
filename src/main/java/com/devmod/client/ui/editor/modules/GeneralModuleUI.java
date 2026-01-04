@@ -7,7 +7,10 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.Unbreakable;
 
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.EditorStartTab;
@@ -57,7 +60,8 @@ public class GeneralModuleUI {
             .info("Maximum items per inventory slot. Vanilla default: " + vanillaStackSize + ". Most items cap at 64, but modded items can go higher.")
             .onChange(value -> module.markDirty("stack size"));
 
-        unbreakableToggle = new EditorToggle("unbreakable", "Unbreakable", false)
+        boolean hasUnbreakable = item.has(Objects.requireNonNull(DataComponents.UNBREAKABLE));
+        unbreakableToggle = new EditorToggle("unbreakable", "Unbreakable", hasUnbreakable)
             .tooltip("When enabled, item never loses durability. Sets minecraft:unbreakable component.")
             .onChange(value -> module.markDirty("unbreakable"));
 
@@ -74,7 +78,10 @@ public class GeneralModuleUI {
                 .info("Current durability points remaining. 0 = broken. Max: " + maxDurability + ". Unbreaking enchant gives chance to not consume durability.")
                 .onChange(value -> module.markDirty("durability"));
 
-            repairCostSlider = new EditorSlider("repairCost", "Repair Cost", 0, 40, 0)
+            int repairCost = item.has(Objects.requireNonNull(DataComponents.REPAIR_COST))
+                ? item.get(Objects.requireNonNull(DataComponents.REPAIR_COST))
+                : 0;
+            repairCostSlider = new EditorSlider("repairCost", "Repair Cost", 0, 40, repairCost)
                 .step(1)
                 .format("%.0f")
                 .suffix(" XP levels")
@@ -90,10 +97,70 @@ public class GeneralModuleUI {
         if (stackSlider != null) {
             stackSlider.setValue(item.getMaxStackSize());
         }
+        var unbreakable = unbreakableToggle;
+        if (unbreakable != null) {
+            unbreakable.setValue(item.has(Objects.requireNonNull(DataComponents.UNBREAKABLE)));
+        }
         var durSlider = durabilitySlider;
         if (durSlider != null && item.isDamageableItem()) {
             durSlider.setValue(item.getMaxDamage() - item.getDamageValue());
             durSlider.setMax(item.getMaxDamage());
+        }
+        var repairSlider = repairCostSlider;
+        if (repairSlider != null) {
+            int repairCost = item.has(Objects.requireNonNull(DataComponents.REPAIR_COST))
+                ? item.get(Objects.requireNonNull(DataComponents.REPAIR_COST))
+                : 0;
+            repairSlider.setValue(repairCost);
+        }
+    }
+
+    public void applyQuickSettingsToItem(ItemStack target) {
+        if (target == null || target.isEmpty()) {
+            return;
+        }
+
+        var stackSlider = stackSizeSlider;
+        if (stackSlider != null) {
+            int desired = Math.round(stackSlider.getValue());
+            int clamped = Mth.clamp(desired, 1, 99);
+            int defaultMax = target.getItem().getDefaultMaxStackSize();
+            if (clamped == defaultMax) {
+                target.remove(Objects.requireNonNull(DataComponents.MAX_STACK_SIZE));
+            } else {
+                target.set(Objects.requireNonNull(DataComponents.MAX_STACK_SIZE), clamped);
+            }
+            if (target.getCount() > clamped) {
+                target.setCount(clamped);
+            }
+        }
+
+        var unbreakable = unbreakableToggle;
+        if (unbreakable != null) {
+            if (unbreakable.getValue()) {
+                target.set(Objects.requireNonNull(DataComponents.UNBREAKABLE), new Unbreakable(true));
+            } else {
+                target.remove(Objects.requireNonNull(DataComponents.UNBREAKABLE));
+            }
+        }
+
+        if (target.isDamageableItem()) {
+            var durSlider = durabilitySlider;
+            if (durSlider != null) {
+                int maxDamage = target.getMaxDamage();
+                int current = Mth.clamp(Math.round(durSlider.getValue()), 0, maxDamage);
+                target.setDamageValue(maxDamage - current);
+            }
+
+            var repairSlider = repairCostSlider;
+            if (repairSlider != null) {
+                int repairCost = Math.max(0, Math.round(repairSlider.getValue()));
+                if (repairCost > 0) {
+                    target.set(Objects.requireNonNull(DataComponents.REPAIR_COST), repairCost);
+                } else {
+                    target.remove(Objects.requireNonNull(DataComponents.REPAIR_COST));
+                }
+            }
         }
     }
 

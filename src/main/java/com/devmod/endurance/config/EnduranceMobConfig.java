@@ -168,7 +168,8 @@ public record EnduranceMobConfig(
      */
     public String getDisplayName() {
         String path = mobId.getPath();
-        String[] parts = path.split("_");
+        // Use -1 limit to avoid surprising behavior with trailing empty strings
+        String[] parts = path.split("_", -1);
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
             if (!part.isEmpty()) {

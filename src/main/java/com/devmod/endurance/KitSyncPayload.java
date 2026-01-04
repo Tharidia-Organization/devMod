@@ -143,7 +143,8 @@ public record KitSyncPayload(
                         tag = compound;
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Malformed NBT data - skip this slot silently (common for empty/invalid kit slots)
             }
             if (tag != null) {
                 tags.add(tag);

@@ -1,6 +1,9 @@
 package com.devmod.mob;
 
+import java.util.Locale;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 /**
  * Categorizes how a mob can spawn in the world.
@@ -55,12 +58,12 @@ public enum SpawnSource {
      * @param questType The type of quest being started (nullable)
      * @return true if structure characteristics should be used
      */
-    public boolean shouldUseStructure(String questType) {
+    public boolean shouldUseStructure(@Nullable String questType) {
         return switch (this) {
             case STRUCTURE_ONLY -> true;
             case NATURAL_ONLY, UNKNOWN -> false;
             case NATURAL_AND_STRUCTURE -> questType != null
-                && STRUCTURE_PREFERRED_QUEST_TYPES.contains(questType.toLowerCase());
+                && STRUCTURE_PREFERRED_QUEST_TYPES.contains(questType.toLowerCase(Locale.ROOT));
         };
     }
 

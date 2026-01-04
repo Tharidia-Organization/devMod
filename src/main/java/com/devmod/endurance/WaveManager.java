@@ -81,6 +81,7 @@ public class WaveManager {
         private int totalToSpawn;
         private int spawned = 0;
         private int killed = 0;
+        private int practiceDummyCounter = 0;
         private long waveStartTime;
         private int waveTicks = 0;
         private int nextSpawnIndex = 0;
@@ -221,6 +222,10 @@ public class WaveManager {
             spawned++;
         }
 
+        public int nextPracticeDummyIndex() {
+            return practiceDummyCounter++;
+        }
+
         public void incrementWaveTicks() {
             waveTicks++;
         }
@@ -338,7 +343,9 @@ public class WaveManager {
 
         // Check if this is a boss wave (using dynamic tension system)
         UUID questId = quest.getQuestId();
-        boolean shouldBeBossWave = BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId);
+        boolean practice = session.isPracticeMode();
+        boolean bossWaveCandidate = BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId);
+        boolean shouldBeBossWave = !practice && bossWaveCandidate;
         LOGGER.info("[BossDebug] WaveManager.startWave: wave={}, shouldBeBossWave={}", waveNumber, shouldBeBossWave);
         if (shouldBeBossWave) {
             // Start boss wave instead of normal wave
@@ -428,14 +435,16 @@ public class WaveManager {
             waveState.waveNumber, waveState.totalToSpawn, waveState.modifiers);
 
         // Telemetry: record wave start
-        EnduranceTelemetryService.INSTANCE.recordWaveStart(
-            quest.getQuestId(),
-            waveNumber,
-            waveState.totalToSpawn,
-            playerCount,
-            questType,
-            waveState.modifiers
-        );
+        if (!practice) {
+            EnduranceTelemetryService.INSTANCE.recordWaveStart(
+                quest.getQuestId(),
+                waveNumber,
+                waveState.totalToSpawn,
+                playerCount,
+                questType,
+                waveState.modifiers
+            );
+        }
 
         return waveState;
     }
@@ -640,7 +649,10 @@ public class WaveManager {
                 applySpawnAffix(mob, safeAffix);
 
                 SpawnAffix appliedAffix = safeAffix;
-                if (!safeAffix.elite && random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber, waveState.getSession())) {
+                // FIX #9B: Check ELITE_HUNTER curse - forces all mobs to be elite
+                boolean forcedElite = com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE
+                    .shouldSpawnElite(waveState.quest.getQuestId());
+                if (!safeAffix.elite && (forcedElite || random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber, waveState.getSession()))) {
                     applyEliteBuffs(mob, waveState.waveNumber);
                     appliedAffix = SpawnAffix.ELITE;
                 } else if (safeAffix.elite) {
@@ -650,9 +662,10 @@ public class WaveManager {
                 finalizeMobSpawn(mob, level, spawnPos);
 
                 CompoundTag tag = mob.getPersistentData();
-                tag.putUUID("endurance_quest_id", Objects.requireNonNull(waveState.quest.getQuestId()));
-                tag.putUUID("endurance_arena_id", Objects.requireNonNull(arena.getId()));
-                tag.putString("endurance_affix",
+                tag.putUUID(EnduranceTags.QUEST_ID, Objects.requireNonNull(waveState.quest.getQuestId()));
+                tag.putUUID(EnduranceTags.ARENA_ID, Objects.requireNonNull(arena.getId()));
+                tag.putString(EnduranceTags.MOB_ID, Objects.requireNonNull(waveState.quest.getMobId().toString()));
+                tag.putString(EnduranceTags.AFFIX,
                     Objects.requireNonNull(appliedAffix.name(), "appliedAffixName"));
                 if (handle != null) {
                     if (handle.templateId() != null) {
@@ -722,15 +735,18 @@ public class WaveManager {
 
         // Limit dummies to avoid overwhelming the player
         int dummyCount = Math.min(count, Math.min(5, positions.size()));
+        boolean objectiveTarget = waveState.getObjective().getType() == WaveObjectiveState.Type.ELITE_HUNT;
 
         int successfulSpawns = 0;
         for (int i = 0; i < dummyCount; i++) {
             BlockPos pos = positions.get(i % positions.size());
-            String dummyId = String.format("practice_w%d_%d", waveState.getWaveNumber(), i);
+            int dummyIndex = waveState.nextPracticeDummyIndex();
+            String dummyId = String.format("practice_w%d_%d", waveState.getWaveNumber(), dummyIndex);
 
-            UUID uuid = DummmmmmyCompat.spawnDummy(level, pos, dummyId);
+            UUID uuid = DummmmmmyCompat.spawnDummy(level, pos, dummyId,
+                dummy -> tagPracticeDummy(dummy, waveState, arena));
             if (uuid != null) {
-                waveState.addSpawnedMob(uuid, SpawnAffix.BASE, false);
+                waveState.addSpawnedMob(uuid, SpawnAffix.BASE, objectiveTarget);
                 successfulSpawns++;
             }
         }
@@ -739,10 +755,24 @@ public class WaveManager {
         if (successfulSpawns > 0) {
             waveState.totalToSpawn = successfulSpawns;
             waveState.adjustKillTarget(successfulSpawns);
+            waveState.getObjective().adjustEliteTargetCount(successfulSpawns);
         }
 
         LOGGER.info("[EnduranceQuest] Practice mode: spawned {} dummies for wave {}",
             successfulSpawns, waveState.getWaveNumber());
+    }
+
+    private void tagPracticeDummy(Entity dummy, WaveState waveState, ArenaContext arena) {
+        if (dummy == null || waveState == null || arena == null) {
+            return;
+        }
+        CompoundTag tag = dummy.getPersistentData();
+        tag.putUUID(EnduranceTags.QUEST_ID, Objects.requireNonNull(waveState.quest.getQuestId(), "questId"));
+        tag.putUUID(EnduranceTags.ARENA_ID, Objects.requireNonNull(arena.getId(), "arenaId"));
+        tag.putString(EnduranceTags.MOB_ID, Objects.requireNonNull(waveState.quest.getMobId().toString()));
+        tag.putString(EnduranceTags.MOB_ID_OVERRIDE, Objects.requireNonNull(waveState.quest.getMobId().toString()));
+        tag.putString(EnduranceTags.AFFIX, Objects.requireNonNull(SpawnAffix.BASE.name(), "affix"));
+        tag.putBoolean(EnduranceTags.PRACTICE_DUMMY, true);
     }
 
     public int respawnMissingMobs(EnduranceQuestManager.ActiveQuestSession session,
@@ -759,6 +789,9 @@ public class WaveManager {
         if (allowed <= 0) {
             EnduranceTelemetryService.INSTANCE.recordWaveBlocked(waveState.quest.getQuestId());
             return 0;
+        }
+        if (waveState.isPracticeMode()) {
+            return respawnPracticeDummies(session, waveState, allowed, deadMobIds);
         }
 
         ArenaContext arena = session.getArena();
@@ -856,10 +889,11 @@ public class WaveManager {
             finalizeMobSpawn(mob, level, spawnPos);
 
             CompoundTag tag = mob.getPersistentData();
-            tag.putUUID("endurance_quest_id", Objects.requireNonNull(waveState.quest.getQuestId()));
-            tag.putUUID("endurance_arena_id", Objects.requireNonNull(arena.getId()));
+            tag.putUUID(EnduranceTags.QUEST_ID, Objects.requireNonNull(waveState.quest.getQuestId()));
+            tag.putUUID(EnduranceTags.ARENA_ID, Objects.requireNonNull(arena.getId()));
+            tag.putString(EnduranceTags.MOB_ID, Objects.requireNonNull(waveState.quest.getMobId().toString()));
             tag.putBoolean("endurance_respawned", true);
-            tag.putString("endurance_affix", Objects.requireNonNull(affix.name(), "affixName"));
+            tag.putString(EnduranceTags.AFFIX, Objects.requireNonNull(affix.name(), "affixName"));
             if (handle.templateId() != null) {
                 tag.putString("endurance_template_id",
                     Objects.requireNonNull(handle.templateId(), "templateId"));
@@ -898,6 +932,75 @@ public class WaveManager {
         if (failedRespawns > 0) {
             LOGGER.warn("[EnduranceQuest] External respawn summary: {} successful, {} failed (wave {})",
                 successfulRespawns, failedRespawns, waveState.waveNumber);
+        }
+
+        return successfulRespawns;
+    }
+
+    private int respawnPracticeDummies(EnduranceQuestManager.ActiveQuestSession session,
+                                       WaveState waveState,
+                                       int missingCount,
+                                       List<UUID> deadMobIds) {
+        if (session == null || waveState == null || missingCount <= 0) {
+            return 0;
+        }
+        if (!DummmmmmyCompat.isAvailable()) {
+            LOGGER.warn("[EnduranceQuest] Practice mode respawn requested but Dummmmmmy mod not available");
+            return 0;
+        }
+
+        ArenaContext arena = session.getArena();
+        if (arena == null) {
+            return 0;
+        }
+
+        SpawnContext spawnContext = waveState.getSpawnContext();
+        if (spawnContext == null || spawnContext.positions.isEmpty()) {
+            LOGGER.error("[EnduranceQuest] No spawn positions available for practice dummy respawn");
+            return 0;
+        }
+
+        ServerLevel level = arena.getLevel();
+        List<BlockPos> positions = spawnContext.positions;
+        List<UUID> safeDeadMobIds = deadMobIds != null ? deadMobIds : List.of();
+        boolean objectiveTarget = waveState.getObjective().getType() == WaveObjectiveState.Type.ELITE_HUNT;
+
+        int spawnLimit = Math.min(missingCount, positions.size());
+        int successfulRespawns = 0;
+        int deadIndex = 0;
+
+        for (int i = 0; i < spawnLimit; i++) {
+            if (!spawnContext.canSpawnMore(waveState.getSpawned() + successfulRespawns)) {
+                LOGGER.warn("[EnduranceQuest] Entity limit reached, stopping practice respawn at {}/{}",
+                    successfulRespawns, spawnLimit);
+                break;
+            }
+            BlockPos pos = positions.get(i % positions.size());
+            int dummyIndex = waveState.nextPracticeDummyIndex();
+            String dummyId = String.format("practice_w%d_%d", waveState.getWaveNumber(), dummyIndex);
+            UUID uuid = DummmmmmyCompat.spawnDummy(level, pos, dummyId,
+                dummy -> tagPracticeDummy(dummy, waveState, arena));
+            if (uuid != null) {
+                UUID deadId = deadIndex < safeDeadMobIds.size() ? safeDeadMobIds.get(deadIndex) : null;
+                deadIndex++;
+                if (deadId != null) {
+                    waveState.getSpawnedMobs().remove(deadId);
+                    waveState.spawnAffixes.remove(deadId);
+                    if (objectiveTarget) {
+                        waveState.replaceObjectiveTarget(deadId, uuid);
+                    }
+                } else if (objectiveTarget) {
+                    waveState.getObjective().registerObjectiveTarget(uuid);
+                }
+                waveState.getSpawnedMobs().add(uuid);
+                waveState.spawnAffixes.put(uuid, SpawnAffix.BASE);
+                successfulRespawns++;
+            }
+        }
+
+        if (successfulRespawns > 0) {
+            LOGGER.info("[EnduranceQuest] Practice mode: respawned {} dummies for wave {}",
+                successfulRespawns, waveState.getWaveNumber());
         }
 
         return successfulRespawns;
@@ -962,14 +1065,16 @@ public class WaveManager {
 
         long durationMs = System.currentTimeMillis() - waveState.getWaveStartTime();
         float killsPerSecond = durationMs > 0 ? (waveState.killed * 1000f / durationMs) : 0f;
-        EnduranceTelemetryService.INSTANCE.recordWaveComplete(
-            waveState.quest.getQuestId(),
-            waveState.waveNumber,
-            waveState.killed,
-            durationMs,
-            false,
-            killsPerSecond
-        );
+        if (!waveState.isPracticeMode()) {
+            EnduranceTelemetryService.INSTANCE.recordWaveComplete(
+                waveState.quest.getQuestId(),
+                waveState.waveNumber,
+                waveState.killed,
+                durationMs,
+                false,
+                killsPerSecond
+            );
+        }
 
         if (player != null && session.getQuest().getState() == EnduranceQuestState.IN_PROGRESS) {
             EnduranceEventHandler.onWaveComplete(player, session, session.getQuest().getCurrentWave());
@@ -987,6 +1092,19 @@ public class WaveManager {
         ArenaContext arena = session.getArena();
         if (arena != null) {
             despawnRemainingMobs(waveState, arena.getLevel());
+        }
+
+        long durationMs = System.currentTimeMillis() - waveState.getWaveStartTime();
+        float killsPerSecond = durationMs > 0 ? (waveState.killed * 1000f / durationMs) : 0f;
+        if (!waveState.isPracticeMode()) {
+            EnduranceTelemetryService.INSTANCE.recordWaveComplete(
+                waveState.quest.getQuestId(),
+                waveState.waveNumber,
+                waveState.killed,
+                durationMs,
+                false,
+                killsPerSecond
+            );
         }
 
         net.minecraft.server.MinecraftServer server = null;
@@ -1479,7 +1597,7 @@ public class WaveManager {
 
             // Check if this was a boss wave (using dynamic tension system)
             UUID questId = waveState.quest.getQuestId();
-            if (BossWaveSystem.INSTANCE.isBossWave(waveState.waveNumber, questId)) {
+            if (!waveState.isPracticeMode() && BossWaveSystem.INSTANCE.isBossWave(waveState.waveNumber, questId)) {
                 // End the boss fight and award bonus points
                 BossWaveSystem.BossFight bossFight = BossWaveSystem.INSTANCE.endBossFight(arenaId, true);
                 if (bossFight != null) {

@@ -79,8 +79,8 @@ class ChannelIdCollisionTest {
             assertTrue(id > 0, String.format("Channel %s has invalid ID %d (must be > 0)", name, id));
 
             // Verify IDs are in reasonable range
-            // Range 1-99: Core systems, 100-115: Mailbox system, 120-129: Unified notifications
-            int maxExpected = 129;
+            // Range 1-99: Core systems, 100-115: Mailbox system, 120-129: Unified notifications, 130-139: Nutrition
+            int maxExpected = 139;
             assertTrue(id <= maxExpected,
                 String.format("Channel %s has ID %d which exceeds max expected (%d)", name, id, maxExpected));
 

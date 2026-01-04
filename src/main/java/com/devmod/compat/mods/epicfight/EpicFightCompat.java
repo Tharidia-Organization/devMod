@@ -3,7 +3,6 @@ package com.devmod.compat.mods.epicfight;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -380,8 +379,8 @@ public class EpicFightCompat implements CompatModule {
      * @param entity The entity to check
      * @return true if entity is patched by Epic Fight
      */
-    public static boolean hasEntityPatch(@Nonnull LivingEntity entity) {
-        if (!apiAvailable) return false;
+    public static boolean hasEntityPatch(@Nullable LivingEntity entity) {
+        if (entity == null || !apiAvailable) return false;
 
         try {
             Object patch = getEntityPatch(entity);
@@ -398,10 +397,10 @@ public class EpicFightCompat implements CompatModule {
      * @return The entity patch object, or null
      */
     @Nullable
-    public static Object getEntityPatch(@Nonnull LivingEntity entity) {
+    public static Object getEntityPatch(@Nullable LivingEntity entity) {
         final Method method = getEntityPatchMethod;
         final Class<?> lepClass = livingEntityPatchClass;
-        if (!apiAvailable || method == null || lepClass == null) {
+        if (entity == null || !apiAvailable || method == null || lepClass == null) {
             return null;
         }
 
@@ -420,8 +419,8 @@ public class EpicFightCompat implements CompatModule {
      * @return The player patch object, or null
      */
     @Nullable
-    public static Object getPlayerPatch(@Nonnull Player player) {
-        if (!apiAvailable) return null;
+    public static Object getPlayerPatch(@Nullable Player player) {
+        if (player == null || !apiAvailable) return null;
 
         try {
             final Method ppMethod = getPlayerPatchMethod;
@@ -445,9 +444,9 @@ public class EpicFightCompat implements CompatModule {
      * @param player The player
      * @return true if in battle mode
      */
-    public static boolean isInBattleMode(@Nonnull Player player) {
+    public static boolean isInBattleMode(@Nullable Player player) {
         final Method method = isBattleModeMethod;
-        if (!apiAvailable || method == null) return false;
+        if (player == null || !apiAvailable || method == null) return false;
 
         try {
             Object playerPatch = getPlayerPatch(player);
@@ -467,9 +466,9 @@ public class EpicFightCompat implements CompatModule {
      * @param entity The entity
      * @return true if in action
      */
-    public static boolean isInAction(@Nonnull LivingEntity entity) {
+    public static boolean isInAction(@Nullable LivingEntity entity) {
         final Method method = isInactionMethod;
-        if (!apiAvailable || method == null) return false;
+        if (entity == null || !apiAvailable || method == null) return false;
 
         try {
             Object patch = getEntityPatch(entity);
@@ -489,9 +488,9 @@ public class EpicFightCompat implements CompatModule {
      * @param player The player
      * @return Current stamina, or -1 if unavailable
      */
-    public static float getStamina(@Nonnull Player player) {
+    public static float getStamina(@Nullable Player player) {
         final Method method = getStaminaMethod;
-        if (!apiAvailable || method == null) return -1f;
+        if (player == null || !apiAvailable || method == null) return -1f;
 
         try {
             Object playerPatch = getPlayerPatch(player);
@@ -513,9 +512,9 @@ public class EpicFightCompat implements CompatModule {
      * @param player The player
      * @return Max stamina, or -1 if unavailable
      */
-    public static float getMaxStamina(@Nonnull Player player) {
+    public static float getMaxStamina(@Nullable Player player) {
         final Method method = getMaxStaminaMethod;
-        if (!apiAvailable || method == null) return -1f;
+        if (player == null || !apiAvailable || method == null) return -1f;
 
         try {
             Object playerPatch = getPlayerPatch(player);
@@ -538,10 +537,10 @@ public class EpicFightCompat implements CompatModule {
      * @return Animation name, or null
      */
     @Nullable
-    public static String getCurrentAnimationName(@Nonnull LivingEntity entity) {
+    public static String getCurrentAnimationName(@Nullable LivingEntity entity) {
         final Method animatorMethod = getAnimatorMethod;
         final Method animMethod = getCurrentAnimationMethod;
-        if (!apiAvailable || animatorMethod == null) return null;
+        if (entity == null || !apiAvailable || animatorMethod == null) return null;
 
         try {
             Object patch = getEntityPatch(entity);
@@ -574,8 +573,8 @@ public class EpicFightCompat implements CompatModule {
      * @param entity The entity
      * @return true if Epic Fight combat is active
      */
-    public static boolean isCombatActive(@Nonnull LivingEntity entity) {
-        if (!hasEntityPatch(entity)) return false;
+    public static boolean isCombatActive(@Nullable LivingEntity entity) {
+        if (entity == null || !hasEntityPatch(entity)) return false;
 
         if (entity instanceof Player player) {
             return isInBattleMode(player) || isInAction(entity);
@@ -590,9 +589,9 @@ public class EpicFightCompat implements CompatModule {
     /**
      * Check if a player is currently holding a skill (guard, parry, etc.).
      */
-    public static boolean isHoldingSkill(@Nonnull Player player) {
+    public static boolean isHoldingSkill(@Nullable Player player) {
         final Method method = isHoldingSkillMethod;
-        if (!apiAvailable || method == null) return false;
+        if (player == null || !apiAvailable || method == null) return false;
 
         try {
             Object playerPatch = getPlayerPatch(player);
@@ -610,9 +609,9 @@ public class EpicFightCompat implements CompatModule {
      * Get the skill object the player is currently holding.
      */
     @Nullable
-    public static Object getHoldingSkill(@Nonnull Player player) {
+    public static Object getHoldingSkill(@Nullable Player player) {
         final Method method = getHoldingSkillMethod;
-        if (!apiAvailable || method == null) return null;
+        if (player == null || !apiAvailable || method == null) return null;
 
         try {
             Object playerPatch = getPlayerPatch(player);
@@ -637,7 +636,7 @@ public class EpicFightCompat implements CompatModule {
      * Get the name of the skill the player is currently holding.
      */
     @Nullable
-    public static String getHoldingSkillName(@Nonnull Player player) {
+    public static String getHoldingSkillName(@Nullable Player player) {
         Object skill = getHoldingSkill(player);
         if (skill == null) return null;
 
@@ -661,8 +660,8 @@ public class EpicFightCompat implements CompatModule {
     /**
      * Check if a player is currently guarding.
      */
-    public static boolean isGuarding(@Nonnull Player player) {
-        if (!isHoldingSkill(player)) return false;
+    public static boolean isGuarding(@Nullable Player player) {
+        if (player == null || !isHoldingSkill(player)) return false;
 
         Object skill = getHoldingSkill(player);
         if (skill == null) return false;
@@ -683,8 +682,8 @@ public class EpicFightCompat implements CompatModule {
     /**
      * Check if a player is currently using a parry skill.
      */
-    public static boolean isParrying(@Nonnull Player player) {
-        if (!isHoldingSkill(player)) return false;
+    public static boolean isParrying(@Nullable Player player) {
+        if (player == null || !isHoldingSkill(player)) return false;
 
         Object skill = getHoldingSkill(player);
         if (skill == null) return false;
@@ -701,9 +700,9 @@ public class EpicFightCompat implements CompatModule {
     /**
      * Get the number of ticks since the player's last action.
      */
-    public static int getTicksSinceLastAction(@Nonnull Player player) {
+    public static int getTicksSinceLastAction(@Nullable Player player) {
         final Method method = getTickSinceLastActionMethod;
-        if (!apiAvailable || method == null) return -1;
+        if (player == null || !apiAvailable || method == null) return -1;
 
         try {
             Object playerPatch = getPlayerPatch(player);
@@ -722,7 +721,7 @@ public class EpicFightCompat implements CompatModule {
     /**
      * Check if a player is within the parry window (8 ticks by default).
      */
-    public static boolean isInParryWindow(@Nonnull Player player) {
+    public static boolean isInParryWindow(@Nullable Player player) {
         int ticksSince = getTicksSinceLastAction(player);
         int window = getParryWindow();
         return ticksSince >= 0 && ticksSince <= window;
@@ -731,8 +730,8 @@ public class EpicFightCompat implements CompatModule {
     /**
      * Check if a player executed a perfect parry (within first 3 ticks).
      */
-    public static boolean isPerfectParry(@Nonnull Player player) {
-        if (!isGuarding(player) && !isParrying(player)) return false;
+    public static boolean isPerfectParry(@Nullable Player player) {
+        if (player == null || (!isGuarding(player) && !isParrying(player))) return false;
 
         int ticksSince = getTicksSinceLastAction(player);
         return ticksSince >= 0 && ticksSince <= 3;

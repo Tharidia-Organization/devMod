@@ -1,7 +1,6 @@
 package com.devmod.mob;
 
 import java.util.List;
-import java.util.Optional;
 
 import javax.annotation.Nullable;
 
@@ -201,8 +200,9 @@ public record EnhancedMobRequirements(
             : MobRequirements.LightRequirement.range(lightLevel, 15);
 
         // Create biome requirement from structure hint
-        MobRequirements.BiomeRequirement structureBiome = structure.biomeHint() != null
-            ? MobRequirements.BiomeRequirement.preferred(ResourceLocation.parse(structure.biomeHint()))
+        String biomeHint = structure.biomeHint();
+        MobRequirements.BiomeRequirement structureBiome = biomeHint != null
+            ? MobRequirements.BiomeRequirement.preferred(ResourceLocation.parse(biomeHint))
             : base.biome();
 
         return new MobRequirements(
@@ -232,7 +232,7 @@ public record EnhancedMobRequirements(
      */
     public String describeSpawnSource() {
         StringBuilder sb = new StringBuilder();
-        sb.append(spawnSource.name().toLowerCase().replace('_', ' '));
+        sb.append(spawnSource.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' '));
 
         if (!structureIds.isEmpty()) {
             sb.append(" [");

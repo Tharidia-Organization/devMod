@@ -190,7 +190,7 @@ public class FuelModule extends AbstractEditorModule {
             com.devmod.config.FuelConfigManager.setSpecificStats(copy, stats.copy());
             FuelStats applied = com.devmod.config.FuelConfigManager.getStats(copy).copy();
             core.setStats(applied.copy());
-            ui.updateComponentsFromStats();
+            withDirtyTrackingDisabled(ui::updateComponentsFromStats);
             setPreviewItem(copy);
             this.item = copy;
             core.setOriginalStats(applied.copy());

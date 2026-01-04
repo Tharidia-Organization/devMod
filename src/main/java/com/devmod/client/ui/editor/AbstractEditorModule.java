@@ -290,6 +290,16 @@ public abstract class AbstractEditorModule implements EditorModule {
         this.dirtyEnabled = enabled;
     }
 
+    protected void withDirtyTrackingDisabled(Runnable action) {
+        boolean wasEnabled = dirtyEnabled;
+        dirtyEnabled = false;
+        try {
+            action.run();
+        } finally {
+            dirtyEnabled = wasEnabled;
+        }
+    }
+
     @Override
     public boolean hasPendingDiff() {
         return hasUnsavedChanges();

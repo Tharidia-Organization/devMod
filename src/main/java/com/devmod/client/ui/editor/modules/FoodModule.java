@@ -103,6 +103,7 @@ public class FoodModule extends AbstractEditorModule {
         addTab(ModuleTab.of("nutrition", "Nutrition", ui::getNutritionSections));
         addTab(ModuleTab.of("effects", "Effects", ui::getEffectsSections));
         addTab(ModuleTab.of("properties", "Properties", ui::getPropertiesSections));
+        addTab(ModuleTab.of("easydiet", "Easy-Diet", ui::getEasyDietSections));
         addTab(ModuleTab.of("debug", "Debug", () -> ui.getDebugSections(item)));
 
         // Sync UI with stats after components are created
@@ -191,7 +192,7 @@ public class FoodModule extends AbstractEditorModule {
             com.devmod.config.FoodConfigManager.setSpecificStats(copy, stats.copy());
             FoodStats applied = com.devmod.config.FoodConfigManager.getStats(copy).copy();
             core.setStats(applied.copy());
-            ui.updateComponentsFromStats();
+            withDirtyTrackingDisabled(ui::updateComponentsFromStats);
             setPreviewItem(copy);
             this.item = copy;
             core.setOriginalStats(applied.copy());

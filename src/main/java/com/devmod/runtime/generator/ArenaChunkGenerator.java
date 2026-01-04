@@ -173,6 +173,22 @@ public abstract class ArenaChunkGenerator extends ChunkGenerator {
         // No carvers for arena dimensions - we control the terrain
     }
 
+    // ============== Structure Generation - DISABLED ==============
+    // These overrides completely disable structure generation to improve dimension creation performance.
+    // Without these, Minecraft still does expensive structure placement checks even with empty structure sets.
+
+    @Override
+    public void createStructures(
+            @Nonnull net.minecraft.core.RegistryAccess registryAccess,
+            @Nonnull net.minecraft.world.level.chunk.ChunkGeneratorStructureState structureState,
+            @Nonnull StructureManager structureManager,
+            @Nonnull ChunkAccess chunk,
+            @Nonnull net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager templateManager
+    ) {
+        // No structures in arena dimensions - skip entirely for performance
+    }
+
+
     @Override
     public void buildSurface(
             @Nonnull WorldGenRegion level,

@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -24,6 +25,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.arena.policy.ArenaPolicy;
+import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
 import com.devmod.endurance.analytics.QuestResult;
 import com.devmod.endurance.analytics.WaveSummary;
@@ -34,6 +36,8 @@ import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
 import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
+import com.devmod.compat.mods.easydiet.EasyDietCompat;
+import com.devmod.endurance.nutrition.NutritionBridgeSystem;
 
 @EventBusSubscriber(modid = "devmod")
 public class EnduranceEventHandler {
@@ -50,6 +54,7 @@ public class EnduranceEventHandler {
     public static void onQuestStart(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session) {
         UUID playerId = player.getUUID();
         UUID questId = session.getQuest().getQuestId();
+        boolean practice = session.isPracticeMode();
         ArenaPolicy policy = EnduranceQuestManager.INSTANCE.getPolicyForSession(session);
 
         // Create combo session for DMC-style scoring
@@ -83,7 +88,9 @@ public class EnduranceEventHandler {
         ComebackSystem.INSTANCE.resetCooldown(playerId);
 
         // Start live analytics session for real-time feedback hooks
-        LiveAnalyticsHookManager.INSTANCE.onQuestStart(questId, playerId);
+        if (!practice) {
+            LiveAnalyticsHookManager.INSTANCE.onQuestStart(questId, playerId);
+        }
 
         // Start Devil's Bargain curse session for mid-run risk/reward (shared per questId)
         if (com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.getSession(questId).isEmpty()) {
@@ -105,34 +112,41 @@ public class EnduranceEventHandler {
             com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.startSession(questId, arenaCenter, arenaRadius);
         }
 
-        // Record telemetry for quest start
-        int playerCount = session.getPlayerCount();
-        QuestType questType = session.getQuestType();
-        String templateId = session.getTemplateId();
-        Integer templateVersion = session.getTemplateVersion();
-        String policyId = session.getPolicyId();
-        Integer policyVersion = session.getPolicyVersion();
-        UUID instanceId = session.getInstanceId();
-        UUID arenaId = session.getArena() != null ? session.getArena().getId() : null;
+        // Start nutrition tracking session for Easy-Diet integration
+        if (EasyDietCompat.isAvailable()) {
+            NutritionBridgeSystem.INSTANCE.onQuestStart(playerId, questId);
+        }
 
-        EnduranceTelemetryService.INSTANCE.recordQuestStart(
-            questId,
-            playerId,
-            session.getQuest().getDisplayName(),
-            session.getQuest().getTotalWaves(),
-            session.getQuest().isEndlessMode(),
-            playerCount,
-            questType,
-            templateId,
-            templateVersion,
-            policyId,
-            policyVersion,
-            instanceId,
-            arenaId
-        );
+        if (!practice) {
+            // Record telemetry for quest start
+            int playerCount = session.getPlayerCount();
+            QuestType questType = session.getQuestType();
+            String templateId = session.getTemplateId();
+            Integer templateVersion = session.getTemplateVersion();
+            String policyId = session.getPolicyId();
+            Integer policyVersion = session.getPolicyVersion();
+            UUID instanceId = session.getInstanceId();
+            UUID arenaId = session.getArena() != null ? session.getArena().getId() : null;
 
-        // Trigger player attribute snapshot on quest start
-        PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "quest_start");
+            EnduranceTelemetryService.INSTANCE.recordQuestStart(
+                questId,
+                playerId,
+                session.getQuest().getDisplayName(),
+                session.getQuest().getTotalWaves(),
+                session.getQuest().isEndlessMode(),
+                playerCount,
+                questType,
+                templateId,
+                templateVersion,
+                policyId,
+                policyVersion,
+                instanceId,
+                arenaId
+            );
+
+            // Trigger player attribute snapshot on quest start
+            PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "quest_start");
+        }
 
         LOGGER.info("[EnduranceQuest] Quest started for {} with {} mutators",
             player.getName().getString(), mutatorSession.getActiveMutatorCount());
@@ -151,6 +165,9 @@ public class EnduranceEventHandler {
                                    boolean completed, boolean cleanupShared) {
         UUID playerId = player.getUUID();
         UUID questId = session.getQuest().getQuestId();
+        boolean practice = session.isPracticeMode();
+        boolean tideEnabled = isTideEnabled(session);
+        UUID tideScopeId = resolveDesignScopeId(session);
 
         // Get sessions before cleanup
         ComboSystem.ComboSession comboSession = EnduranceEventCombat.removeComboSession(playerId);
@@ -161,10 +178,17 @@ public class EnduranceEventHandler {
         // Get max combo before cleanup
         int maxCombo = comboSession != null ? comboSession.getMaxCombo() : 0;
 
-        // Award rewards based on performance
-        ArenaPolicy policy = EnduranceQuestManager.INSTANCE.getPolicyForSession(session);
-        RewardSystem.QuestRewards rewards = RewardSystem.INSTANCE.calculateQuestRewards(
-            player, session.getQuest(), comboSession, mutatorSession, policy, session);
+        RewardSystem.QuestRewards rewards;
+        if (practice) {
+            rewards = new RewardSystem.QuestRewards();
+            rewards.styleRank = comboSession != null ? comboSession.getHighestRank() : null;
+            rewards.activeMutators = mutatorSession != null ? mutatorSession.getActiveMutatorCount() : 0;
+        } else {
+            // Award rewards based on performance
+            ArenaPolicy policy = EnduranceQuestManager.INSTANCE.getPolicyForSession(session);
+            rewards = RewardSystem.INSTANCE.calculateQuestRewards(
+                player, session.getQuest(), comboSession, mutatorSession, policy, session);
+        }
 
         // Send completion screen to client (only if quest completed or exited at checkpoint)
         if (rewards != null) {
@@ -172,7 +196,9 @@ public class EnduranceEventHandler {
                 player, session, rewards, comboSession, maxCombo);
 
             // Send mailbox notification with reward summary
-            sendQuestRewardMailbox(player, session, rewards, completed);
+            if (!practice) {
+                sendQuestRewardMailbox(player, session, rewards, completed);
+            }
         }
 
         // Cleanup combo system
@@ -220,20 +246,28 @@ public class EnduranceEventHandler {
             com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.endSession(questId);
         }
 
+        // End nutrition tracking session and remove attribute modifiers
+        if (EasyDietCompat.isAvailable()) {
+            NutritionBridgeSystem.INSTANCE.removeAttributeModifiers(player);
+            NutritionBridgeSystem.INSTANCE.onQuestEnd(playerId);
+        }
+
         // Cleanup comeback system state
         ComebackSystem.INSTANCE.onQuestEnd(playerId);
 
         // Process chain rewards if chain was completed
-        DirectiveChainManager.INSTANCE.getActiveChain(questId).ifPresent(chainProgress -> {
-            if (chainProgress.isCompleted()) {
-                DirectiveChainManager.ChainRewards chainRewards = DirectiveChainManager.INSTANCE.calculateChainRewards(chainProgress);
-                RewardSystem.INSTANCE.getWallet(playerId).addCurrency(RewardSystem.Currency.TOKENS, chainRewards.bonusTokens());
-                RewardSystem.INSTANCE.getWallet(playerId).addCurrency(RewardSystem.Currency.PRESTIGE, chainRewards.bonusPrestige());
-                LOGGER.info("[EnduranceQuest] Chain '{}' rewards awarded to {}: {} tokens, {} prestige",
-                    chainProgress.getChain().name(), player.getName().getString(),
-                    chainRewards.bonusTokens(), chainRewards.bonusPrestige());
-            }
-        });
+        if (!practice) {
+            DirectiveChainManager.INSTANCE.getActiveChain(questId).ifPresent(chainProgress -> {
+                if (chainProgress.isCompleted()) {
+                    DirectiveChainManager.ChainRewards chainRewards = DirectiveChainManager.INSTANCE.calculateChainRewards(chainProgress);
+                    RewardSystem.INSTANCE.getWallet(playerId).addCurrency(RewardSystem.Currency.TOKENS, chainRewards.bonusTokens());
+                    RewardSystem.INSTANCE.getWallet(playerId).addCurrency(RewardSystem.Currency.PRESTIGE, chainRewards.bonusPrestige());
+                    LOGGER.info("[EnduranceQuest] Chain '{}' rewards awarded to {}: {} tokens, {} prestige",
+                        chainProgress.getChain().name(), player.getName().getString(),
+                        chainRewards.bonusTokens(), chainRewards.bonusPrestige());
+                }
+            });
+        }
 
         // Cleanup directive chain tracking (shared per questId)
         if (cleanupShared) {
@@ -241,7 +275,7 @@ public class EnduranceEventHandler {
         }
 
         // Record gamification stats (leaderboards, badges, challenges)
-        if (completed && combatSessionData != null && EnduranceQuestManager.INSTANCE.isGamificationEnabled()) {
+        if (!practice && completed && combatSessionData != null && EnduranceQuestManager.INSTANCE.isGamificationEnabled()) {
             GamificationManager.QuestCompletionResult gamificationResult =
                 GamificationManager.INSTANCE.recordQuestCompletion(
                     playerId,
@@ -269,67 +303,74 @@ public class EnduranceEventHandler {
             }
         }
 
-        // Submit to global leaderboard system
-        String arenaId = session.getTemplateId();
-        LeaderboardSystem.INSTANCE.submitQuestResult(player, session.getQuest(), comboSession, arenaId);
+        if (!practice) {
+            // Submit to global leaderboard system
+            String arenaId = session.getTemplateId();
+            LeaderboardSystem.INSTANCE.submitQuestResult(player, session.getQuest(), comboSession, arenaId);
 
-        // Update weekly challenge progress for quest completion
-        int bossesKilledThisRun = combatSessionData != null ?
-            (int) combatSessionData.getWaveStats().stream()
-                .filter(w -> BossWaveSystem.INSTANCE.isBossWave(w.waveNumber, questId))
-                .count() : 0;
-        com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onQuestComplete(
-            playerId, session.getQuest(), bossesKilledThisRun);
+            // Update weekly challenge progress for quest completion
+            int bossesKilledThisRun = combatSessionData != null ?
+                (int) combatSessionData.getWaveStats().stream()
+                    .filter(w -> BossWaveSystem.INSTANCE.isBossWave(w.waveNumber, questId))
+                    .count() : 0;
+            com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onQuestComplete(
+                playerId, session.getQuest(), bossesKilledThisRun);
 
-        // Record analytics session for detailed tracking
-        if (combatSessionData != null) {
-            EnduranceAnalytics.INSTANCE.recordSession(
-                combatSessionData,
-                session.getQuest(),
-                player.getName().getString()
+            // Record analytics session for detailed tracking
+            if (combatSessionData != null) {
+                EnduranceAnalytics.INSTANCE.recordSession(
+                    combatSessionData,
+                    session.getQuest(),
+                    player.getName().getString()
+                );
+            }
+
+            // Notify live analytics hooks with quest result
+            QuestResult result = buildQuestResult(
+                questId, playerId, session.getQuest(), combatSessionData, comboSession, completed
             );
-        }
+            LiveAnalyticsHookManager.INSTANCE.onQuestEnd(result);
 
-        // Notify live analytics hooks with quest result
-        QuestResult result = buildQuestResult(
-            questId, playerId, session.getQuest(), combatSessionData, comboSession, completed
-        );
-        LiveAnalyticsHookManager.INSTANCE.onQuestEnd(result);
+            if (combatSessionData != null) {
+                EnduranceTelemetryService.INSTANCE.recordQuestPerformance(
+                    questId,
+                    playerId,
+                    session.getQuestType(),
+                    combatSessionData,
+                    session.getQuest().getCurrentWave()
+                );
+            }
 
-        if (combatSessionData != null) {
-            EnduranceTelemetryService.INSTANCE.recordQuestPerformance(
+            // Record telemetry for quest end
+            EnduranceTelemetryService.INSTANCE.recordQuestEnd(
                 questId,
-                playerId,
-                session.getQuestType(),
-                combatSessionData,
-                session.getQuest().getCurrentWave()
+                completed ? EnduranceQuestState.COMPLETED : EnduranceQuestState.FAILED,
+                session.getQuest().getCurrentWave(),
+                session.getQuest().getSessionDuration(),
+                session.getQuest().getMobsKilledThisSession(),
+                session.getQuest().getTotalDamageDealtThisSession(),
+                session.getQuest().getDamageTakenThisSession()
             );
         }
 
-        // Record telemetry for quest end
-        EnduranceTelemetryService.INSTANCE.recordQuestEnd(
-            questId,
-            completed ? EnduranceQuestState.COMPLETED : EnduranceQuestState.FAILED,
-            session.getQuest().getCurrentWave(),
-            session.getQuest().getSessionDuration(),
-            session.getQuest().getMobsKilledThisSession(),
-            session.getQuest().getTotalDamageDealtThisSession(),
-            session.getQuest().getDamageTakenThisSession()
-        );
-
-        // === THE TIDE - Record quest outcome for global threat level ===
-        int waveReached = session.getQuest().getCurrentWave();
-        boolean perfect = session.getQuest().getDeathsThisSession() == 0 &&
-                          session.getQuest().getDamageTakenThisSession() == 0;
-        if (completed) {
-            com.devmod.endurance.tide.TideManager.INSTANCE.onQuestCompleted(questId, perfect);
-        } else if (waveReached < 5) {
-            // Early failure (before wave 5) increases tide more
-            com.devmod.endurance.tide.TideManager.INSTANCE.onQuestFailedEarly(questId);
+        if (tideEnabled) {
+            // === THE TIDE - Record quest outcome for global threat level ===
+            int waveReached = session.getQuest().getCurrentWave();
+            boolean perfect = session.getQuest().getDeathsThisSession() == 0 &&
+                              session.getQuest().getDamageTakenThisSession() == 0;
+            UUID scopeId = tideScopeId != null ? tideScopeId : questId;
+            if (completed) {
+                com.devmod.endurance.tide.TideManager.INSTANCE.onQuestCompleted(scopeId, perfect);
+            } else if (waveReached < 5) {
+                // Early failure (before wave 5) increases tide more
+                com.devmod.endurance.tide.TideManager.INSTANCE.onQuestFailedEarly(scopeId);
+            }
         }
 
         // Trigger player attribute snapshot on quest end
-        PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "quest_end");
+        if (!practice) {
+            PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "quest_end");
+        }
 
         // === PARTY STATE TRANSITION ===
         // Finish party quest if this was a party quest and party is still in IN_QUEST state
@@ -363,6 +404,11 @@ public class EnduranceEventHandler {
      * Called when a new wave starts.
      */
     public static void onWaveStart(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session, int waveNumber) {
+        onWaveStart(player, session, waveNumber, true);
+    }
+
+    public static void onWaveStart(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session,
+                                   int waveNumber, boolean applyShared) {
         UUID playerId = player.getUUID();
         EnduranceQuest quest = session.getQuest();
 
@@ -374,7 +420,9 @@ public class EnduranceEventHandler {
 
         // === BLOOD CONTRACTS - Signal wave start for violation tracking ===
         UUID questId = quest.getQuestId();
-        com.devmod.endurance.contracts.ActiveContractManager.INSTANCE.onWaveStart(questId);
+        if (applyShared) {
+            com.devmod.endurance.contracts.ActiveContractManager.INSTANCE.onWaveStart(questId);
+        }
 
         // Sync contracts to client for HUD
         com.devmod.endurance.contracts.ActiveContractManager.INSTANCE.getSession(questId, playerId)
@@ -385,7 +433,7 @@ public class EnduranceEventHandler {
             });
 
         // Check if this is a boss wave (using tension system)
-        boolean isBossWave = BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId);
+        boolean isBossWave = !session.isPracticeMode() && BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId);
 
         // Gather wave info for notification
         int mobCount = quest.getCurrentWaveMobCount();
@@ -447,6 +495,10 @@ public class EnduranceEventHandler {
         UUID playerId = player.getUUID();
         UUID questId = session.getQuest().getQuestId();
         EnduranceQuest quest = session.getQuest();
+        boolean practice = session.isPracticeMode();
+        boolean signatureEnabled = isSignatureWeaponsEnabled(session);
+        boolean tideEnabled = isTideEnabled(session);
+        UUID tideScopeId = resolveDesignScopeId(session);
 
         // Get tracking sessions
         ComboSystem.ComboSession comboSession = EnduranceEventCombat.getComboSession(playerId);
@@ -466,26 +518,34 @@ public class EnduranceEventHandler {
         var perkSynergyWeb = com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE;
 
         // === SIGNATURE WEAPONS - Track exceptional wave performance ===
-        if ("SSS".equals(styleRank)) {
+        if (signatureEnabled && "SSS".equals(styleRank)) {
             com.devmod.combat.signature.SoulImprintManager.INSTANCE.recordSSSWave(player);
-            perkSynergyWeb.recordSSSRank(player);
             LOGGER.debug("[EnduranceQuest] Recorded SSS wave for signature weapon tracking");
         }
-        if (waveDamageTaken == 0 && waveKills > 0) {
+        if (signatureEnabled && waveDamageTaken == 0 && waveKills > 0) {
             com.devmod.combat.signature.SoulImprintManager.INSTANCE.recordNoHitWave(player);
             LOGGER.debug("[EnduranceQuest] Recorded no-hit wave for signature weapon tracking");
         }
 
-        // === PERK SYNERGY WEB - Record wave stats for discovery tracking ===
-        perkSynergyWeb.recordWaveComplete(player, waveNumber);
-        perkSynergyWeb.recordKills(player, waveKills);
+        if (!practice) {
+            if ("SSS".equals(styleRank)) {
+                perkSynergyWeb.recordSSSRank(player);
+            }
+
+            // === PERK SYNERGY WEB - Record wave stats for discovery tracking ===
+            perkSynergyWeb.recordWaveComplete(player, waveNumber);
+            perkSynergyWeb.recordKills(player, waveKills);
+        }
 
         // === THE TIDE - Global threat reduction for exceptional play ===
-        if ("SSS".equals(styleRank)) {
-            com.devmod.endurance.tide.TideManager.INSTANCE.onSSSWave(playerId, questId);
-        }
-        if (waveDamageTaken == 0 && waveKills > 0) {
-            com.devmod.endurance.tide.TideManager.INSTANCE.onNoHitWave(playerId, questId);
+        if (tideEnabled) {
+            UUID scopeId = tideScopeId != null ? tideScopeId : questId;
+            if ("SSS".equals(styleRank)) {
+                com.devmod.endurance.tide.TideManager.INSTANCE.onSSSWave(playerId, scopeId);
+            }
+            if (waveDamageTaken == 0 && waveKills > 0) {
+                com.devmod.endurance.tide.TideManager.INSTANCE.onNoHitWave(playerId, scopeId);
+            }
         }
 
         // === ARENA HAZARDS - Check for new hazards on wave transition ===
@@ -520,6 +580,9 @@ public class EnduranceEventHandler {
         boolean nextWaveIsBoss = applyShared
             ? TensionSystem.INSTANCE.onWaveComplete(questId, waveNumber)
             : TensionSystem.INSTANCE.getTensionInfo(questId).bossImminent();
+        if (practice) {
+            nextWaveIsBoss = false;
+        }
         TensionSystem.TensionInfo tensionInfo = TensionSystem.INSTANCE.getTensionInfo(questId);
         LOGGER.info("[EnduranceQuest]   Tension: {}% (level {}), Boss pending: {}",
             (int)(tensionInfo.percent() * 100), tensionInfo.level(), nextWaveIsBoss);
@@ -528,16 +591,18 @@ public class EnduranceEventHandler {
         com.devmod.network.NetworkHandler.sendTensionUpdate(player, tensionInfo.percent(), tensionInfo.level(), nextWaveIsBoss);
 
         // Update weekly challenge progress for wave completion
-        com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onWaveComplete(
-            playerId, waveNumber, quest.isEndlessMode());
+        if (!practice) {
+            com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onWaveComplete(
+                playerId, waveNumber, quest.isEndlessMode());
+        }
 
         // If boss wave is coming, send alert
-        if (nextWaveIsBoss && (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode())) {
+        if (!practice && nextWaveIsBoss && (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode())) {
             BossWaveSystem.INSTANCE.triggerBossAlert(player, "Champion");
         }
 
         // === LIVE ANALYTICS - Notify hooks of wave transition ===
-        if (applyShared) {
+        if (!practice && applyShared) {
             WaveSummary waveSummary = buildWaveSummary(waveNumber, waveStats, comboSession);
             LiveAnalyticsHookManager.INSTANCE.onWaveComplete(waveNumber, waveSummary, waveNumber + 1);
         }
@@ -572,23 +637,25 @@ public class EnduranceEventHandler {
         }
 
         // === PERK SYNERGY WEB - Check for new hidden perk discoveries ===
-        PerkSystem.PerkSession perkSession = PerkSystem.INSTANCE.getSession(playerId).orElse(null);
-        if (perkSession != null) {
-            var discoveries = perkSynergyWeb.getDiscoveries(player);
-            var discoveryContext = new com.devmod.endurance.perk.PerkSynergyWeb.DiscoveryContext(
-                playerId,
-                perkSession.getAcquiredPerkIds(),
-                discoveries.getDiscoveredPerks(),
-                waveNumber,
-                discoveries.getTotalKills(),
-                discoveries.getTotalWavesCompleted(),
-                styleRank,
-                Map.of()
-            );
-            List<String> newDiscoveries = perkSynergyWeb.checkDiscoveries(player, discoveryContext);
-            if (!newDiscoveries.isEmpty()) {
-                LOGGER.info("[EnduranceQuest] Player {} discovered {} hidden perks: {}",
-                    player.getName().getString(), newDiscoveries.size(), newDiscoveries);
+        if (!practice) {
+            PerkSystem.PerkSession perkSession = PerkSystem.INSTANCE.getSession(playerId).orElse(null);
+            if (perkSession != null) {
+                var discoveries = perkSynergyWeb.getDiscoveries(player);
+                var discoveryContext = new com.devmod.endurance.perk.PerkSynergyWeb.DiscoveryContext(
+                    playerId,
+                    perkSession.getAcquiredPerkIds(),
+                    discoveries.getDiscoveredPerks(),
+                    waveNumber,
+                    discoveries.getTotalKills(),
+                    discoveries.getTotalWavesCompleted(),
+                    styleRank,
+                    Map.of()
+                );
+                List<String> newDiscoveries = perkSynergyWeb.checkDiscoveries(player, discoveryContext);
+                if (!newDiscoveries.isEmpty()) {
+                    LOGGER.info("[EnduranceQuest] Player {} discovered {} hidden perks: {}",
+                        player.getName().getString(), newDiscoveries.size(), newDiscoveries);
+                }
             }
         }
 
@@ -687,17 +754,21 @@ public class EnduranceEventHandler {
         // Apply contract/bargain multipliers to directive multiplier for final reward
         float totalMultiplier = directiveMultiplier * contractMultiplier * bargainMultiplier;
 
-        RewardSystem.WaveReward waveReward = RewardSystem.INSTANCE.calculateWaveReward(
-            waveNumber, quest, comboSession, mutatorSession, totalMultiplier);
-        String rewardLine = String.format(
-            "Reward: +%d tokens (base %d, style x%.1f, mutator x%.1f, directive x%.1f, bonus %d)",
-            waveReward.tokensEarned(),
-            waveReward.baseTokens(),
-            waveReward.styleMultiplier(),
-            waveReward.mutatorMultiplier(),
-            waveReward.directiveMultiplier(),
-            waveReward.bonusPoints());
-        LOGGER.info("[EnduranceQuest]   {}", rewardLine);
+        RewardSystem.WaveReward waveReward = practice
+            ? new RewardSystem.WaveReward(0, 0, 1.0f, 1.0f, 1.0f, 0)
+            : RewardSystem.INSTANCE.calculateWaveReward(
+                waveNumber, quest, comboSession, mutatorSession, totalMultiplier);
+        if (!practice) {
+            String rewardLine = String.format(
+                "Reward: +%d tokens (base %d, style x%.1f, mutator x%.1f, directive x%.1f, bonus %d)",
+                waveReward.tokensEarned(),
+                waveReward.baseTokens(),
+                waveReward.styleMultiplier(),
+                waveReward.mutatorMultiplier(),
+                waveReward.directiveMultiplier(),
+                waveReward.bonusPoints());
+            LOGGER.info("[EnduranceQuest]   {}", rewardLine);
+        }
 
         // === NOTIFY PLAYER (Unified Notification Center) ===
         boolean hasMoreWaves = quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode();
@@ -705,7 +776,7 @@ public class EnduranceEventHandler {
         NotificationService.INSTANCE.notifyWaveComplete(
             playerId,
             waveNumber,
-            waveReward.tokensEarned(),
+            practice ? 0 : waveReward.tokensEarned(),
             styleRank,
             maxCombo,
             isFlawless,
@@ -713,8 +784,196 @@ public class EnduranceEventHandler {
             waveKills,
             waveDamage,
             waveDamageTaken,
-            waveReward
+            practice ? null : waveReward
         );
+
+        // === PARTY STATS SYNC (for debrief Party tab) ===
+        if (applyShared) {
+            sendPartyWaveStats(session, waveNumber);
+        }
+    }
+
+    /**
+     * Send aggregated party wave stats to all party members for the debrief Party tab.
+     * Only sends if player is in a party run (2+ members).
+     * FIX #4: Simplified signature - all stats come from CombatTracker now.
+     */
+    private static void sendPartyWaveStats(EnduranceQuestManager.ActiveQuestSession session,
+                                           int waveNumber) {
+        UUID partyId = session.getPartyId();
+        if (partyId == null) {
+            return; // Solo run, no party stats needed
+        }
+
+        PartyQuestSession partySession = EnduranceQuestManager.INSTANCE.getPartySession(partyId).orElse(null);
+        if (partySession == null || !partySession.isActive()) {
+            return;
+        }
+
+        // Only aggregate once per wave (first player to complete triggers aggregation)
+        EnduranceQuest quest = partySession.getQuest();
+        if (quest.getCurrentWave() != waveNumber) {
+            return; // Already advanced, skip
+        }
+
+        // Get server for player lookup
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return;
+
+        // Get shared combat session for this quest
+        CombatTracker.QuestCombatSession combatSession =
+            CombatTracker.INSTANCE.getSession(partySession.getQuestId()).orElse(null);
+        // FIX #1/#6: Use explicit wave number to avoid race condition
+        CombatTracker.WaveCombatStats sharedWaveStats = combatSession != null
+            ? combatSession.getWaveStats(waveNumber)
+            : null;
+
+        // FIX #3: Finalize duration BEFORE reading it (otherwise it's 0)
+        if (sharedWaveStats != null) {
+            sharedWaveStats.finalizeDuration();
+        }
+
+        // FIX #8: Use shared wave duration (not per-player)
+        long waveDurationMs = sharedWaveStats != null ? sharedWaveStats.duration : 0;
+
+        // Aggregate stats from all party members
+        List<PartyWaveStats.PlayerWaveData> playerStats = new java.util.ArrayList<>();
+        int partyTotalKills = 0;
+        int partyEliteKills = 0;
+        int partyTotalDamageDealt = 0;
+        int partyTotalDamageTaken = 0;
+        int partyDeaths = 0;
+        int partyMaxCombo = 0;
+
+        for (UUID memberId : partySession.getMembers()) {
+            // FIX AUDIT #6: Use NullGuard for diagnostic logging on unexpected nulls
+            if (memberId == null) {
+                LOGGER.warn("[EnduranceQuest] Null member ID in party during stats collection");
+                continue;
+            }
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(memberId);
+            if (memberPlayer == null) continue;
+
+            String playerName = memberPlayer.getName().getString();
+            boolean isSpectator = partySession.isSpectator(memberId);
+
+            if (isSpectator) {
+                playerStats.add(PartyWaveStats.PlayerWaveData.spectator(memberId, playerName));
+                continue;
+            }
+
+            // Get member's session data
+            EnduranceQuestManager.ActiveQuestSession memberSession =
+                EnduranceQuestManager.INSTANCE.getActiveSession(memberPlayer).orElse(null);
+            if (memberSession == null) continue;
+
+            // FIX #1/#6: Get per-player stats using explicit wave number
+            CombatTracker.PlayerWaveCombatStats playerWaveStats = combatSession != null
+                ? combatSession.getPlayerWaveStats(memberId, waveNumber)
+                : null;
+
+            // FIX #3: Use all 0s as fallback if no tracking data (not session kills)
+            int kills = playerWaveStats != null ? playerWaveStats.kills : 0;
+            int damageDealt = playerWaveStats != null ? (int) playerWaveStats.damageDealt : 0;
+            int damageTaken = playerWaveStats != null ? (int) playerWaveStats.damageTaken : 0;
+            int deaths = playerWaveStats != null ? playerWaveStats.deaths : 0;
+            // FIX #4: Use real eliteKills from per-player tracking
+            int eliteKills = playerWaveStats != null ? playerWaveStats.eliteKills : 0;
+            // FIX #5: Use per-wave maxCombo from CombatTracker (not session max)
+            int maxCombo = playerWaveStats != null ? playerWaveStats.maxCombo : 0;
+
+            float dps = waveDurationMs > 0 ? (damageDealt * 1000f / waveDurationMs) : 0;
+
+            partyTotalKills += kills;
+            partyEliteKills += eliteKills;
+            partyTotalDamageDealt += damageDealt;
+            partyTotalDamageTaken += damageTaken;
+            partyDeaths += deaths;
+            if (maxCombo > partyMaxCombo) partyMaxCombo = maxCombo;
+
+            playerStats.add(new PartyWaveStats.PlayerWaveData(
+                memberId.toString(),
+                playerName,
+                kills,
+                eliteKills, // FIX #4: Now using real per-player elite kills
+                damageDealt,
+                damageTaken,
+                deaths,
+                maxCombo,
+                dps,
+                0f, // killPercent calculated below
+                false
+            ));
+        }
+
+        // Calculate kill percentages
+        if (partyTotalKills > 0) {
+            List<PartyWaveStats.PlayerWaveData> updatedStats = new java.util.ArrayList<>();
+            for (PartyWaveStats.PlayerWaveData data : playerStats) {
+                float killPercent = (data.kills() * 100f) / partyTotalKills;
+                updatedStats.add(new PartyWaveStats.PlayerWaveData(
+                    data.playerId(), data.playerName(), data.kills(), data.eliteKills(),
+                    data.damageDealt(), data.damageTaken(), data.deaths(), data.maxCombo(),
+                    data.dps(), killPercent, data.wasSpectator()
+                ));
+            }
+            playerStats = updatedStats;
+        }
+
+        // Calculate party DPS and no-damage status
+        float partyDPS = waveDurationMs > 0 ? (partyTotalDamageDealt * 1000f / waveDurationMs) : 0;
+        boolean partyNoDamageWave = partyTotalDamageTaken == 0 && partyTotalKills > 0;
+
+        // Determine MVP
+        String mvpPlayerId = PartyWaveStats.determineMvp(playerStats);
+        PartyWaveStats.PlayerWaveData mvpData = null;
+        for (PartyWaveStats.PlayerWaveData data : playerStats) {
+            if (data.playerId().equals(mvpPlayerId)) {
+                mvpData = data;
+                break;
+            }
+        }
+        String mvpReason = PartyWaveStats.determineMvpReason(mvpData, playerStats, waveNumber);
+
+        // Build and send payload to all party members
+        PartyWaveStats stats = new PartyWaveStats(
+            waveNumber,
+            quest.getTotalWaves(),
+            waveDurationMs,
+            playerStats,
+            partyTotalKills,
+            partyEliteKills,
+            partyTotalDamageDealt,
+            partyTotalDamageTaken,
+            partyDeaths,
+            partyMaxCombo,
+            partyDPS,
+            partyNoDamageWave,
+            mvpPlayerId,
+            mvpReason
+        );
+
+        PartyStatsSyncPayload payload = PartyStatsSyncPayload.fromPartyWaveStats(stats);
+
+        // FIX AUDIT #7: Validate payload before distribution loop
+        if (payload == null) {
+            LOGGER.warn("[EnduranceQuest] Failed to create PartyStatsSyncPayload for wave {}", waveNumber);
+            return;
+        }
+
+        for (UUID memberId : partySession.getMembers()) {
+            if (memberId == null) {
+                LOGGER.warn("[EnduranceQuest] Null member ID in party session during stats sync");
+                continue;
+            }
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(memberId);
+            if (memberPlayer != null) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(memberPlayer, payload);
+            }
+        }
+
+        LOGGER.debug("[EnduranceQuest] Party stats synced for wave {}: {} members, {} total kills, MVP: {}",
+            waveNumber, playerStats.size(), partyTotalKills, mvpPlayerId);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -814,6 +1073,19 @@ public class EnduranceEventHandler {
                     EnduranceQuestManager.INSTANCE.rejoinPartyMember(player);
                 }
             }
+
+            var party = com.devmod.party.PartyManager.INSTANCE.getPlayerParty(player.getUUID());
+            if (party != null && party.getState() != com.devmod.party.PartyData.PartyState.IN_QUEST) {
+                UUID leaderId = party.getLeaderId();
+                if (!leaderId.equals(player.getUUID())) {
+                    MinecraftServer server = player.getServer();
+                    if (server != null && server.getPlayerList().getPlayer(leaderId) == null) {
+                        if (com.devmod.party.PartyManager.INSTANCE.transferLeadership(leaderId, player.getUUID())) {
+                            com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, party.getPartyId());
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -827,6 +1099,9 @@ public class EnduranceEventHandler {
 
             // Notify QuestStartSequence about disconnect (cancels sequence if needed)
             QuestStartSequence.INSTANCE.onPlayerDisconnect(playerId);
+
+            // Clean up nutrition session to prevent memory leaks
+            NutritionBridgeSystem.INSTANCE.onPlayerDisconnect(playerId);
 
             Optional<EnduranceQuestManager.ActiveQuestSession> sessionOpt =
                 EnduranceQuestManager.INSTANCE.getActiveSession(player);
@@ -1083,5 +1358,32 @@ public class EnduranceEventHandler {
             0, // coinsEarned - set by reward system
             List.of() // achievementsUnlocked - set by gamification
         );
+    }
+
+    private static @javax.annotation.Nullable UUID resolveDesignScopeId(
+            @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+        if (session == null) {
+            return null;
+        }
+        UUID instanceId = session.getInstanceId();
+        return instanceId != null ? instanceId : session.getQuest().getQuestId();
+    }
+
+    private static boolean isSignatureWeaponsEnabled(
+            @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+        if (session == null) {
+            return false;
+        }
+        return GameDesignConfigManager.INSTANCE.isSignatureWeaponsEnabled(
+            resolveDesignScopeId(session), session.isPracticeMode());
+    }
+
+    private static boolean isTideEnabled(
+            @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+        if (session == null) {
+            return false;
+        }
+        return GameDesignConfigManager.INSTANCE.isTideEnabled(
+            resolveDesignScopeId(session), session.isPracticeMode());
     }
 }

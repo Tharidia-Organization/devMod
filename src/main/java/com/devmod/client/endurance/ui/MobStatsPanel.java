@@ -278,7 +278,7 @@ public class MobStatsPanel {
             "Scaling", countScaling, 1.0f, MAX_SCALING, "%.1fx", mouseX, mouseY);
         contentY = renderSlider(graphics, font, contentX, contentY, contentWidth, 6,
             "Max/Wave", maxPerWave, 1, MAX_PER_WAVE, "%d", mouseX, mouseY);
-        contentY = renderSlider(graphics, font, contentX, contentY, contentWidth, 7,
+        renderSlider(graphics, font, contentX, contentY, contentWidth, 7,
             "Elite %", eliteChance * 100, 0, 100, "%.0f%%", mouseX, mouseY);
 
         // Modified indicator
@@ -328,6 +328,7 @@ public class MobStatsPanel {
         return contentY + btnHeight + 4;
     }
 
+    @SuppressWarnings("UnusedVariable") // mouseX/mouseY reserved for hover effects
     private int renderSlider(GuiGraphics graphics, @Nonnull Font font, int contentX, int contentY,
             int contentWidth, int sliderId, String label, double value, double min, double max,
             String format, int mouseX, int mouseY) {

@@ -12,6 +12,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 @Pseudo
 @Mixin(targets = "net.joefoxe.hexerei.Hexerei$DynamicRegistries", remap = false)
+@SuppressWarnings({"UnusedMethod", "UnusedVariable"}) // Mixin methods are invoked via bytecode injection
 public class HexereiDynamicRegistriesMixin {
     @Inject(method = "get", at = @At("HEAD"), cancellable = true)
     private static void devmod$hexereiClientRegistries(CallbackInfoReturnable<RegistryAccess> cir) {

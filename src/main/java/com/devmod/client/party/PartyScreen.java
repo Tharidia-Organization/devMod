@@ -32,8 +32,14 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UiSounds;
+import com.devmod.client.endurance.KitSelectionScreen;
+import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
+import com.devmod.endurance.KitManager;
+import com.devmod.endurance.KitPreset;
+import com.devmod.endurance.KitSyncConfirmPayload;
+import com.devmod.endurance.KitSyncPayload;
 import com.devmod.endurance.QuestType;
 import com.devmod.party.NamedInvitePayload;
 import com.devmod.party.PartyActionPayload;
@@ -47,6 +53,8 @@ public class PartyScreen extends Screen {
     // === DESIGN CONSTANTS ===
     private static final int PANEL_WIDTH = 600;
     private static final int PANEL_HEIGHT = 420;
+    private static final long KIT_SYNC_TIMEOUT_MS = 5_000L;
+    private static final int KIT_SYNC_MAX_ATTEMPTS = 3;
 
     // Animation
     private float animationTick = 0f;
@@ -64,7 +72,21 @@ public class PartyScreen extends Screen {
     private boolean isInParty = false;
     private boolean isLeader = false;
     private boolean isReady = false;
+    private boolean isSpectator = false;
     private int memberListScrollOffset = 0;
+
+    // Kit Selection (local player)
+    private KitPreset selectedKit = KitPreset.STARTER;
+    @Nullable private CustomKit selectedCustomKit = null;
+    private boolean usingCustomKit = false;
+    @Nullable private String customKitName = null;
+    private List<CustomKit> savedCustomKits = new ArrayList<>();
+    private String localKitId = "STARTER";
+    private boolean kitSyncInFlight = false;
+    private long kitSyncStartTime = 0L;
+    private int kitSyncAttempts = 0;
+    @Nullable private KitSyncPayload pendingKitSyncPayload = null;
+    @Nullable private String pendingKitId = null;
 
     // Mob Selection
     private List<EnduranceQuestRegistry.MobQuestConfig> availableMobs = new ArrayList<>();
@@ -104,6 +126,9 @@ public class PartyScreen extends Screen {
     @Nullable private EditorButton leaveButton;
     @Nullable private EditorButton disbandButton;
     @Nullable private EditorButton inviteButton;
+    @Nullable private EditorButton kitPrevButton;
+    @Nullable private EditorButton kitNextButton;
+    @Nullable private EditorButton kitEditButton;
 
     @Nullable private ButtonArea inviteButtonBounds;
     @Nullable private ButtonArea readyButtonBounds;
@@ -111,6 +136,9 @@ public class PartyScreen extends Screen {
     @Nullable private ButtonArea leaveButtonBounds;
     @Nullable private ButtonArea disbandButtonBounds;
     @Nullable private ButtonArea createPartyButtonBounds;
+    @Nullable private ButtonArea kitPrevButtonBounds;
+    @Nullable private ButtonArea kitNextButtonBounds;
+    @Nullable private ButtonArea kitEditButtonBounds;
 
     private int hoveredMemberIndex = -1;
     private int hoveredMobIndex = -1;
@@ -153,6 +181,7 @@ public class PartyScreen extends Screen {
     public int getPanelY() { return panelY; }
     public int getPanelWidth() { return PANEL_WIDTH; }
     public int getPanelHeight() { return PANEL_HEIGHT; }
+    public int getKitRowY() { return panelY + PANEL_HEIGHT - 103; }
 
     public float getGlowPulse() { return glowPulse; }
     public float getTitleGlow() { return titleGlow; }
@@ -164,6 +193,40 @@ public class PartyScreen extends Screen {
     public List<PartySyncPayload.PartyMemberInfo> getMembers() { return members; }
     @Nullable public UUID getLeaderId() { return leaderId; }
     public boolean isLeader() { return isLeader; }
+    public boolean isLocalSpectator() { return isSpectator; }
+    public boolean isLocalReady() { return isReady; }
+    public boolean isKitSyncInFlight() { return kitSyncInFlight; }
+    public String getLocalKitLabel() {
+        if (selectedCustomKit != null) {
+            return selectedCustomKit.getName();
+        }
+        if (usingCustomKit) {
+            if (customKitName != null && !customKitName.isBlank()) {
+                return customKitName;
+            }
+            return "Custom Kit";
+        }
+        return selectedKit != null ? selectedKit.getDisplayName() : "Starter Kit";
+    }
+    @Nullable
+    public String getStartBlockReason() {
+        if (!isInParty) return null;
+        if (partyState == PartyData.PartyState.IN_QUEST) return "Run active";
+        if (!isLeader) return "Leader only";
+        int memberCount = members.size();
+        if (questType.allowsSoloPlay() && memberCount == 1) {
+            long notReady = members.stream().filter(m -> !m.isReady()).count();
+            return notReady > 0 ? "Press READY" : null;
+        }
+        if (memberCount < questType.minPlayers) {
+            return "Need " + questType.minPlayers + " players";
+        }
+        long notReady = members.stream().filter(m -> !m.isReady()).count();
+        if (notReady > 0) {
+            return "Waiting " + notReady + " ready";
+        }
+        return null;
+    }
     public float[] getMemberAnimations() { return memberAnimations; }
     public int getMemberListScrollOffset() { return memberListScrollOffset; }
     public int getMaxVisibleMembers() { return MAX_VISIBLE_MEMBERS; }
@@ -223,12 +286,14 @@ public class PartyScreen extends Screen {
         this.renderer = new PartyScreenRenderer(this);
 
         loadAvailableMobs();
+        savedCustomKits = KitManager.INSTANCE.getAllCustomKits();
         refreshFromCache();
 
         // === Create UI Components ===
         initInviteSection();
         initMobSearchBox();
         initActionButtons();
+        initKitButtons();
 
         updateButtonStates();
         updatePreviewEntity();
@@ -323,6 +388,39 @@ public class PartyScreen extends Screen {
         createPartyButtonBounds = new ButtonArea(centerX - 80, panelY + PANEL_HEIGHT / 2 + 20, 160, 30);
     }
 
+    private void initKitButtons() {
+        int kitY = getKitRowY();
+        int rightX = panelX + PANEL_WIDTH - 15;
+        int btnH = 18;
+        int navW = 22;
+        int editW = 40;
+        int gap = 4;
+
+        kitEditButton = EditorButton.builder("kit-edit", "EDIT")
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::openKitEditor)
+            .build();
+        kitNextButton = EditorButton.builder("kit-next", ">")
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::nextKit)
+            .build();
+        kitPrevButton = EditorButton.builder("kit-prev", "<")
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::prevKit)
+            .build();
+
+        int editX = rightX - editW;
+        int nextX = editX - gap - navW;
+        int prevX = nextX - gap - navW;
+
+        kitEditButtonBounds = new ButtonArea(editX, kitY - 2, editW, btnH);
+        kitNextButtonBounds = new ButtonArea(nextX, kitY - 2, navW, btnH);
+        kitPrevButtonBounds = new ButtonArea(prevX, kitY - 2, navW, btnH);
+    }
+
     private void loadAvailableMobs() {
         availableMobs = new ArrayList<>(EnduranceQuestRegistry.INSTANCE.getAllMobConfigs());
         availableNamespaces = availableMobs.stream()
@@ -387,6 +485,26 @@ public class PartyScreen extends Screen {
 
         if (isInParty) {
             members = new ArrayList<>(ClientPartyCache.getMembers());
+            UUID localId = null;
+            Minecraft client = Minecraft.getInstance();
+            if (client.player != null) {
+                localId = client.player.getUUID();
+            }
+            UUID finalLocalId = localId;
+            members.sort((a, b) -> {
+                int leaderCmp = Boolean.compare(b.isLeader(), a.isLeader());
+                if (leaderCmp != 0) return leaderCmp;
+                if (finalLocalId != null) {
+                    boolean aLocal = a.playerId().equals(finalLocalId);
+                    boolean bLocal = b.playerId().equals(finalLocalId);
+                    if (aLocal != bLocal) return aLocal ? -1 : 1;
+                }
+                int statusCmp = Integer.compare(getMemberStatusRank(a), getMemberStatusRank(b));
+                if (statusCmp != 0) return statusCmp;
+                int readyCmp = Boolean.compare(b.isReady(), a.isReady());
+                if (readyCmp != 0) return readyCmp;
+                return a.playerName().compareToIgnoreCase(b.playerName());
+            });
             clampMemberScroll();
             leaderId = ClientPartyCache.getLeaderId();
             QuestType cachedType = ClientPartyCache.getQuestType();
@@ -412,16 +530,18 @@ public class PartyScreen extends Screen {
                 }
             }
 
-            Minecraft mc = Minecraft.getInstance();
-            var localPlayer = mc.player;
+            var localPlayer = client.player;
             if (localPlayer != null) {
                 isLeader = localPlayer.getUUID().equals(leaderId);
-                UUID localId = localPlayer.getUUID();
-                isReady = members.stream()
-                        .filter(m -> m.playerId().equals(localId))
+                PartySyncPayload.PartyMemberInfo localInfo = members.stream()
+                        .filter(m -> m.playerId().equals(localPlayer.getUUID()))
                         .findFirst()
-                        .map(PartySyncPayload.PartyMemberInfo::isReady)
-                        .orElse(false);
+                        .orElse(null);
+                isReady = localInfo != null && localInfo.isReady();
+                isSpectator = localInfo != null && localInfo.isSpectator();
+                if (localInfo != null) {
+                    syncLocalKitSelection(localInfo, false);
+                }
             }
         } else {
             members.clear();
@@ -429,6 +549,83 @@ public class PartyScreen extends Screen {
             leaderId = null;
             isLeader = false;
             isReady = false;
+            isSpectator = false;
+            localKitId = "STARTER";
+            selectedKit = KitPreset.STARTER;
+            selectedCustomKit = null;
+            usingCustomKit = false;
+            customKitName = null;
+            kitSyncInFlight = false;
+            kitSyncAttempts = 0;
+            kitSyncStartTime = 0L;
+            pendingKitSyncPayload = null;
+            pendingKitId = null;
+        }
+    }
+
+    private int getMemberStatusRank(PartySyncPayload.PartyMemberInfo member) {
+        if (!member.isOnline()) return 2;
+        if (member.isSpectator()) return 1;
+        return 0;
+    }
+
+    private void syncLocalKitSelection(PartySyncPayload.PartyMemberInfo localInfo, boolean force) {
+        if (kitSyncInFlight || localInfo == null) {
+            return;
+        }
+        String kitId = localInfo.kitId();
+        if (kitId == null || kitId.isBlank()) {
+            kitId = "STARTER";
+        }
+        if (!force && kitId.equals(localKitId)) {
+            // Defensive null check for @Nullable customKitName
+            String kitName = customKitName;
+            if (usingCustomKit && (kitName == null || kitName.isBlank())) {
+                String label = localInfo.kitLabel();
+                if (label != null && !label.isBlank()) {
+                    customKitName = label;
+                }
+            }
+            return;
+        }
+        localKitId = kitId;
+        if ("TEMPORARY".equals(kitId)) {
+            selectedCustomKit = null;
+            usingCustomKit = true;
+            customKitName = localInfo.kitLabel();
+            return;
+        }
+        if (kitId.length() == 8) {
+            savedCustomKits = KitManager.INSTANCE.getAllCustomKits();
+            CustomKit resolved = null;
+            for (CustomKit kit : savedCustomKits) {
+                if (kit.getId().equals(kitId)) {
+                    resolved = kit;
+                    break;
+                }
+            }
+            selectedCustomKit = resolved;
+            usingCustomKit = true;
+            customKitName = resolved != null ? resolved.getName() : localInfo.kitLabel();
+            return;
+        }
+        usingCustomKit = false;
+        selectedCustomKit = null;
+        customKitName = null;
+        KitPreset preset = KitManager.INSTANCE.getKitById(kitId);
+        selectedKit = preset != null ? preset : KitPreset.STARTER;
+    }
+
+    private void forceRefreshKitSelection() {
+        PartySyncPayload party = ClientPartyCache.getParty();
+        Minecraft mc = Minecraft.getInstance();
+        net.minecraft.client.player.LocalPlayer localPlayer = mc.player;
+        if (party == null || localPlayer == null) {
+            return;
+        }
+        PartySyncPayload.PartyMemberInfo localInfo = party.getMember(localPlayer.getUUID());
+        if (localInfo != null) {
+            syncLocalKitSelection(localInfo, true);
         }
     }
 
@@ -458,6 +655,21 @@ public class PartyScreen extends Screen {
             refreshFromCache();
             updateButtonStates();
         }
+
+        if (kitSyncInFlight && now - kitSyncStartTime > KIT_SYNC_TIMEOUT_MS) {
+            if (kitSyncAttempts < KIT_SYNC_MAX_ATTEMPTS && pendingKitSyncPayload != null) {
+                kitSyncAttempts++;
+                kitSyncStartTime = now;
+                sendKitSyncPayload(pendingKitSyncPayload);
+            } else {
+                kitSyncInFlight = false;
+                pendingKitSyncPayload = null;
+                pendingKitId = null;
+                notifyKitSyncFailure("Kit sync timeout");
+                forceRefreshKitSelection();
+                updateButtonStates();
+            }
+        }
     }
 
     private void updateButtonStates() {
@@ -478,11 +690,24 @@ public class PartyScreen extends Screen {
         if (inviteButton != null) {
             inviteButton.enabled(isInParty && isLeader);
         }
+        if (readyButton != null) {
+            readyButton.enabled(!kitSyncInFlight);
+        }
         if (leaveButton != null) {
             leaveButton.enabled(isInParty);
         }
         if (createPartyButton != null) {
             createPartyButton.enabled(!isInParty);
+        }
+        boolean kitEditable = canEditKit();
+        if (kitPrevButton != null) {
+            kitPrevButton.enabled(kitEditable);
+        }
+        if (kitNextButton != null) {
+            kitNextButton.enabled(kitEditable);
+        }
+        if (kitEditButton != null) {
+            kitEditButton.enabled(kitEditable);
         }
         var localInviteBox = inviteBox;
         if (localInviteBox != null) {
@@ -495,8 +720,268 @@ public class PartyScreen extends Screen {
         }
     }
 
+    private boolean canEditKit() {
+        return isInParty
+            && partyState != PartyData.PartyState.IN_QUEST
+            && !kitSyncInFlight;
+    }
+
+    private KitPreset[] getSelectablePresets() {
+        return java.util.Arrays.stream(KitPreset.values())
+            .filter(p -> p != KitPreset.CUSTOM)
+            .toArray(KitPreset[]::new);
+    }
+
+    private void prevKit() {
+        if (!canEditKit()) {
+            UiSounds.error();
+            return;
+        }
+        KitPreset[] presets = getSelectablePresets();
+
+        if (selectedCustomKit != null) {
+            int idx = savedCustomKits.indexOf(selectedCustomKit);
+            if (idx > 0) {
+                selectedCustomKit = savedCustomKits.get(idx - 1);
+            } else {
+                selectedCustomKit = null;
+                selectedKit = presets[presets.length - 1];
+            }
+        } else {
+            int idx = java.util.Arrays.asList(presets).indexOf(selectedKit);
+            if (idx > 0) {
+                selectedKit = presets[idx - 1];
+            } else if (!savedCustomKits.isEmpty()) {
+                selectedCustomKit = savedCustomKits.get(savedCustomKits.size() - 1);
+            } else {
+                selectedKit = presets[presets.length - 1];
+            }
+        }
+
+        usingCustomKit = selectedCustomKit != null;
+        customKitName = selectedCustomKit != null ? selectedCustomKit.getName() : null;
+        submitKitSelection();
+    }
+
+    private void nextKit() {
+        if (!canEditKit()) {
+            UiSounds.error();
+            return;
+        }
+        KitPreset[] presets = getSelectablePresets();
+
+        if (selectedCustomKit != null) {
+            int idx = savedCustomKits.indexOf(selectedCustomKit);
+            if (idx < savedCustomKits.size() - 1) {
+                selectedCustomKit = savedCustomKits.get(idx + 1);
+            } else {
+                selectedCustomKit = null;
+                selectedKit = presets[0];
+            }
+        } else {
+            int idx = java.util.Arrays.asList(presets).indexOf(selectedKit);
+            if (idx < presets.length - 1) {
+                selectedKit = presets[idx + 1];
+            } else if (!savedCustomKits.isEmpty()) {
+                selectedCustomKit = savedCustomKits.get(0);
+            } else {
+                selectedKit = presets[0];
+            }
+        }
+
+        usingCustomKit = selectedCustomKit != null;
+        customKitName = selectedCustomKit != null ? selectedCustomKit.getName() : null;
+        submitKitSelection();
+    }
+
+    private void openKitEditor() {
+        if (!canEditKit()) {
+            UiSounds.error();
+            return;
+        }
+        CustomKit kitToEdit = selectedCustomKit;
+        Minecraft.getInstance().setScreen(
+            new KitSelectionScreen(this, items -> {
+                savedCustomKits = KitManager.INSTANCE.getAllCustomKits();
+                if (items != null && !items.isEmpty()) {
+                    usingCustomKit = true;
+                    customKitName = KitManager.INSTANCE.getTemporaryKitName();
+                    selectedCustomKit = null;
+                } else {
+                    usingCustomKit = false;
+                    customKitName = null;
+                    selectedCustomKit = null;
+                }
+                submitKitSelection();
+            }, savedKit -> {
+                savedCustomKits = KitManager.INSTANCE.getAllCustomKits();
+                if (savedKit != null) {
+                    CustomKit resolved = null;
+                    for (CustomKit kit : savedCustomKits) {
+                        if (kit.getId().equals(savedKit.getId())) {
+                            resolved = kit;
+                            break;
+                        }
+                    }
+                    selectedCustomKit = resolved != null ? resolved : savedKit;
+                    customKitName = selectedCustomKit.getName();
+                    usingCustomKit = true;
+                    submitKitSelection();
+                }
+            }, kitToEdit)
+        );
+    }
+
+    private void submitKitSelection() {
+        if (!isInParty || partyState == PartyData.PartyState.IN_QUEST) {
+            return;
+        }
+        if (kitSyncInFlight) {
+            return;
+        }
+        String kitId = resolveSelectedKitId();
+        if (kitId == null || kitId.isBlank()) {
+            kitId = "STARTER";
+        }
+        if (kitId.equals(localKitId)) {
+            return;
+        }
+        if (requiresKitSync(kitId)) {
+            KitSyncPayload payload = buildKitSyncPayload(kitId);
+            if (payload == null) {
+                UiSounds.error();
+                return;
+            }
+            pendingKitId = kitId;
+            pendingKitSyncPayload = payload;
+            kitSyncInFlight = true;
+            kitSyncAttempts = 1;
+            kitSyncStartTime = System.currentTimeMillis();
+            sendKitSyncPayload(payload);
+            updateButtonStates();
+            return;
+        }
+        sendKitSelectionToServer(kitId);
+    }
+
+    private String resolveSelectedKitId() {
+        if (selectedCustomKit != null) {
+            return selectedCustomKit.getId();
+        }
+        if (usingCustomKit && KitManager.INSTANCE.hasTemporaryKit()) {
+            return "TEMPORARY";
+        }
+        if (selectedKit != null) {
+            return selectedKit.name();
+        }
+        return "STARTER";
+    }
+
+    private boolean requiresKitSync(String kitId) {
+        return "TEMPORARY".equals(kitId) || kitId.length() == 8;
+    }
+
+    @Nullable
+    private KitSyncPayload buildKitSyncPayload(String kitId) {
+        Minecraft mc = Minecraft.getInstance();
+        var level = mc.level;
+        if (level == null) {
+            return null;
+        }
+        var registryAccess = level.registryAccess();
+
+        if ("TEMPORARY".equals(kitId)) {
+            List<net.minecraft.world.item.ItemStack> items = KitManager.INSTANCE.getTemporaryKitItems();
+            if (items.isEmpty()) {
+                notifyKitSyncFailure("Temporary kit is empty");
+                return null;
+            }
+            if (items.size() > KitSyncPayload.MAX_ITEMS) {
+                notifyKitSyncFailure("Kit too large (max " + KitSyncPayload.MAX_ITEMS + " items)");
+                return null;
+            }
+            String kitName = KitManager.INSTANCE.getTemporaryKitName();
+            return KitSyncPayload.fromTemporary(
+                kitName != null ? kitName : "Temporary Kit",
+                items,
+                registryAccess
+            );
+        }
+
+        if (kitId.length() == 8) {
+            CustomKit kit = selectedCustomKit;
+            if (kit == null) {
+                kit = KitManager.INSTANCE.getCustomKit(kitId).orElse(null);
+            }
+            if (kit == null) {
+                notifyKitSyncFailure("Custom kit not found");
+                return null;
+            }
+            List<net.minecraft.world.item.ItemStack> stacks = kit.toItemStacks(registryAccess);
+            if (stacks.size() > KitSyncPayload.MAX_ITEMS) {
+                notifyKitSyncFailure("Kit too large (max " + KitSyncPayload.MAX_ITEMS + " items)");
+                return null;
+            }
+            return KitSyncPayload.fromCustomKit(kit, registryAccess);
+        }
+        return null;
+    }
+
+    private void sendKitSyncPayload(KitSyncPayload payload) {
+        PacketDistributor.sendToServer(Objects.requireNonNull(payload));
+    }
+
+    private void sendKitSelectionToServer(String kitId) {
+        localKitId = kitId;
+        PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.setKit(kitId)));
+        if (isReady) {
+            isReady = false;
+            ClientPartyCache.setLocalPlayerReady(false);
+        }
+        updateButtonStates();
+    }
+
+    public void onKitSyncConfirm(KitSyncConfirmPayload payload) {
+        if (!kitSyncInFlight) {
+            return;
+        }
+        String kitId = payload != null ? payload.kitId() : "";
+        // Use local variable to satisfy NullAway null-check flow analysis
+        String pendingId = pendingKitId;
+        if (pendingId != null && kitId != null && !kitId.isBlank() && !pendingId.equals(kitId)) {
+            return;
+        }
+
+        kitSyncInFlight = false;
+        kitSyncAttempts = 0;
+        kitSyncStartTime = 0L;
+        pendingKitSyncPayload = null;
+        String pending = pendingKitId;
+        pendingKitId = null;
+
+        if (payload != null && payload.success()) {
+            if (pending != null && !pending.isBlank()) {
+                sendKitSelectionToServer(pending);
+            }
+            UiSounds.success();
+        } else {
+            String message = payload != null ? payload.message() : "Kit sync failed";
+            notifyKitSyncFailure(message);
+            forceRefreshKitSelection();
+            updateButtonStates();
+        }
+    }
+
+    private void notifyKitSyncFailure(String message) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            mc.player.sendSystemMessage(Objects.requireNonNull(Component.literal("[DevMod] " + message)));
+        }
+    }
+
     private boolean canStartQuest() {
         if (!isInParty) return false;
+        if (kitSyncInFlight) return false;
         if (questType.allowsSoloPlay() && members.size() == 1) return true;
         if (members.size() < questType.minPlayers) return false;
         return members.stream().allMatch(PartySyncPayload.PartyMemberInfo::isReady);
@@ -504,6 +989,12 @@ public class PartyScreen extends Screen {
 
     @Nonnull
     private Component getReadyButtonText() {
+        if (partyState == PartyData.PartyState.IN_QUEST) {
+            if (isSpectator) {
+                return Objects.requireNonNull(Component.literal("REJOIN"));
+            }
+            return Objects.requireNonNull(Component.literal(isReady ? "READY" : "CONTINUE"));
+        }
         return Objects.requireNonNull(Component.literal(isReady ? "READY" : "NOT READY"));
     }
 
@@ -546,10 +1037,19 @@ public class PartyScreen extends Screen {
         safeRenderer.renderMainPanel(graphics);
 
         if (isInParty) {
-            hoveredQuestTab = safeRenderer.renderQuestTypeTabs(graphics, mouseX, mouseY);
+            if (partyState == PartyData.PartyState.IN_QUEST) {
+                hoveredQuestTab = -1;
+            } else {
+                hoveredQuestTab = safeRenderer.renderQuestTypeTabs(graphics, mouseX, mouseY);
+            }
             hoveredMemberIndex = safeRenderer.renderMembersPanel(graphics, mouseX, mouseY);
-            hoveredMobIndex = safeRenderer.renderMobSelectionPanel(graphics, mouseX, mouseY);
-            safeRenderer.renderMobPreviewPanel(graphics, mouseX, mouseY);
+            if (partyState == PartyData.PartyState.IN_QUEST) {
+                hoveredMobIndex = -1;
+                safeRenderer.renderRunStatusPanel(graphics, mouseX, mouseY);
+            } else {
+                hoveredMobIndex = safeRenderer.renderMobSelectionPanel(graphics, mouseX, mouseY);
+                safeRenderer.renderMobPreviewPanel(graphics, mouseX, mouseY);
+            }
             safeRenderer.renderWaveStatsBar(graphics, mouseX, mouseY);
         } else {
             safeRenderer.renderNoPartyState(graphics);
@@ -576,6 +1076,16 @@ public class PartyScreen extends Screen {
     }
 
     private void onReadyClicked() {
+        if (kitSyncInFlight) {
+            UiSounds.error();
+            return;
+        }
+        if (partyState == PartyData.PartyState.IN_QUEST) {
+            PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.toggleReady()));
+            updateButtonStates();
+            UiSounds.toggleOn();
+            return;
+        }
         isReady = !isReady;
         ClientPartyCache.setLocalPlayerReady(isReady);
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.toggleReady()));
@@ -631,7 +1141,8 @@ public class PartyScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // Quest type tabs
-        if (isInParty && isLeader && hoveredQuestTab >= 0 && hoveredQuestTab < QuestType.values().length) {
+        if (isInParty && partyState != PartyData.PartyState.IN_QUEST
+            && isLeader && hoveredQuestTab >= 0 && hoveredQuestTab < QuestType.values().length) {
             questType = QuestType.values()[hoveredQuestTab];
             ClientPartyCache.setQuestType(questType);
             PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.setQuestType(questType)));
@@ -686,7 +1197,8 @@ public class PartyScreen extends Screen {
         }
 
         // Mob list clicks
-        if (isInParty && isLeader && hoveredMobIndex >= 0 && hoveredMobIndex < filteredMobs.size()) {
+        if (isInParty && partyState != PartyData.PartyState.IN_QUEST
+            && isLeader && hoveredMobIndex >= 0 && hoveredMobIndex < filteredMobs.size()) {
             selectedMobIndex = hoveredMobIndex;
             selectedMobId = filteredMobs.get(selectedMobIndex).mobId;
             updatePreviewEntity();
@@ -734,7 +1246,8 @@ public class PartyScreen extends Screen {
         }
 
         // Member kick
-        if (hoveredMemberIndex >= 0 && hoveredMemberIndex < members.size() && isLeader && button == 1) {
+        if (hoveredMemberIndex >= 0 && hoveredMemberIndex < members.size() && isLeader
+            && button == 1 && partyState != PartyData.PartyState.IN_QUEST) {
             PartySyncPayload.PartyMemberInfo member = members.get(hoveredMemberIndex);
             if (!member.playerId().equals(leaderId)) {
                 PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.kickMember(member.playerId())));
@@ -846,6 +1359,24 @@ public class PartyScreen extends Screen {
                 localDisbandBtn.render(graphics, localDisbandBounds.x, localDisbandBounds.y,
                     localDisbandBounds.width, localDisbandBounds.height, mouseX, mouseY);
             }
+            var localKitPrev = kitPrevButton;
+            var localKitPrevBounds = kitPrevButtonBounds;
+            if (localKitPrev != null && localKitPrevBounds != null) {
+                localKitPrev.render(graphics, localKitPrevBounds.x, localKitPrevBounds.y,
+                    localKitPrevBounds.width, localKitPrevBounds.height, mouseX, mouseY);
+            }
+            var localKitNext = kitNextButton;
+            var localKitNextBounds = kitNextButtonBounds;
+            if (localKitNext != null && localKitNextBounds != null) {
+                localKitNext.render(graphics, localKitNextBounds.x, localKitNextBounds.y,
+                    localKitNextBounds.width, localKitNextBounds.height, mouseX, mouseY);
+            }
+            var localKitEdit = kitEditButton;
+            var localKitEditBounds = kitEditButtonBounds;
+            if (localKitEdit != null && localKitEditBounds != null) {
+                localKitEdit.render(graphics, localKitEditBounds.x, localKitEditBounds.y,
+                    localKitEditBounds.width, localKitEditBounds.height, mouseX, mouseY);
+            }
         } else {
             var localCreateBtn = createPartyButton;
             var localCreateBounds = createPartyButtonBounds;
@@ -866,6 +1397,9 @@ public class PartyScreen extends Screen {
             if (leaveButton != null && leaveButton.mouseClicked(mouseX, mouseY, button)) return true;
             if (startButton != null && startButton.mouseClicked(mouseX, mouseY, button)) return true;
             if (disbandButton != null && isLeader && disbandButton.mouseClicked(mouseX, mouseY, button)) return true;
+            if (kitPrevButton != null && kitPrevButton.mouseClicked(mouseX, mouseY, button)) return true;
+            if (kitNextButton != null && kitNextButton.mouseClicked(mouseX, mouseY, button)) return true;
+            if (kitEditButton != null && kitEditButton.mouseClicked(mouseX, mouseY, button)) return true;
         } else {
             if (createPartyButton != null && createPartyButton.mouseClicked(mouseX, mouseY, button)) return true;
         }
@@ -880,6 +1414,9 @@ public class PartyScreen extends Screen {
             if (leaveButton != null) handled |= leaveButton.mouseReleased(mouseX, mouseY, button);
             if (startButton != null) handled |= startButton.mouseReleased(mouseX, mouseY, button);
             if (disbandButton != null && isLeader) handled |= disbandButton.mouseReleased(mouseX, mouseY, button);
+            if (kitPrevButton != null) handled |= kitPrevButton.mouseReleased(mouseX, mouseY, button);
+            if (kitNextButton != null) handled |= kitNextButton.mouseReleased(mouseX, mouseY, button);
+            if (kitEditButton != null) handled |= kitEditButton.mouseReleased(mouseX, mouseY, button);
         } else {
             if (createPartyButton != null) handled |= createPartyButton.mouseReleased(mouseX, mouseY, button);
         }

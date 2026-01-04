@@ -380,9 +380,11 @@ public record StructureCharacteristics(
 
     /**
      * Returns preferred floor as ResourceLocation.
+     * Falls back to stone_bricks if floorMaterial is somehow null.
      */
     public ResourceLocation floorBlock() {
-        return ResourceLocation.parse(floorMaterial);
+        String material = floorMaterial != null ? floorMaterial : "minecraft:stone_bricks";
+        return ResourceLocation.parse(material);
     }
 
     /**

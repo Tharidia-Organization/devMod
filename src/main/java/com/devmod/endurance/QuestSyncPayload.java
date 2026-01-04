@@ -14,6 +14,7 @@ import com.devmod.network.PayloadValidation;
 
 public record QuestSyncPayload(
     boolean hasActiveQuest,
+    String questId,
     String questName,
     String templateId,
     int templateVersion,
@@ -71,6 +72,7 @@ public record QuestSyncPayload(
 
     private static void encode(RegistryFriendlyByteBuf buf, QuestSyncPayload payload) {
         buf.writeBoolean(payload.hasActiveQuest);
+        buf.writeUtf(Objects.requireNonNull(payload.questId));
         buf.writeUtf(Objects.requireNonNull(payload.questName));
         buf.writeUtf(Objects.requireNonNull(payload.templateId));
         buf.writeVarInt(payload.templateVersion);
@@ -126,6 +128,7 @@ public record QuestSyncPayload(
 
     private static QuestSyncPayload decode(RegistryFriendlyByteBuf buf) {
         boolean hasActiveQuest = buf.readBoolean();
+        String questId = buf.readUtf(MAX_STRING_LENGTH);
         // SECURITY FIX: Limit string length
         String questName = buf.readUtf(MAX_STRING_LENGTH);
         String templateId = buf.readUtf(MAX_STRING_LENGTH);
@@ -184,7 +187,7 @@ public record QuestSyncPayload(
         long overdriveRemaining = buf.readLong();
 
         return new QuestSyncPayload(
-            hasActiveQuest, questName, templateId, templateVersion, policyId, policyVersion,
+            hasActiveQuest, questId, questName, templateId, templateVersion, policyId, policyVersion,
             instanceId, arenaId, difficultyLabel, questTypeLabel,
             currentWave, totalWaves, endlessMode,
             pointsEarned, mobsKilled, mobsKilledInWave, totalMobsInWave,
@@ -206,6 +209,7 @@ public record QuestSyncPayload(
     public int estimatedSize() {
         int size = 0;
         size += 1; // hasActiveQuest
+        size += estimatedUtfSize(questId);
         size += estimatedUtfSize(questName);
         size += estimatedUtfSize(templateId);
         size += varIntSize(templateVersion);
@@ -258,7 +262,7 @@ public record QuestSyncPayload(
      */
     public static QuestSyncPayload empty() {
         return new QuestSyncPayload(
-            false, "", "", 0, "", 0, "", "", "", "",
+            false, "", "", "", 0, "", 0, "", "", "", "",
             0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, "", "", 0, 0, false, false,
             List.of(), 0, 0, 0, 0,

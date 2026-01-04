@@ -39,7 +39,29 @@ repositories {
         name = "DevAuth"
         url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1"
     }
+
+    // Tharidia mods (Easy-Diet, etc.) - GitHub Packages or local maven
+    maven {
+        name = "Tharidia"
+        url = uri("https://maven.pkg.github.com/Tharidia-Organization/*")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") ?: ""
+            password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: ""
+        }
+    }
+    // Fallback: local maven for Easy-Diet development
+    mavenLocal()
 }
+
+// Check if GitHub credentials are available for optional dependencies
+def hasGitHubCredentials = (System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: "").length() > 0
+if (!hasGitHubCredentials) {
+    logger.warn("[DevMod] GitHub credentials not found - optional dependencies (Easy-Diet) will be skipped")
+    logger.warn("[DevMod] Set GITHUB_TOKEN env var or gpr.key property to enable all optional dependencies")
+}
+
+// NOTE: Easy-Diet integration now uses reflection (EasyDietApi.java)
+// No source exclusions needed - all files compile without Easy-Diet JAR
 
 base {
     archivesName = mod_id
@@ -328,6 +350,16 @@ dependencies {
     // Distant Horizons API - compile-only for soft dependency (optional compatibility)
     // API v4.0.1 supports 1.21-1.21.1 on NeoForge
     compileOnly "maven.modrinth:distanthorizons:2.3.0-b-1.21.1"
+
+    // Tharidia Easy-Diet - REFLECTION-BASED integration (no compile-time dependency needed)
+    // EasyDietApi uses reflection to access Easy-Diet classes at runtime
+    // This allows DevMod to compile and run without Easy-Diet being present
+    //
+    // NOTE: The compileOnly dependency below is OPTIONAL - only needed if you want
+    // IDE auto-completion during development. Comment out if Easy-Diet JAR unavailable.
+    // if (hasGitHubCredentials) {
+    //     compileOnly "com.THproject:tharidia_easydiet:0.1.0-alpha"
+    // }
 
     // Player Animator (KosmX) - compile-only for SpotBugs analysis + optional compat
     // Provides dev.kosmx.playerAnim.api.layered.IAnimatedPlayer
@@ -764,7 +796,9 @@ tasks.named('processResources') {
 
 def designTokenColorAllowlist = [
     'src/main/java/com/devmod/client/ui/editor/core/DesignTokens.java',
-    'src/main/java/com/devmod/shared/SharedColorTokens.java'
+    'src/main/java/com/devmod/shared/SharedColorTokens.java',
+    // Server-side enum with inlined colors to avoid client dependency (DesignTokens)
+    'src/main/java/com/devmod/endurance/nutrition/NutritionCategory.java'
 ]
 
 tasks.register('checkDesignTokensColors') {

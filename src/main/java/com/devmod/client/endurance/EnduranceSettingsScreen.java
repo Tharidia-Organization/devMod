@@ -902,6 +902,7 @@ public class EnduranceSettingsScreen extends Screen {
         return path.get(path.size() - 1);
     }
 
+    @SuppressWarnings("UnusedMethod") // Interface methods used by reflection or reserved for future features
     private interface ConfigItem {
         void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY);
         int getHeight();

@@ -5,22 +5,30 @@ import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 
+import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.network.ClientTensionCache;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobDifficultyPreset;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
+import com.devmod.endurance.EnduranceQuestState;
+import com.devmod.endurance.KitPreset;
 import com.devmod.endurance.QuestType;
+import com.devmod.endurance.QuestSyncPayload;
+import com.devmod.endurance.WaveObjectiveState;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartySyncPayload;
 
@@ -50,6 +58,7 @@ public class PartyScreenRenderer {
     private static final int COLOR_ROW_HOVER = DesignTokens.Party.ROW_HOVER;
     private static final int COLOR_ROW_DEFAULT = DesignTokens.Party.ROW_DEFAULT;
     private static final int COLOR_HINT_TEXT = DesignTokens.Party.HINT_TEXT;
+    private static final int COLOR_BAR_BG = DesignTokens.Surface.LEVEL_0;
 
     // Stat colors
     private static final int COLOR_STAT_HP = DesignTokens.Party.STAT_HP;
@@ -125,8 +134,32 @@ public class PartyScreenRenderer {
             QuestType questType = screen.getQuestType();
             List<PartySyncPayload.PartyMemberInfo> members = screen.getMembers();
             String subtitle = partyState.name() + " - " + members.size() + "/" + questType.maxPlayers + " Warriors";
+            if (partyState == PartyData.PartyState.IN_QUEST) {
+                QuestSyncPayload questData = ClientQuestCache.getData();
+                if (questData != null && questData.hasActiveQuest()) {
+                    String waveLabel = questData.endlessMode()
+                        ? "Wave " + questData.currentWave()
+                        : "Wave " + questData.currentWave() + "/" + questData.totalWaves();
+                    subtitle = subtitle + " - " + waveLabel;
+                }
+            }
             int subX = panelX + panelWidth / 2 - f.width(subtitle) / 2;
             graphics.drawString(f, subtitle, subX, panelY + 28, COLOR_TEXT_DIM, false);
+            if (partyState != PartyData.PartyState.IN_QUEST) {
+                String startReason = screen.getStartBlockReason();
+                if (startReason != null && !startReason.isBlank()) {
+                    String hint = "START LOCKED: " + startReason;
+                    int hintX = panelX + panelWidth / 2 - f.width(hint) / 2;
+                    graphics.drawString(f, hint, hintX, panelY + 38, COLOR_NOT_READY, false);
+                }
+                String nextHint = buildLobbyNextAction(questType, members, screen.isLeader());
+                if (nextHint != null && !nextHint.isBlank()) {
+                    int nextY = panelY + (startReason != null && !startReason.isBlank() ? 48 : 38);
+                    @Nonnull String nextText = java.util.Objects.requireNonNull(fitToWidth(f, nextHint, panelWidth - 40));
+                    int nextX = panelX + panelWidth / 2 - f.width(nextText) / 2;
+                    graphics.drawString(f, nextText, nextX, nextY, COLOR_TEXT_DIM, false);
+                }
+            }
         }
     }
 
@@ -226,6 +259,8 @@ public class PartyScreenRenderer {
         boolean isLeader = screen.isLeader();
         List<PartySyncPayload.PartyMemberInfo> members = screen.getMembers();
         float[] memberAnimations = screen.getMemberAnimations();
+        PartyData.PartyState partyState = screen.getPartyState();
+        boolean inQuest = partyState == PartyData.PartyState.IN_QUEST;
         int maxVisible = screen.getMaxVisibleMembers();
         int rawOffset = screen.getMemberListScrollOffset();
         int maxScroll = Math.max(0, members.size() - maxVisible);
@@ -244,6 +279,27 @@ public class PartyScreenRenderer {
         // Header
         graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, COLOR_PANEL_HEADER);
         graphics.drawString(f, "PARTY MEMBERS", panelLeft + 8, panelTop + 7, COLOR_GLOW_CYAN, false);
+        int activeCount = 0;
+        int readyCount = 0;
+        int spectatorCount = 0;
+        int offlineCount = 0;
+        for (PartySyncPayload.PartyMemberInfo member : members) {
+            if (!member.isOnline()) {
+                offlineCount++;
+            } else if (member.isSpectator()) {
+                spectatorCount++;
+            } else {
+                activeCount++;
+                if (member.isReady()) {
+                    readyCount++;
+                }
+            }
+        }
+        @Nonnull String counts = java.util.Objects.requireNonNull(fitToWidth(f,
+            "Act" + activeCount + " Ready" + readyCount + " Spec" + spectatorCount + " Off" + offlineCount,
+            panelW - 16));
+        int countsWidth = f.width(counts);
+        graphics.drawString(f, counts, panelLeft + panelW - countsWidth - 6, panelTop + 7, COLOR_TEXT_DIM, false);
 
         int hoveredMemberIndex = -1;
         int memberY = panelTop + 28;
@@ -271,10 +327,52 @@ public class PartyScreenRenderer {
 
             boolean isMemberLeader = member.playerId().equals(leaderId);
 
-            // Ready/status indicator with glow
+            String status;
+            int statusTextColor;
+            int statusColor;
+            int statusGlow;
+            String tag;
+            int tagColor;
+            if (!member.isOnline()) {
+                status = "Offline";
+                statusTextColor = COLOR_TEXT_DIM;
+                statusColor = COLOR_TEXT_DIM;
+                statusGlow = COLOR_NOT_READY_GLOW;
+                tag = "OFF";
+                tagColor = COLOR_TEXT_DIM;
+            } else if (inQuest) {
+                if (member.isSpectator()) {
+                    status = "Spectating";
+                    statusTextColor = COLOR_TEXT_DIM;
+                    statusColor = COLOR_NOT_READY;
+                    statusGlow = COLOR_NOT_READY_GLOW;
+                    tag = "SPEC";
+                    tagColor = COLOR_TEXT_DIM;
+                } else if (member.isReady()) {
+                    status = "Ready to continue";
+                    statusTextColor = COLOR_READY;
+                    statusColor = COLOR_READY;
+                    statusGlow = COLOR_READY_GLOW;
+                    tag = "READY";
+                    tagColor = COLOR_READY;
+                } else {
+                    status = "Fighting";
+                    statusTextColor = COLOR_GLOW_CYAN;
+                    statusColor = COLOR_GLOW_CYAN;
+                    statusGlow = COLOR_GLOW_BLUE;
+                    tag = "ACTIVE";
+                    tagColor = COLOR_GLOW_CYAN;
+                }
+            } else {
+                status = member.isReady() ? "Ready" : "Not ready";
+                statusTextColor = member.isReady() ? COLOR_READY : COLOR_NOT_READY;
+                statusColor = member.isReady() ? COLOR_READY : COLOR_NOT_READY;
+                statusGlow = member.isReady() ? COLOR_READY_GLOW : COLOR_NOT_READY_GLOW;
+                tag = member.isReady() ? "READY" : "WAIT";
+                tagColor = member.isReady() ? COLOR_READY : COLOR_NOT_READY;
+            }
+
             int statusX = rowX + 5;
-            int statusColor = member.isReady() ? COLOR_READY : COLOR_NOT_READY;
-            int statusGlow = member.isReady() ? COLOR_READY_GLOW : COLOR_NOT_READY_GLOW;
 
             // Status glow
             graphics.fill(statusX - 2, rowY + 5, statusX + 10, rowY + rowH - 5, statusGlow);
@@ -284,6 +382,10 @@ public class PartyScreenRenderer {
             String prefix = isMemberLeader ? "[L] " : "    ";
             int nameColor = isMemberLeader ? COLOR_LEADER_GOLD : COLOR_TEXT_WHITE;
 
+            int tagPadding = 4;
+            int tagWidth = f.width(tag) + tagPadding * 2;
+            int tagX = rowX + rowW - tagWidth - 6;
+
             // Player name
             String displayName = member.playerName();
             Minecraft mc = Minecraft.getInstance();
@@ -291,15 +393,25 @@ public class PartyScreenRenderer {
             if (localPlayer != null && member.playerId().equals(localPlayer.getUUID())) {
                 displayName += " (You)";
             }
-            graphics.drawString(f, prefix + displayName, rowX + 18, rowY + 5, nameColor, false);
+            int maxTextWidth = Math.max(0, tagX - (rowX + 18) - 6);
+            String displayLine = fitToWidth(f, prefix + displayName, maxTextWidth);
+            graphics.drawString(f, displayLine, rowX + 18, rowY + 5, nameColor, false);
 
             // Status text
-            String status = member.isReady() ? "Ready" : "Waiting";
-            int statusTextColor = member.isReady() ? COLOR_READY : COLOR_NOT_READY;
-            graphics.drawString(f, status, rowX + 18, rowY + 15, statusTextColor, false);
+            String kitLabel = resolveMemberKitLabel(member);
+            String statusDetail = kitLabel != null && !kitLabel.isBlank()
+                ? status + " | " + kitLabel
+                : status;
+            String statusLine = fitToWidth(f, statusDetail, maxTextWidth);
+            graphics.drawString(f, statusLine, rowX + 18, rowY + 15, statusTextColor, false);
+
+            // Status tag
+            int tagY = rowY + 8;
+            graphics.fill(tagX, tagY, tagX + tagWidth, tagY + 12, tagColor);
+            graphics.drawString(f, tag, tagX + tagPadding, tagY + 2, COLOR_TEXT_WHITE, false);
 
             // Kick hint on hover (for leader)
-            if (isHovered && isLeader && !member.playerId().equals(leaderId)) {
+            if (isHovered && isLeader && !member.playerId().equals(leaderId) && !inQuest) {
                 graphics.drawString(f, "[Right-click: Kick]", rowX + rowW - 85, rowY + 10, COLOR_TEXT_DIM, false);
             }
         }
@@ -310,6 +422,13 @@ public class PartyScreenRenderer {
                 scrollOffset + visibleCount,
                 members.size());
             graphics.drawString(f, range, panelLeft + panelW - 70, panelTop + panelH - 12, COLOR_TEXT_DIM, false);
+        }
+
+        String composition = buildCompositionLine(members);
+        if (composition != null && !composition.isBlank()) {
+            int compMaxWidth = members.size() > maxVisible ? panelW - 80 : panelW - 16;
+            String compLine = fitToWidth(f, composition, compMaxWidth);
+            graphics.drawString(f, compLine, panelLeft + 8, panelTop + panelH - 12, COLOR_TEXT_DIM, false);
         }
 
         // Empty state
@@ -327,6 +446,63 @@ public class PartyScreenRenderer {
         AxiomRenderer.drawBorder(graphics, panelLeft + 5, inviteSectionY + 12, 140, 20, COLOR_BORDER_SUBTLE);
 
         return hoveredMemberIndex;
+    }
+
+    @Nullable
+    private String resolveMemberKitLabel(PartySyncPayload.PartyMemberInfo member) {
+        if (member == null) {
+            return null;
+        }
+        String label = member.kitLabel();
+        if (label != null && !label.isBlank()) {
+            return label;
+        }
+        String kitId = member.kitId();
+        if (kitId == null || kitId.isBlank()) {
+            return null;
+        }
+        if ("TEMPORARY".equals(kitId)) {
+            return "Temporary Kit";
+        }
+        if (kitId.length() == 8) {
+            return "Custom Kit";
+        }
+        try {
+            return KitPreset.valueOf(kitId.toUpperCase(java.util.Locale.ROOT)).getDisplayName();
+        } catch (IllegalArgumentException e) {
+            return kitId;
+        }
+    }
+
+    @Nullable
+    private String buildCompositionLine(List<PartySyncPayload.PartyMemberInfo> members) {
+        if (members == null || members.isEmpty()) {
+            return null;
+        }
+        java.util.Map<String, Integer> counts = new java.util.LinkedHashMap<>();
+        for (PartySyncPayload.PartyMemberInfo member : members) {
+            if (member == null || !member.isOnline()) {
+                continue;
+            }
+            String label = resolveMemberKitLabel(member);
+            if (label == null || label.isBlank()) {
+                continue;
+            }
+            counts.merge(label, 1, (a, b) -> a + b);
+        }
+        if (counts.isEmpty()) {
+            return null;
+        }
+        java.util.List<String> dupes = new java.util.ArrayList<>();
+        for (var entry : counts.entrySet()) {
+            if (entry.getValue() > 1) {
+                dupes.add(entry.getValue() + "x " + entry.getKey());
+            }
+        }
+        if (dupes.isEmpty()) {
+            return "Comp: Mixed";
+        }
+        return "Comp: " + String.join(", ", dupes);
     }
 
     public int renderMobSelectionPanel(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -474,6 +650,198 @@ public class PartyScreenRenderer {
         return hoveredMobIndex;
     }
 
+    public void renderRunStatusPanel(GuiGraphics graphics, int mouseX, int mouseY) {
+        int panelX = screen.getPanelX();
+        int panelY = screen.getPanelY();
+        List<PartySyncPayload.PartyMemberInfo> members = screen.getMembers();
+
+        int panelLeft = panelX + 225;
+        int panelTop = panelY + 80;
+        int panelW = 160;
+        int panelH = 230;
+        net.minecraft.client.gui.Font f = getFont();
+
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, COLOR_PANEL_BG);
+        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, COLOR_BORDER_SUBTLE);
+
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, COLOR_PANEL_HEADER);
+        graphics.drawString(f, "RUN STATUS", panelLeft + 8, panelTop + 7, COLOR_GLOW_CYAN, false);
+
+        QuestSyncPayload questData = ClientQuestCache.getData();
+        boolean hasQuestData = questData != null && questData.hasActiveQuest();
+        if (!hasQuestData) {
+            graphics.drawCenteredString(f, "Awaiting run data", panelLeft + panelW / 2, panelTop + 110, COLOR_TEXT_DIM);
+            return;
+        }
+        QuestSyncPayload questDataSafe = Objects.requireNonNull(questData);
+
+        boolean atCheckpoint = questDataSafe.getState() == EnduranceQuestState.WAVE_COMPLETE;
+        boolean tensionActive = ClientTensionCache.isActive();
+        boolean syncStale = ClientQuestCache.isStale(3000);
+        int syncSeconds = syncStale ? Math.max(1, (int) Math.ceil(ClientQuestCache.getTimeSinceUpdate() / 1000.0)) : 0;
+        QuestType questType = screen.getQuestType();
+
+        int activeCount = 0;
+        int readyCount = 0;
+        for (PartySyncPayload.PartyMemberInfo member : members) {
+            if (!member.isOnline() || member.isSpectator()) {
+                continue;
+            }
+            activeCount++;
+            if (member.isReady()) {
+                readyCount++;
+            }
+        }
+        int gateTotal = Math.max(1, activeCount);
+
+        String waveLabel = questDataSafe.endlessMode()
+            ? questDataSafe.currentWave() + "/INF"
+            : questDataSafe.currentWave() + "/" + questDataSafe.totalWaves();
+
+        int textX = panelLeft + 8;
+        int textY = panelTop + 30;
+        int maxWidth = panelW - 16;
+        int lineGap = 2;
+
+        String waveLine = fitToWidth(f, "Wave " + waveLabel, maxWidth);
+        graphics.drawString(f, waveLine, textX, textY, COLOR_TEXT_WHITE, false);
+        textY += f.lineHeight + lineGap;
+
+        String typeLine = fitToWidth(f, "Type " + questType.displayName, maxWidth);
+        graphics.drawString(f, typeLine, textX, textY, COLOR_TEXT_DIM, false);
+        textY += f.lineHeight + lineGap;
+
+        String runLine = fitToWidth(f, "Run " + formatDuration(questDataSafe.sessionDurationMs()), maxWidth);
+        graphics.drawString(f, runLine, textX, textY, COLOR_TEXT_DIM, false);
+        textY += f.lineHeight + lineGap;
+
+        if (Screen.hasShiftDown()) {
+            String questIdShort = shortId(questDataSafe.questId());
+            String questLine = fitToWidth(f, "Quest " + questIdShort, maxWidth);
+            graphics.drawString(f, questLine, textX, textY, COLOR_TEXT_WHITE, false);
+            textY += f.lineHeight + lineGap;
+        } else {
+            String questHint = fitToWidth(f, "Hold SHIFT for questId", maxWidth);
+            graphics.drawString(f, questHint, textX, textY, COLOR_TEXT_DIM, false);
+            textY += f.lineHeight + lineGap;
+        }
+
+        int tensionPercent = Math.round(ClientTensionCache.getTensionPercent() * 100f);
+        String tensionLabel = ClientTensionCache.getTensionLabel();
+        if (tensionLabel == null) {
+            tensionLabel = "";
+        }
+        String tensionLine = tensionActive
+            ? "Tension " + tensionPercent + "% " + tensionLabel
+            : "Tension --";
+        tensionLine = fitToWidth(f, tensionLine, maxWidth);
+        int tensionColor = tensionActive ? ClientTensionCache.getDisplayColor() : COLOR_TEXT_DIM;
+        graphics.drawString(f, tensionLine, textX, textY, tensionColor, false);
+        textY += f.lineHeight + lineGap;
+
+        if (syncStale) {
+            String syncLine = fitToWidth(f, "Sync stale " + syncSeconds + "s", maxWidth);
+            graphics.drawString(f, syncLine, textX, textY, COLOR_NOT_READY, false);
+            textY += f.lineHeight + lineGap;
+        }
+
+        String detailLeft;
+        String detailRight = "";
+        int detailColor = COLOR_TEXT_WHITE;
+        if (atCheckpoint) {
+            detailLeft = "Checkpoint " + readyCount + "/" + gateTotal;
+            detailColor = readyCount >= gateTotal ? COLOR_READY : COLOR_NOT_READY;
+            if (activeCount == 0) {
+                detailRight = "No actives";
+            } else {
+                int waiting = Math.max(0, gateTotal - readyCount);
+                detailRight = waiting > 0 ? "Waiting " + waiting : "All Ready";
+            }
+        } else {
+            String objective = questDataSafe.objectiveTitle();
+            if (objective == null || objective.isEmpty()) {
+                objective = questDataSafe.questName();
+            }
+            int progress = questDataSafe.objectiveProgress();
+            int target = questDataSafe.objectiveTarget();
+            WaveObjectiveState.Type objectiveType = questDataSafe.getObjectiveType();
+            if (objectiveType == WaveObjectiveState.Type.KILL_ALL) {
+                progress = questDataSafe.mobsKilledInWave();
+                target = questDataSafe.totalMobsInWave();
+                detailLeft = target > 0 ? "Kills " + progress + "/" + target : "Kills";
+            } else {
+                detailLeft = "Objective " + objective;
+            }
+            if (objectiveType != WaveObjectiveState.Type.KILL_ALL) {
+                if (target > 0) {
+                    detailRight = progress + "/" + target;
+                } else if (questDataSafe.objectiveComplete()) {
+                    detailRight = "DONE";
+                } else if (questDataSafe.objectiveFailed()) {
+                    detailRight = "FAIL";
+                }
+            }
+        }
+        int rightWidth = detailRight.isEmpty() ? 0 : f.width(detailRight);
+        int leftMax = maxWidth - (rightWidth > 0 ? rightWidth + 6 : 0);
+        detailLeft = fitToWidth(f, detailLeft, leftMax);
+        graphics.drawString(f, detailLeft, textX, textY, detailColor, false);
+        if (!detailRight.isEmpty()) {
+            int rightX = panelLeft + panelW - 8 - rightWidth;
+            graphics.drawString(f, detailRight, rightX, textY, COLOR_TEXT_DIM, false);
+        }
+
+        if (atCheckpoint) {
+            String waitingLabel = buildWaitingLabel(members);
+            if (!waitingLabel.isEmpty()) {
+                textY += f.lineHeight + lineGap;
+                waitingLabel = fitToWidth(f, waitingLabel, maxWidth);
+                graphics.drawString(f, waitingLabel, textX, textY, COLOR_TEXT_DIM, false);
+            }
+        }
+
+        String actionLabel;
+        int actionColor = COLOR_TEXT_DIM;
+        if (screen.isLocalSpectator()) {
+            actionLabel = "NEXT: READY to REJOIN";
+            actionColor = COLOR_GLOW_CYAN;
+        } else if (atCheckpoint) {
+            actionLabel = screen.isLocalReady() ? "NEXT: Waiting party" : "NEXT: READY to CONTINUE";
+            actionColor = readyCount >= gateTotal ? COLOR_READY : COLOR_NOT_READY;
+        } else {
+            actionLabel = "NEXT: Fighting";
+        }
+        actionLabel = fitToWidth(f, actionLabel, maxWidth);
+        int actionY = panelTop + panelH - 38;
+        graphics.drawString(f, actionLabel, textX, actionY, actionColor, false);
+
+        int barCount = (tensionActive ? 1 : 0) + (atCheckpoint ? 1 : 0);
+        if (barCount > 0) {
+            int barHeight = 4;
+            int barGap = 4;
+            int barX = panelLeft + 8;
+            int barW = panelW - 16;
+            int barY = panelTop + panelH - 12 - (barHeight + barGap) * barCount;
+            if (tensionActive) {
+                graphics.fill(barX, barY, barX + barW, barY + barHeight, COLOR_BAR_BG);
+                int fill = Math.round(barW * ClientTensionCache.getTensionPercent());
+                if (fill > 0) {
+                    graphics.fill(barX, barY, barX + fill, barY + barHeight, ClientTensionCache.getDisplayColor());
+                }
+                barY += barHeight + barGap;
+            }
+            if (atCheckpoint) {
+                graphics.fill(barX, barY, barX + barW, barY + barHeight, COLOR_BAR_BG);
+                float progress = activeCount > 0 ? (float) readyCount / activeCount : 0f;
+                int fill = Math.round(barW * progress);
+                int color = readyCount >= gateTotal ? COLOR_READY : COLOR_NOT_READY;
+                if (fill > 0) {
+                    graphics.fill(barX, barY, barX + fill, barY + barHeight, color);
+                }
+            }
+        }
+    }
+
     public void renderMobPreviewPanel(GuiGraphics graphics, int mouseX, int mouseY) {
         int panelX = screen.getPanelX();
         int panelY = screen.getPanelY();
@@ -597,6 +965,11 @@ public class PartyScreenRenderer {
     }
 
     public void renderWaveStatsBar(GuiGraphics graphics, int mouseX, int mouseY) {
+        renderKitSelectionRow(graphics);
+        if (screen.getPartyState() == PartyData.PartyState.IN_QUEST) {
+            renderRunFooter(graphics);
+            return;
+        }
         EnduranceQuestRegistry.MobQuestConfig config = screen.getSelectedMobConfig();
         if (config == null) return;
 
@@ -654,6 +1027,115 @@ public class PartyScreenRenderer {
         graphics.drawString(f, String.format("Difficulty: %.1fx", questType.difficultyMultiplier * waveMultiplier), col, statsY, COLOR_STAT_DIFFICULTY, false);
     }
 
+    private void renderKitSelectionRow(GuiGraphics graphics) {
+        if (!screen.isInParty()) {
+            return;
+        }
+        int panelX = screen.getPanelX();
+        int panelWidth = screen.getPanelWidth();
+        int kitY = screen.getKitRowY();
+        net.minecraft.client.gui.Font f = getFont();
+
+        String label = screen.getLocalKitLabel();
+        String kitLabel = label != null && !label.isBlank() ? label : "-";
+        boolean locked = screen.getPartyState() == PartyData.PartyState.IN_QUEST;
+        boolean syncing = screen.isKitSyncInFlight();
+        String suffix = syncing ? " (SYNC)" : (locked ? " (LOCKED)" : "");
+        String line = "KIT: " + kitLabel + suffix;
+        int maxWidth = panelWidth - 150;
+        graphics.drawString(f, fitToWidth(f, line, maxWidth), panelX + 15, kitY, COLOR_TEXT_DIM, false);
+    }
+
+    private void renderRunFooter(GuiGraphics graphics) {
+        int panelX = screen.getPanelX();
+        int panelY = screen.getPanelY();
+        int panelHeight = screen.getPanelHeight();
+        int panelWidth = screen.getPanelWidth();
+        List<PartySyncPayload.PartyMemberInfo> members = screen.getMembers();
+
+        QuestSyncPayload questData = ClientQuestCache.getData();
+        if (questData == null || !questData.hasActiveQuest()) {
+            return;
+        }
+
+        boolean atCheckpoint = questData.getState() == EnduranceQuestState.WAVE_COMPLETE;
+        boolean syncStale = ClientQuestCache.isStale(3000);
+        int syncSeconds = syncStale ? Math.max(1, (int) Math.ceil(ClientQuestCache.getTimeSinceUpdate() / 1000.0)) : 0;
+
+        int activeCount = 0;
+        int readyCount = 0;
+        for (PartySyncPayload.PartyMemberInfo member : members) {
+            if (!member.isOnline() || member.isSpectator()) {
+                continue;
+            }
+            activeCount++;
+            if (member.isReady()) {
+                readyCount++;
+            }
+        }
+        int gateTotal = Math.max(1, activeCount);
+
+        int barY = panelY + panelHeight - 85;
+        int barX = panelX + 15;
+        int barW = panelWidth - 30;
+        net.minecraft.client.gui.Font f = getFont();
+
+        graphics.fill(barX, barY - 5, barX + barW, barY - 3, COLOR_BORDER_SUBTLE);
+
+        String statusLabel = atCheckpoint ? "CHECKPOINT READY" : "RUN ACTIVE";
+        graphics.drawString(f, statusLabel, barX, barY, COLOR_TEXT_DIM, false);
+
+        String waveLabel = questData.endlessMode()
+            ? "Wave " + questData.currentWave() + "/INF"
+            : "Wave " + questData.currentWave() + "/" + questData.totalWaves();
+        int waveWidth = f.width(waveLabel);
+        int waveX = barX + barW - waveWidth;
+        graphics.drawString(f, waveLabel, waveX, barY, COLOR_TEXT_DIM, false);
+        if (syncStale) {
+            String syncLabel = "SYNC " + syncSeconds + "s";
+            int syncWidth = f.width(syncLabel);
+            int syncX = Math.max(barX, waveX - syncWidth - 8);
+            graphics.drawString(f, syncLabel, syncX, barY, COLOR_NOT_READY, false);
+        }
+
+        int infoY = barY + 16;
+        String readyLabel;
+        int readyColor;
+        if (atCheckpoint) {
+            readyLabel = "Checkpoint " + readyCount + "/" + gateTotal;
+            readyColor = readyCount >= gateTotal ? COLOR_READY : COLOR_NOT_READY;
+        } else {
+            readyLabel = "In wave";
+            readyColor = COLOR_TEXT_WHITE;
+        }
+        graphics.drawString(f, readyLabel, barX, infoY, readyColor, false);
+
+        String actionLabel;
+        int actionColor = COLOR_TEXT_DIM;
+        if (screen.isLocalSpectator()) {
+            actionLabel = "NEXT: READY = REJOIN";
+            actionColor = COLOR_GLOW_CYAN;
+        } else if (atCheckpoint) {
+            actionLabel = screen.isLocalReady() ? "NEXT: Waiting party" : "NEXT: READY = CONTINUE";
+            actionColor = readyCount >= gateTotal ? COLOR_READY : COLOR_NOT_READY;
+        } else {
+            actionLabel = "NEXT: Fighting";
+        }
+        graphics.drawString(f, actionLabel, barX + 140, infoY, actionColor, false);
+
+        if (atCheckpoint) {
+            int progressY = infoY + 10;
+            int progressW = 140;
+            graphics.fill(barX, progressY, barX + progressW, progressY + 4, COLOR_BAR_BG);
+            float progress = activeCount > 0 ? (float) readyCount / activeCount : 0f;
+            int fill = Math.round(progressW * progress);
+            if (fill > 0) {
+                int color = readyCount >= gateTotal ? COLOR_READY : COLOR_NOT_READY;
+                graphics.fill(barX, progressY, barX + fill, progressY + 4, color);
+            }
+        }
+    }
+
     public void renderNoPartyState(GuiGraphics graphics) {
         int panelX = screen.getPanelX();
         int panelY = screen.getPanelY();
@@ -697,6 +1179,25 @@ public class PartyScreenRenderer {
         };
     }
 
+    private String buildLobbyNextAction(QuestType questType, List<PartySyncPayload.PartyMemberInfo> members, boolean isLeader) {
+        if (!isLeader) {
+            return "NEXT: Wait for leader";
+        }
+        int memberCount = members != null ? members.size() : 0;
+        boolean soloAllowed = questType.allowsSoloPlay();
+        boolean enoughPlayers = (soloAllowed && memberCount == 1) || memberCount >= questType.minPlayers;
+        if (!enoughPlayers) {
+            return "NEXT: Invite players";
+        }
+        if (members != null) {
+            long notReady = members.stream().filter(m -> !m.isReady()).count();
+            if (notReady > 0) {
+                return "NEXT: Everyone READY";
+            }
+        }
+        return "NEXT: Start quest";
+    }
+
     public int getTierColor(MobTier tier) {
         return switch (tier) {
             case TRIVIAL -> DesignTokens.Party.DIFFICULTY_TRIVIAL;
@@ -717,5 +1218,73 @@ public class PartyScreenRenderer {
             case ELITE -> "***** Elite";
             case BOSS -> "BOSS";
         };
+    }
+
+    @Nonnull
+    private String fitToWidth(net.minecraft.client.gui.Font font, String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+        String trimmed = text;
+        while (!trimmed.isEmpty() && font.width(trimmed + "..") > maxWidth) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed.isEmpty() ? "" : trimmed + "..";
+    }
+
+    private String shortId(String fullId) {
+        if (fullId == null || fullId.isEmpty()) {
+            return "-";
+        }
+        return fullId.length() <= 8 ? fullId : fullId.substring(0, 8);
+    }
+
+    private String buildWaitingLabel(List<PartySyncPayload.PartyMemberInfo> members) {
+        if (members == null || members.isEmpty()) {
+            return "";
+        }
+        java.util.List<String> names = new java.util.ArrayList<>();
+        for (PartySyncPayload.PartyMemberInfo member : members) {
+            if (!member.isOnline() || member.isSpectator() || member.isReady()) {
+                continue;
+            }
+            names.add(truncateName(member.playerName(), 6));
+        }
+        if (names.isEmpty()) {
+            return "";
+        }
+        int cap = Math.min(2, names.size());
+        String text = String.join(", ", names.subList(0, cap));
+        if (names.size() > cap) {
+            text = text + " +" + (names.size() - cap);
+        }
+        return "Waiting: " + text;
+    }
+
+    private String truncateName(String name, int maxLen) {
+        if (name == null || name.isEmpty()) {
+            return "";
+        }
+        if (name.length() <= maxLen) {
+            return name;
+        }
+        return name.substring(0, Math.max(1, maxLen - 2)) + "..";
+    }
+
+    private String formatDuration(long durationMs) {
+        if (durationMs <= 0) {
+            return "00:00";
+        }
+        long totalSeconds = durationMs / 1000;
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+        if (hours > 0) {
+            return hours + ":" + String.format("%02d:%02d", minutes, seconds);
+        }
+        return String.format("%02d:%02d", minutes, seconds);
     }
 }

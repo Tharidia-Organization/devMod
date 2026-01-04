@@ -239,8 +239,8 @@ public class EndurancePlayerStateManager {
 
         // Cleanup practice mode dummies if applicable
         if (session.isPracticeMode() && DummmmmmyCompat.isAvailable()) {
-            DummmmmmyCompat.removeAllDummies(arena.getLevel());
-            LOGGER.debug("[EnduranceQuest] Cleaned up practice mode dummies");
+            int removed = DummmmmmyCompat.removeArenaDummies(arena.getLevel(), arena.getId(), arena.getBounds());
+            LOGGER.debug("[EnduranceQuest] Cleaned up practice mode dummies ({})", removed);
         }
 
         // Cleanup WaveManager state (removes tracked mobs, resets wave state)

@@ -22,6 +22,7 @@ import net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -29,6 +30,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.devmod.DevMod;
 import com.devmod.components.ArmorComponents;
 import com.devmod.config.ArmorConfigManager;
+import com.devmod.runtime.DynamicDimensionManager;
+import com.devmod.endurance.config.GlobalMobConfigStorage;
 import com.devmod.config.FuelConfigManager;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.endurance.EnduranceQuestManager;
@@ -123,6 +126,20 @@ public class CommonModEvents {
             LOGGER.info("[DevMod] EnduranceQuestManager initialized successfully with instance dimensions enabled");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize EnduranceQuestManager", e);
+        }
+
+        // Load global mob configuration for Endurance mode
+        // Clear cache first to handle crash recovery (stale cache from previous session)
+        GlobalMobConfigStorage.clearCache();
+        try {
+            var globalMobConfig = GlobalMobConfigStorage.load();
+            if (globalMobConfig.isPresent()) {
+                LOGGER.info("[DevMod] GlobalMobConfigStorage loaded with custom mob settings");
+            } else {
+                LOGGER.info("[DevMod] GlobalMobConfigStorage using default settings");
+            }
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to load GlobalMobConfigStorage", e);
         }
 
         // Initialize ArmorConfigManager for custom armor stats
@@ -303,6 +320,9 @@ public class CommonModEvents {
             LOGGER.error("[DevMod] Error during EnduranceQuestManager shutdown", e);
         }
 
+        // Clear global mob config cache to prevent stale data on server restart
+        GlobalMobConfigStorage.clearCache();
+
         // Save leaderboard data
         try {
             com.devmod.endurance.LeaderboardSystem.INSTANCE.saveAll();
@@ -352,6 +372,18 @@ public class CommonModEvents {
             } catch (Exception e) {
                 LOGGER.error("[DevMod] Error during MailboxManager shutdown", e);
             }
+        }
+    }
+
+    /**
+     * Called when a level/dimension is unloaded.
+     * Notifies DynamicDimensionManager to invalidate any proxy generators
+     * that were using the unloaded dimension as their source.
+     */
+    @SubscribeEvent
+    public static void onLevelUnload(LevelEvent.Unload event) {
+        if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            DynamicDimensionManager.INSTANCE.onDimensionUnload(serverLevel.dimension());
         }
     }
 

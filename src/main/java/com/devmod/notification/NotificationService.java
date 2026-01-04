@@ -67,6 +67,10 @@ public class NotificationService {
     private final NotificationRouter router;
     private volatile boolean initialized = false;
 
+    // UX Q6: Rate limiting for party death notifications (prevent spam on TPK)
+    private static final long DEATH_NOTIFICATION_COOLDOWN_MS = 2000; // 2 seconds between death notifications per recipient
+    private final Map<UUID, Long> lastDeathNotificationTime = new java.util.concurrent.ConcurrentHashMap<>();
+
     private NotificationService() {
         this.router = new NotificationRouter();
     }
@@ -531,6 +535,45 @@ public class NotificationService {
             case "kicked", "disbanded" -> true;
             default -> false;
         };
+    }
+
+    /**
+     * UX Q4: Notify party members when a teammate dies during a quest.
+     * Sends a toast notification to all OTHER party members (not the one who died).
+     * UX Q6: Rate-limited to prevent notification spam on TPK scenarios.
+     */
+    public void notifyPartyMemberDeath(UUID deadPlayerId, String deadPlayerName, UUID partyId) {
+        var party = com.devmod.party.PartyManager.INSTANCE.getParty(partyId);
+        if (party == null) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+
+        // Notify all party members except the one who died
+        for (UUID memberId : party.getMembers()) {
+            if (memberId.equals(deadPlayerId)) {
+                continue; // Don't notify the dead player themselves
+            }
+
+            // UX Q6: Rate limiting - skip if notified too recently
+            Long lastNotified = lastDeathNotificationTime.get(memberId);
+            if (lastNotified != null && (now - lastNotified) < DEATH_NOTIFICATION_COOLDOWN_MS) {
+                continue; // Skip - too soon since last death notification
+            }
+            lastDeathNotificationTime.put(memberId, now);
+
+            Notification notification = Notification.builder(NotificationCategory.PARTY)
+                    .titleKey("devmod.notification.party.member_death.title")
+                    .messageKey("devmod.notification.party.member_death.message")
+                    .param("player", deadPlayerName)
+                    .priority(NotificationPriority.HIGH)
+                    .soundId("party.member_death")
+                    .persistToMailbox(false)
+                    .build();
+
+            notifyAsync(memberId, notification);
+        }
     }
 
     /**

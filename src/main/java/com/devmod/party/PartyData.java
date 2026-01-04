@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +40,9 @@ public class PartyData {
     /** Map of member UUIDs to their ready status */
     private final Map<UUID, Boolean> memberReady;
 
+    /** Map of member UUIDs to their selected kit ID */
+    private final Map<UUID, String> memberKits;
+
     /** Pending invites sent from this party */
     private final Map<UUID, PartyInvite> pendingInvites;
 
@@ -58,6 +62,8 @@ public class PartyData {
 
     /** Timestamp when the party was created */
     private final long createdAt;
+
+    private static final String DEFAULT_KIT_ID = "STARTER";
 
     /**
      * Possible states of a party.
@@ -92,12 +98,14 @@ public class PartyData {
         this.members = ConcurrentHashMap.newKeySet();
         this.memberNames = new ConcurrentHashMap<>();
         this.memberReady = new ConcurrentHashMap<>();
+        this.memberKits = new ConcurrentHashMap<>();
         this.pendingInvites = new ConcurrentHashMap<>();
 
         // Add leader as first member
         this.members.add(leaderId);
         this.memberNames.put(leaderId, leaderName);
         this.memberReady.put(leaderId, true); // Leader is always ready
+        this.memberKits.put(leaderId, DEFAULT_KIT_ID);
     }
 
     // === Member Management ===
@@ -127,6 +135,7 @@ public class PartyData {
         members.add(playerId);
         memberNames.put(playerId, playerName);
         memberReady.put(playerId, false);
+        memberKits.put(playerId, DEFAULT_KIT_ID);
 
         LOGGER.info("[Party] {} joined party {} ({}/{})",
                 playerName, partyId, members.size(), questType.maxPlayers);
@@ -156,6 +165,7 @@ public class PartyData {
         members.remove(playerId);
         memberNames.remove(playerId);
         memberReady.remove(playerId);
+        memberKits.remove(playerId);
 
         LOGGER.info("[Party] Player {} left party {}", playerId, partyId);
         return true;
@@ -202,6 +212,31 @@ public class PartyData {
         memberReady.put(playerId, ready);
         updatePartyState();
         return true;
+    }
+
+    public boolean setMemberKit(UUID playerId, String kitId) {
+        if (!members.contains(playerId)) {
+            return false;
+        }
+        if (state == PartyState.IN_QUEST) {
+            return false;
+        }
+        String normalized = (kitId == null || kitId.isBlank()) ? DEFAULT_KIT_ID : kitId;
+        String previous = memberKits.put(playerId, normalized);
+        if (!Objects.equals(previous, normalized)) {
+            memberReady.put(playerId, false);
+            updatePartyState();
+        }
+        return true;
+    }
+
+    @Nullable
+    public String getMemberKitId(UUID playerId) {
+        return memberKits.get(playerId);
+    }
+
+    public Map<UUID, String> getMemberKitIds() {
+        return Collections.unmodifiableMap(memberKits);
     }
 
     /**
@@ -276,6 +311,30 @@ public class PartyData {
     @Nullable
     public PartyInvite getInvite(UUID inviteId) {
         return pendingInvites.get(inviteId);
+    }
+
+    @Nullable
+    public PartyInvite removeInvite(UUID inviteId, boolean cancel) {
+        if (inviteId == null) {
+            return null;
+        }
+        PartyInvite invite = pendingInvites.remove(inviteId);
+        if (invite != null && cancel) {
+            invite.cancel();
+        }
+        return invite;
+    }
+
+    public List<PartyInvite> clearPendingInvites() {
+        if (pendingInvites.isEmpty()) {
+            return List.of();
+        }
+        List<PartyInvite> invites = new ArrayList<>(pendingInvites.values());
+        for (PartyInvite invite : invites) {
+            invite.cancel();
+        }
+        pendingInvites.clear();
+        return invites;
     }
 
     /**
@@ -380,6 +439,15 @@ public class PartyData {
         this.instanceId = instanceId;
         this.state = PartyState.IN_QUEST;
         LOGGER.info("[Party] Party {} started quest in instance {}", partyId, instanceId);
+        return true;
+    }
+
+    public boolean forceStartQuest(UUID instanceId) {
+        if (state == PartyState.DISBANDED) {
+            return false;
+        }
+        this.instanceId = instanceId;
+        this.state = PartyState.IN_QUEST;
         return true;
     }
 

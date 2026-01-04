@@ -37,7 +37,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
 import net.minecraft.world.level.dimension.LevelStem;
-import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
@@ -55,6 +54,8 @@ import com.devmod.runtime.biome.ZoneBiomeSource;
 import com.devmod.runtime.environment.DimensionEnvironmentManager;
 import com.devmod.runtime.generator.ArenaChunkGenerator;
 import com.devmod.runtime.generator.ArenaFlatChunkGenerator;
+import com.devmod.runtime.generator.BiomePolicyResolver;
+import com.devmod.runtime.generator.DynamicArenaChunkGenerator;
 
 public class DynamicDimensionManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicDimensionManager.class);
@@ -109,6 +110,42 @@ public class DynamicDimensionManager {
         }
 
         LOGGER.info("[DynamicDim] Shutdown complete");
+    }
+
+    /**
+     * Called when a dimension is unloaded. Invalidates proxy generators that
+     * were using this dimension as their source.
+     *
+     * @param unloadedDimension The dimension key that was unloaded
+     */
+    public void onDimensionUnload(ResourceKey<Level> unloadedDimension) {
+        if (!initialized || server == null || unloadedDimension == null) {
+            return;
+        }
+
+        LOGGER.debug("[DynamicDim] onDimensionUnload called for {}", unloadedDimension.location());
+
+        // ConcurrentHashMap.keySet() is weakly consistent - safe to iterate while
+        // other threads modify the map. Destroyed dimensions return null from getLevel().
+        for (ResourceKey<Level> dimKey : dimensionToInstance.keySet()) {
+            if (dimKey == null) continue;
+            ServerLevel level = server.getLevel(dimKey);
+            if (level == null) {
+                continue;
+            }
+
+            ChunkGenerator gen = level.getChunkSource().getGenerator();
+            if (gen instanceof DynamicArenaChunkGenerator dynamicGen) {
+                var config = dynamicGen.getConfig();
+                // Objects.equals handles null sourceDimension (CONTROLLED_NATURAL mode)
+                if (config.mode() == DynamicArenaChunkGenerator.Mode.PROXY_WORLDGEN
+                        && Objects.equals(unloadedDimension, config.sourceDimension())) {
+                    dynamicGen.invalidateProxy();
+                    LOGGER.info("[DynamicDim] Invalidated proxy for {} because source {} was unloaded",
+                            dimKey.location(), unloadedDimension.location());
+                }
+            }
+        }
     }
 
     // === Dimension Creation ===
@@ -249,6 +286,14 @@ public class DynamicDimensionManager {
         ServerLevel newLevel = injectDimension(dimensionKey, levelStem);
 
         if (newLevel != null) {
+            // Initialize proxy generator if using dynamic terrain with proxy mode
+            if (chunkGenerator instanceof DynamicArenaChunkGenerator dynamicGen) {
+                boolean proxyInitialized = dynamicGen.initializeProxy(server);
+                if (!proxyInitialized && dynamicGen.getConfig().mode() == DynamicArenaChunkGenerator.Mode.PROXY_WORLDGEN) {
+                    LOGGER.warn("[DynamicDim] Proxy initialization failed, falling back to controlled natural generation");
+                }
+            }
+
             // Generate the arena platform
             generateArenaPlatform(newLevel, arenaId);
 
@@ -266,7 +311,7 @@ public class DynamicDimensionManager {
 
     /**
      * Creates the appropriate chunk generator based on template settings.
-     * Uses ArenaFlatChunkGenerator for multi-biome zone support, otherwise FlatLevelSource.
+     * Uses DynamicArenaChunkGenerator for dynamic terrain, ArenaFlatChunkGenerator for flat.
      *
      * @param template The arena template (may be null)
      * @param flatSettings The flat level settings
@@ -278,6 +323,14 @@ public class DynamicDimensionManager {
             FlatLevelGeneratorSettings flatSettings,
             Holder<net.minecraft.world.level.biome.Biome> defaultBiome
     ) {
+        // Check if template has terrain settings with DYNAMIC type
+        if (template != null) {
+            var terrainSettings = template.terrainSettings();
+            if (terrainSettings != null && terrainSettings.type() == ArenaTemplate.TerrainSettings.TerrainType.DYNAMIC) {
+                return createDynamicGenerator(template, terrainSettings, defaultBiome);
+            }
+        }
+
         // Check if template has zone settings with multiple zones
         var zoneSettings = template != null ? template.zoneSettings() : null;
         if (zoneSettings != null && zoneSettings.enabled()) {
@@ -309,9 +362,120 @@ public class DynamicDimensionManager {
             }
         }
 
-        // Fallback: Use standard FlatLevelSource for simple single-biome arenas
-        LOGGER.debug("[DynamicDim] Using standard FlatLevelSource (no zones configured)");
-        return new FlatLevelSource(nn(flatSettings, "flat settings"));
+        // Fallback: Use ArenaFlatChunkGenerator with single default biome
+        // We always use our custom generator to ensure structure generation is disabled
+        // FlatLevelSource would still do expensive structure checks even with empty structure sets
+        ZoneBiomeSource simpleBiomeSource = ZoneBiomeSource.singleBiome(defaultBiome);
+        ArenaChunkGenerator.ArenaBounds bounds = calculateArenaBounds(template);
+        ArenaZone.ZoneShape shape = determineArenaShape(template);
+
+        LOGGER.debug("[DynamicDim] Using ArenaFlatChunkGenerator (no zones, single biome)");
+        return new ArenaFlatChunkGenerator(
+                simpleBiomeSource,
+                bounds,
+                shape,
+                flatSettings
+        );
+    }
+
+    /**
+     * Creates a DynamicArenaChunkGenerator based on template terrain settings.
+     * Supports PROXY_WORLDGEN (delegates to source dimension) and CONTROLLED_NATURAL (fallback).
+     *
+     * @param template The arena template
+     * @param terrainSettings The terrain settings with dynamic config
+     * @param defaultBiome The default biome holder
+     * @return The configured dynamic chunk generator
+     */
+    private ChunkGenerator createDynamicGenerator(
+            @Nonnull ArenaTemplate template,
+            @Nonnull ArenaTemplate.TerrainSettings terrainSettings,
+            Holder<net.minecraft.world.level.biome.Biome> defaultBiome
+    ) {
+        var dynamicSettings = terrainSettings.dynamic();
+        if (dynamicSettings == null) {
+            dynamicSettings = ArenaTemplate.TerrainSettings.DynamicSettings.proxyOverworld();
+        }
+
+        // Build DynamicConfig from template settings
+        DynamicArenaChunkGenerator.Mode mode = dynamicSettings.mode() == ArenaTemplate.TerrainSettings.DynamicSettings.Mode.CONTROLLED_NATURAL
+                ? DynamicArenaChunkGenerator.Mode.CONTROLLED_NATURAL
+                : DynamicArenaChunkGenerator.Mode.PROXY_WORLDGEN;
+
+        ResourceKey<Level> sourceDimension = null;
+        String sourceDimStr = dynamicSettings.sourceDimension();
+        if (sourceDimStr != null && !sourceDimStr.isBlank()) {
+            ResourceLocation dimLoc = ResourceLocation.tryParse(sourceDimStr);
+            if (dimLoc != null) {
+                sourceDimension = ResourceKey.create(nn(Registries.DIMENSION, "dimension registry"), dimLoc);
+            }
+        }
+        if (sourceDimension == null && mode == DynamicArenaChunkGenerator.Mode.PROXY_WORLDGEN) {
+            sourceDimension = Level.OVERWORLD;
+        }
+
+        DynamicArenaChunkGenerator.BiomePolicy biomePolicy = switch (dynamicSettings.biomePolicy()) {
+            case FIXED -> DynamicArenaChunkGenerator.BiomePolicy.FIXED;
+            case RANDOM_FROM_TAG -> DynamicArenaChunkGenerator.BiomePolicy.RANDOM_FROM_TAG;
+            default -> DynamicArenaChunkGenerator.BiomePolicy.MATCH_MOB;
+        };
+
+        String fixedBiomeStr = dynamicSettings.fixedBiome();
+        ResourceLocation fixedBiome = fixedBiomeStr != null
+                ? ResourceLocation.tryParse(fixedBiomeStr)
+                : null;
+
+        String biomeTagStr = dynamicSettings.biomeTag();
+        ResourceLocation biomeTag = biomeTagStr != null
+                ? ResourceLocation.tryParse(biomeTagStr)
+                : null;
+
+        DynamicArenaChunkGenerator.DynamicConfig config = new DynamicArenaChunkGenerator.DynamicConfig(
+                mode,
+                sourceDimension,
+                biomePolicy,
+                fixedBiome,
+                biomeTag,
+                dynamicSettings.allowCaves(),
+                dynamicSettings.blendRadius(),
+                dynamicSettings.combatRingRadius()
+        );
+
+        // Validate biome configuration before proceeding
+        if (server != null) {
+            List<String> issues = BiomePolicyResolver.validateConfig(config, server);
+            if (!issues.isEmpty()) {
+                LOGGER.warn("[DynamicDim] Biome config validation issues for template '{}': {}",
+                        template.id(), issues);
+            }
+        }
+
+        // Generate deterministic seed from template + world seed (needed for biome resolution)
+        long seed = template.id().hashCode() ^ (server != null ? server.overworld().getSeed() : 0L);
+
+        // Resolve biome using BiomePolicyResolver
+        // Note: mobId is null at dimension creation time - MATCH_MOB will use default
+        Holder<net.minecraft.world.level.biome.Biome> resolvedBiome = defaultBiome;
+        if (server != null) {
+            resolvedBiome = BiomePolicyResolver.resolve(config, server, null, seed)
+                    .orElse(defaultBiome);
+            LOGGER.debug("[DynamicDim] BiomePolicy {} resolved to: {}",
+                    biomePolicy,
+                    resolvedBiome.unwrapKey().map(k -> k.location()).orElse(null));
+        }
+
+        // Create zone-aware biome source with resolved biome
+        ZoneBiomeSource biomeSource = ZoneBiomeSource.singleBiome(resolvedBiome);
+
+        // Calculate arena bounds and shape
+        ArenaChunkGenerator.ArenaBounds bounds = calculateArenaBounds(template);
+        ArenaZone.ZoneShape shape = determineArenaShape(template);
+
+        LOGGER.info("[DynamicDim] Using DynamicArenaChunkGenerator mode={}, source={}, caves={}, combatRadius={}, blendRadius={}",
+                mode, sourceDimension != null ? sourceDimension.location() : "none",
+                dynamicSettings.allowCaves(), config.combatRingRadius(), config.blendRadius());
+
+        return new DynamicArenaChunkGenerator(biomeSource, bounds, shape, config, seed);
     }
 
     /**

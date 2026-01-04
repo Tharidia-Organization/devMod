@@ -10,10 +10,13 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.endurance.ClientChallengeCache;
+import com.devmod.client.endurance.ClientPartyStatsCache;
 import com.devmod.client.endurance.ClientPersonalRecordsCache;
 import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.client.endurance.EnduranceQuestScreen;
 import com.devmod.client.endurance.EnduranceUiCache;
+import com.devmod.client.endurance.QuestDeathScreen;
+import com.devmod.client.party.PartyScreen;
 import com.devmod.client.overlay.InstanceLoadingOverlay;
 import com.devmod.endurance.ClientShopCache;
 import com.devmod.endurance.KitSyncConfirmPayload;
@@ -51,6 +54,8 @@ public final class ClientEnduranceHandlers {
 
     public static void handleQuestCompletion(QuestCompletionPayload payload) {
         EnduranceUiCache.setLastQuestCompletion(payload);
+        // Clear party stats cache since quest is ending
+        ClientPartyStatsCache.clear();
         ActionRegistry.invoke(ActionIds.UI_QUEST_COMPLETION_OPEN,
             ClientActionContexts.forClient(ActionOrigin.EVENT, payload));
     }
@@ -68,9 +73,16 @@ public final class ClientEnduranceHandlers {
         ClientPersonalRecordsCache.update(payload);
     }
 
+    /**
+     * Handle quest death packet from server.
+     * Opens QuestDeathScreen directly instead of via ActionRegistry to bypass
+     * precondition timing issues (cache may not be updated when packet arrives).
+     */
     public static void handleQuestDeath() {
-        ActionRegistry.invoke(ActionIds.UI_QUEST_DEATH_OPEN,
-            ClientActionContexts.forClient(ActionOrigin.EVENT));
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null) {
+            mc.execute(() -> mc.setScreen(new QuestDeathScreen()));
+        }
     }
 
     public static void handleChallengeSync(ChallengeSyncPayload payload) {
@@ -79,8 +91,12 @@ public final class ClientEnduranceHandlers {
 
     public static void handleKitSyncConfirm(KitSyncConfirmPayload payload) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc != null && mc.screen instanceof EnduranceQuestScreen screen) {
-            screen.onKitSyncConfirm(payload);
+        if (mc != null) {
+            if (mc.screen instanceof EnduranceQuestScreen screen) {
+                screen.onKitSyncConfirm(payload);
+            } else if (mc.screen instanceof PartyScreen partyScreen) {
+                partyScreen.onKitSyncConfirm(payload);
+            }
         }
     }
 }

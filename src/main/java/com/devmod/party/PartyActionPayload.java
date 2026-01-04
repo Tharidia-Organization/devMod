@@ -16,7 +16,8 @@ public record PartyActionPayload(
     Action action,
     @Nullable UUID targetPlayerId,  // For KICK action
     int questTypeOrdinal,           // For SET_QUEST_TYPE action
-    @Nullable String mobId          // For SET_MOB_TYPE action (ResourceLocation as string)
+    @Nullable String mobId,         // For SET_MOB_TYPE action (ResourceLocation as string)
+    @Nullable String kitId          // For SET_KIT action
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<PartyActionPayload> TYPE = new Type<>(
@@ -42,6 +43,11 @@ public record PartyActionPayload(
         if (payload.mobId != null) {
             buf.writeUtf(payload.mobId);
         }
+
+        buf.writeBoolean(payload.kitId != null);
+        if (payload.kitId != null) {
+            buf.writeUtf(payload.kitId);
+        }
     }
 
     private static PartyActionPayload decode(RegistryFriendlyByteBuf buf) {
@@ -60,7 +66,12 @@ public record PartyActionPayload(
             mobId = buf.readUtf(128);
         }
 
-        return new PartyActionPayload(action, targetPlayerId, questTypeOrdinal, mobId);
+        String kitId = null;
+        if (buf.readBoolean()) {
+            kitId = buf.readUtf(64);
+        }
+
+        return new PartyActionPayload(action, targetPlayerId, questTypeOrdinal, mobId, kitId);
     }
 
     /**
@@ -82,41 +93,47 @@ public record PartyActionPayload(
         /** Start the quest (leader only, all ready) */
         START_QUEST,
         /** Create a new party */
-        CREATE_PARTY
+        CREATE_PARTY,
+        /** Set kit selection (per-player) */
+        SET_KIT
     }
 
     // Factory methods for common actions
 
     public static PartyActionPayload toggleReady() {
-        return new PartyActionPayload(Action.TOGGLE_READY, null, 0, null);
+        return new PartyActionPayload(Action.TOGGLE_READY, null, 0, null, null);
     }
 
     public static PartyActionPayload leaveParty() {
-        return new PartyActionPayload(Action.LEAVE_PARTY, null, 0, null);
+        return new PartyActionPayload(Action.LEAVE_PARTY, null, 0, null, null);
     }
 
     public static PartyActionPayload kickMember(UUID playerId) {
-        return new PartyActionPayload(Action.KICK_MEMBER, playerId, 0, null);
+        return new PartyActionPayload(Action.KICK_MEMBER, playerId, 0, null, null);
     }
 
     public static PartyActionPayload setQuestType(com.devmod.endurance.QuestType questType) {
-        return new PartyActionPayload(Action.SET_QUEST_TYPE, null, questType.ordinal(), null);
+        return new PartyActionPayload(Action.SET_QUEST_TYPE, null, questType.ordinal(), null, null);
     }
 
     public static PartyActionPayload setMobType(ResourceLocation mobId) {
-        return new PartyActionPayload(Action.SET_MOB_TYPE, null, 0, mobId.toString());
+        return new PartyActionPayload(Action.SET_MOB_TYPE, null, 0, mobId.toString(), null);
     }
 
     public static PartyActionPayload disbandParty() {
-        return new PartyActionPayload(Action.DISBAND_PARTY, null, 0, null);
+        return new PartyActionPayload(Action.DISBAND_PARTY, null, 0, null, null);
     }
 
     public static PartyActionPayload startQuest() {
-        return new PartyActionPayload(Action.START_QUEST, null, 0, null);
+        return new PartyActionPayload(Action.START_QUEST, null, 0, null, null);
     }
 
     public static PartyActionPayload createParty(com.devmod.endurance.QuestType questType) {
-        return new PartyActionPayload(Action.CREATE_PARTY, null, questType.ordinal(), null);
+        return new PartyActionPayload(Action.CREATE_PARTY, null, questType.ordinal(), null, null);
+    }
+
+    public static PartyActionPayload setKit(String kitId) {
+        return new PartyActionPayload(Action.SET_KIT, null, 0, null, kitId);
     }
 
     /**
@@ -155,6 +172,11 @@ public record PartyActionPayload(
         String mob = mobId;
         if (mob != null) {
             size += varIntSize(mob.length()) + mob.length();
+        }
+        size += 1; // boolean for kitId presence
+        String kit = kitId;
+        if (kit != null) {
+            size += varIntSize(kit.length()) + kit.length();
         }
         return size;
     }

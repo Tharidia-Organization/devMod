@@ -23,8 +23,12 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.combat.signature.SoulImprintManager;
+import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
+import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.challenges.DailyChallengeManager;
+import com.devmod.endurance.nutrition.NutritionBridgeSystem;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+import com.devmod.compat.mods.easydiet.EasyDietCompat;
 
 public class EnduranceEventCombat {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventCombat.class);
@@ -51,6 +55,11 @@ public class EnduranceEventCombat {
             // Check if target is a quest mob
             if (isQuestMob(target)) {
                 UUID playerId = player.getUUID();
+                EnduranceQuestManager.ActiveQuestSession session =
+                    EnduranceQuestManager.INSTANCE.getActiveSession(player).orElse(null);
+                boolean signatureEnabled = isSignatureWeaponsEnabled(session);
+                boolean tideEnabled = isTideEnabled(session);
+                UUID tideScopeId = resolveDesignScopeId(session);
 
                 // Get body part if available (integration with body part system)
                 String bodyPart = getBodyPartHit(target, source);
@@ -61,12 +70,14 @@ public class EnduranceEventCombat {
                 // Record in quest manager
                 EnduranceQuestManager.INSTANCE.recordDamageDealt(player, damage);
 
-                // Record damage for signature weapon imprint
-                SoulImprintManager.INSTANCE.recordDamage(player, damage);
+                if (signatureEnabled) {
+                    // Record damage for signature weapon imprint
+                    SoulImprintManager.INSTANCE.recordDamage(player, damage);
 
-                // Check for headshot
-                if ("HEAD".equals(bodyPart)) {
-                    SoulImprintManager.INSTANCE.recordHeadshot(player);
+                    // Check for headshot
+                    if ("HEAD".equals(bodyPart)) {
+                        SoulImprintManager.INSTANCE.recordHeadshot(player);
+                    }
                 }
 
                 // Process combo system - record hit
@@ -83,9 +94,14 @@ public class EnduranceEventCombat {
                     // Update tension system with combo progress
                     if (target instanceof Mob mob) {
                         CompoundTag mobData = mob.getPersistentData();
-                        if (mobData.contains("endurance_quest_id")) {
-                            UUID questId = mobData.getUUID("endurance_quest_id");
+                        if (mobData.contains(EnduranceTags.QUEST_ID)) {
+                            UUID questId = mobData.getUUID(EnduranceTags.QUEST_ID);
                             TensionSystem.INSTANCE.onComboUpdate(questId, comboSession.getCurrentCombo(), comboSession.getCurrentRank());
+
+                            // FIX #2: Track per-wave max combo in CombatTracker
+                            CombatTracker.INSTANCE.getSession(questId).ifPresent(combatTrackerSession ->
+                                combatTrackerSession.updatePlayerCombo(playerId, comboSession.getCurrentCombo())
+                            );
                         }
                     }
                 }
@@ -93,8 +109,8 @@ public class EnduranceEventCombat {
                 // Process resonance chain system (party combo synergy)
                 if (target instanceof Mob mob) {
                     CompoundTag mobData = mob.getPersistentData();
-                    UUID resonanceQuestId = mobData.contains("endurance_quest_id") ?
-                        mobData.getUUID("endurance_quest_id") : null;
+                    UUID resonanceQuestId = mobData.contains(EnduranceTags.QUEST_ID) ?
+                        mobData.getUUID(EnduranceTags.QUEST_ID) : null;
 
                     if (resonanceQuestId != null) {
                         var resonanceResult = com.devmod.endurance.resonance.ResonanceChainSystem.INSTANCE
@@ -108,7 +124,10 @@ public class EnduranceEventCombat {
                                 target.hurt(source, bonusDamage);
                             }
                             // Resonance chains reduce global tide
-                            com.devmod.endurance.tide.TideManager.INSTANCE.onResonance(playerId, resonanceQuestId);
+                            if (tideEnabled) {
+                                com.devmod.endurance.tide.TideManager.INSTANCE.onResonance(
+                                    playerId, tideScopeId != null ? tideScopeId : resonanceQuestId);
+                            }
                         }
                     }
                 }
@@ -116,8 +135,8 @@ public class EnduranceEventCombat {
                 // Process mutator effects
                 if (target instanceof Mob mob) {
                     CompoundTag data = mob.getPersistentData();
-                    UUID questId = data.contains("endurance_quest_id") ?
-                        data.getUUID("endurance_quest_id") : null;
+                    UUID questId = data.contains(EnduranceTags.QUEST_ID) ?
+                        data.getUUID(EnduranceTags.QUEST_ID) : null;
 
                     if (questId != null) {
                         MutatorSystem.MutatorSession mutatorSession = mutatorSessions.get(questId);
@@ -206,7 +225,21 @@ public class EnduranceEventCombat {
             }
 
             // Apply perk damage reduction
-            return PerkSystem.INSTANCE.processDamageTaken(player, damage);
+            damage = PerkSystem.INSTANCE.processDamageTaken(player, damage);
+
+            // Apply nutrition-based damage modification (Easy-Diet integration)
+            if (EasyDietCompat.isAvailable()) {
+                float nutritionReduction = NutritionBridgeSystem.INSTANCE.getDamageReduction(player);
+                if (Math.abs(nutritionReduction) > 0.001f) {
+                    // Positive = reduction, negative = increased damage taken
+                    damage *= (1.0f - nutritionReduction);
+                    LOGGER.debug("[Combat] Nutrition modifier: {} ({}% change)",
+                        nutritionReduction > 0 ? "well-fed" : "malnourished",
+                        (int) (nutritionReduction * 100));
+                }
+            }
+
+            return damage;
         }
         return originalDamage;
     }
@@ -224,7 +257,11 @@ public class EnduranceEventCombat {
             CombatTracker.INSTANCE.onCriticalHit(player, damage);
 
             // Record for signature weapon imprint
-            SoulImprintManager.INSTANCE.recordCriticalHit(player);
+            EnduranceQuestManager.ActiveQuestSession session =
+                EnduranceQuestManager.INSTANCE.getActiveSession(player).orElse(null);
+            if (isSignatureWeaponsEnabled(session)) {
+                SoulImprintManager.INSTANCE.recordCriticalHit(player);
+            }
 
             lastCriticalHits.put(playerId, new CriticalHitMarker(target.getId(), System.currentTimeMillis()));
 
@@ -248,39 +285,80 @@ public class EnduranceEventCombat {
         if (!isQuestMob(entity)) return;
 
         CompoundTag data = entity.getPersistentData();
-        UUID arenaId = data.contains("endurance_arena_id") ? data.getUUID("endurance_arena_id") : null;
-        UUID questId = data.contains("endurance_quest_id") ? data.getUUID("endurance_quest_id") : null;
+        UUID arenaId = data.contains(EnduranceTags.ARENA_ID) ? data.getUUID(EnduranceTags.ARENA_ID) : null;
+        UUID questId = data.contains(EnduranceTags.QUEST_ID) ? data.getUUID(EnduranceTags.QUEST_ID) : null;
 
-        // Get the mob type
+        // Get the mob type (allow override for practice dummies)
         ResourceLocation mobId = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entity.getType()));
+        String taggedMobId = data.getString(EnduranceTags.MOB_ID);
+        if (taggedMobId.isEmpty()) {
+            taggedMobId = data.getString(EnduranceTags.MOB_ID_OVERRIDE);
+        }
+        if (!taggedMobId.isEmpty()) {
+            ResourceLocation override = ResourceLocation.tryParse(taggedMobId);
+            if (override != null) {
+                mobId = override;
+            }
+        }
 
         // Find who killed it
         if (source.getEntity() instanceof ServerPlayer player) {
             UUID playerId = player.getUUID();
+            EnduranceQuestManager.ActiveQuestSession session =
+                EnduranceQuestManager.INSTANCE.getActiveSession(player).orElse(null);
+            boolean practice = session != null && session.isPracticeMode();
+            boolean signatureEnabled = isSignatureWeaponsEnabled(session);
+            boolean nemesisEnabled = isNemesisEnabled(session);
+            boolean tideEnabled = isTideEnabled(session);
+            UUID tideScopeId = resolveDesignScopeId(session);
 
             // Record kill in quest manager
             EnduranceQuestManager.INSTANCE.recordKill(player, mobId);
 
-            // Record in combat tracker
-            CombatTracker.INSTANCE.onMobKilled(player, entity);
+            // Check if this is an elite mob (FIX #1: track elite kills)
+            // FIX #9A: Also check endurance_elite boolean as fallback
+            String affixStr = data.getString(EnduranceTags.AFFIX);
+            boolean flagElite = data.getBoolean("endurance_elite"); // Fallback: direct elite flag
+            boolean affixElite = false;
+            if (!affixStr.isEmpty()) {
+                try {
+                    SpawnAffix affix = SpawnAffix.valueOf(affixStr);
+                    affixElite = affix.elite;
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid affix name, keep false
+                }
+            }
+            // FIX AUDIT #10: Log diagnostic when sources disagree
+            if (flagElite != affixElite && (flagElite || affixElite)) {
+                LOGGER.debug("[EnduranceQuest] Elite detection mismatch for {}: flag={}, affix={} ({})",
+                    mobId, flagElite, affixElite, affixStr);
+            }
+            boolean isElite = flagElite || affixElite; // Either source counts
+
+            // Record in combat tracker with elite status
+            CombatTracker.INSTANCE.onMobKilled(player, entity, isElite);
 
             // Check if this is a boss kill
             boolean isBoss = data.getBoolean("endurance_is_boss");
 
             // === NEMESIS EVOLUTION - Record boss defeat for player profile ===
-            if (isBoss && entity instanceof Mob) {
+            if (nemesisEnabled && isBoss && entity instanceof Mob) {
                 com.devmod.endurance.nemesis.NemesisEvolutionManager.INSTANCE.recordBossDefeat(entity.getUUID());
-                // Also reduce global tide when boss is killed
-                com.devmod.endurance.tide.TideManager.INSTANCE.onBossKilled(entity.getUUID(), questId);
             }
+            if (tideEnabled && isBoss && entity instanceof Mob) {
+                // Also reduce global tide when boss is killed
+                com.devmod.endurance.tide.TideManager.INSTANCE.onBossKilled(
+                    entity.getUUID(), tideScopeId != null ? tideScopeId : questId);
+            }
+            if (signatureEnabled) {
+                // Record kill for signature weapon imprint
+                SoulImprintManager.INSTANCE.recordKill(player, entity, isBoss);
 
-            // Record kill for signature weapon imprint
-            SoulImprintManager.INSTANCE.recordKill(player, entity, isBoss);
-
-            // Check for execute kill (target was below 10% health)
-            float targetHealthPercent = entity.getHealth() / entity.getMaxHealth();
-            if (targetHealthPercent <= 0.10f) {
-                SoulImprintManager.INSTANCE.recordExecuteKill(player);
+                // Check for execute kill (target was below 10% health)
+                float targetHealthPercent = entity.getHealth() / entity.getMaxHealth();
+                if (targetHealthPercent <= 0.10f) {
+                    SoulImprintManager.INSTANCE.recordExecuteKill(player);
+                }
             }
 
             // Record kill in combo system
@@ -312,7 +390,7 @@ public class EnduranceEventCombat {
             }
 
             // Record wave kill telemetry
-            if (questId != null) {
+            if (!practice && questId != null) {
                 var waveStateOpt = arenaId != null ? WaveManager.INSTANCE.getWaveState(arenaId) : Optional.<WaveManager.WaveState>empty();
                 int waveNumber = waveStateOpt.map(WaveManager.WaveState::getWaveNumber).orElse(1);
                 String weaponId = player.getMainHandItem().getItem().getDescriptionId();
@@ -332,17 +410,17 @@ public class EnduranceEventCombat {
             // Process perk on-kill effects (lifesteal, blood frenzy, etc.)
             PerkSystem.INSTANCE.processKill(player);
 
-            // Track daily challenge progress
-            boolean isCritical = isRecentCriticalKill(playerId, entity.getId());
-            DailyChallengeManager.INSTANCE.onMobKill(playerId, isCritical, isBoss);
+            if (!practice) {
+                // Track daily challenge progress
+                boolean isCritical = isRecentCriticalKill(playerId, entity.getId());
+                DailyChallengeManager.INSTANCE.onMobKill(playerId, isCritical, isBoss);
 
-            // Track weekly challenge progress
-            com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onMobKill(playerId, isBoss);
+                // Track weekly challenge progress
+                com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onMobKill(playerId, isBoss);
+            }
 
             // Notify wave manager
             if (arenaId != null) {
-                EnduranceQuestManager.ActiveQuestSession session =
-                    EnduranceQuestManager.INSTANCE.getActiveSession(player).orElse(null);
                 WaveManager.INSTANCE.handleMobDeath(entity.getUUID(), arenaId, session, player);
             }
         } else {
@@ -391,7 +469,17 @@ public class EnduranceEventCombat {
             ComebackSystem.INSTANCE.onPlayerDeath(player.getUUID());
 
             // === THE TIDE - Record player death for global threat level ===
-            com.devmod.endurance.tide.TideManager.INSTANCE.onPlayerDeath(player.getUUID(), questId);
+            if (isTideEnabled(activeSession)) {
+                com.devmod.endurance.tide.TideManager.INSTANCE.onPlayerDeath(
+                    player.getUUID(), resolveDesignScopeId(activeSession));
+            }
+
+            // === UX Q4: Notify party members when a teammate dies ===
+            UUID partyId = activeSession.getPartyId();
+            if (partyId != null) {
+                com.devmod.notification.NotificationService.INSTANCE.notifyPartyMemberDeath(
+                    player.getUUID(), player.getName().getString(), partyId);
+            }
 
             EnduranceQuestManager.INSTANCE.handlePlayerDeath(player);
         }
@@ -405,11 +493,55 @@ public class EnduranceEventCombat {
      * Check if an entity is a quest mob.
      */
     public static boolean isQuestMob(Entity entity) {
-        if (entity instanceof Mob mob) {
-            CompoundTag data = mob.getPersistentData();
-            return data.contains("endurance_quest_id");
+        if (!(entity instanceof LivingEntity living)) {
+            return false;
         }
-        return false;
+        CompoundTag data = living.getPersistentData();
+        if (!data.contains(EnduranceTags.QUEST_ID)) {
+            return false;
+        }
+        if (living instanceof Mob) {
+            return true;
+        }
+        return data.getBoolean(EnduranceTags.PRACTICE_DUMMY)
+            || DummmmmmyCompat.isDummy(living)
+            || living.getTags().contains("devmod_arena_dummy");
+    }
+
+    private static @javax.annotation.Nullable UUID resolveDesignScopeId(
+            @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+        if (session == null) {
+            return null;
+        }
+        UUID instanceId = session.getInstanceId();
+        return instanceId != null ? instanceId : session.getQuest().getQuestId();
+    }
+
+    private static boolean isSignatureWeaponsEnabled(
+            @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+        if (session == null) {
+            return false;
+        }
+        return GameDesignConfigManager.INSTANCE.isSignatureWeaponsEnabled(
+            resolveDesignScopeId(session), session.isPracticeMode());
+    }
+
+    private static boolean isNemesisEnabled(
+            @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+        if (session == null) {
+            return false;
+        }
+        return GameDesignConfigManager.INSTANCE.isNemesisEnabled(
+            resolveDesignScopeId(session), session.isPracticeMode());
+    }
+
+    private static boolean isTideEnabled(
+            @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+        if (session == null) {
+            return false;
+        }
+        return GameDesignConfigManager.INSTANCE.isTideEnabled(
+            resolveDesignScopeId(session), session.isPracticeMode());
     }
 
     /**

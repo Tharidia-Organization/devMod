@@ -22,6 +22,7 @@ import net.minecraft.ChatFormatting;
  * @see DesignTokens for legacy compatibility (delegates here)
  * @see ThemeManager for theme-aware color resolution
  */
+@SuppressWarnings("SameNameButDifferent") // Nested Text classes are intentional for contextual grouping
 public final class DesignTokens {
 
     private DesignTokens() {}
@@ -823,6 +824,31 @@ public final class DesignTokens {
         public static final int TIMER_CRITICAL = Semantic.ERROR;
 
         private Hud() {}
+    }
+
+    // ===========================================================================
+    // NUTRITION COLORS
+    // ===========================================================================
+
+    public static final class Nutrition {
+        public static final int GRAIN = 0xFFD4AF37;
+        public static final int PROTEIN = 0xFFFF6B6B;
+        public static final int VEGETABLE = 0xFF51CF66;
+        public static final int FRUIT = 0xFFFFA500;
+        public static final int SUGAR = 0xFFFFB6C1;
+        public static final int WATER = 0xFF4A90E2;
+
+        public static final int HUD_BG = withAlpha(Palette.SHADOW, Alpha.A50);
+        public static final int HUD_BORDER = 0xFF1A1A1A;
+        public static final int HUD_WELL_FED = 0xFF00FF00;
+        public static final int HUD_CRITICAL = 0xFFFF0000;
+        public static final int BAR_BG = 0xFF222222;
+        public static final int BAR_LOW = 0xFF444444;
+        public static final int MOD_POSITIVE = HUD_WELL_FED;
+        public static final int MOD_NEGATIVE = 0xFFFF6666;
+        public static final int MOD_NEUTRAL = 0xFFAAAAAA;
+
+        private Nutrition() {}
     }
 
     // ===========================================================================

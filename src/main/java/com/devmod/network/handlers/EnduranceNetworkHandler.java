@@ -32,6 +32,7 @@ import com.devmod.endurance.EnduranceQuestState;
 import com.devmod.endurance.InstanceLoadingPayload;
 import com.devmod.endurance.KitSyncPayload;
 import com.devmod.endurance.KitSyncConfirmPayload;
+import com.devmod.endurance.PartyStatsSyncPayload;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PerkSelectionPayload;
 import com.devmod.endurance.PerkSynergySystem;
@@ -55,6 +56,7 @@ import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.KitManager;
+import com.devmod.endurance.nutrition.NutritionSyncPayload;
 import com.devmod.mob.MobRequirements;
 import com.devmod.mob.MobRequirementsRegistry;
 import com.devmod.network.ChannelId;
@@ -250,6 +252,20 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
             nn(com.devmod.endurance.EnduranceMobConfigSyncPayload.STREAM_CODEC),
             validated(EnduranceNetworkHandler::handleMobConfigSync, PayloadLimits.LARGE)
         );
+
+        // PARTY_STATS_SYNC: Server -> Client party wave stats (for party debrief tab)
+        event.registrar(ChannelId.PARTY_STATS_SYNC.asString()).playToClient(
+            nn(PartyStatsSyncPayload.TYPE),
+            nn(PartyStatsSyncPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handlePartyStatsSync, PayloadLimits.MEDIUM)
+        );
+
+        // NUTRITION_SYNC: Server -> Client nutrition state (Easy-Diet integration)
+        event.registrar(ChannelId.NUTRITION_SYNC.asString()).playToClient(
+            nn(NutritionSyncPayload.TYPE),
+            nn(NutritionSyncPayload.STREAM_CODEC),
+            validated(EnduranceNetworkHandler::handleNutritionSync, PayloadLimits.SMALL)
+        );
     }
 
     // =================================================================================
@@ -361,7 +377,8 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                             payload != null && payload.temporary(),
                             payload != null ? payload.kitId() : "",
                             validation.getErrorMessage()));
-                        recordKitSyncTelemetry(player, payload, false, 0, 0, validation.getErrorMessage(), startNanos);
+                        recordKitSyncTelemetry(player, payload, false, 0, 0,
+                            validation.getErrorMessage() != null ? validation.getErrorMessage() : "validation failed", startNanos);
                         return;
                     }
 
@@ -387,6 +404,8 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
 
                     var registryAccess = Objects.requireNonNull(player.registryAccess());
                     List<ItemStack> items = new ArrayList<>();
+                    String stackError = null;
+                    boolean normalizedStacks = false;
                     for (var tag : payload.itemTags()) {
                         if (tag == null) {
                             parseFailures++;
@@ -394,13 +413,35 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                         }
                         var parsed = ItemStack.parse(registryAccess, tag);
                         if (parsed.isPresent() && !parsed.get().isEmpty()) {
-                            items.add(parsed.get());
+                            ItemStack parsedStack = parsed.get();
+                            if (parsedStack.getCount() <= 0) {
+                                parseFailures++;
+                                continue;
+                            }
+                            int added = addNormalizedStack(items, parsedStack, KitSyncPayload.MAX_ITEMS);
+                            if (added < 0) {
+                                stackError = "Kit sync rejected (stack size exceeds max items)";
+                                break;
+                            }
+                            if (parsedStack.getCount() > parsedStack.getMaxStackSize()) {
+                                normalizedStacks = true;
+                            }
                         } else {
                             parseFailures++;
                         }
                     }
 
                     itemCount = items.size();
+
+                    if (stackError != null) {
+                        player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", stackError));
+                        sendPacket(player, KitSyncConfirmPayload.failure(
+                            payload.temporary(),
+                            payload.kitId(),
+                            stackError));
+                        recordKitSyncTelemetry(player, payload, false, itemCount, parseFailures, stackError, startNanos);
+                        return;
+                    }
 
                     if (parseFailures > 0) {
                         String message = "Kit sync rejected (" + parseFailures + " invalid item"
@@ -429,7 +470,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                         LOGGER.debug("[EnduranceKit] Synced temporary kit '{}' for {} ({} items)",
                             payload.name(), player.getName().getString(), items.size());
                         sendPacket(player, KitSyncConfirmPayload.success(true, payload.kitId(),
-                            "Temporary kit synced"));
+                            normalizedStacks ? "Temporary kit synced (stack sizes normalized)" : "Temporary kit synced"));
                         recordKitSyncTelemetry(player, payload, true, itemCount, parseFailures, "", startNanos);
                         return;
                     }
@@ -455,7 +496,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                     LOGGER.debug("[EnduranceKit] Synced custom kit '{}' ({}) for {}",
                         kit.getName(), kit.getId(), player.getName().getString());
                     sendPacket(player, KitSyncConfirmPayload.success(false, kit.getId(),
-                        "Custom kit synced"));
+                        normalizedStacks ? "Custom kit synced (stack sizes normalized)" : "Custom kit synced"));
                     recordKitSyncTelemetry(player, payload, true, itemCount, parseFailures, "", startNanos);
                 } catch (Exception e) {
                     LOGGER.warn("[EnduranceKit] Failed to sync kit for {}", player.getName().getString(), e);
@@ -492,6 +533,28 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
             + "\"serverMs\":" + durationMs + ","
             + "\"error\":\"" + TelemetryJson.escape(error) + "\"}";
         TelemetryService.INSTANCE.appendNetworkLine(line);
+    }
+
+    private static int addNormalizedStack(List<ItemStack> items, ItemStack stack, int maxItems) {
+        int count = stack.getCount();
+        if (count <= 0) {
+            return 0;
+        }
+        int max = Math.max(1, stack.getMaxStackSize());
+        int added = 0;
+        int remaining = count;
+        while (remaining > 0) {
+            if (items.size() >= maxItems) {
+                return -1;
+            }
+            int size = Math.min(max, remaining);
+            ItemStack copy = stack.copy();
+            copy.setCount(size);
+            items.add(copy);
+            remaining -= size;
+            added++;
+        }
+        return added;
     }
 
     public static void handleKitSyncConfirm(KitSyncConfirmPayload payload, IPayloadContext context) {
@@ -646,6 +709,26 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
         if (FMLEnvironment.dist == Dist.CLIENT) {
             enqueueWork(context, () ->
                 NetworkHandler.withClientHooks(hooks -> hooks.handleQuestSync(payload)));
+        }
+    }
+
+    // =================================================================================
+    // PARTY STATS SYNC (client-side)
+    // =================================================================================
+    public static void handlePartyStatsSync(PartyStatsSyncPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            enqueueWork(context, () ->
+                com.devmod.client.endurance.ClientPartyStatsCache.update(payload));
+        }
+    }
+
+    // =================================================================================
+    // NUTRITION SYNC (client-side, Easy-Diet integration)
+    // =================================================================================
+    public static void handleNutritionSync(NutritionSyncPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            enqueueWork(context, () ->
+                com.devmod.client.endurance.ClientNutritionCache.update(payload));
         }
     }
 
@@ -1222,6 +1305,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
      * Applies a config value to the global GameMechanicsConfig.
      * Key names must match the NeoForge config key names (e.g., "baseMobCount", "mobScaling").
      */
+    @SuppressWarnings("UnusedVariable") // valueType reserved for future type validation
     private static boolean applyConfigValue(String key, String valueType, String value) {
         var cfg = com.devmod.config.GameMechanicsConfig.class;
         try {

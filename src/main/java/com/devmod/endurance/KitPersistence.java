@@ -106,7 +106,7 @@ public final class KitPersistence {
     /**
      * Save all custom kits to disk.
      */
-    public static void saveKits() {
+    public static boolean saveKits() {
         ensureDirectory();
 
         List<KitData> kitDataList = new ArrayList<>();
@@ -118,8 +118,10 @@ public final class KitPersistence {
             String json = GSON.toJson(kitDataList);
             Files.writeString(getKitsFile(), json, StandardCharsets.UTF_8);
             LOGGER.info("[KitPersistence] Saved {} custom kits", kitDataList.size());
+            return true;
         } catch (IOException e) {
             LOGGER.error("[KitPersistence] Failed to save custom kits", e);
+            return false;
         }
     }
 
@@ -142,10 +144,10 @@ public final class KitPersistence {
     /**
      * Add or update a custom kit.
      */
-    public static void saveKit(CustomKit kit) {
+    public static boolean saveKit(CustomKit kit) {
         ensureLoaded();
         customKits.put(kit.getId(), kit);
-        saveKits();
+        return saveKits();
     }
 
     /**
@@ -154,8 +156,7 @@ public final class KitPersistence {
     public static boolean deleteKit(String id) {
         ensureLoaded();
         if (customKits.remove(id) != null) {
-            saveKits();
-            return true;
+            return saveKits();
         }
         return false;
     }

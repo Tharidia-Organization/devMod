@@ -41,6 +41,7 @@ import com.devmod.arena.policy.ArenaPolicy.ExecutionOverrides;
 import com.devmod.config.GameMechanicsConfig;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.EnduranceTags;
 import com.devmod.endurance.MomentumTracker;
 
 public class ExecutionSystem {
@@ -289,11 +290,11 @@ public class ExecutionSystem {
      */
     private boolean isQuestMob(Mob mob, ServerPlayer player) {
         CompoundTag data = mob.getPersistentData();
-        if (!data.contains("endurance_quest_id")) return false;
+        if (!data.contains(EnduranceTags.QUEST_ID)) return false;
 
         return EnduranceQuestManager.INSTANCE.getActiveSession(player)
             .map(session -> {
-                UUID mobQuestId = data.getUUID("endurance_quest_id");
+                UUID mobQuestId = data.getUUID(EnduranceTags.QUEST_ID);
                 return mobQuestId.equals(session.getQuest().getQuestId());
             })
             .orElse(false);

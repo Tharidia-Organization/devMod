@@ -93,6 +93,7 @@ class ArenaBuilderAsyncPriorityTest {
             base.limits(),
             buildSettings,
             base.zoneSettings(),
+            base.terrainSettings(),
             base.tags()
         );
     }

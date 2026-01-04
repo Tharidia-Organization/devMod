@@ -59,6 +59,7 @@ public class EnduranceSessionHandler {
         session = activeSessions.remove(playerId);
 
         if (session != null) {
+            boolean practice = session.isPracticeMode();
             // Handle pending sessions (instance still being created)
             if (session.isPending()) {
                 LOGGER.info("[EnduranceQuest] Player {} abandoned pending quest before instance was ready",
@@ -90,11 +91,13 @@ public class EnduranceSessionHandler {
             // Cleanup subsystems and award partial rewards BEFORE teleport
             EnduranceEventHandler.onQuestEnd(player, session, false);
 
-            // INTEGRATION: End telemetry dungeon session BEFORE teleport
-            TelemetryService.INSTANCE.endDungeonSession(player, "abandoned");
+            if (!practice) {
+                // INTEGRATION: End telemetry dungeon session BEFORE teleport
+                TelemetryService.INSTANCE.endDungeonSession(player, "abandoned");
 
-            // Update stats
-            persistence.updatePlayerStats(playerId, session.getQuest(), false);
+                // Update stats
+                persistence.updatePlayerStats(playerId, session.getQuest(), false);
+            }
 
             // Send empty sync to clear client HUD
             PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
@@ -223,10 +226,12 @@ public class EnduranceSessionHandler {
                 // Cleanup subsystems and award partial rewards BEFORE teleport
                 EnduranceEventHandler.onQuestEnd(player, session, false);
 
-                // INTEGRATION: End telemetry dungeon session BEFORE teleport
-                TelemetryService.INSTANCE.endDungeonSession(player, "death_give_up");
+                if (!session.isPracticeMode()) {
+                    // INTEGRATION: End telemetry dungeon session BEFORE teleport
+                    TelemetryService.INSTANCE.endDungeonSession(player, "death_give_up");
 
-                persistence.updatePlayerStats(playerId, session.getQuest(), false);
+                    persistence.updatePlayerStats(playerId, session.getQuest(), false);
+                }
 
                 // Send empty sync to clear client HUD
                 PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
@@ -310,11 +315,26 @@ public class EnduranceSessionHandler {
             List.of("Invulnerability active"));
 
         if (!hasActiveWave && !hasPendingCountdown) {
-            // No wave in progress and no countdown pending - schedule new wave start
-            session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
-            session.setRespawnCountdownActive(true);
-            LOGGER.info("[EnduranceQuest] Scheduled wave start after respawn for player {}",
-                player.getName().getString());
+            // No wave in progress and no countdown pending - schedule new wave/boss start
+            // Check if this is a boss wave to schedule the correct intro
+            int currentWave = session.getQuest().getCurrentWave();
+            UUID questId = session.getQuest().getQuestId();
+            boolean isBossWave = !session.isPracticeMode()
+                && BossWaveSystem.INSTANCE.isBossWave(currentWave, questId);
+
+            if (isBossWave) {
+                // Boss wave: schedule boss intro instead of regular wave countdown
+                session.scheduleBossIntro(EnduranceQuestManager.BOSS_INTRO_TICKS);
+                session.setRespawnCountdownActive(true);
+                LOGGER.info("[EnduranceQuest] Scheduled BOSS intro after respawn for player {} (wave {})",
+                    player.getName().getString(), currentWave);
+            } else {
+                // Regular wave: schedule normal wave countdown
+                session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
+                session.setRespawnCountdownActive(true);
+                LOGGER.info("[EnduranceQuest] Scheduled wave start after respawn for player {}",
+                    player.getName().getString());
+            }
         } else {
             // Wave is already in progress or countdown is pending - just rejoin
             LOGGER.info("[EnduranceQuest] Skipping wave start schedule on respawn (hasActiveWave={}, hasPendingCountdown={})",
@@ -385,10 +405,12 @@ public class EnduranceSessionHandler {
                 // Cleanup subsystems and award full rewards BEFORE teleport
                 EnduranceEventHandler.onQuestEnd(player, session, true);
 
-                // INTEGRATION: End telemetry dungeon session with success BEFORE teleport
-                TelemetryService.INSTANCE.endDungeonSession(player, "completed");
+                if (!session.isPracticeMode()) {
+                    // INTEGRATION: End telemetry dungeon session with success BEFORE teleport
+                    TelemetryService.INSTANCE.endDungeonSession(player, "completed");
 
-                persistence.updatePlayerStats(player.getUUID(), session.getQuest(), true);
+                    persistence.updatePlayerStats(player.getUUID(), session.getQuest(), true);
+                }
 
                 // Send empty sync to clear client HUD
                 PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
@@ -417,7 +439,7 @@ public class EnduranceSessionHandler {
         if (session != null && session.getPartyId() != null) {
             LOGGER.info("[CheckpointDebug] Delegating to party continueToNextWave for partyId={}",
                 session.getPartyId());
-            EnduranceQuestManager.INSTANCE.continuePartyToNextWave(session.getPartyId());
+            EnduranceQuestManager.INSTANCE.requestPartyContinue(player.getUUID());
             return;
         }
         if (session != null && session.getQuest().getState() == EnduranceQuestState.WAVE_COMPLETE) {
@@ -463,6 +485,7 @@ public class EnduranceSessionHandler {
         session = activeSessions.remove(playerId);
 
         if (session != null && session.getQuest().getState() == EnduranceQuestState.WAVE_COMPLETE) {
+            boolean practice = session.isPracticeMode();
             // Cleanup config overrides for this quest
             EnduranceConfigManager.INSTANCE.cleanupQuest(session.getQuest().getQuestId());
 
@@ -472,10 +495,12 @@ public class EnduranceSessionHandler {
             // Cleanup subsystems and award partial rewards BEFORE teleport
             EnduranceEventHandler.onQuestEnd(player, session, false);
 
-            // INTEGRATION: End telemetry dungeon session BEFORE teleport
-            TelemetryService.INSTANCE.endDungeonSession(player, "checkpoint_exit");
+            if (!practice) {
+                // INTEGRATION: End telemetry dungeon session BEFORE teleport
+                TelemetryService.INSTANCE.endDungeonSession(player, "checkpoint_exit");
 
-            persistence.updatePlayerStats(playerId, session.getQuest(), false);
+                persistence.updatePlayerStats(playerId, session.getQuest(), false);
+            }
 
             // Send empty sync to clear client HUD
             PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
@@ -522,10 +547,12 @@ public class EnduranceSessionHandler {
         EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, success);
         boolean fallbackUsed = ensureInstanceRecovery(player, session, reason);
         boolean restoreSuccess = restored || session.isInInstanceDimension();
-        EnduranceTelemetryService.INSTANCE.recordInventoryRestore(
-            session.getQuest().getQuestId(),
-            restoreSuccess,
-            fallbackUsed
-        );
+        if (!session.isPracticeMode()) {
+            EnduranceTelemetryService.INSTANCE.recordInventoryRestore(
+                session.getQuest().getQuestId(),
+                restoreSuccess,
+                fallbackUsed
+            );
+        }
     }
 }

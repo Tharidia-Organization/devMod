@@ -41,7 +41,7 @@ public class QuestDeathScreen extends Screen {
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 340;
-    private static final int PANEL_HEIGHT = 320;
+    private static final int PANEL_HEIGHT = 335; // UX Q8: Increased from 320 to fit respawn_location line
 
     // === Animation ===
     private static final long FADE_IN_DURATION = 500;
@@ -218,6 +218,9 @@ public class QuestDeathScreen extends Screen {
         g.drawString(safeFont, "  " + I18n.translate("devmod.endurance.respawn_cost").getString(), panelX + 30, y, applyAlpha(COLOR_WARNING, alpha));
         y += 12;
         g.drawString(safeFont, "  " + I18n.ui("respawn_countdown").getString(), panelX + 30, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        y += 12;
+        // UX Q2: Show respawn location to reduce uncertainty
+        g.drawString(safeFont, "  " + I18n.ui("respawn_location").getString(), panelX + 30, y, applyAlpha(COLOR_TEXT_DIM, alpha));
         y += 18;
 
         // Give up info

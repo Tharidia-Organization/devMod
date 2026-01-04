@@ -132,6 +132,9 @@ public class NotificationSoundManager {
                 SoundEvents.PLAYER_LEVELUP, 1.0f, 0.6f));
         soundConfigs.put("party.quest_finished", new SoundConfig(
                 SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 0.8f));
+        // UX Q4/Q10: Distinctive sound for party member death - urgent but not jarring
+        soundConfigs.put("party.member_death", new SoundConfig(
+                SoundEvents.SHIELD_BREAK, 0.7f, 0.6f));
 
         // Quest sounds
         soundConfigs.put("quest.start", new SoundConfig(

@@ -343,6 +343,7 @@ public class TemplateLoader {
             template.limits(),
             template.buildSettings(),
             template.zoneSettings(),
+            template.terrainSettings(),
             template.tags()
         );
     }

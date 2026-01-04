@@ -419,6 +419,7 @@ public class RecoverySystem {
         }
     }
 
+    @SuppressWarnings("NullAway") // LevelResource.ROOT is a static final constant, never null
     private void cleanupOrphanedDimensionFolders(MinecraftServer server) {
         // This will be implemented when DynamicDimensionManager is ready
         // For now, just log what we would do

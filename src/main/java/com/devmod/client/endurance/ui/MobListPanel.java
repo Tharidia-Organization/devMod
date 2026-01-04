@@ -114,7 +114,7 @@ public class MobListPanel {
         filteredMobs.clear();
         scrollOffset = 0;
 
-        String lowerSearch = searchQuery.toLowerCase();
+        String lowerSearch = searchQuery.toLowerCase(java.util.Locale.ROOT);
 
         for (MobListEntry entry : allMobs) {
             // Namespace filter
@@ -129,8 +129,8 @@ public class MobListPanel {
 
             // Search filter
             if (!searchQuery.isEmpty()) {
-                String displayName = entry.config.getDisplayName().toLowerCase();
-                String mobId = entry.config.mobId().toString().toLowerCase();
+                String displayName = entry.config.getDisplayName().toLowerCase(java.util.Locale.ROOT);
+                String mobId = entry.config.mobId().toString().toLowerCase(java.util.Locale.ROOT);
                 if (!displayName.contains(lowerSearch) && !mobId.contains(lowerSearch)) {
                     continue;
                 }

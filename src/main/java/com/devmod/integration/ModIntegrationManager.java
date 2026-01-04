@@ -93,6 +93,9 @@ public class ModIntegrationManager {
         CompatRegistry.register(new com.devmod.compat.mods.apothicattributes.ApothicAttributesCompat());
         CompatRegistry.register(new com.devmod.compat.mods.elixirum.ElixirumCompat());
 
+        // P3 - Combat/Attributes (Nutrition Systems)
+        CompatRegistry.register(new com.devmod.compat.mods.easydiet.EasyDietCompat());
+
         // P3 - Combat/Attributes (Mobs)
         CompatRegistry.register(new com.devmod.compat.mods.mowziesmobs.MowziesMobsCompat());
 

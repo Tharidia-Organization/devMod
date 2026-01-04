@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -315,7 +316,7 @@ public class EnduranceAnalytics {
         }
         int colonIndex = weaponId.indexOf(':');
         String path = colonIndex < 0 ? weaponId : weaponId.substring(colonIndex + 1);
-        List<String> parts = UNDERSCORE_SPLITTER.splitToList(path);
+        List<String> parts = UNDERSCORE_SPLITTER.splitToList(Objects.requireNonNull(path));
         return parts.stream()
             .map(s -> s.isEmpty() ? s : s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1))
             .collect(Collectors.joining(" "));

@@ -370,6 +370,11 @@ public class QuestStartSequence {
         settings.party(sequence.partyId, new ArrayList<>(memberIds));
         settings.questType = sequence.questType;
 
+        PartyData party = PartyManager.INSTANCE.getParty(sequence.partyId);
+        if (party != null) {
+            settings.partyKits(new java.util.HashMap<>(party.getMemberKitIds()));
+        }
+
         // Store settings for later use
         sequence.questSettings = settings;
 
@@ -380,7 +385,6 @@ public class QuestStartSequence {
             .orElse(sequence.members.get(0));
 
         // Get mob type from party settings (falls back to zombie if not set)
-        PartyData party = PartyManager.INSTANCE.getParty(sequence.partyId);
         ResourceLocation mobId = party != null ? party.getEffectiveMobId() : ResourceLocation.withDefaultNamespace("zombie");
 
         CompletableFuture<EnduranceQuestManager.PreparedArenaResult> future =
@@ -520,6 +524,10 @@ public class QuestStartSequence {
         }
         effectiveSettings.party(sequence.partyId, new ArrayList<>(activeMemberIds));
         effectiveSettings.questType = sequence.questType;
+        PartyData party = PartyManager.INSTANCE.getParty(sequence.partyId);
+        if (party != null) {
+            effectiveSettings.partyKits(new java.util.HashMap<>(party.getMemberKitIds()));
+        }
         sequence.questSettings = effectiveSettings;
 
         EnduranceQuest sharedQuest = EnduranceQuestManager.INSTANCE
@@ -554,12 +562,14 @@ public class QuestStartSequence {
 
         // Count successes and failures
         int successCount = 0;
+        java.util.Set<UUID> startedMembers = new java.util.HashSet<>();
         for (Map.Entry<UUID, EnduranceQuestManager.StartQuestResult> entry : results.entrySet()) {
             ServerPlayer member = membersById.get(entry.getKey());
             if (member == null) continue;
 
             if (entry.getValue().success()) {
                 successCount++;
+                startedMembers.add(entry.getKey());
                 member.sendSystemMessage(I18n.translate("devmod.party.quest_started"));
             } else {
                 LOGGER.warn("[QuestSequence] Failed to start quest for {}: {}",
@@ -569,30 +579,29 @@ public class QuestStartSequence {
         }
 
         // Update party state if at least some members started
-        if (successCount > 0) {
-            PartyData party = PartyManager.INSTANCE.getParty(sequence.partyId);
-            if (party != null) {
-                party.startQuest(sequence.instanceId);
-                var partySession = new PartyQuestSession(
-                    sequence.partyId,
-                    sharedQuest,
-                    sequence.preparedArena.getId(),
-                    sequence.instanceId,
-                    sequence.questType,
-                    party.getMembers()
-                );
-                for (UUID memberId : party.getMembers()) {
-                    if (!sequence.arrivedMembers.contains(memberId)) {
-                        partySession.markSpectator(memberId);
-                    }
+        if (successCount > 0 && party != null) {
+            PartyManager.INSTANCE.startQuest(sequence.partyId, sequence.instanceId);
+            var partySession = new PartyQuestSession(
+                sequence.partyId,
+                sharedQuest,
+                sequence.preparedArena.getId(),
+                sequence.preparedArena,
+                sequence.preparedArenaHandle,
+                sequence.instanceId,
+                sequence.questType,
+                party.getMembers()
+            );
+            for (UUID memberId : party.getMembers()) {
+                if (!startedMembers.contains(memberId)) {
+                    partySession.markSpectator(memberId);
                 }
-                EnduranceQuestManager.INSTANCE.registerPartySession(partySession);
-                // Sync party state to all members so clients see IN_QUEST state
-                if (!membersToStart.isEmpty()) {
-                    MinecraftServer server = membersToStart.get(0).getServer();
-                    if (server != null) {
-                        com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, sequence.partyId);
-                    }
+            }
+            EnduranceQuestManager.INSTANCE.registerPartySession(partySession);
+            // Sync party state to all members so clients see IN_QUEST state
+            if (!membersToStart.isEmpty()) {
+                MinecraftServer server = membersToStart.get(0).getServer();
+                if (server != null) {
+                    com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, sequence.partyId);
                 }
             }
             LOGGER.info("[QuestSequence] Quest started for {}/{} members", successCount, membersToStart.size());

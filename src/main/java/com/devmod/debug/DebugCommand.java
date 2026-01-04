@@ -27,6 +27,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
+import com.devmod.runtime.generator.BiomePolicyResolver;
 
 public class DebugCommand {
 
@@ -38,6 +39,10 @@ public class DebugCommand {
                     .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DEBUG_COMMAND_LIST, ctx)))
                 .then(Commands.literal("off")
                     .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DEBUG_COMMAND_OFF, ctx)))
+                .then(Commands.literal("biome")
+                    .executes(DebugCommand::runBiomeDiagnostics)
+                    .then(Commands.argument("filter", Objects.requireNonNull(StringArgumentType.greedyString()))
+                        .executes(DebugCommand::runBiomeDiagnosticsFiltered)))
                 .then(Commands.argument("feature", Objects.requireNonNull(StringArgumentType.word()))
                     .suggests(DebugCommand::suggestFeatures)
                     .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DEBUG_COMMAND_TOGGLE, ctx)))
@@ -252,5 +257,119 @@ public class DebugCommand {
             .forEach(builder::suggest);
 
         return builder.buildFuture();
+    }
+
+    /**
+     * Run biome matching diagnostics against all registered mob entities.
+     * Tests keyword matching from MOB_BIOME_PREFERENCES against actual mod registry.
+     */
+    private static int runBiomeDiagnostics(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+
+        source.sendSuccess(() -> Component.literal("§e=== Biome Matching Diagnostics ==="), false);
+        source.sendSuccess(() -> Component.literal("§7Testing against registered mob entities..."), false);
+
+        BiomePolicyResolver.DiagnosticSummary summary = BiomePolicyResolver.runDiagnostics();
+
+        // Summary stats
+        String statsLine = String.format(
+            "§7Total mobs: §f%d §7| Matched: §a%d §7| Unmatched (plains): §c%d",
+            summary.totalMobs(), summary.matchedMobs(), summary.unmatchedMobs());
+        source.sendSuccess(() -> Component.literal(Objects.requireNonNull(statsLine)), false);
+
+        // Show matched mobs (limit to avoid spam)
+        int showLimit = 15;
+        var results = summary.results();
+        if (!results.isEmpty()) {
+            source.sendSuccess(() -> Component.literal(""), false);
+            source.sendSuccess(() -> Component.literal("§eMatched mobs:"), false);
+
+            int shown = 0;
+            for (var result : results) {
+                if (shown >= showLimit) {
+                    int remaining = results.size() - showLimit;
+                    source.sendSuccess(() -> Component.literal(
+                        "§8... and " + remaining + " more"
+                    ), false);
+                    break;
+                }
+                var assignedBiome = result.assignedBiome();
+                String biome = assignedBiome != null
+                    ? assignedBiome.location().getPath()
+                    : "plains";
+                String line = String.format(
+                    "  §7%s §8→ §f%s §8(keyword: %s)",
+                    result.mobId(), biome, result.matchedKeyword());
+                source.sendSuccess(() -> Component.literal(Objects.requireNonNull(line)), false);
+                shown++;
+            }
+        }
+
+        // Potential issues (keywords matching too many mobs)
+        var issues = summary.potentialIssues();
+        if (!issues.isEmpty()) {
+            source.sendSuccess(() -> Component.literal(""), false);
+            source.sendSuccess(() -> Component.literal("§6⚠ Keywords with many matches:"), false);
+            for (String issue : issues) {
+                source.sendSuccess(() -> Component.literal("  §7- " + issue), false);
+            }
+        }
+
+        // Keywords info
+        source.sendSuccess(() -> Component.literal(""), false);
+        source.sendSuccess(() -> Component.literal(
+            "§7Registered keywords: §f" + BiomePolicyResolver.getRegisteredKeywords().size()
+        ), false);
+
+        return 1;
+    }
+
+    /**
+     * Run biome diagnostics with optional filter for mob name or biome.
+     * UX improvement: allows searching through many modded mobs.
+     */
+    private static int runBiomeDiagnosticsFiltered(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String filter = StringArgumentType.getString(context, "filter").toLowerCase(Locale.ROOT);
+
+        source.sendSuccess(() -> Component.literal("§e=== Biome Matching Diagnostics ==="), false);
+        source.sendSuccess(() -> Component.literal("§7Filter: §f\"" + filter + "\""), false);
+
+        BiomePolicyResolver.DiagnosticSummary summary = BiomePolicyResolver.runDiagnostics();
+
+        // Filter results by mob name or biome name
+        var filteredResults = summary.results().stream()
+            .filter(r -> r.mobId().toString().toLowerCase(Locale.ROOT).contains(filter)
+                      || r.assignedBiome().location().toString().toLowerCase(Locale.ROOT).contains(filter)
+                      || r.matchedKeyword().toLowerCase(Locale.ROOT).contains(filter))
+            .toList();
+
+        // Summary stats
+        String statsLine = String.format(
+            "§7Showing: §f%d §7of %d matched mobs",
+            filteredResults.size(), summary.matchedMobs());
+        source.sendSuccess(() -> Component.literal(Objects.requireNonNull(statsLine)), false);
+
+        if (filteredResults.isEmpty()) {
+            // UX: Yellow (§6) not red - empty search is informational, not an error
+            source.sendSuccess(() -> Component.literal("§6No matches for filter \"" + filter + "\""), false);
+            // UX Q6: Concrete examples are more actionable than abstract hints
+            source.sendSuccess(() -> Component.literal("§7Examples: §fzombie§7, §fdesert§7, §fnether§7, §fice"), false);
+            return 1;
+        }
+
+        source.sendSuccess(() -> Component.literal(""), false);
+        source.sendSuccess(() -> Component.literal("§eFiltered results:"), false);
+
+        // Show all filtered results (user explicitly filtered, so show everything)
+        for (var result : filteredResults) {
+            String biome = result.assignedBiome().location().getPath();
+            String line = String.format(
+                "  §7%s §8→ §f%s §8(keyword: %s)",
+                result.mobId(), biome, result.matchedKeyword());
+            source.sendSuccess(() -> Component.literal(Objects.requireNonNull(line)), false);
+        }
+
+        return 1;
     }
 }

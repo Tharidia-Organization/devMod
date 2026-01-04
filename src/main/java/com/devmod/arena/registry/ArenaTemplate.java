@@ -43,6 +43,7 @@ public record ArenaTemplate(
     Limits limits,
     BuildSettings buildSettings,
     @Nullable ZoneSettings zoneSettings,
+    @Nullable TerrainSettings terrainSettings,
     List<String> tags
 ) {
     public static Builder builder(String id) {
@@ -157,6 +158,7 @@ public record ArenaTemplate(
             base.limits(),
             base.buildSettings(),
             base.zoneSettings(),
+            base.terrainSettings(),
             List.of("default", "flat", "smoke")
         );
     }
@@ -325,6 +327,85 @@ public record ArenaTemplate(
 
     public record Offset(int x, int y, int z) {}
 
+    /**
+     * Terrain generation configuration for dynamic arenas.
+     * Controls how the chunk generator creates terrain outside the arena structure.
+     */
+    public record TerrainSettings(
+        TerrainType type,
+        @Nullable DynamicSettings dynamic
+    ) {
+        public enum TerrainType {
+            /** Flat terrain - simple void with bedrock layer (fast, default) */
+            FLAT,
+            /** Dynamic terrain - natural worldgen with biomes, caves, features */
+            DYNAMIC
+        }
+
+        public record DynamicSettings(
+            Mode mode,
+            @Nullable String sourceDimension,
+            BiomePolicy biomePolicy,
+            @Nullable String fixedBiome,
+            @Nullable String biomeTag,
+            boolean allowCaves,
+            int blendRadius,
+            int combatRingRadius
+        ) {
+            public enum Mode {
+                /** Proxy to source dimension's worldgen (full mod support) */
+                PROXY_WORLDGEN,
+                /** Controlled natural generation by DevMod (lightweight fallback) */
+                CONTROLLED_NATURAL
+            }
+
+            public enum BiomePolicy {
+                /** Match biome to mob's preferred environment */
+                MATCH_MOB,
+                /** Use fixed biome from configuration */
+                FIXED,
+                /** Random biome from a biome tag */
+                RANDOM_FROM_TAG
+            }
+
+            public static DynamicSettings proxyOverworld() {
+                return new DynamicSettings(
+                    Mode.PROXY_WORLDGEN,
+                    "minecraft:overworld",
+                    BiomePolicy.MATCH_MOB,
+                    null,
+                    null,
+                    true,
+                    3,
+                    32
+                );
+            }
+
+            public static DynamicSettings controlledNatural() {
+                return new DynamicSettings(
+                    Mode.CONTROLLED_NATURAL,
+                    null,
+                    BiomePolicy.MATCH_MOB,
+                    null,
+                    null,
+                    false,
+                    3,
+                    32
+                );
+            }
+        }
+
+        public static final TerrainSettings FLAT = new TerrainSettings(TerrainType.FLAT, null);
+        public static final TerrainSettings DYNAMIC_PROXY = new TerrainSettings(
+            TerrainType.DYNAMIC,
+            DynamicSettings.proxyOverworld()
+        );
+        public static final TerrainSettings DYNAMIC_CONTROLLED = new TerrainSettings(
+            TerrainType.DYNAMIC,
+            DynamicSettings.controlledNatural()
+        );
+    }
+
     public enum MobSpawnStrategy {
         DISTRIBUTED,
         CLUSTERED,
@@ -391,6 +472,8 @@ public record ArenaTemplate(
         private BuildSettings buildSettings = new BuildSettings(BuildSettings.Priority.SYNC, BuildSettings.Order.FLOOR_FIRST);
         @Nullable
         private ZoneSettings zoneSettings;
+        @Nullable
+        private TerrainSettings terrainSettings;
         private List<String> tags = List.of();
 
         public Builder(String id) {
@@ -430,6 +513,7 @@ public record ArenaTemplate(
         public Builder limits(Limits limits) { this.limits = limits; return this; }
         public Builder buildSettings(BuildSettings buildSettings) { this.buildSettings = buildSettings; return this; }
         public Builder zoneSettings(@Nullable ZoneSettings zoneSettings) { this.zoneSettings = zoneSettings; return this; }
+        public Builder terrainSettings(@Nullable TerrainSettings terrainSettings) { this.terrainSettings = terrainSettings; return this; }
         public Builder tags(List<String> tags) { this.tags = tags; return this; }
 
         public ArenaTemplate build() {
@@ -468,6 +552,7 @@ public record ArenaTemplate(
                 Objects.requireNonNull(limits, "limits"),
                 Objects.requireNonNull(buildSettings, "buildSettings"),
                 zoneSettings,
+                terrainSettings,
                 List.copyOf(Objects.requireNonNull(tags, "tags"))
             );
         }

@@ -2,6 +2,8 @@ package com.devmod.mixin.client;
 
 import java.lang.reflect.Field;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -28,9 +30,12 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 @SuppressWarnings({"UnusedMethod", "UnusedVariable", "NullAway", "NullAway.Init"})
 public class MoreCullingCompatMixin {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger("DevMod/MoreCullingCompat");
+
     // Cache the field reference to avoid repeated reflection lookups
     private static volatile Field cullingShapesByFaceField;
     private static volatile boolean fieldLookupAttempted = false;
+    private static volatile boolean fieldLookupLogged = false;
 
     /**
      * Intercepts MoreCulling's getFaceCullingShape method to add null protection.
@@ -65,9 +70,17 @@ public class MoreCullingCompatMixin {
                         cullingShapesByFaceField = BlockBehaviour.BlockStateBase.class
                             .getDeclaredField("moreculling$cullingShapesByFace");
                         cullingShapesByFaceField.setAccessible(true);
+                        if (!fieldLookupLogged) {
+                            LOGGER.debug("MoreCulling compatibility: field found, null-safety protection active");
+                            fieldLookupLogged = true;
+                        }
                     } catch (NoSuchFieldException e) {
                         // Field doesn't exist - MoreCulling might not be installed or uses different version
                         cullingShapesByFaceField = null;
+                        if (!fieldLookupLogged) {
+                            LOGGER.debug("MoreCulling compatibility: field not found (mod not installed or different version)");
+                            fieldLookupLogged = true;
+                        }
                     }
                     fieldLookupAttempted = true;
                 }

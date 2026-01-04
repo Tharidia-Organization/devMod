@@ -128,9 +128,10 @@ public enum Curse {
         "Death waits in every shadow..."
     ),
 
+    // FIX UX #4: More specific description of what elite means
     ELITE_HUNTER(
         "Elite Hunter",
-        "All mobs are elite variants (+50% stats)",
+        "All mobs are elite (+50% HP, +50% DMG, +10% Speed)",
         CurseTier.CURSED,
         2.5f,
         EnduranceColors.Bargain.ELITE_HUNTER,

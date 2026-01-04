@@ -25,6 +25,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.arena.api.ArenaHandle;
+import com.devmod.endurance.EnduranceTags;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.telemetry.boss.BossPhaseService;
 import com.devmod.telemetry.combat.FightSessionService;
@@ -436,8 +437,8 @@ public class TelemetryLogHandlers {
             return null;
         }
         CompoundTag data = living.getPersistentData();
-        boolean hasContext = data.hasUUID("endurance_quest_id")
-            || data.hasUUID("endurance_arena_id")
+        boolean hasContext = data.hasUUID(EnduranceTags.QUEST_ID)
+            || data.hasUUID(EnduranceTags.ARENA_ID)
             || data.contains("endurance_template_id")
             || data.contains("endurance_policy_id");
         if (!hasContext) {
@@ -451,8 +452,8 @@ public class TelemetryLogHandlers {
         Integer policyVersion = data.contains("endurance_policy_version")
             ? data.getInt("endurance_policy_version")
             : null;
-        UUID arenaId = data.hasUUID("endurance_arena_id") ? data.getUUID("endurance_arena_id") : null;
-        UUID sessionId = data.hasUUID("endurance_quest_id") ? data.getUUID("endurance_quest_id") : null;
+        UUID arenaId = data.hasUUID(EnduranceTags.ARENA_ID) ? data.getUUID(EnduranceTags.ARENA_ID) : null;
+        UUID sessionId = data.hasUUID(EnduranceTags.QUEST_ID) ? data.getUUID(EnduranceTags.QUEST_ID) : null;
 
         return new FightSessionService.CombatContext(
             templateId,
