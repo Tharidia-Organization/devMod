@@ -338,9 +338,9 @@ public class ComboSystem {
                 );
             }
 
-            // Track stats
+            // Track stats (cap damage to prevent overflow from corrupting analytics)
             totalHits++;
-            totalDamage += damage;
+            totalDamage += Math.min(damage, 10000f);
 
             // Check for combo milestones
             checkComboMilestones();

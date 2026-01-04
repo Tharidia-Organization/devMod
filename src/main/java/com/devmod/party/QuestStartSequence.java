@@ -20,9 +20,11 @@ import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.endurance.EnduranceQuest;
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.InstanceArenaManager;
+import com.devmod.endurance.PartyQuestSession;
 import com.devmod.endurance.QuestType;
 import com.devmod.util.I18n;
 
@@ -508,6 +510,31 @@ public class QuestStartSequence {
             return;
         }
 
+        List<UUID> activeMemberIds = membersToStart.stream()
+            .map(ServerPlayer::getUUID)
+            .toList();
+        EnduranceQuestManager.QuestSettings effectiveSettings = sequence.questSettings;
+        if (effectiveSettings == null) {
+            effectiveSettings = new EnduranceQuestManager.QuestSettings();
+            effectiveSettings.questType = sequence.questType;
+        }
+        effectiveSettings.party(sequence.partyId, new ArrayList<>(activeMemberIds));
+        effectiveSettings.questType = sequence.questType;
+        sequence.questSettings = effectiveSettings;
+
+        EnduranceQuest sharedQuest = EnduranceQuestManager.INSTANCE
+            .createSharedQuest(sequence.mobId, UUID.randomUUID())
+            .orElse(null);
+        if (sharedQuest == null) {
+            LOGGER.error("[QuestSequence] Failed to create shared quest for party {}", sequence.partyId);
+            for (ServerPlayer member : membersToStart) {
+                if (member != null && member.isAlive()) {
+                    member.sendSystemMessage(I18n.translate("devmod.party.quest_start_failed"));
+                }
+            }
+            return;
+        }
+
         // Use the new startPreparedQuest which doesn't teleport (already done)
         Map<UUID, EnduranceQuestManager.StartQuestResult> results =
             EnduranceQuestManager.INSTANCE.startPreparedQuest(
@@ -516,7 +543,8 @@ public class QuestStartSequence {
                 sequence.mobId,
                 sequence.questSettings,
                 sequence.instanceId,
-                sequence.preparedArenaHandle
+                sequence.preparedArenaHandle,
+                sharedQuest
             );
 
         Map<UUID, ServerPlayer> membersById = new HashMap<>();
@@ -544,7 +572,21 @@ public class QuestStartSequence {
         if (successCount > 0) {
             PartyData party = PartyManager.INSTANCE.getParty(sequence.partyId);
             if (party != null) {
-                party.startQuest(sequence.partyId);
+                party.startQuest(sequence.instanceId);
+                var partySession = new PartyQuestSession(
+                    sequence.partyId,
+                    sharedQuest,
+                    sequence.preparedArena.getId(),
+                    sequence.instanceId,
+                    sequence.questType,
+                    party.getMembers()
+                );
+                for (UUID memberId : party.getMembers()) {
+                    if (!sequence.arrivedMembers.contains(memberId)) {
+                        partySession.markSpectator(memberId);
+                    }
+                }
+                EnduranceQuestManager.INSTANCE.registerPartySession(partySession);
                 // Sync party state to all members so clients see IN_QUEST state
                 if (!membersToStart.isEmpty()) {
                     MinecraftServer server = membersToStart.get(0).getServer();

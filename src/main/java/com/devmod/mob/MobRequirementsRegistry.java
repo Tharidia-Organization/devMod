@@ -166,7 +166,7 @@ public class MobRequirementsRegistry {
      * @param server The Minecraft server (can be null)
      * @return Requirements for the mob
      */
-    public MobRequirements getWithServer(ResourceLocation mobId, MinecraftServer server) {
+    public MobRequirements getWithServer(ResourceLocation mobId, @Nullable MinecraftServer server) {
         // Check if we already have a cached value with high confidence
         MobRequirements cached = cache.get(mobId);
         if (cached != null && cached.confidence() > 0.8f) {

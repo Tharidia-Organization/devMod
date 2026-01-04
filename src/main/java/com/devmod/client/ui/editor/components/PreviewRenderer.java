@@ -91,6 +91,7 @@ public class PreviewRenderer {
     private float autoRotateSpeed = 0.5f;
 
     // Display options
+    private boolean showSlots = true;
     private boolean showHint = true;
     private String hintText = "Drag to rotate";
     @Nullable
@@ -125,6 +126,11 @@ public class PreviewRenderer {
         return this;
     }
 
+    public PreviewRenderer showSlots(boolean show) {
+        this.showSlots = show;
+        return this;
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // RENDERING
     // ═══════════════════════════════════════════════════════════════
@@ -152,7 +158,9 @@ public class PreviewRenderer {
         }
 
         slotBoxes.clear();
-        renderSlots(graphics, font, x, y, size, mouseX, mouseY);
+        if (showSlots) {
+            renderSlots(graphics, font, x, y, size, mouseX, mouseY);
+        }
 
         // Render content based on mode
         if (mode == PreviewMode.ENTITY) {
@@ -171,12 +179,14 @@ public class PreviewRenderer {
         }
 
         // Render carried stack (from vanilla "carried" slot) following the cursor
-        var player = Minecraft.getInstance().player;
-        if (player != null) {
-            ItemStack carried = player.containerMenu.getCarried();
-            if (!carried.isEmpty()) {
-                graphics.renderItem(carried, mouseX - ScaledCoord.scaleDim(DesignTokens.Spacing.SM),
-                    mouseY - ScaledCoord.scaleDim(DesignTokens.Spacing.LG));
+        if (showSlots) {
+            var player = Minecraft.getInstance().player;
+            if (player != null) {
+                ItemStack carried = player.containerMenu.getCarried();
+                if (!carried.isEmpty()) {
+                    graphics.renderItem(carried, mouseX - ScaledCoord.scaleDim(DesignTokens.Spacing.SM),
+                        mouseY - ScaledCoord.scaleDim(DesignTokens.Spacing.LG));
+                }
             }
         }
 
@@ -338,28 +348,30 @@ public class PreviewRenderer {
         if (button != 0) return false;
 
         // Slot click
-        for (SlotBox box : slotBoxes) {
-            if (box.bounds.contains(mouseX, mouseY)) {
-                EquipmentSlot clickedSlot = Objects.requireNonNull(box.slot, "slot cannot be null");
-                this.slot = clickedSlot;
-                if (onSlotClick != null) {
-                    onSlotClick.accept(clickedSlot);
-                }
-                var player = Minecraft.getInstance().player;
-                if (player != null) {
-                    ItemStack carried = Objects.requireNonNull(player.containerMenu.getCarried(), "carried stack cannot be null");
-                    ItemStack current = Objects.requireNonNull(player.getItemBySlot(clickedSlot), "slot stack cannot be null");
-                    if (carried.isEmpty()) {
-                        // pick up
-                        player.containerMenu.setCarried(Objects.requireNonNull(current.copy(), "copy cannot be null"));
-                        player.setItemSlot(clickedSlot, Objects.requireNonNull(ItemStack.EMPTY, "empty cannot be null"));
-                    } else {
-                        // place/swap
-                        player.setItemSlot(clickedSlot, Objects.requireNonNull(carried.copy(), "copy cannot be null"));
-                        player.containerMenu.setCarried(Objects.requireNonNull(current.copy(), "copy cannot be null"));
+        if (showSlots) {
+            for (SlotBox box : slotBoxes) {
+                if (box.bounds.contains(mouseX, mouseY)) {
+                    EquipmentSlot clickedSlot = Objects.requireNonNull(box.slot, "slot cannot be null");
+                    this.slot = clickedSlot;
+                    if (onSlotClick != null) {
+                        onSlotClick.accept(clickedSlot);
                     }
+                    var player = Minecraft.getInstance().player;
+                    if (player != null) {
+                        ItemStack carried = Objects.requireNonNull(player.containerMenu.getCarried(), "carried stack cannot be null");
+                        ItemStack current = Objects.requireNonNull(player.getItemBySlot(clickedSlot), "slot stack cannot be null");
+                        if (carried.isEmpty()) {
+                            // pick up
+                            player.containerMenu.setCarried(Objects.requireNonNull(current.copy(), "copy cannot be null"));
+                            player.setItemSlot(clickedSlot, Objects.requireNonNull(ItemStack.EMPTY, "empty cannot be null"));
+                        } else {
+                            // place/swap
+                            player.setItemSlot(clickedSlot, Objects.requireNonNull(carried.copy(), "copy cannot be null"));
+                            player.containerMenu.setCarried(Objects.requireNonNull(current.copy(), "copy cannot be null"));
+                        }
+                    }
+                    return true;
                 }
-                return true;
             }
         }
 
@@ -380,7 +392,7 @@ public class PreviewRenderer {
         }
 
         // Drop carried stack into equip slots on release
-        if (button == 0) {
+        if (showSlots && button == 0) {
             for (SlotBox box : slotBoxes) {
                 if (box.bounds.contains(mouseX, mouseY)) {
                     var player = Minecraft.getInstance().player;
@@ -420,9 +432,11 @@ public class PreviewRenderer {
             return true;
         }
         // Allow drag visual with carried stack
-        var player = Minecraft.getInstance().player;
-        if (player != null && !player.containerMenu.getCarried().isEmpty() && previewBounds.contains(mouseX, mouseY)) {
-            return true;
+        if (showSlots) {
+            var player = Minecraft.getInstance().player;
+            if (player != null && !player.containerMenu.getCarried().isEmpty() && previewBounds.contains(mouseX, mouseY)) {
+                return true;
+            }
         }
         return false;
     }
@@ -447,10 +461,12 @@ public class PreviewRenderer {
      */
     public void setSlot(@Nonnull EquipmentSlot slot) {
         this.slot = Objects.requireNonNull(slot, "slot cannot be null");
-        var player = Minecraft.getInstance().player;
-        if (player != null) {
-            EquipmentSlot safeSlot = Objects.requireNonNull(this.slot, "slot cannot be null");
-            this.item = Objects.requireNonNull(player.getItemBySlot(safeSlot), "slot stack cannot be null");
+        if (showSlots) {
+            var player = Minecraft.getInstance().player;
+            if (player != null) {
+                EquipmentSlot safeSlot = Objects.requireNonNull(this.slot, "slot cannot be null");
+                this.item = Objects.requireNonNull(player.getItemBySlot(safeSlot), "slot stack cannot be null");
+            }
         }
     }
 

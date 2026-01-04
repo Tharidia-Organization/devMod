@@ -555,9 +555,19 @@ public class ArenaBuilder {
             }
 
             // P1: Block integrity verification
+            // Calculate actual arena height (not size, which is horizontal)
+            int actualMaxY = originY;
+            if (template.walls() != null) {
+                actualMaxY = template.walls().startY() + template.walls().height();
+            } else if (template.ceiling() != null && template.ceiling().enabled()) {
+                actualMaxY = template.ceiling().y() + template.ceiling().thickness();
+            } else {
+                // Fallback: floor + reasonable height
+                actualMaxY = originY + 20;
+            }
             BlockIntegrityVerifier.VerificationResult integrityResult = new BlockIntegrityVerifier()
                 .verify(auditLevel, originX, originY, originZ,
-                        originX + size, originY + size, originZ + size,
+                        originX + size, actualMaxY, originZ + size,
                         transaction.getBlockCount());
             if (integrityResult.hasIntegrityIssues()) {
                 telemetry.emit("arena.build.integrity_issue", Map.of(

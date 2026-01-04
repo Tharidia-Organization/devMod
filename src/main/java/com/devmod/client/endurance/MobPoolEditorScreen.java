@@ -420,12 +420,23 @@ public class MobPoolEditorScreen extends Screen {
 
         // Namespace dropdown button
         int dropdownWidth = 80;
-        graphics.fill(filterX, filterY, filterX + dropdownWidth, filterY + 18, DesignTokens.Surface.LEVEL_1);
-        graphics.renderOutline(filterX, filterY, dropdownWidth, 18, DesignTokens.Border.DEFAULT);
+        int dropdownHeight = 18;
+
+        // Check hover state for dropdown button
+        boolean dropdownHovered = mouseX >= filterX && mouseX < filterX + dropdownWidth
+            && mouseY >= filterY && mouseY < filterY + dropdownHeight;
+
+        int bgColor = dropdownHovered ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_1;
+        int borderColor = dropdownHovered ? DesignTokens.Border.LIGHT : DesignTokens.Border.DEFAULT;
+
+        graphics.fill(filterX, filterY, filterX + dropdownWidth, filterY + dropdownHeight, bgColor);
+        graphics.renderOutline(filterX, filterY, dropdownWidth, dropdownHeight, borderColor);
 
         String displayNs = namespaceFilter.length() > 8 ? namespaceFilter.substring(0, 7) + ".." : namespaceFilter;
-        graphics.drawString(safeFont, displayNs, filterX + 4, filterY + 5, DesignTokens.Text.PRIMARY, false);
-        graphics.drawString(safeFont, "\u25BC", filterX + dropdownWidth - 12, filterY + 5, DesignTokens.Text.SECONDARY, false);
+        int textColor = dropdownHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
+        graphics.drawString(safeFont, displayNs, filterX + 4, filterY + 5, textColor, false);
+        graphics.drawString(safeFont, "\u25BC", filterX + dropdownWidth - 12, filterY + 5,
+            dropdownHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY, false);
 
         // Tier filter buttons (below namespace)
         // This is simplified - just show count
@@ -502,24 +513,32 @@ public class MobPoolEditorScreen extends Screen {
         int sliderY = sectionY + 22;
         int sliderWidth = (width - PADDING * 5) / 4;
 
-        renderGlobalSlider(graphics, safeFont, PADDING, sliderY, sliderWidth, 0, "HP", globalHealthMult);
-        renderGlobalSlider(graphics, safeFont, PADDING + sliderWidth + PADDING, sliderY, sliderWidth, 1, "DMG", globalDamageMult);
-        renderGlobalSlider(graphics, safeFont, PADDING + (sliderWidth + PADDING) * 2, sliderY, sliderWidth, 2, "SPD", globalSpeedMult);
-        renderGlobalSlider(graphics, safeFont, PADDING + (sliderWidth + PADDING) * 3, sliderY, sliderWidth, 3, "Elite", globalEliteChanceMult);
+        renderGlobalSlider(graphics, safeFont, PADDING, sliderY, sliderWidth, 0, "HP", globalHealthMult, mouseX, mouseY);
+        renderGlobalSlider(graphics, safeFont, PADDING + sliderWidth + PADDING, sliderY, sliderWidth, 1, "DMG", globalDamageMult, mouseX, mouseY);
+        renderGlobalSlider(graphics, safeFont, PADDING + (sliderWidth + PADDING) * 2, sliderY, sliderWidth, 2, "SPD", globalSpeedMult, mouseX, mouseY);
+        renderGlobalSlider(graphics, safeFont, PADDING + (sliderWidth + PADDING) * 3, sliderY, sliderWidth, 3, "Elite", globalEliteChanceMult, mouseX, mouseY);
     }
 
     private void renderGlobalSlider(GuiGraphics graphics, @Nonnull Font safeFont, int x, int y, int sliderWidth, int sliderId,
-            String label, float value) {
-        // Label
-        graphics.drawString(safeFont, label, x, y, DesignTokens.Text.PRIMARY, false);
-
-        // Slider track
+            String label, float value, int mouseX, int mouseY) {
+        // Slider track dimensions (for hover detection)
         int trackX = x + 35;
         int trackW = sliderWidth - 70;
         int trackY = y + 3;
         int trackH = 6;
 
-        graphics.fill(trackX, trackY, trackX + trackW, trackY + trackH, DesignTokens.Surface.LEVEL_0);
+        // Check if mouse is hovering over this slider's track area
+        boolean isHovered = mouseX >= trackX && mouseX < trackX + trackW
+            && mouseY >= trackY - 4 && mouseY < trackY + trackH + 4;
+        boolean isActive = activeGlobalSlider == sliderId;
+
+        // Label (highlight on hover)
+        int labelColor = (isHovered || isActive) ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
+        graphics.drawString(safeFont, label, x, y, labelColor, false);
+
+        // Track background (highlight on hover)
+        int trackBgColor = isHovered ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_0;
+        graphics.fill(trackX, trackY, trackX + trackW, trackY + trackH, trackBgColor);
 
         // Slider fill (0.1 to 3.0 range, center at 1.0)
         float minVal = 0.1f;
@@ -529,15 +548,15 @@ public class MobPoolEditorScreen extends Screen {
         int fillColor = Math.abs(value - 1.0f) < 0.01f ? DesignTokens.Text.SECONDARY : DesignTokens.Accent.PRIMARY;
         graphics.fill(trackX, trackY, trackX + fillW, trackY + trackH, fillColor);
 
-        // Handle
+        // Handle (brighter on hover/active)
         int handleX = trackX + fillW - 2;
-        boolean isActive = activeGlobalSlider == sliderId;
-        int handleColor = isActive ? DesignTokens.Text.WHITE : DesignTokens.Border.LIGHT;
+        int handleColor = (isActive || isHovered) ? DesignTokens.Text.WHITE : DesignTokens.Border.LIGHT;
         graphics.fill(handleX, trackY - 2, handleX + 4, trackY + trackH + 2, handleColor);
 
-        // Value
+        // Value (highlight on hover)
         String valueStr = String.format("%.1fx", value);
-        graphics.drawString(safeFont, valueStr, trackX + trackW + 4, y, DesignTokens.Text.SECONDARY, false);
+        int valueColor = (isHovered || isActive) ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY;
+        graphics.drawString(safeFont, valueStr, trackX + trackW + 4, y, valueColor, false);
     }
 
     private void renderFooter(GuiGraphics graphics, int mouseX, int mouseY) {

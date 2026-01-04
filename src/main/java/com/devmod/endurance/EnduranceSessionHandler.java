@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.level.GameType;
 
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -44,7 +45,18 @@ public class EnduranceSessionHandler {
      */
     public void abandonQuest(ServerPlayer player) {
         UUID playerId = player.getUUID();
-        EnduranceQuestManager.ActiveQuestSession session = activeSessions.remove(playerId);
+        EnduranceQuestManager.ActiveQuestSession session = activeSessions.get(playerId);
+
+        if (session != null && session.getPartyId() != null) {
+            EnduranceQuestManager.INSTANCE.markPartyMemberInactive(playerId, "abandon");
+            player.setGameMode(GameType.SPECTATOR);
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                "[DevMod] You are now spectating the party run. Rejoin after this wave.")
+                .withStyle(SharedColorTokens.Chat.YELLOW)));
+            return;
+        }
+
+        session = activeSessions.remove(playerId);
 
         if (session != null) {
             // Handle pending sessions (instance still being created)
@@ -112,6 +124,14 @@ public class EnduranceSessionHandler {
         EnduranceQuestManager.ActiveQuestSession session = activeSessions.get(playerId);
 
         if (session != null) {
+            if (session.getPartyId() != null) {
+                EnduranceQuestManager.INSTANCE.markPartyMemberInactive(playerId, "death");
+                player.setGameMode(GameType.SPECTATOR);
+                player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                    "[DevMod] You are down. Spectating until the next wave.")
+                    .withStyle(SharedColorTokens.Chat.RED)));
+                return;
+            }
             // Ignore deaths during pending sessions (instance still being created)
             if (session.isPending()) {
                 LOGGER.debug("[EnduranceQuest] Ignoring death for player {} - session is pending",
@@ -167,6 +187,13 @@ public class EnduranceSessionHandler {
         UUID playerId = player.getUUID();
         EnduranceQuestManager.ActiveQuestSession session = activeSessions.get(playerId);
 
+        if (session != null && session.getPartyId() != null) {
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                "[DevMod] Respawn choice is handled by the party run.")
+                .withStyle(SharedColorTokens.Chat.YELLOW)));
+            return;
+        }
+
         if (session != null && session.isAwaitingRespawnChoice()) {
             if (continueQuest) {
                 if (player.isDeadOrDying()) {
@@ -221,6 +248,9 @@ public class EnduranceSessionHandler {
         if (session == null) {
             return;
         }
+        if (session.getPartyId() != null) {
+            return;
+        }
         if (!session.isAwaitingRespawnChoice() && !session.isRespawnRequested()) {
             return;
         }
@@ -264,15 +294,32 @@ public class EnduranceSessionHandler {
         session.setAwaitingRespawnChoice(false);
         session.setRespawnRequested(false);
 
-        // Delay wave start to give time for instance load
+        // Check if there's already an active wave or pending countdown
+        // to avoid scheduling duplicate wave starts (which causes boss to spawn immediately)
+        ArenaContext arena = session.getArena();
+        boolean hasActiveWave = arena != null && arena.getId() != null
+            && WaveManager.INSTANCE.getWaveState(arena.getId()).isPresent();
+        boolean hasPendingCountdown = session.isWaveStartPending() || session.isBossIntroPending();
+
+        // Always apply safe window for invulnerability after respawn
         session.scheduleSafeWindow(EnduranceQuestManager.SAFE_WINDOW_TICKS);
-        session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
-        session.setRespawnCountdownActive(true);
         EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session, QuestSequencePayload.Phase.SAFE_WINDOW,
             (int) Math.ceil(EnduranceQuestManager.SAFE_WINDOW_TICKS / 20.0),
             session.getQuest().getDisplayName(),
             "Safe window",
             List.of("Invulnerability active"));
+
+        if (!hasActiveWave && !hasPendingCountdown) {
+            // No wave in progress and no countdown pending - schedule new wave start
+            session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
+            session.setRespawnCountdownActive(true);
+            LOGGER.info("[EnduranceQuest] Scheduled wave start after respawn for player {}",
+                player.getName().getString());
+        } else {
+            // Wave is already in progress or countdown is pending - just rejoin
+            LOGGER.info("[EnduranceQuest] Skipping wave start schedule on respawn (hasActiveWave={}, hasPendingCountdown={})",
+                hasActiveWave, hasPendingCountdown);
+        }
 
         // Notify player of penalty
         player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.respawned_penalty", session.getQuest().getDeathsThisSession())
@@ -362,7 +409,28 @@ public class EnduranceSessionHandler {
      */
     public void continueToNextWave(ServerPlayer player) {
         EnduranceQuestManager.ActiveQuestSession session = activeSessions.get(player.getUUID());
+        LOGGER.info("[CheckpointDebug] continueToNextWave called for player {}, session={}, partyId={}",
+            player.getName().getString(),
+            session != null ? "present" : "null",
+            session != null ? session.getPartyId() : "N/A");
+
+        if (session != null && session.getPartyId() != null) {
+            LOGGER.info("[CheckpointDebug] Delegating to party continueToNextWave for partyId={}",
+                session.getPartyId());
+            EnduranceQuestManager.INSTANCE.continuePartyToNextWave(session.getPartyId());
+            return;
+        }
         if (session != null && session.getQuest().getState() == EnduranceQuestState.WAVE_COMPLETE) {
+            LOGGER.info("[CheckpointDebug] Quest state is WAVE_COMPLETE, starting next wave");
+
+            // Clear completed wave state before starting new wave
+            // This allows EnduranceEventTick to start the next wave
+            ArenaContext arena = session.getArena();
+            if (arena != null && arena.getId() != null) {
+                WaveManager.INSTANCE.clearCompletedWaveState(arena.getId());
+                LOGGER.info("[CheckpointDebug] Cleared completed wave state for arena {}", arena.getId());
+            }
+
             session.getQuest().continueToNextWave();
             session.resetWaveKills();
             session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
@@ -370,6 +438,9 @@ public class EnduranceSessionHandler {
 
             LOGGER.info("[EnduranceQuest] Player {} starting wave {}",
                 player.getName().getString(), session.getQuest().getCurrentWave());
+        } else if (session != null) {
+            LOGGER.warn("[CheckpointDebug] Quest state is {} (expected WAVE_COMPLETE), cannot continue",
+                session.getQuest().getState());
         }
     }
 
@@ -378,7 +449,18 @@ public class EnduranceSessionHandler {
      */
     public void exitAtCheckpoint(ServerPlayer player) {
         UUID playerId = player.getUUID();
-        EnduranceQuestManager.ActiveQuestSession session = activeSessions.remove(playerId);
+        EnduranceQuestManager.ActiveQuestSession session = activeSessions.get(playerId);
+
+        if (session != null && session.getPartyId() != null) {
+            EnduranceQuestManager.INSTANCE.markPartyMemberInactive(playerId, "exit_checkpoint");
+            player.setGameMode(GameType.SPECTATOR);
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                "[DevMod] You are now spectating the party run.")
+                .withStyle(SharedColorTokens.Chat.YELLOW)));
+            return;
+        }
+
+        session = activeSessions.remove(playerId);
 
         if (session != null && session.getQuest().getState() == EnduranceQuestState.WAVE_COMPLETE) {
             // Cleanup config overrides for this quest

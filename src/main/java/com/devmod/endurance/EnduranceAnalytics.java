@@ -36,6 +36,7 @@ public class EnduranceAnalytics {
     private static final Gson GSON = new GsonBuilder()
         .setPrettyPrinting()
         .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        .serializeSpecialFloatingPointValues()  // Allow Infinity/NaN to prevent crashes
         .create();
 
     public static final EnduranceAnalytics INSTANCE = new EnduranceAnalytics();
@@ -188,7 +189,7 @@ public class EnduranceAnalytics {
             Map<String, Integer> bodyPartTotals = new HashMap<>();
             for (QuestSessionRecord session : sessions) {
                 session.bodyPartHits.forEach((part, count) ->
-                    bodyPartTotals.merge(part, count, Integer::sum));
+                    bodyPartTotals.merge(part, count, (a, b) -> a + b));
             }
             int totalHits = bodyPartTotals.values().stream().mapToInt(Integer::intValue).sum();
             bodyPartEffectiveness.clear();
@@ -258,7 +259,7 @@ public class EnduranceAnalytics {
 
         // Weapon usage
         float totalWeaponDamage = combatSession.getWeaponStats().values().stream()
-            .map(w -> w.totalDamage).reduce(0f, Float::sum);
+            .map(w -> w.totalDamage).reduce(0f, (a, b) -> a + b);
 
         for (CombatTracker.WeaponStats weaponStats : combatSession.getWeaponStats().values()) {
             WeaponUsageRecord weaponRecord = new WeaponUsageRecord();
@@ -309,10 +310,14 @@ public class EnduranceAnalytics {
 
     private String getWeaponDisplayName(String weaponId) {
         // Simple conversion from ID to display name
+        if (weaponId == null || weaponId.isEmpty()) {
+            return "Unknown";
+        }
         int colonIndex = weaponId.indexOf(':');
         String path = colonIndex < 0 ? weaponId : weaponId.substring(colonIndex + 1);
-        return UNDERSCORE_SPLITTER.splitToList(path).stream()
-            .map(s -> s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1))
+        List<String> parts = UNDERSCORE_SPLITTER.splitToList(path);
+        return parts.stream()
+            .map(s -> s.isEmpty() ? s : s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1))
             .collect(Collectors.joining(" "));
     }
 

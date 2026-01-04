@@ -338,9 +338,14 @@ public class WaveManager {
 
         // Check if this is a boss wave (using dynamic tension system)
         UUID questId = quest.getQuestId();
-        if (BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId)) {
+        boolean shouldBeBossWave = BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId);
+        LOGGER.info("[BossDebug] WaveManager.startWave: wave={}, shouldBeBossWave={}", waveNumber, shouldBeBossWave);
+        if (shouldBeBossWave) {
             // Start boss wave instead of normal wave
+            LOGGER.info("[BossDebug] Starting boss wave {} via BossWaveSystem", waveNumber);
             BossWaveSystem.BossFight bossFight = BossWaveSystem.INSTANCE.startBossWave(session, waveNumber);
+            LOGGER.info("[BossDebug] startBossWave result: bossFight={}, bossEntity={}",
+                bossFight != null, bossFight != null ? bossFight.getBossEntity() : null);
             if (bossFight != null && bossFight.getBossEntity() != null) {
                 WaveState waveState = new WaveState(
                     arena.getId(),
@@ -940,6 +945,13 @@ public class WaveManager {
         if (waveState == null || waveState.isCompletionNotified()) {
             return;
         }
+        PartyQuestSession partySession = session.getPartyId() != null
+            ? EnduranceQuestManager.INSTANCE.getPartySession(session.getPartyId()).orElse(null)
+            : null;
+        if (partySession != null && partySession.isActive()) {
+            handlePartyWaveComplete(session, partySession, waveState, player);
+            return;
+        }
         waveState.markCompletionNotified();
         waveState.advanceSpawnIndex(waveState.getSpawnPlan().size());
 
@@ -962,6 +974,72 @@ public class WaveManager {
         if (player != null && session.getQuest().getState() == EnduranceQuestState.IN_PROGRESS) {
             EnduranceEventHandler.onWaveComplete(player, session, session.getQuest().getCurrentWave());
             EnduranceQuestManager.INSTANCE.completeWave(player);
+        }
+    }
+
+    private void handlePartyWaveComplete(EnduranceQuestManager.ActiveQuestSession session,
+                                         PartyQuestSession partySession,
+                                         WaveState waveState,
+                                         @javax.annotation.Nullable net.minecraft.server.level.ServerPlayer player) {
+        waveState.markCompletionNotified();
+        waveState.advanceSpawnIndex(waveState.getSpawnPlan().size());
+
+        ArenaContext arena = session.getArena();
+        if (arena != null) {
+            despawnRemainingMobs(waveState, arena.getLevel());
+        }
+
+        net.minecraft.server.MinecraftServer server = null;
+        if (player != null) {
+            server = player.getServer();
+        } else if (arena != null && arena.getLevel() != null) {
+            server = arena.getLevel().getServer();
+        }
+
+        if (server != null && session.getQuest().getState() == EnduranceQuestState.IN_PROGRESS) {
+            boolean applyShared = true;
+            EnduranceQuestManager.ActiveQuestSession sharedSession = null;
+            for (UUID memberId : partySession.getMembers()) {
+                net.minecraft.server.level.ServerPlayer member = server.getPlayerList().getPlayer(
+                    java.util.Objects.requireNonNull(memberId, "memberId cannot be null"));
+                if (member == null) {
+                    continue;
+                }
+                EnduranceQuestManager.ActiveQuestSession memberSession =
+                    EnduranceQuestManager.INSTANCE.getActiveSession(memberId).orElse(null);
+                if (memberSession != null) {
+                    EnduranceEventHandler.onWaveComplete(member, memberSession,
+                        memberSession.getQuest().getCurrentWave(), applyShared);
+                    if (applyShared) {
+                        sharedSession = memberSession;
+                    }
+                    applyShared = false;
+                }
+            }
+            if (sharedSession != null) {
+                List<WaveDirective> directives = sharedSession.getPendingDirectives();
+                int directiveWave = sharedSession.getDirectiveWaveNumber();
+                boolean chainActive = DirectiveChainManager.INSTANCE.hasActiveChain(sharedSession.getQuest().getQuestId());
+                for (UUID memberId : partySession.getMembers()) {
+                    EnduranceQuestManager.ActiveQuestSession memberSession =
+                        EnduranceQuestManager.INSTANCE.getActiveSession(memberId).orElse(null);
+                    if (memberSession == null) {
+                        continue;
+                    }
+                    if (memberSession != sharedSession && !directives.isEmpty()) {
+                        memberSession.setPendingDirectives(directives, directiveWave);
+                    }
+                    if (!chainActive && !directives.isEmpty()) {
+                        net.minecraft.server.level.ServerPlayer member = server.getPlayerList().getPlayer(
+                            java.util.Objects.requireNonNull(memberId, "memberId cannot be null"));
+                        if (member != null) {
+                            com.devmod.network.NetworkHandler.sendWaveDirectiveChoices(
+                                member, directiveWave, directives);
+                        }
+                    }
+                }
+            }
+            EnduranceQuestManager.INSTANCE.completePartyWave(partySession);
         }
     }
 
@@ -1443,6 +1521,24 @@ public class WaveManager {
                 }
             }
         }
+    }
+
+    /**
+     * Clear wave state only if the wave is already complete.
+     * This is used when transitioning between waves to allow the next wave to start.
+     * Does not despawn mobs (they should already be gone when wave completes).
+     *
+     * @param arenaId The arena ID to clear wave state for
+     * @return true if a completed wave state was removed, false otherwise
+     */
+    public boolean clearCompletedWaveState(UUID arenaId) {
+        WaveState state = activeWaves.get(arenaId);
+        if (state != null && state.isComplete()) {
+            activeWaves.remove(arenaId);
+            LOGGER.debug("[WaveManager] Cleared completed wave state for arena {}", arenaId);
+            return true;
+        }
+        return false;
     }
 
     // =========================================================================

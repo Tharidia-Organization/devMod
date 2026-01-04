@@ -46,6 +46,7 @@ import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.endurance.ArenaSuggestionsPayload;
+import com.devmod.endurance.EnduranceMobConfigSyncPayload;
 import com.devmod.endurance.RequestArenaSuggestionsPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
@@ -88,6 +89,7 @@ import static com.devmod.network.ChannelId.EQUIP_MOB;
 import static com.devmod.network.ChannelId.FOOD_STATS;
 import static com.devmod.network.ChannelId.FUEL_STATS;
 import static com.devmod.network.ChannelId.GAME_MECHANICS_SYNC;
+import static com.devmod.network.ChannelId.ENDURANCE_MOB_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.IMPACT_SYNC;
 import static com.devmod.network.ChannelId.INSTANCE_LOADING;
@@ -559,6 +561,12 @@ public class NetworkHandler {
                 nn(WaveDirectiveSelectionPayload.TYPE),
                 nn(WaveDirectiveSelectionPayload.STREAM_CODEC),
                 validated(EnduranceNetworkHandler::handleWaveDirectiveSelection, PayloadLimits.SMALL)
+        );
+        // ENDURANCE_MOB_CONFIG_SYNC (53): Client -> Server mob pool config changes
+        event.registrar(ENDURANCE_MOB_CONFIG_SYNC.asString()).playToServer(
+                nn(EnduranceMobConfigSyncPayload.TYPE),
+                nn(EnduranceMobConfigSyncPayload.STREAM_CODEC),
+                validated(EnduranceNetworkHandler::handleMobConfigSync, PayloadLimits.MEDIUM)
         );
 
         // ===================================================================

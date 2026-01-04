@@ -432,6 +432,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     }
 
     private void openKitEditor() {
+        CustomKit kitToEdit = selectedCustomKit;
         net.minecraft.client.Minecraft.getInstance().setScreen(
             new KitSelectionScreen(this, items -> {
                 // Refresh saved kits in case a new one was created
@@ -449,17 +450,19 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                 }
             }, savedKit -> {
                 savedCustomKits = KitManager.INSTANCE.getAllCustomKits();
-                CustomKit currentSelection = selectedCustomKit;  // Local copy for null safety
-                if (currentSelection != null) {
+                if (savedKit != null) {
+                    CustomKit resolved = null;
                     for (CustomKit kit : savedCustomKits) {
-                        if (kit.getId().equals(currentSelection.getId())) {
-                            selectedCustomKit = kit;
-                            customKitName = kit.getName();
+                        if (kit.getId().equals(savedKit.getId())) {
+                            resolved = kit;
                             break;
                         }
                     }
+                    selectedCustomKit = resolved != null ? resolved : savedKit;
+                    customKitName = selectedCustomKit.getName();
+                    usingCustomKit = true;
                 }
-            }, null)  // No existing kit to edit
+            }, kitToEdit)
         );
     }
 

@@ -382,11 +382,17 @@ public class BossWaveSystem {
         if (questId != null) {
             TensionSystem.TensionState state = TensionSystem.INSTANCE.getState(questId);
             if (state != null) {
-                return state.isBossWavePending();
+                boolean pending = state.isBossWavePending();
+                LOGGER.debug("[BossDebug] isBossWave: wave={}, questId={}, bossWavePending={}",
+                    waveNumber, questId, pending);
+                return pending;
             }
+            LOGGER.warn("[BossDebug] isBossWave: TensionState is NULL for questId={}", questId);
         }
         // Fallback to legacy fixed interval (every 5 waves)
-        return waveNumber > 0 && waveNumber % 5 == 0;
+        boolean fallback = waveNumber > 0 && waveNumber % 5 == 0;
+        LOGGER.debug("[BossDebug] isBossWave: fallback for wave {} = {}", waveNumber, fallback);
+        return fallback;
     }
 
     /**

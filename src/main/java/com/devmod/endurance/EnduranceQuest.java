@@ -44,6 +44,12 @@ public class EnduranceQuest {
         this.mobConfig = mobConfig;
     }
 
+    public EnduranceQuest(EnduranceQuestRegistry.MobQuestConfig mobConfig, UUID questId) {
+        this.questId = questId != null ? questId : UUID.randomUUID();
+        this.mobId = mobConfig.mobId;
+        this.mobConfig = mobConfig;
+    }
+
     // ========== Quest Lifecycle ==========
 
     /**
@@ -181,16 +187,20 @@ public class EnduranceQuest {
 
     /**
      * Record damage dealt by player.
+     * Caps damage to 10000 to prevent Float.MAX_VALUE from /kill polluting stats.
      */
     public void recordDamageDealt(float damage) {
-        totalDamageDealtThisSession += (int) damage;
+        float cappedDamage = Math.min(damage, 10000f);
+        totalDamageDealtThisSession += (int) cappedDamage;
     }
 
     /**
      * Record damage taken by player.
+     * Caps damage to 10000 to prevent Float.MAX_VALUE from /kill polluting stats.
      */
     public void recordDamageTaken(float damage) {
-        totalDamageTakenThisSession += (int) damage;
+        float cappedDamage = Math.min(damage, 10000f);
+        totalDamageTakenThisSession += (int) cappedDamage;
     }
 
     // ========== Getters ==========

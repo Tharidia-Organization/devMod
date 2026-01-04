@@ -85,27 +85,30 @@ public class CombatTracker {
         }
 
         public void recordDamageDealt(float damage, ItemStack weapon, DamageSource source, String bodyPart) {
-            totalDamageDealt += damage;
+            // Cap damage to prevent Float.MAX_VALUE or overflow from corrupting analytics
+            float cappedDamage = Math.min(damage, 10000f);
+
+            totalDamageDealt += cappedDamage;
             totalHitsLanded++;
 
             if (currentWaveStats != null) {
-                currentWaveStats.damageDealt += damage;
+                currentWaveStats.damageDealt += cappedDamage;
                 currentWaveStats.hitsLanded++;
             }
 
             // Track weapon stats
             String weaponId = getWeaponId(weapon);
             WeaponStats stats = weaponStats.computeIfAbsent(weaponId, k -> new WeaponStats(weaponId));
-            stats.totalDamage += damage;
+            stats.totalDamage += cappedDamage;
             stats.hits++;
-            if (damage > stats.maxSingleHit) {
-                stats.maxSingleHit = damage;
+            if (cappedDamage > stats.maxSingleHit) {
+                stats.maxSingleHit = cappedDamage;
             }
 
             // Track damage type
             String damageType = source.type().msgId();
             float existing = damageByType.getOrDefault(damageType, 0f);
-            damageByType.put(damageType, existing + damage);
+            damageByType.put(damageType, existing + cappedDamage);
 
             // Track body part
             if (bodyPart != null && !bodyPart.isEmpty()) {
@@ -126,17 +129,21 @@ public class CombatTracker {
         }
 
         public void recordDamageTaken(float damage, DamageSource source) {
-            totalDamageTaken += damage;
+            // Cap damage to prevent Float.MAX_VALUE from /kill or similar commands
+            // polluting the analytics with Infinity values
+            float cappedDamage = Math.min(damage, 10000f);
+
+            totalDamageTaken += cappedDamage;
             totalHitsTaken++;
 
             if (currentWaveStats != null) {
-                currentWaveStats.damageTaken += damage;
+                currentWaveStats.damageTaken += cappedDamage;
                 currentWaveStats.hitsTaken++;
             }
 
             String damageType = source.type().msgId();
             float existing = damageTakenByType.getOrDefault(damageType, 0f);
-            damageTakenByType.put(damageType, existing + damage);
+            damageTakenByType.put(damageType, existing + cappedDamage);
         }
 
         public void recordKill(long timeSinceLastKill) {

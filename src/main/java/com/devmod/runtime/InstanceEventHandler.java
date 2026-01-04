@@ -195,6 +195,15 @@ public class InstanceEventHandler {
                                 .getActiveSession(player.getUUID());
                             if (enduranceSession.isPresent()) {
                                 var session = enduranceSession.get();
+                                if (session.getPartyId() != null
+                                    && com.devmod.endurance.EnduranceQuestManager.INSTANCE
+                                        .isPartyRunActiveForPlayer(player.getUUID())) {
+                                    LOGGER.debug("[InstanceEvents] Player {} left instance during party run, marking spectator",
+                                        player.getName().getString());
+                                    com.devmod.endurance.EnduranceQuestManager.INSTANCE
+                                        .markPartyMemberInactive(player.getUUID(), "left_instance");
+                                    return;
+                                }
                                 if (session.isAwaitingRespawnChoice() || session.isRespawnRequested()
                                     || session.getQuest().getState() == com.devmod.endurance.EnduranceQuestState.FAILED) {
                                     LOGGER.debug("[InstanceEvents] Player {} left instance during Endurance respawn window, preserving instance",

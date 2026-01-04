@@ -183,7 +183,15 @@ public class InstanceManager {
             }
 
         // Create instance data
-        InstanceData instance = InstanceRegistry.INSTANCE.createInstance(arenaId, playerId);
+        InstanceData instance;
+        if (partyMembers != null && !partyMembers.isEmpty()) {
+            java.util.Set<UUID> uniqueMembers = new java.util.HashSet<>(partyMembers);
+            uniqueMembers.add(playerId);
+            int maxPlayers = Math.max(1, uniqueMembers.size());
+            instance = InstanceRegistry.INSTANCE.createPartyInstance(arenaId, playerId, maxPlayers);
+        } else {
+            instance = InstanceRegistry.INSTANCE.createInstance(arenaId, playerId);
+        }
         UUID instanceId = instance.getInstanceId();
 
         // Add all players to instance
@@ -542,6 +550,11 @@ public class InstanceManager {
         if (!initialized) return;
 
         UUID playerId = nn(player.getUUID(), "player uuid");
+        if (com.devmod.endurance.EnduranceQuestManager.INSTANCE.isPartyRunActiveForPlayer(playerId)) {
+            LOGGER.info("[InstanceManager] Player {} disconnected during party run; preserving instance",
+                player.getName().getString());
+            return;
+        }
 
         // Cancel pending teleport if any
         if (pendingTeleports.remove(playerId) != null) {

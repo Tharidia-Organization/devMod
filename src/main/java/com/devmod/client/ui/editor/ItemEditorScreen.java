@@ -47,6 +47,7 @@ import com.devmod.client.ui.editor.components.FooterComponent;
 import com.devmod.client.ui.editor.components.HeaderComponent;
 import com.devmod.client.ui.editor.components.LeftColumnComponent;
 import com.devmod.client.ui.editor.components.ModeBadge;
+import com.devmod.client.ui.editor.components.PreviewRenderer;
 import com.devmod.client.ui.editor.components.ScrollableContentArea;
 import com.devmod.client.ui.editor.components.SlotSelector;
 import com.devmod.client.ui.editor.controller.InputRouter;
@@ -187,7 +188,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int LOCAL_ONLY_BANNER_BG = DesignTokens.Semantic.WARNING_MUTED;
     private static final int LOCAL_ONLY_BANNER_BORDER = DesignTokens.Semantic.WARNING;
     private static final String LOCAL_ONLY_BANNER_TEXT =
-        "Local kit edit: client-only changes; Apply disabled.";
+        "Local kit edit: use Save to Kit to keep changes.";
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -546,6 +547,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         leftColumn.slotType(slotType);
         leftColumn.item(getEditedItem());
         leftColumn.onSlotSelect(this::handleSlotSwitch);
+        if (localOnlyMode) {
+            leftColumn.previewMode(PreviewRenderer.PreviewMode.ITEM);
+            leftColumn.showPreviewSlots(false);
+            leftColumn.showSlotSelector(false);
+        }
         setSelectedSlotInfo(leftColumn.getSelectedSlot());
     }
 
@@ -912,10 +918,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         footer
             .canUndo(module != null && module.canUndo())
             .canRedo(module != null && module.canRedo())
-            .canApply(module != null && !localOnlyMode)
+            .canApply(module != null)
             .isDirty(dirty)
             .pendingCount(pending)
-            .applyLabel(localOnlyMode ? "Local Kit" : null);
+            .applyLabel(localOnlyMode ? "Save to Kit" : null);
         footer.render(graphics, panelBounds.x(), footerY, panelBounds.width(), mouseX, mouseY);
 
         // Render side panels if visible
@@ -1449,7 +1455,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     @Override
     public void applyChanges() {
         if (localOnlyMode) {
-            showStatus("Local kit edit only", DesignTokens.Semantic.WARNING);
+            closeEditor(true);
             return;
         }
         EditorModule module = activeModule;

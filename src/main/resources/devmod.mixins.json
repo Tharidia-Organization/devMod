@@ -19,7 +19,8 @@
     "client.HexereiDynamicRegistriesMixin",
     "client.ClientLevelTimeMixin",
     "client.LevelAccessorTimeMixin",
-    "client.FabricScreenApiFixMixin"
+    "client.FabricScreenApiFixMixin",
+    "client.MoreCullingCompatMixin"
   ],
   "injectors": {
     "defaultRequire": 1

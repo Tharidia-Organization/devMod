@@ -45,6 +45,7 @@ public class LeftColumnComponent {
     private final SlotSelector slotSelector;
     private final ItemInfoPanel itemInfo;
     private ResponsiveLayout.Rect armorCardBounds = ResponsiveLayout.Rect.EMPTY;
+    private boolean showSlotSelector = true;
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -91,6 +92,24 @@ public class LeftColumnComponent {
     public LeftColumnComponent item(ItemStack item) {
         itemInfo.item(item);
         preview.item(item);
+        return this;
+    }
+
+    public LeftColumnComponent previewMode(PreviewRenderer.PreviewMode mode) {
+        preview.mode(mode);
+        return this;
+    }
+
+    public LeftColumnComponent showSlotSelector(boolean show) {
+        this.showSlotSelector = show;
+        if (!show) {
+            armorCardBounds = ResponsiveLayout.Rect.EMPTY;
+        }
+        return this;
+    }
+
+    public LeftColumnComponent showPreviewSlots(boolean show) {
+        preview.showSlots(show);
         return this;
     }
 
@@ -177,7 +196,7 @@ public class LeftColumnComponent {
 
         // Calculate section heights based on proportions
         int previewAreaHeight = Math.round(height * PREVIEW_PROPORTION);
-        int slotAreaHeight = Math.round(height * SLOT_AREA_PROPORTION);
+        int slotAreaHeight = showSlotSelector ? Math.round(height * SLOT_AREA_PROPORTION) : 0;
 
         // Preview (centered in its allocated area)
         int previewSize = Math.min(ScaledCoord.scaleDim(EditorConstants.PREVIEW_SIZE), previewAreaHeight - gap * 2);
@@ -185,15 +204,19 @@ public class LeftColumnComponent {
         int previewX = x + (columnWidth - previewSize) / 2;
         preview.render(graphics, previewX, previewY, mouseX, mouseY, partialTick);
 
-        // Slot selector (after preview area)
-        int slotY = y + previewAreaHeight;
         int slotX = x + padding;
-        int slotSelectorHeight = ScaledCoord.scaleDim(EditorConstants.SLOT_AREA_HEIGHT);
-        slotSelector.render(graphics, slotX, slotY, innerWidth, mouseX, mouseY);
+        if (showSlotSelector) {
+            // Slot selector (after preview area)
+            int slotY = y + previewAreaHeight;
+            int slotSelectorHeight = ScaledCoord.scaleDim(EditorConstants.SLOT_AREA_HEIGHT);
+            slotSelector.render(graphics, slotX, slotY, innerWidth, mouseX, mouseY);
 
-        // Selected armor piece card (below slot selector)
-        int cardY = slotY + slotSelectorHeight + gap;
-        renderSelectedPieceCard(graphics, slotX, cardY, innerWidth, mouseX, mouseY);
+            // Selected armor piece card (below slot selector)
+            int cardY = slotY + slotSelectorHeight + gap;
+            renderSelectedPieceCard(graphics, slotX, cardY, innerWidth, mouseX, mouseY);
+        } else {
+            armorCardBounds = ResponsiveLayout.Rect.EMPTY;
+        }
 
         // Item info (in remaining space)
         int infoY = y + previewAreaHeight + slotAreaHeight;
@@ -247,19 +270,21 @@ public class LeftColumnComponent {
         }
 
         // Check slot selector
-        if (slotSelector.mouseClicked(mouseX, mouseY, button)) {
-            return true;
-        }
-
-        // Cycle slot when clicking the armor card
-        if (armorCardBounds.contains(mouseX, mouseY)) {
-            int current = slotSelector.getSelectedIndex();
-            int next = (current + 1) % slotSelector.getSlots().size();
-            slotSelector.setSelectedIndex(next);
-            if (onSlotSelect != null) {
-                onSlotSelect.accept(slotSelector.getSelectedSlot());
+        if (showSlotSelector) {
+            if (slotSelector.mouseClicked(mouseX, mouseY, button)) {
+                return true;
             }
-            return true;
+
+            // Cycle slot when clicking the armor card
+            if (armorCardBounds.contains(mouseX, mouseY)) {
+                int current = slotSelector.getSelectedIndex();
+                int next = (current + 1) % slotSelector.getSlots().size();
+                slotSelector.setSelectedIndex(next);
+                if (onSlotSelect != null) {
+                    onSlotSelect.accept(slotSelector.getSelectedSlot());
+                }
+                return true;
+            }
         }
 
         return false;
@@ -288,7 +313,7 @@ public class LeftColumnComponent {
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // Bracket keys to navigate slots
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_BRACKET) {
+        if (showSlotSelector && keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_BRACKET) {
             // Previous slot
             int current = slotSelector.getSelectedIndex();
             if (current > 0) {
@@ -299,7 +324,7 @@ public class LeftColumnComponent {
             }
             return true;
         }
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_BRACKET) {
+        if (showSlotSelector && keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_BRACKET) {
             // Next slot
             int current = slotSelector.getSelectedIndex();
             if (current < slotSelector.getSlots().size() - 1) {
@@ -312,8 +337,10 @@ public class LeftColumnComponent {
         }
 
         // Arrow keys for slot navigation
-        if (slotSelector.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
+        if (showSlotSelector) {
+            if (slotSelector.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
+            }
         }
 
         return false;

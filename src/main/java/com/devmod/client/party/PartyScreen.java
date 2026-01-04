@@ -52,7 +52,8 @@ public class PartyScreen extends Screen {
     private float animationTick = 0f;
     private float glowPulse = 0f;
     private float titleGlow = 0f;
-    private final float[] memberAnimations = new float[8];
+    private static final int MAX_VISIBLE_MEMBERS = 6;
+    private final float[] memberAnimations = new float[MAX_VISIBLE_MEMBERS];
 
     // Party State
     private List<PartySyncPayload.PartyMemberInfo> members = new ArrayList<>();
@@ -63,6 +64,7 @@ public class PartyScreen extends Screen {
     private boolean isInParty = false;
     private boolean isLeader = false;
     private boolean isReady = false;
+    private int memberListScrollOffset = 0;
 
     // Mob Selection
     private List<EnduranceQuestRegistry.MobQuestConfig> availableMobs = new ArrayList<>();
@@ -163,6 +165,8 @@ public class PartyScreen extends Screen {
     @Nullable public UUID getLeaderId() { return leaderId; }
     public boolean isLeader() { return isLeader; }
     public float[] getMemberAnimations() { return memberAnimations; }
+    public int getMemberListScrollOffset() { return memberListScrollOffset; }
+    public int getMaxVisibleMembers() { return MAX_VISIBLE_MEMBERS; }
 
     public List<EnduranceQuestRegistry.MobQuestConfig> getFilteredMobs() { return filteredMobs; }
     public int getSelectedMobIndex() { return selectedMobIndex; }
@@ -368,6 +372,11 @@ public class PartyScreen extends Screen {
         updatePreviewEntity();
     }
 
+    private void clampMemberScroll() {
+        int maxScroll = Math.max(0, members.size() - MAX_VISIBLE_MEMBERS);
+        memberListScrollOffset = Mth.clamp(memberListScrollOffset, 0, maxScroll);
+    }
+
     private void onMobSearchChanged(String text) {
         mobSearchText = text;
         filterMobs();
@@ -378,6 +387,7 @@ public class PartyScreen extends Screen {
 
         if (isInParty) {
             members = new ArrayList<>(ClientPartyCache.getMembers());
+            clampMemberScroll();
             leaderId = ClientPartyCache.getLeaderId();
             QuestType cachedType = ClientPartyCache.getQuestType();
             if (cachedType != null) questType = cachedType;
@@ -415,6 +425,7 @@ public class PartyScreen extends Screen {
             }
         } else {
             members.clear();
+            memberListScrollOffset = 0;
             leaderId = null;
             isLeader = false;
             isReady = false;
@@ -431,8 +442,9 @@ public class PartyScreen extends Screen {
         titleGlow = (float) (Math.sin(animationTick * 3) * 0.3 + 0.7);
 
         // Member entrance animations
+        int visibleMembers = Math.min(memberAnimations.length, Math.max(0, members.size() - memberListScrollOffset));
         for (int i = 0; i < memberAnimations.length; i++) {
-            if (i < members.size()) {
+            if (i < visibleMembers) {
                 memberAnimations[i] = Math.min(1f, memberAnimations[i] + 0.1f);
             } else {
                 memberAnimations[i] = 0f;
@@ -771,6 +783,18 @@ public class PartyScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        int memberPanelX = panelX + 15;
+        int memberPanelY = panelY + 80;
+        int memberPanelW = 200;
+        int memberPanelH = 200;
+
+        if (isInParty && mouseX >= memberPanelX && mouseX < memberPanelX + memberPanelW &&
+                mouseY >= memberPanelY && mouseY < memberPanelY + memberPanelH) {
+            int maxScroll = Math.max(0, members.size() - MAX_VISIBLE_MEMBERS);
+            memberListScrollOffset = Mth.clamp(memberListScrollOffset - (int) verticalAmount, 0, maxScroll);
+            return true;
+        }
+
         int listX = panelX + 230;
         int listY = panelY + 80 + 28 + 25 + 16 + 18; // searchY + nsFilterY offset + tierFilterY offset + listOffset
         int listW = 150;

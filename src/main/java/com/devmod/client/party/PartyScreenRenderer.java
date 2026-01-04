@@ -226,6 +226,10 @@ public class PartyScreenRenderer {
         boolean isLeader = screen.isLeader();
         List<PartySyncPayload.PartyMemberInfo> members = screen.getMembers();
         float[] memberAnimations = screen.getMemberAnimations();
+        int maxVisible = screen.getMaxVisibleMembers();
+        int rawOffset = screen.getMemberListScrollOffset();
+        int maxScroll = Math.max(0, members.size() - maxVisible);
+        int scrollOffset = Math.min(Math.max(0, rawOffset), maxScroll);
 
         int panelLeft = panelX + 15;
         int panelTop = panelY + 80;
@@ -244,9 +248,10 @@ public class PartyScreenRenderer {
         int hoveredMemberIndex = -1;
         int memberY = panelTop + 28;
 
-        for (int i = 0; i < Math.min(members.size(), 6); i++) {
-            PartySyncPayload.PartyMemberInfo member = members.get(i);
-            float anim = memberAnimations[i];
+        int visibleCount = Math.min(maxVisible, Math.max(0, members.size() - scrollOffset));
+        for (int i = 0; i < visibleCount; i++) {
+            PartySyncPayload.PartyMemberInfo member = members.get(scrollOffset + i);
+            float anim = i < memberAnimations.length ? memberAnimations[i] : 1f;
 
             int rowY = memberY + i * 32;  // ROW_HEIGHT_STANDARD
             int rowH = 32;  // ROW_HEIGHT_STANDARD
@@ -258,7 +263,7 @@ public class PartyScreenRenderer {
 
             boolean isHovered = mouseX >= panelLeft + 5 && mouseX < panelLeft + panelW - 5 &&
                     mouseY >= rowY && mouseY < rowY + rowH;
-            if (isHovered) hoveredMemberIndex = i;
+            if (isHovered) hoveredMemberIndex = scrollOffset + i;
 
             // Row background
             int rowBg = isHovered ? COLOR_ROW_HOVER : COLOR_ROW_DEFAULT;
@@ -297,6 +302,14 @@ public class PartyScreenRenderer {
             if (isHovered && isLeader && !member.playerId().equals(leaderId)) {
                 graphics.drawString(f, "[Right-click: Kick]", rowX + rowW - 85, rowY + 10, COLOR_TEXT_DIM, false);
             }
+        }
+
+        if (members.size() > maxVisible && visibleCount > 0) {
+            String range = String.format("%d-%d/%d",
+                scrollOffset + 1,
+                scrollOffset + visibleCount,
+                members.size());
+            graphics.drawString(f, range, panelLeft + panelW - 70, panelTop + panelH - 12, COLOR_TEXT_DIM, false);
         }
 
         // Empty state

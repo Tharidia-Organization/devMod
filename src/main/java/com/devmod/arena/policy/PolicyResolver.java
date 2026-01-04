@@ -29,7 +29,10 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateType;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.devmod.mob.EnhancedMobRequirements;
+import com.devmod.mob.EnhancedMobRequirementsRegistry;
 import com.devmod.mob.MobRequirements;
+import com.devmod.mob.StructureCharacteristics;
 
 public class PolicyResolver implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolicyResolver.class);
@@ -696,14 +699,12 @@ public class PolicyResolver implements AutoCloseable {
      */
     public List<TemplateSuggestion> getTemplateSuggestions(MobRequirements mobReqs) {
         List<TemplateSuggestion> suggestions = new ArrayList<>();
-        String selectedTemplateId = null;
-        double highestScore = -1;
 
         // DD-DYNAMIC: Add dynamic/custom template as first option (highest priority)
         TemplateSuggestion dynamicSuggestion = createDynamicSuggestion(mobReqs);
         suggestions.add(dynamicSuggestion);
-        highestScore = dynamicSuggestion.compatibilityScore();
-        selectedTemplateId = dynamicSuggestion.templateId();
+        double highestScore = dynamicSuggestion.compatibilityScore();
+        String selectedTemplateId = dynamicSuggestion.templateId();
 
         for (ArenaTemplate template : templateRegistry.all()) {
             int minRadius = mobReqs.space().minArenaRadius();
@@ -810,42 +811,102 @@ public class PolicyResolver implements AutoCloseable {
      * Generates a dynamic ArenaTemplate tailored to the specific mob requirements.
      * This creates a "custom_[mobId]" template optimized for the mob's needs.
      *
-     * @param mobReqs The mob requirements to generate a template for
-     * @param server  The server for registry access (may be null for pattern-based fallback)
+     * Now uses EnhancedMobRequirements to consider spawn source (natural vs structure):
+     * - Structure-only mobs: use structure characteristics for floor, light, biome
+     * - Natural+structure mobs: depends on questType (dungeon/boss → structure)
+     * - Natural-only mobs: use standard biome-based floor mapping
+     *
+     * @param mobReqs   The mob requirements to generate a template for
+     * @param server    The server for registry access (may be null for pattern-based fallback)
      * @return A dynamically generated ArenaTemplate
      */
     public ArenaTemplate generateDynamicTemplate(MobRequirements mobReqs, @javax.annotation.Nullable net.minecraft.server.MinecraftServer server) {
+        return generateDynamicTemplate(mobReqs, server, null);
+    }
+
+    /**
+     * Generates a dynamic ArenaTemplate with quest type consideration.
+     *
+     * @param mobReqs   The mob requirements to generate a template for
+     * @param server    The server for registry access (may be null for pattern-based fallback)
+     * @param questType The quest type (affects structure priority for natural+structure mobs)
+     * @return A dynamically generated ArenaTemplate
+     */
+    public ArenaTemplate generateDynamicTemplate(
+        MobRequirements mobReqs,
+        @javax.annotation.Nullable net.minecraft.server.MinecraftServer server,
+        @javax.annotation.Nullable String questType
+    ) {
         String mobId = mobReqs.mobId().getPath();
         String templateId = "custom_" + mobId.replace(":", "_");
 
+        // Get enhanced requirements with spawn source detection
+        EnhancedMobRequirements enhanced = EnhancedMobRequirementsRegistry.INSTANCE
+            .getWithServer(mobReqs.mobId(), server);
+
+        // Determine effective requirements based on spawn source and quest type
+        MobRequirements effectiveReqs = enhanced.getEffectiveRequirements(questType);
+        StructureCharacteristics structure = enhanced.primaryStructure();
+        boolean useStructure = enhanced.spawnSource().shouldUseStructure(questType);
+
         // Calculate optimal size based on mob space requirements
-        int minRadius = mobReqs.space().minArenaRadius();
+        int minRadius = effectiveReqs.space().minArenaRadius();
         int size = Math.max(64, roundToNearest16(minRadius * 2 + 16)); // Add padding, round to 16
 
-        // Determine biome
-        String biomeId = mobReqs.biome().preferredBiome()
-            .map(r -> r.toString())
-            .orElse("minecraft:plains");
+        // Determine biome - structure hint takes priority when using structure
+        String biomeId;
+        if (useStructure && structure != null && structure.biomeHint() != null) {
+            biomeId = structure.biomeHint();
+        } else {
+            biomeId = effectiveReqs.biome().preferredBiome()
+                .map(r -> r.toString())
+                .orElse("minecraft:plains");
+        }
 
-        // Determine floor material dynamically using BiomeFloorMapper
-        // Priority: preferredBlock → biomeTag → registry lookup → pattern fallback
-        String floorMaterial = BiomeFloorMapper.resolveFloorMaterial(mobReqs, server);
+        // Determine floor material - structure floor takes priority when using structure
+        String floorMaterial;
+        if (useStructure && structure != null) {
+            floorMaterial = structure.floorMaterial();
+            if (loggingEnabled) {
+                LOGGER.info("[PolicyResolver] Using structure floor '{}' from '{}' for mob '{}'",
+                    floorMaterial, structure.structureId(), mobId);
+            }
+        } else {
+            // Fallback to biome-based floor mapping
+            floorMaterial = BiomeFloorMapper.resolveFloorMaterial(effectiveReqs, server);
+        }
 
-        // Calculate lighting based on light requirements
-        int skyLight = mobReqs.light().prefersLight() ? 15 : (mobReqs.light().prefersDark() ? 0 : 15);
-        int blockLight = mobReqs.light().optimalLight();
+        // Calculate lighting - structure light takes priority when using structure
+        int skyLight;
+        int blockLight;
+        if (useStructure && structure != null) {
+            skyLight = structure.dark() ? 0 : 15;
+            blockLight = structure.lightLevel();
+        } else {
+            skyLight = effectiveReqs.light().prefersLight() ? 15 : (effectiveReqs.light().prefersDark() ? 0 : 15);
+            blockLight = effectiveReqs.light().optimalLight();
+        }
 
         // Determine if boss arena needed
-        boolean isBoss = mobReqs.boss().isBoss();
+        boolean isBoss = effectiveReqs.boss().isBoss();
         ArenaTemplate.ArenaShape shape = isBoss ? ArenaTemplate.ArenaShape.CIRCULAR : ArenaTemplate.ArenaShape.RECTANGULAR;
 
         // Wall height based on mob height + clearance
-        int wallHeight = (int) Math.ceil(mobReqs.space().height() + mobReqs.space().clearanceAbove()) + 3;
+        int wallHeight = (int) Math.ceil(effectiveReqs.space().height() + effectiveReqs.space().clearanceAbove()) + 3;
         wallHeight = Math.max(11, Math.min(wallHeight, 20)); // Clamp between 11-20
 
+        // Determine if arena should be enclosed (ceiling)
+        boolean enclosed = (useStructure && structure != null) ? structure.enclosed() : effectiveReqs.light().prefersDark();
+
         if (loggingEnabled) {
-            LOGGER.info("[PolicyResolver] Generated dynamic template '{}' for mob '{}': size={}, biome={}, floor={}",
-                templateId, mobId, size, biomeId, floorMaterial);
+            LOGGER.info("[PolicyResolver] Generated dynamic template '{}' for mob '{}': " +
+                "size={}, biome={}, floor={}, light={}, spawnSource={}, useStructure={}",
+                templateId, mobId, size, biomeId, floorMaterial, blockLight,
+                enhanced.spawnSource(), useStructure);
+            if (structure != null && useStructure) {
+                LOGGER.info("[PolicyResolver] Using structure characteristics from '{}': {}",
+                    structure.structureId(), structure.describeEnvironment());
+            }
         }
 
         return ArenaTemplate.builder(templateId)
@@ -861,7 +922,7 @@ public class PolicyResolver implements AutoCloseable {
             .arenaShape(shape)
             .floor(new ArenaTemplate.Floor(64, 1, floorMaterial, "solid", "minecraft:polished_andesite", 0))
             .walls(new ArenaTemplate.Walls(true, "minecraft:barrier", wallHeight, 1, 64, "solid"))
-            .ceiling(new ArenaTemplate.Ceiling(true, "minecraft:barrier", 64 + wallHeight, 1))
+            .ceiling(new ArenaTemplate.Ceiling(enclosed, "minecraft:barrier", 64 + wallHeight - 1, 1))
             .underfloor(new ArenaTemplate.Underfloor("minecraft:bedrock", 3, false))
             .palette(new ArenaTemplate.Palette("minecraft:polished_andesite", "minecraft:glowstone", "minecraft:magma_block"))
             .biome(new ArenaTemplate.Biome(biomeId, ArenaTemplate.Biome.ApplyTo.BOUNDS))

@@ -1,6 +1,7 @@
 package com.devmod.arena.policy;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -181,9 +182,17 @@ public final class BiomeFloorMapper {
     @Nullable
     public static String getFloorFromBiomeRegistry(ResourceLocation biomeId, MinecraftServer server) {
         try {
-            Registry<Biome> biomeRegistry = server.registryAccess().registryOrThrow(Registries.BIOME);
+            Registry<Biome> biomeRegistry = server.registryAccess().registryOrThrow(
+                Objects.requireNonNull(Registries.BIOME, "Registries.BIOME cannot be null")
+            );
             Optional<Holder.Reference<Biome>> holderOpt = biomeRegistry.getHolder(
-                net.minecraft.resources.ResourceKey.create(Registries.BIOME, Objects.requireNonNull(biomeId))
+                Objects.requireNonNull(
+                    net.minecraft.resources.ResourceKey.create(
+                        Objects.requireNonNull(Registries.BIOME, "Registries.BIOME cannot be null"),
+                        Objects.requireNonNull(biomeId, "biomeId cannot be null")
+                    ),
+                    "ResourceKey cannot be null"
+                )
             );
 
             if (holderOpt.isEmpty()) {
@@ -195,7 +204,8 @@ public final class BiomeFloorMapper {
 
             // Check each tag in priority order
             for (Map.Entry<TagKey<Biome>, String> entry : TAG_FLOOR_MAP.entrySet()) {
-                if (holder.is(entry.getKey())) {
+                TagKey<Biome> tagKey = Objects.requireNonNull(entry.getKey(), "TagKey cannot be null");
+                if (holder.is(tagKey)) {
                     return entry.getValue();
                 }
             }
@@ -215,7 +225,7 @@ public final class BiomeFloorMapper {
      */
     @Nullable
     private static String inferFloorFromTagPath(String tagPath) {
-        String lower = tagPath.toLowerCase();
+        String lower = tagPath.toLowerCase(Locale.ROOT);
 
         // Nether variants
         if (lower.contains("nether")) {
@@ -324,8 +334,14 @@ public final class BiomeFloorMapper {
      */
     public static TagKey<Biome> createModBiomeTag(String namespace, String path) {
         return TagKey.create(
-            Registries.BIOME,
-            Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(namespace, path))
+            Objects.requireNonNull(Registries.BIOME, "Registries.BIOME cannot be null"),
+            Objects.requireNonNull(
+                ResourceLocation.fromNamespaceAndPath(
+                    Objects.requireNonNull(namespace, "namespace cannot be null"),
+                    Objects.requireNonNull(path, "path cannot be null")
+                ),
+                "ResourceLocation cannot be null"
+            )
         );
     }
 }

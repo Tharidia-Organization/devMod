@@ -515,7 +515,10 @@ public class WaveCheckpointScreen extends Screen {
 
     // === Actions ===
 
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(WaveCheckpointScreen.class);
+
     private void continueToNextWave() {
+        LOGGER.info("[CheckpointDebug] continueToNextWave called, sending CONTINUE_TO_NEXT_WAVE action");
         ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_CONTINUE,
             ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.CONTINUE_TO_NEXT_WAVE));
         if (minecraft != null) {

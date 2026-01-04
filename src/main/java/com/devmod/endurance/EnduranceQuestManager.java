@@ -73,6 +73,8 @@ import com.devmod.runtime.RecoverySystem;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
+import com.devmod.mob.EnhancedMobRequirements;
+import com.devmod.mob.EnhancedMobRequirementsRegistry;
 import com.devmod.mob.MobRequirements;
 import com.devmod.mob.MobRequirementsRegistry;
 
@@ -87,6 +89,10 @@ public class EnduranceQuestManager {
 
     // Active quests per player (player UUID -> active quest)
     private final Map<UUID, ActiveQuestSession> activeSessions = new ConcurrentHashMap<>();
+    // Active party quests (party UUID -> party session)
+    private final Map<UUID, PartyQuestSession> partySessions = new ConcurrentHashMap<>();
+    // Quest UUID -> party UUID lookup for shared party runs
+    private final Map<UUID, UUID> questToParty = new ConcurrentHashMap<>();
 
     // Quest templates (mob ID -> quest template with best records)
     private final Map<ResourceLocation, EnduranceQuest> questTemplates = new ConcurrentHashMap<>();
@@ -409,21 +415,39 @@ public class EnduranceQuestManager {
             .server(server);
 
         // Priority 1: forceTemplateId from settings (explicit user selection from UI)
+        String selectedTemplateId = null;
         if (settings.forceTemplateId != null && !settings.forceTemplateId.isEmpty()) {
             LOGGER.info("[EnduranceQuest] Using explicit template override from settings: {}",
                 settings.forceTemplateId);
-            ctxBuilder.forceTemplateId(settings.forceTemplateId);
+            selectedTemplateId = settings.forceTemplateId;
         } else {
             // Priority 2: ForceTemplateCapability (admin override)
             ForceTemplateCapability capability = forceTemplateCapability;
             if (capability != null) {
-                capability.getForcedTemplate(playerId)
-                    .ifPresent(templateId -> {
-                        LOGGER.info("[EnduranceQuest] Force template override active for {}: {}",
-                            playerId, templateId);
-                        ctxBuilder.forceTemplateId(templateId);
-                    });
+                var forced = capability.getForcedTemplate(playerId);
+                if (forced.isPresent()) {
+                    LOGGER.info("[EnduranceQuest] Force template override active for {}: {}",
+                        playerId, forced.get());
+                    selectedTemplateId = forced.get();
+                }
             }
+        }
+
+        // Priority 3: Auto-select dynamic template for structure-spawn mobs
+        // This ensures mobs like acolyte (crypt) get appropriate arena style
+        if (selectedTemplateId == null && mobRequirements != null) {
+            EnhancedMobRequirements enhanced = EnhancedMobRequirementsRegistry.INSTANCE
+                .getWithServer(mobId, server);
+            if (enhanced.spawnSource().shouldUseStructure(questType)) {
+                String customTemplateId = "custom_" + mobId.getPath().replace(":", "_");
+                LOGGER.info("[EnduranceQuest] Auto-selecting dynamic template '{}' for structure-spawn mob '{}'",
+                    customTemplateId, mobId);
+                selectedTemplateId = customTemplateId;
+            }
+        }
+
+        if (selectedTemplateId != null) {
+            ctxBuilder.forceTemplateId(selectedTemplateId);
         }
 
         return policyResolver.resolve(ctxBuilder.build());
@@ -1771,6 +1795,15 @@ public class EnduranceQuestManager {
             ResourceLocation mobId, QuestSettings settings,
             @javax.annotation.Nullable UUID instanceId,
             @javax.annotation.Nullable ArenaHandle arenaHandle) {
+        return startPreparedQuest(players, arena, mobId, settings, instanceId, arenaHandle, null);
+    }
+
+    public Map<UUID, StartQuestResult> startPreparedQuest(
+            List<ServerPlayer> players, ArenaContext arena,
+            ResourceLocation mobId, QuestSettings settings,
+            @javax.annotation.Nullable UUID instanceId,
+            @javax.annotation.Nullable ArenaHandle arenaHandle,
+            @javax.annotation.Nullable EnduranceQuest sharedQuest) {
 
         Map<UUID, StartQuestResult> results = new HashMap<>();
 
@@ -1817,16 +1850,24 @@ public class EnduranceQuestManager {
             return results;
         }
 
+        EnduranceQuest quest = sharedQuest != null ? sharedQuest : new EnduranceQuest(template.getMobConfig());
+        if (!quest.getMobId().equals(mobId)) {
+            for (ServerPlayer player : players) {
+                results.put(player.getUUID(), new StartQuestResult(false, "Quest mob mismatch: " + mobId, null));
+            }
+            return results;
+        }
+        quest.setTotalWaves(settings.totalWaves);
+        quest.setEndlessMode(settings.endlessMode);
+        if (sharedQuest != null && quest.getState() != EnduranceQuestState.IN_PROGRESS) {
+            quest.start(arena.getId());
+        }
+
         // Start quest for each player
         for (ServerPlayer player : players) {
             if (player == null || !player.isAlive()) continue;
 
             UUID playerId = player.getUUID();
-
-            // Create quest instance
-            EnduranceQuest quest = new EnduranceQuest(template.getMobConfig());
-            quest.setTotalWaves(settings.totalWaves);
-            quest.setEndlessMode(settings.endlessMode);
 
             // Create placeholder session for atomic insert
             ActiveQuestSession placeholderSession = new ActiveQuestSession(playerId, quest, null, System.currentTimeMillis());
@@ -1840,7 +1881,9 @@ public class EnduranceQuestManager {
             }
 
             // Start the quest
-            quest.start(arena.getId());
+            if (sharedQuest == null) {
+                quest.start(arena.getId());
+            }
 
             // Create the real session with arena and party settings
             ActiveQuestSession session = new ActiveQuestSession(
@@ -1895,6 +1938,14 @@ public class EnduranceQuestManager {
         }
 
         return results;
+    }
+
+    public Optional<EnduranceQuest> createSharedQuest(ResourceLocation mobId, UUID questId) {
+        EnduranceQuest template = questTemplates.get(mobId);
+        if (template == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new EnduranceQuest(template.getMobConfig(), questId));
     }
 
     /**
@@ -2567,6 +2618,54 @@ public class EnduranceQuestManager {
     }
 
     /**
+     * Complete current wave for a party-run session.
+     */
+    public void completePartyWave(PartyQuestSession partySession) {
+        if (partySession == null || !partySession.isActive()) {
+            return;
+        }
+        EnduranceQuest quest = partySession.getQuest();
+        if (quest.getState() != EnduranceQuestState.IN_PROGRESS) {
+            return;
+        }
+
+        quest.completeWave();
+        if (quest.getState() == EnduranceQuestState.COMPLETED) {
+            endPartyRun(partySession, true, "completed");
+        }
+    }
+
+    public void continuePartyToNextWave(UUID partyId) {
+        PartyQuestSession partySession = partySessions.get(partyId);
+        if (partySession == null || !partySession.isActive()) {
+            return;
+        }
+        EnduranceQuest quest = partySession.getQuest();
+        if (quest.getState() != EnduranceQuestState.WAVE_COMPLETE) {
+            return;
+        }
+        quest.continueToNextWave();
+
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        for (UUID memberId : partySession.getMembers()) {
+            ActiveQuestSession session = activeSessions.get(memberId);
+            if (session == null) {
+                continue;
+            }
+            session.resetWaveKills();
+            session.scheduleWaveStart(WAVE_START_COUNTDOWN_TICKS);
+            session.setRespawnCountdownActive(false);
+
+            if (session.isPartySpectator() && server != null) {
+                ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
+                if (player != null) {
+                    rejoinPartyMember(player);
+                }
+            }
+        }
+    }
+
+    /**
      * Continue to next wave after checkpoint.
      */
     public void continueToNextWave(ServerPlayer player) {
@@ -2578,6 +2677,64 @@ public class EnduranceQuestManager {
      */
     public void exitAtCheckpoint(ServerPlayer player) {
         sessionHandler.exitAtCheckpoint(player);
+    }
+
+    public void endPartyRun(PartyQuestSession partySession, boolean completed, String reason) {
+        if (partySession == null || !partySession.isActive()) {
+            return;
+        }
+
+        partySession.end(completed ? PartyQuestSession.Status.COMPLETED : PartyQuestSession.Status.FAILED);
+
+        UUID questId = partySession.getQuestId();
+        ActiveQuestSession cleanupSession = null;
+        for (UUID memberId : partySession.getMembers()) {
+            ActiveQuestSession session = activeSessions.get(memberId);
+            if (session != null) {
+                activeSessions.remove(memberId);
+                if (cleanupSession == null) {
+                    cleanupSession = session;
+                }
+                ServerPlayer player = null;
+                var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+                if (server != null) {
+                    player = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
+                }
+
+                if (player != null) {
+                    EnduranceEventHandler.onQuestEnd(player, session, completed);
+                    com.devmod.telemetry.TelemetryService.INSTANCE.endDungeonSession(
+                        player, completed ? "completed" : (reason != null ? reason : "failed"));
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                        player, Objects.requireNonNull(QuestSyncPayload.empty()));
+                    EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
+                }
+            }
+        }
+
+        EnduranceConfigManager.INSTANCE.cleanupQuest(questId);
+        EnduranceEventCombat.removeMutatorSession(questId);
+        MutatorSystem.INSTANCE.endSession(questId);
+        CombatTracker.INSTANCE.stopTracking(questId);
+        TensionSystem.INSTANCE.endSession(questId);
+        com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.endSession(questId);
+        com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.endSession(questId);
+        DirectiveChainManager.INSTANCE.endChain(questId);
+
+        if (cleanupSession != null) {
+            EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(cleanupSession);
+            EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(cleanupSession, completed);
+        }
+
+        com.devmod.party.PartyManager.INSTANCE.finishQuest(partySession.getPartyId());
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+            com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, partySession.getPartyId());
+        }
+
+        removePartySession(partySession.getPartyId());
+        LOGGER.info("[EnduranceQuest] Party run ended partyId={} questId={} completed={}",
+            partySession.getPartyId(), questId, completed);
     }
 
     // ========== Combat Events ==========
@@ -2648,6 +2805,122 @@ public class EnduranceQuestManager {
      */
     public Map<UUID, ActiveQuestSession> getActiveSessions() {
         return Collections.unmodifiableMap(activeSessions);
+    }
+
+    // ========== Party Quest Sessions ==========
+
+    public PartyQuestSession registerPartySession(PartyQuestSession session) {
+        if (session == null) {
+            return null;
+        }
+        partySessions.put(session.getPartyId(), session);
+        questToParty.put(session.getQuestId(), session.getPartyId());
+        return session;
+    }
+
+    public Optional<PartyQuestSession> getPartySession(UUID partyId) {
+        return Optional.ofNullable(partySessions.get(partyId));
+    }
+
+    public Optional<PartyQuestSession> getPartySessionByPlayer(UUID playerId) {
+        ActiveQuestSession session = activeSessions.get(playerId);
+        if (session == null || session.getPartyId() == null) {
+            return Optional.empty();
+        }
+        return getPartySession(session.getPartyId());
+    }
+
+    public Optional<PartyQuestSession> getPartySessionByQuest(UUID questId) {
+        UUID partyId = questToParty.get(questId);
+        if (partyId == null) {
+            return Optional.empty();
+        }
+        return getPartySession(partyId);
+    }
+
+    public boolean isPartyQuest(UUID questId) {
+        return questToParty.containsKey(questId);
+    }
+
+    public void removePartySession(UUID partyId) {
+        PartyQuestSession session = partySessions.remove(partyId);
+        if (session != null) {
+            questToParty.remove(session.getQuestId());
+        }
+    }
+
+    public boolean isPartyRunActiveForPlayer(UUID playerId) {
+        return getPartySessionByPlayer(playerId).map(PartyQuestSession::isActive).orElse(false);
+    }
+
+    public void markPartyMemberInactive(UUID playerId, String reason) {
+        ActiveQuestSession session = activeSessions.get(playerId);
+        if (session == null || session.getPartyId() == null) {
+            return;
+        }
+        PartyQuestSession partySession = partySessions.get(session.getPartyId());
+        if (partySession == null || !partySession.isActive()) {
+            return;
+        }
+        session.setPartySpectator(true);
+        partySession.markSpectator(playerId);
+
+        if (partySession.isWiped()) {
+            EnduranceQuest quest = partySession.getQuest();
+            quest.fail(false);
+            endPartyRun(partySession, false, reason != null ? reason : "party_wipe");
+        }
+    }
+
+    public void markPartyMemberActive(UUID playerId) {
+        ActiveQuestSession session = activeSessions.get(playerId);
+        if (session == null || session.getPartyId() == null) {
+            return;
+        }
+        PartyQuestSession partySession = partySessions.get(session.getPartyId());
+        if (partySession == null || !partySession.isActive()) {
+            return;
+        }
+        session.setPartySpectator(false);
+        partySession.markActive(playerId);
+    }
+
+    public boolean rejoinPartyMember(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        ActiveQuestSession session = activeSessions.get(player.getUUID());
+        if (session == null || session.getPartyId() == null) {
+            return false;
+        }
+        PartyQuestSession partySession = partySessions.get(session.getPartyId());
+        if (partySession == null || !partySession.isActive()) {
+            return false;
+        }
+        if (!session.isPartySpectator()) {
+            return true;
+        }
+
+        boolean teleported = false;
+        UUID instanceId = session.getInstanceId();
+        if (instanceId != null) {
+            teleported = com.devmod.runtime.DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
+        }
+        if (teleported && session.getArena() != null) {
+            teleported = !teleportPlayersToArena(List.of(player), session.getArena(), session.getArenaHandle()).isEmpty();
+        }
+
+        if (teleported) {
+            player.setGameMode(GameType.SURVIVAL);
+            EndurancePlayerStateManager.INSTANCE.resetQuestLoadout(player, session);
+            EndurancePlayerStateManager.INSTANCE.applySafeWindowEffects(player, SAFE_WINDOW_TICKS);
+            markPartyMemberActive(player.getUUID());
+            player.sendSystemMessage(Objects.requireNonNull(
+                net.minecraft.network.chat.Component.literal("[DevMod] Rejoined party run.")
+                    .withStyle(SharedColorTokens.Chat.GREEN)));
+        }
+
+        return teleported;
     }
 
     // ========== Data Reset ==========
@@ -2858,6 +3131,9 @@ public class EnduranceQuestManager {
         private List<WaveDirective> pendingDirectives = List.of();
         private @javax.annotation.Nullable String selectedDirectiveId;
         private int directiveWaveNumber = -1;
+
+        // Party run spectator flag (inactive member)
+        private boolean partySpectator = false;
 
         // Saved player state (to restore after quest)
         private GameType originalGameMode;
@@ -3111,6 +3387,10 @@ public class EnduranceQuestManager {
         public boolean isRespawnCountdownActive() { return respawnCountdownActive; }
 
         public void setRespawnCountdownActive(boolean active) { this.respawnCountdownActive = active; }
+
+        public boolean isPartySpectator() { return partySpectator; }
+
+        public void setPartySpectator(boolean partySpectator) { this.partySpectator = partySpectator; }
 
         public void clearAllSequences() {
             clearPendingWaveStart();

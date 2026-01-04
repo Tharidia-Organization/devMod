@@ -287,7 +287,7 @@ public class DungeonRunService {
 
         DungeonRun activeRun = activeRuns.get(playerId);
 
-        // P2-B Instrumentation: rate-limited room tracking log
+        // P2-B Instrumentation: rate-limited room tracking log (DEBUG level to avoid spam)
         long now = System.currentTimeMillis();
         if (now - lastRoomLogTime > ROOM_LOG_INTERVAL_MS) {
             lastRoomLogTime = now;
@@ -295,7 +295,8 @@ public class DungeonRunService {
                 LOGGER.info("[DungeonRunService] Player {} in room='{}' -> dungeonId='{}' (DUNGEON DETECTED)",
                     player.getName().getString(), currentRoom, dungeonId);
             } else {
-                LOGGER.info("[DungeonRunService] Player {} in room='{}' -> NOT A DUNGEON (no dungeon_//_dungeon pattern)",
+                // Only log at DEBUG level for non-dungeon rooms to avoid console spam
+                LOGGER.debug("[DungeonRunService] Player {} in room='{}' -> not a dungeon",
                     player.getName().getString(), currentRoom);
             }
         }

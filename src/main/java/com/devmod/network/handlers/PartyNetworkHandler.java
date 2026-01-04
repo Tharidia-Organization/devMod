@@ -8,6 +8,7 @@ import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.GameType;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -27,6 +28,8 @@ import com.devmod.party.PartyManager;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
+import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.PartyQuestSession;
 import com.devmod.util.I18n;
 
 import static com.devmod.network.PayloadValidation.validated;
@@ -147,7 +150,15 @@ public final class PartyNetworkHandler extends NetworkHandlerBase implements Pay
                     PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
                     if (party != null) {
                         UUID partyId = party.getPartyId();
-                        if (PartyManager.INSTANCE.leaveParty(playerId)) {
+                        if (party.getState() == PartyData.PartyState.IN_QUEST
+                            && EnduranceQuestManager.INSTANCE.getPartySession(partyId)
+                                .map(PartyQuestSession::isActive).orElse(false)) {
+                            EnduranceQuestManager.INSTANCE.markPartyMemberInactive(playerId, "leave_party");
+                            player.setGameMode(GameType.SPECTATOR);
+                            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                                "[DevMod] You are now spectating the party run.")));
+                            syncPartyToAllMembers(player.server, partyId);
+                        } else if (PartyManager.INSTANCE.leaveParty(playerId)) {
                             LOGGER.info("[Party] {} left party {}", playerName, partyId);
                             syncPartyToAllMembers(player.server, partyId);
                             sendPartySyncToPlayer(player);

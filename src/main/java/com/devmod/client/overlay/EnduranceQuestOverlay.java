@@ -113,6 +113,8 @@ public class EnduranceQuestOverlay {
     private static long waveCompleteDetectedTime = 0;
     private static final long CHECKPOINT_SCREEN_DELAY = 500; // ms before auto-opening
 
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EnduranceQuestOverlay.class);
+
     // === Boss Alert State ===
     private static long bossAlertStartTime = 0;
     private static long bossAlertDuration = 0;
@@ -952,6 +954,7 @@ public class EnduranceQuestOverlay {
             // First time detecting wave complete - record timestamp
             if (waveCompleteDetectedTime == 0) {
                 waveCompleteDetectedTime = System.currentTimeMillis();
+                LOGGER.info("[CheckpointDebug] WAVE_COMPLETE detected, starting delay timer");
             }
 
             // Wait for delay before opening screen (allows animation to play)
@@ -961,13 +964,16 @@ public class EnduranceQuestOverlay {
                 mc.execute(() -> {
                     // Don't interrupt PerkSelectionScreen - player needs to choose a perk first
                     if (mc.screen instanceof PerkSelectionScreen) {
+                        LOGGER.debug("[CheckpointDebug] Waiting for PerkSelectionScreen");
                         return; // Wait for player to finish perk selection
                     }
 
                     if (EnduranceUiCache.getLastDirectiveChoices() != null) {
                         if (mc.screen instanceof WaveDirectiveScreen) {
+                            LOGGER.debug("[CheckpointDebug] WaveDirectiveScreen already open");
                             return;
                         }
+                        LOGGER.info("[CheckpointDebug] Opening WaveDirectiveScreen");
                         if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) {
                             mc.setScreen(null);
                         }
@@ -979,6 +985,8 @@ public class EnduranceQuestOverlay {
 
                     // Mark as shown to prevent reopening (only after perk selection is done)
                     checkpointScreenShown = true;
+                    LOGGER.info("[CheckpointDebug] Opening WaveCheckpointScreen, currentScreen={}",
+                        mc.screen != null ? mc.screen.getClass().getSimpleName() : "null");
 
                     // Close current screen if it's not the checkpoint screen or chat
                     if (mc.screen != null && !(mc.screen instanceof WaveCheckpointScreen)) {
@@ -989,9 +997,14 @@ public class EnduranceQuestOverlay {
                     }
 
                     // Open checkpoint screen if no screen is active
-                    if (mc.screen == null) {
+                    var currentScreen = mc.screen;
+                    if (currentScreen == null) {
+                        LOGGER.info("[CheckpointDebug] Invoking UI_WAVE_CHECKPOINT_OPEN action");
                         ActionRegistry.invoke(ActionIds.UI_WAVE_CHECKPOINT_OPEN,
                             ClientActionContexts.forClient(ActionOrigin.EVENT));
+                    } else {
+                        LOGGER.warn("[CheckpointDebug] Screen not null after close attempt: {}",
+                            currentScreen.getClass().getSimpleName());
                     }
                 });
             }
@@ -999,6 +1012,10 @@ public class EnduranceQuestOverlay {
 
         // Reset flags when state changes away from WAVE_COMPLETE
         if (currentState != EnduranceQuestState.WAVE_COMPLETE) {
+            if (checkpointScreenShown || waveCompleteDetectedTime > 0) {
+                LOGGER.info("[CheckpointDebug] State changed from WAVE_COMPLETE to {}, resetting flags",
+                    currentState);
+            }
             checkpointScreenShown = false;
             waveCompleteDetectedTime = 0;
         }

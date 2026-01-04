@@ -168,6 +168,16 @@ public class RecoverySystem {
         LOGGER.info("[Recovery] Found pending snapshot for {} in state {}",
             player.getName().getString(), snapshot.getState());
 
+        var sessionOpt = com.devmod.endurance.EnduranceQuestManager.INSTANCE.getActiveSession(playerId);
+        if (sessionOpt.isPresent()) {
+            var session = sessionOpt.get();
+            if (session.getPartyId() != null
+                && com.devmod.endurance.EnduranceQuestManager.INSTANCE.isPartyRunActiveForPlayer(playerId)) {
+                LOGGER.info("[Recovery] Skipping recovery for {} - party run active", player.getName().getString());
+                return;
+            }
+        }
+
         // Perform recovery based on state
         switch (snapshot.getState()) {
             case PREPARING, IN_TRANSIT -> {

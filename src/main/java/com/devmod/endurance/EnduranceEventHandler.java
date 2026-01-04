@@ -59,18 +59,25 @@ public class EnduranceEventHandler {
         // Create momentum session for pacing enforcement
         MomentumTracker.INSTANCE.startSession(playerId);
 
-        // Create mutator session with random mutators
-        MutatorSystem.MutatorSession mutatorSession = MutatorSystem.INSTANCE.createSession(questId, 3, 1, policy);
+        // Create mutator session with random mutators (shared per questId)
+        MutatorSystem.MutatorSession mutatorSession = MutatorSystem.INSTANCE.getSession(questId).orElse(null);
+        if (mutatorSession == null) {
+            mutatorSession = MutatorSystem.INSTANCE.createSession(questId, 3, 1, policy);
+        }
         EnduranceEventCombat.putMutatorSession(questId, mutatorSession);
 
         // Create perk session for roguelike upgrades
         PerkSystem.INSTANCE.startSession(playerId, questId, policy);
 
-        // Create combat tracking session
-        CombatTracker.INSTANCE.startTracking(questId, playerId, session.getQuest().getMobConfig().mobId);
+        // Create combat tracking session (shared per questId)
+        if (CombatTracker.INSTANCE.getSession(questId).isEmpty()) {
+            CombatTracker.INSTANCE.startTracking(questId, playerId, session.getQuest().getMobConfig().mobId);
+        }
 
-        // Start tension system for dynamic boss spawning
-        TensionSystem.INSTANCE.startSession(questId);
+        // Start tension system for dynamic boss spawning (shared per questId)
+        if (TensionSystem.INSTANCE.getState(questId) == null) {
+            TensionSystem.INSTANCE.startSession(questId);
+        }
 
         // Reset comeback cooldown for fresh quest
         ComebackSystem.INSTANCE.resetCooldown(playerId);
@@ -78,13 +85,15 @@ public class EnduranceEventHandler {
         // Start live analytics session for real-time feedback hooks
         LiveAnalyticsHookManager.INSTANCE.onQuestStart(questId, playerId);
 
-        // Start Devil's Bargain curse session for mid-run risk/reward
-        com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.startSession(questId);
+        // Start Devil's Bargain curse session for mid-run risk/reward (shared per questId)
+        if (com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.getSession(questId).isEmpty()) {
+            com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.startSession(questId);
+        }
 
         // Load Perk Synergy Web discoveries for hidden perk tracking
         com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.onPlayerJoin(player);
 
-        // Start Arena Hazard session for dynamic environmental effects
+        // Start Arena Hazard session for dynamic environmental effects (shared per questId)
         net.minecraft.core.BlockPos arenaCenter = player.blockPosition();
         int arenaRadius = 30; // Default radius
         ArenaContext arena = session.getArena();
@@ -92,7 +101,9 @@ public class EnduranceEventHandler {
             arenaCenter = arena.getCenter();
             arenaRadius = arena.getSize() / 2;
         }
-        com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.startSession(questId, arenaCenter, arenaRadius);
+        if (com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.getSession(questId).isEmpty()) {
+            com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.startSession(questId, arenaCenter, arenaRadius);
+        }
 
         // Record telemetry for quest start
         int playerCount = session.getPlayerCount();
@@ -133,12 +144,19 @@ public class EnduranceEventHandler {
      */
     public static void onQuestEnd(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session,
                                    boolean completed) {
+        onQuestEnd(player, session, completed, true);
+    }
+
+    public static void onQuestEnd(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session,
+                                   boolean completed, boolean cleanupShared) {
         UUID playerId = player.getUUID();
         UUID questId = session.getQuest().getQuestId();
 
         // Get sessions before cleanup
         ComboSystem.ComboSession comboSession = EnduranceEventCombat.removeComboSession(playerId);
-        MutatorSystem.MutatorSession mutatorSession = EnduranceEventCombat.removeMutatorSession(questId);
+        MutatorSystem.MutatorSession mutatorSession = cleanupShared
+            ? EnduranceEventCombat.removeMutatorSession(questId)
+            : EnduranceEventCombat.getMutatorSession(questId);
 
         // Get max combo before cleanup
         int maxCombo = comboSession != null ? comboSession.getMaxCombo() : 0;
@@ -163,24 +181,32 @@ public class EnduranceEventHandler {
         // Cleanup momentum system
         MomentumTracker.INSTANCE.endSession(playerId);
 
-        // Cleanup mutator system
-        MutatorSystem.INSTANCE.endSession(questId);
+        // Cleanup mutator system (shared per questId)
+        if (cleanupShared) {
+            MutatorSystem.INSTANCE.endSession(questId);
+        }
 
         // Cleanup perk system (removes applied attribute modifiers)
         PerkSystem.INSTANCE.endSession(player);
 
         // Finalize and stop combat tracking
         CombatTracker.QuestCombatSession combatSessionData = CombatTracker.INSTANCE.getSession(questId).orElse(null);
-        CombatTracker.INSTANCE.stopTracking(questId);
+        if (cleanupShared) {
+            CombatTracker.INSTANCE.stopTracking(questId);
+        }
 
         // End tension system session
-        TensionSystem.INSTANCE.endSession(questId);
+        if (cleanupShared) {
+            TensionSystem.INSTANCE.endSession(questId);
+        }
 
         // End Devil's Bargain session and get final reward multiplier
-        var bargainSession = com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.endSession(questId);
-        if (bargainSession != null && bargainSession.getCurseCount() > 0) {
-            LOGGER.info("[EnduranceQuest] Bargain session ended: {} curses, {}x reward multiplier",
-                bargainSession.getCurseCount(), bargainSession.getTotalRewardMultiplier());
+        if (cleanupShared) {
+            var bargainSession = com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.endSession(questId);
+            if (bargainSession != null && bargainSession.getCurseCount() > 0) {
+                LOGGER.info("[EnduranceQuest] Bargain session ended: {} curses, {}x reward multiplier",
+                    bargainSession.getCurseCount(), bargainSession.getTotalRewardMultiplier());
+            }
         }
 
         // Cleanup execution system state
@@ -189,8 +215,10 @@ public class EnduranceEventHandler {
         // Save Perk Synergy Web discoveries and cleanup
         com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.onPlayerLeave(player);
 
-        // End Arena Hazard session
-        com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.endSession(questId);
+        // End Arena Hazard session (shared per questId)
+        if (cleanupShared) {
+            com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.endSession(questId);
+        }
 
         // Cleanup comeback system state
         ComebackSystem.INSTANCE.onQuestEnd(playerId);
@@ -207,8 +235,10 @@ public class EnduranceEventHandler {
             }
         });
 
-        // Cleanup directive chain tracking
-        DirectiveChainManager.INSTANCE.endChain(questId);
+        // Cleanup directive chain tracking (shared per questId)
+        if (cleanupShared) {
+            DirectiveChainManager.INSTANCE.endChain(questId);
+        }
 
         // Record gamification stats (leaderboards, badges, challenges)
         if (completed && combatSessionData != null && EnduranceQuestManager.INSTANCE.isGamificationEnabled()) {
@@ -305,15 +335,17 @@ public class EnduranceEventHandler {
         // Finish party quest if this was a party quest and party is still in IN_QUEST state
         UUID partyId = session.getPartyId();
         if (partyId != null) {
-            var party = com.devmod.party.PartyManager.INSTANCE.getParty(partyId);
-            if (party != null && party.getState() == com.devmod.party.PartyData.PartyState.IN_QUEST) {
-                com.devmod.party.PartyManager.INSTANCE.finishQuest(partyId);
-                LOGGER.info("[EnduranceQuest] Party {} transitioned from IN_QUEST to FORMING", partyId);
+            if (EnduranceQuestManager.INSTANCE.getPartySession(partyId).isEmpty()) {
+                var party = com.devmod.party.PartyManager.INSTANCE.getParty(partyId);
+                if (party != null && party.getState() == com.devmod.party.PartyData.PartyState.IN_QUEST) {
+                    com.devmod.party.PartyManager.INSTANCE.finishQuest(partyId);
+                    LOGGER.info("[EnduranceQuest] Party {} transitioned from IN_QUEST to FORMING", partyId);
 
-                // Sync party state to all members so clients see the updated state
-                var server = player.getServer();
-                if (server != null) {
-                    com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, partyId);
+                    // Sync party state to all members so clients see the updated state
+                    var server = player.getServer();
+                    if (server != null) {
+                        com.devmod.network.handlers.PartyNetworkHandler.syncPartyToAllMembers(server, partyId);
+                    }
                 }
             }
         }
@@ -407,6 +439,11 @@ public class EnduranceEventHandler {
      * Called when a wave is completed.
      */
     public static void onWaveComplete(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session, int waveNumber) {
+        onWaveComplete(player, session, waveNumber, true);
+    }
+
+    public static void onWaveComplete(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session,
+                                      int waveNumber, boolean applyShared) {
         UUID playerId = player.getUUID();
         UUID questId = session.getQuest().getQuestId();
         EnduranceQuest quest = session.getQuest();
@@ -453,11 +490,13 @@ public class EnduranceEventHandler {
 
         // === ARENA HAZARDS - Check for new hazards on wave transition ===
         int upcomingWave = waveNumber + 1;
-        List<com.devmod.endurance.hazard.ArenaHazardSystem.HazardType> triggeredHazards =
-            com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.checkWaveHazards(questId, upcomingWave);
-        if (!triggeredHazards.isEmpty()) {
-            LOGGER.info("[EnduranceQuest] Arena hazards triggered for wave {}: {}",
-                upcomingWave, triggeredHazards);
+        if (applyShared) {
+            List<com.devmod.endurance.hazard.ArenaHazardSystem.HazardType> triggeredHazards =
+                com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.checkWaveHazards(questId, upcomingWave);
+            if (!triggeredHazards.isEmpty()) {
+                LOGGER.info("[EnduranceQuest] Arena hazards triggered for wave {}: {}",
+                    upcomingWave, triggeredHazards);
+            }
         }
 
         // === DETAILED LOGGING ===
@@ -471,14 +510,16 @@ public class EnduranceEventHandler {
         }
 
         // === COMBAT TRACKER - Prepare for next wave ===
-        if (combatSession != null) {
+        if (combatSession != null && applyShared) {
             // Finalize current wave stats and prepare for next wave
             combatSession.startNewWave(waveNumber + 1);
             LOGGER.debug("[EnduranceQuest] Combat tracker advanced to wave {}", waveNumber + 1);
         }
 
         // === TENSION SYSTEM - Dynamic boss spawning ===
-        boolean nextWaveIsBoss = TensionSystem.INSTANCE.onWaveComplete(questId, waveNumber);
+        boolean nextWaveIsBoss = applyShared
+            ? TensionSystem.INSTANCE.onWaveComplete(questId, waveNumber)
+            : TensionSystem.INSTANCE.getTensionInfo(questId).bossImminent();
         TensionSystem.TensionInfo tensionInfo = TensionSystem.INSTANCE.getTensionInfo(questId);
         LOGGER.info("[EnduranceQuest]   Tension: {}% (level {}), Boss pending: {}",
             (int)(tensionInfo.percent() * 100), tensionInfo.level(), nextWaveIsBoss);
@@ -496,11 +537,13 @@ public class EnduranceEventHandler {
         }
 
         // === LIVE ANALYTICS - Notify hooks of wave transition ===
-        WaveSummary waveSummary = buildWaveSummary(waveNumber, waveStats, comboSession);
-        LiveAnalyticsHookManager.INSTANCE.onWaveComplete(waveNumber, waveSummary, waveNumber + 1);
+        if (applyShared) {
+            WaveSummary waveSummary = buildWaveSummary(waveNumber, waveStats, comboSession);
+            LiveAnalyticsHookManager.INSTANCE.onWaveComplete(waveNumber, waveSummary, waveNumber + 1);
+        }
 
         // === MUTATOR SYSTEM - Roll new mutators between waves ===
-        if (mutatorSession != null && waveNumber % 3 == 0) {
+        if (applyShared && mutatorSession != null && waveNumber % 3 == 0) {
             // Every 3 waves, potentially add a new mutator
             int prevMutatorCount = mutatorSession.getActiveMutatorCount();
             MutatorSystem.INSTANCE.rollNewMutator(mutatorSession, waveNumber);
@@ -513,7 +556,7 @@ public class EnduranceEventHandler {
         }
 
         // === DEVIL'S BARGAIN - Spawn altar every 3 waves for curse selection ===
-        if (com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.shouldSpawnAltar(waveNumber)) {
+        if (applyShared && com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.shouldSpawnAltar(waveNumber)) {
             com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.spawnAltar(player, questId, waveNumber);
             LOGGER.info("[EnduranceQuest] Devil's Bargain altar spawned at wave {}", waveNumber);
         }
@@ -552,7 +595,7 @@ public class EnduranceEventHandler {
         // === DIRECTIVE CHAINS - Multi-wave narrative arcs ===
         // Check if we should advance an active chain or offer new chains
         boolean chainActive = DirectiveChainManager.INSTANCE.hasActiveChain(questId);
-        if (chainActive) {
+        if (applyShared && chainActive) {
             // Advance the active chain
             int waveDeaths = waveStats != null ? waveStats.deaths : 0;
             float damageTakenThisWave = waveStats != null ? waveStats.damageTaken : 0;
@@ -591,7 +634,7 @@ public class EnduranceEventHandler {
         }
 
         // === WAVE DIRECTIVES - Risk/Reward choices for next wave ===
-        if (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode()) {
+        if (applyShared && (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode())) {
             int nextWave = waveNumber + 1;
 
             // If chain is active, use chain directive; otherwise offer choices
@@ -764,6 +807,13 @@ public class EnduranceEventHandler {
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             KitManager.INSTANCE.restoreSyncedKits(player);
+            var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player);
+            if (sessionOpt.isPresent()) {
+                var session = sessionOpt.get();
+                if (session.getPartyId() != null && session.isPartySpectator()) {
+                    EnduranceQuestManager.INSTANCE.rejoinPartyMember(player);
+                }
+            }
         }
     }
 
@@ -784,9 +834,15 @@ public class EnduranceEventHandler {
             if (sessionOpt.isPresent()) {
                 LOGGER.info("[EnduranceQuest] Player {} logged out during quest, cleaning up...",
                     player.getName().getString());
-
-                // Treat as abandonment
-                EnduranceQuestManager.INSTANCE.abandonQuest(player);
+                var session = sessionOpt.get();
+                if (session.getPartyId() != null
+                    && EnduranceQuestManager.INSTANCE.getPartySession(session.getPartyId())
+                        .map(PartyQuestSession::isActive).orElse(false)) {
+                    EnduranceQuestManager.INSTANCE.markPartyMemberInactive(playerId, "disconnect");
+                } else {
+                    // Treat as abandonment
+                    EnduranceQuestManager.INSTANCE.abandonQuest(player);
+                }
             }
 
             // Handle party disconnect - transfer leadership or leave party
@@ -794,9 +850,13 @@ public class EnduranceEventHandler {
             if (party != null) {
                 UUID partyId = party.getPartyId();
                 boolean wasLeader = party.isLeader(playerId);
+                boolean partyRunActive = EnduranceQuestManager.INSTANCE.getPartySession(partyId)
+                    .map(PartyQuestSession::isActive).orElse(false);
 
-                // This will transfer leadership if player was leader, or just remove from party
-                com.devmod.party.PartyManager.INSTANCE.handlePlayerDisconnect(playerId);
+                if (!partyRunActive) {
+                    // This will transfer leadership if player was leader, or just remove from party
+                    com.devmod.party.PartyManager.INSTANCE.handlePlayerDisconnect(playerId);
+                }
 
                 // Sync party state to remaining members
                 var server = player.getServer();
