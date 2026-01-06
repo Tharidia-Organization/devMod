@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -58,6 +59,8 @@ import com.devmod.endurance.StartQuestPayload;
 import com.devmod.endurance.TensionUpdatePayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
+import com.devmod.party.PartyData;
+import com.devmod.party.PartyManager;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.KitManager;
@@ -1295,9 +1298,33 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
     }
 
     private static void handleSessionMobConfigOverride(ServerPlayer player, com.devmod.endurance.EnduranceMobConfigSyncPayload payload) {
+        com.devmod.endurance.config.EnduranceMobPoolConfig poolConfig = payload.toPoolConfig();
+        int mobCount = payload.mobEntries().size();
+
         // Check if player is host of an active quest session
         var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player);
         if (sessionOpt.isEmpty()) {
+            PartyData party = PartyManager.INSTANCE.getPlayerParty(player.getUUID());
+            if (party != null && party.isLeader(player.getUUID())) {
+                if (party.getState() == PartyData.PartyState.IN_QUEST) {
+                    EnduranceQuestManager.INSTANCE.getPartySession(party.getPartyId())
+                        .ifPresentOrElse(partySession -> {
+                            for (UUID memberId : partySession.getMembers()) {
+                                EnduranceQuestManager.INSTANCE.getActiveSession(memberId)
+                                    .ifPresent(memberSession -> memberSession.setMobPoolConfig(poolConfig.copy()));
+                            }
+                            player.sendSystemMessage(I18n.translate("devmod.config.mob_session_applied", mobCount));
+                            LOGGER.info("[MobConfig] {} applied session mob config via party {} ({} mobs)",
+                                player.getName().getString(), party.getPartyId(), mobCount);
+                        }, () -> player.sendSystemMessage(I18n.error("devmod.config.no_active_session")));
+                    return;
+                }
+                party.setMobPoolConfig(poolConfig);
+                player.sendSystemMessage(I18n.translate("devmod.config.mob_session_staged", mobCount));
+                LOGGER.info("[MobConfig] {} staged session mob config for party {} ({} mobs)",
+                    player.getName().getString(), party.getPartyId(), mobCount);
+                return;
+            }
             player.sendSystemMessage(I18n.error("devmod.config.no_active_session"));
             return;
         }
@@ -1308,11 +1335,18 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
             return;
         }
 
-        // Convert payload to EnduranceMobPoolConfig and set on session
-        com.devmod.endurance.config.EnduranceMobPoolConfig poolConfig = payload.toPoolConfig();
-        session.setMobPoolConfig(poolConfig);
+        if (session.getPartyId() != null) {
+            EnduranceQuestManager.INSTANCE.getPartySession(session.getPartyId())
+                .ifPresentOrElse(partySession -> {
+                    for (UUID memberId : partySession.getMembers()) {
+                        EnduranceQuestManager.INSTANCE.getActiveSession(memberId)
+                            .ifPresent(memberSession -> memberSession.setMobPoolConfig(poolConfig.copy()));
+                    }
+                }, () -> session.setMobPoolConfig(poolConfig));
+        } else {
+            session.setMobPoolConfig(poolConfig);
+        }
 
-        int mobCount = payload.mobEntries().size();
         var overrides = payload.globalOverrides();
         player.sendSystemMessage(I18n.translate("devmod.config.mob_session_applied", mobCount));
         LOGGER.info("[MobConfig] {} applied session mob config: {} mobs, HP={}x, DMG={}x",
@@ -1341,6 +1375,13 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                         var session = sessionOpt.get();
                         if (session.hasMobPoolConfig()) {
                             poolConfig = session.getMobPoolConfig();
+                            hasConfig = true;
+                        }
+                    }
+                    if (poolConfig == null) {
+                        PartyData party = PartyManager.INSTANCE.getPlayerParty(player.getUUID());
+                        if (party != null && party.hasMobPoolConfig()) {
+                            poolConfig = party.getMobPoolConfig();
                             hasConfig = true;
                         }
                     }

@@ -259,10 +259,22 @@ public class QuestDeathScreen extends Screen {
         if (mc != null) {
             mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.PLAYER_LEVELUP), 1.0f)));
             mc.setScreen(null);
+
+            // Stop suppression after a delay to ensure vanilla DeathScreen doesn't appear
+            // during the brief moment between closing this screen and respawn completing
+            mc.execute(() -> {
+                // Schedule stop after 2 seconds (enough for respawn to complete)
+                java.util.concurrent.CompletableFuture.delayedExecutor(
+                    2, java.util.concurrent.TimeUnit.SECONDS
+                ).execute(ClientQuestCache::stopDeathScreenSuppression);
+            });
         }
     }
 
     private void giveUpAndCollect() {
+        // Stop suppression immediately since quest is ending
+        ClientQuestCache.stopDeathScreenSuppression();
+
         ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT,
             ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
                 .withConfirmed(true));

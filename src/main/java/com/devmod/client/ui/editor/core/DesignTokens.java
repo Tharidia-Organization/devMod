@@ -3709,6 +3709,16 @@ public final class DesignTokens {
                 Text.PRIMARY, withAlpha(Text.PRIMARY, 0x44), Stroke.MUTED, Text.PRIMARY, Text.SECONDARY
             );
 
+            public static final PresetValues COLORBLIND = new PresetValues(
+                withAlpha(Bg.LEVEL_1, 0xE6), withAlpha(Bg.LEVEL_2, 0xCC), withAlpha(Bg.LEVEL_3, 0xDD), withAlpha(Bg.LEVEL_3, 0xEE),
+                Palette.ACCENT_BLUE, withAlpha(Palette.ACCENT_BLUE, 0x44), Stroke.EMPHASIS, Text.PRIMARY, Text.SECONDARY
+            );
+
+            public static final PresetValues HIGH_CONTRAST = new PresetValues(
+                Palette.SHADOW, withAlpha(Palette.SURFACE, 0xFF), withAlpha(Palette.PANEL, 0xFF), withAlpha(Palette.PANEL_ELEVATED, 0xFF),
+                Palette.ACCENT_AMBER, withAlpha(Palette.ACCENT_AMBER, 0x44), Palette.TEXT_PRIMARY, Palette.TEXT_PRIMARY, Palette.TEXT_SECONDARY
+            );
+
             private Presets() {}
         }
 
@@ -3796,5 +3806,84 @@ public final class DesignTokens {
      */
     public static int tabStartX(int screenWidth, int tabCount, int tabWidth) {
         return (screenWidth - (tabCount * tabWidth)) / 2;
+    }
+
+    // ===========================================================================
+    // NEXUS HUB COLORS
+    // ===========================================================================
+
+    /**
+     * Colors for the Nexus hub dimension UI elements.
+     * Includes dialog screens, holograms, and portal visuals.
+     */
+    public static final class Nexus {
+
+        // --- Dialog Screen ---
+        /** Dialog panel background (darker, high opacity) */
+        public static final int DIALOG_PANEL_BG = 0xEE0A1018;
+        /** Dialog border (blue) */
+        public static final int DIALOG_BORDER = 0xFF4488FF;
+        /** Dialog border glow (semi-transparent blue) */
+        public static final int DIALOG_BORDER_GLOW = 0x444488FF;
+        /** Speaker name text (light blue) */
+        public static final int DIALOG_SPEAKER = 0xFF88CCFF;
+
+        // --- Hologram Titles ---
+        /** Primary title (gold/orange) */
+        public static final int TITLE_GOLD = 0xFFFFAA00;
+        /** Subtitle text (light gray) */
+        public static final int SUBTITLE_GRAY = 0xFFCCCCCC;
+        /** Hint text (light blue) */
+        public static final int HINT_BLUE = 0xFF88CCFF;
+        /** Hint text (light green) */
+        public static final int HINT_GREEN = 0xFF88FF88;
+        /** Leaderboard gold */
+        public static final int LEADERBOARD_GOLD = 0xFFFFD700;
+        /** Placeholder/inactive text (medium gray) */
+        public static final int PLACEHOLDER_GRAY = 0xFFAAAAAA;
+        /** Footer/timestamp text (dark gray) */
+        public static final int FOOTER_GRAY = 0xFF666666;
+        /** Zone status title (cyan) */
+        public static final int ZONE_TITLE = 0xFF44FFFF;
+        /** Announcement title (pink/magenta) */
+        public static final int ANNOUNCEMENT_TITLE = 0xFFFF88FF;
+        /** Hologram background (semi-transparent black) */
+        public static final int HOLOGRAM_BG = 0xAA000000;
+
+        // --- Avatar Display ---
+        /** Avatar name label (light cyan) - used for TextDisplay over NPCs */
+        public static final int AVATAR_LABEL = 0x7AD7FF;
+
+        // --- Zone Colors ---
+        /** Combat zone (red) */
+        public static final int ZONE_COMBAT = 0xFFFF4444;
+        /** Arena zone (orange) */
+        public static final int ZONE_ARENA = 0xFFFF8800;
+        /** UI zone (blue) */
+        public static final int ZONE_UI = 0xFF4488FF;
+        /** Telemetry zone (green) */
+        public static final int ZONE_TELEMETRY = 0xFF44FF44;
+        /** Showcase zone (yellow) */
+        public static final int ZONE_SHOWCASE = 0xFFFFFF44;
+        /** Integration zone (purple) */
+        public static final int ZONE_INTEGRATION = 0xFFAA44FF;
+        /** Sandbox zone (cyan) */
+        public static final int ZONE_SANDBOX = 0xFF44FFFF;
+        /** Mechanics zone (gray) */
+        public static final int ZONE_MECHANICS = 0xFFAAAAAA;
+
+        // --- Leaderboard Medals ---
+        /** Gold medal (1st place) */
+        public static final int MEDAL_GOLD = 0xFFFFD700;
+        /** Silver medal (2nd place) */
+        public static final int MEDAL_SILVER = 0xFFC0C0C0;
+        /** Bronze medal (3rd place) */
+        public static final int MEDAL_BRONZE = 0xFFCD7F32;
+
+        // --- Fallback ---
+        /** Default white color */
+        public static final int WHITE = 0xFFFFFFFF;
+
+        private Nexus() {}
     }
 }

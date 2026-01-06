@@ -1908,6 +1908,9 @@ public class EnduranceQuestManager {
             session.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
             session.setKitId(settings.resolveKitId(playerId));
             session.setPracticeMode(settings.practiceMode);
+            if (settings.mobPoolConfig != null) {
+                session.setMobPoolConfig(settings.mobPoolConfig.copy());
+            }
             activeSessions.put(playerId, session); // Replaces placeholder
 
             try {
@@ -3265,6 +3268,9 @@ public class EnduranceQuestManager {
         // Practice mode (uses training dummies instead of real mobs)
         public boolean practiceMode = false;
 
+        // Pending mob pool config for party session (optional)
+        public @javax.annotation.Nullable com.devmod.endurance.config.EnduranceMobPoolConfig mobPoolConfig = null;
+
         public QuestSettings() {}
 
         public QuestSettings waves(int waves) {
@@ -3302,6 +3308,11 @@ public class EnduranceQuestManager {
 
         public QuestSettings forceTemplate(@javax.annotation.Nullable String templateId) {
             this.forceTemplateId = templateId;
+            return this;
+        }
+
+        public QuestSettings mobPoolConfig(@javax.annotation.Nullable com.devmod.endurance.config.EnduranceMobPoolConfig config) {
+            this.mobPoolConfig = config != null ? config.copy() : null;
             return this;
         }
 

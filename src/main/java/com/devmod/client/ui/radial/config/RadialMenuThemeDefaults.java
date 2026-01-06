@@ -131,6 +131,8 @@ public final class RadialMenuThemeDefaults {
         public static final ThemePresetValues GOLD = fromPreset(DesignTokens.RadialMenu.Presets.GOLD);
         public static final ThemePresetValues MIDNIGHT = fromPreset(DesignTokens.RadialMenu.Presets.MIDNIGHT);
         public static final ThemePresetValues MINIMAL = fromPreset(DesignTokens.RadialMenu.Presets.MINIMAL);
+        public static final ThemePresetValues COLORBLIND = fromPreset(DesignTokens.RadialMenu.Presets.COLORBLIND);
+        public static final ThemePresetValues HIGH_CONTRAST = fromPreset(DesignTokens.RadialMenu.Presets.HIGH_CONTRAST);
 
         private Presets() {}
     }

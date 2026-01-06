@@ -163,13 +163,12 @@ public final class EnduranceMeleeAttackGoal extends Goal {
             // Debug: Check target armor before attack
             int targetArmor = target.getArmorValue();
             float targetArmorToughness = 0;
-            if (target instanceof net.minecraft.world.entity.LivingEntity living) {
-                var toughnessHolder = net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS;
-                if (toughnessHolder != null) {
-                    var toughnessAttr = living.getAttribute(toughnessHolder);
-                    if (toughnessAttr != null) {
-                        targetArmorToughness = (float) toughnessAttr.getValue();
-                    }
+            // target is already LivingEntity, no instanceof check needed
+            var toughnessHolder = net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS;
+            if (toughnessHolder != null) {
+                var toughnessAttr = target.getAttribute(toughnessHolder);
+                if (toughnessAttr != null) {
+                    targetArmorToughness = (float) toughnessAttr.getValue();
                 }
             }
 

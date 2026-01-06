@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.radial.RadialActionSafety;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
@@ -274,16 +275,16 @@ public final class RadialCategoryRenderer {
      */
     public static void renderCategoryItems(GuiGraphics graphics, Font font,
                                             RadialCategory category,
+                                            List<RadialMenuItem> visibleItems,
                                             List<RadialCategory> categories,
                                             ItemsConfig config) {
         Objects.requireNonNull(graphics, "graphics cannot be null");
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font cannot be null");
         Objects.requireNonNull(category, "category cannot be null");
+        Objects.requireNonNull(visibleItems, "visibleItems cannot be null");
         Objects.requireNonNull(categories, "categories cannot be null");
         Objects.requireNonNull(config, "config cannot be null");
 
-        // Use getVisibleItems() so indices match selectedItemIndex from RadialMenuScreen
-        List<RadialMenuItem> visibleItems = category.getVisibleItems();
         int numItems = visibleItems.size();
         if (numItems == 0) return;
 
@@ -375,6 +376,12 @@ public final class RadialCategoryRenderer {
 
         // Toggle status indicator
         renderItemStatus(graphics, safeFont, item, itemX, itemY, isActive, canExecute, config.theme);
+
+        // Risk badge
+        RadialActionSafety.RiskLevel riskLevel = RadialActionSafety.evaluate(item);
+        if (riskLevel != RadialActionSafety.RiskLevel.SAFE) {
+            renderRiskBadge(graphics, safeFont, itemX, itemY, riskLevel);
+        }
     }
 
     /**
@@ -510,6 +517,22 @@ public final class RadialCategoryRenderer {
             graphics.drawCenteredString(safeFont, indicator, x,
                 y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, indicatorColor);
         }
+    }
+
+    private static void renderRiskBadge(GuiGraphics graphics, @Nonnull Font font, int x, int y,
+                                         RadialActionSafety.RiskLevel riskLevel) {
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
+        int badgeX = x + RadialMenuConstants.RISK_BADGE_OFFSET_X;
+        int badgeY = y + RadialMenuConstants.RISK_BADGE_OFFSET_Y;
+        int badgeColor = riskLevel == RadialActionSafety.RiskLevel.DANGER
+            ? RadialMenuConstants.RISK_BADGE_DANGER_COLOR
+            : RadialMenuConstants.RISK_BADGE_CAUTION_COLOR;
+        String badgeText = riskLevel == RadialActionSafety.RiskLevel.DANGER ? "!" : "?";
+
+        RadialGeometry.renderCircle(graphics, badgeX, badgeY, RadialMenuConstants.RISK_BADGE_RADIUS,
+            RadialMenuConstants.RISK_BADGE_BG_COLOR);
+        graphics.drawCenteredString(safeFont, badgeText, badgeX,
+            badgeY + RadialMenuConstants.RISK_BADGE_TEXT_OFFSET_Y, badgeColor);
     }
 
     // ================================================================

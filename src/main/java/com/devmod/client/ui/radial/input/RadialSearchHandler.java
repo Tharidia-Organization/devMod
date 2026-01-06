@@ -73,6 +73,19 @@ public final class RadialSearchHandler {
      * @return sorted list of results (highest score first), limited to MAX_SEARCH_RESULTS
      */
     public static List<SearchResult> search(String query, Collection<RadialCategory> categories) {
+        return search(query, categories, null);
+    }
+
+    /**
+     * Searches all items in the given categories for matches to the query with an optional filter.
+     *
+     * @param query      the search query (case-insensitive)
+     * @param categories the categories to search through
+     * @param filter     optional filter for items (null means no additional filter)
+     * @return sorted list of results (highest score first), limited to MAX_SEARCH_RESULTS
+     */
+    public static List<SearchResult> search(String query, Collection<RadialCategory> categories,
+                                            @Nullable java.util.function.Predicate<RadialMenuItem> filter) {
         Objects.requireNonNull(query, "query cannot be null");
         Objects.requireNonNull(categories, "categories cannot be null");
 
@@ -85,7 +98,7 @@ public final class RadialSearchHandler {
 
         Set<RadialCategory> visited = new HashSet<>();
         for (RadialCategory cat : categories) {
-            collectMatches(normalizedQuery, cat, results, visited);
+            collectMatches(normalizedQuery, cat, results, visited, filter);
         }
 
         // Sort by score descending
@@ -114,8 +127,8 @@ public final class RadialSearchHandler {
         Objects.requireNonNull(query, "query cannot be null");
         Objects.requireNonNull(item, "item cannot be null");
 
-        String name = item.getName().toLowerCase(Locale.ROOT);
-        String desc = item.getDescription().toLowerCase(Locale.ROOT);
+        String name = Objects.requireNonNullElse(item.getName(), "").toLowerCase(Locale.ROOT);
+        String desc = Objects.requireNonNullElse(item.getDescription(), "").toLowerCase(Locale.ROOT);
 
         int score = 0;
 
@@ -142,21 +155,29 @@ public final class RadialSearchHandler {
     }
 
     private static void collectMatches(String query, RadialCategory category,
-                                       List<SearchResult> results, Set<RadialCategory> visited) {
+                                       List<SearchResult> results, Set<RadialCategory> visited,
+                                       @Nullable java.util.function.Predicate<RadialMenuItem> filter) {
         if (!visited.add(category)) {
             return;
         }
 
-        for (RadialMenuItem item : category.getVisibleItems()) {
-            int score = calculateScore(query, item);
-            if (score > 0) {
-                results.add(new SearchResult(item, category, score));
-            }
+        for (RadialMenuItem item : category.getItems()) {
             if (item.isSubcategoryLink()) {
                 RadialCategory subcategory = item.getLinkedSubcategory();
                 if (subcategory != null) {
-                    collectMatches(query, subcategory, results, visited);
+                    collectMatches(query, subcategory, results, visited, filter);
                 }
+            }
+
+            if (!item.isVisible()) {
+                continue;
+            }
+            if (filter != null && !filter.test(item)) {
+                continue;
+            }
+            int score = calculateScore(query, item);
+            if (score > 0) {
+                results.add(new SearchResult(item, category, score));
             }
         }
     }

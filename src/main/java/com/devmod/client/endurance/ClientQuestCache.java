@@ -21,6 +21,16 @@ public class ClientQuestCache {
     // Track previous state to detect changes
     private static volatile int lastWave = 0;
     private static volatile boolean wasActive = false;
+    private static volatile EnduranceQuestState lastState = EnduranceQuestState.AVAILABLE;
+
+    /**
+     * Flag to suppress vanilla DeathScreen during quest death/respawn flow.
+     * Set when we receive QUEST_DEATH packet, cleared after a delay post-respawn.
+     * This persists even when hasActiveQuest() becomes false during respawn.
+     */
+    private static volatile boolean suppressingVanillaDeathScreen = false;
+    private static volatile long suppressionStartTime = 0;
+    private static final long SUPPRESSION_TIMEOUT_MS = 10_000; // 10 seconds max
 
     /**
      * Update the cache with new data from server.
@@ -41,6 +51,9 @@ public class ClientQuestCache {
 
         // Sync with IntegratedTestSession
         syncWithIntegratedSession(oldData, payload);
+
+        // Sync with Wave Intelligence System
+        syncWithWIS(oldData, payload);
     }
 
     /**
@@ -83,11 +96,39 @@ public class ClientQuestCache {
     }
 
     /**
+     * Synchronize quest state changes with Wave Intelligence System.
+     * Detects state transitions to trigger WIS phase changes.
+     */
+    private static void syncWithWIS(@Nullable QuestSyncPayload oldData, QuestSyncPayload newData) {
+        var wis = com.devmod.client.endurance.wis.WaveIntelligenceManager.INSTANCE;
+        if (!wis.isEnabled()) return;
+
+        EnduranceQuestState prevState = oldData != null ? oldData.getState() : lastState;
+        EnduranceQuestState newState = newData.getState();
+
+        // Detect transition TO WAVE_COMPLETE (wave finished, debrief should show)
+        if (newState == EnduranceQuestState.WAVE_COMPLETE && prevState == EnduranceQuestState.IN_PROGRESS) {
+            com.devmod.client.endurance.wis.WISClientBridge.onWaveComplete();
+        }
+
+        // Detect transition TO IN_PROGRESS from WAVE_COMPLETE (new wave starting)
+        if (newState == EnduranceQuestState.IN_PROGRESS && prevState == EnduranceQuestState.WAVE_COMPLETE) {
+            // Wave combat is starting
+            com.devmod.client.endurance.wis.WISClientBridge.onWaveStart();
+        }
+
+        // Update last state for next comparison
+        lastState = newState;
+    }
+
+    /**
      * Clear the cache (e.g., when disconnecting).
      */
     public static void clear() {
         cachedData = null;
         lastUpdateTime = 0;
+        suppressingVanillaDeathScreen = false;
+        lastState = EnduranceQuestState.AVAILABLE;
         com.devmod.client.overlay.QuestSequenceOverlay.INSTANCE.clear();
         EnduranceUiCache.clear();
         com.devmod.client.config.ClientMechanicsCache.INSTANCE.clearAll();
@@ -98,6 +139,44 @@ public class ClientQuestCache {
      */
     public static boolean hasActiveQuest() {
         return cachedData != null && cachedData.hasActiveQuest();
+    }
+
+    /**
+     * Start suppressing vanilla DeathScreen.
+     * Called when QUEST_DEATH packet is received.
+     */
+    public static void startDeathScreenSuppression() {
+        suppressingVanillaDeathScreen = true;
+        suppressionStartTime = System.currentTimeMillis();
+    }
+
+    /**
+     * Stop suppressing vanilla DeathScreen.
+     * Called after respawn completes or quest ends.
+     */
+    public static void stopDeathScreenSuppression() {
+        suppressingVanillaDeathScreen = false;
+    }
+
+    /**
+     * Check if vanilla DeathScreen should be suppressed.
+     * Returns true if:
+     * - There's an active quest, OR
+     * - We're in the death/respawn flow (suppression flag is set and not timed out)
+     */
+    public static boolean shouldSuppressVanillaDeathScreen() {
+        if (hasActiveQuest()) {
+            return true;
+        }
+        if (suppressingVanillaDeathScreen) {
+            // Check timeout to prevent infinite suppression if something goes wrong
+            if (System.currentTimeMillis() - suppressionStartTime < SUPPRESSION_TIMEOUT_MS) {
+                return true;
+            }
+            // Timed out, clear flag
+            suppressingVanillaDeathScreen = false;
+        }
+        return false;
     }
 
     /**

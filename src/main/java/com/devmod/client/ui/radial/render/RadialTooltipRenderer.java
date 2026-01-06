@@ -12,11 +12,13 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.radial.RadialActionSafety;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.model.MacroCategory;
+import com.devmod.util.I18n;
 
 public final class RadialTooltipRenderer {
 
@@ -37,6 +39,8 @@ public final class RadialTooltipRenderer {
      * @param theme          color theme to use
      */
     public record TooltipContext(
+        int screenWidth,
+        int screenHeight,
         int centerX,
         int centerY,
         int outerRadius,
@@ -63,13 +67,29 @@ public final class RadialTooltipRenderer {
 
         if (tooltip == null || tooltip.isEmpty()) return;
 
-        int tooltipWidth = font.width(tooltip);
+        int padding = RadialMenuConstants.TOOLTIP_PADDING;
+        int border = RadialMenuConstants.TOOLTIP_BORDER_THICKNESS;
+        int maxWidth = Math.max(80, context.screenWidth - (padding + border) * 2 - 8);
+        List<String> lines = wrapTooltipLines(font, tooltip, maxWidth);
+        if (lines.isEmpty()) return;
+        int tooltipWidth = 0;
+        for (String line : lines) {
+            tooltipWidth = Math.max(tooltipWidth, font.width(Objects.requireNonNull(line)));
+        }
+
         int tooltipX = context.centerX - tooltipWidth / 2;
         int tooltipY = context.centerY + context.outerRadius + RadialMenuConstants.TOOLTIP_OFFSET_Y;
 
-        int padding = RadialMenuConstants.TOOLTIP_PADDING;
-        int border = RadialMenuConstants.TOOLTIP_BORDER_THICKNESS;
-        int textHeight = RadialMenuConstants.TOOLTIP_TEXT_HEIGHT;
+        int lineHeight = font.lineHeight;
+        int textHeight = lineHeight * lines.size();
+        int maxX = context.screenWidth - tooltipWidth - padding - border;
+        tooltipX = Math.max(padding + border, Math.min(tooltipX, maxX));
+
+        int maxY = context.screenHeight - textHeight - padding - border;
+        if (tooltipY > maxY) {
+            tooltipY = context.centerY - context.outerRadius - RadialMenuConstants.TOOLTIP_OFFSET_Y - textHeight;
+        }
+        tooltipY = Math.max(padding + border, Math.min(tooltipY, maxY));
 
         // Border
         graphics.fill(tooltipX - padding - border, tooltipY - padding - border,
@@ -82,7 +102,74 @@ public final class RadialTooltipRenderer {
             RadialMenuConstants.TOOLTIP_BG_COLOR);
 
         // Text
-        graphics.drawString(font, tooltip, tooltipX, tooltipY, context.theme.textPrimary, false);
+        int lineY = tooltipY;
+        for (String line : lines) {
+            graphics.drawString(font, line, tooltipX, lineY, context.theme.textPrimary, false);
+            lineY += lineHeight;
+        }
+    }
+
+    private static List<String> wrapTooltipLines(Font font, String tooltip, int maxWidth) {
+        List<String> lines = new java.util.ArrayList<>();
+        String[] rawLines = tooltip.split("\n", -1);
+        for (String rawLine : rawLines) {
+            if (rawLine.isEmpty()) {
+                lines.add("");
+                continue;
+            }
+            lines.addAll(wrapLine(font, rawLine, maxWidth));
+        }
+        return lines;
+    }
+
+    private static List<String> wrapLine(Font font, String line, int maxWidth) {
+        if (font.width(Objects.requireNonNull(line)) <= maxWidth) {
+            return java.util.List.of(line);
+        }
+
+        String[] words = line.split(" ");
+        List<String> wrapped = new java.util.ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        String carryFormat = "";
+
+        for (String word : words) {
+            String prefix = carryFormat;
+            if (word.startsWith("§")) {
+                prefix = "";
+            }
+            String candidate = current.length() == 0
+                ? prefix + word
+                : current + " " + word;
+
+            if (font.width(candidate) <= maxWidth || current.length() == 0) {
+                if (current.length() == 0) {
+                    current.append(prefix).append(word);
+                } else {
+                    current.append(' ').append(word);
+                }
+            } else {
+                wrapped.add(current.toString());
+                carryFormat = lastFormatCode(current.toString());
+                current.setLength(0);
+                current.append(carryFormat).append(word);
+            }
+        }
+
+        if (current.length() > 0) {
+            wrapped.add(current.toString());
+        }
+        return wrapped;
+    }
+
+    private static String lastFormatCode(String line) {
+        String last = "";
+        for (int i = 0; i + 1 < line.length(); i++) {
+            if (line.charAt(i) == '§') {
+                last = line.substring(i, i + 2);
+                i++;
+            }
+        }
+        return last;
     }
 
     /**
@@ -96,6 +183,7 @@ public final class RadialTooltipRenderer {
      * @param selectedItemIndex    selected item index (-1 if none)
      * @param categories           list of categories
      * @param activeCategory       active category for item rendering (subcategory override)
+     * @param selectedItem         selected item (already filtered) or null
      * @param centerHovered        whether center button is hovered
      * @param macroHubHovered      whether hovering over macro hub area
      * @param editMode             whether edit mode is active
@@ -110,12 +198,16 @@ public final class RadialTooltipRenderer {
                                           int selectedItemIndex,
                                           List<RadialCategory> categories,
                                           @Nullable RadialCategory activeCategory,
+                                          @Nullable RadialMenuItem selectedItem,
                                           boolean centerHovered,
                                           boolean macroHubHovered,
                                           boolean editMode) {
         // Center close button tooltip
         if (centerHovered) {
-            return "§7Click to close §8| §7Scroll to search";
+            if (activeCategory != null && activeCategory.hasParent()) {
+                return I18n.translate("devmod.radial.tooltip.back").getString();
+            }
+            return I18n.translate("devmod.radial.tooltip.close").getString();
         }
 
         // Macro-category segment tooltip
@@ -129,25 +221,24 @@ public final class RadialTooltipRenderer {
         }
 
         // Category item tooltip (use visible items to match selectedItemIndex)
-        if (selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
-            RadialCategory cat = activeCategory != null ? activeCategory : categories.get(selectedCategoryIndex);
-            java.util.List<RadialMenuItem> visibleItems = cat.getVisibleItems();
-            if (selectedItemIndex >= 0 && selectedItemIndex < visibleItems.size()) {
-                RadialMenuItem item = visibleItems.get(selectedItemIndex);
-                String tooltip = Objects.requireNonNullElse(item.getDescription(), "");
-                if (!item.canExecute()) {
-                    String reason = resolveUnavailableReason(item);
-                    if (reason == null || reason.isBlank()) {
-                        tooltip += "\n§cUnavailable";
-                    } else {
-                        tooltip += "\n§c" + reason;
-                    }
-                }
-                if (editMode) {
-                    tooltip += " §8| §cShift+Click to favorite";
-                }
-                return tooltip;
+        if (selectedItem != null) {
+            String tooltip = Objects.requireNonNullElse(selectedItem.getDescription(), "");
+            String meta = buildActionMeta(selectedItem);
+            if (meta != null && !meta.isBlank()) {
+                tooltip += "\n" + meta;
             }
+            if (!selectedItem.canExecute()) {
+                String reason = resolveUnavailableReason(selectedItem);
+                if (reason == null || reason.isBlank()) {
+                    tooltip += "\n" + I18n.translate("devmod.radial.tooltip.unavailable").getString();
+                } else {
+                    tooltip += "\n§c" + reason;
+                }
+            }
+            if (editMode) {
+                tooltip += I18n.translate("devmod.radial.tooltip.favorite_hint").getString();
+            }
+            return tooltip;
         }
 
         return null;
@@ -169,42 +260,42 @@ public final class RadialTooltipRenderer {
     // ================================================================
 
     /**
-     * Renders the help text at the bottom of the screen.
+     * Renders help text lines at the bottom of the screen.
      *
-     * @param graphics      GUI graphics context
-     * @param font          font for rendering text
-     * @param screenWidth   screen width
-     * @param screenHeight  screen height
-     * @param selectedMacro currently selected macro
-     * @param searchMode    whether search mode is active
-     * @param openTime      time when menu was opened
-     * @param theme         color theme
+     * @param graphics     GUI graphics context
+     * @param font         font for rendering text
+     * @param screenWidth  screen width
+     * @param screenHeight screen height
+     * @param lines        lines to render
+     * @param openTime     time when menu was opened
+     * @param theme        color theme
      */
     public static void renderHelpText(GuiGraphics graphics, Font font,
                                        int screenWidth, int screenHeight,
-                                       MacroCategory selectedMacro,
-                                       boolean searchMode, long openTime,
+                                       List<String> lines, long openTime,
                                        RadialMenuConfig.ColorTheme theme) {
         Objects.requireNonNull(graphics, "graphics cannot be null");
         Objects.requireNonNull(font, "font cannot be null");
-        Objects.requireNonNull(selectedMacro, "selectedMacro cannot be null");
+        Objects.requireNonNull(lines, "lines cannot be null");
         Objects.requireNonNull(theme, "theme cannot be null");
+
+        if (lines.isEmpty()) return;
 
         float helpAlpha = Math.min(1f,
             (System.currentTimeMillis() - openTime) / (float) RadialMenuConstants.HELP_FADE_DURATION_MS);
         int textAlpha = (int) (RadialMenuConstants.HELP_TEXT_ALPHA * helpAlpha);
         int helpColor = (textAlpha << 24) | (theme.textSecondary & DesignTokens.Mask.RGB);
 
-        String helpLine;
-        if (searchMode) {
-            helpLine = "§eSearch §7- Type to filter, Enter to select, Esc to cancel";
-        } else {
-            helpLine = "§f[" + selectedMacro.getName() +
-                "§f] §7Click center to switch macros §8| §7[/] Search";
+        int lineHeight = font.lineHeight + 2;
+        int lineCount = lines.size();
+        int startY = screenHeight - RadialMenuConstants.HELP_TEXT_MARGIN_BOTTOM
+            - (lineCount - 1) * lineHeight;
+        int x = screenWidth / 2;
+        int y = startY;
+        for (String line : lines) {
+            graphics.drawCenteredString(font, Objects.requireNonNull(line), x, y, helpColor);
+            y += lineHeight;
         }
-
-        graphics.drawCenteredString(font, helpLine, screenWidth / 2,
-            screenHeight - RadialMenuConstants.HELP_TEXT_MARGIN_BOTTOM, helpColor);
     }
 
     // ================================================================
@@ -256,7 +347,7 @@ public final class RadialTooltipRenderer {
         Objects.requireNonNull(graphics, "graphics cannot be null");
         Objects.requireNonNull(font, "font cannot be null");
 
-        String editText = "§c§l[EDIT MODE] §7Shift+Click to * favorite";
+        String editText = Objects.requireNonNull(I18n.translate("devmod.radial.edit_mode").getString());
         int textWidth = font.width(editText);
 
         int centerX = screenWidth / 2;
@@ -293,7 +384,7 @@ public final class RadialTooltipRenderer {
         if (alpha <= 0) return;
 
         int color = ((int) (alpha * 255) << 24) | RadialMenuConstants.THEME_INDICATOR_COLOR;
-        String themeText = "Theme: " + themeName;
+        String themeText = Objects.requireNonNull(I18n.translate("devmod.radial.theme_indicator", themeName).getString());
         graphics.drawCenteredString(font, themeText, screenWidth / 2,
             RadialMenuConstants.THEME_INDICATOR_Y, color);
     }
@@ -335,6 +426,7 @@ public final class RadialTooltipRenderer {
         @Nonnull net.minecraft.world.item.ItemStack iconStack,
         String name,
         String categoryName,
+        String macroName,
         boolean isToggle,
         boolean isActive,
         boolean canExecute
@@ -343,6 +435,7 @@ public final class RadialTooltipRenderer {
             Objects.requireNonNull(iconStack, "iconStack cannot be null");
             Objects.requireNonNull(name, "name cannot be null");
             Objects.requireNonNull(categoryName, "categoryName cannot be null");
+            Objects.requireNonNull(macroName, "macroName cannot be null");
         }
     }
 
@@ -388,8 +481,10 @@ public final class RadialTooltipRenderer {
         graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, RadialMenuConstants.SEARCH_BOX_BG);
 
         // Search label and text
-        String displayText = !searchQuery.isEmpty() ? searchQuery : "§7Type to search...";
-        String searchPrefix = "Search: ";
+        String displayText = !searchQuery.isEmpty()
+            ? searchQuery
+            : I18n.translate("devmod.radial.search.placeholder").getString();
+        String searchPrefix = I18n.translate("devmod.radial.search.prefix").getString();
         graphics.drawString(font, searchPrefix + displayText,
             boxX + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_X,
             boxY + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_Y,
@@ -420,7 +515,11 @@ public final class RadialTooltipRenderer {
             }
 
             int textColor = result.canExecute() ? config.theme.textPrimary : RadialMenuConstants.COLOR_INACTIVE;
-            String catName = "§7[" + result.categoryName + "]";
+            String context = result.categoryName();
+            if (!result.macroName().isBlank()) {
+                context = result.macroName() + " / " + result.categoryName();
+            }
+            String catName = "§7[" + context + "]";
             graphics.drawString(font, result.name + " " + catName,
                 boxX + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_X + 18,
                 resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y,
@@ -428,7 +527,7 @@ public final class RadialTooltipRenderer {
 
             if (result.isToggle && result.isActive) {
                 int statusColor = result.canExecute() ? config.theme.active : RadialMenuConstants.COLOR_INACTIVE;
-                graphics.drawString(font, "* ON",
+                graphics.drawString(font, I18n.translate("devmod.radial.status.on").getString(),
                     boxX + boxWidth - RadialMenuConstants.SEARCH_RESULT_STATUS_OFFSET_X,
                     resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y, statusColor);
             }
@@ -448,5 +547,46 @@ public final class RadialTooltipRenderer {
             return null;
         }
         return action.getPrecondition().failureMessage(ClientActionContexts.forRadial()).getString();
+    }
+
+    @Nullable
+    private static String buildActionMeta(RadialMenuItem item) {
+        String actionId = item.getAction().getRegistryId();
+        if (actionId == null) {
+            return null;
+        }
+        com.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+        if (action == null) {
+            return null;
+        }
+        List<String> lines = new java.util.ArrayList<>();
+        com.devmod.actions.ActionType actionType = action.getActionType();
+        if (actionType != null) {
+            lines.add(I18n.translate("devmod.radial.meta.type", formatActionType(actionType)).getString());
+        }
+        RadialActionSafety.RiskLevel riskLevel = RadialActionSafety.evaluate(item);
+        if (action.requiresConfirm() || riskLevel == RadialActionSafety.RiskLevel.DANGER) {
+            lines.add(I18n.translate("devmod.radial.meta.confirm_required").getString());
+        }
+        int permissionLevel = action.getPermissionLevel();
+        if (permissionLevel >= 0) {
+            lines.add(I18n.translate("devmod.radial.meta.permission", permissionLevel).getString());
+        }
+        if (riskLevel != RadialActionSafety.RiskLevel.SAFE) {
+            lines.add(I18n.translate("devmod.radial.meta.risk", formatRisk(riskLevel)).getString());
+        }
+        if (lines.isEmpty()) {
+            return null;
+        }
+        return String.join("\n", lines);
+    }
+
+    private static String formatActionType(com.devmod.actions.ActionType actionType) {
+        return I18n.translate("devmod.radial.action_type." + actionType.name().toLowerCase(java.util.Locale.ROOT))
+            .getString();
+    }
+
+    private static String formatRisk(RadialActionSafety.RiskLevel riskLevel) {
+        return I18n.translate("devmod.radial.risk." + riskLevel.getId()).getString();
     }
 }

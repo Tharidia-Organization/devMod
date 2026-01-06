@@ -40,8 +40,6 @@ import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
-import com.devmod.client.endurance.ClientMobPoolConfigCache;
-import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.client.party.ClientPartyCache;
 
 /**
@@ -317,7 +315,7 @@ public class MobPoolEditorScreen extends Screen {
 
     private void resetAll() {
         pendingServerConfig = null;
-        ConfigScope scope = ClientQuestCache.hasActiveQuest() ? ConfigScope.SESSION : ConfigScope.GLOBAL;
+        ConfigScope scope = resolvePreferredScope();
         MobPoolConfigSyncPayload cached = ClientMobPoolConfigCache.get(scope);
         if (cached != null) {
             applyServerConfig(cached, true);
@@ -367,7 +365,7 @@ public class MobPoolEditorScreen extends Screen {
             String reviewLabel = I18n.translate("devmod.endurance.mob_editor.conflict.review_server").getString();
             String line1 = I18n.translate("devmod.endurance.mob_editor.conflict.body").getString();
             String line2 = I18n.translate("devmod.endurance.mob_editor.conflict.prompt").getString();
-            confirmDialog = ConfirmDialog.create(
+            ConfirmDialog conflictDialog = ConfirmDialog.create(
                 title,
                 applyLabel,
                 reviewLabel,
@@ -385,7 +383,8 @@ public class MobPoolEditorScreen extends Screen {
                 line1,
                 line2
             );
-            confirmDialog.show();
+            confirmDialog = conflictDialog;
+            conflictDialog.show();
             return;
         }
         if (!orphanedConfigs.isEmpty()) {
@@ -395,7 +394,7 @@ public class MobPoolEditorScreen extends Screen {
             String line1 = I18n.translate("devmod.endurance.mob_editor.orphaned.apply.body",
                 String.valueOf(orphanedConfigs.size())).getString();
             String line2 = I18n.translate("devmod.endurance.mob_editor.orphaned.apply.prompt").getString();
-            confirmDialog = ConfirmDialog.create(
+            ConfirmDialog orphanDialog = ConfirmDialog.create(
                 title,
                 keepLabel,
                 dropLabel,
@@ -411,7 +410,8 @@ public class MobPoolEditorScreen extends Screen {
                 line1,
                 line2
             );
-            confirmDialog.show();
+            confirmDialog = orphanDialog;
+            orphanDialog.show();
             return;
         }
         applyChanges(scope, true);
@@ -508,7 +508,7 @@ public class MobPoolEditorScreen extends Screen {
         if (initialConfigApplied) {
             return;
         }
-        ConfigScope scope = ClientQuestCache.hasActiveQuest() ? ConfigScope.SESSION : ConfigScope.GLOBAL;
+        ConfigScope scope = resolvePreferredScope();
         MobPoolConfigSyncPayload cached = ClientMobPoolConfigCache.get(scope);
         if (cached != null) {
             applyServerConfig(cached);
@@ -584,7 +584,7 @@ public class MobPoolEditorScreen extends Screen {
         String keepLabel = I18n.translate("devmod.endurance.mob_editor.sync.keep").getString();
         String line1 = I18n.translate("devmod.endurance.mob_editor.sync.body").getString();
         String line2 = I18n.translate("devmod.endurance.mob_editor.sync.prompt").getString();
-        confirmDialog = ConfirmDialog.create(
+        ConfirmDialog syncDialog = ConfirmDialog.create(
             title,
             applyLabel,
             keepLabel,
@@ -601,7 +601,8 @@ public class MobPoolEditorScreen extends Screen {
             line1,
             line2
         );
-        confirmDialog.show();
+        confirmDialog = syncDialog;
+        syncDialog.show();
     }
 
     private void applyPoolConfig(@Nullable EnduranceMobPoolConfig poolConfig) {
@@ -686,18 +687,19 @@ public class MobPoolEditorScreen extends Screen {
         }
     }
 
-    private boolean canApplySession() {
-        if (!ClientQuestCache.hasActiveQuest()) {
-            return false;
-        }
-        var mc = minecraft;
-        if (mc == null || mc.player == null) {
-            return false;
-        }
-        if (!ClientPartyCache.isInParty()) {
+    private boolean hasActiveSessionContext() {
+        if (ClientQuestCache.hasActiveQuest()) {
             return true;
         }
-        return ClientPartyCache.isLeader(mc.player.getUUID());
+        if (!ClientPartyCache.isInParty()) {
+            return false;
+        }
+        var partyState = ClientPartyCache.getPartyState();
+        return partyState != null && partyState != com.devmod.party.PartyData.PartyState.DISBANDED;
+    }
+
+    private ConfigScope resolvePreferredScope() {
+        return hasActiveSessionContext() ? ConfigScope.SESSION : ConfigScope.GLOBAL;
     }
 
     private boolean isInitialSyncPending() {
@@ -717,12 +719,13 @@ public class MobPoolEditorScreen extends Screen {
         String messageKey = null;
         if (isInitialSyncPending()) {
             messageKey = "devmod.endurance.mob_editor.syncing";
-        } else if (!ClientQuestCache.hasActiveQuest()) {
+        } else if (!hasActiveSessionContext()) {
             messageKey = "devmod.endurance.mob_editor.session_disabled.no_quest";
         } else {
             var mc = minecraft;
-            if (mc != null && mc.player != null && ClientPartyCache.isInParty()
-                && !ClientPartyCache.isLeader(mc.player.getUUID())) {
+            var player = mc != null ? mc.player : null;
+            if (player != null && ClientPartyCache.isInParty()
+                && !ClientPartyCache.isLeader(player.getUUID())) {
                 messageKey = "devmod.endurance.mob_editor.session_disabled.not_leader";
             }
         }
@@ -827,10 +830,12 @@ public class MobPoolEditorScreen extends Screen {
             layout.namespaceY + layout.namespaceH, bgColor);
         graphics.renderOutline(layout.namespaceX, layout.namespaceY, layout.namespaceW, layout.namespaceH, borderColor);
 
-        String nsLabel = "all".equals(namespaceFilter)
+        String nsLabelRaw = "all".equals(namespaceFilter)
             ? I18n.translate("devmod.endurance.mob_editor.filter_all").getString()
             : namespaceFilter;
-        nsLabel = safeFont.plainSubstrByWidth(nsLabel, layout.namespaceW - 14);
+        String nsLabel = Objects.requireNonNull(
+            safeFont.plainSubstrByWidth(Objects.requireNonNull(nsLabelRaw, "nsLabelRaw"), layout.namespaceW - 14),
+            "nsLabel");
         int textColor = dropdownHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
         graphics.drawString(safeFont, nsLabel, layout.namespaceX + 4, layout.namespaceY + 5, textColor, false);
         graphics.drawString(safeFont, "\u25BC", layout.namespaceX + layout.namespaceW - 12, layout.namespaceY + 5,
@@ -849,8 +854,10 @@ public class MobPoolEditorScreen extends Screen {
             layout.tierY + layout.tierH, tierBg);
         graphics.renderOutline(layout.tierX, layout.tierY, layout.tierW, layout.tierH, tierBorder);
 
-        String tierLabel = formatTierLabel(tierFilter);
-        tierLabel = safeFont.plainSubstrByWidth(tierLabel, layout.tierW - 14);
+        String tierLabelRaw = formatTierLabel(tierFilter);
+        String tierLabel = Objects.requireNonNull(
+            safeFont.plainSubstrByWidth(Objects.requireNonNull(tierLabelRaw, "tierLabelRaw"), layout.tierW - 14),
+            "tierLabel");
         int tierColor = tierHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
         graphics.drawString(safeFont, tierLabel, layout.tierX + 4, layout.tierY + 5, tierColor, false);
         graphics.drawString(safeFont, "\u25BC", layout.tierX + layout.tierW - 12, layout.tierY + 5,
@@ -947,7 +954,9 @@ public class MobPoolEditorScreen extends Screen {
         boolean showPlaceholder = searchQuery.isEmpty() && !searchFocused;
         String text = showPlaceholder ? I18n.ui("search").getString() : searchQuery;
         int textColor = showPlaceholder ? DesignTokens.Text.MUTED : DesignTokens.Text.PRIMARY;
-        String displayText = safeFont.plainSubstrByWidth(text, width - 20);
+        String displayText = Objects.requireNonNull(
+            safeFont.plainSubstrByWidth(Objects.requireNonNull(text, "text"), width - 20),
+            "displayText");
         graphics.drawString(safeFont, displayText, x + 4, y + 5, textColor, false);
 
         if (!searchQuery.isEmpty()) {
@@ -1234,26 +1243,30 @@ public class MobPoolEditorScreen extends Screen {
         int btnX = width - PADDING - btnWidth;
         boolean canApply = !isInitialSyncPending();
 
-        if (applySessionButton != null) {
-            applySessionButton.setEnabled(canApply && canApplySession());
-            applySessionButton.render(graphics, btnX, btnY, btnWidth, btnHeight, mouseX, mouseY);
+        EditorButton sessionBtn = applySessionButton;
+        if (sessionBtn != null) {
+            sessionBtn.setEnabled(canApply);
+            sessionBtn.render(graphics, btnX, btnY, btnWidth, btnHeight, mouseX, mouseY);
         }
         btnX -= btnWidth + spacing;
 
-        if (proposeButton != null) {
-            proposeButton.setEnabled(canApply);
-            proposeButton.render(graphics, btnX, btnY, btnWidth, btnHeight, mouseX, mouseY);
+        EditorButton propBtn = proposeButton;
+        if (propBtn != null) {
+            propBtn.setEnabled(canApply);
+            propBtn.render(graphics, btnX, btnY, btnWidth, btnHeight, mouseX, mouseY);
         }
         btnX -= btnWidth + spacing;
 
-        if (applyGlobalButton != null) {
-            applyGlobalButton.setEnabled(canApply);
-            applyGlobalButton.render(graphics, btnX, btnY, btnWidth, btnHeight, mouseX, mouseY);
+        EditorButton globalBtn = applyGlobalButton;
+        if (globalBtn != null) {
+            globalBtn.setEnabled(canApply);
+            globalBtn.render(graphics, btnX, btnY, btnWidth, btnHeight, mouseX, mouseY);
         }
 
         // Left-aligned reset button
-        if (resetButton != null) {
-            resetButton.render(graphics, PADDING, btnY, 80, btnHeight, mouseX, mouseY);
+        EditorButton rstBtn = resetButton;
+        if (rstBtn != null) {
+            rstBtn.render(graphics, PADDING, btnY, 80, btnHeight, mouseX, mouseY);
         }
 
         if (canApply) {
@@ -1381,27 +1394,31 @@ public class MobPoolEditorScreen extends Screen {
         }
 
         // Footer buttons
-        if (applyGlobalButton != null && applyGlobalButton.mouseClicked(mouseX, mouseY, button)) {
+        EditorButton globalBtn = applyGlobalButton;
+        if (globalBtn != null && globalBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
-        if (proposeButton != null && proposeButton.mouseClicked(mouseX, mouseY, button)) {
+        EditorButton propBtn = proposeButton;
+        if (propBtn != null && propBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
-        if (applySessionButton != null) {
-            if (!applySessionButton.isEnabled() && applySessionButton.getBounds().contains(mouseX, mouseY)) {
+        EditorButton sessionBtn = applySessionButton;
+        if (sessionBtn != null) {
+            if (!sessionBtn.isEnabled() && sessionBtn.getBounds().contains(mouseX, mouseY)) {
                 notifySessionApplyDisabled();
                 return true;
             }
-            if (applySessionButton.mouseClicked(mouseX, mouseY, button)) {
+            if (sessionBtn.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
         }
-        if (resetButton != null) {
-            if (resetButton.getBounds().contains(mouseX, mouseY) && hasShiftDown()) {
+        EditorButton rstBtn = resetButton;
+        if (rstBtn != null) {
+            if (rstBtn.getBounds().contains(mouseX, mouseY) && hasShiftDown()) {
                 resetToDefaults();
                 return true;
             }
-            if (resetButton.mouseClicked(mouseX, mouseY, button)) {
+            if (rstBtn.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
         }
@@ -1503,13 +1520,8 @@ public class MobPoolEditorScreen extends Screen {
         }
 
         if (activeAffixSlider >= 0) {
-            int sectionY = height - FOOTER_HEIGHT - GLOBAL_SECTION_HEIGHT;
-            int sliderY = sectionY + 22;
-            int affixLabelY = sliderY + 20;
-            int affixY = affixLabelY + 12;
             int affixWidth = (width - PADDING * (AFFIX_COLUMNS + 1)) / AFFIX_COLUMNS;
             int col = activeAffixSlider % AFFIX_COLUMNS;
-            int row = activeAffixSlider / AFFIX_COLUMNS;
             int x = PADDING + col * (affixWidth + PADDING);
             int trackX = x + AFFIX_LABEL_WIDTH;
             int trackW = Math.max(10, affixWidth - AFFIX_LABEL_WIDTH - AFFIX_VALUE_WIDTH - 8);
@@ -1633,7 +1645,7 @@ public class MobPoolEditorScreen extends Screen {
             String cancelLabel = I18n.ui("cancel").getString();
             String line1 = I18n.translate("devmod.ui.unsaved.body").getString();
             String line2 = I18n.translate("devmod.ui.unsaved.prompt").getString();
-            confirmDialog = ConfirmDialog.create(
+            ConfirmDialog unsavedDialog = ConfirmDialog.create(
                 title,
                 confirmLabel,
                 cancelLabel,
@@ -1646,7 +1658,8 @@ public class MobPoolEditorScreen extends Screen {
                 line1,
                 line2
             );
-            confirmDialog.show();
+            confirmDialog = unsavedDialog;
+            unsavedDialog.show();
             return;
         }
 

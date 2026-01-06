@@ -983,6 +983,16 @@ public class EnduranceQuestOverlay {
                         return;
                     }
 
+                    // Check if WIS debrief should show first
+                    var wis = com.devmod.client.endurance.wis.WaveIntelligenceManager.INSTANCE;
+                    if (wis.isEnabled() && wis.getCurrentPhase() == com.devmod.client.endurance.wis.WavePhase.DEBRIEF) {
+                        // WIS is handling debrief - checkpoint will open after debrief closes
+                        com.devmod.client.endurance.wis.WISOverlayHandler.requestCheckpointAfterDebrief();
+                        checkpointScreenShown = true; // Prevent reopening
+                        LOGGER.info("[CheckpointDebug] WIS debrief active, checkpoint will open after debrief");
+                        return;
+                    }
+
                     // Mark as shown to prevent reopening (only after perk selection is done)
                     checkpointScreenShown = true;
                     LOGGER.info("[CheckpointDebug] Opening WaveCheckpointScreen, currentScreen={}",

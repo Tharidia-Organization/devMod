@@ -218,6 +218,8 @@ public final class WaveIntelligenceManager {
 
         if (autoShowDebrief) {
             transitionTo(WavePhase.DEBRIEF);
+            // Request the debrief screen to open
+            WISOverlayHandler.requestDebriefScreen();
         } else {
             transitionTo(WavePhase.IDLE);
         }
@@ -390,6 +392,23 @@ public final class WaveIntelligenceManager {
         return new ArrayList<>(waveHistory);
     }
 
+    /**
+     * Ensure a collector exists for the current wave.
+     * Creates a minimal fallback collector if none exists.
+     * Used when WIS wasn't fully initialized but debrief is still requested.
+     */
+    public void ensureCollectorExists(int waveNumber) {
+        if (currentCollector != null) return;
+
+        this.currentWaveNumber = waveNumber;
+        this.currentCollector = new WaveTelemetryCollector(
+            currentQuestId != null ? currentQuestId : UUID.randomUUID(),
+            waveNumber,
+            currentTick
+        );
+        LOGGER.debug("[WIS] Created fallback collector for wave {}", waveNumber);
+    }
+
     // ========== Configuration ==========
 
     public void setEnabled(boolean enabled) {
@@ -460,5 +479,6 @@ public final class WaveIntelligenceManager {
         endQuest();
         waveHistory.clear();
         phaseChangeListeners.clear();
+        WISOverlayHandler.reset();
     }
 }

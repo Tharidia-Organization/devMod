@@ -14,7 +14,14 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.devmod.DevMod;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.endurance.wis.ui.DebriefScreen;
 import com.devmod.client.endurance.wis.ui.MinimalCombatHUD;
 import com.devmod.client.endurance.wis.ui.PreWaveBriefOverlay;
@@ -26,11 +33,16 @@ import com.devmod.client.endurance.wis.ui.PreWaveBriefOverlay;
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class WISOverlayHandler {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(WISOverlayHandler.class);
+
     private static final ResourceLocation WIS_LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "wave_intelligence");
 
     // Track if we need to open debrief screen
     private static boolean pendingDebriefOpen = false;
+
+    // Track if checkpoint screen should open after debrief closes
+    private static boolean pendingCheckpointAfterDebrief = false;
 
     /**
      * Register the WIS overlay layer.
@@ -94,6 +106,19 @@ public class WISOverlayHandler {
             }
             pendingDebriefOpen = false;
         }
+
+        // Check if we need to open checkpoint screen after debrief
+        // This runs when debrief was shown and user closed it
+        if (pendingCheckpointAfterDebrief && mc.screen == null) {
+            WavePhase phase = WaveIntelligenceManager.INSTANCE.getCurrentPhase();
+            // Only open checkpoint when WIS has transitioned back to IDLE (debrief dismissed)
+            if (phase == WavePhase.IDLE) {
+                LOGGER.info("[WIS] Opening checkpoint screen after debrief");
+                pendingCheckpointAfterDebrief = false;
+                ActionRegistry.invoke(ActionIds.UI_WAVE_CHECKPOINT_OPEN,
+                    ClientActionContexts.forClient(ActionOrigin.EVENT));
+            }
+        }
     }
 
     /**
@@ -121,5 +146,29 @@ public class WISOverlayHandler {
     public static boolean isRenderingWIS() {
         WavePhase phase = WaveIntelligenceManager.INSTANCE.getCurrentPhase();
         return phase == WavePhase.PRE_BRIEF || phase == WavePhase.COMBAT;
+    }
+
+    /**
+     * Request opening the checkpoint screen after debrief closes.
+     * This enables the Debrief -> Checkpoint sequential flow.
+     */
+    public static void requestCheckpointAfterDebrief() {
+        pendingCheckpointAfterDebrief = true;
+    }
+
+    /**
+     * Check if checkpoint screen is pending after debrief.
+     */
+    public static boolean isCheckpointPending() {
+        return pendingCheckpointAfterDebrief;
+    }
+
+    /**
+     * Reset all pending screen state.
+     * Called when quest ends or player disconnects.
+     */
+    public static void reset() {
+        pendingDebriefOpen = false;
+        pendingCheckpointAfterDebrief = false;
     }
 }

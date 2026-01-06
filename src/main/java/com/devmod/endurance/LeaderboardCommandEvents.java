@@ -35,7 +35,7 @@ public final class LeaderboardCommandEvents {
             .labelKey("devmod.action.leaderboard.help")
             .descriptionKey("devmod.action.leaderboard.help.desc")
             .category(ActionCategory.ENDURANCE)
-            .menuPath("Root/Endurance/Leaderboard/Help")
+            .menuPath("Root/Play/Leaderboards/Help")
             .icon(Items.PAPER)
             .commandHint("leaderboard help")
             .handler(context -> {
@@ -52,7 +52,7 @@ public final class LeaderboardCommandEvents {
             .labelKey("devmod.action.leaderboard.list")
             .descriptionKey("devmod.action.leaderboard.list.desc")
             .category(ActionCategory.ENDURANCE)
-            .menuPath("Root/Endurance/Leaderboard/Categories")
+            .menuPath("Root/Play/Leaderboards/Categories")
             .icon(Items.BOOK)
             .commandHint("leaderboard list")
             .handler(context -> {
@@ -69,7 +69,7 @@ public final class LeaderboardCommandEvents {
             .labelKey("devmod.action.leaderboard.top")
             .descriptionKey("devmod.action.leaderboard.top.desc")
             .category(ActionCategory.ENDURANCE)
-            .menuPath("Root/Endurance/Leaderboard/Top")
+            .menuPath("Root/Play/Leaderboards/Top")
             .icon(Items.GOLDEN_APPLE)
             .commandHint("leaderboard top <category> [limit]")
             .handler(context -> {
@@ -86,7 +86,7 @@ public final class LeaderboardCommandEvents {
             .labelKey("devmod.action.leaderboard.me")
             .descriptionKey("devmod.action.leaderboard.me.desc")
             .category(ActionCategory.ENDURANCE)
-            .menuPath("Root/Endurance/Leaderboard/My Rank")
+            .menuPath("Root/Play/Leaderboards/My Rank")
             .icon(Items.PLAYER_HEAD)
             .commandHint("leaderboard me [category]")
             .handler(context -> {
@@ -103,7 +103,7 @@ public final class LeaderboardCommandEvents {
             .labelKey("devmod.action.leaderboard.player")
             .descriptionKey("devmod.action.leaderboard.player.desc")
             .category(ActionCategory.ENDURANCE)
-            .menuPath("Root/Endurance/Leaderboard/Player")
+            .menuPath("Root/Play/Leaderboards/Player")
             .icon(Items.SKELETON_SKULL)
             .precondition(ActionPreconditions.requiresPermissionOrClient(2))
             .commandHint("leaderboard player <player> [category]")
@@ -121,7 +121,7 @@ public final class LeaderboardCommandEvents {
             .labelKey("devmod.action.leaderboard.weekly")
             .descriptionKey("devmod.action.leaderboard.weekly.desc")
             .category(ActionCategory.ENDURANCE)
-            .menuPath("Root/Endurance/Leaderboard/Weekly")
+            .menuPath("Root/Play/Leaderboards/Weekly")
             .icon(Items.CLOCK)
             .commandHint("leaderboard weekly [category]")
             .handler(context -> {
@@ -138,7 +138,7 @@ public final class LeaderboardCommandEvents {
             .labelKey("devmod.action.leaderboard.arena")
             .descriptionKey("devmod.action.leaderboard.arena.desc")
             .category(ActionCategory.ENDURANCE)
-            .menuPath("Root/Endurance/Leaderboard/Arena")
+            .menuPath("Root/Play/Leaderboards/Arena")
             .icon(Items.IRON_SWORD)
             .commandHint("leaderboard arena <arenaId> [category]")
             .handler(context -> {

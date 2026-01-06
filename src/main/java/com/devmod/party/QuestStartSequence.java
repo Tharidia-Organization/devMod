@@ -527,6 +527,9 @@ public class QuestStartSequence {
         PartyData party = PartyManager.INSTANCE.getParty(sequence.partyId);
         if (party != null) {
             effectiveSettings.partyKits(new java.util.HashMap<>(party.getMemberKitIds()));
+            if (party.hasMobPoolConfig()) {
+                effectiveSettings.mobPoolConfig(party.getMobPoolConfig());
+            }
         }
         sequence.questSettings = effectiveSettings;
 

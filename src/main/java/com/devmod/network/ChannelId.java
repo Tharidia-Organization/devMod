@@ -151,6 +151,15 @@ public enum ChannelId {
     NUTRITION_SYNC(130, Direction.SERVER_TO_CLIENT, "NutritionSyncPayload"),
     REQUEST_MOB_POOL_CONFIG(131, Direction.CLIENT_TO_SERVER, "RequestMobPoolConfigPayload"),
     MOB_POOL_CONFIG_SYNC(132, Direction.SERVER_TO_CLIENT, "MobPoolConfigSyncPayload"),
+
+    // ============================================================================
+    // NEXUS SYSTEM CHANNELS (140-149)
+    // ============================================================================
+    NEXUS_DIALOG(140, Direction.SERVER_TO_CLIENT, "NexusDialogPayload"),
+    NEXUS_DIALOG_ACTION(141, Direction.CLIENT_TO_SERVER, "NexusDialogActionPayload"),
+    NEXUS_UI(142, Direction.SERVER_TO_CLIENT, "NexusUiPayload"),
+    NEXUS_LOG_REQUEST(143, Direction.CLIENT_TO_SERVER, "NexusLogRequestPayload"),
+    NEXUS_LOG_SNAPSHOT(144, Direction.SERVER_TO_CLIENT, "NexusLogSnapshotPayload"),
     ;
 
     // ============================================================================

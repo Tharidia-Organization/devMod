@@ -1097,6 +1097,10 @@ public class DuckDbMailboxRepository implements MailboxRepository {
             } catch (SQLException e) {
                 LOGGER.error("[Mailbox] Failed to initialize repository", e);
                 throw new RuntimeException("Failed to initialize mailbox repository", e);
+            } catch (NoClassDefFoundError | UnsatisfiedLinkError | ExceptionInInitializerError e) {
+                // Native library initialization failure
+                LOGGER.error("[Mailbox] DuckDB native library not available - mailbox persistence disabled", e);
+                throw new RuntimeException("DuckDB native library not available", e);
             }
         }, executor);
     }

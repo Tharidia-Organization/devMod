@@ -10,6 +10,7 @@ import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.model.MacroCategory;
+import com.devmod.util.I18n;
 
 public final class RadialHubRenderer {
 
@@ -270,12 +271,16 @@ public final class RadialHubRenderer {
         String centerIcon = null;
         int centerIconColor = RadialMenuConstants.COLOR_TEXT_PRIMARY;
 
-        if (centerHovered) {
-            centerIcon = state.inSubcategory ? "<" : "X";
-            centerIconColor = state.inSubcategory ? RadialMenuConstants.COLOR_CENTER_ICON_BACK
-                : RadialMenuConstants.COLOR_CLOSE_BORDER_HOVER;
-        } else if (state.searchMode) {
+        if (state.searchMode) {
             centerIcon = "\uD83D\uDD0D";
+        } else if (state.inSubcategory) {
+            centerIcon = "<";
+            centerIconColor = centerHovered
+                ? RadialMenuConstants.COLOR_CLOSE_BORDER_HOVER
+                : RadialMenuConstants.COLOR_CENTER_ICON_BACK;
+        } else if (centerHovered) {
+            centerIcon = "X";
+            centerIconColor = RadialMenuConstants.COLOR_CLOSE_BORDER_HOVER;
         } else {
             centerIcon = Objects.requireNonNullElse(state.selectedMacro.getIcon(), "");
             centerIconColor = state.selectedMacro.getColor();
@@ -315,10 +320,11 @@ public final class RadialHubRenderer {
         Objects.requireNonNull(selectedMacro, "selectedMacro cannot be null");
 
         if (hoveredMacro == selectedMacro) {
-            return "§a* " + hoveredMacro.getName() + " §7(active) - " + hoveredMacro.getDescription();
-        } else {
-            return "§7Click: §f" + hoveredMacro.getName() + " §7- " + hoveredMacro.getDescription();
+            return I18n.translate("devmod.radial.macro.tooltip.active",
+                hoveredMacro.getName(), hoveredMacro.getDescription()).getString();
         }
+        return I18n.translate("devmod.radial.macro.tooltip.inactive",
+            hoveredMacro.getName(), hoveredMacro.getDescription()).getString();
     }
 
     /**
@@ -327,6 +333,6 @@ public final class RadialHubRenderer {
      * @return tooltip text with formatting codes
      */
     public static String getCenterButtonTooltip() {
-        return "§7Click to close §8| §7Scroll to search";
+        return I18n.translate("devmod.radial.tooltip.close").getString();
     }
 }

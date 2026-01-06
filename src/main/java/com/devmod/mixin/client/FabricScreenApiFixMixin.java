@@ -79,9 +79,10 @@ public class FabricScreenApiFixMixin {
         cancellable = true
     )
     private void devmod$preventNullScreenForFabric(Screen newScreen, CallbackInfo ci) {
-        // Suppress vanilla DeathScreen when player is in an active Endurance Quest
+        // Suppress vanilla DeathScreen during quest death/respawn flow
         // Our custom QuestDeathScreen is sent via network packet from server
-        if (newScreen instanceof DeathScreen && ClientQuestCache.hasActiveQuest()) {
+        // Uses shouldSuppressVanillaDeathScreen() which persists through respawn
+        if (newScreen instanceof DeathScreen && ClientQuestCache.shouldSuppressVanillaDeathScreen()) {
             ci.cancel();
             return;
         }

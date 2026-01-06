@@ -268,6 +268,8 @@ public class CommonModEvents {
                 LOGGER.info("[DevMod] MailboxManager initialized successfully");
             } catch (Exception e) {
                 LOGGER.error("[DevMod] Failed to initialize MailboxManager", e);
+            } catch (NoClassDefFoundError | UnsatisfiedLinkError | ExceptionInInitializerError e) {
+                LOGGER.error("[DevMod] DuckDB native library not available - MailboxManager disabled", e);
             }
 
             // Initialize notification persistence repositories
@@ -280,6 +282,8 @@ public class CommonModEvents {
                 LOGGER.info("[DevMod] Notification repositories initialized successfully");
             } catch (Exception e) {
                 LOGGER.error("[DevMod] Failed to initialize notification repositories", e);
+            } catch (NoClassDefFoundError | UnsatisfiedLinkError | ExceptionInInitializerError e) {
+                LOGGER.error("[DevMod] DuckDB native library not available - notification repositories disabled", e);
             }
 
             // Initialize Unified Notification Center

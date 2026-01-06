@@ -10,6 +10,9 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -18,6 +21,7 @@ import net.minecraft.world.item.Items;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ActionKeybindRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.util.I18n;
 
 public abstract class RadialAction {
 
@@ -327,7 +331,7 @@ public abstract class RadialAction {
         @Deprecated
         @Override
         public String getDescription() {
-            return description + "\n§7Command: §f" + command;
+            return description + "\n" + I18n.translate("devmod.radial.action.command_hint", command).getString();
         }
 
         @Deprecated
@@ -419,14 +423,35 @@ public abstract class RadialAction {
 
         @Override
         public void execute() {
-            // Simulate key press through Minecraft's input system
             Minecraft mc = Minecraft.getInstance();
             mc.tell(() -> {
-                // Send key event to the game
-                long window = mc.getWindow().getWindow();
-                org.lwjgl.glfw.GLFW.glfwSetKeyCallback(window, (w, key, scancode, action, mods) -> {});
-                // Note: Full key simulation would need more complex implementation
-                // This is a placeholder for the concept
+                InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(keyCode);
+                if (key == null) {
+                    LOGGER.warn("[RadialAction] Keybind simulation failed for keyCode {}", keyCode);
+                    return;
+                }
+
+                boolean invoked = false;
+                try {
+                    var click = KeyMapping.class.getDeclaredMethod("click", InputConstants.Key.class);
+                    click.invoke(null, key);
+                    invoked = true;
+                } catch (ReflectiveOperationException e) {
+                    LOGGER.debug("[RadialAction] KeyMapping.click unavailable: {}", e.getMessage());
+                }
+
+                try {
+                    var set = KeyMapping.class.getDeclaredMethod("set", InputConstants.Key.class, boolean.class);
+                    set.invoke(null, key, true);
+                    set.invoke(null, key, false);
+                    invoked = true;
+                } catch (ReflectiveOperationException e) {
+                    LOGGER.debug("[RadialAction] KeyMapping.set unavailable: {}", e.getMessage());
+                }
+
+                if (!invoked) {
+                    LOGGER.warn("[RadialAction] Keybind simulation unsupported for keyCode {}", keyCode);
+                }
             });
         }
 
@@ -438,7 +463,8 @@ public abstract class RadialAction {
         @Override
     public String getDescription() {
         String keyName = org.lwjgl.glfw.GLFW.glfwGetKeyName(keyCode, 0);
-        return description + "\n§7Key: §f" + (keyName != null ? keyName.toUpperCase(Locale.ROOT) : "KEY_" + keyCode);
+        String keyLabel = keyName != null ? keyName.toUpperCase(Locale.ROOT) : "KEY_" + keyCode;
+        return description + "\n" + I18n.translate("devmod.radial.action.key_hint", keyLabel).getString();
     }
 
         @Override
@@ -534,7 +560,7 @@ public abstract class RadialAction {
 
         @Override
         public String getDescription() {
-            return description + "\n§7Click to expand";
+            return description + "\n" + I18n.translate("devmod.radial.action.expand_hint").getString();
         }
 
         @Override
@@ -586,7 +612,7 @@ public abstract class RadialAction {
             String description = action.getDescription().getString();
             String commandHint = action.getCommandHint();
             if (commandHint != null && !commandHint.isBlank()) {
-                description += "\n§7Command: §f/" + commandHint;
+                description += "\n" + I18n.translate("devmod.radial.action.command_hint", "/" + commandHint).getString();
             }
             ActionKeybindRegistry.KeybindHint keybindHint = ActionKeybindRegistry.getKeybindHint(actionId);
             if (keybindHint != null) {
@@ -595,7 +621,7 @@ public abstract class RadialAction {
                 String keyLabel = modifier != null && !modifier.isBlank()
                     ? modifier + "+" + keyName
                     : keyName;
-                description += "\n§7Key: §f" + keyLabel;
+                description += "\n" + I18n.translate("devmod.radial.action.key_hint", keyLabel).getString();
             }
             return description;
         }

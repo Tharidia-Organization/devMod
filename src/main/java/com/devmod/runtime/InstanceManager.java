@@ -35,6 +35,9 @@ public class InstanceManager {
     // Pending teleports (players in countdown)
     private final Map<UUID, TeleportRequest> pendingTeleports = new ConcurrentHashMap<>();
 
+    // Pending recoveries (delayed by 1 tick after respawn to let respawn complete)
+    private final Map<UUID, PendingRecovery> pendingRecoveries = new ConcurrentHashMap<>();
+
     private MinecraftServer server;
     private boolean initialized = false;
 
@@ -353,10 +356,15 @@ public class InstanceManager {
     }
 
     /**
-     * Called every server tick to process pending teleports.
+     * Called every server tick to process pending teleports and recoveries.
      */
     public void tick() {
-        if (!initialized || pendingTeleports.isEmpty()) return;
+        if (!initialized) return;
+
+        // Process pending recoveries (delayed after respawn)
+        processPendingRecoveries();
+
+        if (pendingTeleports.isEmpty()) return;
 
         Iterator<Map.Entry<UUID, TeleportRequest>> iterator = pendingTeleports.entrySet().iterator();
 
@@ -404,6 +412,38 @@ public class InstanceManager {
             if (request.ticksRemaining <= 0) {
                 iterator.remove();
                 executeTeleport(player, request);
+            }
+        }
+    }
+
+    /**
+     * Process pending recoveries that were delayed after player respawn.
+     */
+    private void processPendingRecoveries() {
+        if (pendingRecoveries.isEmpty()) return;
+
+        Iterator<Map.Entry<UUID, PendingRecovery>> iterator = pendingRecoveries.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, PendingRecovery> entry = iterator.next();
+            PendingRecovery recovery = entry.getValue();
+
+            recovery.ticksRemaining--;
+
+            if (recovery.ticksRemaining <= 0) {
+                iterator.remove();
+
+                // Execute recovery
+                ServerPlayer player = server.getPlayerList().getPlayer(nn(recovery.playerId, "recovery playerId"));
+                if (player != null) {
+                    LOGGER.info("[InstanceManager] Executing delayed recovery for {} (reason: {})",
+                        player.getName().getString(), recovery.reason);
+                    RecoverySystem.INSTANCE.performRecovery(player, recovery.snapshot, recovery.reason);
+                } else {
+                    LOGGER.warn("[InstanceManager] Player {} disconnected before delayed recovery could execute",
+                        recovery.playerId);
+                    // Snapshot is preserved for recovery on next login
+                }
             }
         }
     }
@@ -472,23 +512,46 @@ public class InstanceManager {
         for (UUID playerId : playerIds) {
             ServerPlayer player = server.getPlayerList().getPlayer(nn(playerId, "player id"));
 
-                if (player != null) {
-                    // Update snapshot state
-                    RecoverySystem.INSTANCE.updateSnapshotState(playerId, PlayerInstanceState.RETURNING);
+            if (player != null) {
+                // Update snapshot state
+                RecoverySystem.INSTANCE.updateSnapshotState(playerId, PlayerInstanceState.RETURNING);
 
-                    // Notify player
-                    if (success) {
-                        player.sendSystemMessage(styledMsg("[DevMod] Quest completed! Returning to overworld...", SharedColorTokens.Chat.GREEN));
-                    } else {
-                        player.sendSystemMessage(styledMsg("[DevMod] " + reason + ". Returning to overworld...", SharedColorTokens.Chat.RED));
-                    }
+                // Notify player
+                if (success) {
+                    player.sendSystemMessage(styledMsg("[DevMod] Quest completed! Returning to overworld...", SharedColorTokens.Chat.GREEN));
+                } else {
+                    player.sendSystemMessage(styledMsg("[DevMod] " + reason + ". Returning to overworld...", SharedColorTokens.Chat.RED));
+                }
+
+                // Force respawn if player is dead - can't teleport dead players
+                // After respawn, we need to delay recovery by a few ticks to let
+                // Minecraft's respawn logic fully complete before teleporting
+                boolean needsDelayedRecovery = false;
+                if (player.isDeadOrDying()) {
+                    LOGGER.info("[InstanceManager] Force respawning dead player {} before recovery",
+                        player.getName().getString());
+                    player = server.getPlayerList().respawn(player, false, net.minecraft.world.entity.Entity.RemovalReason.KILLED);
+                    needsDelayedRecovery = true;
+                }
 
                 // Return player to original position
                 // NOTE: performRecovery() also calls unmapPlayer() internally, so we don't need to do it again
-                RecoverySystem.INSTANCE.loadSnapshot(playerId).ifPresent(snapshot -> {
-                    RecoverySystem.INSTANCE.performRecovery(player, snapshot,
-                        success ? "Quest completed" : reason);
-                });
+                final ServerPlayer finalPlayer = player;
+                final boolean delayRecovery = needsDelayedRecovery;
+                final String recoveryReason = success ? "Quest completed" : reason;
+
+                if (finalPlayer != null) {
+                    RecoverySystem.INSTANCE.loadSnapshot(playerId).ifPresent(snapshot -> {
+                        if (delayRecovery) {
+                            // Delay recovery by 2 ticks to let respawn fully complete
+                            LOGGER.info("[InstanceManager] Scheduling delayed recovery for {} (2 ticks)",
+                                finalPlayer.getName().getString());
+                            pendingRecoveries.put(playerId, new PendingRecovery(playerId, snapshot, recoveryReason, 2));
+                        } else {
+                            RecoverySystem.INSTANCE.performRecovery(finalPlayer, snapshot, recoveryReason);
+                        }
+                    });
+                }
             } else {
                 // Player is offline - just clean up mapping
                 // (their snapshot will be used for recovery on next login)
@@ -643,6 +706,25 @@ public class InstanceManager {
          */
         boolean isStale() {
             return System.currentTimeMillis() - createdAt > MAX_AGE_MS;
+        }
+    }
+
+    /**
+     * Represents a pending recovery that needs to be executed after a delay.
+     * Used when a player needs respawning before recovery - we delay 1 tick
+     * to let the respawn fully complete before teleporting.
+     */
+    private static class PendingRecovery {
+        final UUID playerId;
+        final PlayerInstanceSnapshot snapshot;
+        final String reason;
+        int ticksRemaining;
+
+        PendingRecovery(UUID playerId, PlayerInstanceSnapshot snapshot, String reason, int ticksDelay) {
+            this.playerId = playerId;
+            this.snapshot = snapshot;
+            this.reason = reason;
+            this.ticksRemaining = ticksDelay;
         }
     }
 

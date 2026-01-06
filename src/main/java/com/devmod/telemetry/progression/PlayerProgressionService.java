@@ -143,7 +143,7 @@ public class PlayerProgressionService {
      * Record advancement earned.
      */
     public AdvancementRecord recordAdvancement(ServerPlayer player, ResourceLocation advancementId, String title) {
-        int totalAdvancements = advancementsEarned.merge(player.getUUID(), 1, Integer::sum);
+        int totalAdvancements = advancementsEarned.merge(player.getUUID(), 1, (a, b) -> a + b);
 
         return new AdvancementRecord(
                 player.getGameProfile().getName(),

@@ -10,7 +10,10 @@ The radial menu is the primary in-game UI for DevMod actions and tools.
 - Macro categories (Analyze, Telemetry, Combat, Arena, Play, Tools)
 - ActionRegistry-backed menu items and actions
 - Search (prefix/substring/description/fuzzy scoring)
-- Favorites ring (session-only)
+- Favorites ring (persisted in radial config)
+- Quick actions (pinned items via Ctrl+Click)
+- Profiles/safe mode filters + usage-based ordering
+- Action details + risk badges
 - Input bindings and layout/animation settings
 
 ## Components
@@ -43,13 +46,23 @@ The radial menu is the primary in-game UI for DevMod actions and tools.
   - Category keys: `7,8,9,0,-,=`
   - Item keys: `Q,W,E,R,Y,U,I,O,P`
   - Search toggle: `/` or `F`
+  - Profile cycle: `M`
+  - Safe mode toggle: `N`
+  - Theme cycle: `T`
+  - Edit mode toggle: `Shift`
+  - Quick actions: `Alt+1-6` (pinned)
+  - Details: right-click (if enabled) or long-press
 
 ## Behavioral Rules
 
 - Menu items can be backed by the central `ActionRegistry` via `RadialMenuItem.registry(...)` and `RadialAction.registry(...)`.
 - Visibility gating uses `RadialMenuItem.isVisible()` and action visibility.
 - Search uses prefix/substring/description matching with a fuzzy fallback (`RadialSearchHandler`).
-- Favorites are stored in-session only (no persistence in config).
+- Favorites are persisted in radial config (`favoriteActionIds`).
+- Safe mode hides risky actions (based on ActionType, permissions, confirmation flags).
+- Usage ordering sorts items by usage count when enabled.
+- Quick actions are pinned with Ctrl+Click and executed with Alt+macro keys.
+- Action details open on long-press/right-click; dangerous actions open details for confirmation.
 
 ## Automated Validation
 

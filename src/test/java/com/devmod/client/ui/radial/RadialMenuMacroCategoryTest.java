@@ -467,10 +467,11 @@ class RadialMenuMacroCategoryTest {
         @Test
         @DisplayName("L6-03: Help text shows current macro indicator")
         void helpTextShowsMacroIndicator() {
-            // Help text is now rendered via RadialTooltipRenderer
+            // Help text is now rendered via RadialTooltipRenderer, which delegates to RadialHubRenderer
             assertTrue(tooltipRendererSourceCode.contains("selectedMacro.getIcon()") ||
-                tooltipRendererSourceCode.contains("selectedMacro.getName()"),
-                "RadialTooltipRenderer.renderHelpText should include current macro indicator");
+                tooltipRendererSourceCode.contains("selectedMacro.getName()") ||
+                tooltipRendererSourceCode.contains("RadialHubRenderer.getMacroTooltip"),
+                "RadialTooltipRenderer should include macro indicator directly or delegate to RadialHubRenderer");
         }
 
         @Test

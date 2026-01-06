@@ -14,6 +14,7 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -30,6 +31,7 @@ import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateRegistryBootstrap;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.devmod.attributes.ModAttributes;
+import com.devmod.blocks.ModBlocks;
 import com.devmod.components.ArmorComponents;
 import com.devmod.components.FoodComponents;
 import com.devmod.components.FuelComponents;
@@ -44,6 +46,7 @@ import com.devmod.config.GameplayOverridesManager;
 import com.devmod.core.Services;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.integration.ModIntegrationManager;
+import com.devmod.runtime.NexusDimensionManager;
 
 @Mod("devmod")
 public class DevMod {
@@ -56,6 +59,7 @@ public class DevMod {
 
     // 1. ITEMS REGISTRY
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
+    public static final DeferredRegister<Block> BLOCKS = ModBlocks.BLOCKS;
 
     // 2. CREATIVE TABS REGISTRY
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS = DeferredRegister.create(
@@ -92,6 +96,7 @@ public class DevMod {
     public DevMod(IEventBus modEventBus, ModContainer modContainer) {
         IEventBus eventBus = Objects.requireNonNull(modEventBus);
         ITEMS.register(eventBus);
+        BLOCKS.register(eventBus);
         CREATIVE_TABS.register(eventBus);
         ATTRIBUTES.register(eventBus);
         ARMOR_COMPONENTS.register(eventBus);
@@ -174,6 +179,10 @@ public class DevMod {
             EnduranceQuestManager.INSTANCE.applyArenaConfig(newConfig);
             LOGGER.info("[DevMod] ArenaTemplateConfig reloaded and applied");
             com.devmod.arena.ArenaCommandEvents.onArenaConfigReload(newConfig);
+            net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                NexusDimensionManager.INSTANCE.applyRuntimeConfig(server);
+            }
         }
         // Reload game mechanics config
         if (event.getConfig().getSpec() == GameMechanicsConfig.SPEC) {

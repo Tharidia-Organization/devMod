@@ -4,6 +4,7 @@ import com.devmod.client.ui.editor.core.DesignTokens;
 
 public enum SettingsCategory {
     GENERAL("General", "G", DesignTokens.Semantic.INFO, "General mod settings"),
+    RADIAL("Radial", "R", DesignTokens.Radial.MACRO_TOOLS, "Radial menu behavior and UX"),
     EDITOR("Editor", "E", DesignTokens.Accent.PRIMARY, "Item Editor UI settings"),
     DEBUG("Debug", "D", DesignTokens.Semantic.WARNING, "Debug overlays and tools"),
     VISUALIZERS("Visualizers", "V", DesignTokens.Accent.PURPLE, "Heatmaps and visualizations"),

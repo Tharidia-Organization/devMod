@@ -21,6 +21,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
 import com.devmod.client.ui.unified.SettingsPage;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.debug.client.DebugRenderBools;
 
 public class DebugOverlaysPage implements SettingsPage {
@@ -71,6 +72,19 @@ public class DebugOverlaysPage implements SettingsPage {
         try {
             // Apply scroll offset to starting Y position
             int currentY = y - scrollOffset;
+
+            // ==========================================
+            // Section: Developer Access
+            // ==========================================
+            graphics.drawString(safeFont, "Developer Access", x, currentY, DesignTokens.Text.PRIMARY, false);
+            currentY += 14;
+
+            boolean developerModeEnabled = SettingsManager.INSTANCE.getSettings().debug.developerMode;
+            currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
+                "Developer Mode", "Unlock developer-only tools and menus",
+                developerModeEnabled, "");
+
+            currentY += SECTION_SPACING;
 
             // ==========================================
             // Section: Minecraft Native Debug API
@@ -195,6 +209,11 @@ public class DebugOverlaysPage implements SettingsPage {
      */
     private int calculateContentHeight() {
         int height = 0;
+
+        // Section: Developer Access
+        height += 14; // Header
+        height += ROW_HEIGHT; // 1 toggle
+        height += SECTION_SPACING;
 
         // Section: Minecraft Native Debug API
         height += 14; // Header
@@ -332,6 +351,20 @@ public class DebugOverlaysPage implements SettingsPage {
         int rowWidth = contentWidth - 20 - (showScrollbar ? SCROLLBAR_WIDTH + 4 : 0);
         // Apply scroll offset to Y coordinate for hit detection
         int y = contentY - scrollOffset;
+
+        // ==========================================
+        // Developer Access section
+        // ==========================================
+        // Skip section header "Developer Access"
+        y += 14;
+
+        if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
+            var settings = SettingsManager.INSTANCE.getSettings();
+            settings.debug.developerMode = !settings.debug.developerMode;
+            SettingsManager.INSTANCE.markDirty();
+            return true;
+        }
+        y += ROW_HEIGHT + SECTION_SPACING;
 
         // ==========================================
         // Native Debug API section

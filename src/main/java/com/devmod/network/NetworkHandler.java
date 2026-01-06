@@ -883,6 +883,11 @@ public class NetworkHandler {
                 nn(com.devmod.endurance.season.RequestSeasonPassPayload.STREAM_CODEC),
                 validated(NetworkHandler::handleRequestSeasonPass, PayloadLimits.SMALL)
         );
+
+        // ===================================================================
+        // NEXUS SYSTEM CHANNELS (140-149) - P2: Delegated to domain registrar
+        // ===================================================================
+        com.devmod.runtime.network.NexusNetworkHandler.INSTANCE.registerPayloads(event);
     }
 
     // ===================================================================

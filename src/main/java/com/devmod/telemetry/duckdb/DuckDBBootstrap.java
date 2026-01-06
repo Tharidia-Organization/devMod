@@ -54,15 +54,67 @@ public final class DuckDBBootstrap {
     public static boolean isAvailable() {
         if (available == null) {
             try {
+                // Ensure temp directory is set before loading DuckDB (JNA requirement)
+                ensureTempDirectory();
+
                 Class.forName(DUCKDB_DRIVER_CLASS);
                 available = Boolean.TRUE;
                 LOGGER.info("[DuckDB] Driver found in classpath");
             } catch (ClassNotFoundException e) {
                 available = Boolean.FALSE;
                 LOGGER.warn("[DuckDB] Driver not found in classpath");
+            } catch (NoClassDefFoundError | UnsatisfiedLinkError | ExceptionInInitializerError e) {
+                available = Boolean.FALSE;
+                LOGGER.error("[DuckDB] Native library initialization failed: {}", e.getMessage());
             }
         }
         return Boolean.TRUE.equals(available);
+    }
+
+    /**
+     * Ensure JNA temp directory is set for native library extraction.
+     * DuckDB uses JNA internally which requires a writable temp directory.
+     */
+    private static void ensureTempDirectory() {
+        // Check if jna.tmpdir is already set
+        String jnaTmpDir = System.getProperty("jna.tmpdir");
+        if (jnaTmpDir != null && !jnaTmpDir.isEmpty()) {
+            Path tmpPath = Path.of(jnaTmpDir);
+            if (Files.isDirectory(tmpPath) && Files.isWritable(tmpPath)) {
+                return; // Already configured correctly
+            }
+        }
+
+        // Try to use java.io.tmpdir
+        String javaTmpDir = System.getProperty("java.io.tmpdir");
+        if (javaTmpDir != null && !javaTmpDir.isEmpty()) {
+            try {
+                Path tmpPath = Path.of(javaTmpDir);
+                if (Files.isDirectory(tmpPath) && Files.isWritable(tmpPath)) {
+                    // Create a dedicated subdirectory for DuckDB
+                    Path duckDbTmpDir = tmpPath.resolve("duckdb-native");
+                    Files.createDirectories(duckDbTmpDir);
+                    System.setProperty("jna.tmpdir", duckDbTmpDir.toAbsolutePath().toString());
+                    LOGGER.info("[DuckDB] Set jna.tmpdir to: {}", duckDbTmpDir);
+                    return;
+                }
+            } catch (IOException e) {
+                LOGGER.warn("[DuckDB] Could not create temp directory in java.io.tmpdir: {}", e.getMessage());
+            }
+        }
+
+        // Fallback: try user home directory
+        String userHome = System.getProperty("user.home");
+        if (userHome != null && !userHome.isEmpty()) {
+            try {
+                Path homeTmpDir = Path.of(userHome, ".duckdb-tmp");
+                Files.createDirectories(homeTmpDir);
+                System.setProperty("jna.tmpdir", homeTmpDir.toAbsolutePath().toString());
+                LOGGER.info("[DuckDB] Set jna.tmpdir to fallback: {}", homeTmpDir);
+            } catch (IOException e) {
+                LOGGER.error("[DuckDB] Could not create temp directory in user home: {}", e.getMessage());
+            }
+        }
     }
 
     /**

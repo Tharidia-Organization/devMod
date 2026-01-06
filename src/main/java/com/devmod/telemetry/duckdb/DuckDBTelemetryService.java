@@ -133,6 +133,11 @@ public class DuckDBTelemetryService {
             LOGGER.error("[DuckDB] Failed to initialize", e);
             cleanup();
             return false;
+        } catch (NoClassDefFoundError | UnsatisfiedLinkError | ExceptionInInitializerError e) {
+            // Native library initialization failure (common on some platforms)
+            LOGGER.error("[DuckDB] Native library initialization failed - DuckDB not available on this platform", e);
+            cleanup();
+            return false;
         }
     }
 

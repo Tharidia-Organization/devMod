@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/nether_portal_ew",
+  "textures": {
+    "portal": "devmod:block/nexus_portal_showcase",
+    "particle": "devmod:block/nexus_portal_showcase"
+  }
+}

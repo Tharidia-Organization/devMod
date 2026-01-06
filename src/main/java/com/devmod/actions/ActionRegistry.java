@@ -42,6 +42,7 @@ public final class ActionRegistry {
         // UI open actions - safe, client-side only
         ActionIds.UI_RADIAL_OPEN,
         ActionIds.UI_SETTINGS_OPEN,
+        ActionIds.UI_RADIAL_SETTINGS_OPEN,
         ActionIds.UI_ENDURANCE_SCREEN_OPEN,
         ActionIds.UI_ENDURANCE_SHOP_OPEN,
         ActionIds.UI_PARTY_OPEN,

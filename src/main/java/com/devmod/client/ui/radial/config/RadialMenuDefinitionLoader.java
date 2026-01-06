@@ -25,6 +25,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import com.devmod.client.ui.radial.RadialCategory;
+import com.devmod.client.ui.radial.RadialMenuActionLayout;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.RadialMenuRegistry;
 import com.devmod.client.ui.radial.config.RadialMenuDefinitionConfig.CategoryConfig;
@@ -295,6 +296,21 @@ public final class RadialMenuDefinitionLoader {
     private static Map<MacroCategory, List<RadialCategory>> loadEmbeddedDefaults(
             @Nullable java.util.function.Supplier<RadialMenuItem> mobEditorItemSupplier) {
         LOGGER.info("[RadialMenuLoader] Using embedded default categories");
+        Map<MacroCategory, List<RadialCategory>> layout = RadialMenuActionLayout.build(mobEditorItemSupplier);
+        if (hasAnyCategories(layout)) {
+            LOGGER.info("[RadialMenuLoader] Built defaults from action menuPath metadata");
+            return layout;
+        }
+        LOGGER.warn("[RadialMenuLoader] Action layout empty, using legacy defaults");
         return RadialMenuRegistry.createDefaultCategories(mobEditorItemSupplier);
+    }
+
+    private static boolean hasAnyCategories(Map<MacroCategory, List<RadialCategory>> layout) {
+        for (List<RadialCategory> categories : layout.values()) {
+            if (categories != null && !categories.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

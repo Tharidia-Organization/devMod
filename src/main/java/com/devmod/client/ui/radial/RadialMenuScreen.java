@@ -2,12 +2,15 @@ package com.devmod.client.ui.radial;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -25,9 +28,12 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import org.lwjgl.glfw.GLFW;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.ActionResult;
@@ -48,6 +54,28 @@ import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
 public final class RadialMenuScreen extends Screen {
+    private static final Set<String> FOCUSED_ACTION_IDS = Set.of(
+        ActionIds.UI_TESTING_HUB_OPEN,
+        ActionIds.UI_QA_TESTING_OPEN,
+        ActionIds.UI_ITEM_EDITOR_OPEN_AUTO,
+        ActionIds.UI_MOB_CONFIG_OPEN,
+        ActionIds.UI_MOB_EQUIPMENT_OPEN,
+        ActionIds.UI_TELEMETRY_DASHBOARD_OPEN,
+        ActionIds.UI_ENDURANCE_SCREEN_OPEN,
+        ActionIds.UI_ENDURANCE_EDITOR_OPEN,
+        ActionIds.UI_PARTY_OPEN,
+        ActionIds.UI_QUEST_EDITOR_OPEN,
+        ActionIds.UI_VOXELLAB_OPEN,
+        ActionIds.UI_SETTINGS_OPEN,
+        ActionIds.UI_RADIAL_SETTINGS_OPEN,
+        ActionIds.ARENA_CREATE,
+        ActionIds.ARENA_STATUS,
+        ActionIds.ARENA_TEMPLATE_LIST,
+        ActionIds.ARENA_TEMPLATE_STATUS,
+        ActionIds.ARENA_VALIDATE,
+        ActionIds.ARENA_METRICS,
+        ActionIds.ARENA_QUICK_TEST_WIZARD_OPEN
+    );
 
     // ================================================================
     // MACRO-CATEGORY SYSTEM
@@ -88,6 +116,7 @@ public final class RadialMenuScreen extends Screen {
     private int centerX, centerY;
     private double lastMouseX = 0;
     private double lastMouseY = 0;
+    private long lastHoverSoundAt = 0L;
 
     // === Animation System ===
     private final RadialAnimator animator = new RadialAnimator(
@@ -109,9 +138,20 @@ public final class RadialMenuScreen extends Screen {
 
     // === Favorites System ===
     private final List<FavoriteItem> favorites = new ArrayList<>();
+    private boolean favoritesDirty = false;
+
+    // === Quick Actions ===
+    private final List<PinnedItem> quickActions = new ArrayList<>();
+    private boolean pinsDirty = false;
 
     // === Usage Statistics ===
     private final Map<String, Integer> usageStats = new HashMap<>();
+    private final List<String> recentActionIds = new ArrayList<>();
+    private boolean usageDirty = false;
+    private boolean recentsDirty = false;
+
+    // === Category Index ===
+    private final Map<RadialCategory, MacroCategory> categoryMacroIndex = new HashMap<>();
 
     // === Edit Mode ===
     private boolean editMode = false;
@@ -124,8 +164,10 @@ public final class RadialMenuScreen extends Screen {
         super(java.util.Objects.requireNonNull(Component.translatable("devmod.radial.title"), "title"));
         loadConfig();
         initializeCategories();
+        ensureSelectedMacroVisible();
         loadUsageStats();
         loadFavorites();
+        loadPins();
         openTime = System.currentTimeMillis();
         cacheTargetEntity();
         // Removed: particles, gestures, context analysis for cleaner UX
@@ -133,6 +175,21 @@ public final class RadialMenuScreen extends Screen {
 
     private void loadConfig() {
         config.load();
+        if (config.menuProfile == null) {
+            config.menuProfile = RadialMenuConfig.MenuProfile.ALL;
+        }
+        if (config.favoriteActionIds == null) {
+            config.favoriteActionIds = new ArrayList<>();
+        }
+        if (config.recentActionIds == null) {
+            config.recentActionIds = new ArrayList<>();
+        }
+        if (config.pinnedActionIds == null) {
+            config.pinnedActionIds = new ArrayList<>();
+        }
+        if (config.usageStats == null) {
+            config.usageStats = new HashMap<>();
+        }
         innerRadius = config.innerRadius;
         outerRadius = config.outerRadius;
         itemRadius = config.itemRadius;
@@ -174,7 +231,7 @@ public final class RadialMenuScreen extends Screen {
     // ================================================================
 
     private void updateSearchResults() {
-        searchResults = RadialSearchHandler.search(searchQuery.toString(), rootCategories);
+        searchResults = RadialSearchHandler.search(searchQuery.toString(), rootCategories, this::isItemAllowedByProfile);
         selectedSearchResult = searchResults.isEmpty() ? RadialMenuConstants.NO_SELECTION : 0;
     }
 
@@ -183,14 +240,34 @@ public final class RadialMenuScreen extends Screen {
     // ================================================================
 
     private void loadUsageStats() {
-        // In production, load from config file
-        // For now, initialize empty
+        usageStats.clear();
+        if (config.usageStats != null) {
+            usageStats.putAll(config.usageStats);
+        }
+        recentActionIds.clear();
+        if (config.recentActionIds != null) {
+            for (String id : config.recentActionIds) {
+                if (id != null && !id.isBlank()) {
+                    recentActionIds.add(id);
+                }
+            }
+        }
     }
 
     private void recordUsage(RadialMenuItem item) {
-        String key = item.getName();
+        String actionId = item.getAction().getRegistryId();
+        String key = actionId != null ? actionId : item.getName();
         usageStats.put(key, usageStats.getOrDefault(key, 0) + 1);
-        // In production, save to config file
+        usageDirty = true;
+
+        if (actionId != null) {
+            recentActionIds.remove(actionId);
+            recentActionIds.add(0, actionId);
+            while (recentActionIds.size() > RadialMenuConstants.MAX_RECENT_ACTIONS) {
+                recentActionIds.remove(recentActionIds.size() - 1);
+            }
+            recentsDirty = true;
+        }
     }
 
     // ================================================================
@@ -198,17 +275,59 @@ public final class RadialMenuScreen extends Screen {
     // ================================================================
 
     private void loadFavorites() {
-        // Would load from config in production
-        // Animator handles favorite animations internally
+        favorites.clear();
+        if (config.favoriteActionIds == null) {
+            return;
+        }
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (String actionId : config.favoriteActionIds) {
+            if (actionId == null || actionId.isBlank() || !seen.add(actionId)) {
+                continue;
+            }
+            if (ActionRegistry.getAction(actionId) == null) {
+                continue;
+            }
+            RadialMenuItem item = RadialMenuItem.registry(actionId);
+            if (item != null && item.isVisible() && isItemAllowedByProfile(item)) {
+                favorites.add(new FavoriteItem(actionId, item));
+            }
+        }
+    }
+
+    private void loadPins() {
+        quickActions.clear();
+        if (config.pinnedActionIds == null) {
+            return;
+        }
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (String actionId : config.pinnedActionIds) {
+            if (actionId == null || actionId.isBlank() || !seen.add(actionId)) {
+                continue;
+            }
+            if (ActionRegistry.getAction(actionId) == null) {
+                continue;
+            }
+            RadialMenuItem item = RadialMenuItem.registry(actionId);
+            if (item != null && item.isVisible() && isItemAllowedByProfile(item)) {
+                quickActions.add(new PinnedItem(actionId, item));
+            }
+            if (quickActions.size() >= RadialMenuConstants.MAX_QUICK_ACTIONS) {
+                break;
+            }
+        }
     }
 
     private void toggleFavorite(RadialMenuItem item, RadialCategory category) {
-        String key = category.getId() + ":" + item.getName();
+        String key = favoriteKey(item, category);
 
         // Check if already favorite
         for (int i = 0; i < favorites.size(); i++) {
             if (favorites.get(i).key.equals(key)) {
                 favorites.remove(i);
+                if (item.getAction().getRegistryId() != null) {
+                    config.favoriteActionIds.remove(key);
+                    favoritesDirty = true;
+                }
                 playSound(RadialMenuConstants.SOUND_PITCH_FAVORITE_REMOVE);
                 return;
             }
@@ -217,7 +336,65 @@ public final class RadialMenuScreen extends Screen {
         // Add to favorites
         if (favorites.size() < RadialMenuConstants.MAX_FAVORITES) {
             favorites.add(new FavoriteItem(key, item));
+            if (item.getAction().getRegistryId() != null && !config.favoriteActionIds.contains(key)) {
+                config.favoriteActionIds.add(key);
+                favoritesDirty = true;
+            }
             playSound(RadialMenuConstants.SOUND_PITCH_FAVORITE_ADD);
+        } else {
+            showMessage(Minecraft.getInstance(), I18n.translate("devmod.radial.message.favorites_full"));
+        }
+    }
+
+    private void removeFavorite(int index) {
+        if (index < 0 || index >= favorites.size()) {
+            return;
+        }
+        FavoriteItem fav = favorites.remove(index);
+        String actionId = fav.item.getAction().getRegistryId();
+        if (actionId != null && config.favoriteActionIds != null) {
+            config.favoriteActionIds.remove(actionId);
+            favoritesDirty = true;
+        }
+        playSound(RadialMenuConstants.SOUND_PITCH_FAVORITE_REMOVE);
+    }
+
+    private String favoriteKey(RadialMenuItem item, RadialCategory category) {
+        String actionId = item.getAction().getRegistryId();
+        if (actionId != null) {
+            return actionId;
+        }
+        return category.getId() + ":" + item.getName();
+    }
+
+    private void togglePin(RadialMenuItem item) {
+        String actionId = item.getAction().getRegistryId();
+        if (actionId == null || ActionRegistry.getAction(actionId) == null) {
+            showMessage(Minecraft.getInstance(), I18n.translate("devmod.radial.message.pin_invalid"));
+            return;
+        }
+
+        for (int i = 0; i < quickActions.size(); i++) {
+            if (quickActions.get(i).actionId.equals(actionId)) {
+                quickActions.remove(i);
+                if (config.pinnedActionIds != null) {
+                    config.pinnedActionIds.remove(actionId);
+                }
+                pinsDirty = true;
+                playSound(RadialMenuConstants.SOUND_PITCH_FAVORITE_REMOVE);
+                return;
+            }
+        }
+
+        if (quickActions.size() < RadialMenuConstants.MAX_QUICK_ACTIONS) {
+            quickActions.add(new PinnedItem(actionId, item));
+            if (config.pinnedActionIds != null && !config.pinnedActionIds.contains(actionId)) {
+                config.pinnedActionIds.add(actionId);
+            }
+            pinsDirty = true;
+            playSound(RadialMenuConstants.SOUND_PITCH_FAVORITE_ADD);
+        } else {
+            showMessage(Minecraft.getInstance(), I18n.translate("devmod.radial.message.quick_full"));
         }
     }
 
@@ -292,7 +469,21 @@ public final class RadialMenuScreen extends Screen {
             rootCategories.addAll(macroCategoryMap.get(macro));
         }
 
+        indexCategories();
+
         // Animator handles animation arrays internally with proper sizing
+    }
+
+    private void ensureSelectedMacroVisible() {
+        if (macroHasVisibleCategories(selectedMacro)) {
+            return;
+        }
+        for (MacroCategory macro : MacroCategory.values()) {
+            if (macroHasVisibleCategories(macro)) {
+                selectedMacro = macro;
+                return;
+            }
+        }
     }
 
     private RadialMenuItem createMobEditorItem() {
@@ -302,9 +493,57 @@ public final class RadialMenuScreen extends Screen {
 
     private String getMobEditorDescription() {
         if (cachedTargetEntity instanceof net.minecraft.world.entity.Mob mob) {
-            return "Edit: " + mob.getName().getString();
+            return I18n.translate("devmod.radial.mob_editor.target", mob.getName().getString()).getString();
         }
-        return "§cLook at a mob first, then open menu";
+        return I18n.translate("devmod.radial.mob_editor.missing").getString();
+    }
+
+    private void indexCategories() {
+        categoryMacroIndex.clear();
+        for (MacroCategory macro : MacroCategory.values()) {
+            List<RadialCategory> categories = macroCategoryMap.get(macro);
+            if (categories == null) {
+                continue;
+            }
+            for (RadialCategory category : categories) {
+                indexCategory(macro, category, new java.util.HashSet<>());
+            }
+        }
+    }
+
+    private void indexCategory(MacroCategory macro, RadialCategory category, java.util.Set<RadialCategory> visited) {
+        if (category == null || !visited.add(category)) {
+            return;
+        }
+        categoryMacroIndex.put(category, macro);
+        for (RadialMenuItem item : category.getItems()) {
+            if (item.isSubcategoryLink()) {
+                RadialCategory subcategory = item.getLinkedSubcategory();
+                if (subcategory != null) {
+                    indexCategory(macro, subcategory, visited);
+                }
+            }
+        }
+    }
+
+    @Nullable
+    private MacroCategory resolveMacroForCategory(@Nullable RadialCategory category) {
+        if (category == null) {
+            return null;
+        }
+        MacroCategory macro = categoryMacroIndex.get(category);
+        if (macro != null) {
+            return macro;
+        }
+        RadialCategory root = category;
+        while (root.getParent() != null) {
+            root = Objects.requireNonNull(root.getParent(), "parent");
+            MacroCategory parentMacro = categoryMacroIndex.get(root);
+            if (parentMacro != null) {
+                return parentMacro;
+            }
+        }
+        return null;
     }
 
     private static final class MobEditorItem extends RadialMenuItem {
@@ -473,7 +712,7 @@ public final class RadialMenuScreen extends Screen {
 
         RadialCategory itemCategory = getActiveItemCategory();
         if (itemCategory != null) {
-            animator.updateItemAnimations(selectedItemIndex, itemCategory.getVisibleItemCount());
+            animator.updateItemAnimations(selectedItemIndex, getVisibleItemCount(itemCategory));
         }
 
         animator.updateFavoriteAnimations(selectedFavoriteIndex, favorites.size());
@@ -484,6 +723,11 @@ public final class RadialMenuScreen extends Screen {
     // ================================================================
 
     private void updateSelection(int mouseX, int mouseY) {
+        if (searchMode) {
+            clearSelection();
+            return;
+        }
+
         prevSelectedCategory = selectedCategoryIndex;
         int prevSelectedFavorite = selectedFavoriteIndex;
 
@@ -514,9 +758,18 @@ public final class RadialMenuScreen extends Screen {
 
             selectedFavoriteIndex = (int)(favAdjustedAngle / favSegmentAngle) % numFavorites;
 
+            double favMidAngle = favStartOffset + selectedFavoriteIndex * favSegmentAngle;
+            double favX = centerX + Math.cos(favMidAngle) * favoritesRadius;
+            double favY = centerY + Math.sin(favMidAngle) * favoritesRadius;
+            double favDist = Math.hypot(mouseX - favX, mouseY - favY);
+            if (favDist > RadialMenuConstants.FAVORITE_HIT_RADIUS) {
+                selectedFavoriteIndex = RadialMenuConstants.NO_SELECTION;
+                return;
+            }
+
             // Play sound on favorite hover change
-            if (config.enableSounds && selectedFavoriteIndex != prevSelectedFavorite && selectedFavoriteIndex >= 0) {
-                playSound(RadialMenuConstants.SOUND_PITCH_HOVER, RadialMenuConstants.SOUND_VOLUME_HOVER);
+            if (selectedFavoriteIndex != prevSelectedFavorite && selectedFavoriteIndex >= 0) {
+                playHoverSound(RadialMenuConstants.SOUND_PITCH_HOVER, RadialMenuConstants.SOUND_VOLUME_HOVER);
             }
             return;
         }
@@ -547,10 +800,10 @@ public final class RadialMenuScreen extends Screen {
         }
 
         // Select item if mouse is beyond the outer ring
-        // Use getVisibleItems() to only consider visible items for selection
+        // Use filtered visible items to only consider visible items for selection
         if (distance > outerRadius && selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
             RadialCategory itemCategory = inSubcategory ? currentCategory : categories.get(selectedCategoryIndex);
-            int numVisibleItems = itemCategory != null ? itemCategory.getVisibleItemCount() : 0;
+            int numVisibleItems = itemCategory != null ? getVisibleItemCount(itemCategory) : 0;
             if (numVisibleItems > 0) {
                 double itemSegment = segmentAngle / numVisibleItems;
                 double catStartAngle = startOffset + selectedCategoryIndex * segmentAngle;
@@ -563,8 +816,8 @@ public final class RadialMenuScreen extends Screen {
         }
 
         // Play selection sound on category change
-        if (config.enableSounds && selectedCategoryIndex != prevSelectedCategory && selectedCategoryIndex >= 0) {
-            playSound(RadialMenuConstants.SOUND_PITCH_CATEGORY_CHANGE,
+        if (selectedCategoryIndex != prevSelectedCategory && selectedCategoryIndex >= 0) {
+            playHoverSound(RadialMenuConstants.SOUND_PITCH_CATEGORY_CHANGE,
                 RadialMenuConstants.SOUND_VOLUME_CATEGORY_CHANGE);
         }
     }
@@ -588,11 +841,155 @@ public final class RadialMenuScreen extends Screen {
         }
         List<RadialCategory> visible = new ArrayList<>();
         for (RadialCategory category : categories) {
-            if (category.getVisibleItemCount() > 0) {
+            if (getVisibleItemCount(category) > 0) {
                 visible.add(category);
             }
         }
         return visible;
+    }
+
+    private boolean macroHasVisibleCategories(@Nullable MacroCategory macro) {
+        return !getVisibleCategoriesForMacro(macro).isEmpty();
+    }
+
+    private int getVisibleItemCount(RadialCategory category) {
+        return getVisibleItems(category).size();
+    }
+
+    private List<RadialMenuItem> getVisibleItems(RadialCategory category) {
+        if (category == null) {
+            return List.of();
+        }
+        return getVisibleItems(category, new java.util.HashSet<>());
+    }
+
+    private List<RadialMenuItem> getVisibleItems(RadialCategory category, java.util.Set<RadialCategory> visited) {
+        if (category == null || !visited.add(category)) {
+            return List.of();
+        }
+        List<RadialMenuItem> visible = new ArrayList<>();
+        for (RadialMenuItem item : category.getItems()) {
+            if (item.isSubcategoryLink()) {
+                RadialCategory subcategory = item.getLinkedSubcategory();
+                if (subcategory != null && subcategoryHasVisibleItems(subcategory)) {
+                    visible.add(item);
+                }
+                continue;
+            }
+            if (!item.isVisible()) {
+                continue;
+            }
+            if (!isItemAllowedByProfile(item)) {
+                continue;
+            }
+            visible.add(item);
+        }
+        if (!config.useUsageOrdering || visible.size() < 2) {
+            return visible;
+        }
+        List<RadialMenuItem> links = new ArrayList<>();
+        List<IndexedItem> items = new ArrayList<>();
+        for (int i = 0; i < visible.size(); i++) {
+            RadialMenuItem item = visible.get(i);
+            if (item.isSubcategoryLink()) {
+                links.add(item);
+            } else {
+                items.add(new IndexedItem(item, i));
+            }
+        }
+        items.sort((a, b) -> {
+            int usageCompare = Integer.compare(usageCountFor(b.item), usageCountFor(a.item));
+            if (usageCompare != 0) {
+                return usageCompare;
+            }
+            return Integer.compare(a.index, b.index);
+        });
+        List<RadialMenuItem> ordered = new ArrayList<>(visible.size());
+        ordered.addAll(links);
+        for (IndexedItem entry : items) {
+            ordered.add(entry.item);
+        }
+        return ordered;
+    }
+
+    private boolean subcategoryHasVisibleItems(RadialCategory subcategory) {
+        if (subcategory == null) {
+            return false;
+        }
+        List<RadialMenuItem> items = getVisibleItems(subcategory, new java.util.HashSet<>());
+        return !items.isEmpty();
+    }
+
+    private int usageCountFor(RadialMenuItem item) {
+        if (item == null) {
+            return 0;
+        }
+        String actionId = item.getAction().getRegistryId();
+        if (actionId == null) {
+            return 0;
+        }
+        return usageStats.getOrDefault(actionId, 0);
+    }
+
+    private boolean isItemAllowedByProfile(RadialMenuItem item) {
+        if (item == null) {
+            return false;
+        }
+        String actionId = item.getAction().getRegistryId();
+        com.devmod.actions.RadialAction action = actionId != null ? ActionRegistry.getAction(actionId) : null;
+        if (config.menuProfile != RadialMenuConfig.MenuProfile.ALL && action != null) {
+            ActionCategory category = action.getCategory();
+            String menuPath = action.getMenuPath();
+            if (menuPath != null && menuPath.contains("Item Editor")) {
+                return true;
+            }
+            if (config.menuProfile == RadialMenuConfig.MenuProfile.FOCUSED) {
+                if (actionId != null && FOCUSED_ACTION_IDS.contains(actionId)) {
+                    return true;
+                }
+                if (menuPath != null) {
+                    if (menuPath.startsWith("Root/Tools/Mob Editor")
+                        || menuPath.startsWith("Root/Tools/Testing")
+                        || menuPath.startsWith("Root/Arena/Ops")
+                        || menuPath.startsWith("Root/Arena/Templates")
+                        || menuPath.startsWith("Root/Telemetry/Dashboard")
+                        || menuPath.startsWith("Root/Combat")
+                        || menuPath.startsWith("Root/Play/Endurance")
+                        || menuPath.startsWith("Root/Play/Endurance HUD")
+                        || menuPath.startsWith("Root/Play/Party")
+                        || menuPath.startsWith("Root/Play/Quest Flow")
+                        || menuPath.startsWith("Root/Play/Quest Tools")
+                        || menuPath.startsWith("Root/Play/Leaderboards")
+                        || menuPath.startsWith("Root/Nexus")) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            if (config.menuProfile == RadialMenuConfig.MenuProfile.PLAYER) {
+                if (!(category == ActionCategory.ENDURANCE
+                    || category == ActionCategory.COMBAT
+                    || category == ActionCategory.PARTY
+                    || category == ActionCategory.UI)) {
+                    return false;
+                }
+            } else if (config.menuProfile == RadialMenuConfig.MenuProfile.DEV) {
+                if (!(category == ActionCategory.DEBUG
+                    || category == ActionCategory.TELEMETRY
+                    || category == ActionCategory.CONFIG
+                    || category == ActionCategory.TESTING
+                    || category == ActionCategory.ADMIN
+                    || category == ActionCategory.TOOLS
+                    || category == ActionCategory.ARENA
+                    || category == ActionCategory.MISC)) {
+                    return false;
+                }
+            }
+        }
+        if (config.safeMode && !RadialActionSafety.isSafe(item)) {
+            return false;
+        }
+        return true;
     }
 
     private boolean isInSubcategory() {
@@ -614,6 +1011,19 @@ public final class RadialMenuScreen extends Screen {
             return currentCategory;
         }
         return getSelectedCategory();
+    }
+
+    @Nullable
+    private RadialMenuItem getSelectedItem() {
+        RadialCategory category = getActiveItemCategory();
+        if (category == null) {
+            return null;
+        }
+        List<RadialMenuItem> visibleItems = getVisibleItems(category);
+        if (selectedItemIndex < 0 || selectedItemIndex >= visibleItems.size()) {
+            return null;
+        }
+        return visibleItems.get(selectedItemIndex);
     }
 
     private int resolveTopLevelCategoryIndex(@Nullable RadialCategory category) {
@@ -654,6 +1064,12 @@ public final class RadialMenuScreen extends Screen {
         int numFavorites = favorites.size();
         double segmentAngle = RadialMenuConstants.TWO_PI / numFavorites;
         double startOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
+        int ringInner = Math.max(0, favoritesRadius - 1);
+        int ringOuter = favoritesRadius + 1;
+        int ringColor = com.devmod.client.ui.radial.render.RadialGeometry.applyAlpha(
+            RadialMenuConstants.COLOR_DIVIDER, 120);
+        com.devmod.client.ui.radial.render.RadialGeometry.renderRing(graphics, centerX, centerY,
+            ringInner, ringOuter, ringColor);
 
         for (int i = 0; i < numFavorites; i++) {
             FavoriteItem fav = favorites.get(i);
@@ -708,14 +1124,19 @@ public final class RadialMenuScreen extends Screen {
 
         // Convert search results to display format
         List<RadialTooltipRenderer.SearchResultDisplay> displayResults = searchResults.stream()
-            .map(r -> new RadialTooltipRenderer.SearchResultDisplay(
-                Objects.requireNonNullElse(r.getItem().getIconStack(), ItemStack.EMPTY),
-                r.getItem().getName(),
-                r.getCategory().getName(),
-                r.getItem().isToggle(),
-                r.getItem().isActive(),
-                r.getItem().canExecute()
-            ))
+            .map(r -> {
+                MacroCategory macro = resolveMacroForCategory(r.getCategory());
+                String macroName = macro != null ? macro.getName() : "";
+                return new RadialTooltipRenderer.SearchResultDisplay(
+                    Objects.requireNonNullElse(r.getItem().getIconStack(), ItemStack.EMPTY),
+                    r.getItem().getName(),
+                    r.getCategory().getName(),
+                    macroName,
+                    r.getItem().isToggle(),
+                    r.getItem().isActive(),
+                    r.getItem().canExecute()
+                );
+            })
             .toList();
 
         RadialTooltipRenderer.renderSearchOverlay(graphics, safeFont, searchConfig,
@@ -799,6 +1220,7 @@ public final class RadialMenuScreen extends Screen {
 
     private void renderCategoryItems(GuiGraphics graphics, RadialCategory category) {
         List<RadialCategory> categories = getActiveCategories();
+        List<RadialMenuItem> visibleItems = getVisibleItems(category);
 
         RadialCategoryRenderer.ItemsConfig itemsConfig = new RadialCategoryRenderer.ItemsConfig(
             centerX, centerY, outerRadius,
@@ -807,7 +1229,7 @@ public final class RadialMenuScreen extends Screen {
         );
 
         @Nonnull Font safeFont = requireFont();
-        RadialCategoryRenderer.renderCategoryItems(graphics, safeFont, category, categories, itemsConfig);
+        RadialCategoryRenderer.renderCategoryItems(graphics, safeFont, category, visibleItems, categories, itemsConfig);
     }
 
     private void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -823,17 +1245,19 @@ public final class RadialMenuScreen extends Screen {
             .map(f -> new RadialTooltipRenderer.FavoriteRef(f.item.getName()))
             .toList();
 
+        RadialMenuItem selectedItem = getSelectedItem();
         String tooltip = RadialTooltipRenderer.generateTooltip(
             hoveredMacro, selectedMacro,
             selectedFavoriteIndex, favoriteRefs,
             selectedCategoryIndex, selectedItemIndex,
             getActiveCategories(), getActiveItemCategory(),
+            selectedItem,
             centerHovered, macroHubHovered, editMode
         );
 
         if (tooltip != null) {
             RadialTooltipRenderer.TooltipContext context = new RadialTooltipRenderer.TooltipContext(
-                centerX, centerY, outerRadius, config.theme
+                width, height, centerX, centerY, outerRadius, config.theme
             );
             @Nonnull Font safeFont = requireFont();
             RadialTooltipRenderer.renderTooltip(graphics, safeFont, tooltip, context);
@@ -844,7 +1268,7 @@ public final class RadialMenuScreen extends Screen {
         if (!config.showKeyHints) return;
         @Nonnull Font safeFont = requireFont();
         RadialTooltipRenderer.renderHelpText(graphics, safeFont, width, height,
-            selectedMacro, searchMode, openTime, config.theme);
+            buildHelpLines(), openTime, config.theme);
     }
 
     private void renderBreadcrumb(GuiGraphics graphics) {
@@ -877,9 +1301,7 @@ public final class RadialMenuScreen extends Screen {
             primaryMouseDownAt = System.currentTimeMillis();
             return true;
         } else if (button == 1 && config.rightClickToEdit) {
-            if (selectedItemIndex >= 0) {
-                openItemEditor();
-            }
+            openSelectedDetails();
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -900,14 +1322,31 @@ public final class RadialMenuScreen extends Screen {
         }
 
         // Alcuni trackpad su macOS inviano solo mouseReleased: ripeti la logica del click primario.
-        return handlePrimaryClick(hasShiftDown(), mouseX, mouseY);
+        return handlePrimaryClick(hasShiftDown(), hasControlDown(), mouseX, mouseY);
     }
 
-    private boolean handlePrimaryClick(boolean shiftHeld, double mouseX, double mouseY) {
+    private boolean handlePrimaryClick(boolean shiftHeld, boolean ctrlHeld, double mouseX, double mouseY) {
         // Check favorites first
+        if (editMode && selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
+            removeFavorite(selectedFavoriteIndex);
+            return true;
+        }
         if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
             FavoriteItem fav = favorites.get(selectedFavoriteIndex);
             executeItem(fav.item);
+            return true;
+        }
+
+        // Ctrl+click to toggle quick action pin
+        if (ctrlHeld && selectedItemIndex >= 0 && selectedCategoryIndex >= 0) {
+            RadialCategory itemCategory = getActiveItemCategory();
+            if (itemCategory != null) {
+                List<RadialMenuItem> visibleItems = getVisibleItems(itemCategory);
+                if (selectedItemIndex < visibleItems.size()) {
+                    RadialMenuItem item = visibleItems.get(selectedItemIndex);
+                    togglePin(item);
+                }
+            }
             return true;
         }
 
@@ -915,7 +1354,7 @@ public final class RadialMenuScreen extends Screen {
         if (shiftHeld && selectedItemIndex >= 0 && selectedCategoryIndex >= 0) {
             RadialCategory itemCategory = getActiveItemCategory();
             if (itemCategory != null) {
-                List<RadialMenuItem> visibleItems = itemCategory.getVisibleItems();
+                List<RadialMenuItem> visibleItems = getVisibleItems(itemCategory);
                 if (selectedItemIndex < visibleItems.size()) {
                     RadialMenuItem item = visibleItems.get(selectedItemIndex);
                     toggleFavorite(item, itemCategory);
@@ -925,7 +1364,21 @@ public final class RadialMenuScreen extends Screen {
         }
 
         if (editMode && selectedItemIndex >= 0) {
-            openItemEditor();
+            RadialCategory itemCategory = getActiveItemCategory();
+            if (itemCategory != null) {
+                List<RadialMenuItem> visibleItems = getVisibleItems(itemCategory);
+                if (selectedItemIndex < visibleItems.size()) {
+                    RadialMenuItem item = visibleItems.get(selectedItemIndex);
+                    if (item.isSubcategoryLink()) {
+                        RadialCategory subcategory = item.getLinkedSubcategory();
+                        if (subcategory != null) {
+                            navigateTo(subcategory);
+                        }
+                    } else {
+                        toggleFavorite(item, itemCategory);
+                    }
+                }
+            }
         } else {
             activateSelection(mouseX, mouseY);
         }
@@ -941,7 +1394,7 @@ public final class RadialMenuScreen extends Screen {
 
         RadialCategory itemCategory = getActiveItemCategory();
         if (itemCategory != null) {
-            List<RadialMenuItem> visibleItems = itemCategory.getVisibleItems();
+            List<RadialMenuItem> visibleItems = getVisibleItems(itemCategory);
             if (selectedItemIndex >= 0 && selectedItemIndex < visibleItems.size()) {
                 RadialMenuItem item = visibleItems.get(selectedItemIndex);
                 if (item.isSubcategoryLink()) {
@@ -961,11 +1414,13 @@ public final class RadialMenuScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (searchMode && !searchResults.isEmpty()) {
-            if (scrollY > 0) {
-                selectedSearchResult = Math.max(0, selectedSearchResult - 1);
-            } else {
-                selectedSearchResult = Math.min(searchResults.size() - 1, selectedSearchResult + 1);
+        if (searchMode) {
+            if (!searchResults.isEmpty()) {
+                if (scrollY > 0) {
+                    selectedSearchResult = Math.max(0, selectedSearchResult - 1);
+                } else {
+                    selectedSearchResult = Math.min(searchResults.size() - 1, selectedSearchResult + 1);
+                }
             }
             return true;
         }
@@ -981,8 +1436,8 @@ public final class RadialMenuScreen extends Screen {
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == config.input.keyReleaseSelect && config.releaseToSelect) {
-                activateSelection(lastMouseX, lastMouseY);
+        if (keyCode == config.input.keyReleaseSelect && config.releaseToSelect && !searchMode) {
+            activateSelection(lastMouseX, lastMouseY);
             return true;
         }
         return super.keyReleased(keyCode, scanCode, modifiers);
@@ -1028,7 +1483,9 @@ public final class RadialMenuScreen extends Screen {
         // / or F to toggle search
         if (keyCode == config.input.keySearchTogglePrimary || keyCode == config.input.keySearchToggleSecondary) {
             searchMode = !searchMode;
-            if (!searchMode) {
+            if (searchMode) {
+                clearSelection();
+            } else {
                 searchQuery.setLength(0);
                 searchResults.clear();
             }
@@ -1046,18 +1503,57 @@ public final class RadialMenuScreen extends Screen {
             return true;
         }
 
+        if (keyCode == config.input.keyProfileCycle) {
+            config.cycleProfile();
+            clearSelection();
+            clearSubcategory();
+            ensureSelectedMacroVisible();
+            playSound(RadialMenuConstants.SOUND_PITCH_THEME_CYCLE);
+            return true;
+        }
+
+        if (keyCode == config.input.keySafeModeToggle) {
+            config.safeMode = !config.safeMode;
+            config.save();
+            clearSelection();
+            clearSubcategory();
+            ensureSelectedMacroVisible();
+            playSound(RadialMenuConstants.SOUND_PITCH_THEME_CYCLE);
+            return true;
+        }
+
+        if (hasAltDown()) {
+            int quickIndex = indexOfKey(keyCode, config.input.macroKeys);
+            if (quickIndex != RadialMenuConstants.NO_SELECTION && quickIndex < quickActions.size()) {
+                PinnedItem pinned = quickActions.get(quickIndex);
+                if (!isItemAllowedByProfile(pinned.item)) {
+                    showMessage(Minecraft.getInstance(), I18n.translate("devmod.radial.message.no_items_mode"));
+                    return true;
+                }
+                executeItem(pinned.item);
+                return true;
+            }
+        }
+
         // Number keys switch macro-categories (defaults: GLFW_KEY_1 .. GLFW_KEY_6)
         int macroIndex = indexOfKey(keyCode, config.input.macroKeys);
         if (macroIndex != RadialMenuConstants.NO_SELECTION) {
             MacroCategory[] macros = MacroCategory.values();
-            if (macroIndex < macros.length && macros[macroIndex] != selectedMacro) {
-                transitionFromMacro = selectedMacro;
-                selectedMacro = macros[macroIndex];
-                animator.startMacroTransition();
-                selectedCategoryIndex = RadialMenuConstants.NO_SELECTION; // selectedCategoryIndex = -1 (reset on macro change)
-                selectedItemIndex = RadialMenuConstants.NO_SELECTION;
-                clearSubcategory();
-                playSound(RadialMenuConstants.SOUND_PITCH_MACRO_SWITCH);
+            if (macroIndex < macros.length) {
+                MacroCategory targetMacro = macros[macroIndex];
+                if (!macroHasVisibleCategories(targetMacro)) {
+                    showMessage(Minecraft.getInstance(), I18n.translate("devmod.radial.message.no_items_mode"));
+                    return true;
+                }
+                if (targetMacro != selectedMacro) {
+                    transitionFromMacro = selectedMacro;
+                    selectedMacro = targetMacro;
+                    animator.startMacroTransition();
+                    selectedCategoryIndex = RadialMenuConstants.NO_SELECTION; // selectedCategoryIndex = -1 (reset on macro change)
+                    selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+                    clearSubcategory();
+                    playSound(RadialMenuConstants.SOUND_PITCH_MACRO_SWITCH);
+                }
             }
             return true;
         }
@@ -1085,13 +1581,21 @@ public final class RadialMenuScreen extends Screen {
 
         RadialCategory cat = getActiveItemCategory();
         if (cat != null) {
-            List<RadialMenuItem> visibleItems = cat.getVisibleItems();
+            List<RadialMenuItem> visibleItems = getVisibleItems(cat);
             int itemNum = getItemKeyIndex(keyCode);
 
             if (itemNum >= 0 && itemNum < visibleItems.size()) {
                 if (editMode) {
                     selectedItemIndex = itemNum;
-                    openItemEditor();
+                    RadialMenuItem item = visibleItems.get(itemNum);
+                    if (item.isSubcategoryLink()) {
+                        RadialCategory subcategory = item.getLinkedSubcategory();
+                        if (subcategory != null) {
+                            navigateTo(subcategory);
+                        }
+                    } else {
+                        toggleFavorite(item, cat);
+                    }
                 } else {
                     executeItem(visibleItems.get(itemNum));
                 }
@@ -1146,6 +1650,10 @@ public final class RadialMenuScreen extends Screen {
         // Check if clicking on a macro-category segment
         if (distance < macroHubRadius) {
             if (hoveredMacro != null && hoveredMacro != selectedMacro) {
+                if (!macroHasVisibleCategories(hoveredMacro)) {
+                    showMessage(Minecraft.getInstance(), I18n.translate("devmod.radial.message.no_items_mode"));
+                    return;
+                }
                 // Switch to the hovered macro-category
                 transitionFromMacro = selectedMacro;
                 selectedMacro = hoveredMacro;
@@ -1161,7 +1669,11 @@ public final class RadialMenuScreen extends Screen {
         // Check favorites
         if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
             FavoriteItem fav = favorites.get(selectedFavoriteIndex);
-            executeItem(fav.item);
+            if (editMode) {
+                removeFavorite(selectedFavoriteIndex);
+            } else {
+                executeItem(fav.item);
+            }
             return;
         }
 
@@ -1170,7 +1682,7 @@ public final class RadialMenuScreen extends Screen {
             if (cat == null) {
                 return;
             }
-            List<RadialMenuItem> visibleItems = cat.getVisibleItems();
+            List<RadialMenuItem> visibleItems = getVisibleItems(cat);
             if (selectedItemIndex >= 0 && selectedItemIndex < visibleItems.size()) {
                 RadialMenuItem item = visibleItems.get(selectedItemIndex);
 
@@ -1182,7 +1694,11 @@ public final class RadialMenuScreen extends Screen {
                     }
                 }
 
-                executeItem(item);
+                if (editMode) {
+                    toggleFavorite(item, cat);
+                } else {
+                    executeItem(item);
+                }
             }
         }
     }
@@ -1200,8 +1716,9 @@ public final class RadialMenuScreen extends Screen {
         String actionId = item.getAction().getRegistryId();
         if (actionId != null) {
             com.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
-            if (action != null && action.requiresConfirm()) {
-                openItemDetails(item);
+            RadialActionSafety.RiskLevel riskLevel = RadialActionSafety.evaluate(item);
+            if (action != null && (action.requiresConfirm() || riskLevel == RadialActionSafety.RiskLevel.DANGER)) {
+                openItemDetails(item, riskLevel);
                 return;
             }
             ActionResult result = ActionRegistry.invokeWithResult(actionId, ClientActionContexts.forRadial());
@@ -1241,13 +1758,42 @@ public final class RadialMenuScreen extends Screen {
             playSound(pitch);
         }
 
-        if (config.closeOnToggle && !item.isToggle()) {
+        if (config.closeOnToggle && item.isToggle()) {
             animator.startClose();
         }
     }
 
+    private void openSelectedDetails() {
+        if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
+            openItemDetails(favorites.get(selectedFavoriteIndex).item);
+            return;
+        }
+
+        RadialCategory itemCategory = getActiveItemCategory();
+        if (itemCategory == null) {
+            return;
+        }
+        List<RadialMenuItem> visibleItems = getVisibleItems(itemCategory);
+        if (selectedItemIndex < 0 || selectedItemIndex >= visibleItems.size()) {
+            return;
+        }
+        RadialMenuItem item = visibleItems.get(selectedItemIndex);
+        if (item.isSubcategoryLink()) {
+            RadialCategory subcategory = item.getLinkedSubcategory();
+            if (subcategory != null) {
+                navigateTo(subcategory);
+            }
+            return;
+        }
+        openItemDetails(item);
+    }
+
     private void openItemDetails(RadialMenuItem item) {
-        Minecraft.getInstance().setScreen(new RadialActionDetailScreen(this, item));
+        openItemDetails(item, RadialActionSafety.evaluate(item));
+    }
+
+    private void openItemDetails(RadialMenuItem item, RadialActionSafety.RiskLevel riskLevel) {
+        Minecraft.getInstance().setScreen(new RadialActionDetailScreen(this, item, riskLevel));
     }
 
     private void navigateTo(RadialCategory category) {
@@ -1279,20 +1825,6 @@ public final class RadialMenuScreen extends Screen {
         playSound(RadialMenuConstants.SOUND_PITCH_NAVIGATE_BACK);
     }
 
-    private void openItemEditor() {
-        if (selectedCategoryIndex >= 0 && selectedItemIndex >= 0) {
-            RadialCategory cat = getActiveItemCategory();
-            if (cat != null) {
-                List<RadialMenuItem> visibleItems = cat.getVisibleItems();
-                if (selectedItemIndex < visibleItems.size()) {
-                    RadialMenuItem item = visibleItems.get(selectedItemIndex);
-                    showMessage(Minecraft.getInstance(),
-                        "§6[Edit] " + item.getName() + " - Shift+Click to toggle * favorite");
-                }
-            }
-        }
-    }
-
     // ================================================================
     // UTILITY
     // ================================================================
@@ -1309,18 +1841,76 @@ public final class RadialMenuScreen extends Screen {
         }
     }
 
-    private void showMessage(Minecraft mc, @Nonnull String message) {
+    private void playHoverSound(float pitch, float volume) {
+        if (!config.enableSounds) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastHoverSoundAt < RadialMenuConstants.HOVER_SOUND_COOLDOWN_MS) {
+            return;
+        }
+        lastHoverSoundAt = now;
+        playSound(pitch, volume);
+    }
+
+    private void showMessage(Minecraft mc, @Nonnull Component message) {
         var player = mc.player;
         if (player != null) {
-            @Nonnull String safeMessage = Objects.requireNonNull(message, "message");
+            @Nonnull Component safeMessage = Objects.requireNonNull(message, "message");
             player.displayClientMessage(
-                Objects.requireNonNull(Component.literal(safeMessage), "messageComponent"),
+                Objects.requireNonNull(safeMessage, "messageComponent"),
                 true);
         }
     }
 
+    private void persistUserState() {
+        if (!favoritesDirty && !usageDirty && !recentsDirty && !pinsDirty) {
+            return;
+        }
+        if (config.favoriteActionIds == null) {
+            config.favoriteActionIds = new ArrayList<>();
+        }
+        config.favoriteActionIds.clear();
+        java.util.Set<String> favoriteIds = new java.util.HashSet<>();
+        for (FavoriteItem fav : favorites) {
+            String actionId = fav.item.getAction().getRegistryId();
+            if (actionId != null && favoriteIds.add(actionId)) {
+                config.favoriteActionIds.add(actionId);
+            }
+        }
+
+        if (config.usageStats == null) {
+            config.usageStats = new HashMap<>();
+        }
+        config.usageStats.clear();
+        config.usageStats.putAll(usageStats);
+
+        if (config.recentActionIds == null) {
+            config.recentActionIds = new ArrayList<>();
+        }
+        config.recentActionIds.clear();
+        config.recentActionIds.addAll(recentActionIds);
+
+        if (config.pinnedActionIds == null) {
+            config.pinnedActionIds = new ArrayList<>();
+        }
+        config.pinnedActionIds.clear();
+        for (PinnedItem pinned : quickActions) {
+            if (pinned.actionId != null && !pinned.actionId.isBlank()) {
+                config.pinnedActionIds.add(pinned.actionId);
+            }
+        }
+
+        config.save();
+        favoritesDirty = false;
+        usageDirty = false;
+        recentsDirty = false;
+        pinsDirty = false;
+    }
+
     @Override
     public void onClose() {
+        persistUserState();
         // Track screen close for telemetry
         UiTelemetry.screenClosed("radial", "radial_menu");
         logMenuClosed();
@@ -1346,5 +1936,200 @@ public final class RadialMenuScreen extends Screen {
             this.key = key;
             this.item = item;
         }
+    }
+
+    private static class PinnedItem {
+        final String actionId;
+        final RadialMenuItem item;
+
+        PinnedItem(String actionId, RadialMenuItem item) {
+            this.actionId = actionId;
+            this.item = item;
+        }
+    }
+
+    private static class IndexedItem {
+        final RadialMenuItem item;
+        final int index;
+
+        IndexedItem(RadialMenuItem item, int index) {
+            this.item = item;
+            this.index = index;
+        }
+    }
+
+    private void clearSelection() {
+        selectedCategoryIndex = RadialMenuConstants.NO_SELECTION;
+        selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+        selectedFavoriteIndex = RadialMenuConstants.NO_SELECTION;
+    }
+
+    private List<String> buildHelpLines() {
+        List<String> lines = new ArrayList<>();
+        if (searchMode) {
+            lines.add(I18n.translate("devmod.radial.help.search").getString());
+            lines.add(I18n.translate("devmod.radial.help.search_scroll").getString());
+            return lines;
+        }
+
+        String searchKey = keyName(config.input.keySearchTogglePrimary);
+        lines.add(I18n.translate("devmod.radial.help.macro_line", selectedMacro.getName(), searchKey).getString());
+
+        String keyHints = buildKeyHintLine();
+        if (!keyHints.isBlank()) {
+            lines.add(keyHints);
+        }
+
+        String itemHints = buildItemKeyLine();
+        if (!itemHints.isBlank()) {
+            lines.add(itemHints);
+        }
+
+        String profileLine = buildProfileLine();
+        if (!profileLine.isBlank()) {
+            lines.add(profileLine);
+        }
+
+        String quickLine = buildQuickActionsLine();
+        if (!quickLine.isBlank()) {
+            lines.add(quickLine);
+        }
+
+        String recentLine = buildRecentLine();
+        if (!recentLine.isBlank()) {
+            lines.add(recentLine);
+        }
+        return lines;
+    }
+
+    private String buildKeyHintLine() {
+        String macroKeys = formatKeyRange(config.input.macroKeys,
+            new RadialMenuConfig.InputBindings().macroKeys, "1-6");
+        String categoryKeys = formatKeyRange(config.input.categoryKeys,
+            new RadialMenuConfig.InputBindings().categoryKeys, "7-0-/=");
+        StringBuilder hint = new StringBuilder(I18n.translate("devmod.radial.help.keys",
+            macroKeys, categoryKeys).getString());
+
+        if (config.releaseToSelect) {
+            String releaseKey = keyName(config.input.keyReleaseSelect);
+            hint.append(I18n.translate("devmod.radial.help.release_select", releaseKey).getString());
+        }
+
+        if (favorites.isEmpty()) {
+            hint.append(I18n.translate("devmod.radial.help.favorite_hint").getString());
+        }
+
+        return hint.toString();
+    }
+
+    private String buildItemKeyLine() {
+        String itemKeys = formatKeyRange(config.input.itemKeys,
+            new RadialMenuConfig.InputBindings().itemKeys, "QWERTYUIOP");
+        return I18n.translate("devmod.radial.help.items", itemKeys).getString();
+    }
+
+    private String buildProfileLine() {
+        String profileKey = keyName(config.input.keyProfileCycle);
+        String safeKey = keyName(config.input.keySafeModeToggle);
+        String safeLabel = config.safeMode
+            ? I18n.translate("devmod.radial.safe.on").getString()
+            : I18n.translate("devmod.radial.safe.off").getString();
+        RadialMenuConfig.MenuProfile profile = config.menuProfile == RadialMenuConfig.MenuProfile.FOCUSED
+            ? RadialMenuConfig.MenuProfile.PLAYER
+            : config.menuProfile;
+        String profileLabel = I18n.translate("devmod.radial.profile."
+            + profile.name().toLowerCase(Locale.ROOT)).getString();
+        return I18n.translate("devmod.radial.help.profile", profileLabel, profileKey, safeLabel, safeKey).getString();
+    }
+
+    private String buildQuickActionsLine() {
+        if (quickActions.isEmpty()) {
+            return I18n.translate("devmod.radial.help.quick_empty").getString();
+        }
+        StringBuilder line = new StringBuilder(I18n.translate("devmod.radial.help.quick_prefix").getString());
+        int added = 0;
+        for (int i = 0; i < quickActions.size(); i++) {
+            PinnedItem pinned = quickActions.get(i);
+            com.devmod.actions.RadialAction action = ActionRegistry.getAction(pinned.actionId);
+            if (action == null) {
+                continue;
+            }
+            if (!isItemAllowedByProfile(pinned.item) || !pinned.item.isVisible()) {
+                continue;
+            }
+            if (added > 0) {
+                line.append(" §8| ");
+            }
+            String key = i < config.input.macroKeys.length ? keyName(config.input.macroKeys[i]) : String.valueOf(i + 1);
+            String name = truncateLabel(action.getLabel().getString(), 14);
+            line.append(I18n.translate("devmod.radial.help.quick_item", key, name).getString());
+            added++;
+        }
+        return added == 0 ? "" : line.toString();
+    }
+
+    private String buildRecentLine() {
+        if (recentActionIds.isEmpty()) {
+            return "";
+        }
+        List<String> names = new ArrayList<>();
+        for (String id : recentActionIds) {
+            com.devmod.actions.RadialAction action = ActionRegistry.getAction(id);
+            if (action == null) {
+                continue;
+            }
+            String name = action.getLabel().getString();
+            names.add(truncateLabel(name, 18));
+            if (names.size() >= RadialMenuConstants.MAX_RECENT_ACTIONS) {
+                break;
+            }
+        }
+        if (names.isEmpty()) {
+            return "";
+        }
+        return I18n.translate("devmod.radial.help.recent", String.join(" §8| §f", names)).getString();
+    }
+
+    private static String truncateLabel(String label, int maxLength) {
+        if (label == null) {
+            return "";
+        }
+        if (label.length() <= maxLength) {
+            return label;
+        }
+        return label.substring(0, Math.max(0, maxLength - 3)) + "...";
+    }
+
+    private static String formatKeyRange(int[] keys, int[] defaults, String defaultRange) {
+        if (Arrays.equals(keys, defaults)) {
+            return defaultRange;
+        }
+        String list = formatKeyList(keys, 20);
+        return list.isEmpty() ? I18n.translate("devmod.radial.help.custom").getString() : list;
+    }
+
+    private static String formatKeyList(int[] keys, int maxChars) {
+        if (keys == null || keys.length == 0) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < keys.length; i++) {
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(keyName(keys[i]));
+            if (builder.length() > maxChars) {
+                return "";
+            }
+        }
+        return builder.toString();
+    }
+
+    private static String keyName(int keyCode) {
+        String name = GLFW.glfwGetKeyName(keyCode, 0);
+        if (name != null && !name.isBlank()) {
+            return name.toUpperCase(Locale.ROOT);
+        }
+        return "KEY_" + keyCode;
     }
 }

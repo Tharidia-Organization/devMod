@@ -119,9 +119,23 @@ public final class WISClientBridge {
 
     /**
      * Called when wave is complete.
+     * Ensures a collector exists for the debrief screen, creating one if necessary.
      */
     public static void onWaveComplete() {
-        WaveIntelligenceManager.INSTANCE.endCombat();
+        var wis = WaveIntelligenceManager.INSTANCE;
+
+        // Ensure we have a collector for the debrief screen
+        // This handles cases where WIS wasn't fully initialized (no pre-brief phase)
+        if (wis.getCurrentCollector() == null) {
+            QuestSyncPayload cached = ClientQuestCache.getData();
+            int waveNumber = cached != null ? cached.currentWave() : 1;
+
+            // Create a minimal collector with data from cache
+            LOGGER.debug("[WIS Bridge] Creating fallback collector for wave {}", waveNumber);
+            wis.ensureCollectorExists(waveNumber);
+        }
+
+        wis.endCombat();
         LOGGER.debug("[WIS Bridge] Wave complete");
     }
 

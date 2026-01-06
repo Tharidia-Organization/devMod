@@ -29,6 +29,7 @@ import com.devmod.client.ui.unified.pages.EditorSettingsPage;
 import com.devmod.client.ui.unified.pages.GeneralSettingsPage;
 import com.devmod.client.ui.unified.pages.KeybindsPage;
 import com.devmod.client.ui.unified.pages.MobConfigPage;
+import com.devmod.client.ui.unified.pages.RadialSettingsPage;
 import com.devmod.client.ui.unified.pages.TelemetryPage;
 import com.devmod.client.ui.unified.pages.VisualizersPage;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
@@ -89,8 +90,13 @@ public class UnifiedSettingsScreen extends Screen {
     private final Screen parent;
 
     public UnifiedSettingsScreen(@Nullable Screen parent) {
+        this(parent, SettingsCategory.GENERAL);
+    }
+
+    public UnifiedSettingsScreen(@Nullable Screen parent, @Nonnull SettingsCategory initialCategory) {
         super(I18n.screenTitle("voxel_lab_settings"));
         this.parent = parent;
+        this.currentCategory = Objects.requireNonNullElse(initialCategory, SettingsCategory.GENERAL);
 
         // Disable menu blur when opening this screen
         Minecraft mc = Minecraft.getInstance();
@@ -111,6 +117,7 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Initialize pages
         pages.put(SettingsCategory.GENERAL, new GeneralSettingsPage());
+        pages.put(SettingsCategory.RADIAL, new RadialSettingsPage());
         pages.put(SettingsCategory.EDITOR, new EditorSettingsPage());
         pages.put(SettingsCategory.DEBUG, new DebugOverlaysPage());
         pages.put(SettingsCategory.VISUALIZERS, new VisualizersPage());

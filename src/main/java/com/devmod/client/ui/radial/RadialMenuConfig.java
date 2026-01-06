@@ -30,13 +30,16 @@ public class RadialMenuConfig {
     public static final RadialMenuConfig INSTANCE = new RadialMenuConfig();
 
     // === BEHAVIOR OPTIONS ===
-    public boolean releaseToSelect = true;          // Release key to activate selection
-    public boolean rightClickToEdit = true;         // Right-click opens edit mode
+    public boolean releaseToSelect = false;         // Release key to activate selection
+    public boolean rightClickToEdit = true;         // Right-click opens details
     public boolean enableAnimations = true;         // Enable smooth animations
     public boolean enableSounds = true;             // Enable feedback sounds
     public boolean showTooltips = true;             // Show item descriptions
     public boolean closeOnToggle = false;           // Close menu after toggling item
     public boolean showKeyHints = true;             // Show keyboard shortcuts
+    public MenuProfile menuProfile = MenuProfile.FOCUSED; // Filter for focused/default menu
+    public boolean safeMode = false;                // Hide risky actions
+    public boolean useUsageOrdering = false;        // Sort items by usage count
 
     // === COLOR THEME ===
     public ColorTheme theme = new ColorTheme();
@@ -59,10 +62,38 @@ public class RadialMenuConfig {
     // === INPUT BINDINGS ===
     public InputBindings input = new InputBindings();
 
+    // === PERSISTED USER STATE ===
+    public List<String> favoriteActionIds = new ArrayList<>();
+    public List<String> recentActionIds = new ArrayList<>();
+    public List<String> pinnedActionIds = new ArrayList<>();
+    public Map<String, Integer> usageStats = new HashMap<>();
+
     public enum IconMode {
         AUTO,       // Use ItemStack if available, else emoji
         EMOJI,      // Always use emoji
         ITEMSTACK   // Always use ItemStack
+    }
+
+    public enum MenuProfile {
+        ALL("All"),
+        FOCUSED("Focused"),
+        PLAYER("Player"),
+        DEV("Dev");
+
+        public final String label;
+
+        MenuProfile(String label) {
+            this.label = label;
+        }
+
+        public static MenuProfile fromName(String name) {
+            for (MenuProfile profile : values()) {
+                if (profile.name().equalsIgnoreCase(name) || profile.label.equalsIgnoreCase(name)) {
+                    return profile;
+                }
+            }
+            return ALL;
+        }
     }
 
     /**
@@ -76,6 +107,8 @@ public class RadialMenuConfig {
         public int keyEditModeToggleLeft = GLFW.GLFW_KEY_LEFT_SHIFT;
         public int keyEditModeToggleRight = GLFW.GLFW_KEY_RIGHT_SHIFT;
         public int keyThemeCycle = GLFW.GLFW_KEY_T;
+        public int keyProfileCycle = GLFW.GLFW_KEY_M;
+        public int keySafeModeToggle = GLFW.GLFW_KEY_N;
         public int keyCategoryLeft = GLFW.GLFW_KEY_LEFT;
         public int keyCategoryRight = GLFW.GLFW_KEY_RIGHT;
         public int keySearchConfirm = GLFW.GLFW_KEY_ENTER;
@@ -108,6 +141,7 @@ public class RadialMenuConfig {
             GLFW.GLFW_KEY_W,
             GLFW.GLFW_KEY_E,
             GLFW.GLFW_KEY_R,
+            GLFW.GLFW_KEY_T,
             GLFW.GLFW_KEY_Y,
             GLFW.GLFW_KEY_U,
             GLFW.GLFW_KEY_I,
@@ -174,7 +208,9 @@ public class RadialMenuConfig {
         FOREST("forest", RadialMenuThemeDefaults.Presets.FOREST),
         GOLD("gold", RadialMenuThemeDefaults.Presets.GOLD),
         MIDNIGHT("midnight", RadialMenuThemeDefaults.Presets.MIDNIGHT),
-        MINIMAL("minimal", RadialMenuThemeDefaults.Presets.MINIMAL);
+        MINIMAL("minimal", RadialMenuThemeDefaults.Presets.MINIMAL),
+        COLORBLIND("colorblind", RadialMenuThemeDefaults.Presets.COLORBLIND),
+        HIGH_CONTRAST("high_contrast", RadialMenuThemeDefaults.Presets.HIGH_CONTRAST);
 
         public final String name;
         public final int bgDark, bgLight, selected, hover;
@@ -250,6 +286,9 @@ public class RadialMenuConfig {
         this.showTooltips = other.showTooltips;
         this.closeOnToggle = other.closeOnToggle;
         this.showKeyHints = other.showKeyHints;
+        this.menuProfile = other.menuProfile != null ? other.menuProfile : MenuProfile.ALL;
+        this.safeMode = other.safeMode;
+        this.useUsageOrdering = other.useUsageOrdering;
         this.theme = other.theme;
         this.innerRadius = other.innerRadius;
         this.outerRadius = other.outerRadius;
@@ -263,6 +302,14 @@ public class RadialMenuConfig {
         this.searchBoxAnimationSpeed = other.searchBoxAnimationSpeed;
         this.iconMode = other.iconMode == IconMode.EMOJI ? IconMode.ITEMSTACK : other.iconMode;
         this.input = other.input != null ? other.input : new InputBindings();
+        this.favoriteActionIds = other.favoriteActionIds != null ? new ArrayList<>(other.favoriteActionIds)
+            : new ArrayList<>();
+        this.recentActionIds = other.recentActionIds != null ? new ArrayList<>(other.recentActionIds)
+            : new ArrayList<>();
+        this.pinnedActionIds = other.pinnedActionIds != null ? new ArrayList<>(other.pinnedActionIds)
+            : new ArrayList<>();
+        this.usageStats = other.usageStats != null ? new HashMap<>(other.usageStats)
+            : new HashMap<>();
         sanitizeInputBindings();
         save(); // persist sanitized binds so the JSON stays consistent
     }
@@ -285,6 +332,9 @@ public class RadialMenuConfig {
         input.keyEditModeToggleRight = sanitizeKey(input.keyEditModeToggleRight, DEFAULT_INPUT.keyEditModeToggleRight,
             "input.keyEditModeToggleRight");
         input.keyThemeCycle = sanitizeKey(input.keyThemeCycle, DEFAULT_INPUT.keyThemeCycle, "input.keyThemeCycle");
+        input.keyProfileCycle = sanitizeKey(input.keyProfileCycle, DEFAULT_INPUT.keyProfileCycle, "input.keyProfileCycle");
+        input.keySafeModeToggle = sanitizeKey(input.keySafeModeToggle, DEFAULT_INPUT.keySafeModeToggle,
+            "input.keySafeModeToggle");
         input.keyCategoryLeft = sanitizeKey(input.keyCategoryLeft, DEFAULT_INPUT.keyCategoryLeft, "input.keyCategoryLeft");
         input.keyCategoryRight = sanitizeKey(input.keyCategoryRight, DEFAULT_INPUT.keyCategoryRight, "input.keyCategoryRight");
         input.keySearchConfirm = sanitizeKey(input.keySearchConfirm, DEFAULT_INPUT.keySearchConfirm, "input.keySearchConfirm");
@@ -321,6 +371,8 @@ public class RadialMenuConfig {
         addKeyOwner(owners, "input.keyEditModeToggleLeft", input.keyEditModeToggleLeft);
         addKeyOwner(owners, "input.keyEditModeToggleRight", input.keyEditModeToggleRight);
         addKeyOwner(owners, "input.keyThemeCycle", input.keyThemeCycle);
+        addKeyOwner(owners, "input.keyProfileCycle", input.keyProfileCycle);
+        addKeyOwner(owners, "input.keySafeModeToggle", input.keySafeModeToggle);
         addKeyOwner(owners, "input.keyCategoryLeft", input.keyCategoryLeft);
         addKeyOwner(owners, "input.keyCategoryRight", input.keyCategoryRight);
         addKeyOwner(owners, "input.keySearchConfirm", input.keySearchConfirm);
@@ -396,6 +448,23 @@ public class RadialMenuConfig {
         ThemePreset current = ThemePreset.fromName(theme.presetName);
         int nextIndex = (current.ordinal() + 1) % presets.length;
         theme.applyPreset(presets[nextIndex]);
+        save();
+    }
+
+    /**
+     * Cycle between menu profiles (full vs focused).
+     */
+    public void cycleProfile() {
+        MenuProfile[] profiles = {MenuProfile.ALL, MenuProfile.PLAYER, MenuProfile.DEV};
+        int currentIndex = 0;
+        for (int i = 0; i < profiles.length; i++) {
+            if (profiles[i] == menuProfile) {
+                currentIndex = i;
+                break;
+            }
+        }
+        int nextIndex = (currentIndex + 1) % profiles.length;
+        menuProfile = profiles[nextIndex];
         save();
     }
 

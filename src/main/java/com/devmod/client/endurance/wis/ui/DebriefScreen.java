@@ -1009,4 +1009,13 @@ public class DebriefScreen extends BaseDevModScreen {
     public boolean isPauseScreen() {
         return false;
     }
+
+    @Override
+    protected void onContentClose() {
+        // Ensure WIS transitions out of DEBRIEF phase when screen closes
+        // This handles ESC key, Continue button, and any other close path
+        if (WaveIntelligenceManager.INSTANCE.getCurrentPhase() == com.devmod.client.endurance.wis.WavePhase.DEBRIEF) {
+            WaveIntelligenceManager.INSTANCE.skipDebrief();
+        }
+    }
 }

@@ -1,6 +1,8 @@
 package com.devmod.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -14,6 +16,7 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 import com.devmod.DevMod;
 import com.devmod.actions.client.DevModClientActions;
+import com.devmod.blocks.ModBlocks;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.network.ClientNetworkPayloadHooks;
 import com.devmod.client.overlay.ImpactHudController;
@@ -55,6 +58,8 @@ public class DevModClient {
         event.enqueueWork(() -> {
             SettingsManager.INSTANCE.load();
             DevMod.LOGGER.info("[DevMod] Settings loaded from disk");
+
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.NEXUS_PORTAL.get(), RenderType.translucent());
 
             // Initialize Impact HUD Controller (context-aware display modes)
             ImpactHudController.INSTANCE.initialize();

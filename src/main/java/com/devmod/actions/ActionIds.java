@@ -6,6 +6,7 @@ public final class ActionIds {
     // UI / Screens
     public static final String UI_RADIAL_OPEN = "devmod.ui.radial.open";
     public static final String UI_SETTINGS_OPEN = "devmod.ui.settings.open";
+    public static final String UI_RADIAL_SETTINGS_OPEN = "devmod.ui.radial_settings.open";
     public static final String UI_ITEM_EDITOR_OPEN_AUTO = "devmod.ui.item_editor.open_auto";
     public static final String UI_ITEM_EDITOR_OPEN_WEAPON = "devmod.ui.item_editor.open_weapon";
     public static final String UI_ITEM_EDITOR_OPEN_ARMOR = "devmod.ui.item_editor.open_armor";
@@ -167,6 +168,28 @@ public final class ActionIds {
     public static final String COMMAND_TIME_DAY = "devmod.command.time.day";
     public static final String COMMAND_TIME_NIGHT = "devmod.command.time.night";
     public static final String COMMAND_WEATHER_CLEAR = "devmod.command.weather.clear";
+    public static final String COMMAND_NEXUS_RIFTSTAMP = "devmod.command.nexus.riftstamp";
+    public static final String COMMAND_NEXUS_HELP = "devmod.command.nexus.help";
+    public static final String COMMAND_NEXUS_ZONES = "devmod.command.nexus.zones";
+    public static final String COMMAND_NEXUS_ENTER = "devmod.command.nexus.enter";
+    public static final String COMMAND_NEXUS_RETURN = "devmod.command.nexus.return";
+    public static final String COMMAND_NEXUS_TP_HUB = "devmod.command.nexus.tp.hub";
+    public static final String COMMAND_NEXUS_TP_OVERVIEW = "devmod.command.nexus.tp.overview";
+    public static final String COMMAND_NEXUS_TP_COMBAT = "devmod.command.nexus.tp.combat";
+    public static final String COMMAND_NEXUS_TP_ARENA = "devmod.command.nexus.tp.arena";
+    public static final String COMMAND_NEXUS_TP_UI = "devmod.command.nexus.tp.ui";
+    public static final String COMMAND_NEXUS_TP_TELEMETRY = "devmod.command.nexus.tp.telemetry";
+    public static final String COMMAND_NEXUS_TP_SHOWCASE = "devmod.command.nexus.tp.showcase";
+    public static final String COMMAND_NEXUS_TP_INTEGRATION = "devmod.command.nexus.tp.integration";
+    public static final String COMMAND_NEXUS_TP_SANDBOX = "devmod.command.nexus.tp.sandbox";
+    public static final String COMMAND_NEXUS_TP_MECHANICS = "devmod.command.nexus.tp.mechanics";
+    public static final String COMMAND_NEXUS_STATUS = "devmod.command.nexus.status";
+    public static final String COMMAND_NEXUS_REBUILD = "devmod.command.nexus.rebuild";
+    public static final String COMMAND_NEXUS_LOCK = "devmod.command.nexus.lock";
+    public static final String COMMAND_NEXUS_UNLOCK = "devmod.command.nexus.unlock";
+    public static final String COMMAND_NEXUS_AVATAR_STATUS = "devmod.command.nexus.avatar.status";
+    public static final String COMMAND_NEXUS_AVATAR_SPAWN = "devmod.command.nexus.avatar.spawn";
+    public static final String COMMAND_NEXUS_AVATAR_REMOVE = "devmod.command.nexus.avatar.remove";
 
     // Arena
     public static final String ARENA_HELP = "devmod.arena.help";

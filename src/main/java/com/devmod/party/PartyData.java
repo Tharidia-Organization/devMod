@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
+import com.devmod.endurance.config.EnduranceMobPoolConfig;
 
 public class PartyData {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyData.class);
@@ -59,6 +60,10 @@ public class PartyData {
     /** Instance ID if party is currently in a quest */
     @Nullable
     private volatile UUID instanceId;
+
+    /** Pending mob pool config for the next party run (session scope) */
+    @Nullable
+    private volatile EnduranceMobPoolConfig mobPoolConfig;
 
     /** Timestamp when the party was created */
     private final long createdAt;
@@ -457,6 +462,7 @@ public class PartyData {
     public void finishQuest() {
         this.instanceId = null;
         this.state = PartyState.FORMING;
+        clearMobPoolConfig();
         // Reset ready status for non-leaders
         for (UUID memberId : members) {
             if (!memberId.equals(leaderId)) {
@@ -471,10 +477,30 @@ public class PartyData {
      */
     public void disband() {
         this.state = PartyState.DISBANDED;
+        clearMobPoolConfig();
         // Cancel all pending invites
         pendingInvites.values().forEach(PartyInvite::cancel);
         pendingInvites.clear();
         LOGGER.info("[Party] Party {} disbanded", partyId);
+    }
+
+    // === Mob Pool Config (session scope, party-level) ===
+
+    public void setMobPoolConfig(@Nullable EnduranceMobPoolConfig config) {
+        this.mobPoolConfig = config != null ? config.copy() : null;
+    }
+
+    public @Nullable EnduranceMobPoolConfig getMobPoolConfig() {
+        EnduranceMobPoolConfig config = mobPoolConfig;
+        return config != null ? config.copy() : null;
+    }
+
+    public boolean hasMobPoolConfig() {
+        return mobPoolConfig != null && mobPoolConfig.hasModifications();
+    }
+
+    public void clearMobPoolConfig() {
+        mobPoolConfig = null;
     }
 
     /**

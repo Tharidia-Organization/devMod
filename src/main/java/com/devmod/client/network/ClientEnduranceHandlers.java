@@ -90,6 +90,9 @@ public final class ClientEnduranceHandlers {
      * precondition timing issues (cache may not be updated when packet arrives).
      */
     public static void handleQuestDeath() {
+        // Start suppressing vanilla DeathScreen - persists through respawn
+        ClientQuestCache.startDeathScreenSuppression();
+
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
             mc.execute(() -> mc.setScreen(new QuestDeathScreen()));

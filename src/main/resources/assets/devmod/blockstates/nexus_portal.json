@@ -1,0 +1,52 @@
+{
+  "variants": {
+    "axis=x,color=combat": {
+      "model": "devmod:block/nexus_portal_combat_ns"
+    },
+    "axis=z,color=combat": {
+      "model": "devmod:block/nexus_portal_combat_ew"
+    },
+    "axis=x,color=arena": {
+      "model": "devmod:block/nexus_portal_arena_ns"
+    },
+    "axis=z,color=arena": {
+      "model": "devmod:block/nexus_portal_arena_ew"
+    },
+    "axis=x,color=ui": {
+      "model": "devmod:block/nexus_portal_ui_ns"
+    },
+    "axis=z,color=ui": {
+      "model": "devmod:block/nexus_portal_ui_ew"
+    },
+    "axis=x,color=telemetry": {
+      "model": "devmod:block/nexus_portal_telemetry_ns"
+    },
+    "axis=z,color=telemetry": {
+      "model": "devmod:block/nexus_portal_telemetry_ew"
+    },
+    "axis=x,color=showcase": {
+      "model": "devmod:block/nexus_portal_showcase_ns"
+    },
+    "axis=z,color=showcase": {
+      "model": "devmod:block/nexus_portal_showcase_ew"
+    },
+    "axis=x,color=integration": {
+      "model": "devmod:block/nexus_portal_integration_ns"
+    },
+    "axis=z,color=integration": {
+      "model": "devmod:block/nexus_portal_integration_ew"
+    },
+    "axis=x,color=sandbox": {
+      "model": "devmod:block/nexus_portal_sandbox_ns"
+    },
+    "axis=z,color=sandbox": {
+      "model": "devmod:block/nexus_portal_sandbox_ew"
+    },
+    "axis=x,color=mechanics": {
+      "model": "devmod:block/nexus_portal_mechanics_ns"
+    },
+    "axis=z,color=mechanics": {
+      "model": "devmod:block/nexus_portal_mechanics_ew"
+    }
+  }
+}

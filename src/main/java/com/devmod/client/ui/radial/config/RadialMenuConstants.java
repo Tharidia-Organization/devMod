@@ -1,5 +1,7 @@
 package com.devmod.client.ui.radial.config;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
+
 /**
  * Named constants for the Radial Menu system.
  * Centralizes all magic numbers for maintainability and documentation.
@@ -67,7 +69,7 @@ public final class RadialMenuConstants {
     // ================================================================
 
     /** Close button size as ratio of centerButtonRadius */
-    public static final float CLOSE_BUTTON_RATIO = 0.4f;
+    public static final float CLOSE_BUTTON_RATIO = 0.32f;
 
     /** Macro hub extends this many pixels beyond center button */
     public static final int MACRO_HUB_OFFSET = 8;
@@ -157,6 +159,31 @@ public final class RadialMenuConstants {
     public static final int BADGE_TEXT_OFFSET_Y = -2;
 
     // ================================================================
+    // RISK BADGES
+    // ================================================================
+
+    /** Risk badge radius (pixels) */
+    public static final int RISK_BADGE_RADIUS = 6;
+
+    /** Risk badge X offset from item center (pixels) */
+    public static final int RISK_BADGE_OFFSET_X = 12;
+
+    /** Risk badge Y offset from item center (pixels) */
+    public static final int RISK_BADGE_OFFSET_Y = -18;
+
+    /** Risk badge text Y offset (pixels) */
+    public static final int RISK_BADGE_TEXT_OFFSET_Y = -4;
+
+    /** Risk badge background color */
+    public static final int RISK_BADGE_BG_COLOR = RadialMenuThemeDefaults.Badge.BG;
+
+    /** Risk badge danger color */
+    public static final int RISK_BADGE_DANGER_COLOR = DesignTokens.Semantic.ERROR;
+
+    /** Risk badge caution color */
+    public static final int RISK_BADGE_CAUTION_COLOR = DesignTokens.Semantic.WARNING;
+
+    // ================================================================
     // ITEM RING & ITEMS
     // ================================================================
 
@@ -221,6 +248,9 @@ public final class RadialMenuConstants {
     /** Favorite background color when unselected */
     public static final int FAVORITE_BG_UNSELECTED = RadialMenuThemeDefaults.Favorites.BG_UNSELECTED;
 
+    /** Favorite hit radius for selection (pixels) */
+    public static final int FAVORITE_HIT_RADIUS = FAVORITE_BASE_SIZE + FAVORITE_SIZE_BONUS + 2;
+
     /** Favorite icon scale factor */
     public static final float FAVORITE_ICON_SCALE = 0.7f;
 
@@ -258,6 +288,9 @@ public final class RadialMenuConstants {
 
     /** Volume for hover sounds */
     public static final float SOUND_VOLUME_HOVER = 0.2f;
+
+    /** Minimum gap between hover sounds (milliseconds) */
+    public static final long HOVER_SOUND_COOLDOWN_MS = 90;
 
     /** Volume for category change sounds */
     public static final float SOUND_VOLUME_CATEGORY_CHANGE = 0.25f;
@@ -333,6 +366,12 @@ public final class RadialMenuConstants {
 
     /** Maximum number of favorites allowed */
     public static final int MAX_FAVORITES = 8;
+
+    /** Maximum number of quick actions allowed */
+    public static final int MAX_QUICK_ACTIONS = 6;
+
+    /** Maximum number of recent actions to show */
+    public static final int MAX_RECENT_ACTIONS = 3;
 
     /** Maximum items per category for animations */
     public static final int MAX_ITEMS_PER_CATEGORY = 10;

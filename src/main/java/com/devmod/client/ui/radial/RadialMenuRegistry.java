@@ -464,6 +464,7 @@ public final class RadialMenuRegistry {
             .icon("")
             .iconStack(stack(Items.COMPARATOR))
             .item(RadialMenuItem.registry(ActionIds.UI_SETTINGS_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_RADIAL_SETTINGS_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_KEYBINDS_OPEN))
             .item(RadialMenuItem.registry(ActionIds.HUD_QUICK_HELP_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.UI_WELCOME_OPEN))
@@ -715,7 +716,7 @@ public final class RadialMenuRegistry {
             .build());
 
         // Category 5: Commands
-        categories.add(RadialCategory.builder("commands")
+        RadialCategory commands = RadialCategory.builder("commands")
             .name("Commands")
             .color(DesignTokens.Radial.TOOLS_COMMANDS)
             .icon("")
@@ -726,7 +727,61 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.COMMAND_TIME_DAY))
             .item(RadialMenuItem.registry(ActionIds.COMMAND_TIME_NIGHT))
             .item(RadialMenuItem.registry(ActionIds.COMMAND_WEATHER_CLEAR))
-            .build());
+            .build();
+
+        RadialCategory nexus = commands.addSubcategory("nexus", "Nexus", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.NETHER_STAR));
+        nexus.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_HELP),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_STATUS),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_ZONES)
+        );
+
+        RadialCategory nexusAccess = nexus.addSubcategory("nexus_access", "Access", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.ENDER_PEARL));
+        nexusAccess.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_ENTER),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_RETURN)
+        );
+
+        RadialCategory nexusZones = nexus.addSubcategory("nexus_zones", "Zones", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.COMPASS));
+        nexusZones.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_HUB),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_OVERVIEW),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_COMBAT),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ARENA),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_UI),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_TELEMETRY),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_SHOWCASE),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_INTEGRATION),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_SANDBOX),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_MECHANICS)
+        );
+
+        RadialCategory nexusAdmin = nexus.addSubcategory("nexus_admin", "Admin", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.BARRIER));
+        nexusAdmin.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_REBUILD),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_LOCK),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_UNLOCK)
+        );
+
+        RadialCategory nexusAvatar = nexus.addSubcategory("nexus_avatar", "Avatar", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.PLAYER_HEAD));
+        nexusAvatar.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_AVATAR_STATUS),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_AVATAR_SPAWN),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_AVATAR_REMOVE)
+        );
+
+        RadialCategory nexusPortals = nexus.addSubcategory("nexus_portals", "Portals", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.ENDER_EYE));
+        nexusPortals.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_RIFTSTAMP)
+        );
+
+        categories.add(commands);
     }
 
     // ================================================================
