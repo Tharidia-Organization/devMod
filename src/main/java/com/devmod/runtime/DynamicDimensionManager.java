@@ -938,8 +938,19 @@ public class DynamicDimensionManager {
             // 1. Check for players still in dimension
             List<ServerPlayer> playersInDim = new ArrayList<>(level.players());
             if (!playersInDim.isEmpty()) {
-                LOGGER.warn("[DynamicDim] {} players still in dimension, force ejecting", playersInDim.size());
+                InstanceData instance = InstanceRegistry.INSTANCE.getInstance(instanceId).orElse(null);
+                boolean warnEjection = instance == null
+                    || instance.getState() == InstanceState.ACTIVE
+                    || instance.getState() == InstanceState.READY;
+                if (warnEjection) {
+                    LOGGER.warn("[DynamicDim] {} players still in dimension, force ejecting", playersInDim.size());
+                } else {
+                    LOGGER.info("[DynamicDim] {} players still in dimension, force ejecting", playersInDim.size());
+                }
                 for (ServerPlayer player : playersInDim) {
+                    if (RecoverySystem.INSTANCE.loadSnapshot(player.getUUID()).isPresent()) {
+                        RecoverySystem.INSTANCE.updateSnapshotState(player.getUUID(), PlayerInstanceState.RETURNING);
+                    }
                     // Force teleport to overworld spawn
                     ServerLevel overworld = server.overworld();
                     BlockPos spawnPos = overworld.getSharedSpawnPos();

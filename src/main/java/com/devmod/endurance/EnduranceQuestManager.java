@@ -1,5 +1,4 @@
 package com.devmod.endurance;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +37,6 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
-import com.devmod.shared.SharedColorTokens;
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.arena.builder.ArenaBuilder;
 import com.devmod.arena.builder.AsyncArenaBuildCoordinator;
@@ -64,19 +62,20 @@ import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.mob.EnhancedMobRequirements;
+import com.devmod.mob.EnhancedMobRequirementsRegistry;
+import com.devmod.mob.MobRequirements;
+import com.devmod.mob.MobRequirementsRegistry;
 import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.runtime.InstanceData;
 import com.devmod.runtime.InstanceManager;
 import com.devmod.runtime.InstanceRegistry;
 import com.devmod.runtime.RecoverySystem;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
-import com.devmod.mob.EnhancedMobRequirements;
-import com.devmod.mob.EnhancedMobRequirementsRegistry;
-import com.devmod.mob.MobRequirements;
-import com.devmod.mob.MobRequirementsRegistry;
 
 public class EnduranceQuestManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestManager.class);
@@ -1025,6 +1024,13 @@ public class EnduranceQuestManager {
     public Map<UUID, net.minecraft.core.BlockPos> teleportPlayersToArena(List<ServerPlayer> players,
                                                                         ArenaContext arena,
                                                                         @javax.annotation.Nullable ArenaHandle handle) {
+        return teleportPlayersToArena(players, arena, handle, false);
+    }
+
+    public Map<UUID, net.minecraft.core.BlockPos> teleportPlayersToArena(List<ServerPlayer> players,
+                                                                        ArenaContext arena,
+                                                                        @javax.annotation.Nullable ArenaHandle handle,
+                                                                        boolean allowFallback) {
         Map<UUID, net.minecraft.core.BlockPos> spawnPositions = new HashMap<>();
         if (handle == null || handle.playerSpawnPositions() == null || handle.playerSpawnPositions().isEmpty()) {
             LOGGER.error("[EnduranceQuest] Missing player spawn slots; ArenaHandle required");
@@ -1059,6 +1065,13 @@ public class EnduranceQuestManager {
                 template,
                 level
             );
+            if (spawnPos == null && allowFallback) {
+                spawnPos = pickFallbackSpawnPosition(positions, i, occupied);
+                if (spawnPos != null) {
+                    LOGGER.warn("[EnduranceQuest] Falling back to unvalidated player spawn at {}",
+                        spawnPos);
+                }
+            }
             if (spawnPos == null) {
                 LOGGER.warn("[EnduranceQuest] No valid template player spawn found");
                 spawnPositions.clear();
@@ -1106,6 +1119,26 @@ public class EnduranceQuestManager {
                 if (!runtimeValidator.validateAtRuntime(template.id(), slot, level, pos)) {
                     continue;
                 }
+            }
+            occupied.markOccupied(pos);
+            return pos;
+        }
+        return null;
+    }
+
+    private net.minecraft.core.BlockPos pickFallbackSpawnPosition(
+            List<ArenaHandle.BlockPos> positions,
+            int startIndex,
+            com.devmod.arena.spawn.SpawnOccupancyTracker occupied) {
+        if (positions == null || positions.isEmpty()) {
+            return null;
+        }
+        int size = positions.size();
+        for (int offset = 0; offset < size; offset++) {
+            ArenaHandle.BlockPos candidate = positions.get((startIndex + offset) % size);
+            net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(candidate.x(), candidate.y(), candidate.z());
+            if (occupied.isOccupied(pos)) {
+                continue;
             }
             occupied.markOccupied(pos);
             return pos;
@@ -2115,6 +2148,7 @@ public class EnduranceQuestManager {
             return;
         }
 
+        session.setLoadingProtection(true);
         com.devmod.network.NetworkHandler.sendInstanceLoadingShow(player, "Creating template instance...");
         player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
             .withStyle(SharedColorTokens.Chat.YELLOW)));
@@ -2387,6 +2421,7 @@ public class EnduranceQuestManager {
             InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
         }
         if (pendingSession != null) {
+            pendingSession.setLoadingProtection(false);
             activeSessions.remove(pendingSession.getPlayerId());
         }
         if (player != null) {
@@ -2450,6 +2485,10 @@ public class EnduranceQuestManager {
             session.setKitId(settings.resolveKitId(effectivePlayerId));
             session.setPracticeMode(settings.practiceMode);
         }
+        if (pendingSession != null) {
+            pendingSession.setLoadingProtection(false);
+        }
+        session.setLoadingProtection(true);
         activeSessions.put(effectivePlayerId, session);
 
         // Apply arena policy config overrides and sync to client
@@ -2465,12 +2504,17 @@ public class EnduranceQuestManager {
         }
 
         session.scheduleSafeWindow(SAFE_WINDOW_TICKS);
+        if (SAFE_WINDOW_TICKS > 0) {
+            EndurancePlayerStateManager.INSTANCE.applySafeWindowEffects(player, SAFE_WINDOW_TICKS);
+            session.setLastSafeWindowSeconds((int) Math.ceil(SAFE_WINDOW_TICKS / 20.0));
+        }
         session.scheduleWaveStart(WAVE_START_COUNTDOWN_TICKS);
         sendSoloSequenceUpdate(player, session, QuestSequencePayload.Phase.SAFE_WINDOW,
             (int) Math.ceil(SAFE_WINDOW_TICKS / 20.0),
             quest.getDisplayName(),
             "Safe window",
             List.of("Invulnerability active"));
+        session.setLoadingProtection(false);
 
         LOGGER.info("[EnduranceQuest] Player {} started TEMPLATE quest: {} (instance: {})",
             player.getName().getString(), quest.getDisplayName(), instanceId);
@@ -2493,6 +2537,19 @@ public class EnduranceQuestManager {
      */
     public Optional<ActiveQuestSession> getActiveSession(Player player) {
         return getActiveSession(player.getUUID());
+    }
+
+    public boolean hasActiveQuest(@javax.annotation.Nullable UUID questId) {
+        if (questId == null) {
+            return false;
+        }
+        for (ActiveQuestSession session : activeSessions.values()) {
+            if (questId.equals(session.getQuest().getQuestId())) {
+                return true;
+            }
+        }
+        PartyQuestSession partySession = getPartySessionByQuest(questId).orElse(null);
+        return partySession != null && partySession.isActive();
     }
 
     public boolean isGamificationEnabled() {
@@ -2747,48 +2804,111 @@ public class EnduranceQuestManager {
 
         UUID questId = partySession.getQuestId();
         ActiveQuestSession cleanupSession = null;
-        for (UUID memberId : partySession.getMembers()) {
-            ActiveQuestSession session = activeSessions.get(memberId);
-            if (session != null) {
-                activeSessions.remove(memberId);
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        try {
+            for (UUID memberId : partySession.getMembers()) {
+                ActiveQuestSession session = activeSessions.remove(memberId);
+                if (session == null) {
+                    continue;
+                }
                 if (cleanupSession == null) {
                     cleanupSession = session;
                 }
-                ServerPlayer player = null;
-                var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-                if (server != null) {
-                    player = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
-                }
+                ServerPlayer player = server != null ? server.getPlayerList().getPlayer(memberId) : null;
 
                 if (player != null) {
-                    EnduranceEventHandler.onQuestEnd(player, session, completed);
-                    if (!session.isPracticeMode()) {
-                        com.devmod.telemetry.TelemetryService.INSTANCE.endDungeonSession(
-                            player, completed ? "completed" : (reason != null ? reason : "failed"));
+                    try {
+                        EnduranceEventHandler.onQuestEnd(player, session, completed);
+                    } catch (Exception e) {
+                        LOGGER.error("[EnduranceQuest] Failed onQuestEnd for party member {}",
+                            player.getName().getString(), e);
                     }
-                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
-                        player, Objects.requireNonNull(QuestSyncPayload.empty()));
-                    EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
+                    if (!session.isPracticeMode()) {
+                        try {
+                            com.devmod.telemetry.TelemetryService.INSTANCE.endDungeonSession(
+                                player, completed ? "completed" : (reason != null ? reason : "failed"));
+                        } catch (Exception e) {
+                            LOGGER.warn("[EnduranceQuest] Failed to end telemetry session for party member {}",
+                                player.getName().getString(), e);
+                        }
+                    }
+                    try {
+                        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                            player, Objects.requireNonNull(QuestSyncPayload.empty()));
+                    } catch (Exception e) {
+                        LOGGER.warn("[EnduranceQuest] Failed to sync quest end to party member {}",
+                            player.getName().getString(), e);
+                    }
+                    try {
+                        EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
+                    } catch (Exception e) {
+                        LOGGER.warn("[EnduranceQuest] Failed to restore party member {} state",
+                            player.getName().getString(), e);
+                    }
+                }
+            }
+
+            try {
+                EnduranceConfigManager.INSTANCE.cleanupQuest(questId);
+            } catch (Exception e) {
+                LOGGER.warn("[EnduranceQuest] Failed to cleanup quest config for party run {}", questId, e);
+            }
+            try {
+                EnduranceEventCombat.removeMutatorSession(questId);
+            } catch (Exception e) {
+                LOGGER.warn("[EnduranceQuest] Failed to remove mutator session for party run {}", questId, e);
+            }
+            try {
+                MutatorSystem.INSTANCE.endSession(questId);
+            } catch (Exception e) {
+                LOGGER.warn("[EnduranceQuest] Failed to end mutator session for party run {}", questId, e);
+            }
+            try {
+                CombatTracker.INSTANCE.stopTracking(questId);
+            } catch (Exception e) {
+                LOGGER.warn("[EnduranceQuest] Failed to stop combat tracking for party run {}", questId, e);
+            }
+            try {
+                TensionSystem.INSTANCE.endSession(questId);
+            } catch (Exception e) {
+                LOGGER.warn("[EnduranceQuest] Failed to end tension session for party run {}", questId, e);
+            }
+            try {
+                com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.endSession(questId);
+            } catch (Exception e) {
+                LOGGER.warn("[EnduranceQuest] Failed to end bargain session for party run {}", questId, e);
+            }
+            try {
+                com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.endSession(questId);
+            } catch (Exception e) {
+                LOGGER.warn("[EnduranceQuest] Failed to end hazard session for party run {}", questId, e);
+            }
+            try {
+                DirectiveChainManager.INSTANCE.endChain(questId);
+            } catch (Exception e) {
+                LOGGER.warn("[EnduranceQuest] Failed to end directive chain for party run {}", questId, e);
+            }
+        } finally {
+            if (cleanupSession != null) {
+                try {
+                    EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(cleanupSession);
+                } catch (Exception e) {
+                    LOGGER.warn("[EnduranceQuest] Failed to cleanup quest systems for party run {}", questId, e);
+                }
+                try {
+                    EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(cleanupSession, completed);
+                } catch (Exception e) {
+                    LOGGER.warn("[EnduranceQuest] Failed to cleanup instance for party run {}", questId, e);
+                }
+            } else {
+                UUID instanceId = partySession.getInstanceId();
+                if (instanceId != null) {
+                    InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, completed);
                 }
             }
         }
 
-        EnduranceConfigManager.INSTANCE.cleanupQuest(questId);
-        EnduranceEventCombat.removeMutatorSession(questId);
-        MutatorSystem.INSTANCE.endSession(questId);
-        CombatTracker.INSTANCE.stopTracking(questId);
-        TensionSystem.INSTANCE.endSession(questId);
-        com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.endSession(questId);
-        com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.endSession(questId);
-        DirectiveChainManager.INSTANCE.endChain(questId);
-
-        if (cleanupSession != null) {
-            EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(cleanupSession);
-            EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(cleanupSession, completed);
-        }
-
         com.devmod.party.PartyManager.INSTANCE.finishQuest(java.util.Objects.requireNonNull(partySession.getPartyId()));
-        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
             var party = com.devmod.party.PartyManager.INSTANCE.getParty(java.util.Objects.requireNonNull(partySession.getPartyId()));
             if (party != null) {
@@ -3136,7 +3256,7 @@ public class EnduranceQuestManager {
             teleported = com.devmod.runtime.DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
         }
         if (teleported && session.getArena() != null) {
-            teleported = !teleportPlayersToArena(List.of(player), session.getArena(), session.getArenaHandle()).isEmpty();
+            teleported = !teleportPlayersToArena(List.of(player), session.getArena(), session.getArenaHandle(), true).isEmpty();
         }
 
         if (teleported) {
@@ -3351,6 +3471,9 @@ public class EnduranceQuestManager {
         private int killsInCurrentWave = 0;
         private boolean awaitingRespawnChoice = false;
         private boolean respawnRequested = false;
+        private long abandonConfirmUntilMs = 0;
+        private long lastDimensionRecoveryMs = 0;
+        private long lastConfinementLogMs = 0;
 
         // Instance dimension ID (null if using legacy overworld arena)
         private UUID instanceId;
@@ -3364,6 +3487,7 @@ public class EnduranceQuestManager {
 
         // Pending flag - true while instance is being created asynchronously
         private boolean pending = false;
+        private boolean loadingProtection = false;
 
         // Instance start countdown (solo pre-teleport)
         private int pendingInstanceStartTicks = 0;
@@ -3456,6 +3580,32 @@ public class EnduranceQuestManager {
             this.awaitingRespawnChoice = awaiting;
         }
         public void setRespawnRequested(boolean respawnRequested) { this.respawnRequested = respawnRequested; }
+        public boolean canAttemptDimensionRecovery(long nowMs, long cooldownMs) {
+            return nowMs - lastDimensionRecoveryMs >= cooldownMs;
+        }
+        public void markDimensionRecoveryAttempt(long nowMs) {
+            this.lastDimensionRecoveryMs = nowMs;
+        }
+        public boolean canLogConfinement(long nowMs, long cooldownMs) {
+            return nowMs - lastConfinementLogMs >= cooldownMs;
+        }
+        public void markConfinementLog(long nowMs) {
+            this.lastConfinementLogMs = nowMs;
+        }
+
+        public boolean confirmAbandonRequest(long windowMs) {
+            long now = System.currentTimeMillis();
+            if (abandonConfirmUntilMs >= now) {
+                abandonConfirmUntilMs = 0;
+                return true;
+            }
+            abandonConfirmUntilMs = now + Math.max(0L, windowMs);
+            return false;
+        }
+
+        public void clearAbandonConfirm() {
+            abandonConfirmUntilMs = 0;
+        }
 
         public void incrementKillCount() {
             killsInCurrentWave++;
@@ -3502,6 +3652,8 @@ public class EnduranceQuestManager {
         // Pending state (while instance is being created)
         public boolean isPending() { return pending; }
         public void setPending(boolean pending) { this.pending = pending; }
+        public boolean isLoadingProtection() { return loadingProtection; }
+        public void setLoadingProtection(boolean loadingProtection) { this.loadingProtection = loadingProtection; }
 
         public void scheduleInstanceStart(ResourceLocation mobId, QuestSettings settings, ResolvedArena resolved, int ticks) {
             this.pendingMobId = mobId;

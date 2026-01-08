@@ -6,9 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 
 import net.neoforged.bus.api.SubscribeEvent;
@@ -87,6 +89,37 @@ public class InstanceEventHandler {
         }
     }
 
+    private static boolean isInstanceDimension(ResourceKey<Level> dimensionKey) {
+        if (dimensionKey == null) {
+            return false;
+        }
+        ResourceLocation id = dimensionKey.location();
+        if (id == null) {
+            return false;
+        }
+        return "devmod".equals(id.getNamespace()) && id.getPath().startsWith("instance_");
+    }
+
+    private static void sanitizeRespawnDimension(ServerPlayer player, String context) {
+        ResourceKey<Level> respawnDim = player.getRespawnDimension();
+        if (!isInstanceDimension(respawnDim)) {
+            return;
+        }
+
+        ServerLevel overworld = player.server.getLevel(Level.OVERWORLD);
+        if (overworld == null) {
+            LOGGER.warn("[InstanceEvents] Cannot sanitize respawn dimension for {} (overworld missing, context={})",
+                player.getName().getString(), context);
+            return;
+        }
+
+        BlockPos spawnPos = overworld.getSharedSpawnPos();
+        float angle = overworld.getSharedSpawnAngle();
+        player.setRespawnPosition(Level.OVERWORLD, spawnPos, angle, false, false);
+        LOGGER.info("[InstanceEvents] Cleared invalid respawn dimension {} for player {} (context={})",
+            respawnDim.location(), player.getName().getString(), context);
+    }
+
     // === Player Events ===
 
     @SubscribeEvent
@@ -94,6 +127,7 @@ public class InstanceEventHandler {
         if (event.getEntity() instanceof ServerPlayer player) {
             LOGGER.debug("[InstanceEvents] Player logged in: {}", player.getName().getString());
             InstanceManager.INSTANCE.onPlayerLogin(player);
+            sanitizeRespawnDimension(player, "login");
         }
     }
 
@@ -144,6 +178,13 @@ public class InstanceEventHandler {
             var sessionOpt = com.devmod.endurance.EnduranceQuestManager.INSTANCE.getActiveSession(playerId);
             if (sessionOpt.isPresent()) {
                 var session = sessionOpt.get();
+                LOGGER.info("[InstanceEvents] Player {} respawn event (state={}, awaitingRespawn={}, respawnRequested={}, instanceId={}, dimension={})",
+                    player.getName().getString(),
+                    session.getQuest().getState(),
+                    session.isAwaitingRespawnChoice(),
+                    session.isRespawnRequested(),
+                    session.getInstanceId(),
+                    player.level().dimension().location());
 
                 // Only handle if awaiting respawn choice (player died and we showed death screen)
                 if (session.isAwaitingRespawnChoice() || session.isRespawnRequested()) {
@@ -154,12 +195,18 @@ public class InstanceEventHandler {
                     com.devmod.endurance.EnduranceQuestManager.INSTANCE.handleVanillaRespawn(player);
                 }
             }
+            sanitizeRespawnDimension(player, "respawn");
         }
     }
 
     @SubscribeEvent
     public static void onPlayerChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            boolean fromInstance = isInstanceDimension(event.getFrom());
+            boolean toInstance = isInstanceDimension(event.getTo());
+            if (fromInstance || toInstance) {
+                sanitizeRespawnDimension(player, "dimension_change");
+            }
             // Check if player was in an instance and left via unexpected means
             if (InstanceManager.INSTANCE.isPlayerInInstance(player.getUUID())) {
                 InstanceManager.INSTANCE.getPlayerInstance(player.getUUID()).ifPresent(instance -> {

@@ -4,8 +4,14 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestState;
@@ -14,6 +20,7 @@ import com.devmod.endurance.WaveObjectiveState;
 
 @OnlyIn(Dist.CLIENT)
 public class ClientQuestCache {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientQuestCache.class);
 
     private static volatile @Nullable QuestSyncPayload cachedData = null;
     private static volatile long lastUpdateTime = 0;
@@ -25,7 +32,7 @@ public class ClientQuestCache {
 
     /**
      * Flag to suppress vanilla DeathScreen during quest death/respawn flow.
-     * Set when we receive QUEST_DEATH packet, cleared after a delay post-respawn.
+     * Set when we receive QUEST_DEATH packet, cleared after respawn or timeout.
      * This persists even when hasActiveQuest() becomes false during respawn.
      */
     private static volatile boolean suppressingVanillaDeathScreen = false;
@@ -148,6 +155,9 @@ public class ClientQuestCache {
     public static void startDeathScreenSuppression() {
         suppressingVanillaDeathScreen = true;
         suppressionStartTime = System.currentTimeMillis();
+        LOGGER.info("[EnduranceQuest][Client] startDeathScreenSuppression (hasActiveQuest={}, playerDead={})",
+            hasActiveQuest(),
+            isPlayerDead());
     }
 
     /**
@@ -155,7 +165,14 @@ public class ClientQuestCache {
      * Called after respawn completes or quest ends.
      */
     public static void stopDeathScreenSuppression() {
+        if (isPlayerDead()) {
+            suppressionStartTime = System.currentTimeMillis();
+            suppressingVanillaDeathScreen = true;
+            LOGGER.info("[EnduranceQuest][Client] stopDeathScreenSuppression deferred (playerDead=true)");
+            return;
+        }
         suppressingVanillaDeathScreen = false;
+        LOGGER.info("[EnduranceQuest][Client] stopDeathScreenSuppression (playerDead=false)");
     }
 
     /**
@@ -169,6 +186,9 @@ public class ClientQuestCache {
             return true;
         }
         if (suppressingVanillaDeathScreen) {
+            if (isPlayerDead()) {
+                return true;
+            }
             // Check timeout to prevent infinite suppression if something goes wrong
             if (System.currentTimeMillis() - suppressionStartTime < SUPPRESSION_TIMEOUT_MS) {
                 return true;
@@ -177,6 +197,27 @@ public class ClientQuestCache {
             suppressingVanillaDeathScreen = false;
         }
         return false;
+    }
+
+    private static boolean isPlayerDead() {
+        Minecraft mc = Minecraft.getInstance();
+        var player = mc != null ? mc.player : null;
+        if (player == null) {
+            return false;
+        }
+        return !player.isAlive() || player.isDeadOrDying();
+    }
+
+    public static boolean isInInstanceDimension() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.level == null) {
+            return false;
+        }
+        ResourceLocation id = mc.level.dimension().location();
+        if (id == null) {
+            return false;
+        }
+        return "devmod".equals(id.getNamespace()) && id.getPath().startsWith("instance_");
     }
 
     /**

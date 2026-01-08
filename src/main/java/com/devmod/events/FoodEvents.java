@@ -21,7 +21,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 
 import com.devmod.DevMod;
-import com.devmod.config.FoodConfigManager;
+import com.devmod.config.handler.impl.FoodConfigHandler;
 import com.devmod.stats.FoodStats;
 
 @EventBusSubscriber(modid = DevMod.MODID)
@@ -36,11 +36,11 @@ public class FoodEvents {
     @SubscribeEvent
     public static void onItemUseStart(LivingEntityUseItemEvent.Start event) {
         ItemStack stack = event.getItem();
-        if (stack.isEmpty() || !FoodConfigManager.isFood(stack)) {
+        if (stack.isEmpty() || !FoodConfigHandler.isFood(stack)) {
             return;
         }
 
-        FoodStats stats = FoodConfigManager.getStats(stack);
+        FoodStats stats = FoodConfigHandler.INSTANCE.getStats(stack);
         if (stats.getConsumptionTime() > 0 && stats.getConsumptionTime() != 32) {
             // Modify the use duration
             event.setDuration(stats.getConsumptionTime());
@@ -61,7 +61,7 @@ public class FoodEvents {
         ItemStack stack = event.getItem();
         LivingEntity entity = event.getEntity();
 
-        if (stack.isEmpty() || !FoodConfigManager.isFood(stack)) {
+        if (stack.isEmpty() || !FoodConfigHandler.isFood(stack)) {
             return;
         }
 
@@ -70,7 +70,7 @@ public class FoodEvents {
             return;
         }
 
-        FoodStats stats = FoodConfigManager.getStats(stack);
+        FoodStats stats = FoodConfigHandler.INSTANCE.getStats(stack);
 
         // Check if we have custom stats (non-default values)
         boolean hasCustomStats = stats.getNutrition() > 0 ||

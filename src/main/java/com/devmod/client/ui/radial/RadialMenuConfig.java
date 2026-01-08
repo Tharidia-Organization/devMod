@@ -6,8 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -141,7 +143,7 @@ public class RadialMenuConfig {
             GLFW.GLFW_KEY_W,
             GLFW.GLFW_KEY_E,
             GLFW.GLFW_KEY_R,
-            GLFW.GLFW_KEY_T,
+            GLFW.GLFW_KEY_H,
             GLFW.GLFW_KEY_Y,
             GLFW.GLFW_KEY_U,
             GLFW.GLFW_KEY_I,
@@ -343,9 +345,29 @@ public class RadialMenuConfig {
         input.keySearchUp = sanitizeKey(input.keySearchUp, DEFAULT_INPUT.keySearchUp, "input.keySearchUp");
         input.keySearchDown = sanitizeKey(input.keySearchDown, DEFAULT_INPUT.keySearchDown, "input.keySearchDown");
 
+        Set<Integer> usedKeys = new HashSet<>();
+        addUsedKey(usedKeys, input.keyMenuClose);
+        addUsedKey(usedKeys, input.keyReleaseSelect);
+        addUsedKey(usedKeys, input.keySearchTogglePrimary);
+        addUsedKey(usedKeys, input.keySearchToggleSecondary);
+        addUsedKey(usedKeys, input.keyEditModeToggleLeft);
+        addUsedKey(usedKeys, input.keyEditModeToggleRight);
+        addUsedKey(usedKeys, input.keyThemeCycle);
+        addUsedKey(usedKeys, input.keyProfileCycle);
+        addUsedKey(usedKeys, input.keySafeModeToggle);
+        addUsedKey(usedKeys, input.keyCategoryLeft);
+        addUsedKey(usedKeys, input.keyCategoryRight);
+        addUsedKey(usedKeys, input.keySearchConfirm);
+        addUsedKey(usedKeys, input.keySearchBackspace);
+        addUsedKey(usedKeys, input.keySearchUp);
+        addUsedKey(usedKeys, input.keySearchDown);
+
         input.macroKeys = ensureKeyArray("input.macroKeys", input.macroKeys, DEFAULT_INPUT.macroKeys);
         input.categoryKeys = ensureKeyArray("input.categoryKeys", input.categoryKeys, DEFAULT_INPUT.categoryKeys);
         input.itemKeys = ensureKeyArray("input.itemKeys", input.itemKeys, DEFAULT_INPUT.itemKeys);
+        input.macroKeys = dedupeKeyArray("input.macroKeys", input.macroKeys, DEFAULT_INPUT.macroKeys, usedKeys);
+        input.categoryKeys = dedupeKeyArray("input.categoryKeys", input.categoryKeys, DEFAULT_INPUT.categoryKeys, usedKeys);
+        input.itemKeys = dedupeKeyArray("input.itemKeys", input.itemKeys, DEFAULT_INPUT.itemKeys, usedKeys);
 
         if (input.searchQuerySpace == '\0') {
             input.searchQuerySpace = DEFAULT_INPUT.searchQuerySpace;
@@ -409,6 +431,12 @@ public class RadialMenuConfig {
         }
     }
 
+    private static void addUsedKey(Set<Integer> used, int key) {
+        if (key > 0) {
+            used.add(key);
+        }
+    }
+
     private static int[] ensureKeyArray(String name, int[] candidate, int[] fallback) {
         if (candidate == null || candidate.length == 0) {
             return fallback.clone();
@@ -430,6 +458,57 @@ public class RadialMenuConfig {
             }
         }
         return normalized;
+    }
+
+    private static int[] dedupeKeyArray(String name, int[] values, int[] fallback, Set<Integer> used) {
+        if (values == null || values.length == 0) {
+            return values;
+        }
+        int[] normalized = values.clone();
+        for (int i = 0; i < normalized.length; i++) {
+            int key = normalized[i];
+            if (key <= 0) {
+                continue;
+            }
+            if (used.contains(key)) {
+                int replacement = findUnusedKey(fallback[i], fallback, used);
+                if (replacement <= 0) {
+                    LOGGER.warn("[RadialMenuConfig] Key binding duplicate for {}[{}] could not be resolved", name, i);
+                    continue;
+                }
+                LOGGER.warn("[RadialMenuConfig] Key binding duplicate for {}[{}], resetting to {}", name, i, replacement);
+                normalized[i] = replacement;
+                used.add(replacement);
+                continue;
+            }
+            used.add(key);
+        }
+        return normalized;
+    }
+
+    private static int findUnusedKey(int preferred, int[] fallback, Set<Integer> used) {
+        if (preferred > 0 && !used.contains(preferred)) {
+            return preferred;
+        }
+        for (int key : fallback) {
+            if (key > 0 && !used.contains(key)) {
+                return key;
+            }
+        }
+        int alpha = findUnusedKeyInRange(GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_Z, used);
+        if (alpha > 0) {
+            return alpha;
+        }
+        return findUnusedKeyInRange(GLFW.GLFW_KEY_0, GLFW.GLFW_KEY_9, used);
+    }
+
+    private static int findUnusedKeyInRange(int start, int end, Set<Integer> used) {
+        for (int key = start; key <= end; key++) {
+            if (!used.contains(key)) {
+                return key;
+            }
+        }
+        return 0;
     }
 
     /**

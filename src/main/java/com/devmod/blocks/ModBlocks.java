@@ -22,7 +22,7 @@ public final class ModBlocks {
             .noCollission()
             .noOcclusion()
             .strength(-1.0F, 3600000.0F)
-            .sound(SoundType.GLASS)
+            .sound(Objects.requireNonNull(SoundType.GLASS))
             .lightLevel(state -> 11))
     );
 

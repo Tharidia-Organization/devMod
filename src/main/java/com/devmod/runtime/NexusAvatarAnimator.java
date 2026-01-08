@@ -1,5 +1,4 @@
 package com.devmod.runtime;
-
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -7,13 +6,12 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.config.Config;
-
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
+
+import com.devmod.config.Config;
 
 /**
  * Handles tick-based animation for the Nexus avatar entity.
@@ -51,6 +49,20 @@ public final class NexusAvatarAnimator {
     }
 
     /**
+     * Initialize the animator with a specific target Y position.
+     * Use this at spawn time to avoid race conditions with entity positioning.
+     *
+     * @param targetY The intended base Y position for floating animation
+     */
+    public void initializeWithTargetY(double targetY) {
+        this.baseY = targetY;
+        this.phase = 0;
+        this.particleTick = 0;
+        this.initialized = true;
+        LOGGER.debug("[NexusAvatar] Animator initialized with target Y={}", baseY);
+    }
+
+    /**
      * Reset the animator state. Call when avatar is respawned.
      */
     public void reset() {
@@ -71,6 +83,7 @@ public final class NexusAvatarAnimator {
         Objects.requireNonNull(level, "level");
 
         if (!initialized) {
+            LOGGER.warn("[NexusAvatar] Lazy initialization triggered - baseY may be incorrect. Call initializeWithTargetY() at spawn time.");
             initialize(avatar);
         }
 

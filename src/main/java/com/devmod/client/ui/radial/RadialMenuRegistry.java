@@ -20,7 +20,7 @@ import com.devmod.actions.ActionIds;
 import com.devmod.client.ui.editor.WeaponTypeDetector;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.radial.model.MacroCategory;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 
 public final class RadialMenuRegistry {
 
@@ -56,7 +56,7 @@ public final class RadialMenuRegistry {
     }
 
     private static boolean isArmorItem(ItemStack stack) {
-        return stack != null && ArmorConfigManager.isArmor(stack);
+        return stack != null && ArmorConfigHandler.isArmor(stack);
     }
 
     private static boolean isGeneralItem(ItemStack stack) {

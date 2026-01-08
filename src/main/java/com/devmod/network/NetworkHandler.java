@@ -1,5 +1,4 @@
 package com.devmod.network;
-
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -20,14 +19,16 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import com.devmod.DevMod;
 import com.devmod.abilities.StaminaSyncPayload;
 import com.devmod.arena.network.BuildProgressPayload;
+import com.devmod.endurance.ArenaSuggestionsPayload;
 import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceMobConfigSyncPayload;
 import com.devmod.endurance.EnduranceQuestManager;
-import com.devmod.endurance.MobPoolConfigSyncPayload;
 import com.devmod.endurance.InstanceLoadingPayload;
 import com.devmod.endurance.KitSyncConfirmPayload;
 import com.devmod.endurance.KitSyncPayload;
+import com.devmod.endurance.MobPoolConfigSyncPayload;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PerkSelectionPayload;
 import com.devmod.endurance.PerkSystem;
@@ -36,9 +37,10 @@ import com.devmod.endurance.QuestActionPayload;
 import com.devmod.endurance.QuestCompletionPayload;
 import com.devmod.endurance.QuestDeathPayload;
 import com.devmod.endurance.QuestSyncPayload;
+import com.devmod.endurance.RequestArenaSuggestionsPayload;
+import com.devmod.endurance.RequestMobPoolConfigPayload;
 import com.devmod.endurance.RequestPersonalRecordsPayload;
 import com.devmod.endurance.RequestShopSyncPayload;
-import com.devmod.endurance.RequestMobPoolConfigPayload;
 import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.ShopPurchasePayload;
 import com.devmod.endurance.ShopSyncPayload;
@@ -47,9 +49,6 @@ import com.devmod.endurance.TensionUpdatePayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
-import com.devmod.endurance.ArenaSuggestionsPayload;
-import com.devmod.endurance.EnduranceMobConfigSyncPayload;
-import com.devmod.endurance.RequestArenaSuggestionsPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 import com.devmod.mailbox.network.payload.TicketActionPayload;
@@ -72,11 +71,13 @@ import com.devmod.party.NamedInvitePayload;
 import com.devmod.party.PartyActionPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
+import com.devmod.portal.network.PortalStatePayload;
 import com.devmod.runtime.environment.EnvironmentSyncPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
 import com.devmod.telemetry.network.LVCSyncPayload;
 
 import static com.devmod.DevMod.MODID;
+import static com.devmod.network.ChannelId.ARENA_SUGGESTIONS;
 import static com.devmod.network.ChannelId.ARMOR_STATS;
 import static com.devmod.network.ChannelId.ARRIVAL_CONFIRM;
 import static com.devmod.network.ChannelId.BOSS_ALERT;
@@ -86,12 +87,12 @@ import static com.devmod.network.ChannelId.CHALLENGE_SYNC;
 import static com.devmod.network.ChannelId.COMBAT_FLOW_SYNC;
 import static com.devmod.network.ChannelId.CONTRACT_SYNC;
 import static com.devmod.network.ChannelId.EDITOR_APPLY_CONFIRM;
+import static com.devmod.network.ChannelId.ENDURANCE_MOB_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.ENVIRONMENT_SYNC;
 import static com.devmod.network.ChannelId.EQUIP_MOB;
 import static com.devmod.network.ChannelId.FOOD_STATS;
 import static com.devmod.network.ChannelId.FUEL_STATS;
 import static com.devmod.network.ChannelId.GAME_MECHANICS_SYNC;
-import static com.devmod.network.ChannelId.ENDURANCE_MOB_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.IMPACT_SYNC;
 import static com.devmod.network.ChannelId.INSTANCE_LOADING;
@@ -132,7 +133,6 @@ import static com.devmod.network.ChannelId.REQUEST_MOB_POOL_CONFIG;
 import static com.devmod.network.ChannelId.REQUEST_PERSONAL_RECORDS;
 import static com.devmod.network.ChannelId.REQUEST_SEASON_PASS;
 import static com.devmod.network.ChannelId.REQUEST_SHOP_SYNC;
-import static com.devmod.network.ChannelId.ARENA_SUGGESTIONS;
 import static com.devmod.network.ChannelId.SEASON_PASS_SYNC;
 import static com.devmod.network.ChannelId.SHIELD_IMPACT;
 import static com.devmod.network.ChannelId.SHIELD_SHATTER;
@@ -156,6 +156,7 @@ import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_SELECTION;
 import static com.devmod.network.ChannelId.WEAPON_LEGACY;
 import static com.devmod.network.ChannelId.WEAPON_STATS_V2;
 import static com.devmod.network.ChannelId.ZONE_DEBUG;
+import static com.devmod.network.ChannelId.PORTAL_STATE;
 import static com.devmod.network.PayloadValidation.PayloadLimits;
 import static com.devmod.network.PayloadValidation.validated;
 
@@ -252,6 +253,8 @@ public class NetworkHandler {
         void handleZoneDebug(ZoneDebugPayload payload);
 
         void handleSeasonPassSync(com.devmod.endurance.season.SeasonPassPayload payload);
+
+        void handlePortalState(PortalStatePayload payload);
     }
 
     @Nullable
@@ -888,6 +891,20 @@ public class NetworkHandler {
         // NEXUS SYSTEM CHANNELS (140-149) - P2: Delegated to domain registrar
         // ===================================================================
         com.devmod.runtime.network.NexusNetworkHandler.INSTANCE.registerPayloads(event);
+
+        // ===================================================================
+        // PORTAL CHANNELS (150-159)
+        // ===================================================================
+        event.registrar(PORTAL_STATE.asString()).playToClient(
+                nn(PortalStatePayload.TYPE),
+                nn(PortalStatePayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handlePortalState(payload)));
+                    }
+                }, PayloadLimits.SMALL)
+        );
     }
 
     // ===================================================================
@@ -1012,6 +1029,15 @@ public class NetworkHandler {
      * Used to enable/disable zone boundary visualization on client.
      */
     public static void sendZoneDebug(ServerPlayer player, ZoneDebugPayload payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+            Objects.requireNonNull(player), Objects.requireNonNull(payload));
+    }
+
+    /**
+     * Send portal state sync to a player.
+     * Used to sync portal teleportation overlay state.
+     */
+    public static void sendPortalState(ServerPlayer player, PortalStatePayload payload) {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }

@@ -1,10 +1,16 @@
 package com.devmod.client.endurance.wis;
-
 import java.util.Objects;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 
 import net.neoforged.api.distmarker.Dist;
@@ -14,14 +20,14 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.devmod.DevMod;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.endurance.PerkSelectionScreen;
+import com.devmod.client.endurance.WaveDirectiveScreen;
 import com.devmod.client.endurance.wis.ui.DebriefScreen;
 import com.devmod.client.endurance.wis.ui.MinimalCombatHUD;
 import com.devmod.client.endurance.wis.ui.PreWaveBriefOverlay;
@@ -40,6 +46,9 @@ public class WISOverlayHandler {
 
     // Track if we need to open debrief screen
     private static boolean pendingDebriefOpen = false;
+    private static long pendingDebriefRequestedAt = 0L;
+
+    private static final long DEBRIEF_FORCE_OPEN_DELAY_MS = 1500;
 
     // Track if checkpoint screen should open after debrief closes
     private static boolean pendingCheckpointAfterDebrief = false;
@@ -99,12 +108,8 @@ public class WISOverlayHandler {
         WaveIntelligenceManager.INSTANCE.tick();
 
         // Check if we need to open debrief screen
-        if (pendingDebriefOpen && mc.screen == null) {
-            WaveTelemetryCollector collector = WaveIntelligenceManager.INSTANCE.getCurrentCollector();
-            if (collector != null) {
-                mc.setScreen(new DebriefScreen(collector));
-            }
-            pendingDebriefOpen = false;
+        if (pendingDebriefOpen) {
+            openDebriefIfReady(mc);
         }
 
         // Check if we need to open checkpoint screen after debrief
@@ -127,6 +132,7 @@ public class WISOverlayHandler {
      */
     public static void requestDebriefScreen() {
         pendingDebriefOpen = true;
+        pendingDebriefRequestedAt = System.currentTimeMillis();
     }
 
     /**
@@ -134,7 +140,7 @@ public class WISOverlayHandler {
      */
     public static void openDebriefScreenNow() {
         Minecraft mc = Minecraft.getInstance();
-        WaveTelemetryCollector collector = WaveIntelligenceManager.INSTANCE.getCurrentCollector();
+        WaveTelemetryCollector collector = ensureCollectorAvailable();
         if (collector != null) {
             mc.setScreen(new DebriefScreen(collector));
         }
@@ -170,5 +176,55 @@ public class WISOverlayHandler {
     public static void reset() {
         pendingDebriefOpen = false;
         pendingCheckpointAfterDebrief = false;
+        pendingDebriefRequestedAt = 0L;
+    }
+
+    private static void openDebriefIfReady(Minecraft mc) {
+        WaveTelemetryCollector collector = ensureCollectorAvailable();
+        long elapsed = pendingDebriefRequestedAt > 0L
+            ? System.currentTimeMillis() - pendingDebriefRequestedAt
+            : 0L;
+
+        Screen current = mc.screen;
+        boolean canOpen = current == null;
+
+        if (!canOpen && elapsed >= DEBRIEF_FORCE_OPEN_DELAY_MS && canInterruptScreen(current)) {
+            mc.setScreen(null);
+            canOpen = mc.screen == null;
+        }
+
+        if (canOpen && collector != null) {
+            mc.setScreen(new DebriefScreen(collector));
+            pendingDebriefOpen = false;
+            pendingDebriefRequestedAt = 0L;
+        }
+    }
+
+    private static boolean canInterruptScreen(@Nullable Screen screen) {
+        if (screen == null) {
+            return true;
+        }
+        return !(screen instanceof ChatScreen)
+            && !(screen instanceof PerkSelectionScreen)
+            && !(screen instanceof WaveDirectiveScreen);
+    }
+
+    @Nullable
+    private static WaveTelemetryCollector ensureCollectorAvailable() {
+        WaveTelemetryCollector collector = WaveIntelligenceManager.INSTANCE.getCurrentCollector();
+        if (collector != null) {
+            return collector;
+        }
+
+        int waveNumber = WaveIntelligenceManager.INSTANCE.getCurrentWaveNumber();
+        if (waveNumber <= 0) {
+            waveNumber = ClientQuestCache.getCurrentWave();
+        }
+        if (waveNumber <= 0) {
+            waveNumber = 1;
+        }
+
+        WaveIntelligenceManager.INSTANCE.ensureCollectorExists(waveNumber);
+        return WaveIntelligenceManager.INSTANCE.getCurrentCollector();
     }
 }

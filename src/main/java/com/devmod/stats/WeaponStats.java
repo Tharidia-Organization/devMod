@@ -3,8 +3,9 @@ package com.devmod.stats;
 import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.config.Config;
+import com.devmod.config.stats.IItemStats;
 
-public class WeaponStats {
+public class WeaponStats implements IItemStats {
     // ═══════════════════════════════════════════════════════════════
     // HIT LOCATION MULTIPLIERS
     // ═══════════════════════════════════════════════════════════════
@@ -58,6 +59,18 @@ public class WeaponStats {
     private float toolDefaultMiningSpeed = 1.0f;
     private int toolDamagePerBlock = 1;
     public java.util.List<ToolRuleData> toolRules = new java.util.ArrayList<>();
+    private java.util.List<AttributeModifierData> customAttributeModifiers = new java.util.ArrayList<>();
+
+    public java.util.List<AttributeModifierData> getCustomAttributeModifiers() {
+        return customAttributeModifiers;
+    }
+
+    public void setCustomAttributeModifiers(java.util.List<AttributeModifierData> modifiers) {
+        customAttributeModifiers.clear();
+        if (modifiers != null) {
+            customAttributeModifiers.addAll(modifiers);
+        }
+    }
 
     public float getHeadMult() {
         return headMult;
@@ -298,6 +311,7 @@ public class WeaponStats {
         public String blockTag = "";
         public float speed = 1.0f;
         public Boolean correctForDrops = Boolean.TRUE;
+        public boolean isTag = false;
 
         public ToolRuleData() {}
 
@@ -305,14 +319,42 @@ public class WeaponStats {
             this.blockTag = tag == null ? "" : tag;
             this.speed = speed;
             this.correctForDrops = drops;
+            this.isTag = false;
         }
 
         public ToolRuleData copy() {
-            return new ToolRuleData(blockTag, speed, correctForDrops);
+            ToolRuleData copy = new ToolRuleData(blockTag, speed, correctForDrops);
+            copy.isTag = this.isTag;
+            return copy;
         }
 
         public boolean isEmpty() {
             return blockTag == null || blockTag.isBlank();
+        }
+    }
+
+    /**
+     * Simple DTO for custom attribute modifiers (modpack-driven).
+     */
+    public static class AttributeModifierData {
+        public String attributeId = "";
+        public double amount = 0.0;
+        public int operation = 0; // 0=ADD, 1=MULT_BASE, 2=MULT_TOTAL
+
+        public AttributeModifierData() {}
+
+        public AttributeModifierData(String attributeId, double amount, int operation) {
+            this.attributeId = attributeId == null ? "" : attributeId;
+            this.amount = amount;
+            this.operation = operation;
+        }
+
+        public AttributeModifierData copy() {
+            return new AttributeModifierData(attributeId, amount, operation);
+        }
+
+        public boolean isEmpty() {
+            return attributeId == null || attributeId.isBlank();
         }
     }
 
@@ -376,6 +418,13 @@ public class WeaponStats {
         if (damageVsPlayers != 0.0f) tag.putFloat("VsPlayers", damageVsPlayers);
         if (trueDamagePercent != 0.0f) tag.putFloat("TrueDmgPct", trueDamagePercent);
 
+        if (!customAttributeModifiers.isEmpty()) {
+            net.minecraft.nbt.ListTag attrs = writeAttributeModifiers(customAttributeModifiers);
+            if (!attrs.isEmpty()) {
+                tag.put("AttrMods", attrs);
+            }
+        }
+
         // Durability
         if (maxDurability > 0) tag.putInt("MaxDur", maxDurability);
         if (currentDamage > 0) tag.putInt("CurDmg", currentDamage);
@@ -395,6 +444,9 @@ public class WeaponStats {
                 if (rule.correctForDrops != null) {
                     r.putBoolean("Drops", rule.correctForDrops);
                 }
+                if (rule.isTag) {
+                    r.putBoolean("IsTag", true);
+                }
                 rules.add(r);
             }
             tool.put("Rules", rules);
@@ -403,63 +455,105 @@ public class WeaponStats {
     }
 
     /**
-     * Load weapon stats from NBT compound tag.
+     * Load weapon stats from NBT compound tag (static factory).
      */
-    public static WeaponStats load(CompoundTag tag) {
+    public static WeaponStats fromTag(CompoundTag tag) {
         WeaponStats stats = new WeaponStats();
+        stats.load(tag);
+        return stats;
+    }
 
+    /**
+     * Load weapon stats from NBT compound tag (instance method for IItemStats).
+     */
+    @Override
+    public void load(CompoundTag tag) {
         // Hit location multipliers
-        if (tag.contains("HeadMult")) stats.setHeadMult(tag.getFloat("HeadMult"));
-        if (tag.contains("BodyMult")) stats.setBodyMult(tag.getFloat("BodyMult"));
-        if (tag.contains("ArmsMult")) stats.setArmsMult(tag.getFloat("ArmsMult"));
-        if (tag.contains("LegsMult")) stats.setLegsMult(tag.getFloat("LegsMult"));
+        if (tag.contains("HeadMult")) setHeadMult(tag.getFloat("HeadMult"));
+        if (tag.contains("BodyMult")) setBodyMult(tag.getFloat("BodyMult"));
+        if (tag.contains("ArmsMult")) setArmsMult(tag.getFloat("ArmsMult"));
+        if (tag.contains("LegsMult")) setLegsMult(tag.getFloat("LegsMult"));
 
         // Core stats
-        if (tag.contains("ArmorPen")) stats.setArmorPenetration(tag.getFloat("ArmorPen"));
-        if (tag.contains("BaseDmg")) stats.setBaseDamageBonus(tag.getFloat("BaseDmg"));
-        if (tag.contains("AtkDmg")) stats.setAttackDamage(tag.getFloat("AtkDmg"));
-        if (tag.contains("AtkSpd")) stats.setAttackSpeed(tag.getFloat("AtkSpd"));
-        if (tag.contains("AtkRch")) stats.setAttackReach(tag.getFloat("AtkRch"));
-        if (tag.contains("AtkKB")) stats.setAttackKnockback(tag.getFloat("AtkKB"));
-        if (tag.contains("DmgBonus")) stats.setDamageBonus(tag.getFloat("DmgBonus"));
-        if (tag.contains("SweepRatio")) stats.setSweepingRatio(tag.getFloat("SweepRatio"));
+        if (tag.contains("ArmorPen")) setArmorPenetration(tag.getFloat("ArmorPen"));
+        if (tag.contains("BaseDmg")) setBaseDamageBonus(tag.getFloat("BaseDmg"));
+        if (tag.contains("AtkDmg")) setAttackDamage(tag.getFloat("AtkDmg"));
+        if (tag.contains("AtkSpd")) setAttackSpeed(tag.getFloat("AtkSpd"));
+        if (tag.contains("AtkRch")) setAttackReach(tag.getFloat("AtkRch"));
+        if (tag.contains("AtkKB")) setAttackKnockback(tag.getFloat("AtkKB"));
+        if (tag.contains("DmgBonus")) setDamageBonus(tag.getFloat("DmgBonus"));
+        if (tag.contains("SweepRatio")) setSweepingRatio(tag.getFloat("SweepRatio"));
 
         // Critical hit
-        if (tag.contains("CritCh")) stats.setCritChance(tag.getFloat("CritCh"));
-        if (tag.contains("CritDmg")) stats.setCritDamage(tag.getFloat("CritDmg"));
-        if (tag.contains("ArmorShred")) stats.setArmorShred(tag.getFloat("ArmorShred"));
+        if (tag.contains("CritCh")) setCritChance(tag.getFloat("CritCh"));
+        if (tag.contains("CritDmg")) setCritDamage(tag.getFloat("CritDmg"));
+        if (tag.contains("ArmorShred")) setArmorShred(tag.getFloat("ArmorShred"));
 
         // Damage type bonuses
-        if (tag.contains("FireDmg")) stats.setFireDamageBonus(tag.getFloat("FireDmg"));
-        if (tag.contains("MagicDmg")) stats.setMagicDamageBonus(tag.getFloat("MagicDmg"));
-        if (tag.contains("Lifesteal")) stats.setLifesteal(tag.getFloat("Lifesteal"));
-        if (tag.contains("VsUndead")) stats.setDamageVsUndead(tag.getFloat("VsUndead"));
-        if (tag.contains("VsArthro")) stats.setDamageVsArthropods(tag.getFloat("VsArthro"));
-        if (tag.contains("VsPlayers")) stats.setDamageVsPlayers(tag.getFloat("VsPlayers"));
-        if (tag.contains("TrueDmgPct")) stats.setTrueDamagePercent(tag.getFloat("TrueDmgPct"));
+        if (tag.contains("FireDmg")) setFireDamageBonus(tag.getFloat("FireDmg"));
+        if (tag.contains("MagicDmg")) setMagicDamageBonus(tag.getFloat("MagicDmg"));
+        if (tag.contains("Lifesteal")) setLifesteal(tag.getFloat("Lifesteal"));
+        if (tag.contains("VsUndead")) setDamageVsUndead(tag.getFloat("VsUndead"));
+        if (tag.contains("VsArthro")) setDamageVsArthropods(tag.getFloat("VsArthro"));
+        if (tag.contains("VsPlayers")) setDamageVsPlayers(tag.getFloat("VsPlayers"));
+        if (tag.contains("TrueDmgPct")) setTrueDamagePercent(tag.getFloat("TrueDmgPct"));
 
         // Durability
-        if (tag.contains("MaxDur")) stats.setMaxDurability(tag.getInt("MaxDur"));
-        if (tag.contains("CurDmg")) stats.setCurrentDamage(tag.getInt("CurDmg"));
-        if (tag.contains("Repair")) stats.setRepairCost(tag.getInt("Repair"));
-        if (tag.contains("Unbreakable")) stats.setUnbreakable(tag.getBoolean("Unbreakable"));
-        if (tag.contains("ClearToolRules")) stats.setClearToolRules(tag.getBoolean("ClearToolRules"));
+        if (tag.contains("MaxDur")) setMaxDurability(tag.getInt("MaxDur"));
+        if (tag.contains("CurDmg")) setCurrentDamage(tag.getInt("CurDmg"));
+        if (tag.contains("Repair")) setRepairCost(tag.getInt("Repair"));
+        if (tag.contains("Unbreakable")) setUnbreakable(tag.getBoolean("Unbreakable"));
+        if (tag.contains("ClearToolRules")) setClearToolRules(tag.getBoolean("ClearToolRules"));
         if (tag.contains("ToolRules")) {
             net.minecraft.nbt.CompoundTag tool = tag.getCompound("ToolRules");
-            stats.setToolDefaultMiningSpeed(tool.contains("DefaultSpeed") ? tool.getFloat("DefaultSpeed") : 1.0f);
-            stats.setToolDamagePerBlock(tool.contains("DamagePerBlock") ? tool.getInt("DamagePerBlock") : 1);
-            stats.toolRules.clear();
+            setToolDefaultMiningSpeed(tool.contains("DefaultSpeed") ? tool.getFloat("DefaultSpeed") : 1.0f);
+            setToolDamagePerBlock(tool.contains("DamagePerBlock") ? tool.getInt("DamagePerBlock") : 1);
+            toolRules.clear();
             net.minecraft.nbt.ListTag rules = tool.getList("Rules", 10);
             for (int i = 0; i < rules.size(); i++) {
                 net.minecraft.nbt.CompoundTag r = rules.getCompound(i);
                 String blockTag = r.getString("Tag");
                 float speed = r.contains("Speed") ? r.getFloat("Speed") : 1.0f;
                 Boolean drops = r.contains("Drops") ? r.getBoolean("Drops") : null;
-                stats.toolRules.add(new ToolRuleData(blockTag, speed, drops));
+                ToolRuleData data = new ToolRuleData(blockTag, speed, drops);
+                data.isTag = r.contains("IsTag") && r.getBoolean("IsTag");
+                toolRules.add(data);
             }
         }
 
-        return stats;
+        if (tag.contains("AttrMods")) {
+            setCustomAttributeModifiers(readAttributeModifiers(tag.getList("AttrMods", 10)));
+        }
+    }
+
+    public static net.minecraft.nbt.ListTag writeAttributeModifiers(java.util.List<AttributeModifierData> list) {
+        net.minecraft.nbt.ListTag out = new net.minecraft.nbt.ListTag();
+        if (list == null || list.isEmpty()) return out;
+        for (AttributeModifierData data : list) {
+            if (data == null || data.isEmpty()) continue;
+            net.minecraft.nbt.CompoundTag entry = new net.minecraft.nbt.CompoundTag();
+            entry.putString("Id", data.attributeId);
+            entry.putDouble("Value", data.amount);
+            entry.putInt("Op", data.operation);
+            out.add(entry);
+        }
+        return out;
+    }
+
+    public static java.util.List<AttributeModifierData> readAttributeModifiers(net.minecraft.nbt.ListTag list) {
+        java.util.List<AttributeModifierData> out = new java.util.ArrayList<>();
+        if (list == null || list.isEmpty()) return out;
+        for (int i = 0; i < list.size(); i++) {
+            net.minecraft.nbt.CompoundTag entry = list.getCompound(i);
+            String id = entry.getString("Id");
+            double value = entry.contains("Value") ? entry.getDouble("Value") : 0.0;
+            int op = entry.contains("Op") ? entry.getInt("Op") : 0;
+            AttributeModifierData data = new AttributeModifierData(id, value, op);
+            if (!data.isEmpty()) {
+                out.add(data);
+            }
+        }
+        return out;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -514,6 +608,7 @@ public class WeaponStats {
             && repairCost == 0
             && !unbreakable
             && !clearToolRules
+            && customAttributeModifiers.isEmpty()
             && toolRules.isEmpty()
             && isDefaultValue(toolDefaultMiningSpeed, 1.0f)
             && toolDamagePerBlock == 1;
@@ -557,6 +652,12 @@ public class WeaponStats {
         for (ToolRuleData rule : this.toolRules) {
             copy.toolRules.add(rule == null ? null : rule.copy());
         }
+        copy.customAttributeModifiers.clear();
+        for (AttributeModifierData data : this.customAttributeModifiers) {
+            if (data != null && !data.isEmpty()) {
+                copy.customAttributeModifiers.add(data.copy());
+            }
+        }
         return copy;
     }
 
@@ -586,6 +687,7 @@ public class WeaponStats {
             ", repair=" + repairCost +
             ", unbreakable=" + unbreakable +
             ", clearToolRules=" + clearToolRules +
+            ", customAttrs=" + customAttributeModifiers +
             ", toolRules=" + toolRules +
             ", toolDefaultSpeed=" + toolDefaultMiningSpeed +
             ", toolDamagePerBlock=" + toolDamagePerBlock +

@@ -9,7 +9,7 @@ import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.DevMod;
 import com.devmod.client.ui.editor.components.SourceBadge;
-import com.devmod.config.FuelConfigManager;
+import com.devmod.config.handler.impl.FuelConfigHandler;
 import com.devmod.stats.FuelStats;
 
 public class FuelModuleCore {
@@ -86,7 +86,7 @@ public class FuelModuleCore {
             sourcePrefix = "[DEV] ";
             dataSource = SourceBadge.Source.DEV;
             DevMod.LOGGER.info("[Editor][Fuel] Loaded stats from component tag (size={})", statsTag.size());
-            stats = FuelStats.load(statsTag);
+            stats = FuelStats.fromTag(statsTag);
         } else {
             boolean hasCustomData = customTag != null && !customTag.isEmpty();
             sourcePrefix = hasCustomData ? "[NBT] " : "[VANILLA] ";
@@ -106,7 +106,7 @@ public class FuelModuleCore {
         if (target == null || item == null) return;
 
         try {
-            int vanillaBurnTime = FuelConfigManager.getVanillaBurnTime(item);
+            int vanillaBurnTime = FuelConfigHandler.getVanillaBurnTime(item);
             if (vanillaBurnTime > 0) {
                 target.setBurnTime(vanillaBurnTime);
             }

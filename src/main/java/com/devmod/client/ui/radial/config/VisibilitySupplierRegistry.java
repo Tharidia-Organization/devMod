@@ -21,7 +21,7 @@ import net.minecraft.world.item.ThrowablePotionItem;
 import net.minecraft.world.item.crafting.RecipeType;
 
 import com.devmod.client.ui.editor.WeaponTypeDetector;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 
 /**
  * Registry for visibility suppliers that can be referenced by ID in JSON config.
@@ -158,7 +158,7 @@ public final class VisibilitySupplierRegistry {
      * Check if the item is armor.
      */
     private static boolean isArmorItem(ItemStack stack) {
-        return stack != null && ArmorConfigManager.isArmor(stack);
+        return stack != null && ArmorConfigHandler.isArmor(stack);
     }
 
     /**

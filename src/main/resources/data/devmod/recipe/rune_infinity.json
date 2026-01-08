@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "rune_blocks",
+  "pattern": [
+    "SDS",
+    "DNd",
+    "SDS"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stone"
+    },
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "N": {
+      "item": "minecraft:nether_star"
+    },
+    "d": {
+      "item": "minecraft:dragon_breath"
+    }
+  },
+  "result": {
+    "id": "devmod:rune_infinity",
+    "count": 1
+  }
+}

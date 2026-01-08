@@ -36,9 +36,20 @@ public final class Compat {
             return false;
         }
 
+        ModList modList;
+        try {
+            modList = ModList.get();
+        } catch (Exception e) {
+            LOGGER.debug("[Compat] Mod list unavailable while checking {}: {}", modId, e.getMessage());
+            return false;
+        }
+        if (modList == null) {
+            return false;
+        }
+
         return LOADED_CACHE.computeIfAbsent(modId, id -> {
             try {
-                boolean loaded = ModList.get().isLoaded(id);
+                boolean loaded = modList.isLoaded(id);
                 if (loaded) {
                     LOGGER.debug("[Compat] Mod detected: {}", id);
                 }
@@ -94,7 +105,11 @@ public final class Compat {
 
         return VERSION_CACHE.computeIfAbsent(modId, id -> {
             try {
-                return ModList.get()
+                ModList modList = ModList.get();
+                if (modList == null) {
+                    return "unknown";
+                }
+                return modList
                     .getModContainerById(id)
                     .map(container -> container.getModInfo().getVersion().toString())
                     .orElse("unknown");

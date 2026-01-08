@@ -279,7 +279,8 @@ public class NutritionSession {
                 minIdx = i;
             }
         }
-        return NutritionCategory.VALUES[minIdx];
+        NutritionCategory category = NutritionCategory.byIndex(minIdx);
+        return category != null ? category : NutritionCategory.GRAIN;
     }
 
     // =========================================================================

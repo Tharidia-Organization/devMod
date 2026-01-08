@@ -2,7 +2,7 @@ package com.devmod.runtime;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +49,7 @@ public final class RiftStampManager {
     private static final double BOSSBAR_RANGE_SQ = 48.0 * 48.0;
     private static final int PLACEMENT_FLAGS = 2 | 16 | 64;
 
-    private final Map<RiftKey, RiftSession> active = new HashMap<>();
+    private final Map<RiftKey, RiftSession> active = new ConcurrentHashMap<>();
 
     private RiftStampManager() {}
 
@@ -373,7 +373,9 @@ public final class RiftStampManager {
             if (result instanceof StructureTemplate template) {
                 return template;
             }
-        } catch (Exception ignored) {}
+        } catch (ReflectiveOperationException ignored) {
+            // Optional API path, fall back below.
+        }
         try {
             Method get = manager.getClass().getMethod("get", ResourceLocation.class);
             Object result = get.invoke(manager, location);
@@ -383,7 +385,7 @@ public final class RiftStampManager {
             if (result instanceof StructureTemplate template) {
                 return template;
             }
-        } catch (Exception ignored) {
+        } catch (ReflectiveOperationException ignored) {
             return null;
         }
         return null;

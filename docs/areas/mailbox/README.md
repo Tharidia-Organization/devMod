@@ -255,6 +255,38 @@ Parametri configurabili tramite `MailboxConfig` (file `config/devmod/mailbox_con
 | broadcastQueueEnabled | false | Accoda i broadcast massivi |
 | broadcastQueueThreshold | 1000 | Soglia destinatari per usare la coda |
 
+### Delivery
+
+| Parametro | Default | Descrizione |
+|-----------|---------|-------------|
+| deliveryDispatchEnabled | true | Abilita il dispatcher di consegna |
+| deliveryImmediateDispatchEnabled | true | Tenta consegna immediata su enqueue |
+| deliveryDispatchIntervalSeconds | 5 | Intervallo dispatch (secondi) |
+| deliveryDispatchBatchSize | 50 | Max job per passata |
+| deliveryMaxAttempts | 3 | Tentativi massimi prima del fail |
+| deliveryRetryDelaySeconds | 30 | Base delay retry (secondi) |
+| deliveryRetryMaxDelaySeconds | 3600 | Cap massimo delay retry (secondi) |
+| deliveryRetryBackoffMultiplier | 2.0 | Moltiplicatore backoff (>= 1.0) |
+| deliveryRetryJitterRatio | 0.2 | Jitter su delay (0.0 - 0.5) |
+| deliveryRecallEnabled | true | Invia recall al fail definitivo |
+
+Esempio (estratto `mailbox_config.json`):
+
+```json
+{
+  "deliveryDispatchEnabled": true,
+  "deliveryImmediateDispatchEnabled": true,
+  "deliveryDispatchIntervalSeconds": 5,
+  "deliveryDispatchBatchSize": 50,
+  "deliveryMaxAttempts": 3,
+  "deliveryRetryDelaySeconds": 30,
+  "deliveryRetryMaxDelaySeconds": 3600,
+  "deliveryRetryBackoffMultiplier": 2.0,
+  "deliveryRetryJitterRatio": 0.2,
+  "deliveryRecallEnabled": true
+}
+```
+
 ### Content filter
 
 | Parametro | Default | Descrizione |

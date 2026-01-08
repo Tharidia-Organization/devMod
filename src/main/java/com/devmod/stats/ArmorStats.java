@@ -2,7 +2,9 @@ package com.devmod.stats;
 
 import net.minecraft.nbt.CompoundTag;
 
-public class ArmorStats {
+import com.devmod.config.stats.IItemStats;
+
+public class ArmorStats implements IItemStats {
 
     // Damage type reductions (0.0 = no reduction, 1.0 = 100% reduction)
     // Values are capped at 0.8 total when applied to prevent invincibility
@@ -284,43 +286,50 @@ public class ArmorStats {
     }
 
     /**
-     * Load armor stats from NBT compound tag.
+     * Load armor stats from NBT compound tag (static factory).
      */
-    public static ArmorStats load(CompoundTag tag) {
+    public static ArmorStats fromTag(CompoundTag tag) {
         ArmorStats stats = new ArmorStats();
-        if (tag.contains("PhysRed")) stats.setPhysicalReduction(tag.getFloat("PhysRed"));
-        if (tag.contains("FireRed")) stats.setFireReduction(tag.getFloat("FireRed"));
-        if (tag.contains("MagicRed")) stats.setMagicReduction(tag.getFloat("MagicRed"));
-        if (tag.contains("ExplRed")) stats.setExplosionReduction(tag.getFloat("ExplRed"));
-        if (tag.contains("ProjRed")) stats.setProjectileReduction(tag.getFloat("ProjRed"));
-        if (tag.contains("ArmorBon")) stats.setArmorBonus(tag.getFloat("ArmorBon"));
-        if (tag.contains("ToughBon")) stats.setToughnessBonus(tag.getFloat("ToughBon"));
-        if (tag.contains("KBRes")) stats.setKnockbackResistance(tag.getFloat("KBRes"));
-        if (tag.contains("Thorns")) stats.setThornsReflect(tag.getBoolean("Thorns"));
-        if (tag.contains("ThornsPct")) stats.setThornsPercent(tag.getFloat("ThornsPct"));
-        stats.setShieldReflectProjectiles(tag.contains("ShieldReflect") && tag.getBoolean("ShieldReflect"));
-        stats.setShieldBlockStrength(tag.contains("ShieldBlock") ? tag.getFloat("ShieldBlock") : 0.5f);
-        stats.setShieldRecoverySpeed(tag.contains("ShieldRecovery") ? tag.getFloat("ShieldRecovery") : 1.0f);
+        stats.load(tag);
+        return stats;
+    }
+
+    /**
+     * Load armor stats from NBT compound tag (instance method for IItemStats).
+     */
+    @Override
+    public void load(CompoundTag tag) {
+        if (tag.contains("PhysRed")) setPhysicalReduction(tag.getFloat("PhysRed"));
+        if (tag.contains("FireRed")) setFireReduction(tag.getFloat("FireRed"));
+        if (tag.contains("MagicRed")) setMagicReduction(tag.getFloat("MagicRed"));
+        if (tag.contains("ExplRed")) setExplosionReduction(tag.getFloat("ExplRed"));
+        if (tag.contains("ProjRed")) setProjectileReduction(tag.getFloat("ProjRed"));
+        if (tag.contains("ArmorBon")) setArmorBonus(tag.getFloat("ArmorBon"));
+        if (tag.contains("ToughBon")) setToughnessBonus(tag.getFloat("ToughBon"));
+        if (tag.contains("KBRes")) setKnockbackResistance(tag.getFloat("KBRes"));
+        if (tag.contains("Thorns")) setThornsReflect(tag.getBoolean("Thorns"));
+        if (tag.contains("ThornsPct")) setThornsPercent(tag.getFloat("ThornsPct"));
+        setShieldReflectProjectiles(tag.contains("ShieldReflect") && tag.getBoolean("ShieldReflect"));
+        setShieldBlockStrength(tag.contains("ShieldBlock") ? tag.getFloat("ShieldBlock") : 0.5f);
+        setShieldRecoverySpeed(tag.contains("ShieldRecovery") ? tag.getFloat("ShieldRecovery") : 1.0f);
 
         // Shield Visual Settings
-        stats.setShieldColor(tag.contains("ShieldColor") ? tag.getInt("ShieldColor") : ShieldColors.DEFAULT);
-        stats.setShieldOpacity(tag.contains("ShieldOpacity") ? tag.getFloat("ShieldOpacity") : 0.6f);
-        stats.setShieldGlowEnabled(!tag.contains("ShieldGlow") || tag.getBoolean("ShieldGlow"));
-        stats.setShieldGlowIntensity(tag.contains("ShieldGlowInt") ? tag.getFloat("ShieldGlowInt") : 1.0f);
-        stats.setShieldNoiseIntensity(tag.contains("ShieldNoise") ? tag.getFloat("ShieldNoise") : 0.15f);
-        stats.setShieldPulseSpeed(tag.contains("ShieldPulse") ? tag.getFloat("ShieldPulse") : 1.0f);
+        setShieldColor(tag.contains("ShieldColor") ? tag.getInt("ShieldColor") : ShieldColors.DEFAULT);
+        setShieldOpacity(tag.contains("ShieldOpacity") ? tag.getFloat("ShieldOpacity") : 0.6f);
+        setShieldGlowEnabled(!tag.contains("ShieldGlow") || tag.getBoolean("ShieldGlow"));
+        setShieldGlowIntensity(tag.contains("ShieldGlowInt") ? tag.getFloat("ShieldGlowInt") : 1.0f);
+        setShieldNoiseIntensity(tag.contains("ShieldNoise") ? tag.getFloat("ShieldNoise") : 0.15f);
+        setShieldPulseSpeed(tag.contains("ShieldPulse") ? tag.getFloat("ShieldPulse") : 1.0f);
 
         // Shield Deflection Settings
-        stats.setShieldDeflectionSpread(tag.contains("DeflectSpread") ? tag.getFloat("DeflectSpread") : 0.15f);
-        stats.setShieldDeflectToOwner(tag.contains("DeflectReturn") && tag.getBoolean("DeflectReturn"));
-        stats.setShieldDeflectSpeedMult(tag.contains("DeflectSpeed") ? tag.getFloat("DeflectSpeed") : 0.8f);
+        setShieldDeflectionSpread(tag.contains("DeflectSpread") ? tag.getFloat("DeflectSpread") : 0.15f);
+        setShieldDeflectToOwner(tag.contains("DeflectReturn") && tag.getBoolean("DeflectReturn"));
+        setShieldDeflectSpeedMult(tag.contains("DeflectSpeed") ? tag.getFloat("DeflectSpeed") : 0.8f);
 
         // Shield Shatter Settings
-        stats.setShieldShatterThreshold(tag.contains("ShatterThresh") ? tag.getFloat("ShatterThresh") : 10.0f);
-        stats.setShieldAutoRegenerate(!tag.contains("ShieldAutoRegen") || tag.getBoolean("ShieldAutoRegen"));
-        stats.setShieldRegenDelay(tag.contains("RegenDelay") ? tag.getFloat("RegenDelay") : 3.0f);
-
-        return stats;
+        setShieldShatterThreshold(tag.contains("ShatterThresh") ? tag.getFloat("ShatterThresh") : 10.0f);
+        setShieldAutoRegenerate(!tag.contains("ShieldAutoRegen") || tag.getBoolean("ShieldAutoRegen"));
+        setShieldRegenDelay(tag.contains("RegenDelay") ? tag.getFloat("RegenDelay") : 3.0f);
     }
 
     /**

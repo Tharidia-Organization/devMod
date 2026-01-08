@@ -3039,6 +3039,27 @@ public final class DesignTokens {
             private Panel() {}
         }
 
+        public static final class Feathered {
+            public static final int PAPER_BG = 0xFFE9D7B5;
+            public static final int PAPER_INSET = 0xFFE1CDAA;
+            public static final int PAPER_DETAIL = 0xFFF1E2C8;
+            public static final int PAPER_BORDER = 0xFFB8A17D;
+            public static final int PAPER_HOVER = 0xFFF4E7D0;
+            public static final int PAPER_SELECTED = 0xFFEBD3AE;
+
+            public static final int TEXT_PRIMARY = 0xFF3B2F25;
+            public static final int TEXT_SECONDARY = 0xFF5A4A3A;
+            public static final int TEXT_MUTED = 0xFF7B6A58;
+            public static final int TEXT_ACCENT = 0xFF8B3D2C;
+
+            public static final int TYPE_PLAYER = 0xFF3F5C8E;
+            public static final int TYPE_SYSTEM = 0xFF5A4A3A;
+            public static final int TYPE_ADMIN = 0xFF8D6A2F;
+            public static final int TYPE_REWARD = 0xFF3D7B4B;
+
+            private Feathered() {}
+        }
+
         public static final class Divider {
             public static final int LINE = withAlpha(DesignTokens.Text.WHITE, DesignTokens.Alpha.A25);
 

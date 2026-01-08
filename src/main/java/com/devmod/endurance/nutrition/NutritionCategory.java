@@ -1,5 +1,7 @@
 package com.devmod.endurance.nutrition;
 
+import java.util.List;
+
 import javax.annotation.Nonnull;
 
 /**
@@ -38,7 +40,10 @@ public enum NutritionCategory {
     WATER(5, "Water", "water", 0xFF4A90E2);
 
     /** Pre-computed array of all values for fast iteration. */
-    public static final NutritionCategory[] VALUES = values();
+    private static final NutritionCategory[] VALUES = values();
+
+    /** Immutable list view for safe iteration. */
+    public static final List<NutritionCategory> ALL = List.of(VALUES);
 
     /** Number of categories. */
     public static final int COUNT = VALUES.length;

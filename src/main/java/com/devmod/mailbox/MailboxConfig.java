@@ -96,6 +96,40 @@ public class MailboxConfig {
     private int broadcastQueueThreshold = 1000;
 
     // ============================================================================
+    // DELIVERY SETTINGS
+    // ============================================================================
+
+    /** Whether the delivery dispatcher should run */
+    private boolean deliveryDispatchEnabled = true;
+
+    /** Whether to attempt immediate delivery on enqueue */
+    private boolean deliveryImmediateDispatch = true;
+
+    /** Dispatch interval in seconds */
+    private int deliveryDispatchIntervalSeconds = 5;
+
+    /** Max delivery jobs per dispatch pass */
+    private int deliveryDispatchBatchSize = 50;
+
+    /** Max delivery attempts before failing */
+    private int deliveryMaxAttempts = 3;
+
+    /** Base delay between retries in seconds */
+    private int deliveryRetryDelaySeconds = 30;
+
+    /** Max delay between retries in seconds */
+    private int deliveryRetryMaxDelaySeconds = 3600;
+
+    /** Exponential backoff multiplier for retries */
+    private double deliveryRetryBackoffMultiplier = 2.0;
+
+    /** Jitter ratio applied to retry delays */
+    private double deliveryRetryJitterRatio = 0.2;
+
+    /** Whether to send recall messages on final failure */
+    private boolean deliveryRecallEnabled = true;
+
+    // ============================================================================
     // CONTENT FILTER
     // ============================================================================
 
@@ -259,6 +293,46 @@ public class MailboxConfig {
 
     public int getBroadcastQueueThreshold() {
         return broadcastQueueThreshold;
+    }
+
+    public boolean isDeliveryDispatchEnabled() {
+        return deliveryDispatchEnabled;
+    }
+
+    public boolean isDeliveryImmediateDispatchEnabled() {
+        return deliveryImmediateDispatch;
+    }
+
+    public int getDeliveryDispatchIntervalSeconds() {
+        return deliveryDispatchIntervalSeconds;
+    }
+
+    public int getDeliveryDispatchBatchSize() {
+        return deliveryDispatchBatchSize;
+    }
+
+    public int getDeliveryMaxAttempts() {
+        return deliveryMaxAttempts;
+    }
+
+    public int getDeliveryRetryDelaySeconds() {
+        return deliveryRetryDelaySeconds;
+    }
+
+    public int getDeliveryRetryMaxDelaySeconds() {
+        return deliveryRetryMaxDelaySeconds;
+    }
+
+    public double getDeliveryRetryBackoffMultiplier() {
+        return deliveryRetryBackoffMultiplier;
+    }
+
+    public double getDeliveryRetryJitterRatio() {
+        return deliveryRetryJitterRatio;
+    }
+
+    public boolean isDeliveryRecallEnabled() {
+        return deliveryRecallEnabled;
     }
 
     public boolean isPlayerToPlayerEnabled() {
@@ -430,6 +504,52 @@ public class MailboxConfig {
 
     public void setBroadcastQueueThreshold(int threshold) {
         this.broadcastQueueThreshold = Math.max(1, Math.min(1_000_000, threshold));
+    }
+
+    public void setDeliveryDispatchEnabled(boolean enabled) {
+        this.deliveryDispatchEnabled = enabled;
+    }
+
+    public void setDeliveryImmediateDispatchEnabled(boolean enabled) {
+        this.deliveryImmediateDispatch = enabled;
+    }
+
+    public void setDeliveryDispatchIntervalSeconds(int seconds) {
+        this.deliveryDispatchIntervalSeconds = Math.max(1, Math.min(300, seconds));
+    }
+
+    public void setDeliveryDispatchBatchSize(int batchSize) {
+        this.deliveryDispatchBatchSize = Math.max(1, Math.min(5000, batchSize));
+    }
+
+    public void setDeliveryMaxAttempts(int attempts) {
+        this.deliveryMaxAttempts = Math.max(1, Math.min(20, attempts));
+    }
+
+    public void setDeliveryRetryDelaySeconds(int seconds) {
+        this.deliveryRetryDelaySeconds = Math.max(1, Math.min(3600, seconds));
+        if (deliveryRetryMaxDelaySeconds < deliveryRetryDelaySeconds) {
+            deliveryRetryMaxDelaySeconds = deliveryRetryDelaySeconds;
+        }
+    }
+
+    public void setDeliveryRetryMaxDelaySeconds(int seconds) {
+        int resolved = Math.max(1, Math.min(86400, seconds));
+        this.deliveryRetryMaxDelaySeconds = Math.max(resolved, deliveryRetryDelaySeconds);
+    }
+
+    public void setDeliveryRetryBackoffMultiplier(double multiplier) {
+        double resolved = Double.isFinite(multiplier) ? multiplier : 2.0;
+        this.deliveryRetryBackoffMultiplier = Math.max(1.0, Math.min(10.0, resolved));
+    }
+
+    public void setDeliveryRetryJitterRatio(double ratio) {
+        double resolved = Double.isFinite(ratio) ? ratio : 0.2;
+        this.deliveryRetryJitterRatio = Math.max(0.0, Math.min(0.5, resolved));
+    }
+
+    public void setDeliveryRecallEnabled(boolean enabled) {
+        this.deliveryRecallEnabled = enabled;
     }
 
     public void setPlayerToPlayerEnabled(boolean enabled) {
@@ -703,6 +823,26 @@ public class MailboxConfig {
         if (queueEnabled != null) setBroadcastQueueEnabled(queueEnabled);
         Integer queueThreshold = data.broadcastQueueThreshold();
         if (queueThreshold != null) setBroadcastQueueThreshold(queueThreshold);
+        Boolean deliveryEnabled = data.deliveryDispatchEnabled();
+        if (deliveryEnabled != null) setDeliveryDispatchEnabled(deliveryEnabled);
+        Boolean deliveryImmediate = data.deliveryImmediateDispatchEnabled();
+        if (deliveryImmediate != null) setDeliveryImmediateDispatchEnabled(deliveryImmediate);
+        Integer dispatchInterval = data.deliveryDispatchIntervalSeconds();
+        if (dispatchInterval != null) setDeliveryDispatchIntervalSeconds(dispatchInterval);
+        Integer dispatchBatch = data.deliveryDispatchBatchSize();
+        if (dispatchBatch != null) setDeliveryDispatchBatchSize(dispatchBatch);
+        Integer maxAttempts = data.deliveryMaxAttempts();
+        if (maxAttempts != null) setDeliveryMaxAttempts(maxAttempts);
+        Integer retryDelay = data.deliveryRetryDelaySeconds();
+        if (retryDelay != null) setDeliveryRetryDelaySeconds(retryDelay);
+        Integer retryMax = data.deliveryRetryMaxDelaySeconds();
+        if (retryMax != null) setDeliveryRetryMaxDelaySeconds(retryMax);
+        Double backoffMultiplier = data.deliveryRetryBackoffMultiplier();
+        if (backoffMultiplier != null) setDeliveryRetryBackoffMultiplier(backoffMultiplier);
+        Double retryJitter = data.deliveryRetryJitterRatio();
+        if (retryJitter != null) setDeliveryRetryJitterRatio(retryJitter);
+        Boolean recallEnabled = data.deliveryRecallEnabled();
+        if (recallEnabled != null) setDeliveryRecallEnabled(recallEnabled);
         Boolean p2pEnabled = data.playerToPlayerEnabled();
         if (p2pEnabled != null) setPlayerToPlayerEnabled(p2pEnabled);
         Integer minLevel = data.minLevelToSend();
@@ -774,6 +914,16 @@ public class MailboxConfig {
             broadcastBatchDelayMs,
             broadcastQueueEnabled,
             broadcastQueueThreshold,
+            deliveryDispatchEnabled,
+            deliveryImmediateDispatch,
+            deliveryDispatchIntervalSeconds,
+            deliveryDispatchBatchSize,
+            deliveryMaxAttempts,
+            deliveryRetryDelaySeconds,
+            deliveryRetryMaxDelaySeconds,
+            deliveryRetryBackoffMultiplier,
+            deliveryRetryJitterRatio,
+            deliveryRecallEnabled,
             playerToPlayerEnabled,
             minLevelToSend,
             itemAttachmentsEnabled,
@@ -862,6 +1012,16 @@ public class MailboxConfig {
         @Nullable Integer broadcastBatchDelayMs,
         @Nullable Boolean broadcastQueueEnabled,
         @Nullable Integer broadcastQueueThreshold,
+        @Nullable Boolean deliveryDispatchEnabled,
+        @Nullable Boolean deliveryImmediateDispatchEnabled,
+        @Nullable Integer deliveryDispatchIntervalSeconds,
+        @Nullable Integer deliveryDispatchBatchSize,
+        @Nullable Integer deliveryMaxAttempts,
+        @Nullable Integer deliveryRetryDelaySeconds,
+        @Nullable Integer deliveryRetryMaxDelaySeconds,
+        @Nullable Double deliveryRetryBackoffMultiplier,
+        @Nullable Double deliveryRetryJitterRatio,
+        @Nullable Boolean deliveryRecallEnabled,
         @Nullable Boolean playerToPlayerEnabled,
         @Nullable Integer minLevelToSend,
         @Nullable Boolean itemAttachmentsEnabled,

@@ -53,7 +53,7 @@ public record GlobalConfigSyncPayload(
         CompoundTag weaponTag = new CompoundTag();
 
         // Serialize armor configs
-        com.devmod.config.ArmorConfigManager.getAllGlobalStats().forEach((item, stats) -> {
+        com.devmod.config.handler.impl.ArmorConfigHandler.getEveryGlobalStats().forEach((item, stats) -> {
             ResourceLocation id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item));
             CompoundTag statsTag = new CompoundTag();
             stats.save(statsTag);
@@ -61,7 +61,7 @@ public record GlobalConfigSyncPayload(
         });
 
         // Serialize weapon configs
-        com.devmod.config.WeaponConfigManager.getAllGlobalStats().forEach((item, stats) -> {
+        com.devmod.config.handler.impl.WeaponConfigHandler.getEveryGlobalStats().forEach((item, stats) -> {
             ResourceLocation id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item));
             CompoundTag statsTag = new CompoundTag();
             stats.save(statsTag);
@@ -81,8 +81,8 @@ public record GlobalConfigSyncPayload(
             if (id != null && net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id)) {
                 net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id);
                 CompoundTag statsTag = armorConfigs.getCompound(Objects.requireNonNull(key));
-                ArmorStats stats = ArmorStats.load(statsTag);
-                com.devmod.config.ArmorConfigManager.setGlobalStatsClientOnly(item, stats);
+                ArmorStats stats = ArmorStats.fromTag(statsTag);
+                com.devmod.config.handler.impl.ArmorConfigHandler.setGlobalStatsClientOnly(item, stats);
             }
         }
 
@@ -92,8 +92,8 @@ public record GlobalConfigSyncPayload(
             if (id != null && net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id)) {
                 net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id);
                 CompoundTag statsTag = weaponConfigs.getCompound(Objects.requireNonNull(key));
-                WeaponStats stats = WeaponStats.load(statsTag);
-                com.devmod.config.WeaponConfigManager.setGlobalStatsClientOnly(item, stats);
+                WeaponStats stats = WeaponStats.fromTag(statsTag);
+                com.devmod.config.handler.impl.WeaponConfigHandler.setGlobalStatsClientOnly(item, stats);
             }
         }
     }

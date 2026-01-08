@@ -147,12 +147,14 @@ public final class EnduranceMeleeAttackGoal extends Goal {
     private void checkAndPerformAttack(LivingEntity target, double distanceSqr) {
         double attackReachSqr = this.getAttackReachSqr(target);
         if (distanceSqr <= attackReachSqr && this.ticksUntilNextAttack <= 0) {
+            // Debug: Log attack attempt
+            var attackAttribute = this.mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+            if (attackAttribute == null) {
+                return;
+            }
             this.resetAttackCooldown();
             this.mob.swing(InteractionHand.MAIN_HAND);
-
-            // Debug: Log attack attempt
-            float attackDamage = (float) this.mob.getAttributeValue(
-                Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
+            float attackDamage = (float) attackAttribute.getValue();
             float targetHealthBefore = target.getHealth();
 
             // Check for damage resistance effect that might block damage

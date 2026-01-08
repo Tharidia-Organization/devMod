@@ -41,13 +41,13 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import com.devmod.DevMod;
-import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.Config;
-import com.devmod.config.FoodConfigManager;
-import com.devmod.config.FuelConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
+import com.devmod.config.handler.impl.FoodConfigHandler;
+import com.devmod.config.handler.impl.FuelConfigHandler;
 import com.devmod.config.MobConfigManager;
-import com.devmod.config.UsableConfigManager;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
+import com.devmod.config.handler.impl.UsableConfigHandler;
 import com.devmod.network.ArmorStatsPayload;
 import com.devmod.network.ChannelId;
 import com.devmod.network.EquipMobPayload;
@@ -307,7 +307,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 stats.setBaseDamageBonus((float) security.validateDamage(payload.bonus()));
 
                 if (payload.isGlobal()) {
-                    WeaponConfigManager.setGlobalStats(stack.getItem(), stats);
+                    WeaponConfigHandler.INSTANCE.setGlobalStats(stack.getItem(), stats);
                     String itemName = stack.getHoverName().getString();
                     player.sendSystemMessage(I18n.translate("devmod.network.weapon_global_saved", itemName));
                     sendEditorConfirm(player, true, true, "weapon", getItemId(stack), "Weapon global saved");
@@ -320,7 +320,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                         }
                     }
                 } else {
-                    WeaponConfigManager.setSpecificStats(stack, stats);
+                    WeaponConfigHandler.INSTANCE.setSpecificStats(stack, stats);
                     String customName = security.validateString(payload.name(), 64);
                     if (customName != null && !customName.isEmpty()) {
                         stack.set(nn(DataComponents.CUSTOM_NAME), Component.literal(nn(customName)));
@@ -356,6 +356,16 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
             }
 
             CompoundTag tag = nn(payload.statsTag());
+            if (tag.getBoolean("reset")) {
+                if (payload.isGlobal()) {
+                    WeaponConfigHandler.INSTANCE.clearGlobalStats(stack.getItem());
+                    sendEditorConfirm(player, true, true, "weapon", getItemId(stack), "Weapon global reset");
+                } else {
+                    WeaponConfigHandler.clearItemSpecificStats(stack);
+                    sendEditorConfirm(player, true, false, "weapon", getItemId(stack), "Weapon reset to defaults");
+                }
+                return;
+            }
             CompoundTag toLoad;
             if (tag.contains("weapon_stats_component")) {
                 toLoad = tag.getCompound("weapon_stats_component");
@@ -370,17 +380,17 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 return;
             }
 
-            WeaponStats stats = WeaponConfigManager.clampStats(WeaponStats.load(toLoad));
+            WeaponStats stats = WeaponConfigHandler.clampStats(WeaponStats.fromTag(toLoad));
             sanitizeToolRules(stats, security);
 
             if (payload.isGlobal()) {
-                WeaponConfigManager.setGlobalStats(stack.getItem(), stats);
+                WeaponConfigHandler.INSTANCE.setGlobalStats(stack.getItem(), stats);
                 sendEditorConfirm(player, true, true, "weapon", getItemId(stack), "Weapon global saved");
             } else {
                 CompoundTag variant = new CompoundTag();
                 if (toLoad.contains("Mace")) variant.put("Mace", nn(toLoad.getCompound("Mace")));
                 if (toLoad.contains("Trident")) variant.put("Trident", nn(toLoad.getCompound("Trident")));
-                WeaponConfigManager.setSpecificStats(stack, stats, variant);
+                WeaponConfigHandler.INSTANCE.setSpecificStats(stack, stats, variant);
                 sendEditorConfirm(player, true, false, "weapon", getItemId(stack), "Weapon specific updated");
             }
         });
@@ -415,18 +425,29 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 return;
             }
 
+            if (tag.getBoolean("reset")) {
+                if (payload.isGlobal()) {
+                    WeaponConfigHandler.INSTANCE.clearGlobalStats(stack.getItem());
+                    sendEditorConfirm(player, true, true, "weapon", getItemId(stack), "Weapon global reset");
+                } else {
+                    WeaponConfigHandler.clearItemSpecificStats(stack);
+                    sendEditorConfirm(player, true, false, "weapon", getItemId(stack), "Weapon reset to defaults");
+                }
+                return;
+            }
+
             CompoundTag toLoad = tag.contains("weapon_stats_component") ? tag.getCompound("weapon_stats_component")
                 : (tag.contains("WeaponModStats") ? tag.getCompound("WeaponModStats") : tag);
 
             WeaponStats stats;
             if (tag.contains("delta")) {
-                WeaponStats base = WeaponConfigManager.getStats(stack).copy();
+                WeaponStats base = WeaponConfigHandler.INSTANCE.getStats(stack).copy();
                 applyDelta(base, tag.getCompound("delta"));
                 toLoad = new CompoundTag();
                 base.save(toLoad);
-                stats = WeaponConfigManager.clampStats(base);
+                stats = WeaponConfigHandler.clampStats(base);
             } else {
-                stats = WeaponConfigManager.clampStats(WeaponStats.load(toLoad));
+                stats = WeaponConfigHandler.clampStats(WeaponStats.fromTag(toLoad));
             }
             sanitizeToolRules(stats, security);
 
@@ -436,13 +457,13 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 stats.getArmorPenetration(), stats.getArmorShred());
 
             if (payload.isGlobal()) {
-                WeaponConfigManager.setGlobalStats(stack.getItem(), stats);
+                WeaponConfigHandler.INSTANCE.setGlobalStats(stack.getItem(), stats);
                 sendEditorConfirm(player, true, true, "weapon", getItemId(stack), "Weapon global saved");
             } else {
                 CompoundTag variant = new CompoundTag();
                 if (toLoad.contains("Mace")) variant.put("Mace", nn(toLoad.getCompound("Mace")));
                 if (toLoad.contains("Trident")) variant.put("Trident", nn(toLoad.getCompound("Trident")));
-                WeaponConfigManager.setSpecificStats(stack, stats, variant);
+                WeaponConfigHandler.INSTANCE.setSpecificStats(stack, stats, variant);
                 sendEditorConfirm(player, true, false, "weapon", getItemId(stack), "Weapon specific updated");
             }
         });
@@ -480,6 +501,12 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 }
 
                 CompoundTag root = payload.statsTag().copy();
+                if (root.getBoolean("reset")) {
+                    com.devmod.client.ui.editor.RangedWeaponModule.clearStats(stack);
+                    player.sendSystemMessage(I18n.translate("devmod.network.weapon_specific_updated"));
+                    sendEditorConfirm(player, true, false, "ranged", getItemId(stack), "Ranged weapon reset to defaults");
+                    return;
+                }
                 CompoundTag data = stack.getOrDefault(nn(DataComponents.CUSTOM_DATA), nn(CustomData.EMPTY)).copyTag();
                 if (root.contains("RangedStats")) {
                     CompoundTag ranged = nn(root.getCompound("RangedStats"));
@@ -531,7 +558,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                     ResourceLocation itemLoc = ResourceLocation.tryParse(nn(payload.itemName()));
                     if (itemLoc != null && BuiltInRegistries.ITEM.containsKey(itemLoc)) {
                         Item item = BuiltInRegistries.ITEM.get(itemLoc);
-                        ArmorConfigManager.setGlobalStats(item, stats);
+                        ArmorConfigHandler.INSTANCE.setGlobalStats(item, stats);
                         String itemName = nn(item.getDescription().getString());
                         player.sendSystemMessage(I18n.translate("devmod.network.armor_global_saved", itemName));
                         sendEditorConfirm(player, true, true, "armor", itemName, "Armor global saved");
@@ -558,8 +585,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
 
                     if (slot != null) {
                         ItemStack armor = player.getItemBySlot(nn(slot));
-                        if (!armor.isEmpty() && ArmorConfigManager.isArmor(armor)) {
-                            ArmorConfigManager.setSpecificStats(armor, stats);
+                        if (!armor.isEmpty() && ArmorConfigHandler.isArmor(armor)) {
+                            ArmorConfigHandler.INSTANCE.setSpecificStats(armor, stats);
                             player.sendSystemMessage(I18n.translate("devmod.network.armor_specific_updated"));
                             sendEditorConfirm(player, true, false, "armor", getItemId(armor), "Armor specific updated");
                         } else {
@@ -568,8 +595,8 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                         }
                     } else {
                         ItemStack held = player.getMainHandItem();
-                        if (!held.isEmpty() && ArmorConfigManager.isArmor(held)) {
-                            ArmorConfigManager.setSpecificStats(held, stats);
+                        if (!held.isEmpty() && ArmorConfigHandler.isArmor(held)) {
+                            ArmorConfigHandler.INSTANCE.setSpecificStats(held, stats);
                             player.sendSystemMessage(I18n.translate("devmod.network.armor_specific_updated"));
                             sendEditorConfirm(player, true, false, "armor", getItemId(held), "Armor specific updated (fallback main hand)");
                             return;
@@ -606,25 +633,30 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 return;
             }
 
-            CompoundTag toLoad = tag.contains("armor_stats_component") ? tag.getCompound("armor_stats_component")
-                : (tag.contains("ArmorModStats") ? tag.getCompound("ArmorModStats") : tag);
-            ArmorStats stats = ArmorStats.load(toLoad);
-
-            stats.setPhysicalReduction((float) security.validateArmorReduction(stats.getPhysicalReduction()));
-            stats.setFireReduction((float) security.validateArmorReduction(stats.getFireReduction()));
-            stats.setMagicReduction((float) security.validateArmorReduction(stats.getMagicReduction()));
-            stats.setExplosionReduction((float) security.validateArmorReduction(stats.getExplosionReduction()));
-            stats.setProjectileReduction((float) security.validateArmorReduction(stats.getProjectileReduction()));
-            stats.setArmorBonus((float) security.validateArmorBonus(stats.getArmorBonus()));
-            stats.setToughnessBonus((float) security.validateToughnessBonus(stats.getToughnessBonus()));
-            stats.setKnockbackResistance((float) security.validateKnockbackResistance(stats.getKnockbackResistance()));
-            stats.setThornsPercent((float) security.validateThornsPercent(stats.getThornsPercent()));
-            stats.setShieldBlockStrength((float) security.validateShieldBlock(stats.getShieldBlockStrength()));
-            stats.setShieldRecoverySpeed((float) security.validateShieldRecovery(stats.getShieldRecoverySpeed()));
-
             if (payload.isGlobal()) {
+                if (tag.getBoolean("reset")) {
+                    ArmorConfigHandler.INSTANCE.clearGlobalStats(payloadStack.getItem());
+                    sendEditorConfirm(player, true, true, "armor", getItemId(payloadStack), "Armor global reset");
+                    return;
+                }
+                CompoundTag toLoad = tag.contains("armor_stats_component") ? tag.getCompound("armor_stats_component")
+                    : (tag.contains("ArmorModStats") ? tag.getCompound("ArmorModStats") : tag);
+                ArmorStats stats = ArmorStats.fromTag(toLoad);
+
+                stats.setPhysicalReduction((float) security.validateArmorReduction(stats.getPhysicalReduction()));
+                stats.setFireReduction((float) security.validateArmorReduction(stats.getFireReduction()));
+                stats.setMagicReduction((float) security.validateArmorReduction(stats.getMagicReduction()));
+                stats.setExplosionReduction((float) security.validateArmorReduction(stats.getExplosionReduction()));
+                stats.setProjectileReduction((float) security.validateArmorReduction(stats.getProjectileReduction()));
+                stats.setArmorBonus((float) security.validateArmorBonus(stats.getArmorBonus()));
+                stats.setToughnessBonus((float) security.validateToughnessBonus(stats.getToughnessBonus()));
+                stats.setKnockbackResistance((float) security.validateKnockbackResistance(stats.getKnockbackResistance()));
+                stats.setThornsPercent((float) security.validateThornsPercent(stats.getThornsPercent()));
+                stats.setShieldBlockStrength((float) security.validateShieldBlock(stats.getShieldBlockStrength()));
+                stats.setShieldRecoverySpeed((float) security.validateShieldRecovery(stats.getShieldRecoverySpeed()));
+
                 Item item = payloadStack.getItem();
-                ArmorConfigManager.setGlobalStats(item, stats);
+                ArmorConfigHandler.INSTANCE.setGlobalStats(item, stats);
                 sendEditorConfirm(player, true, true, "armor", getItemId(payloadStack), "Armor global saved");
                 return;
             }
@@ -669,12 +701,34 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 }
             }
 
-            if (target.isEmpty() || !ArmorConfigManager.isArmor(target)) {
+            if (target.isEmpty() || !ArmorConfigHandler.isArmor(target)) {
                 sendEditorConfirm(player, false, false, "armor", getItemId(payloadStack), "No matching armor piece");
                 return;
             }
 
-            ArmorConfigManager.setSpecificStats(target, stats);
+            if (tag.getBoolean("reset")) {
+                ArmorConfigHandler.clearItemSpecificStats(target);
+                sendEditorConfirm(player, true, false, "armor", getItemId(target), "Armor reset to defaults");
+                return;
+            }
+
+            CompoundTag toLoad = tag.contains("armor_stats_component") ? tag.getCompound("armor_stats_component")
+                : (tag.contains("ArmorModStats") ? tag.getCompound("ArmorModStats") : tag);
+            ArmorStats stats = ArmorStats.fromTag(toLoad);
+
+            stats.setPhysicalReduction((float) security.validateArmorReduction(stats.getPhysicalReduction()));
+            stats.setFireReduction((float) security.validateArmorReduction(stats.getFireReduction()));
+            stats.setMagicReduction((float) security.validateArmorReduction(stats.getMagicReduction()));
+            stats.setExplosionReduction((float) security.validateArmorReduction(stats.getExplosionReduction()));
+            stats.setProjectileReduction((float) security.validateArmorReduction(stats.getProjectileReduction()));
+            stats.setArmorBonus((float) security.validateArmorBonus(stats.getArmorBonus()));
+            stats.setToughnessBonus((float) security.validateToughnessBonus(stats.getToughnessBonus()));
+            stats.setKnockbackResistance((float) security.validateKnockbackResistance(stats.getKnockbackResistance()));
+            stats.setThornsPercent((float) security.validateThornsPercent(stats.getThornsPercent()));
+            stats.setShieldBlockStrength((float) security.validateShieldBlock(stats.getShieldBlockStrength()));
+            stats.setShieldRecoverySpeed((float) security.validateShieldRecovery(stats.getShieldRecoverySpeed()));
+
+            ArmorConfigHandler.INSTANCE.setSpecificStats(target, stats);
             sendEditorConfirm(player, true, false, "armor", getItemId(target), "Armor specific updated");
         });
     }
@@ -710,11 +764,21 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 sendEditorConfirm(player, false, payload.isGlobal(), "usable", getItemId(stack), "Missing stats");
                 return;
             }
+            if (tag.getBoolean("reset")) {
+                if (payload.isGlobal()) {
+                    UsableConfigHandler.INSTANCE.clearGlobalStats(stack.getItem());
+                    sendEditorConfirm(player, true, true, "usable", getItemId(stack), "Usable global reset");
+                } else {
+                    UsableConfigHandler.clearItemSpecificStats(stack);
+                    sendEditorConfirm(player, true, false, "usable", getItemId(stack), "Usable reset to defaults");
+                }
+                return;
+            }
 
             CompoundTag toLoad = tag.contains("usable_stats_component") ? tag.getCompound("usable_stats_component")
                 : (tag.contains("UsableModStats") ? tag.getCompound("UsableModStats") : tag);
 
-            UsableStats stats = UsableStats.load(toLoad);
+            UsableStats stats = UsableStats.fromTag(toLoad);
 
             // Clamp values for security
             stats.setUseDuration(Math.max(0, Math.min(200, stats.getUseDuration())));
@@ -726,12 +790,12 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
 
             if (payload.isGlobal()) {
                 Item item = stack.getItem();
-                UsableConfigManager.setGlobalStats(item, stats);
+                UsableConfigHandler.INSTANCE.setGlobalStats(item, stats);
                 sendEditorConfirm(player, true, true, "usable", getItemId(stack), "Usable global saved");
                 LOGGER.info("[UsableConfig] Player {} saved GLOBAL usable config for {}",
                     player.getName().getString(), getItemId(stack));
             } else {
-                UsableConfigManager.setSpecificStats(stack, stats);
+                UsableConfigHandler.INSTANCE.setSpecificStats(stack, stats);
                 sendEditorConfirm(player, true, false, "usable", getItemId(stack), "Usable specific updated");
                 LOGGER.info("[UsableConfig] Player {} updated SPECIFIC usable config for {}",
                     player.getName().getString(), getItemId(stack));
@@ -770,6 +834,16 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 sendEditorConfirm(player, false, payload.isGlobal(), "food", getItemId(stack), "Missing stats");
                 return;
             }
+            if (tag.getBoolean("reset")) {
+                if (payload.isGlobal()) {
+                    FoodConfigHandler.clearGlobalStats(getItemId(stack));
+                    sendEditorConfirm(player, true, true, "food", getItemId(stack), "Food global reset");
+                } else {
+                    FoodConfigHandler.clearItemSpecificStats(stack);
+                    sendEditorConfirm(player, true, false, "food", getItemId(stack), "Food reset to defaults");
+                }
+                return;
+            }
 
             CompoundTag toLoad = tag.contains("food_stats_component") ? tag.getCompound("food_stats_component")
                 : (tag.contains("FoodModStats") ? tag.getCompound("FoodModStats") : tag);
@@ -791,12 +865,12 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
 
             if (payload.isGlobal()) {
                 String itemId = getItemId(stack);
-                FoodConfigManager.setGlobalStats(itemId, stats);
+                FoodConfigHandler.setGlobalStats(itemId, stats);
                 sendEditorConfirm(player, true, true, "food", itemId, "Food global saved");
                 LOGGER.info("[FoodConfig] Player {} saved GLOBAL food config for {}",
                     player.getName().getString(), itemId);
             } else {
-                FoodConfigManager.setSpecificStats(stack, stats);
+                FoodConfigHandler.INSTANCE.setSpecificStats(stack, stats);
                 sendEditorConfirm(player, true, false, "food", getItemId(stack), "Food specific updated");
                 LOGGER.info("[FoodConfig] Player {} updated SPECIFIC food config for {}",
                     player.getName().getString(), getItemId(stack));
@@ -835,11 +909,21 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
                 sendEditorConfirm(player, false, payload.isGlobal(), "fuel", getItemId(stack), "Missing stats");
                 return;
             }
+            if (tag.getBoolean("reset")) {
+                if (payload.isGlobal()) {
+                    FuelConfigHandler.clearGlobalStats(getItemId(stack));
+                    sendEditorConfirm(player, true, true, "fuel", getItemId(stack), "Fuel global reset");
+                } else {
+                    FuelConfigHandler.clearItemSpecificStats(stack);
+                    sendEditorConfirm(player, true, false, "fuel", getItemId(stack), "Fuel reset to defaults");
+                }
+                return;
+            }
 
             CompoundTag toLoad = tag.contains("fuel_stats_component") ? tag.getCompound("fuel_stats_component")
                 : (tag.contains("FuelModStats") ? tag.getCompound("FuelModStats") : tag);
 
-            FuelStats stats = FuelStats.load(toLoad);
+            FuelStats stats = FuelStats.fromTag(toLoad);
 
             // Clamp values for security
             stats.setBurnTime(Math.max(0, Math.min(32000, stats.getBurnTime())));
@@ -851,12 +935,12 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
 
             if (payload.isGlobal()) {
                 String itemId = getItemId(stack);
-                FuelConfigManager.setGlobalStats(itemId, stats);
+                FuelConfigHandler.setGlobalStats(itemId, stats);
                 sendEditorConfirm(player, true, true, "fuel", itemId, "Fuel global saved");
                 LOGGER.info("[FuelConfig] Player {} saved GLOBAL fuel config for {}",
                     player.getName().getString(), itemId);
             } else {
-                FuelConfigManager.setSpecificStats(stack, stats);
+                FuelConfigHandler.INSTANCE.setSpecificStats(stack, stats);
                 sendEditorConfirm(player, true, false, "fuel", getItemId(stack), "Fuel specific updated");
                 LOGGER.info("[FuelConfig] Player {} updated SPECIFIC fuel config for {}",
                     player.getName().getString(), getItemId(stack));
@@ -1007,6 +1091,10 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
         if (delta.contains("AtkRch")) target.setAttackReach(delta.getFloat("AtkRch"));
         if (delta.contains("AtkKB")) target.setAttackKnockback(delta.getFloat("AtkKB"));
         if (delta.contains("DmgBonus")) target.setDamageBonus(delta.getFloat("DmgBonus"));
+        if (delta.contains("SweepRatio")) target.setSweepingRatio(delta.getFloat("SweepRatio"));
+        if (!delta.contains("DmgBonus") && delta.contains("Sweep")) {
+            target.setDamageBonus(delta.getFloat("Sweep"));
+        }
         if (delta.contains("CritCh")) target.setCritChance(delta.getFloat("CritCh"));
         if (delta.contains("CritDmg")) target.setCritDamage(delta.getFloat("CritDmg"));
         if (delta.contains("ArmorShred")) target.setArmorShred(delta.getFloat("ArmorShred"));
@@ -1024,6 +1112,9 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
         if (delta.contains("ClearToolRules")) target.setClearToolRules(delta.getBoolean("ClearToolRules"));
         if (delta.contains("DefaultSpeed")) target.setToolDefaultMiningSpeed(delta.getFloat("DefaultSpeed"));
         if (delta.contains("DamagePerBlock")) target.setToolDamagePerBlock(delta.getInt("DamagePerBlock"));
+        if (delta.contains("AttrMods")) {
+            target.setCustomAttributeModifiers(WeaponStats.readAttributeModifiers(delta.getList("AttrMods", 10)));
+        }
     }
 
     private static void clampRanged(CompoundTag ranged) {
@@ -1067,12 +1158,14 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase implements P
         List<WeaponStats.ToolRuleData> cleaned = new ArrayList<>();
         for (WeaponStats.ToolRuleData rule : stats.toolRules) {
             if (rule == null || rule.isEmpty()) continue;
-            String tag = security.validateItemId(rule.blockTag);
+            String rawTag = rule.blockTag == null ? "" : rule.blockTag;
+            String tag = security.validateTagId(rawTag);
             if (tag == null || tag.isBlank()) continue;
             WeaponStats.ToolRuleData safe = new WeaponStats.ToolRuleData();
             safe.blockTag = tag;
             safe.speed = (float) security.validateToolSpeed(rule.speed);
             safe.correctForDrops = rule.correctForDrops;
+            safe.isTag = rule.isTag || rawTag.startsWith("#");
             cleaned.add(safe);
             if (cleaned.size() >= PacketValidator.MAX_TOOL_RULES) break;
         }

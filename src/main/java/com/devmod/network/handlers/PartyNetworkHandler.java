@@ -1,5 +1,4 @@
 package com.devmod.network.handlers;
-
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
@@ -15,6 +14,9 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.KitManager;
+import com.devmod.endurance.PartyQuestSession;
 import com.devmod.network.ChannelId;
 import com.devmod.network.NetworkHandler;
 import com.devmod.network.PayloadValidation.PayloadLimits;
@@ -28,9 +30,6 @@ import com.devmod.party.PartyManager;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
-import com.devmod.endurance.EnduranceQuestManager;
-import com.devmod.endurance.KitManager;
-import com.devmod.endurance.PartyQuestSession;
 import com.devmod.util.I18n;
 
 import static com.devmod.network.PayloadValidation.validated;

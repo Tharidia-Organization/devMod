@@ -295,8 +295,8 @@ public class HazardValidator {
 
         switch (hazard.type()) {
             case "lava_ring" -> {
-                int inner = (int) params.getOrDefault("innerRadius", 0);
-                int outer = (int) params.getOrDefault("outerRadius", 0);
+                int inner = ((Number) params.getOrDefault("innerRadius", 0)).intValue();
+                int outer = ((Number) params.getOrDefault("outerRadius", 0)).intValue();
                 double area = Math.PI * (outer * outer - inner * inner);
                 return area / maxArea;
             }

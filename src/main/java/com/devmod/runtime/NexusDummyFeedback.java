@@ -1,19 +1,19 @@
 package com.devmod.runtime;
-
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-import com.devmod.DevMod;
-import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
-import com.devmod.config.Config;
-
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+
+import com.devmod.DevMod;
+import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
+import com.devmod.config.Config;
 
 @EventBusSubscriber(modid = DevMod.MODID)
 public class NexusDummyFeedback {

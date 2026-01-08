@@ -16,7 +16,7 @@ import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.combat.ShieldDeflector;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceEventCombat;
 import com.devmod.endurance.EnduranceEventHandler;
@@ -60,7 +60,7 @@ public final class ShieldBlockHandler {
             return incomingDamage;
         }
 
-        ArmorStats stats = ArmorConfigManager.getStats(shield);
+        ArmorStats stats = ArmorConfigHandler.INSTANCE.getStats(shield);
         BlockResult result = calculateBlock(player, source, incomingDamage, stats);
 
         applyParryEffects(player, result, incomingDamage);

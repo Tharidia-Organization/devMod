@@ -387,7 +387,11 @@ public class BossWaveSystem {
                     waveNumber, questId, pending);
                 return pending;
             }
-            LOGGER.warn("[BossDebug] isBossWave: TensionState is NULL for questId={}", questId);
+            if (EnduranceQuestManager.INSTANCE.hasActiveQuest(questId)) {
+                LOGGER.warn("[BossDebug] isBossWave: TensionState is NULL for questId={}", questId);
+            } else {
+                LOGGER.debug("[BossDebug] isBossWave: no tension state for inactive questId={}", questId);
+            }
         }
         // Fallback to legacy fixed interval (every 5 waves)
         boolean fallback = waveNumber > 0 && waveNumber % 5 == 0;

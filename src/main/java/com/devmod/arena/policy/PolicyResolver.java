@@ -27,6 +27,7 @@ import com.devmod.arena.override.OverrideManager;
 import com.devmod.arena.override.TemplateOverride;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.TemplateLoadException;
 import com.devmod.arena.registry.TemplateType;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.devmod.mob.EnhancedMobRequirements;
@@ -208,6 +209,7 @@ public class PolicyResolver implements AutoCloseable {
             MobRequirements mobReqs = context.mobRequirements();
             if (forcedId.startsWith("custom_") && mobReqs != null) {
                 ArenaTemplate dynamicTemplate = generateDynamicTemplate(mobReqs, context.server());
+                registerDynamicTemplate(dynamicTemplate);
                 if (loggingEnabled) {
                     LOGGER.info("[PolicyResolver] Using dynamically generated template '{}' for mob '{}'",
                         dynamicTemplate.id(), mobReqs.mobId());
@@ -993,8 +995,12 @@ public class PolicyResolver implements AutoCloseable {
 
         // Boss-specific spawn
         if (isBoss) {
+            int bossDistance = Math.min(radius - 6, innerRadius + 4);
+            if (bossDistance == meleeDistance) {
+                bossDistance = Math.min(radius - 6, innerRadius + 8);
+            }
             slots.add(new ArenaTemplate.SpawnSlot(
-                new int[]{0, 1, innerRadius},
+                new int[]{0, 1, bossDistance},
                 ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR,
                 List.of("boss", "mob"),
                 new ArenaTemplate.SpawnSlot.Validation(true, 3, 2)
@@ -1002,6 +1008,29 @@ public class PolicyResolver implements AutoCloseable {
         }
 
         return slots;
+    }
+
+    private void registerDynamicTemplate(ArenaTemplate dynamicTemplate) {
+        if (dynamicTemplate == null) {
+            return;
+        }
+        ArenaTemplate existing = templateRegistry.get(dynamicTemplate.id()).orElse(null);
+        if (existing != null && existing.equals(dynamicTemplate)) {
+            return;
+        }
+        try {
+            templateRegistry.load(dynamicTemplate);
+        } catch (TemplateLoadException e) {
+            if (loggingEnabled) {
+                LOGGER.warn("[PolicyResolver] Failed to register dynamic template '{}': {}",
+                    dynamicTemplate.id(), String.join("; ", e.getErrors()));
+            }
+        } catch (RuntimeException e) {
+            if (loggingEnabled) {
+                LOGGER.warn("[PolicyResolver] Failed to register dynamic template '{}': {}",
+                    dynamicTemplate.id(), e.getMessage());
+            }
+        }
     }
 
     /**

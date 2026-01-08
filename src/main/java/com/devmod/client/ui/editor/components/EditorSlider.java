@@ -35,6 +35,10 @@ public class EditorSlider {
     private static final int FOCUS_RING_EXTRA_WIDTH = 4;
     private static final int DEFAULT_MARKER_HALF_WIDTH = 1;
     private static final int DEFAULT_MARKER_HEIGHT = 2;
+    private static final float MANUAL_INPUT_MIN = -1_000_000f;
+    private static final float MANUAL_INPUT_MAX = 1_000_000f;
+    private static final String LABEL_ELLIPSIS = "...";
+    private static final boolean SHOW_SOURCE_BADGE = false;
 
     // ═══════════════════════════════════════════════════════════════
     // CONFIGURATION
@@ -132,7 +136,7 @@ public class EditorSlider {
         if (show && inputField == null) {
             EditorTextField createdField = new EditorTextField(id + "_input", "");
             inputField = createdField;
-            createdField.numeric(true).numericRange(min, max);
+            createdField.numeric(true).numericRange(MANUAL_INPUT_MIN, MANUAL_INPUT_MAX);
             createdField.onChange(text -> {
                 if (!createdField.isValid() || text.isEmpty()) {
                     return;
@@ -141,7 +145,7 @@ public class EditorSlider {
             });
         }
         if (inputField != null) {
-            inputField.numericRange(min, max);
+            inputField.numericRange(MANUAL_INPUT_MIN, MANUAL_INPUT_MAX);
         }
         return this;
     }
@@ -160,6 +164,10 @@ public class EditorSlider {
      * Set a source badge to display the value's origin (DEV/NBT/VANILLA).
      */
     public EditorSlider sourceBadge(SourceBadge badge) {
+        if (!SHOW_SOURCE_BADGE) {
+            this.sourceBadge = null;
+            return this;
+        }
         this.sourceBadge = badge;
         return this;
     }
@@ -219,6 +227,10 @@ public class EditorSlider {
      * Set the source badge source type directly.
      */
     public EditorSlider source(SourceBadge.Source source) {
+        if (!SHOW_SOURCE_BADGE) {
+            this.sourceBadge = null;
+            return this;
+        }
         if (this.sourceBadge == null) {
             this.sourceBadge = new SourceBadge();
         }
@@ -251,8 +263,29 @@ public class EditorSlider {
 
         // Calculate track position using EditorSpacing (per spec Section 4.2)
         String safeLabel = label == null ? "" : label;
-        // Use fixed LABEL_WIDTH for consistent column alignment across all sliders
-        int labelWidth = showLabel ? LABEL_WIDTH : 0;
+        int gap = EditorSpacing.XS;
+        SourceBadge badge = SHOW_SOURCE_BADGE ? sourceBadge : null;
+        int badgeWidth = badge != null ? badge.getWidth() : 0;
+        int infoWidth = infoButton != null ? InfoButton.getSize() : 0;
+        int badgeInfoGap = (badgeWidth > 0 && infoWidth > 0) ? gap : 0;
+        int badgeInfoWidth = badgeWidth + infoWidth + badgeInfoGap;
+        // Use fixed LABEL_WIDTH for consistent column alignment across all sliders.
+        // Truncate label text to keep badges/info within the label column.
+        int labelWidth = showLabel ? Math.max(LABEL_WIDTH, badgeInfoWidth) : 0;
+        int labelGap = (badgeInfoWidth > 0 && !safeLabel.isEmpty()) ? gap : 0;
+        int availableLabelWidth = Math.max(0, labelWidth - badgeInfoWidth - labelGap);
+        String displayLabel = safeLabel;
+        int ellipsisWidth = font.width(LABEL_ELLIPSIS);
+        if (availableLabelWidth <= 0) {
+            displayLabel = "";
+        } else if (font.width(displayLabel) > availableLabelWidth) {
+            int sliceWidth = Math.max(0, availableLabelWidth - ellipsisWidth);
+            displayLabel = font.plainSubstrByWidth(displayLabel, sliceWidth);
+            if (!displayLabel.isEmpty() && availableLabelWidth >= ellipsisWidth) {
+                displayLabel = displayLabel + LABEL_ELLIPSIS;
+            }
+        }
+
         int trackX = x + labelWidth + EditorSpacing.S;
         int reservedRight = showInput ? INPUT_WIDTH + EditorSpacing.S : VALUE_TEXT_RESERVED_WIDTH;
         int trackWidth = width - labelWidth - reservedRight - EditorSpacing.S * 2;
@@ -267,16 +300,24 @@ public class EditorSlider {
         // Label on the left
         if (showLabel) {
             int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
-            graphics.drawString(font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
+            if (!displayLabel.isEmpty()) {
+                graphics.drawString(font, displayLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
+            }
 
             // Track position after label for badges/buttons
-            int afterLabelX = x + font.width(safeLabel) + EditorSpacing.XS;
+            int afterLabelX = x + font.width(displayLabel);
+            if (badgeInfoWidth > 0 && !displayLabel.isEmpty()) {
+                afterLabelX += gap;
+            }
 
             // Source badge (inline after label)
-            if (sourceBadge != null) {
-                int badgeY = y + (HEIGHT - sourceBadge.getHeight()) / 2;
-                sourceBadge.render(graphics, afterLabelX, badgeY, mouseX, mouseY);
-                afterLabelX += sourceBadge.getWidth() + EditorSpacing.XS;
+            if (badge != null) {
+                int badgeY = y + (HEIGHT - badge.getHeight()) / 2;
+                badge.render(graphics, afterLabelX, badgeY, mouseX, mouseY);
+                afterLabelX += badge.getWidth();
+                if (infoButton != null) {
+                    afterLabelX += gap;
+                }
             }
 
             // Info button (after source badge or label)
@@ -292,7 +333,8 @@ public class EditorSlider {
 
         // Filled portion
         float ratio = (value - min) / (max - min);
-        int filledWidth = (int) (trackWidth * ratio);
+        float clampedRatio = Mth.clamp(ratio, 0f, 1f);
+        int filledWidth = (int) (trackWidth * clampedRatio);
         int fillColor = enabled ? trackColor : DesignTokens.withAlpha(trackColor, 0x80);
         graphics.fill(trackX, trackY, trackX + filledWidth, trackY + TRACK_HEIGHT, fillColor);
 
@@ -439,38 +481,41 @@ public class EditorSlider {
 
         if (bounds.contains(mouseX, mouseY) || focused) {
             float delta = (float) scrollY * step;
-            setValue(value + delta);
+            setValueClamped(value + delta);
             return true;
         }
         return false;
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (showInput && inputField != null && inputField.isFocused()) {
+            return inputField.keyPressed(keyCode, scanCode, modifiers);
+        }
         if (!focused || !enabled) return false;
 
         // Left/Right arrows
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT) {
-            setValue(value - step);
+            setValueClamped(value - step);
             return true;
         }
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT) {
-            setValue(value + step);
+            setValueClamped(value + step);
             return true;
         }
 
         // Home/End
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_HOME) {
-            setValue(min);
+            setValueClamped(min);
             return true;
         }
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_END) {
-            setValue(max);
+            setValueClamped(max);
             return true;
         }
 
         // Backspace to reset to default
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_BACKSPACE) {
-            setValue(defaultValue);
+            setValueClamped(defaultValue);
             return true;
         }
 
@@ -501,9 +546,8 @@ public class EditorSlider {
 
         // Only update and play sound if value changed
         if (newValue != this.value) {
-            this.value = Mth.clamp(newValue, min, max);
+            setValueClamped(newValue);
             EditorSounds.playSliderTick();
-            onChange.accept(this.value);
         }
     }
 
@@ -528,7 +572,7 @@ public class EditorSlider {
     }
 
     public void setValue(float value) {
-        float newValue = Mth.clamp(value, min, max);
+        float newValue = clampGuardrail(value);
         if (newValue != this.value) {
             this.value = newValue;
             onChange.accept(newValue);
@@ -542,9 +586,9 @@ public class EditorSlider {
     public void setMin(float min) {
         this.min = min;
         if (inputField != null) {
-            inputField.numericRange(min, max);
+            inputField.numericRange(MANUAL_INPUT_MIN, MANUAL_INPUT_MAX);
         }
-        setValue(value); // Re-clamp
+        setValue(value);
     }
 
     public float getMax() {
@@ -554,9 +598,9 @@ public class EditorSlider {
     public void setMax(float max) {
         this.max = max;
         if (inputField != null) {
-            inputField.numericRange(min, max);
+            inputField.numericRange(MANUAL_INPUT_MIN, MANUAL_INPUT_MAX);
         }
-        setValue(value); // Re-clamp
+        setValue(value);
     }
 
     public float getStep() {
@@ -610,6 +654,17 @@ public class EditorSlider {
      * Reset to default value.
      */
     public void reset() {
-        setValue(defaultValue);
+        setValueClamped(defaultValue);
+    }
+
+    private void setValueClamped(float value) {
+        setValue(Mth.clamp(value, min, max));
+    }
+
+    private float clampGuardrail(float value) {
+        if (!Float.isFinite(value)) {
+            return this.value;
+        }
+        return Mth.clamp(value, MANUAL_INPUT_MIN, MANUAL_INPUT_MAX);
     }
 }

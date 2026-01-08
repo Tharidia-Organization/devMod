@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -39,17 +40,15 @@ public final class AttributeListSection implements EditorSection.CustomSection {
     private static final String EMPTY_STATE_TEXT = "No attributes match this filter";
     private static final int GROUP_HEADER_HEIGHT = 14;
     private static final AttributeGroup[] GROUP_ORDER = new AttributeGroup[] {
-        AttributeGroup.COMBAT,
-        AttributeGroup.DEFENSE,
-        AttributeGroup.MOVEMENT,
-        AttributeGroup.OTHER
+        AttributeGroup.VANILLA,
+        AttributeGroup.DEVMOD,
+        AttributeGroup.MODDED
     };
 
     private enum AttributeGroup {
-        COMBAT("Combat"),
-        DEFENSE("Defense"),
-        MOVEMENT("Movement"),
-        OTHER("Other");
+        VANILLA("Vanilla"),
+        DEVMOD("DevMod"),
+        MODDED("Modded");
 
         private final String label;
 
@@ -95,19 +94,31 @@ public final class AttributeListSection implements EditorSection.CustomSection {
             Objects.requireNonNull(ItemAttributeModifiers.EMPTY)
         );
 
-        // Add standard vanilla attributes with default values
-        addVanillaAttribute(Attributes.ATTACK_DAMAGE, "Attack Damage", 1.0, 0, 50, DesignTokens.SliderColors.DAMAGE, mods);
-        addVanillaAttribute(Attributes.ATTACK_SPEED, "Attack Speed", 4.0, 0, 10, DesignTokens.SliderColors.SPEED, mods);
-        addVanillaAttribute(Attributes.ARMOR, "Armor", 0.0, 0, 30, DesignTokens.SliderColors.DEFENSE, mods);
-        addVanillaAttribute(Attributes.ARMOR_TOUGHNESS, "Armor Toughness", 0.0, 0, 20, DesignTokens.SliderColors.DEFENSE, mods);
-        addVanillaAttribute(Attributes.KNOCKBACK_RESISTANCE, "Knockback Resistance", 0.0, 0, 1, DesignTokens.SliderColors.NEUTRAL, mods);
-        addVanillaAttribute(Attributes.ATTACK_KNOCKBACK, "Attack Knockback", 0.0, 0, 5, DesignTokens.SliderColors.DAMAGE, mods);
-        addVanillaAttribute(Attributes.MOVEMENT_SPEED, "Movement Speed", 0.1, 0, 1, DesignTokens.SliderColors.SPEED, mods);
+        for (var entry : BuiltInRegistries.ATTRIBUTE.entrySet()) {
+            ResourceKey<Attribute> key = entry.getKey();
+            ResourceLocation id = key.location();
+            Attribute attr = entry.getValue();
+            Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.getHolder(key).orElse(null);
+            if (holder == null || attr == null) {
+                continue;
+            }
+            addAttribute(holder, id, mods);
+        }
+
+        entries.sort((a, b) -> {
+            int groupCompare = Integer.compare(getGroupFor(a).ordinal(), getGroupFor(b).ordinal());
+            if (groupCompare != 0) return groupCompare;
+            int nameCompare = a.displayName.compareToIgnoreCase(b.displayName);
+            if (nameCompare != 0) return nameCompare;
+            return a.id.toString().compareToIgnoreCase(b.id.toString());
+        });
         updateFilter();
     }
 
-    private void addVanillaAttribute(Holder<Attribute> attribute, String displayName, double defaultValue,
-                                      double min, double max, int color, ItemAttributeModifiers mods) {
+    private void addAttribute(Holder<Attribute> attribute, ResourceLocation id, ItemAttributeModifiers mods) {
+        String displayName = resolveDisplayName(attribute, id);
+        double defaultValue = attribute.value().getDefaultValue();
+        SliderConfig sliderConfig = resolveSliderConfig(attribute, defaultValue);
         // Find current value from item
         double currentValue = defaultValue;
         boolean hasModifier = false;
@@ -115,23 +126,23 @@ public final class AttributeListSection implements EditorSection.CustomSection {
         for (ItemAttributeModifiers.Entry entry : mods.modifiers()) {
             if (entry.attribute().equals(attribute)) {
                 AttributeModifier mod = entry.modifier();
+                hasModifier = true;
                 if (mod.operation() == AttributeModifier.Operation.ADD_VALUE) {
-                    currentValue = defaultValue + mod.amount();
-                    hasModifier = true;
-                    break;
+                    currentValue += mod.amount();
                 }
             }
         }
 
         // Create slider
-        String sliderId = "attr_" + getAttributeKey(attribute);
-        EditorSlider slider = new EditorSlider(sliderId, displayName, (float) min, (float) max, (float) currentValue)
-            .step(getStepForAttribute(attribute))
-            .format(getFormatForAttribute(attribute))
-            .suffix(getSuffixForAttribute(attribute))
-            .trackColor(color)
+        String sliderId = "attr_" + getAttributePath(attribute);
+        EditorSlider slider = new EditorSlider(sliderId, displayName,
+            (float) sliderConfig.min(), (float) sliderConfig.max(), (float) currentValue)
+            .step(sliderConfig.step())
+            .format(sliderConfig.format())
+            .suffix(sliderConfig.suffix())
+            .trackColor(sliderConfig.color())
             .showInput(true)
-            .info(getInfoForAttribute(attribute))
+            .info(buildInfoText(attribute, id))
             .onChange(value -> {
                 updateAttribute(attribute, value, defaultValue);
                 if (onModify != null) {
@@ -139,7 +150,7 @@ public final class AttributeListSection implements EditorSection.CustomSection {
                 }
             });
 
-        entries.add(new AttributeEntry(attribute, displayName, slider, hasModifier, defaultValue));
+        entries.add(new AttributeEntry(attribute, id, displayName, slider, hasModifier, defaultValue));
     }
 
     private void onSearchChanged(String text) {
@@ -163,22 +174,19 @@ public final class AttributeListSection implements EditorSection.CustomSection {
 
     private boolean matchesFilter(AttributeEntry entry, String query) {
         String name = entry.displayName.toLowerCase(Locale.ROOT);
-        String key = getAttributeKey(entry.attribute);
-        return name.contains(query) || key.toLowerCase(Locale.ROOT).contains(query);
+        String key = entry.id.toString().toLowerCase(Locale.ROOT);
+        return name.contains(query) || key.contains(query);
     }
 
     private AttributeGroup getGroupFor(AttributeEntry entry) {
-        String key = getAttributeKey(entry.attribute);
-        if (key.contains("attack_damage") || key.contains("attack_speed") || key.contains("attack_knockback")) {
-            return AttributeGroup.COMBAT;
+        String namespace = entry.id.getNamespace();
+        if ("minecraft".equals(namespace)) {
+            return AttributeGroup.VANILLA;
         }
-        if (key.contains("armor") || key.contains("knockback_resistance")) {
-            return AttributeGroup.DEFENSE;
+        if ("devmod".equals(namespace)) {
+            return AttributeGroup.DEVMOD;
         }
-        if (key.contains("movement_speed")) {
-            return AttributeGroup.MOVEMENT;
-        }
-        return AttributeGroup.OTHER;
+        return AttributeGroup.MODDED;
     }
 
     private int getGroupedHeight() {
@@ -197,38 +205,57 @@ public final class AttributeListSection implements EditorSection.CustomSection {
         return height;
     }
 
-    private String getAttributeKey(Holder<Attribute> attribute) {
+    private String getAttributePath(Holder<Attribute> attribute) {
         ResourceLocation key = BuiltInRegistries.ATTRIBUTE.getKey(Objects.requireNonNull(attribute.value()));
         return key != null ? key.getPath() : "unknown";
     }
 
-    private float getStepForAttribute(Holder<Attribute> attribute) {
-        if (attribute.equals(Attributes.KNOCKBACK_RESISTANCE) || attribute.equals(Attributes.MOVEMENT_SPEED)) {
-            return 0.01f;
+    private SliderConfig resolveSliderConfig(Holder<Attribute> attribute, double defaultValue) {
+        if (attribute.equals(Attributes.ATTACK_DAMAGE)) {
+            return new SliderConfig(0, 50, 0.5f, "%.1f", " HP", DesignTokens.SliderColors.DAMAGE);
         }
         if (attribute.equals(Attributes.ATTACK_SPEED)) {
-            return 0.1f;
+            return new SliderConfig(0, 10, 0.1f, "%.1f", "/s", DesignTokens.SliderColors.SPEED);
         }
-        return 0.5f;
+        if (attribute.equals(Attributes.ARMOR)) {
+            return new SliderConfig(0, 30, 0.5f, "%.1f", " pts", DesignTokens.SliderColors.DEFENSE);
+        }
+        if (attribute.equals(Attributes.ARMOR_TOUGHNESS)) {
+            return new SliderConfig(0, 20, 0.5f, "%.1f", " pts", DesignTokens.SliderColors.DEFENSE);
+        }
+        if (attribute.equals(Attributes.KNOCKBACK_RESISTANCE)) {
+            return new SliderConfig(0, 1, 0.01f, "%.2f", "%", DesignTokens.SliderColors.NEUTRAL);
+        }
+        if (attribute.equals(Attributes.ATTACK_KNOCKBACK)) {
+            return new SliderConfig(0, 5, 0.1f, "%.1f", " HP", DesignTokens.SliderColors.DAMAGE);
+        }
+        if (attribute.equals(Attributes.MOVEMENT_SPEED)) {
+            return new SliderConfig(0, 1, 0.01f, "%.2f", " m/s", DesignTokens.SliderColors.SPEED);
+        }
+        double min = defaultValue - 10.0;
+        double max = defaultValue + 10.0;
+        if (Math.abs(defaultValue) < 1.0) {
+            min = -1.0;
+            max = 1.0;
+        }
+        return new SliderConfig(min, max, 0.1f, "%.2f", "", DesignTokens.SliderColors.NEUTRAL);
     }
 
-    private String getFormatForAttribute(Holder<Attribute> attribute) {
-        if (attribute.equals(Attributes.KNOCKBACK_RESISTANCE) || attribute.equals(Attributes.MOVEMENT_SPEED)) {
-            return "%.2f";
+    private String resolveDisplayName(Holder<Attribute> attribute, ResourceLocation id) {
+        String translated = net.minecraft.client.resources.language.I18n.get(attribute.value().getDescriptionId());
+        if (translated != null && !translated.isBlank() && !translated.equals(attribute.value().getDescriptionId())) {
+            return translated;
         }
-        if (attribute.equals(Attributes.ATTACK_SPEED)) {
-            return "%.1f";
-        }
-        return "%.1f";
+        return id.getPath().replace('_', ' ');
     }
 
-    private String getSuffixForAttribute(Holder<Attribute> attribute) {
-        if (attribute.equals(Attributes.ATTACK_SPEED)) return "/s";
-        if (attribute.equals(Attributes.KNOCKBACK_RESISTANCE)) return "%";
-        if (attribute.equals(Attributes.MOVEMENT_SPEED)) return " m/s";
-        if (attribute.equals(Attributes.ARMOR) || attribute.equals(Attributes.ARMOR_TOUGHNESS)) return " pts";
-        if (attribute.equals(Attributes.ATTACK_DAMAGE) || attribute.equals(Attributes.ATTACK_KNOCKBACK)) return " HP";
-        return "";
+    private String buildInfoText(Holder<Attribute> attribute, ResourceLocation id) {
+        String info = getInfoForAttribute(attribute);
+        String idLine = "ID: " + id;
+        if (info.isBlank()) {
+            return idLine;
+        }
+        return info + "\n" + idLine;
     }
 
     private String getInfoForAttribute(Holder<Attribute> attribute) {
@@ -275,7 +302,7 @@ public final class AttributeListSection implements EditorSection.CustomSection {
         double diff = newValue - defaultValue;
         if (Math.abs(diff) > 0.001) {
             ResourceLocation modId = Objects.requireNonNull(
-                ResourceLocation.fromNamespaceAndPath("devmod", "editor_" + getAttributeKey(attribute)));
+                ResourceLocation.fromNamespaceAndPath("devmod", "editor_" + getAttributePath(attribute)));
             AttributeModifier modifier = new AttributeModifier(
                 modId,
                 diff,
@@ -438,9 +465,19 @@ public final class AttributeListSection implements EditorSection.CustomSection {
      */
     private record AttributeEntry(
         Holder<Attribute> attribute,
+        ResourceLocation id,
         String displayName,
         EditorSlider slider,
         boolean hasModifier,
         double defaultValue
+    ) {}
+
+    private record SliderConfig(
+        double min,
+        double max,
+        float step,
+        String format,
+        String suffix,
+        int color
     ) {}
 }

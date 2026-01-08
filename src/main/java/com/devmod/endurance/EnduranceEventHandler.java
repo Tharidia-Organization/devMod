@@ -1001,6 +1001,18 @@ public class EnduranceEventHandler {
                 EnduranceQuestManager.INSTANCE.getActiveSession(player);
 
             if (session.isPresent()) {
+                if (session.get().isLoadingProtection()) {
+                    if (event.getNewDamage() > 0f) {
+                        LOGGER.debug("[EnduranceQuest] Blocked damage during loading for {} (source={}, damage={}, pos={}, dim={})",
+                            player.getName().getString(),
+                            event.getSource().getMsgId(),
+                            event.getNewDamage(),
+                            player.blockPosition(),
+                            player.level().dimension().location());
+                    }
+                    event.setNewDamage(0f);
+                    return;
+                }
                 // IMPORTANT: Use getNewDamage() to respect armor reduction!
                 // getOriginalDamage() returns pre-armor damage which would bypass armor
                 float modifiedDamage = EnduranceEventCombat.handleDamagePre(player, event.getNewDamage());
@@ -1035,6 +1047,28 @@ public class EnduranceEventHandler {
 
         // Check if a player in a quest died
         if (entity instanceof ServerPlayer player) {
+            var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player);
+            String damageType = event.getSource() != null ? event.getSource().type().msgId() : "unknown";
+            if (sessionOpt.isPresent()) {
+                var session = sessionOpt.get();
+                LOGGER.info("[EnduranceQuest][DeathEvent] player={}, damageType={}, dimension={}, questState={}, awaitingRespawn={}, respawnRequested={}, wave={}, questId={}, instanceId={}",
+                    player.getName().getString(),
+                    damageType,
+                    player.level().dimension().location(),
+                    session.getQuest().getState(),
+                    session.isAwaitingRespawnChoice(),
+                    session.isRespawnRequested(),
+                    session.getQuest().getCurrentWave(),
+                    session.getQuest().getQuestId(),
+                    session.getInstanceId());
+            } else {
+                boolean inInstance = com.devmod.runtime.InstanceManager.INSTANCE.isPlayerInInstance(player.getUUID());
+                LOGGER.info("[EnduranceQuest][DeathEvent] player={}, damageType={}, dimension={}, hasSession=false, inInstance={}",
+                    player.getName().getString(),
+                    damageType,
+                    player.level().dimension().location(),
+                    inInstance);
+            }
             EnduranceEventCombat.handlePlayerDeath(player);
         }
     }

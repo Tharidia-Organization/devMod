@@ -21,7 +21,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
 import com.devmod.client.ui.unified.SettingsPage;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.stats.WeaponStats;
 
 public class CombatSettingsPage implements SettingsPage {
@@ -101,7 +101,7 @@ public class CombatSettingsPage implements SettingsPage {
                 currentY += ROW_HEIGHT;
 
                 // Get weapon stats
-                WeaponStats stats = WeaponConfigManager.getStats(heldItem);
+                WeaponStats stats = WeaponConfigHandler.INSTANCE.getStats(heldItem);
 
                 // Stats display - body part colors
                 int headColor = DesignTokens.BodyDiagram.HEAD;   // Red for head

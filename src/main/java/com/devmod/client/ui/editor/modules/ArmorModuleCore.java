@@ -15,7 +15,7 @@ import net.minecraft.world.item.component.CustomData;
 import com.devmod.DevMod;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.components.ArmorComponents;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.stats.ArmorStats;
 
 public class ArmorModuleCore {
@@ -50,7 +50,7 @@ public class ArmorModuleCore {
         // Reset source tracking
         hasComponentData = false;
         hasNbtData = false;
-        hasGlobalConfig = ArmorConfigManager.hasGlobalConfig(item.getItem());
+        hasGlobalConfig = ArmorConfigHandler.hasGlobalConfig(item.getItem());
 
         // Prefer component storage; fall back to legacy CustomData
         CompoundTag componentTag = null;
@@ -71,7 +71,7 @@ public class ArmorModuleCore {
             item.has(customDataType));
 
         if (componentTag != null && !componentTag.isEmpty()) {
-            stats = ArmorStats.load(componentTag.copy());
+            stats = ArmorStats.fromTag(componentTag.copy());
             hasComponentData = true;
             originalStats = stats.copy();
             return;
@@ -84,7 +84,7 @@ public class ArmorModuleCore {
         CompoundTag tag = Objects.requireNonNull(customData.copyTag(), "custom data tag cannot be null");
 
         if (tag.contains(NBT_KEY)) {
-            stats = ArmorStats.load(tag.getCompound(NBT_KEY));
+            stats = ArmorStats.fromTag(tag.getCompound(NBT_KEY));
             hasNbtData = true;
         } else {
             stats = new ArmorStats();
@@ -221,13 +221,13 @@ public class ArmorModuleCore {
         if (tag.contains(NBT_KEY)) {
             return loadStatsFromTag(tag);
         }
-        ArmorStats global = ArmorConfigManager.getGlobalStats(item.getItem());
+        ArmorStats global = ArmorConfigHandler.getItemGlobalStats(item.getItem());
         return global == null ? new ArmorStats() : global;
     }
 
     ArmorStats loadStatsFromTag(CompoundTag tag) {
         if (tag.contains(NBT_KEY)) {
-            return ArmorStats.load(tag.getCompound(NBT_KEY));
+            return ArmorStats.fromTag(tag.getCompound(NBT_KEY));
         }
         return new ArmorStats();
     }

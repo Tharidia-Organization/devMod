@@ -181,7 +181,7 @@ public class FoodModuleUI {
         FoodStats stats = core.getStats();
         dietSliders.clear();
 
-        for (NutritionCategory cat : NutritionCategory.VALUES) {
+        for (NutritionCategory cat : NutritionCategory.ALL) {
             EditorSlider slider = new EditorSlider(
                 "diet_" + cat.key,
                 cat.displayName,
@@ -236,7 +236,7 @@ public class FoodModuleUI {
         sections.add(new SimpleHeaderSection("diet-header", "Nutrition Profile"));
 
         // Add slider for each category
-        for (NutritionCategory cat : NutritionCategory.VALUES) {
+        for (NutritionCategory cat : NutritionCategory.ALL) {
             EditorSlider slider = dietSliders.get(cat);
             if (slider != null) {
                 sections.add(new SliderSectionAdapter(slider));
@@ -246,9 +246,9 @@ public class FoodModuleUI {
         // Add info note
         FoodStats stats = core.getStats();
         if (stats.hasNutritionProfile()) {
-            int count = NutritionCategory.VALUES.length;
+            int count = NutritionCategory.COUNT;
             int configured = 0;
-            for (NutritionCategory cat : NutritionCategory.VALUES) {
+            for (NutritionCategory cat : NutritionCategory.ALL) {
                 if (stats.getNutritionValue(cat) > 0) configured++;
             }
             sections.add(new TextNoteSection("diet-status",
@@ -358,7 +358,7 @@ public class FoodModuleUI {
         if (isFastFoodToggle != null) isFastFoodToggle.setValue(stats.isFastFood());
 
         // Update Easy-Diet sliders (convert 0.0-1.0 to 0-100 for display)
-        for (NutritionCategory cat : NutritionCategory.VALUES) {
+        for (NutritionCategory cat : NutritionCategory.ALL) {
             EditorSlider slider = dietSliders.get(cat);
             if (slider != null) {
                 float value = stats.getNutritionValue(cat);

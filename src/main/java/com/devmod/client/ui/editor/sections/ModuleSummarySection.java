@@ -22,6 +22,7 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
     private static final int PADDING = 8;
     private static final int BADGE_WIDTH = 32;
     private static final int BADGE_HEIGHT = 12;
+    private static final boolean SHOW_SOURCE_BADGE = false;
 
     private final String id;
     private final String title;
@@ -83,7 +84,7 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
 
             // Source badge if present - use local capture for null safety
             String source = stat.source;
-            if (source != null) {
+            if (SHOW_SOURCE_BADGE && source != null) {
                 valueX -= BADGE_WIDTH + 4;
                 int badgeX = x + w - PADDING - BADGE_WIDTH;
                 int badgeY = statY + 2;

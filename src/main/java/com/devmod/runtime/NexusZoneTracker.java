@@ -1,5 +1,4 @@
 package com.devmod.runtime;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -9,8 +8,6 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
-import com.devmod.config.Config;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -18,6 +15,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+
+import com.devmod.config.Config;
 
 public final class NexusZoneTracker {
     private static final Map<UUID, ZoneState> STATES = new HashMap<>();

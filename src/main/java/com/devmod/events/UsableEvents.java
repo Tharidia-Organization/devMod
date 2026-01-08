@@ -17,7 +17,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 
 import com.devmod.DevMod;
-import com.devmod.config.UsableConfigManager;
+import com.devmod.config.handler.impl.UsableConfigHandler;
 import com.devmod.stats.UsableStats;
 
 @EventBusSubscriber(modid = DevMod.MODID)
@@ -33,7 +33,7 @@ public class UsableEvents {
         ItemStack stack = event.getItem();
         if (stack.isEmpty()) return;
 
-        UsableStats stats = UsableConfigManager.getStats(stack);
+        UsableStats stats = UsableConfigHandler.INSTANCE.getStats(stack);
         if (stats == null || stats.isDefault()) return;
 
         // Only modify if useDuration is explicitly set
@@ -55,7 +55,7 @@ public class UsableEvents {
 
         if (!(event.getEntity() instanceof Player player)) return;
 
-        UsableStats stats = UsableConfigManager.getStats(stack);
+        UsableStats stats = UsableConfigHandler.INSTANCE.getStats(stack);
         if (stats == null || stats.isDefault()) return;
 
         // Apply cooldown if set

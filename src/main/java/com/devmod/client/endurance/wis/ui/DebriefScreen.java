@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 import javax.annotation.Nullable;
 
@@ -16,11 +17,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.endurance.ClientPartyStatsCache;
 import com.devmod.client.endurance.wis.CombatEvent;
@@ -30,6 +33,11 @@ import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.ui.BaseDevModScreen;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.PartyWaveStats;
+import com.devmod.mailbox.client.ClientTicketCache;
+import com.devmod.mailbox.network.payload.TicketCreatePayload;
+import com.devmod.mailbox.ticket.TicketCategory;
+import com.devmod.mailbox.ticket.TicketPriority;
+import com.devmod.mailbox.ticket.TicketStatus;
 import com.devmod.util.I18n;
 
 /**
@@ -49,8 +57,16 @@ public class DebriefScreen extends BaseDevModScreen {
     private static final String SCREEN_ID = "wave_debrief";
 
     // Layout
-    private static final int TAB_HEIGHT = 32;
-    private static final int CONTENT_PADDING = 16;
+    private static final int PANEL_MAX_WIDTH = 960;
+    private static final int PANEL_MAX_HEIGHT = 640;
+    private static final int PANEL_MARGIN = DesignTokens.Space._8;
+    private static final int PANEL_PADDING = DesignTokens.Space._7;
+    private static final int TAB_HEIGHT = DesignTokens.Component.TAB_HEIGHT;
+    private static final int TAB_GAP = DesignTokens.Component.TAB_GAP;
+    private static final int FOOTER_HEIGHT = DesignTokens.Space._8;
+    private static final int HEADER_GAP = DesignTokens.Space._4;
+    private static final int ACTION_BUTTON_WIDTH = 140;
+    private static final int ACTION_BUTTON_GAP = DesignTokens.Space._4;
 
     // Colors
     private static final int COLOR_BG = DesignTokens.Bg.LEVEL_0;
@@ -63,18 +79,18 @@ public class DebriefScreen extends BaseDevModScreen {
 
     // Tabs
     private enum Tab {
-        OVERVIEW("Overview", "O"),
-        COMBAT("Combat", "C"),
-        SPATIAL("Spatial", "S"),
-        TIMELINE("Timeline", "T"),
-        PARTY("Party", "P"),
-        REPORT("Report", "R");
+        OVERVIEW("devmod.endurance.debrief.tab.overview", "O"),
+        COMBAT("devmod.endurance.debrief.tab.combat", "C"),
+        SPATIAL("devmod.endurance.debrief.tab.spatial", "S"),
+        TIMELINE("devmod.endurance.debrief.tab.timeline", "T"),
+        PARTY("devmod.endurance.debrief.tab.party", "P"),
+        REPORT("devmod.endurance.debrief.tab.report", "R");
 
-        final String label;
+        final String labelKey;
         final String icon;
 
-        Tab(String label, String icon) {
-            this.label = label;
+        Tab(String labelKey, String icon) {
+            this.labelKey = labelKey;
             this.icon = icon;
         }
     }
@@ -87,6 +103,8 @@ public class DebriefScreen extends BaseDevModScreen {
     private final List<Button> tabButtons = new ArrayList<>();
     private Button continueButton;
     private Button submitTicketButton;
+    @Nullable private EditBox ticketSubjectField;
+    @Nullable private EditBox ticketNotesField;
     // Timeline navigation buttons (UX: visual controls for accessibility)
     private Button timelinePrevButton;
     private Button timelineNextButton;
@@ -119,6 +137,25 @@ public class DebriefScreen extends BaseDevModScreen {
     // Gson for proper JSON serialization (Fix #8)
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
+    // Layout state
+    private int panelX;
+    private int panelY;
+    private int panelWidth;
+    private int panelHeight;
+    private int headerHeight;
+    private int tabStartX;
+    private int tabY;
+    private int tabWidth;
+    private int contentX;
+    private int contentY;
+    private int contentWidth;
+    private int contentHeight;
+    private int footerY;
+
+    // Ticket inputs
+    private static final int TICKET_SUBJECT_MAX = 120;
+    private static final int TICKET_NOTES_MAX = 600;
+
     public DebriefScreen(WaveTelemetryCollector collector) {
         super(I18n.screenTitle("wave_debrief"), SCREEN_ID, "endurance");
         this.collector = collector;
@@ -127,27 +164,29 @@ public class DebriefScreen extends BaseDevModScreen {
 
     @Override
     protected void initContent() {
-        int centerX = this.width / 2;
-        int bottomY = this.height - 40;
+        updateLayout();
+        Font font = Minecraft.getInstance().font;
+        int centerX = panelX + panelWidth / 2;
+        int actionButtonHeight = DesignTokens.Component.BUTTON_HEIGHT_MD;
+        int actionButtonY = footerY + Math.max(0, (FOOTER_HEIGHT - actionButtonHeight) / 2);
 
         // Tab buttons
         tabButtons.clear();
-        int tabWidth = 80;
-        int tabSpacing = 4;
-        int totalTabWidth = Tab.values().length * tabWidth + (Tab.values().length - 1) * tabSpacing;
-        int tabStartX = (this.width - totalTabWidth) / 2;
+        int totalTabWidth = Tab.values().length * tabWidth + (Tab.values().length - 1) * TAB_GAP;
+        tabStartX = panelX + (panelWidth - totalTabWidth) / 2;
 
         for (int i = 0; i < Tab.values().length; i++) {
             Tab tab = Tab.values()[i];
-            int tabX = tabStartX + i * (tabWidth + tabSpacing);
+            int tabX = tabStartX + i * (tabWidth + TAB_GAP);
             Button tabBtn = Button.builder(
-                Objects.requireNonNull(Component.literal(tab.icon + " " + tab.label)),
+                Objects.requireNonNull(Component.literal(tab.icon + " ")
+                    .append(Component.translatable(tab.labelKey))),
                 btn -> {
                     activeTab = tab;
                     scrollOffset = 0;
                     updateButtonVisibility();
                 })
-                .bounds(tabX, 50, tabWidth, TAB_HEIGHT)
+                .bounds(tabX, tabY, tabWidth, TAB_HEIGHT)
                 .build();
             tabButtons.add(tabBtn);
             addRenderableWidget(Objects.requireNonNull(tabBtn));
@@ -155,44 +194,44 @@ public class DebriefScreen extends BaseDevModScreen {
 
         // Continue button
         continueButton = Button.builder(
-            Objects.requireNonNull(Component.literal("Continue")),
+            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.action.continue")),
             btn -> {
                 WaveIntelligenceManager.INSTANCE.skipDebrief();
                 onClose();
             })
-            .bounds(centerX - 60, bottomY, 120, 24)
+            .bounds(centerX - ACTION_BUTTON_WIDTH / 2, actionButtonY, ACTION_BUTTON_WIDTH, actionButtonHeight)
             .build();
         addRenderableWidget(Objects.requireNonNull(continueButton));
 
         // Submit ticket button (only in Report tab)
         submitTicketButton = Button.builder(
-            Objects.requireNonNull(Component.literal("Submit Ticket")),
+            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.action.submit_ticket")),
             btn -> submitTicket())
-            .bounds(centerX - 80, bottomY - 30, 160, 24)
+            .bounds(centerX - ACTION_BUTTON_WIDTH / 2, actionButtonY, ACTION_BUTTON_WIDTH, actionButtonHeight)
             .build();
         submitTicketButton.visible = false;
         addRenderableWidget(Objects.requireNonNull(submitTicketButton));
 
         // Timeline navigation buttons (UX: accessible visual controls)
         // UX Q3: Position adjacent with small gap (no 140px hole)
-        int timelineNavY = this.height - 115;
+        int timelineNavY = contentY + contentHeight - actionButtonHeight - DesignTokens.Space._4;
         int buttonWidth = 60;
-        int buttonGap = 10;
+        int buttonGap = DesignTokens.Space._3;
         timelinePrevButton = Button.builder(
-            Objects.requireNonNull(Component.literal("◀ Prev")),
+            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.action.prev")),
             btn -> {
                 if (timelinePage > 0) {
                     timelinePage--;
                     updateTimelineButtonState(); // UX Q8: Update enabled state
                 }
             })
-            .bounds(centerX - buttonWidth - buttonGap / 2, timelineNavY, buttonWidth, 20)
+            .bounds(centerX - buttonWidth - buttonGap / 2, timelineNavY, buttonWidth, actionButtonHeight - 4)
             .build();
         timelinePrevButton.visible = false;
         addRenderableWidget(Objects.requireNonNull(timelinePrevButton));
 
         timelineNextButton = Button.builder(
-            Objects.requireNonNull(Component.literal("Next ▶")),
+            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.action.next")),
             btn -> {
                 List<CombatEvent> events = collector.getEvents();
                 int totalPages = Math.max(1, (events.size() + TIMELINE_PAGE_SIZE - 1) / TIMELINE_PAGE_SIZE);
@@ -201,20 +240,78 @@ public class DebriefScreen extends BaseDevModScreen {
                     updateTimelineButtonState(); // UX Q8: Update enabled state
                 }
             })
-            .bounds(centerX + buttonGap / 2, timelineNavY, buttonWidth, 20)
+            .bounds(centerX + buttonGap / 2, timelineNavY, buttonWidth, actionButtonHeight - 4)
             .build();
         timelineNextButton.visible = false;
         addRenderableWidget(Objects.requireNonNull(timelineNextButton));
 
+        // Ticket fields (report tab)
+        EditBox subjectField = new EditBox(font, contentX, contentY, contentWidth, 20,
+            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.report.subject")));
+        subjectField.setMaxLength(TICKET_SUBJECT_MAX);
+        subjectField.setHint(Objects.requireNonNull(Component.translatable(
+            "devmod.endurance.debrief.report.subject.placeholder")));
+        subjectField.setValue(Objects.requireNonNull(
+            Component.translatable("devmod.endurance.debrief.report.subject.default", waveNumber)).getString());
+        subjectField.visible = false;
+        addRenderableWidget(subjectField);
+        ticketSubjectField = subjectField;
+
+        EditBox notesField = new EditBox(font, contentX, contentY, contentWidth, 40,
+            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.report.notes")));
+        notesField.setMaxLength(TICKET_NOTES_MAX);
+        notesField.setHint(Objects.requireNonNull(Component.translatable(
+            "devmod.endurance.debrief.report.notes.placeholder")));
+        notesField.visible = false;
+        addRenderableWidget(notesField);
+        ticketNotesField = notesField;
+
         updateButtonVisibility();
     }
 
+    private void updateLayout() {
+        Font font = Minecraft.getInstance().font;
+        int margin = PANEL_MARGIN;
+        panelWidth = Math.min(PANEL_MAX_WIDTH, Math.max(DesignTokens.Component.MODAL_MIN_WIDTH, width - margin * 2));
+        panelHeight = Math.min(PANEL_MAX_HEIGHT, height - margin * 2);
+        panelX = (width - panelWidth) / 2;
+        panelY = (height - panelHeight) / 2;
+
+        headerHeight = font.lineHeight * 2 + HEADER_GAP;
+        tabY = panelY + PANEL_PADDING + headerHeight + HEADER_GAP;
+        footerY = panelY + panelHeight - FOOTER_HEIGHT;
+
+        contentX = panelX + PANEL_PADDING;
+        contentY = tabY + TAB_HEIGHT + HEADER_GAP;
+        int contentBottom = footerY - HEADER_GAP;
+        contentWidth = panelWidth - PANEL_PADDING * 2;
+        contentHeight = Math.max(0, contentBottom - contentY);
+
+        int totalGap = (Tab.values().length - 1) * TAB_GAP;
+        int usableWidth = Math.max(0, contentWidth - totalGap);
+        tabWidth = Math.max(DesignTokens.Component.TAB_MIN_WIDTH, usableWidth / Tab.values().length);
+    }
+
     private void updateButtonVisibility() {
+        boolean reportTab = activeTab == Tab.REPORT;
         if (submitTicketButton != null) {
-            submitTicketButton.visible = activeTab == Tab.REPORT;
+            submitTicketButton.visible = reportTab;
             // Fix #5: Disable button after submission
             submitTicketButton.active = !ticketSubmitted;
         }
+        if (ticketSubjectField != null) {
+            ticketSubjectField.visible = reportTab;
+            if (!reportTab) {
+                ticketSubjectField.setFocused(false);
+            }
+        }
+        if (ticketNotesField != null) {
+            ticketNotesField.visible = reportTab;
+            if (!reportTab) {
+                ticketNotesField.setFocused(false);
+            }
+        }
+        layoutActionButtons(reportTab);
         // UX: Show timeline navigation buttons only on Timeline tab
         boolean showTimelineNav = activeTab == Tab.TIMELINE;
         if (timelinePrevButton != null) {
@@ -228,6 +325,28 @@ public class DebriefScreen extends BaseDevModScreen {
         // Fix #7: Reset maxScrollOffset when switching tabs
         maxScrollOffset = 0;
         scrollOffset = 0;
+    }
+
+    private void layoutActionButtons(boolean showSubmit) {
+        if (continueButton == null) {
+            return;
+        }
+        int actionButtonY = footerY + Math.max(0, (FOOTER_HEIGHT - continueButton.getHeight()) / 2);
+        int centerX = panelX + panelWidth / 2;
+        continueButton.setY(actionButtonY);
+
+        if (showSubmit && submitTicketButton != null) {
+            int totalWidth = ACTION_BUTTON_WIDTH * 2 + ACTION_BUTTON_GAP;
+            int startX = panelX + (panelWidth - totalWidth) / 2;
+            continueButton.setX(startX);
+            submitTicketButton.setX(startX + ACTION_BUTTON_WIDTH + ACTION_BUTTON_GAP);
+            submitTicketButton.setY(actionButtonY);
+        } else {
+            continueButton.setX(centerX - ACTION_BUTTON_WIDTH / 2);
+            if (submitTicketButton != null) {
+                submitTicketButton.setY(actionButtonY);
+            }
+        }
     }
 
     /**
@@ -253,8 +372,15 @@ public class DebriefScreen extends BaseDevModScreen {
 
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Background
+        // Background overlay
         graphics.fill(0, 0, this.width, this.height, COLOR_BG);
+
+        // Panel
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, DesignTokens.Background.PANEL_SOLID);
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 1, DesignTokens.Stroke.DEFAULT);
+        graphics.fill(panelX, panelY + panelHeight - 1, panelX + panelWidth, panelY + panelHeight, DesignTokens.Stroke.DEFAULT);
+        graphics.fill(panelX, panelY, panelX + 1, panelY + panelHeight, DesignTokens.Stroke.DEFAULT);
+        graphics.fill(panelX + panelWidth - 1, panelY, panelX + panelWidth, panelY + panelHeight, DesignTokens.Stroke.DEFAULT);
 
         // Header
         renderHeader(graphics);
@@ -262,18 +388,18 @@ public class DebriefScreen extends BaseDevModScreen {
         // Tab bar highlight
         renderTabHighlight(graphics);
 
-        // Content area
-        int contentX = CONTENT_PADDING;
-        int contentY = 50 + TAB_HEIGHT + CONTENT_PADDING;
-        int contentWidth = this.width - CONTENT_PADDING * 2;
-        int contentHeight = this.height - contentY - 80;
-
         // Content panel background
         graphics.fill(contentX - 2, contentY - 2,
             contentX + contentWidth + 2, contentY + contentHeight + 2,
             DesignTokens.Surface.LEVEL_0);
 
         // Render active tab content
+        boolean scissor = contentWidth > 0 && contentHeight > 0;
+        if (scissor) {
+            graphics.enableScissor(contentX, contentY, contentX + contentWidth, contentY + contentHeight);
+        }
+        graphics.pose().pushPose();
+        graphics.pose().translate(0, -scrollOffset, 0);
         switch (activeTab) {
             case OVERVIEW -> renderOverviewTab(graphics, contentX, contentY, contentWidth, contentHeight);
             case COMBAT -> renderCombatTab(graphics, contentX, contentY, contentWidth, contentHeight);
@@ -281,6 +407,10 @@ public class DebriefScreen extends BaseDevModScreen {
             case TIMELINE -> renderTimelineTab(graphics, contentX, contentY, contentWidth, contentHeight);
             case PARTY -> renderPartyTab(graphics, contentX, contentY, contentWidth, contentHeight);
             case REPORT -> renderReportTab(graphics, contentX, contentY, contentWidth, contentHeight);
+        }
+        graphics.pose().popPose();
+        if (scissor) {
+            graphics.disableScissor();
         }
 
         // Fix #3: Render scroll indicator if content overflows
@@ -317,20 +447,24 @@ public class DebriefScreen extends BaseDevModScreen {
 
     private void renderHeader(GuiGraphics graphics) {
         Font font = Minecraft.getInstance().font;
-        String title = Objects.requireNonNull(String.format("Wave %d Debrief", waveNumber));
-        int titleWidth = font.width(title);
-        graphics.drawString(font, title, (this.width - titleWidth) / 2, 20, COLOR_ACCENT, true);
+        String title = Objects.requireNonNull(
+            Component.translatable("devmod.endurance.debrief.header.title", waveNumber).getString());
+        graphics.drawString(font, title, panelX + PANEL_PADDING, panelY + PANEL_PADDING, COLOR_ACCENT, true);
+
+        String subtitle = Component.translatable(
+            "devmod.endurance.debrief.header.subtitle",
+            formatDuration(collector.getWaveDurationMs()),
+            collector.getTotalKills(),
+            String.format("%.1f", collector.getDPS())
+        ).getString();
+        graphics.drawString(font, subtitle, panelX + PANEL_PADDING,
+            panelY + PANEL_PADDING + font.lineHeight + HEADER_GAP, COLOR_TEXT_DIM, false);
     }
 
     private void renderTabHighlight(GuiGraphics graphics) {
-        int tabWidth = 80;
-        int tabSpacing = 4;
-        int totalTabWidth = Tab.values().length * tabWidth + (Tab.values().length - 1) * tabSpacing;
-        int tabStartX = (this.width - totalTabWidth) / 2;
-
         int activeIndex = activeTab.ordinal();
-        int activeX = tabStartX + activeIndex * (tabWidth + tabSpacing);
-        graphics.fill(activeX, 50 + TAB_HEIGHT - 2, activeX + tabWidth, 50 + TAB_HEIGHT, COLOR_ACCENT);
+        int activeX = tabStartX + activeIndex * (tabWidth + TAB_GAP);
+        graphics.fill(activeX, tabY + TAB_HEIGHT - 2, activeX + tabWidth, tabY + TAB_HEIGHT, COLOR_ACCENT);
     }
 
     // ========== Tab Content ==========
@@ -338,204 +472,253 @@ public class DebriefScreen extends BaseDevModScreen {
     private void renderOverviewTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Minecraft.getInstance().font;
         int lineHeight = font.lineHeight + 4;
-        int col1X = x + 20;
-        int col2X = x + w / 2 + 20;
+        int columnGap = DesignTokens.Space._6;
+        int columnWidth = Math.max(1, (w - columnGap) / 2);
+        int leftX = x;
+        int rightX = x + columnWidth + columnGap;
 
-        // Grade with breakdown (Fix #3: use cached breakdown)
+        int cursorLeft = y;
+        int cursorRight = y;
+
         GradeBreakdown breakdown = getOrCalculateGradeBreakdown();
         int gradeColor = getGradeColor(breakdown.grade);
-        graphics.drawString(font, "GRADE", col1X, y, COLOR_TEXT_DIM, false);
+
+        graphics.drawString(font, tr("devmod.endurance.debrief.section.grade"), leftX, cursorLeft, COLOR_TEXT_DIM, false);
+        cursorLeft += lineHeight;
+
+        float gradeScale = 2.4f;
+        int gradeHeight = Math.round(font.lineHeight * gradeScale);
         graphics.pose().pushPose();
-        graphics.pose().translate(col1X, y + lineHeight, 0);
-        graphics.pose().scale(3f, 3f, 1f);
+        graphics.pose().translate(leftX, cursorLeft, 0);
+        graphics.pose().scale(gradeScale, gradeScale, 1f);
         graphics.drawString(font, breakdown.grade, 0, 0, gradeColor, true);
         graphics.pose().popPose();
+        cursorLeft += gradeHeight + DesignTokens.Space._2;
 
-        // Fix #7: Show grade breakdown next to grade with caps for transparency
-        // UX Q2: Use constants for single source of truth
-        int breakdownX = col1X + 60;
-        int breakdownY = y + lineHeight;
-        graphics.drawString(font, String.format("DPS: +%.0f/%.0f", breakdown.dpsScore, CAP_DPS), breakdownX, breakdownY, COLOR_TEXT_DIM, false);
+        int breakdownY = cursorLeft;
+        graphics.drawString(font, tr("devmod.endurance.debrief.grade.dps", String.format("%.0f", breakdown.dpsScore), String.format("%.0f", CAP_DPS)),
+            leftX, breakdownY, COLOR_TEXT_DIM, false);
         breakdownY += font.lineHeight;
         if (breakdown.noDamageBonus > 0) {
-            graphics.drawString(font, String.format("No DMG: +%.0f/%.0f", breakdown.noDamageBonus, CAP_NO_DAMAGE), breakdownX, breakdownY, COLOR_SUCCESS, false);
+            graphics.drawString(font, tr("devmod.endurance.debrief.grade.no_damage",
+                String.format("%.0f", breakdown.noDamageBonus), String.format("%.0f", CAP_NO_DAMAGE)),
+                leftX, breakdownY, COLOR_SUCCESS, false);
             breakdownY += font.lineHeight;
         }
-        graphics.drawString(font, String.format("Combo: +%.0f/%.0f", breakdown.comboScore, CAP_COMBO), breakdownX, breakdownY, COLOR_TEXT_DIM, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.grade.combo", String.format("%.0f", breakdown.comboScore), String.format("%.0f", CAP_COMBO)),
+            leftX, breakdownY, COLOR_TEXT_DIM, false);
         breakdownY += font.lineHeight;
-        graphics.drawString(font, String.format("TTK: +%.0f/%.0f", breakdown.ttkScore, CAP_TTK), breakdownX, breakdownY, COLOR_TEXT_DIM, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.grade.ttk", String.format("%.0f", breakdown.ttkScore), String.format("%.0f", CAP_TTK)),
+            leftX, breakdownY, COLOR_TEXT_DIM, false);
         breakdownY += font.lineHeight;
-        graphics.drawString(font, String.format("Crit: +%.0f/%.0f", breakdown.critScore, CAP_CRIT), breakdownX, breakdownY, COLOR_TEXT_DIM, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.grade.crit", String.format("%.0f", breakdown.critScore), String.format("%.0f", CAP_CRIT)),
+            leftX, breakdownY, COLOR_TEXT_DIM, false);
         breakdownY += font.lineHeight;
-        graphics.drawString(font, String.format("Total: %.0f/%.0f", breakdown.totalScore, CAP_TOTAL), breakdownX, breakdownY, COLOR_ACCENT, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.grade.total", String.format("%.0f", breakdown.totalScore), String.format("%.0f", CAP_TOTAL)),
+            leftX, breakdownY, COLOR_ACCENT, false);
+        cursorLeft = breakdownY + lineHeight;
 
-        // Stats column 1
-        int statsY = y + 80;
-        renderStatLine(graphics, font, col1X, statsY, "Duration",
-            formatDuration(collector.getWaveDurationMs()));
-        statsY += lineHeight;
-        renderStatLine(graphics, font, col1X, statsY, "Kills",
-            String.valueOf(collector.getTotalKills()));
-        statsY += lineHeight;
-        renderStatLine(graphics, font, col1X, statsY, "Elite Kills",
-            String.valueOf(collector.getEliteKills()));
-        statsY += lineHeight;
-        renderStatLine(graphics, font, col1X, statsY, "Max Combo",
-            collector.getMaxCombo() + "x");
+        graphics.drawString(font, tr("devmod.endurance.debrief.section.achievements"), leftX, cursorLeft, COLOR_ACCENT, false);
+        cursorLeft += lineHeight;
 
-        // Stats column 2
-        statsY = y + 80;
-        renderStatLine(graphics, font, col2X, statsY, "DPS",
-            String.format("%.1f", collector.getDPS()));
-        statsY += lineHeight;
-        renderStatLine(graphics, font, col2X, statsY, "Damage Dealt",
-            String.format("%.0f", collector.getTotalDamageDealt()));
-        statsY += lineHeight;
-        renderStatLine(graphics, font, col2X, statsY, "Damage Taken",
-            String.format("%.0f", collector.getTotalDamageTaken()));
-        statsY += lineHeight;
-        renderStatLine(graphics, font, col2X, statsY, "Avg TTK",
-            String.format("%.0fms", collector.getAverageTTK()));
-
-        // Achievements
-        int achY = statsY + 30;
-        graphics.drawString(font, "ACHIEVEMENTS", col1X, achY, COLOR_ACCENT, false);
-        achY += lineHeight;
-
-        // UX: Use ✓ symbol for colorblind accessibility (not just green color)
+        boolean hasAchievement = false;
         if (collector.wasNoDamageWave()) {
-            graphics.drawString(font, "✓ No Damage!", col1X, achY, COLOR_SUCCESS, false);
-            achY += lineHeight;
+            graphics.drawString(font, tr("devmod.endurance.debrief.achievement.no_damage"), leftX, cursorLeft, COLOR_SUCCESS, false);
+            cursorLeft += lineHeight;
+            hasAchievement = true;
         }
         if (collector.getMaxCombo() >= 50) {
-            graphics.drawString(font, "✓ Combo Master (50+)", col1X, achY, COLOR_SUCCESS, false);
-            achY += lineHeight;
+            graphics.drawString(font, tr("devmod.endurance.debrief.achievement.combo_master"), leftX, cursorLeft, COLOR_SUCCESS, false);
+            cursorLeft += lineHeight;
+            hasAchievement = true;
         }
         if (collector.getCriticalHitRate() > 0.5f) {
-            graphics.drawString(font, "✓ Precision (>50% crit)", col1X, achY, COLOR_SUCCESS, false);
+            graphics.drawString(font, tr("devmod.endurance.debrief.achievement.precision"), leftX, cursorLeft, COLOR_SUCCESS, false);
+            cursorLeft += lineHeight;
+            hasAchievement = true;
+        }
+        if (!hasAchievement) {
+            graphics.drawString(font, tr("devmod.endurance.debrief.achievement.none"), leftX, cursorLeft, COLOR_TEXT_DIM, false);
+            cursorLeft += lineHeight;
         }
 
-        // Comparison with previous wave
+        graphics.drawString(font, tr("devmod.endurance.debrief.section.stats"), rightX, cursorRight, COLOR_TEXT_DIM, false);
+        cursorRight += lineHeight;
+
+        renderStatLine(graphics, font, rightX, cursorRight,
+            tr("devmod.endurance.debrief.stat.duration"), formatDuration(collector.getWaveDurationMs()));
+        cursorRight += lineHeight;
+        renderStatLine(graphics, font, rightX, cursorRight,
+            tr("devmod.endurance.debrief.stat.kills"), String.valueOf(collector.getTotalKills()));
+        cursorRight += lineHeight;
+        renderStatLine(graphics, font, rightX, cursorRight,
+            tr("devmod.endurance.debrief.stat.elite_kills"), String.valueOf(collector.getEliteKills()));
+        cursorRight += lineHeight;
+        renderStatLine(graphics, font, rightX, cursorRight,
+            tr("devmod.endurance.debrief.stat.max_combo"), collector.getMaxCombo() + "x");
+        cursorRight += lineHeight;
+        renderStatLine(graphics, font, rightX, cursorRight,
+            tr("devmod.endurance.debrief.stat.dps"), String.format("%.1f", collector.getDPS()));
+        cursorRight += lineHeight;
+        renderStatLine(graphics, font, rightX, cursorRight,
+            tr("devmod.endurance.debrief.stat.damage_dealt"), String.format("%.0f", collector.getTotalDamageDealt()));
+        cursorRight += lineHeight;
+        renderStatLine(graphics, font, rightX, cursorRight,
+            tr("devmod.endurance.debrief.stat.damage_taken"), String.format("%.0f", collector.getTotalDamageTaken()));
+        cursorRight += lineHeight;
+        renderStatLine(graphics, font, rightX, cursorRight,
+            tr("devmod.endurance.debrief.stat.avg_ttk"), String.format("%.0fms", collector.getAverageTTK()));
+        cursorRight += lineHeight + DesignTokens.Space._2;
+
         WaveTelemetryCollector prev = WaveIntelligenceManager.INSTANCE.getPreviousWaveCollector();
         if (prev != null) {
-            int compY = y + h - 60;
-            graphics.drawString(font, "vs Previous Wave:", col1X, compY, COLOR_TEXT_DIM, false);
-            compY += lineHeight;
+            graphics.drawString(font, tr("devmod.endurance.debrief.section.comparison"), rightX, cursorRight, COLOR_TEXT_DIM, false);
+            cursorRight += lineHeight;
 
-            // UX: Use ▲/▼ symbols for colorblind accessibility
             float dpsDiff = collector.getDPS() - prev.getDPS();
             String dpsSymbol = dpsDiff >= 0 ? "▲" : "▼";
             String dpsChange = dpsDiff >= 0 ? "+" + String.format("%.1f", dpsDiff) : String.format("%.1f", dpsDiff);
             int dpsColor = dpsDiff >= 0 ? COLOR_SUCCESS : COLOR_ERROR;
-            graphics.drawString(font, "DPS: " + dpsSymbol + dpsChange, col1X + 20, compY, dpsColor, false);
+            graphics.drawString(font, tr("devmod.endurance.debrief.comparison.dps", dpsSymbol, dpsChange),
+                rightX + 6, cursorRight, dpsColor, false);
+            cursorRight += lineHeight;
 
-            float ttkDiff = prev.getAverageTTK() - collector.getAverageTTK(); // Lower is better
+            float ttkDiff = prev.getAverageTTK() - collector.getAverageTTK();
             String ttkSymbol = ttkDiff >= 0 ? "▲" : "▼";
             String ttkChange = ttkDiff >= 0 ? "-" + String.format("%.0f", ttkDiff) + "ms" :
                                "+" + String.format("%.0f", -ttkDiff) + "ms";
             int ttkColor = ttkDiff >= 0 ? COLOR_SUCCESS : COLOR_ERROR;
-            graphics.drawString(font, "TTK: " + ttkSymbol + ttkChange, col2X, compY, ttkColor, false);
+            graphics.drawString(font, tr("devmod.endurance.debrief.comparison.ttk", ttkSymbol, ttkChange),
+                rightX + 6, cursorRight, ttkColor, false);
+            cursorRight += lineHeight;
         }
+
+        updateScrollBounds(y, Math.max(cursorLeft, cursorRight), h);
     }
 
     private void renderCombatTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Minecraft.getInstance().font;
         int lineHeight = font.lineHeight + 4;
+        int columnGap = DesignTokens.Space._6;
+        int columnWidth = Math.max(1, (w - columnGap) / 2);
+        int leftX = x;
+        int rightX = x + columnWidth + columnGap;
 
-        // Mob breakdown
-        graphics.drawString(font, "MOB BREAKDOWN", x + 10, y, COLOR_ACCENT, false);
-        y += lineHeight + 8;
+        int cursorLeft = y;
+        int cursorRight = y;
+
+        graphics.drawString(font, tr("devmod.endurance.debrief.combat.mob_breakdown"), leftX, cursorLeft, COLOR_ACCENT, false);
+        cursorLeft += lineHeight + 6;
 
         Map<ResourceLocation, WaveTelemetryCollector.MobTypeStats> mobStats = collector.getMobStats();
         List<Map.Entry<ResourceLocation, WaveTelemetryCollector.MobTypeStats>> sorted =
             new ArrayList<>(mobStats.entrySet());
         sorted.sort(Comparator.comparingInt(e -> -e.getValue().kills));
 
+        int maxRows = 8;
         int shown = 0;
         for (var entry : sorted) {
-            if (shown >= 8) break;
+            if (shown >= maxRows) break;
             String mobName = entry.getKey().getPath();
             WaveTelemetryCollector.MobTypeStats stats = entry.getValue();
 
-            String line = String.format("%-20s  K:%d  DMG:%.0f  TTK:%.0fms",
-                mobName, stats.kills, stats.totalDamageDealt, stats.getAverageTimeToKill());
-            graphics.drawString(font, line, x + 10, y, COLOR_TEXT, false);
-            y += lineHeight;
+            String line = tr("devmod.endurance.debrief.combat.mob_line",
+                mobName, stats.kills, String.format("%.0f", stats.totalDamageDealt),
+                String.format("%.0f", stats.getAverageTimeToKill()));
+            graphics.drawString(font, line, leftX, cursorLeft, COLOR_TEXT, false);
+            cursorLeft += lineHeight;
             shown++;
         }
+        if (sorted.size() > maxRows) {
+            graphics.drawString(font, tr("devmod.endurance.debrief.combat.more", sorted.size() - maxRows),
+                leftX, cursorLeft, COLOR_TEXT_DIM, false);
+            cursorLeft += lineHeight;
+        }
 
-        // Weapon stats
-        y += 20;
-        graphics.drawString(font, "WEAPON STATS", x + 10, y, COLOR_ACCENT, false);
-        y += lineHeight + 8;
+        graphics.drawString(font, tr("devmod.endurance.debrief.combat.weapon_stats"), rightX, cursorRight, COLOR_ACCENT, false);
+        cursorRight += lineHeight + 6;
 
         Map<String, WaveTelemetryCollector.WeaponStats> weaponStats = collector.getWeaponStats();
-        for (var entry : weaponStats.entrySet()) {
+        List<Map.Entry<String, WaveTelemetryCollector.WeaponStats>> weapons = new ArrayList<>(weaponStats.entrySet());
+        weapons.sort(Comparator.comparingInt(e -> -e.getValue().kills));
+
+        shown = 0;
+        for (var entry : weapons) {
+            if (shown >= maxRows) break;
             String weapon = entry.getKey();
             WaveTelemetryCollector.WeaponStats stats = entry.getValue();
 
-            String line = String.format("%-20s  K:%d  DMG:%.0f  Crit:%.0f%%",
-                weapon, stats.kills, stats.totalDamage, stats.getCriticalRate() * 100);
-            graphics.drawString(font, line, x + 10, y, COLOR_TEXT, false);
-            y += lineHeight;
+            String line = tr("devmod.endurance.debrief.combat.weapon_line",
+                weapon, stats.kills, String.format("%.0f", stats.totalDamage),
+                String.format("%.0f", stats.getCriticalRate() * 100));
+            graphics.drawString(font, line, rightX, cursorRight, COLOR_TEXT, false);
+            cursorRight += lineHeight;
+            shown++;
         }
+        if (weapons.size() > maxRows) {
+            graphics.drawString(font, tr("devmod.endurance.debrief.combat.more", weapons.size() - maxRows),
+                rightX, cursorRight, COLOR_TEXT_DIM, false);
+            cursorRight += lineHeight;
+        }
+
+        updateScrollBounds(y, Math.max(cursorLeft, cursorRight), h);
     }
 
     private void renderSpatialTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
+        int cursorY = y;
+        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.title"), x, cursorY, COLOR_ACCENT, false);
+        cursorY += font.lineHeight + DesignTokens.Space._4;
 
-        graphics.drawString(font, "SPATIAL ANALYSIS", x + 10, y, COLOR_ACCENT, false);
-        y += font.lineHeight + 10;
+        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.positions", collector.getPlayerPositions().size()),
+            x, cursorY, COLOR_TEXT, false);
+        cursorY += font.lineHeight + DesignTokens.Space._2;
 
-        graphics.drawString(font, "Position Samples: " + collector.getPlayerPositions().size(),
-            x + 10, y, COLOR_TEXT, false);
-        y += font.lineHeight + 4;
+        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.kills", collector.getKillPositions().size()),
+            x, cursorY, COLOR_TEXT, false);
+        cursorY += font.lineHeight + DesignTokens.Space._2;
 
-        graphics.drawString(font, "Kill Locations: " + collector.getKillPositions().size(),
-            x + 10, y, COLOR_TEXT, false);
-        y += font.lineHeight + 4;
+        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.damage", collector.getDamagePositions().size()),
+            x, cursorY, COLOR_TEXT, false);
+        cursorY += font.lineHeight + DesignTokens.Space._2;
 
-        graphics.drawString(font, "Damage Locations: " + collector.getDamagePositions().size(),
-            x + 10, y, COLOR_TEXT, false);
-        y += font.lineHeight + 4;
-
-        // UX: Use ✓/✗ symbols for colorblind accessibility
         boolean noDeath = collector.getDeathPositions().isEmpty();
         String deathSymbol = noDeath ? "✓" : "✗";
-        graphics.drawString(font, deathSymbol + " Death Locations: " + collector.getDeathPositions().size(),
-            x + 10, y, noDeath ? COLOR_SUCCESS : COLOR_ERROR, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.deaths", deathSymbol, collector.getDeathPositions().size()),
+            x, cursorY, noDeath ? COLOR_SUCCESS : COLOR_ERROR, false);
+        cursorY += font.lineHeight + DesignTokens.Space._6;
 
-        y += 30;
-        graphics.drawString(font, "(Full heatmap visualization available in ticket report)",
-            x + 10, y, COLOR_TEXT_DIM, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.heatmap_note"),
+            x, cursorY, COLOR_TEXT_DIM, false);
+
+        updateScrollBounds(y, cursorY + font.lineHeight, h);
     }
 
     private void renderTimelineTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Minecraft.getInstance().font;
         int lineHeight = font.lineHeight + 2;
+        int textX = x + DesignTokens.Space._2;
 
         List<CombatEvent> events = collector.getEvents();
         int totalPages = Math.max(1, (events.size() + TIMELINE_PAGE_SIZE - 1) / TIMELINE_PAGE_SIZE);
         timelinePage = Math.min(timelinePage, totalPages - 1);
 
-        // Fix #9: Header with pagination info
-        String header = String.format("EVENT TIMELINE (Page %d/%d) - %d events",
+        String header = tr("devmod.endurance.debrief.timeline.header",
             timelinePage + 1, totalPages, events.size());
-        graphics.drawString(font, header, x + 10, y, COLOR_ACCENT, false);
-        y += font.lineHeight + 4;
+        graphics.drawString(font, header, textX, y, COLOR_ACCENT, false);
+        y += font.lineHeight + DesignTokens.Space._2;
 
-        // Pagination controls hint
-        graphics.drawString(font, "[Scroll or ←/→ to navigate pages]", x + 10, y, COLOR_TEXT_DIM, false);
-        y += font.lineHeight + 8;
+        graphics.drawString(font, tr("devmod.endurance.debrief.timeline.hint"), textX, y, COLOR_TEXT_DIM, false);
+        y += font.lineHeight + DesignTokens.Space._4;
 
         // Calculate page bounds
         int startIdx = timelinePage * TIMELINE_PAGE_SIZE;
         int endIdx = Math.min(startIdx + TIMELINE_PAGE_SIZE, events.size());
 
-        // Update maxScrollOffset for scroll indicator
-        maxScrollOffset = Math.max(0, (totalPages - 1) * 10);
+        maxScrollOffset = 0;
 
-        for (int i = startIdx; i < endIdx && y < this.height - 100; i++) {
+        int listBottom = y + h - (DesignTokens.Component.BUTTON_HEIGHT_MD + DesignTokens.Space._4);
+        for (int i = startIdx; i < endIdx && y < listBottom; i++) {
             CombatEvent event = events.get(i);
             String eventText = formatEvent(event);
             int eventColor = getEventColor(event);
@@ -543,16 +726,17 @@ public class DebriefScreen extends BaseDevModScreen {
             float seconds = event.ticksSinceWaveStart() / 20f;
             String timePrefix = Objects.requireNonNull(String.format("[%.1fs] ", seconds));
 
-            graphics.drawString(font, timePrefix, x + 10, y, COLOR_TEXT_DIM, false);
-            graphics.drawString(font, eventText, x + 10 + font.width(timePrefix), y, eventColor, false);
+            graphics.drawString(font, timePrefix, textX, y, COLOR_TEXT_DIM, false);
+            graphics.drawString(font, eventText, textX + font.width(timePrefix), y, eventColor, false);
             y += lineHeight;
         }
 
         // Page indicator at bottom
         if (totalPages > 1) {
-            String pageInfo = Objects.requireNonNull(String.format("← Page %d of %d →", timelinePage + 1, totalPages));
+            String pageInfo = tr("devmod.endurance.debrief.timeline.page", timelinePage + 1, totalPages);
             int pageInfoWidth = font.width(pageInfo);
-            graphics.drawString(font, pageInfo, x + (w - pageInfoWidth) / 2, this.height - 110, COLOR_ACCENT, false);
+            graphics.drawString(font, pageInfo, x + (w - pageInfoWidth) / 2,
+                listBottom + DesignTokens.Space._2, COLOR_ACCENT, false);
         }
     }
 
@@ -568,135 +752,164 @@ public class DebriefScreen extends BaseDevModScreen {
 
         if (partyStats == null || !partyStats.isPartyRun()) {
             // No party data available - UX: provide actionable guidance
-            graphics.drawString(font, "PARTY STATS", x + 10, y, COLOR_ACCENT, false);
-            y += lineHeight + 10;
-            graphics.drawString(font, "No party data for this wave.", x + 10, y, COLOR_TEXT_DIM, false);
-            y += lineHeight + 8;
-            graphics.drawString(font, "To see party stats:", x + 10, y, COLOR_TEXT, false);
-            y += lineHeight;
+            int cursorY = y;
+            graphics.drawString(font, tr("devmod.endurance.debrief.party.title"), x, cursorY, COLOR_ACCENT, false);
+            cursorY += lineHeight + 6;
+            graphics.drawString(font, tr("devmod.endurance.debrief.party.empty"), x, cursorY, COLOR_TEXT_DIM, false);
+            cursorY += lineHeight + DesignTokens.Space._3;
+            graphics.drawString(font, tr("devmod.endurance.debrief.party.how_to"), x, cursorY, COLOR_TEXT, false);
+            cursorY += lineHeight;
             // UX Q4/Q5: Use dynamic keybind name with fallback for unknown/empty
             String partyKey = KeyInputHandler.OPEN_PARTY_KEY.getKey().getDisplayName().getString();
             if (partyKey == null || partyKey.isBlank() || partyKey.contains("unknown")) {
                 partyKey = "P"; // Sensible default fallback
             }
-            graphics.drawString(font, "  1. Open Party Screen (" + partyKey + ")", x + 10, y, COLOR_TEXT_DIM, false);
-            y += lineHeight;
-            graphics.drawString(font, "  2. Create or join a party", x + 10, y, COLOR_TEXT_DIM, false);
-            y += lineHeight;
-            graphics.drawString(font, "  3. Start an Endurance quest together", x + 10, y, COLOR_TEXT_DIM, false);
-            y += lineHeight + 8;
-            graphics.drawString(font, "Party members' kills, damage, and combos", x + 10, y, COLOR_TEXT_DIM, false);
-            y += lineHeight;
-            graphics.drawString(font, "will be aggregated here after each wave.", x + 10, y, COLOR_TEXT_DIM, false);
+            graphics.drawString(font, tr("devmod.endurance.debrief.party.step_open", partyKey), x, cursorY, COLOR_TEXT_DIM, false);
+            cursorY += lineHeight;
+            graphics.drawString(font, tr("devmod.endurance.debrief.party.step_join"), x, cursorY, COLOR_TEXT_DIM, false);
+            cursorY += lineHeight;
+            graphics.drawString(font, tr("devmod.endurance.debrief.party.step_start"), x, cursorY, COLOR_TEXT_DIM, false);
+            cursorY += lineHeight + DesignTokens.Space._3;
+            graphics.drawString(font, tr("devmod.endurance.debrief.party.note_line1"), x, cursorY, COLOR_TEXT_DIM, false);
+            cursorY += lineHeight;
+            graphics.drawString(font, tr("devmod.endurance.debrief.party.note_line2"), x, cursorY, COLOR_TEXT_DIM, false);
+            updateScrollBounds(y, cursorY + lineHeight, h);
             return;
         }
 
-        // Header
-        graphics.drawString(font, "PARTY STATS", x + 10, y, COLOR_ACCENT, false);
-        y += lineHeight + 10;
+        int cursorY = y;
+        graphics.drawString(font, tr("devmod.endurance.debrief.party.title"), x, cursorY, COLOR_ACCENT, false);
+        cursorY += lineHeight + 6;
 
-        // Party totals
-        graphics.drawString(font, "PARTY TOTALS", x + 10, y, COLOR_TEXT_DIM, false);
-        y += lineHeight;
-        renderStatLine(graphics, font, x + 20, y, "Total Kills", String.valueOf(partyStats.partyTotalKills()));
-        y += lineHeight;
-        // FIX UX #7: Show elite kills as PARTY total, not individual (prevents "stealing" elites)
-        renderStatLine(graphics, font, x + 20, y, "Elite Kills", String.valueOf(partyStats.partyEliteKills()));
-        y += lineHeight;
-        renderStatLine(graphics, font, x + 20, y, "Total Damage", String.format("%,d", partyStats.partyTotalDamageDealt()));
-        y += lineHeight;
-        renderStatLine(graphics, font, x + 20, y, "Party DPS", String.format("%.1f", partyStats.partyDPS()));
-        y += lineHeight;
-        renderStatLine(graphics, font, x + 20, y, "Damage Taken", String.format("%,d", partyStats.partyTotalDamageTaken()));
-        y += lineHeight;
+        graphics.drawString(font, tr("devmod.endurance.debrief.party.totals"), x, cursorY, COLOR_TEXT_DIM, false);
+        cursorY += lineHeight;
+        renderStatLine(graphics, font, x, cursorY, tr("devmod.endurance.debrief.party.total_kills"),
+            String.valueOf(partyStats.partyTotalKills()));
+        cursorY += lineHeight;
+        renderStatLine(graphics, font, x, cursorY, tr("devmod.endurance.debrief.party.elite_kills"),
+            String.valueOf(partyStats.partyEliteKills()));
+        cursorY += lineHeight;
+        renderStatLine(graphics, font, x, cursorY, tr("devmod.endurance.debrief.party.total_damage"),
+            String.format("%,d", partyStats.partyTotalDamageDealt()));
+        cursorY += lineHeight;
+        renderStatLine(graphics, font, x, cursorY, tr("devmod.endurance.debrief.party.party_dps"),
+            String.format("%.1f", partyStats.partyDPS()));
+        cursorY += lineHeight;
+        renderStatLine(graphics, font, x, cursorY, tr("devmod.endurance.debrief.party.damage_taken"),
+            String.format("%,d", partyStats.partyTotalDamageTaken()));
+        cursorY += lineHeight;
 
-        // No damage bonus - UX: Use ✓ with star for colorblind accessibility
         if (partyStats.partyNoDamageWave()) {
-            graphics.drawString(font, "✓★ PARTY FLAWLESS WAVE!", x + 20, y, COLOR_SUCCESS, true);
-            y += lineHeight;
+            graphics.drawString(font, tr("devmod.endurance.debrief.party.flawless"), x, cursorY, COLOR_SUCCESS, true);
+            cursorY += lineHeight;
         }
 
-        y += lineHeight;
+        cursorY += lineHeight;
 
-        // MVP
         String mvpId = partyStats.mvpPlayerId();
         String mvpReason = partyStats.mvpReason();
         if (mvpId != null && !mvpId.isEmpty()) {
             PartyWaveStats.PlayerWaveData mvpData = partyStats.getPlayerData(mvpId);
-            String mvpName = mvpData != null ? mvpData.playerName() : "Unknown";
-            graphics.drawString(font, "MVP: " + mvpName, x + 10, y, DesignTokens.Overlay.Text.GOLD, true);
+            String mvpName = mvpData != null ? mvpData.playerName() : tr("devmod.endurance.debrief.party.mvp_unknown");
+            String mvpLabel = tr("devmod.endurance.debrief.party.mvp", mvpName);
+            graphics.drawString(font, mvpLabel, x, cursorY, DesignTokens.Overlay.Text.GOLD, true);
             if (mvpReason != null && !mvpReason.isEmpty()) {
-                graphics.drawString(font, " (" + mvpReason + ")", x + 10 + font.width("MVP: " + mvpName), y, COLOR_TEXT_DIM, false);
+                graphics.drawString(font, " (" + mvpReason + ")", x + font.width(mvpLabel), cursorY, COLOR_TEXT_DIM, false);
             }
-            y += lineHeight + 10;
+            cursorY += lineHeight + DesignTokens.Space._4;
         }
 
-        // Per-player breakdown
-        graphics.drawString(font, "PLAYER BREAKDOWN", x + 10, y, COLOR_TEXT_DIM, false);
-        y += lineHeight;
+        graphics.drawString(font, tr("devmod.endurance.debrief.party.breakdown"), x, cursorY, COLOR_TEXT_DIM, false);
+        cursorY += lineHeight;
 
-        // Table header
-        int col1 = x + 20;
-        int col2 = x + 150;
-        int col3 = x + 210;
-        int col4 = x + 280;
-        int col5 = x + 350;
+        int col1 = x;
+        int col2 = x + (int)(w * 0.42f);
+        int col3 = x + (int)(w * 0.60f);
+        int col4 = x + (int)(w * 0.74f);
+        int col5 = x + (int)(w * 0.86f);
 
-        graphics.drawString(font, "Player", col1, y, COLOR_TEXT_DIM, false);
-        graphics.drawString(font, "Kills", col2, y, COLOR_TEXT_DIM, false);
-        graphics.drawString(font, "Kill%", col3, y, COLOR_TEXT_DIM, false);
-        graphics.drawString(font, "DPS", col4, y, COLOR_TEXT_DIM, false);
-        graphics.drawString(font, "Combo", col5, y, COLOR_TEXT_DIM, false);
-        y += lineHeight;
+        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.player"), col1, cursorY, COLOR_TEXT_DIM, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.kills"), col2, cursorY, COLOR_TEXT_DIM, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.kill_pct"), col3, cursorY, COLOR_TEXT_DIM, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.dps"), col4, cursorY, COLOR_TEXT_DIM, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.combo"), col5, cursorY, COLOR_TEXT_DIM, false);
+        cursorY += lineHeight;
 
-        // Draw separator
-        graphics.fill(col1, y - 2, x + w - 20, y - 1, DesignTokens.Stroke.DEFAULT);
+        graphics.fill(col1, cursorY - 2, x + w, cursorY - 1, DesignTokens.Stroke.DEFAULT);
 
-        // Player rows
         for (PartyWaveStats.PlayerWaveData playerData : partyStats.playerStats()) {
             if (playerData.wasSpectator()) {
-                graphics.drawString(font, playerData.playerName(), col1, y, COLOR_TEXT_DIM, false);
-                graphics.drawString(font, "(Spectator)", col2, y, COLOR_TEXT_DIM, false);
+                graphics.drawString(font, playerData.playerName(), col1, cursorY, COLOR_TEXT_DIM, false);
+                graphics.drawString(font, tr("devmod.endurance.debrief.party.spectator"), col2, cursorY, COLOR_TEXT_DIM, false);
             } else {
                 boolean isMvp = playerData.playerId().equals(mvpId);
                 int nameColor = isMvp ? DesignTokens.Overlay.Text.GOLD : COLOR_TEXT;
 
-                graphics.drawString(font, playerData.playerName(), col1, y, nameColor, isMvp);
-                graphics.drawString(font, String.valueOf(playerData.kills()), col2, y, COLOR_TEXT, false);
-                graphics.drawString(font, String.format("%.0f%%", playerData.killPercent()), col3, y, COLOR_TEXT, false);
-                graphics.drawString(font, String.format("%.1f", playerData.dps()), col4, y, COLOR_TEXT, false);
-                graphics.drawString(font, String.valueOf(playerData.maxCombo()), col5, y, COLOR_TEXT, false);
+                graphics.drawString(font, playerData.playerName(), col1, cursorY, nameColor, isMvp);
+                graphics.drawString(font, String.valueOf(playerData.kills()), col2, cursorY, COLOR_TEXT, false);
+                graphics.drawString(font, String.format("%.0f%%", playerData.killPercent()), col3, cursorY, COLOR_TEXT, false);
+                graphics.drawString(font, String.format("%.1f", playerData.dps()), col4, cursorY, COLOR_TEXT, false);
+                graphics.drawString(font, String.valueOf(playerData.maxCombo()), col5, cursorY, COLOR_TEXT, false);
             }
-            y += lineHeight;
+            cursorY += lineHeight;
         }
+
+        updateScrollBounds(y, cursorY, h);
     }
 
     @SuppressWarnings("UnusedVariable") // w/h reserved for future layout constraints
     private void renderReportTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Minecraft.getInstance().font;
         int lineHeight = font.lineHeight + 4;
+        int cursorY = y;
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.title"), x, cursorY, COLOR_ACCENT, false);
+        cursorY += lineHeight + DesignTokens.Space._3;
 
-        graphics.drawString(font, "WAVE REPORT", x + 10, y, COLOR_ACCENT, false);
-        y += lineHeight + 10;
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.subtitle"), x, cursorY, COLOR_TEXT, false);
+        cursorY += lineHeight + DesignTokens.Space._4;
 
-        graphics.drawString(font, "Generate a ticket with full wave analytics:", x + 10, y, COLOR_TEXT, false);
-        y += lineHeight * 2;
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.subject.label"), x, cursorY, COLOR_TEXT_DIM, false);
+        cursorY += lineHeight;
 
-        graphics.drawString(font, "Report includes:", x + 10, y, COLOR_TEXT_DIM, false);
-        y += lineHeight;
-        graphics.drawString(font, "- Complete performance summary", x + 20, y, COLOR_TEXT, false);
-        y += lineHeight;
-        graphics.drawString(font, "- Per-mob kill breakdown", x + 20, y, COLOR_TEXT, false);
-        y += lineHeight;
-        graphics.drawString(font, "- Weapon effectiveness analysis", x + 20, y, COLOR_TEXT, false);
-        y += lineHeight;
-        graphics.drawString(font, "- Spatial heatmap data", x + 20, y, COLOR_TEXT, false);
-        y += lineHeight;
-        graphics.drawString(font, "- Full event timeline", x + 20, y, COLOR_TEXT, false);
-        y += lineHeight * 2;
+        EditBox subjectField = ticketSubjectField;
+        if (subjectField != null) {
+            subjectField.setX(x);
+            subjectField.setY(cursorY - scrollOffset);
+            subjectField.setWidth(w);
+            cursorY += subjectField.getHeight() + DesignTokens.Space._4;
+        }
 
-        graphics.drawString(font, "Click 'Submit Ticket' to send this data to the dev team.",
-            x + 10, y, COLOR_TEXT_DIM, false);
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.notes.label"), x, cursorY, COLOR_TEXT_DIM, false);
+        cursorY += lineHeight;
+
+        EditBox notesField = ticketNotesField;
+        if (notesField != null) {
+            notesField.setX(x);
+            notesField.setY(cursorY - scrollOffset);
+            notesField.setWidth(w);
+            cursorY += notesField.getHeight() + DesignTokens.Space._4;
+        }
+
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.title"), x, cursorY, COLOR_TEXT_DIM, false);
+        cursorY += lineHeight;
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.summary"), x, cursorY, COLOR_TEXT, false);
+        cursorY += lineHeight;
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.mobs"), x, cursorY, COLOR_TEXT, false);
+        cursorY += lineHeight;
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.weapons"), x, cursorY, COLOR_TEXT, false);
+        cursorY += lineHeight;
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.spatial"), x, cursorY, COLOR_TEXT, false);
+        cursorY += lineHeight;
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.timeline"), x, cursorY, COLOR_TEXT, false);
+        cursorY += lineHeight + DesignTokens.Space._2;
+
+        graphics.drawString(font, tr("devmod.endurance.debrief.report.submit_hint"), x, cursorY, COLOR_TEXT_DIM, false);
+        if (ticketSubmitted) {
+            cursorY += lineHeight;
+            graphics.drawString(font, tr("devmod.endurance.debrief.report.submitted"), x, cursorY, COLOR_SUCCESS, false);
+        }
+
+        updateScrollBounds(y, cursorY + lineHeight, h);
     }
 
     // ========== Helpers ==========
@@ -705,6 +918,20 @@ public class DebriefScreen extends BaseDevModScreen {
         Font safeFont = Objects.requireNonNull(font);
         graphics.drawString(safeFont, label + ":", x, y, COLOR_TEXT_DIM, false);
         graphics.drawString(safeFont, value, x + 100, y, COLOR_TEXT, false);
+    }
+
+    private void updateScrollBounds(int startY, int contentBottom, int viewHeight) {
+        maxScrollOffset = Math.max(0, contentBottom - startY - viewHeight);
+        if (scrollOffset > maxScrollOffset) {
+            scrollOffset = maxScrollOffset;
+        }
+    }
+
+    private static String tr(String key, Object... args) {
+        if (args == null || args.length == 0) {
+            return Component.translatable(key).getString();
+        }
+        return Component.translatable(key, args).getString();
     }
 
     /**
@@ -795,15 +1022,17 @@ public class DebriefScreen extends BaseDevModScreen {
      */
     private String formatEvent(CombatEvent event) {
         return switch (event) {
-            case CombatEvent.KillEvent k -> "✓ Killed " + k.mobType().getPath() +
-                (k.isElite() ? " ★ELITE" : "") +
-                (k.isCritical() ? " ⚡CRIT!" : "");
-            case CombatEvent.DamageTakenEvent d -> String.format("✗ Took %.1f dmg from %s",
-                d.damage(), d.damageSource());
-            case CombatEvent.ComboEvent c -> "◆ Combo: " + c.type().name() + " (" + c.comboCount() + "x)";
-            case CombatEvent.SpecialActionEvent s -> "◆ Action: " + s.actionType();
-            case CombatEvent.MobSpawnEvent m -> "○ Spawned: " + m.mobType().getPath();
-            default -> "· " + event.getClass().getSimpleName();
+            case CombatEvent.KillEvent k -> tr("devmod.endurance.debrief.timeline.event.kill",
+                k.mobType().getPath(),
+                k.isElite() ? tr("devmod.endurance.debrief.timeline.event.elite") : "",
+                k.isCritical() ? tr("devmod.endurance.debrief.timeline.event.crit") : "");
+            case CombatEvent.DamageTakenEvent d -> tr("devmod.endurance.debrief.timeline.event.damage",
+                String.format("%.1f", d.damage()), d.damageSource());
+            case CombatEvent.ComboEvent c -> tr("devmod.endurance.debrief.timeline.event.combo",
+                c.type().name(), c.comboCount());
+            case CombatEvent.SpecialActionEvent s -> tr("devmod.endurance.debrief.timeline.event.action", s.actionType());
+            case CombatEvent.MobSpawnEvent m -> tr("devmod.endurance.debrief.timeline.event.spawn", m.mobType().getPath());
+            default -> tr("devmod.endurance.debrief.timeline.event.unknown", event.getClass().getSimpleName());
         };
     }
 
@@ -816,6 +1045,116 @@ public class DebriefScreen extends BaseDevModScreen {
             case CombatEvent.MobSpawnEvent m -> COLOR_TEXT_DIM;
             default -> COLOR_TEXT;
         };
+    }
+
+    private Map<String, Object> buildReportData(String timestamp, GradeBreakdown grade) {
+        Map<String, Object> report = new LinkedHashMap<>();
+        report.put("waveNumber", waveNumber);
+        report.put("timestamp", timestamp);
+        report.put("grade", grade.grade());
+        report.put("totalScore", grade.totalScore());
+
+        Map<String, Object> scoreBreakdown = new LinkedHashMap<>();
+        scoreBreakdown.put("dps", grade.dpsScore());
+        scoreBreakdown.put("noDamageBonus", grade.noDamageBonus());
+        scoreBreakdown.put("combo", grade.comboScore());
+        scoreBreakdown.put("ttk", grade.ttkScore());
+        scoreBreakdown.put("crit", grade.critScore());
+        report.put("scoreBreakdown", scoreBreakdown);
+
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("durationMs", collector.getWaveDurationMs());
+        stats.put("kills", collector.getTotalKills());
+        stats.put("eliteKills", collector.getEliteKills());
+        stats.put("dps", collector.getDPS());
+        stats.put("damageDealt", collector.getTotalDamageDealt());
+        stats.put("damageTaken", collector.getTotalDamageTaken());
+        stats.put("maxCombo", collector.getMaxCombo());
+        stats.put("criticalHits", collector.getCriticalHits());
+        stats.put("critRate", collector.getCriticalHitRate());
+        stats.put("avgTTK", collector.getAverageTTK());
+        stats.put("dodges", collector.getDodges());
+        stats.put("parries", collector.getParries());
+        stats.put("eventCount", collector.getEventCount());
+        report.put("stats", stats);
+
+        report.put("noDamageWave", collector.wasNoDamageWave());
+
+        PartyWaveStats partyStats = ClientPartyStatsCache.getStatsForWave(waveNumber);
+        if (partyStats != null && partyStats.isPartyRun()) {
+            Map<String, Object> partyData = new LinkedHashMap<>();
+            partyData.put("partySize", partyStats.playerStats().size());
+            partyData.put("partyTotalKills", partyStats.partyTotalKills());
+            partyData.put("partyTotalDamage", partyStats.partyTotalDamageDealt());
+            partyData.put("partyDPS", partyStats.partyDPS());
+            partyData.put("partyNoDamageWave", partyStats.partyNoDamageWave());
+            partyData.put("mvpPlayerId", partyStats.mvpPlayerId());
+            partyData.put("mvpReason", partyStats.mvpReason());
+
+            List<Map<String, Object>> playerBreakdown = new ArrayList<>();
+            for (PartyWaveStats.PlayerWaveData pd : partyStats.playerStats()) {
+                Map<String, Object> playerEntry = new LinkedHashMap<>();
+                playerEntry.put("playerName", pd.playerName());
+                playerEntry.put("kills", pd.kills());
+                playerEntry.put("killPercent", pd.killPercent());
+                playerEntry.put("dps", pd.dps());
+                playerEntry.put("maxCombo", pd.maxCombo());
+                playerEntry.put("wasSpectator", pd.wasSpectator());
+                playerBreakdown.add(playerEntry);
+            }
+            partyData.put("players", playerBreakdown);
+            report.put("party", partyData);
+        }
+
+        return report;
+    }
+
+    private String buildTicketDescription(GradeBreakdown grade, String notes, String reportFileName) {
+        String summary = tr("devmod.endurance.debrief.ticket.summary",
+            waveNumber,
+            grade.grade(),
+            formatDuration(collector.getWaveDurationMs()),
+            collector.getTotalKills(),
+            collector.getEliteKills(),
+            String.format("%.1f", collector.getDPS()),
+            String.format("%.0f", collector.getTotalDamageTaken()),
+            collector.getMaxCombo(),
+            String.format("%.0fms", collector.getAverageTTK()));
+
+        StringBuilder description = new StringBuilder(summary);
+        if (reportFileName != null && !reportFileName.isBlank()) {
+            description.append(" ").append(tr("devmod.endurance.debrief.ticket.report_file", reportFileName));
+        }
+        if (notes != null && !notes.isBlank()) {
+            description.append(" ").append(tr("devmod.endurance.debrief.ticket.notes", notes));
+        }
+        return description.toString();
+    }
+
+    private String resolveTicketSubject() {
+        String fallback = tr("devmod.endurance.debrief.report.subject.default", waveNumber);
+        EditBox subjectField = ticketSubjectField;
+        if (subjectField == null) {
+            return fallback;
+        }
+        String subject = subjectField.getValue() != null ? subjectField.getValue().trim() : "";
+        if (subject.isBlank()) {
+            subjectField.setValue(fallback);
+            return fallback;
+        }
+        return subject;
+    }
+
+    private String resolveTicketNotes() {
+        EditBox notesField = ticketNotesField;
+        if (notesField == null) {
+            return "";
+        }
+        String notes = notesField.getValue() != null ? notesField.getValue().trim() : "";
+        if (notes.isBlank()) {
+            return "";
+        }
+        return notes.replaceAll("\\s+", " ");
     }
 
     /**
@@ -834,11 +1173,22 @@ public class DebriefScreen extends BaseDevModScreen {
         Minecraft mc = Minecraft.getInstance();
         net.minecraft.world.entity.player.Player player = mc.player;
         if (player == null) {
-            onClose();
+            ticketSubmitted = false;
+            updateButtonVisibility();
             return;
         }
 
         try {
+            String subject = resolveTicketSubject();
+            if (subject.isBlank()) {
+                ticketSubmitted = false;
+                updateButtonVisibility();
+                showError(tr("devmod.endurance.debrief.report.error.subject"));
+                return;
+            }
+
+            String notes = resolveTicketNotes();
+
             // Create reports directory
             java.nio.file.Path reportsDir = mc.gameDirectory.toPath().resolve("wis-reports");
             java.nio.file.Files.createDirectories(reportsDir);
@@ -851,101 +1201,60 @@ public class DebriefScreen extends BaseDevModScreen {
 
             // Fix #8: Build report using proper data structures for Gson serialization
             GradeBreakdown grade = getOrCalculateGradeBreakdown();
-
-            Map<String, Object> report = new LinkedHashMap<>();
-            report.put("waveNumber", waveNumber);
-            report.put("timestamp", timestamp);
-            report.put("grade", grade.grade());
-            report.put("totalScore", grade.totalScore());
-
-            Map<String, Object> scoreBreakdown = new LinkedHashMap<>();
-            scoreBreakdown.put("dps", grade.dpsScore());
-            scoreBreakdown.put("noDamageBonus", grade.noDamageBonus());
-            scoreBreakdown.put("combo", grade.comboScore());
-            scoreBreakdown.put("ttk", grade.ttkScore());
-            scoreBreakdown.put("crit", grade.critScore());
-            report.put("scoreBreakdown", scoreBreakdown);
-
-            Map<String, Object> stats = new LinkedHashMap<>();
-            stats.put("durationMs", collector.getWaveDurationMs());
-            stats.put("kills", collector.getTotalKills());
-            stats.put("eliteKills", collector.getEliteKills());
-            stats.put("dps", collector.getDPS());
-            stats.put("damageDealt", collector.getTotalDamageDealt());
-            stats.put("damageTaken", collector.getTotalDamageTaken());
-            stats.put("maxCombo", collector.getMaxCombo());
-            stats.put("criticalHits", collector.getCriticalHits());
-            stats.put("critRate", collector.getCriticalHitRate());
-            stats.put("avgTTK", collector.getAverageTTK());
-            stats.put("dodges", collector.getDodges());
-            stats.put("parries", collector.getParries());
-            stats.put("eventCount", collector.getEventCount());
-            report.put("stats", stats);
-
-            report.put("noDamageWave", collector.wasNoDamageWave());
-
-            // Add party context if available
-            PartyWaveStats partyStats = ClientPartyStatsCache.getStatsForWave(waveNumber);
-            if (partyStats != null && partyStats.isPartyRun()) {
-                Map<String, Object> partyData = new LinkedHashMap<>();
-                partyData.put("partySize", partyStats.playerStats().size());
-                partyData.put("partyTotalKills", partyStats.partyTotalKills());
-                partyData.put("partyTotalDamage", partyStats.partyTotalDamageDealt());
-                partyData.put("partyDPS", partyStats.partyDPS());
-                partyData.put("partyNoDamageWave", partyStats.partyNoDamageWave());
-                partyData.put("mvpPlayerId", partyStats.mvpPlayerId());
-                partyData.put("mvpReason", partyStats.mvpReason());
-
-                // Per-player breakdown
-                List<Map<String, Object>> playerBreakdown = new ArrayList<>();
-                for (PartyWaveStats.PlayerWaveData pd : partyStats.playerStats()) {
-                    Map<String, Object> playerEntry = new LinkedHashMap<>();
-                    playerEntry.put("playerName", pd.playerName());
-                    playerEntry.put("kills", pd.kills());
-                    playerEntry.put("killPercent", pd.killPercent());
-                    playerEntry.put("dps", pd.dps());
-                    playerEntry.put("maxCombo", pd.maxCombo());
-                    playerEntry.put("wasSpectator", pd.wasSpectator());
-                    playerBreakdown.add(playerEntry);
-                }
-                partyData.put("players", playerBreakdown);
-                report.put("party", partyData);
-            }
+            Map<String, Object> report = buildReportData(timestamp, grade);
 
             // Write file using Gson for proper escaping
             String json = GSON.toJson(report);
             java.nio.file.Files.writeString(reportFile, json);
 
+            TicketCategory category = TicketCategory.BUG;
+            TicketPriority priority = category.getDefaultPriority();
+            String description = buildTicketDescription(grade, notes, filename);
+
+            PacketDistributor.sendToServer(new TicketCreatePayload(category, priority, subject, description));
+
+            UUID tempId = UUID.randomUUID();
+            ClientTicketCache.addTicket(new ClientTicketCache.TicketData(
+                tempId,
+                category,
+                priority,
+                TicketStatus.OPEN,
+                subject,
+                description,
+                java.time.Instant.now(),
+                null,
+                0
+            ));
+
             // Notify player - UX: Make path clickable to copy or open folder
-            // UX Q9: Add HoverEvents for clarity on what each button does
-            // UX Q10: Show just filename to avoid long path wrapping, full path in hover
             String fullPath = Objects.requireNonNull(reportFile.toAbsolutePath().toString());
             String folderPath = Objects.requireNonNull(reportsDir.toAbsolutePath().toString());
-            player.sendSystemMessage(Objects.requireNonNull(
-                Component.literal("[WIS] Report saved: ")
-                    .withStyle(style -> style.withColor(DesignTokens.Semantic.SUCCESS))
-                    .append(Objects.requireNonNull(Component.literal(Objects.requireNonNull(filename))
-                        .withStyle(style -> style
-                            .withColor(COLOR_ACCENT)
-                            .withUnderlined(true)
-                            .withHoverEvent(new net.minecraft.network.chat.HoverEvent(
-                                Objects.requireNonNull(net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT),
-                                Objects.requireNonNull(Component.literal("Click to copy full path:\n" + fullPath))))
-                            .withClickEvent(new net.minecraft.network.chat.ClickEvent(
-                                net.minecraft.network.chat.ClickEvent.Action.COPY_TO_CLIPBOARD,
-                                fullPath)))))
-                    .append(Objects.requireNonNull(Component.literal(" ")
-                        .withStyle(style -> style.withColor(DesignTokens.Semantic.SUCCESS))))
-                    .append(Objects.requireNonNull(Component.literal("[Open Folder]")
-                        .withStyle(style -> style
-                            .withColor(COLOR_ACCENT)
-                            .withUnderlined(true)
-                            .withHoverEvent(new net.minecraft.network.chat.HoverEvent(
-                                Objects.requireNonNull(net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT),
-                                Objects.requireNonNull(Component.literal("Click to open folder"))))
-                            .withClickEvent(new net.minecraft.network.chat.ClickEvent(
-                                net.minecraft.network.chat.ClickEvent.Action.OPEN_FILE,
-                                folderPath)))))));
+            net.minecraft.network.chat.MutableComponent reportMessage = Component.translatable("devmod.endurance.debrief.report.sent_prefix")
+                .append(Objects.requireNonNull(Component.literal(" ")))
+                .append(Objects.requireNonNull(Component.literal(Objects.requireNonNull(filename))
+                    .withStyle(style -> style
+                        .withColor(COLOR_ACCENT)
+                        .withUnderlined(true)
+                        .withHoverEvent(new net.minecraft.network.chat.HoverEvent(
+                            Objects.requireNonNull(net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT),
+                            Objects.requireNonNull(Component.translatable(
+                                "devmod.endurance.debrief.report.copy_path", fullPath))))
+                        .withClickEvent(new net.minecraft.network.chat.ClickEvent(
+                            net.minecraft.network.chat.ClickEvent.Action.COPY_TO_CLIPBOARD,
+                            fullPath)))))
+                .append(Objects.requireNonNull(Component.literal(" ")))
+                .append(Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.report.open_folder")
+                    .withStyle(style -> style
+                        .withColor(COLOR_ACCENT)
+                        .withUnderlined(true)
+                        .withHoverEvent(new net.minecraft.network.chat.HoverEvent(
+                            Objects.requireNonNull(net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT),
+                            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.report.open_folder_hint"))))
+                        .withClickEvent(new net.minecraft.network.chat.ClickEvent(
+                            net.minecraft.network.chat.ClickEvent.Action.OPEN_FILE,
+                            folderPath)))));
+            player.sendSystemMessage(Objects.requireNonNull(reportMessage.withStyle(
+                style -> style.withColor(DesignTokens.Semantic.SUCCESS))));
 
             org.slf4j.LoggerFactory.getLogger(DebriefScreen.class).info(
                 "[WIS] Wave {} report exported to {}", waveNumber, reportFile);
@@ -956,10 +1265,10 @@ public class DebriefScreen extends BaseDevModScreen {
             updateButtonVisibility();
 
             player.sendSystemMessage(Objects.requireNonNull(
-                Component.literal("[WIS] Failed to save report: " + e.getMessage())
+                Component.translatable("devmod.endurance.debrief.report.error", e.getMessage())
                     .withStyle(style -> style.withColor(DesignTokens.Semantic.ERROR))));
             org.slf4j.LoggerFactory.getLogger(DebriefScreen.class).error(
-                "[WIS] Failed to export wave report", e);
+                "[WIS] Failed to export wave report / ticket", e);
         }
     }
 
@@ -981,7 +1290,7 @@ public class DebriefScreen extends BaseDevModScreen {
         }
 
         // Default scroll behavior for other tabs
-        scrollOffset = Math.max(0, scrollOffset - (int)(vertAmount * 10));
+        scrollOffset = net.minecraft.util.Mth.clamp(scrollOffset - (int)(vertAmount * 10), 0, maxScrollOffset);
         return true;
     }
 

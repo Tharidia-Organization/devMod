@@ -219,7 +219,7 @@ public class NutritionHudOverlay {
         int barX = x + PADDING + LABEL_WIDTH;
         int barY = y + PADDING;
 
-        for (NutritionCategory cat : NutritionCategory.VALUES) {
+        for (NutritionCategory cat : NutritionCategory.ALL) {
             float value = ClientNutritionCache.getValue(cat);
             // FIX UX #9: Draw category label (first letter)
             String label = cat.displayName.substring(0, 1);

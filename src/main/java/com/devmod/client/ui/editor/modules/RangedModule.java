@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.editor.AbstractEditorModule;
 import com.devmod.client.ui.editor.EditorSection;
@@ -161,6 +162,16 @@ public class RangedModule extends AbstractEditorModule {
         RangedModuleCore core = requireCore();
         RangedModuleUI ui = requireUi();
         core.resetToOriginal();
+        ui.updateComponentsFromStats();
+        clearDirty();
+    }
+
+    @Override
+    public void resetToDefaults() {
+        RangedModuleUI ui = requireUi();
+        ItemStack baseline = originalItem.copy();
+        com.devmod.client.ui.editor.RangedWeaponModule.clearStats(baseline);
+        setItem(baseline);
         ui.updateComponentsFromStats();
         clearDirty();
     }

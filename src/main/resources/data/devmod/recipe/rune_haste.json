@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "rune_blocks",
+  "pattern": [
+    "SGS",
+    "GRG",
+    "SGS"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stone"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "R": {
+      "item": "minecraft:sugar"
+    }
+  },
+  "result": {
+    "id": "devmod:rune_haste",
+    "count": 1
+  }
+}

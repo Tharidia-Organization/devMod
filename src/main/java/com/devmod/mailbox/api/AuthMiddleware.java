@@ -94,7 +94,7 @@ public final class AuthMiddleware {
             secret = generateSecretString();
             config.setApiSecretKey(secret);
             config.save();
-            LOGGER.warn("[MailboxAuth] Generated new API secret key; saved to config");
+            LOGGER.info("[MailboxAuth] Generated new API secret key; saved to config");
         }
 
         secretKey = deriveKey(secret);
@@ -500,7 +500,7 @@ public final class AuthMiddleware {
         AdminUser user = new AdminUser(username, hashPassword(password), "ADMIN");
         ADMIN_USERS.put(username, user);
         saveUsers();
-        LOGGER.warn("[MailboxAuth] Bootstrap admin created. Username: {} Password: {}", username, password);
+        LOGGER.info("[MailboxAuth] Bootstrap admin created. Username: {} Password: {}", username, password);
     }
 
     private static String generatePassword(int length) {

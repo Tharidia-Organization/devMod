@@ -9,8 +9,8 @@ import javax.annotation.Nullable;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.editor.ItemEditorDataManager;
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 
@@ -121,14 +121,14 @@ public class ItemEditorPresetManager implements PresetManager {
 
     private BiConsumer<ItemStack, WeaponStats> weaponApplier() {
         if (weaponApplier == null) {
-            weaponApplier = WeaponConfigManager::setSpecificStats;
+            weaponApplier = WeaponConfigHandler.INSTANCE::setSpecificStats;
         }
         return weaponApplier;
     }
 
     private BiConsumer<ItemStack, ArmorStats> armorApplier() {
         if (armorApplier == null) {
-            armorApplier = ArmorConfigManager::setSpecificStats;
+            armorApplier = ArmorConfigHandler.INSTANCE::setSpecificStats;
         }
         return armorApplier;
     }

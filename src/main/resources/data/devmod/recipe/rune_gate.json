@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "rune_blocks",
+  "pattern": [
+    "SOS",
+    "OEO",
+    "SOS"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stone"
+    },
+    "O": {
+      "item": "minecraft:obsidian"
+    },
+    "E": {
+      "item": "minecraft:ender_pearl"
+    }
+  },
+  "result": {
+    "id": "devmod:rune_gate",
+    "count": 1
+  }
+}

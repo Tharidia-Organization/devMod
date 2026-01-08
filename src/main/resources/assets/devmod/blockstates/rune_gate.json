@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "face=floor,facing=north": {
+      "model": "devmod:block/rune_gate_floor"
+    },
+    "face=floor,facing=south": {
+      "model": "devmod:block/rune_gate_floor",
+      "y": 180
+    },
+    "face=floor,facing=east": {
+      "model": "devmod:block/rune_gate_floor",
+      "y": 90
+    },
+    "face=floor,facing=west": {
+      "model": "devmod:block/rune_gate_floor",
+      "y": 270
+    },
+    "face=ceiling,facing=north": {
+      "model": "devmod:block/rune_gate_ceiling"
+    },
+    "face=ceiling,facing=south": {
+      "model": "devmod:block/rune_gate_ceiling",
+      "y": 180
+    },
+    "face=ceiling,facing=east": {
+      "model": "devmod:block/rune_gate_ceiling",
+      "y": 90
+    },
+    "face=ceiling,facing=west": {
+      "model": "devmod:block/rune_gate_ceiling",
+      "y": 270
+    },
+    "face=wall,facing=north": {
+      "model": "devmod:block/rune_gate_wall"
+    },
+    "face=wall,facing=south": {
+      "model": "devmod:block/rune_gate_wall",
+      "y": 180
+    },
+    "face=wall,facing=east": {
+      "model": "devmod:block/rune_gate_wall",
+      "y": 270
+    },
+    "face=wall,facing=west": {
+      "model": "devmod:block/rune_gate_wall",
+      "y": 90
+    }
+  }
+}

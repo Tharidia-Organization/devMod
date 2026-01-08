@@ -248,15 +248,15 @@ public class RangedModuleUI {
     private void createDamageComponents(SourceBadge.Source source) {
         RangedWeaponModule.RangedStats stats = core.getStats();
 
-        critChanceSlider = new EditorSlider("critChance", "Crit Chance", 0f, 1f, stats.critChance)
-            .step(0.01f)
-            .format("%.2f")
+        critChanceSlider = new EditorSlider("critChance", "Crit Chance", 0f, 100f, stats.critChance * 100f)
+            .step(1f)
+            .format("%.0f")
             .suffix("%")
             .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(source)
-            .info("Chance for projectile to deal critical damage (0-1). Vanilla arrows crit at full velocity. This adds bonus crit chance.")
-            .onChange(v -> { stats.critChance = v; module.markDirty("Crit chance"); });
+            .info("Chance for projectile to deal critical damage. Vanilla arrows crit at full velocity. This adds bonus crit chance.")
+            .onChange(v -> { stats.critChance = v / 100f; module.markDirty("Crit chance"); });
 
         critDamageSlider = new EditorSlider("critDamage", "Crit Damage", 1.0f, 3.5f, stats.critDamage)
             .step(0.05f)
@@ -360,7 +360,7 @@ public class RangedModuleUI {
         if (projectileGravitySlider != null) projectileGravitySlider.setValue(stats.projectileGravity);
         if (projectileSpreadSlider != null) projectileSpreadSlider.setValue(stats.projectileSpread);
         if (baseDamageSlider != null) baseDamageSlider.setValue(stats.baseDamage);
-        if (critChanceSlider != null) critChanceSlider.setValue(stats.critChance);
+        if (critChanceSlider != null) critChanceSlider.setValue(stats.critChance * 100f);
         if (critDamageSlider != null) critDamageSlider.setValue(stats.critDamage);
         if (piercingSlider != null) piercingSlider.setValue(stats.piercing);
         if (multishotCountSlider != null) multishotCountSlider.setValue(stats.multishotCount);
@@ -378,24 +378,12 @@ public class RangedModuleUI {
 
     private void applySourceLabel(@Nullable EditorSlider slider, @Nullable RangedWeaponModule.SourcedValue<?> sourced) {
         if (slider == null || sourced == null) return;
-        String prefix = switch (sourced.source()) {
-            case DEVMOD_COMPONENT -> "[DEV] ";
-            case CUSTOM_DATA -> "[NBT] ";
-            case VANILLA_DEFAULT -> "[VANILLA] ";
-            default -> "";
-        };
-        slider.setLabel(prefix + slider.getLabel().replaceFirst("^\\[[^]]+\\] ", ""));
+        slider.setLabel(slider.getLabel().replaceFirst("^\\[[^]]+\\] ", ""));
     }
 
     private void applySourceLabel(@Nullable EditorToggle toggle, @Nullable RangedWeaponModule.SourcedValue<?> sourced) {
         if (toggle == null || sourced == null) return;
-        String prefix = switch (sourced.source()) {
-            case DEVMOD_COMPONENT -> "[DEV] ";
-            case CUSTOM_DATA -> "[NBT] ";
-            case VANILLA_DEFAULT -> "[VANILLA] ";
-            default -> "";
-        };
-        toggle.setLabel(prefix + toggle.getLabel().replaceFirst("^\\[[^]]+\\] ", ""));
+        toggle.setLabel(toggle.getLabel().replaceFirst("^\\[[^]]+\\] ", ""));
     }
 
     // ═══════════════════════════════════════════════════════════════

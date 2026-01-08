@@ -6,16 +6,12 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Manages dialog content for the Nexus avatar.
  * Generates personalized responses based on player context.
  */
 public final class NexusDialogManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NexusDialogManager.class);
-
     public static final NexusDialogManager INSTANCE = new NexusDialogManager();
 
     private NexusDialogManager() {}
@@ -106,7 +102,7 @@ public final class NexusDialogManager {
             lines.add("[Party: " + ctx.partySize() + " members]");
         }
 
-        return new DialogResponse(speakerName, lines, getMainOptions(ctx));
+        return new DialogResponse(speakerName, lines, getMainOptions());
     }
 
     /**
@@ -265,7 +261,7 @@ public final class NexusDialogManager {
      * Get the main menu options.
      */
     @Nonnull
-    private List<DialogOption> getMainOptions(@Nonnull NexusDialogContext ctx) {
+    private List<DialogOption> getMainOptions() {
         List<DialogOption> options = new ArrayList<>();
 
         options.add(new DialogOption("quest_info", "Tell me about quests", "\u2694", DialogType.QUEST_INFO));

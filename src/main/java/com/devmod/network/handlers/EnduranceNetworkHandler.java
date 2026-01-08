@@ -1,5 +1,4 @@
 package com.devmod.network.handlers;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -24,19 +24,16 @@ import com.devmod.arena.policy.TemplateSuggestion;
 import com.devmod.endurance.ArenaSuggestionsPayload;
 import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.EnduranceConfigSyncPayload;
-import com.devmod.endurance.MobPoolConfigSyncPayload;
-import com.devmod.endurance.config.ConfigProposalManager;
-import com.devmod.endurance.config.ConfigScope;
-import com.devmod.endurance.config.EnduranceMobConfig;
-import com.devmod.endurance.config.EnduranceMobPoolConfig;
-import com.devmod.endurance.config.GlobalMobConfigStorage;
 import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.EnduranceQuestState;
 import com.devmod.endurance.InstanceLoadingPayload;
-import com.devmod.endurance.KitSyncPayload;
+import com.devmod.endurance.KitManager;
 import com.devmod.endurance.KitSyncConfirmPayload;
+import com.devmod.endurance.KitSyncPayload;
+import com.devmod.endurance.MobPoolConfigSyncPayload;
 import com.devmod.endurance.PartyStatsSyncPayload;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PerkSelectionPayload;
@@ -54,16 +51,16 @@ import com.devmod.endurance.RequestShopSyncPayload;
 import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.ShopPurchasePayload;
 import com.devmod.endurance.ShopSyncPayload;
-import com.devmod.shared.SharedColorTokens;
 import com.devmod.endurance.StartQuestPayload;
 import com.devmod.endurance.TensionUpdatePayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
-import com.devmod.party.PartyData;
-import com.devmod.party.PartyManager;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
-import com.devmod.endurance.CustomKit;
-import com.devmod.endurance.KitManager;
+import com.devmod.endurance.config.ConfigProposalManager;
+import com.devmod.endurance.config.ConfigScope;
+import com.devmod.endurance.config.EnduranceMobConfig;
+import com.devmod.endurance.config.EnduranceMobPoolConfig;
+import com.devmod.endurance.config.GlobalMobConfigStorage;
 import com.devmod.endurance.nutrition.NutritionSyncPayload;
 import com.devmod.mob.MobRequirements;
 import com.devmod.mob.MobRequirementsRegistry;
@@ -72,6 +69,9 @@ import com.devmod.network.NetworkHandler;
 import com.devmod.network.PacketValidator;
 import com.devmod.network.PacketValidator.ValidationResult;
 import com.devmod.network.PayloadValidation.PayloadLimits;
+import com.devmod.party.PartyData;
+import com.devmod.party.PartyManager;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
@@ -90,6 +90,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
 
     private static final long PERK_SELECTION_TIMEOUT_MS = 20_000L;
     private static final long DIRECTIVE_SELECTION_TIMEOUT_MS = 15_000L;
+    private static final long ABANDON_CONFIRM_WINDOW_MS = 3_000L;
 
     // =================================================================================
     // PAYLOAD REGISTRATION (P2: Domain-specific registration)
@@ -317,7 +318,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
         enqueueWork(context, () -> {
             if (context.player() instanceof ServerPlayer player) {
                 PacketValidator security = security();
-                ValidationResult validation = security.validatePacket(player, "endurance_quest", true);
+                ValidationResult validation = security.validatePacket(player, "endurance_quest", false);
                 if (!validation.isSuccess()) {
                     player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
                     return;
@@ -674,6 +675,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
             try {
                 switch (action) {
                     case CONTINUE_AFTER_DEATH -> {
+                        session.clearAbandonConfirm();
                         if (awaitingRespawn) {
                             EnduranceQuestManager.INSTANCE.handleRespawnChoice(player, true);
                             LOGGER.info("[EnduranceQuest] Player {} respawning after death",
@@ -688,6 +690,9 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                     }
                     case GIVE_UP_AFTER_DEATH -> {
                         if (awaitingRespawn) {
+                            if (!confirmAbandon(player, session)) {
+                                return;
+                            }
                             EnduranceQuestManager.INSTANCE.handleRespawnChoice(player, false);
                             LOGGER.info("[EnduranceQuest] Player {} gave up after death",
                                 player.getName().getString());
@@ -696,22 +701,30 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                             LOGGER.info("[EnduranceQuest] Player {} exited at checkpoint",
                                 player.getName().getString());
                         } else {
+                            if (!confirmAbandon(player, session)) {
+                                return;
+                            }
                             EnduranceQuestManager.INSTANCE.abandonQuest(player);
                             LOGGER.info("[EnduranceQuest] Player {} abandoned quest",
                                 player.getName().getString());
                         }
                     }
                     case CONTINUE_TO_NEXT_WAVE -> {
+                        session.clearAbandonConfirm();
                         EnduranceQuestManager.INSTANCE.continueToNextWave(player);
                         LOGGER.info("[EnduranceQuest] Player {} continuing to next wave",
                             player.getName().getString());
                     }
                     case EXIT_AT_CHECKPOINT -> {
+                        session.clearAbandonConfirm();
                         EnduranceQuestManager.INSTANCE.exitAtCheckpoint(player);
                         LOGGER.info("[EnduranceQuest] Player {} exited at checkpoint",
                             player.getName().getString());
                     }
                     case ABANDON_QUEST -> {
+                        if (!confirmAbandon(player, session)) {
+                            return;
+                        }
                         EnduranceQuestManager.INSTANCE.abandonQuest(player);
                         LOGGER.info("[EnduranceQuest] Player {} abandoned quest",
                             player.getName().getString());
@@ -722,6 +735,17 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                 LOGGER.error("[EnduranceQuest] Quest action failed", e);
             }
         });
+    }
+
+    private static boolean confirmAbandon(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session) {
+        if (session.confirmAbandonRequest(ABANDON_CONFIRM_WINDOW_MS)) {
+            return true;
+        }
+        player.sendSystemMessage(Objects.requireNonNull(Component.literal("[DevMod] Press exit again to confirm.")
+            .withStyle(SharedColorTokens.Chat.YELLOW)));
+        LOGGER.info("[EnduranceQuest] Player {} requested quest abandon; awaiting confirmation",
+            player.getName().getString());
+        return false;
     }
 
     // =================================================================================
@@ -1409,7 +1433,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
         }
     }
 
-    private static EnduranceMobPoolConfig normalizePoolConfig(EnduranceMobPoolConfig poolConfig) {
+    private static EnduranceMobPoolConfig normalizePoolConfig(@javax.annotation.Nullable EnduranceMobPoolConfig poolConfig) {
         EnduranceMobPoolConfig normalized = poolConfig != null
             ? poolConfig.copy()
             : new EnduranceMobPoolConfig();

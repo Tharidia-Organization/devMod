@@ -6,7 +6,9 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.nbt.CompoundTag;
 
-public class UsableStats {
+import com.devmod.config.stats.IItemStats;
+
+public class UsableStats implements IItemStats {
     // ═══════════════════════════════════════════════════════════════
     // USE PROPERTIES
     // ═══════════════════════════════════════════════════════════════
@@ -149,34 +151,40 @@ public class UsableStats {
     }
 
     /**
-     * Load usable stats from NBT compound tag.
+     * Load usable stats from NBT compound tag (static factory).
      */
-    public static UsableStats load(CompoundTag tag) {
+    public static UsableStats fromTag(CompoundTag tag) {
         UsableStats stats = new UsableStats();
+        stats.load(tag);
+        return stats;
+    }
 
+    /**
+     * Load usable stats from NBT compound tag (instance method for IItemStats).
+     */
+    @Override
+    public void load(CompoundTag tag) {
         // Use properties
-        if (tag.contains("UseDur")) stats.useDuration = tag.getInt("UseDur");
-        if (tag.contains("Cooldown")) stats.cooldownDuration = tag.getInt("Cooldown");
+        if (tag.contains("UseDur")) useDuration = tag.getInt("UseDur");
+        if (tag.contains("Cooldown")) cooldownDuration = tag.getInt("Cooldown");
         if (tag.contains("UseAnim")) {
-            stats.useAnimation = Objects.requireNonNull(tag.getString("UseAnim"), "UseAnim");
+            useAnimation = Objects.requireNonNull(tag.getString("UseAnim"), "UseAnim");
         }
 
         // Throwable properties
         if (tag.contains("Throwable")) {
-            stats.isThrowable = tag.getBoolean("Throwable");
-            stats.projectileSpeed = tag.contains("ProjSpeed") ? tag.getFloat("ProjSpeed") : 1.5f;
-            stats.projectileGravity = tag.contains("ProjGrav") ? tag.getFloat("ProjGrav") : 0.03f;
-            stats.projectileInaccuracy = tag.contains("ProjInacc") ? tag.getFloat("ProjInacc") : 1.0f;
-            stats.projectileDamage = tag.contains("ProjDmg") ? tag.getInt("ProjDmg") : 0;
+            isThrowable = tag.getBoolean("Throwable");
+            projectileSpeed = tag.contains("ProjSpeed") ? tag.getFloat("ProjSpeed") : 1.5f;
+            projectileGravity = tag.contains("ProjGrav") ? tag.getFloat("ProjGrav") : 0.03f;
+            projectileInaccuracy = tag.contains("ProjInacc") ? tag.getFloat("ProjInacc") : 1.0f;
+            projectileDamage = tag.contains("ProjDmg") ? tag.getInt("ProjDmg") : 0;
         }
 
         // Consumption
-        if (tag.contains("NoConsume")) stats.consumeOnUse = !tag.getBoolean("NoConsume");
+        if (tag.contains("NoConsume")) consumeOnUse = !tag.getBoolean("NoConsume");
         if (tag.contains("Remainder")) {
-            stats.remainderItem = Objects.requireNonNull(tag.getString("Remainder"), "Remainder");
+            remainderItem = Objects.requireNonNull(tag.getString("Remainder"), "Remainder");
         }
-
-        return stats;
     }
 
     // ═══════════════════════════════════════════════════════════════

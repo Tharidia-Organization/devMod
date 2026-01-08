@@ -553,10 +553,60 @@ public class ArenaBuilder {
             auditLevel = mcPlacer.getLevel();
         }
         if (auditLevel != null) {
-            int size = template.size();
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int halfX = sizeX / 2;
+            int halfZ = sizeZ / 2;
+            ArenaTemplate.ArenaShape shape = template.arenaShape();
+            if (shape == null) {
+                shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+            }
+
+            int wallThickness = 0;
+            if (template.walls() != null && template.walls().enabled()) {
+                wallThickness = Math.max(1, template.walls().thickness());
+            }
+
+            int minX;
+            int maxX;
+            int minZ;
+            int maxZ;
+            if (shape == ArenaTemplate.ArenaShape.CIRCULAR || shape == ArenaTemplate.ArenaShape.RING) {
+                int radius = Math.max(halfX, halfZ);
+                int extent = radius + wallThickness;
+                minX = originX - extent;
+                maxX = originX + extent;
+                minZ = originZ - extent;
+                maxZ = originZ + extent;
+            } else {
+                int wallPad = Math.max(0, wallThickness - 1);
+                minX = originX - halfX - wallPad;
+                maxX = originX + halfX - 1 + wallPad;
+                minZ = originZ - halfZ - wallPad;
+                maxZ = originZ + halfZ - 1 + wallPad;
+            }
+
+            int minY = originY;
+            if (template.floor() != null) {
+                minY = template.floor().y();
+                if (template.underfloor() != null) {
+                    minY -= template.underfloor().depth();
+                }
+            }
+            int maxY = minY;
+            if (template.floor() != null) {
+                maxY = Math.max(maxY, template.floor().y() + template.floor().thickness() - 1);
+            }
+            if (template.ceiling() != null && template.ceiling().enabled()) {
+                maxY = Math.max(maxY, template.ceiling().y() + template.ceiling().thickness() - 1);
+            } else if (template.walls() != null && template.walls().enabled()) {
+                maxY = Math.max(maxY, template.walls().startY() + template.walls().height() - 1);
+            } else {
+                maxY = minY + 20;
+            }
+
             PostBuildEntityAudit.AuditResult auditResult = new PostBuildEntityAudit()
-                .audit(auditLevel, originX, originY, originZ,
-                       originX + size, originY + size, originZ + size);
+                .audit(auditLevel, minX, minY, minZ, maxX, maxY, maxZ);
             if (auditResult.hasResiduals()) {
                 telemetry.emit("arena.build.residual_entities", Map.of(
                     "templateId", template.id(),
@@ -569,20 +619,11 @@ public class ArenaBuilder {
             }
 
             // P1: Block integrity verification
-            // Calculate actual arena height (not size, which is horizontal)
-            int actualMaxY = originY;
-            if (template.walls() != null) {
-                actualMaxY = template.walls().startY() + template.walls().height();
-            } else if (template.ceiling() != null && template.ceiling().enabled()) {
-                actualMaxY = template.ceiling().y() + template.ceiling().thickness();
-            } else {
-                // Fallback: floor + reasonable height
-                actualMaxY = originY + 20;
-            }
             BlockIntegrityVerifier.VerificationResult integrityResult = new BlockIntegrityVerifier()
-                .verify(auditLevel, originX, originY, originZ,
-                        originX + size, actualMaxY, originZ + size,
-                        transaction.getBlockCount());
+                .verify(auditLevel, minX, minY, minZ,
+                        maxX, maxY, maxZ,
+                        transaction.getBlockCount(),
+                        template, originX, originZ);
             if (integrityResult.hasIntegrityIssues()) {
                 telemetry.emit("arena.build.integrity_issue", Map.of(
                     "templateId", template.id(),
@@ -886,11 +927,6 @@ public class ArenaBuilder {
                 "clamped", combatRadius,
                 "templateRadius", templateRadius
             ));
-        }
-
-        ArenaTemplate.ArenaShape shape = template.arenaShape();
-        if (shape == null) {
-            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
         }
 
         // Iterate only within the combat ring + blend zone

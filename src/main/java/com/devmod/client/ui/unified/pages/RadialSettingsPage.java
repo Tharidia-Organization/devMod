@@ -30,8 +30,8 @@ public class RadialSettingsPage implements SettingsPage {
     private boolean showKeyHints;
     private boolean safeMode;
     private boolean useUsageOrdering;
-    private RadialMenuConfig.MenuProfile menuProfile;
-    private String themePreset;
+    private RadialMenuConfig.MenuProfile menuProfile = RadialMenuConfig.MenuProfile.ALL;
+    private String themePreset = "default";
 
     // Original values for dirty check
     private boolean originalReleaseToSelect;
@@ -43,8 +43,8 @@ public class RadialSettingsPage implements SettingsPage {
     private boolean originalShowKeyHints;
     private boolean originalSafeMode;
     private boolean originalUseUsageOrdering;
-    private RadialMenuConfig.MenuProfile originalMenuProfile;
-    private String originalThemePreset;
+    private RadialMenuConfig.MenuProfile originalMenuProfile = RadialMenuConfig.MenuProfile.ALL;
+    private String originalThemePreset = "default";
 
     // Scroll state
     private int scrollOffset = 0;

@@ -1,5 +1,4 @@
 package com.devmod.client.endurance;
-
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -24,15 +23,16 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.devmod.client.endurance.ui.MobListPanel;
 import com.devmod.client.endurance.ui.MobStatsPanel;
 import com.devmod.client.notification.ClientNotificationManager;
+import com.devmod.client.party.ClientPartyCache;
 import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceMobConfigSyncPayload;
+import com.devmod.endurance.EnduranceQuestRegistry;
+import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
 import com.devmod.endurance.MobPoolConfigSyncPayload;
 import com.devmod.endurance.RequestMobPoolConfigPayload;
 import com.devmod.endurance.SpawnAffix;
-import com.devmod.endurance.EnduranceQuestRegistry;
-import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
 import com.devmod.endurance.config.ConfigScope;
 import com.devmod.endurance.config.EnduranceMobConfig;
 import com.devmod.endurance.config.EnduranceMobPoolConfig;
@@ -40,7 +40,6 @@ import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
-import com.devmod.client.party.ClientPartyCache;
 
 /**
  * Screen for editing the Endurance mob pool configuration.

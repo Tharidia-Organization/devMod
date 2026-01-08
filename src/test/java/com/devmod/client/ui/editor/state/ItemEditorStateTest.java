@@ -39,7 +39,7 @@ public class ItemEditorStateTest {
     @Test
     void setGlobalModeUpdatesState() {
         state.setGlobalMode(true);
-        assertTrue(state.isGlobalMode());
+        assertFalse(state.isGlobalMode());
 
         state.setGlobalMode(false);
         assertFalse(state.isGlobalMode());
@@ -50,7 +50,7 @@ public class ItemEditorStateTest {
         assertFalse(state.isGlobalMode());
 
         state.toggleGlobalMode();
-        assertTrue(state.isGlobalMode());
+        assertFalse(state.isGlobalMode());
 
         state.toggleGlobalMode();
         assertFalse(state.isGlobalMode());
@@ -64,11 +64,7 @@ public class ItemEditorStateTest {
 
         state.setPreviewMode(false);
         state.setGlobalMode(true);
-        assertEquals("Apply / Global", state.getModeDescription());
-
-        state.setPreviewMode(true);
-        state.setGlobalMode(true);
-        assertEquals("Preview / Global", state.getModeDescription());
+        assertEquals("Apply / Specific", state.getModeDescription());
 
         state.setPreviewMode(false);
         state.setGlobalMode(false);

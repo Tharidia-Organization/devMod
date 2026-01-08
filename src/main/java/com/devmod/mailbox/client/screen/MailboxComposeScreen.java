@@ -24,7 +24,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.ItemPickerOverlay;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -33,7 +32,7 @@ import com.devmod.mailbox.MailboxConfig;
 import com.devmod.mailbox.attachment.CurrencyAttachment;
 import com.devmod.mailbox.attachment.ItemAttachment;
 import com.devmod.mailbox.attachment.MailAttachment;
-import com.devmod.mailbox.client.MailboxUiTheme;
+import com.devmod.mailbox.client.MailboxUiSkin;
 import com.devmod.mailbox.network.payload.MailboxSendPayload;
 
 /**
@@ -265,18 +264,19 @@ public class MailboxComposeScreen extends Screen {
     }
 
     private void renderPanel(GuiGraphics graphics) {
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, MailboxUiTheme.Panel.BG);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, MailboxUiSkin.panelBg());
+        MailboxUiSkin.renderScrollPanel(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT);
 
-        int borderColor = DesignTokens.Border.DEFAULT();
+        int borderColor = MailboxUiSkin.border();
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 1, borderColor);
         graphics.fill(panelX, panelY + PANEL_HEIGHT - 1, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
         graphics.fill(panelX, panelY, panelX + 1, panelY + PANEL_HEIGHT, borderColor);
         graphics.fill(panelX + PANEL_WIDTH - 1, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
 
-        graphics.drawString(getFont(), "Compose Message", panelX + 15, panelY + 12,
-            DesignTokens.Text.PRIMARY(), false);
+        MailboxUiSkin.drawText(graphics, getFont(), "Compose Message", panelX + 15, panelY + 12,
+            MailboxUiSkin.textPrimary(), false);
         graphics.fill(panelX + 10, panelY + 30, panelX + PANEL_WIDTH - 10, panelY + 31,
-            DesignTokens.Border.DEFAULT());
+            MailboxUiSkin.border());
     }
 
     private void renderFields(GuiGraphics graphics) {
@@ -292,9 +292,9 @@ public class MailboxComposeScreen extends Screen {
 
     private void renderField(GuiGraphics graphics, @Nullable FieldLayout field) {
         if (field == null) return;
-        graphics.drawString(getFont(), field.label, field.labelX, field.labelY,
-            DesignTokens.Text.MUTED(), false);
-        AxiomRenderer.drawInputBackground(graphics, field.x, field.y, field.width, field.height,
+        MailboxUiSkin.drawText(graphics, getFont(), field.label, field.labelX, field.labelY,
+            MailboxUiSkin.textMuted(), false);
+        MailboxUiSkin.drawInputBackground(graphics, field.x, field.y, field.width, field.height,
             field.box.isFocused());
     }
 
@@ -338,7 +338,7 @@ public class MailboxComposeScreen extends Screen {
     private void renderError(GuiGraphics graphics) {
         if (errorMessage == null) return;
         int y = panelY + PANEL_HEIGHT - 55;
-        graphics.drawString(getFont(), errorMessage, panelX + 20, y, DesignTokens.Border.ERROR(), false);
+        MailboxUiSkin.drawText(graphics, getFont(), errorMessage, panelX + 20, y, DesignTokens.Border.ERROR(), false);
     }
 
     @Override
@@ -641,10 +641,14 @@ public class MailboxComposeScreen extends Screen {
         EditBox box = new EditBox(getFont(), x + INPUT_PADDING, inputY + INPUT_PADDING,
             width - INPUT_PADDING * 2, height - INPUT_PADDING * 2, emptyTitle);
         Component hintComponent = Objects.requireNonNull(
-            Component.literal(Objects.requireNonNull(hint, "hint")), "hint component");
+            MailboxUiSkin.styledComponent(Objects.requireNonNull(hint, "hint")), "hint component");
         box.setHint(hintComponent);
         box.setMaxLength(maxLength);
         box.setBordered(false);
+        if (MailboxUiSkin.isFeatheredTheme()) {
+            box.setTextColor(MailboxUiSkin.textPrimary());
+            box.setTextColorUneditable(MailboxUiSkin.textMuted());
+        }
         addRenderableWidget(box);
 
         return new FieldLayout(label, x, labelY, x, inputY, width, height, box);

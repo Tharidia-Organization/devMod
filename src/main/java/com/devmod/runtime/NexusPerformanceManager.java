@@ -1,5 +1,4 @@
 package com.devmod.runtime;
-
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -13,14 +12,14 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.config.Config;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
+
+import com.devmod.config.Config;
 
 /**
  * Performance optimization manager for the Nexus dimension.

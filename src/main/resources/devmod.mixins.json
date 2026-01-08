@@ -4,8 +4,11 @@
   "package": "com.devmod.mixin",
   "refmap": "devmod.refmap.json",
   "compatibilityLevel": "JAVA_21",
+  "plugin": "com.devmod.mixin.DevModMixinPlugin",
   "mixins": [
+    "CommandsMixin",
     "MinecraftServerAccessor",
+    "VanillaPackResourcesBuilderMixin",
     "RecipeManagerMixin",
     "DebugPacketsMixin",
     "MobDespawnMixin"
@@ -20,7 +23,8 @@
     "client.ClientLevelTimeMixin",
     "client.LevelAccessorTimeMixin",
     "client.FabricScreenApiFixMixin",
-    "client.MoreCullingCompatMixin"
+    "client.MoreCullingCompatMixin",
+    "client.SoundManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

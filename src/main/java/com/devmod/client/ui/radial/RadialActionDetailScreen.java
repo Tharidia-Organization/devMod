@@ -1,5 +1,4 @@
 package com.devmod.client.ui.radial;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -7,6 +6,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -17,13 +18,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 
-import org.lwjgl.glfw.GLFW;
-
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionCategory;
+import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;

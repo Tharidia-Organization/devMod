@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "portal_igniters",
+  "pattern": [
+    "D",
+    "FI"
+  ],
+  "key": {
+    "D": {
+      "item": "minecraft:blue_dye"
+    },
+    "F": {
+      "item": "minecraft:flint"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "devmod:portal_igniter_blue",
+    "count": 1
+  }
+}

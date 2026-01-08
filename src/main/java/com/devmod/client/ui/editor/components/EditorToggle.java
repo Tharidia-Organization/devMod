@@ -27,6 +27,7 @@ public class EditorToggle {
     private static final int TEXT_OFFSET_Y = (TOGGLE_HEIGHT - TEXT_HEIGHT) / 2;
     private static final int BADGE_GAP = 4;
     private static final int STATE_TEXT_GAP = 8;
+    private static final boolean SHOW_SOURCE_BADGE = false;
 
     // Configuration
     private final String id;
@@ -122,6 +123,10 @@ public class EditorToggle {
      * Set a source badge to display the value's origin (DEV/NBT/VANILLA).
      */
     public EditorToggle sourceBadge(SourceBadge badge) {
+        if (!SHOW_SOURCE_BADGE) {
+            this.sourceBadge = null;
+            return this;
+        }
         this.sourceBadge = badge;
         return this;
     }
@@ -130,6 +135,10 @@ public class EditorToggle {
      * Set the source badge source type directly.
      */
     public EditorToggle source(SourceBadge.Source source) {
+        if (!SHOW_SOURCE_BADGE) {
+            this.sourceBadge = null;
+            return this;
+        }
         SourceBadge badge = this.sourceBadge;
         if (badge == null) {
             badge = new SourceBadge();
@@ -183,7 +192,7 @@ public class EditorToggle {
         safeGraphics.drawString(font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
 
         // Source badge (inline after label)
-        SourceBadge badge = this.sourceBadge;
+        SourceBadge badge = SHOW_SOURCE_BADGE ? this.sourceBadge : null;
         if (badge != null) {
             int badgeX = x + font.width(Objects.requireNonNull(safeLabel, "safeLabel")) + BADGE_GAP;
             int badgeY = y + (height - badge.getHeight()) / 2;

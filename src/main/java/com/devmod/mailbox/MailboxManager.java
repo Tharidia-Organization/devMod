@@ -13,10 +13,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -42,6 +44,8 @@ import com.devmod.mailbox.attachment.CurrencyAttachment;
 import com.devmod.mailbox.attachment.ItemAttachment;
 import com.devmod.mailbox.attachment.MailAttachment;
 import com.devmod.mailbox.broadcast.BroadcastQueueWorker;
+import com.devmod.mailbox.delivery.MailboxDeliveryJob;
+import com.devmod.mailbox.delivery.MailboxDeliveryRuntime;
 import com.devmod.mailbox.digest.DigestManager;
 import com.devmod.mailbox.moderation.AdminAuditLog;
 import com.devmod.mailbox.moderation.ContentFilter;
@@ -157,6 +161,9 @@ public class MailboxManager {
             // Start webhook manager
             WebhookManager.INSTANCE.start();
 
+            // Start delivery runtime
+            MailboxDeliveryRuntime.INSTANCE.start();
+
             // Start ticket manager
             TicketManager.INSTANCE.initialize().join();
 
@@ -235,6 +242,7 @@ public class MailboxManager {
         MessageScheduler.INSTANCE.stop();
         DigestManager.INSTANCE.stop();
         WebhookManager.INSTANCE.stop();
+        MailboxDeliveryRuntime.INSTANCE.stop();
         TicketManager.INSTANCE.shutdown().join();
         claimInFlight.clear();
         ApiServerLauncher.stop();
@@ -319,6 +327,8 @@ public class MailboxManager {
         }
     }
 
+    private record DeliveryOutcome(MailboxMessage message, boolean delivered) {}
+
     private FilterDecision applyContentFilter(String subject, @Nullable String body) {
         ContentFilter filter = ContentFilter.INSTANCE;
         if (!filter.isEnabled()) {
@@ -396,6 +406,51 @@ public class MailboxManager {
         }
 
         return AttachmentValidation.success();
+    }
+
+    @Nullable
+    private static String canonicalizeAttachmentData(@Nullable String attachmentData) {
+        if (attachmentData == null || attachmentData.isBlank()) {
+            return null;
+        }
+        List<MailAttachment> parsed = MailAttachment.parseAttachments(attachmentData);
+        if (parsed.isEmpty()) {
+            return null;
+        }
+        return MailAttachment.toJsonPayload(parsed);
+    }
+
+    @Nullable
+    private static String buildAttachmentDataFromReservation(AttachmentReservation reservation) {
+        if (reservation == null || !reservation.success()) {
+            return null;
+        }
+        List<MailAttachment> attachments = new ArrayList<>();
+
+        if (!reservation.items().isEmpty()) {
+            List<Map.Entry<ResourceLocation, Integer>> entries = new ArrayList<>(reservation.items().entrySet());
+            entries.sort(java.util.Comparator.comparing(e -> e.getKey().toString()));
+            for (Map.Entry<ResourceLocation, Integer> entry : entries) {
+                if (entry.getKey() != null && entry.getValue() != null && entry.getValue() > 0) {
+                    attachments.add(new ItemAttachment(entry.getKey(), entry.getValue(), null));
+                }
+            }
+        }
+
+        if (!reservation.currencies().isEmpty()) {
+            List<Map.Entry<RewardSystem.Currency, Integer>> entries =
+                new ArrayList<>(reservation.currencies().entrySet());
+            entries.sort(java.util.Comparator.comparing(e -> e.getKey().name()));
+            for (Map.Entry<RewardSystem.Currency, Integer> entry : entries) {
+                String currencyType = CurrencyAttachment.toCurrencyType(entry.getKey());
+                Integer amount = entry.getValue();
+                if (currencyType != null && amount != null && amount > 0) {
+                    attachments.add(new CurrencyAttachment(currencyType, amount));
+                }
+            }
+        }
+
+        return MailAttachment.toJsonPayload(attachments);
     }
 
     /**
@@ -550,21 +605,44 @@ public class MailboxManager {
                     return CompletableFuture.completedFuture(SendResult.error(reason));
                 }
 
-                // Create and save the message
-                MailboxMessage message = MailboxMessage.builder()
+                String sealedAttachmentData = buildAttachmentDataFromReservation(reservation);
+                Instant now = Instant.now();
+                Instant expiresAt = now.plus(config.getDefaultMessageTtl());
+                UUID messageId = UUID.randomUUID();
+
+                MailboxDeliveryJob job = MailboxDeliveryJob.builder()
+                    .messageId(messageId)
                     .sender(senderUuid, sender.getName().getString())
                     .recipient(recipientUuid)
                     .subject(finalSubject)
                     .body(finalBody)
                     .messageType(MessageType.PLAYER)
-                    .expiresAt(Instant.now().plus(config.getDefaultMessageTtl()))
-                    .attachment(attachmentData)
+                    .createdAt(now)
+                    .availableAt(now)
+                    .expiresAt(expiresAt)
+                    .attachment(sealedAttachmentData)
+                    .status(MailboxDeliveryJob.DeliveryStatus.PENDING)
                     .build();
 
-                return repo.saveMessage(message).thenApply(saved -> {
+                MailboxMessage message = MailboxMessage.builder()
+                    .id(messageId)
+                    .sender(senderUuid, sender.getName().getString())
+                    .recipient(recipientUuid)
+                    .subject(finalSubject)
+                    .body(finalBody)
+                    .messageType(MessageType.PLAYER)
+                    .createdAt(now)
+                    .expiresAt(expiresAt)
+                    .attachment(sealedAttachmentData)
+                    .build();
+
+                return queueAndDeliverMessage(job, message).thenApply(outcome -> {
                     updateRateLimit(senderUuid, recipientUuid);
-                    notifyNewMessage(recipientUuid, saved);
-                    LOGGER.debug("[Mailbox] Player {} sent message to {}", senderUuid, recipientUuid);
+                    if (outcome.delivered()) {
+                        LOGGER.debug("[Mailbox] Player {} sent message to {}", senderUuid, recipientUuid);
+                    } else {
+                        LOGGER.info("[Mailbox] Queued message {} for delivery to {}", messageId, recipientUuid);
+                    }
 
                     // P1: Record successful message in reputation system
                     PlayerReputation.INSTANCE.recordSuccessfulMessage(senderUuid);
@@ -574,28 +652,28 @@ public class MailboxManager {
                             senderUuid,
                             sender.getName().getString(),
                             recipientUuid,
-                            saved.id(),
-                            saved.messageType(),
+                            messageId,
+                            MessageType.PLAYER,
                             filterDecision.reason(),
-                            saved.subject()
+                            finalSubject
                         );
                     }
 
                     // Dispatch webhook
                     WebhookManager.INSTANCE.dispatchMessageSent(
-                        saved.id(),
+                        messageId,
                         senderUuid,
                         sender.getName().getString(),
                         recipientUuid,
                         finalSubject,
-                        attachmentData != null && !attachmentData.isBlank()
+                        sealedAttachmentData != null && !sealedAttachmentData.isBlank()
                     );
 
-                    return SendResult.success(saved.id());
+                    return SendResult.success(messageId);
                 }).exceptionally(e -> {
-                    LOGGER.error("[Mailbox] Failed to send message", e);
+                    LOGGER.error("[Mailbox] Failed to queue message", e);
                     refundReservation(sender, reservation);
-                    return SendResult.error("Failed to send message");
+                    return SendResult.error("Failed to queue message");
                 });
             });
         }).exceptionally(e -> {
@@ -656,36 +734,59 @@ public class MailboxManager {
             }
         }
 
+        String sealedAttachmentData = canonicalizeAttachmentData(attachmentData);
+        Instant now = Instant.now();
         Instant expiresAt = expiresIn != null
-            ? Instant.now().plus(expiresIn)
-            : Instant.now().plus(MailboxConfig.INSTANCE.getDefaultMessageTtl());
+            ? now.plus(expiresIn)
+            : now.plus(MailboxConfig.INSTANCE.getDefaultMessageTtl());
 
-        MailboxMessage message = MailboxMessage.builder()
+        UUID messageId = UUID.randomUUID();
+
+        MailboxDeliveryJob job = MailboxDeliveryJob.builder()
+            .messageId(messageId)
             .sender(null, "System")
             .recipient(recipientUuid)
             .subject(filterDecision.subject())
             .body(filterDecision.body())
             .messageType(MessageType.SYSTEM)
+            .createdAt(now)
+            .availableAt(now)
             .expiresAt(expiresAt)
-            .attachment(attachmentData)
+            .attachment(sealedAttachmentData)
+            .status(MailboxDeliveryJob.DeliveryStatus.PENDING)
             .build();
 
-        return repo.saveMessage(message).thenApply(saved -> {
-            notifyNewMessage(recipientUuid, saved);
-            LOGGER.debug("[Mailbox] System message sent to {}: {}", recipientUuid, saved.subject());
+        MailboxMessage message = MailboxMessage.builder()
+            .id(messageId)
+            .sender(null, "System")
+            .recipient(recipientUuid)
+            .subject(filterDecision.subject())
+            .body(filterDecision.body())
+            .messageType(MessageType.SYSTEM)
+            .createdAt(now)
+            .expiresAt(expiresAt)
+            .attachment(sealedAttachmentData)
+            .build();
+
+        return queueAndDeliverMessage(job, message).thenApply(outcome -> {
+            if (outcome.delivered()) {
+                LOGGER.debug("[Mailbox] System message sent to {}: {}", recipientUuid, message.subject());
+            } else {
+                LOGGER.info("[Mailbox] Queued system message {} for {}", messageId, recipientUuid);
+            }
 
             if (filterDecision.flagged()) {
                 logFlaggedMessage(
                     null,
                     "System",
                     recipientUuid,
-                    saved.id(),
-                    saved.messageType(),
+                    messageId,
+                    MessageType.SYSTEM,
                     filterDecision.reason(),
-                    saved.subject()
+                    filterDecision.subject()
                 );
             }
-            return saved.id();
+            return messageId;
         });
     }
 
@@ -753,6 +854,7 @@ public class MailboxManager {
             }
         }
 
+        String sealedAttachmentData = canonicalizeAttachmentData(attachmentData);
         Instant now = Instant.now();
         Instant resolvedExpiresAt;
         if (expiresAt != null) {
@@ -761,32 +863,53 @@ public class MailboxManager {
             resolvedExpiresAt = now.plus(MailboxConfig.INSTANCE.getDefaultMessageTtl());
         }
 
-        MailboxMessage message = MailboxMessage.builder()
+        UUID messageId = UUID.randomUUID();
+
+        MailboxDeliveryJob job = MailboxDeliveryJob.builder()
+            .messageId(messageId)
             .sender(null, adminName)
             .recipient(recipientUuid)
             .subject(filterDecision.subject())
             .body(filterDecision.body())
             .messageType(MessageType.ADMIN)
+            .createdAt(now)
+            .availableAt(now)
             .expiresAt(resolvedExpiresAt)
-            .attachment(attachmentData)
+            .attachment(sealedAttachmentData)
+            .status(MailboxDeliveryJob.DeliveryStatus.PENDING)
             .build();
 
-        return repo.saveMessage(message).thenApply(saved -> {
-            notifyNewMessage(recipientUuid, saved);
-            LOGGER.debug("[Mailbox] Admin message from {} sent to {}: {}", adminName, recipientUuid, saved.subject());
+        MailboxMessage message = MailboxMessage.builder()
+            .id(messageId)
+            .sender(null, adminName)
+            .recipient(recipientUuid)
+            .subject(filterDecision.subject())
+            .body(filterDecision.body())
+            .messageType(MessageType.ADMIN)
+            .createdAt(now)
+            .expiresAt(resolvedExpiresAt)
+            .attachment(sealedAttachmentData)
+            .build();
+
+        return queueAndDeliverMessage(job, message).thenApply(outcome -> {
+            if (outcome.delivered()) {
+                LOGGER.debug("[Mailbox] Admin message from {} sent to {}: {}", adminName, recipientUuid, message.subject());
+            } else {
+                LOGGER.info("[Mailbox] Queued admin message {} for {}", messageId, recipientUuid);
+            }
 
             if (filterDecision.flagged()) {
                 logFlaggedMessage(
                     null,
                     adminName,
                     recipientUuid,
-                    saved.id(),
-                    saved.messageType(),
+                    messageId,
+                    MessageType.ADMIN,
                     filterDecision.reason(),
-                    saved.subject()
+                    filterDecision.subject()
                 );
             }
-            return saved.id();
+            return messageId;
         });
     }
 
@@ -1010,6 +1133,175 @@ public class MailboxManager {
         );
     }
 
+    private CompletableFuture<DeliveryOutcome> queueAndDeliverMessage(
+            MailboxDeliveryJob job,
+            MailboxMessage message
+    ) {
+        MailboxRepository repo = repository;
+        if (!initialized || repo == null) {
+            return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
+        }
+
+        return repo.saveDeliveryJob(job).thenCompose(savedJob -> {
+            if (!MailboxConfig.INSTANCE.isDeliveryImmediateDispatchEnabled()) {
+                return CompletableFuture.completedFuture(new DeliveryOutcome(message, false));
+            }
+
+            Instant attemptAt = Instant.now();
+            return deliverDeliveryJob(savedJob)
+                .thenCompose(deliveredMessage -> {
+                    MailboxDeliveryJob delivered = savedJob.toBuilder()
+                        .status(MailboxDeliveryJob.DeliveryStatus.DELIVERED)
+                        .attemptCount(savedJob.attemptCount() + 1)
+                        .lastAttemptAt(attemptAt)
+                        .deliveredAt(attemptAt)
+                        .lastFailureAt(null)
+                        .lastFailureReason(null)
+                        .build();
+                    return repo.updateDeliveryJob(delivered)
+                        .handle((updated, updateError) -> {
+                            if (updateError != null || !Boolean.TRUE.equals(updated)) {
+                                LOGGER.warn(
+                                    "[Mailbox] Failed to update delivery job {} after delivery",
+                                    savedJob.id(),
+                                    updateError
+                                );
+                            }
+                            return new DeliveryOutcome(deliveredMessage, true);
+                        });
+                })
+                .exceptionallyCompose(error -> {
+                    Throwable cause = unwrapCompletionError(error);
+                    String reason = buildFailureReason(cause);
+                    return handleImmediateDeliveryFailure(savedJob, attemptAt, reason)
+                        .thenApply(updatedJob -> new DeliveryOutcome(message, false));
+                });
+        });
+    }
+
+    public static String buildFailureReason(Throwable error) {
+        String reason = error.getMessage();
+        if (reason == null || reason.isBlank()) {
+            reason = error.getClass().getSimpleName();
+        }
+        String truncated = truncate(reason, 200);
+        return truncated.isBlank() ? error.getClass().getSimpleName() : truncated;
+    }
+
+    public static int computeRetryDelaySeconds(int failureCount) {
+        MailboxConfig config = MailboxConfig.INSTANCE;
+        int baseDelay = Math.max(1, config.getDeliveryRetryDelaySeconds());
+        int maxDelay = Math.max(baseDelay, config.getDeliveryRetryMaxDelaySeconds());
+        double multiplier = Math.max(1.0, config.getDeliveryRetryBackoffMultiplier());
+        int attemptIndex = Math.max(1, failureCount);
+
+        double delay = baseDelay * Math.pow(multiplier, attemptIndex - 1);
+        delay = Math.min(delay, maxDelay);
+
+        double jitterRatio = Math.max(0.0, Math.min(0.5, config.getDeliveryRetryJitterRatio()));
+        if (jitterRatio > 0.0) {
+            double jitter = ThreadLocalRandom.current().nextDouble(-jitterRatio, jitterRatio);
+            delay = delay * (1.0 + jitter);
+        }
+
+        int rounded = (int) Math.round(delay);
+        if (rounded < 1) {
+            rounded = 1;
+        }
+        if (rounded > maxDelay) {
+            rounded = maxDelay;
+        }
+        return rounded;
+    }
+
+    private static Throwable unwrapCompletionError(Throwable error) {
+        if (error instanceof CompletionException completion && completion.getCause() != null) {
+            return completion.getCause();
+        }
+        return error;
+    }
+
+    private CompletableFuture<MailboxDeliveryJob> handleImmediateDeliveryFailure(
+            MailboxDeliveryJob job,
+            Instant attemptAt,
+            String reason
+    ) {
+        MailboxRepository repo = repository;
+        if (!initialized || repo == null) {
+            return CompletableFuture.completedFuture(job);
+        }
+
+        if (job.expiresAt() != null && attemptAt.isAfter(job.expiresAt())) {
+            String expiryReason = "Message expired before delivery";
+            MailboxDeliveryJob cancelled = job.toBuilder()
+                .status(MailboxDeliveryJob.DeliveryStatus.CANCELLED)
+                .attemptCount(job.attemptCount() + 1)
+                .failureCount(job.failureCount() + 1)
+                .lastAttemptAt(attemptAt)
+                .lastFailureAt(attemptAt)
+                .lastFailureReason(expiryReason)
+                .build();
+
+            return repo.updateDeliveryJob(cancelled)
+                .handle((updated, updateError) -> {
+                    if (updateError != null || !Boolean.TRUE.equals(updated)) {
+                        LOGGER.warn(
+                            "[Mailbox] Failed to update delivery job {} after expiry",
+                            job.id(),
+                            updateError
+                        );
+                    }
+                    return cancelled;
+                })
+                .thenCompose(updatedJob -> {
+                    if (MailboxConfig.INSTANCE.isDeliveryRecallEnabled()) {
+                        return sendDeliveryRecall(updatedJob, expiryReason)
+                            .thenApply(messageId -> updatedJob);
+                    }
+                    return CompletableFuture.completedFuture(updatedJob);
+                });
+        }
+
+        int nextFailureCount = job.failureCount() + 1;
+        int maxAttempts = MailboxConfig.INSTANCE.getDeliveryMaxAttempts();
+        boolean isFinalFailure = nextFailureCount >= maxAttempts;
+
+        MailboxDeliveryJob.Builder builder = job.toBuilder()
+            .attemptCount(job.attemptCount() + 1)
+            .failureCount(nextFailureCount)
+            .lastAttemptAt(attemptAt)
+            .lastFailureAt(attemptAt)
+            .lastFailureReason(reason);
+
+        if (isFinalFailure) {
+            builder.status(MailboxDeliveryJob.DeliveryStatus.FAILED);
+        } else {
+            Instant nextAttemptAt = attemptAt.plusSeconds(computeRetryDelaySeconds(nextFailureCount));
+            builder.status(MailboxDeliveryJob.DeliveryStatus.PENDING)
+                .availableAt(nextAttemptAt);
+        }
+
+        MailboxDeliveryJob updated = builder.build();
+        return repo.updateDeliveryJob(updated)
+            .handle((persisted, updateError) -> {
+                if (updateError != null || !Boolean.TRUE.equals(persisted)) {
+                    LOGGER.warn(
+                        "[Mailbox] Failed to update delivery job {} after failure",
+                        job.id(),
+                        updateError
+                    );
+                }
+                return updated;
+            })
+            .thenCompose(updatedJob -> {
+                if (isFinalFailure && MailboxConfig.INSTANCE.isDeliveryRecallEnabled()) {
+                    return sendDeliveryRecall(updatedJob, reason)
+                        .thenApply(messageId -> updatedJob);
+                }
+                return CompletableFuture.completedFuture(updatedJob);
+            });
+    }
+
     private void logFlaggedMessage(
             @Nullable UUID actorUuid,
             String actorName,
@@ -1084,6 +1376,82 @@ public class MailboxManager {
             return CompletableFuture.completedFuture(0);
         }
         return repo.getUnreadCount(playerUuid);
+    }
+
+    public CompletableFuture<List<MailboxDeliveryJob>> getDeliveryJobsByStatus(
+            MailboxDeliveryJob.DeliveryStatus status,
+            int limit
+    ) {
+        MailboxRepository repo = repository;
+        if (!initialized || repo == null) {
+            return CompletableFuture.completedFuture(List.of());
+        }
+        return repo.getDeliveryJobsByStatus(status, limit);
+    }
+
+    public CompletableFuture<Boolean> updateDeliveryJob(MailboxDeliveryJob job) {
+        MailboxRepository repo = repository;
+        if (!initialized || repo == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+        return repo.updateDeliveryJob(job);
+    }
+
+    public CompletableFuture<MailboxMessage> deliverDeliveryJob(MailboxDeliveryJob job) {
+        MailboxRepository repo = repository;
+        if (!initialized || repo == null) {
+            return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
+        }
+
+        MailboxMessage message = MailboxMessage.builder()
+            .id(job.messageId())
+            .sender(job.senderUuid(), job.senderName())
+            .recipient(job.recipientUuid())
+            .subject(job.subject())
+            .body(job.body())
+            .messageType(job.messageType())
+            .createdAt(job.createdAt())
+            .expiresAt(job.expiresAt())
+            .attachment(job.attachmentData())
+            .build();
+
+        return repo.saveMessage(message)
+            .thenApply(saved -> {
+                notifyNewMessage(saved.recipientUuid(), saved);
+                return saved;
+            })
+            .exceptionallyCompose(error -> {
+                Throwable cause = unwrapCompletionError(error);
+                return repo.getMessage(job.messageId())
+                    .thenCompose(existing -> existing
+                        .<CompletableFuture<MailboxMessage>>map(CompletableFuture::completedFuture)
+                        .orElseGet(() -> CompletableFuture.failedFuture(cause)));
+            });
+    }
+
+    public CompletableFuture<UUID> sendDeliveryRecall(MailboxDeliveryJob job, String reason) {
+        UUID senderUuid = job.senderUuid();
+        if (senderUuid == null) {
+            return CompletableFuture.completedFuture(job.messageId());
+        }
+
+        String subject = "Delivery failed: " + truncate(job.subject(), 64);
+        String body = "Your message could not be delivered.\n"
+            + "Recipient: " + job.recipientUuid() + "\n"
+            + "Reason: " + reason;
+
+        return sendSystemMessage(
+            senderUuid,
+            subject,
+            body,
+            job.attachmentData(),
+            null,
+            false,
+            false
+        ).exceptionally(error -> {
+            LOGGER.warn("[Mailbox] Failed to send delivery recall for {}", job.id(), error);
+            return job.messageId();
+        });
     }
 
     /**
@@ -1335,9 +1703,25 @@ public class MailboxManager {
         if (!initialized || repo == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
         }
-        return repo.saveMessage(message).thenAccept(saved ->
-            notifyNewMessage(saved.recipientUuid(), saved)
-        );
+        MailboxDeliveryJob job = MailboxDeliveryJob.builder()
+            .messageId(message.id())
+            .sender(message.senderUuid(), message.senderName())
+            .recipient(message.recipientUuid())
+            .subject(message.subject())
+            .body(message.body())
+            .messageType(message.messageType())
+            .createdAt(message.createdAt())
+            .availableAt(message.createdAt())
+            .expiresAt(message.expiresAt())
+            .attachment(message.attachmentData())
+            .status(MailboxDeliveryJob.DeliveryStatus.PENDING)
+            .build();
+
+        return queueAndDeliverMessage(job, message).thenAccept(outcome -> {
+            if (!outcome.delivered()) {
+                LOGGER.info("[Mailbox] Queued message {} for {}", message.id(), message.recipientUuid());
+            }
+        });
     }
 
     /**

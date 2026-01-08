@@ -77,7 +77,7 @@ public class UsableModuleCore {
             sourcePrefix = "[DEV] ";
             dataSource = SourceBadge.Source.DEV;
             DevMod.LOGGER.info("[Editor][Usable] Loaded stats from component tag (size={})", statsTag.size());
-            stats = UsableStats.load(statsTag);
+            stats = UsableStats.fromTag(statsTag);
         } else {
             boolean hasCustomData = customTag != null && !customTag.isEmpty();
             sourcePrefix = hasCustomData ? "[NBT] " : "[VANILLA] ";

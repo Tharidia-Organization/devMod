@@ -1,5 +1,4 @@
 package com.devmod.runtime;
-
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -13,14 +12,6 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.blocks.ModBlocks;
-import com.devmod.blocks.NexusPortalBlock;
-import com.devmod.blocks.NexusPortalColor;
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatRegistry;
-import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
-import com.devmod.config.Config;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -30,16 +21,24 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
+import com.devmod.blocks.ModBlocks;
+import com.devmod.blocks.NexusPortalBlock;
+import com.devmod.blocks.NexusPortalColor;
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatRegistry;
+import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
+import com.devmod.config.Config;
+
 /**
  * Builds the Nexus development hub layout.
  */
+@SuppressWarnings("UnusedMethod") // Retained builder components for future layout variants.
 public final class NexusHubBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(NexusHubBuilder.class);
     private static final int PLACEMENT_FLAGS = 2 | 16 | 64;
 
     private static final int HUB_HALF_SIZE = 96; // 192x192
     private static final int CENTER_HALF_SIZE = 32; // 64x64
-    private static final int CORE_HALF_SIZE = 8; // 16x16
     private static final int WALL_HEIGHT = 8;
     private static final int DOOR_WIDTH = 10;
     private static final int DOOR_HEIGHT = 5;
@@ -80,6 +79,8 @@ public final class NexusHubBuilder {
     @Nonnull private static BlockState ARENA_RING = Objects.requireNonNull(Blocks.POLISHED_BASALT.defaultBlockState());
     @Nonnull private static BlockState ARENA_RING_INNER = Objects.requireNonNull(Blocks.BLACKSTONE.defaultBlockState());
     @Nonnull private static BlockState ARENA_BARRIER = Objects.requireNonNull(Blocks.BLACKSTONE_WALL.defaultBlockState());
+    @Nonnull private static BlockState PORTAL_FRAME = Objects.requireNonNull(Blocks.OBSIDIAN.defaultBlockState());
+    @Nonnull private static BlockState PORTAL_GLASS = Objects.requireNonNull(Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState());
     @Nonnull private static BlockState PAD_BLUE = Objects.requireNonNull(Blocks.LIGHT_BLUE_CONCRETE.defaultBlockState());
     @Nonnull private static BlockState PAD_GREEN = Objects.requireNonNull(Blocks.LIME_CONCRETE.defaultBlockState());
     @Nonnull private static BlockState PAD_ORANGE = Objects.requireNonNull(Blocks.ORANGE_CONCRETE.defaultBlockState());
@@ -200,6 +201,9 @@ public final class NexusHubBuilder {
         TELEMETRY_GLASS = nn(palette.get(NexusPalette.Key.TELEMETRY_GLASS), "TELEMETRY_GLASS");
         ARENA_RING = nn(palette.get(NexusPalette.Key.ARENA_RING), "ARENA_RING");
         ARENA_RING_INNER = nn(palette.get(NexusPalette.Key.ARENA_RING_INNER), "ARENA_RING_INNER");
+        ARENA_BARRIER = nn(palette.get(NexusPalette.Key.ARENA_BARRIER), "ARENA_BARRIER");
+        PORTAL_FRAME = nn(palette.get(NexusPalette.Key.PORTAL_FRAME), "PORTAL_FRAME");
+        PORTAL_GLASS = nn(palette.get(NexusPalette.Key.PORTAL_GLASS), "PORTAL_GLASS");
         PAD_BLUE = nn(palette.get(NexusPalette.Key.PAD_BLUE), "PAD_BLUE");
         PAD_GREEN = nn(palette.get(NexusPalette.Key.PAD_GREEN), "PAD_GREEN");
         PAD_ORANGE = nn(palette.get(NexusPalette.Key.PAD_ORANGE), "PAD_ORANGE");
@@ -335,9 +339,9 @@ public final class NexusHubBuilder {
 
         int portalCenterX = resolvePortalCenter(minX, maxX, doorCenterX);
         placePortalDisplayZ(level, portalCenterX, corridorMinZ - 1, floorY, Direction.NORTH,
-            resolvePortalGlass(northRoom), resolvePortalColor(northRoom), pos);
+            resolvePortalGlass(), resolvePortalColor(northRoom), pos);
         placePortalDisplayZ(level, portalCenterX, corridorMaxZ + 1, floorY, Direction.SOUTH,
-            resolvePortalGlass(southRoom), resolvePortalColor(southRoom), pos);
+            resolvePortalGlass(), resolvePortalColor(southRoom), pos);
 
         int northRoomMaxZ = corridorMinZ - 2;
         int southRoomMinZ = corridorMaxZ + 2;
@@ -362,9 +366,9 @@ public final class NexusHubBuilder {
 
         int portalCenterZ = resolvePortalCenter(minZ, maxZ, doorCenterZ);
         placePortalDisplayX(level, portalCenterZ, corridorMinX - 1, floorY, Direction.WEST,
-            resolvePortalGlass(westRoom), resolvePortalColor(westRoom), pos);
+            resolvePortalGlass(), resolvePortalColor(westRoom), pos);
         placePortalDisplayX(level, portalCenterZ, corridorMaxX + 1, floorY, Direction.EAST,
-            resolvePortalGlass(eastRoom), resolvePortalColor(eastRoom), pos);
+            resolvePortalGlass(), resolvePortalColor(eastRoom), pos);
 
         int westRoomMaxX = corridorMinX - 2;
         int eastRoomMinX = corridorMaxX + 2;
@@ -432,8 +436,8 @@ public final class NexusHubBuilder {
         }
     }
 
-    private static BlockState resolvePortalGlass(WingRoom room) {
-        return Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState();
+    private static BlockState resolvePortalGlass() {
+        return PORTAL_GLASS;
     }
 
     private static NexusPortalColor resolvePortalColor(WingRoom room) {
@@ -464,7 +468,7 @@ public final class NexusHubBuilder {
         BlockState portalState = ModBlocks.NEXUS_PORTAL.get().defaultBlockState()
             .setValue(NexusPortalBlock.AXIS, Direction.Axis.X)
             .setValue(NexusPortalBlock.COLOR, color);
-        BlockState frameState = Blocks.OBSIDIAN.defaultBlockState();
+        BlockState frameState = PORTAL_FRAME;
 
         for (int x = startX; x <= endX; x++) {
             for (int y = startY; y <= endY; y++) {
@@ -494,7 +498,7 @@ public final class NexusHubBuilder {
         BlockState portalState = ModBlocks.NEXUS_PORTAL.get().defaultBlockState()
             .setValue(NexusPortalBlock.AXIS, Direction.Axis.Z)
             .setValue(NexusPortalBlock.COLOR, color);
-        BlockState frameState = Blocks.OBSIDIAN.defaultBlockState();
+        BlockState frameState = PORTAL_FRAME;
 
         for (int z = startZ; z <= endZ; z++) {
             for (int y = startY; y <= endY; y++) {
@@ -2648,7 +2652,9 @@ public final class NexusHubBuilder {
             if (result instanceof StructureTemplate template) {
                 return template;
             }
-        } catch (Exception ignored) {}
+        } catch (ReflectiveOperationException ignored) {
+            // Optional API path, fall back below.
+        }
         try {
             Method get = manager.getClass().getMethod("get", ResourceLocation.class);
             Object result = get.invoke(manager, location);
@@ -2658,7 +2664,7 @@ public final class NexusHubBuilder {
             if (result instanceof StructureTemplate template) {
                 return template;
             }
-        } catch (Exception ignored) {
+        } catch (ReflectiveOperationException ignored) {
             return null;
         }
         return null;

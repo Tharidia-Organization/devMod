@@ -27,7 +27,7 @@ import com.devmod.collision.integration.OBBHitHelper;
 import com.devmod.combat.filter.AmmoFilter;
 import com.devmod.combat.shield.ShieldBlockHandler;
 import com.devmod.combat.tracking.EvasionHandler;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.damage.DamageBreakdown;
 import com.devmod.damage.DamageCalculator;
 import com.devmod.stats.WeaponStats;
@@ -109,7 +109,7 @@ public class DamageHandler {
             EvasionHandler.confirmHit(victim);
 
             // 2. Retrieve Statistics (Global or Specific) - component/modifier source of truth
-            WeaponStats stats = WeaponConfigManager.getStats(weapon);
+            WeaponStats stats = WeaponConfigHandler.INSTANCE.getStats(weapon);
 
             // 3. Resolve part labels/colors for UI
             PartPresentation partPresentation = getPartPresentation(part);

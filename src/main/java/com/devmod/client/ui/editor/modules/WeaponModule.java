@@ -220,7 +220,7 @@ public class WeaponModule extends AbstractEditorModule {
         // Build NBT from current stats
         CompoundTag statsTag = new CompoundTag();
         CompoundTag weaponStats = new CompoundTag();
-        com.devmod.config.WeaponConfigManager.clampStats(stats);
+        com.devmod.config.handler.impl.WeaponConfigHandler.clampStats(stats);
         stats.save(weaponStats);
         CompoundTag delta = core.buildDelta(originalStats, stats);
         if (!delta.isEmpty()) {
@@ -252,9 +252,9 @@ public class WeaponModule extends AbstractEditorModule {
                 item.getItem(), stats.getAttackDamage(), stats.getAttackSpeed(), stats.getAttackReach(),
                 stats.getBaseDamageBonus(), stats.getArmorPenetration(), stats.getArmorShred());
             // Apply full stack edits to the preview copy (CustomData + component + attributes)
-            com.devmod.config.WeaponConfigManager.setSpecificStats(copy, stats.copy(), variantTag);
+            com.devmod.config.handler.impl.WeaponConfigHandler.INSTANCE.setSpecificStats(copy, stats.copy(), variantTag);
             // Reload from the written stack to pick up server-side clamps/normalization
-            WeaponStats applied = com.devmod.config.WeaponConfigManager.getStats(copy).copy();
+            WeaponStats applied = com.devmod.config.handler.impl.WeaponConfigHandler.INSTANCE.getStats(copy).copy();
             core.setStats(applied.copy());
             withDirtyTrackingDisabled(ui::updateSlidersFromStats);
             // Store the preview copy in the base class so UI can render it without mutating the real item
@@ -299,6 +299,18 @@ public class WeaponModule extends AbstractEditorModule {
         WeaponModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
         variants.resetToOriginal(variant);
+        ui.updateSlidersFromStats();
+        variants.updateVariantComponents(variant);
+        clearDirty();
+    }
+
+    @Override
+    public void resetToDefaults() {
+        WeaponModuleVariants variants = requireVariants();
+        WeaponModuleUI ui = requireUi();
+        ItemStack baseline = originalItem.copy();
+        com.devmod.config.handler.impl.WeaponConfigHandler.clearItemSpecificStats(baseline);
+        setItem(baseline);
         ui.updateSlidersFromStats();
         variants.updateVariantComponents(variant);
         clearDirty();

@@ -1,5 +1,7 @@
 package com.devmod.blocks;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import net.minecraft.core.BlockPos;
@@ -24,33 +26,36 @@ public class NexusPortalBlock extends Block {
 
     public NexusPortalBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any()
-            .setValue(AXIS, Direction.Axis.X)
-            .setValue(COLOR, NexusPortalColor.COMBAT));
+        registerDefaultState(Objects.requireNonNull(stateDefinition.any()
+            .setValue(Objects.requireNonNull(AXIS), Direction.Axis.X)
+            .setValue(Objects.requireNonNull(COLOR), NexusPortalColor.COMBAT)));
     }
 
     @Override
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return defaultBlockState().setValue(AXIS, context.getHorizontalDirection().getAxis());
+    public BlockState getStateForPlacement(@Nonnull BlockPlaceContext context) {
+        return defaultBlockState().setValue(Objects.requireNonNull(AXIS),
+            Objects.requireNonNull(context.getHorizontalDirection().getAxis()));
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(@Nonnull StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(AXIS, COLOR);
     }
 
     @Override
     @Nonnull
-    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        if (state.getValue(AXIS) == Direction.Axis.Z) {
-            return Z_SHAPE;
+    public VoxelShape getShape(@Nonnull BlockState state, @Nonnull BlockGetter level,
+                               @Nonnull BlockPos pos, @Nonnull CollisionContext context) {
+        if (state.getValue(Objects.requireNonNull(AXIS)) == Direction.Axis.Z) {
+            return Objects.requireNonNull(Z_SHAPE);
         }
-        return X_SHAPE;
+        return Objects.requireNonNull(X_SHAPE);
     }
 
     @Override
     @Nonnull
-    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return Shapes.empty();
+    public VoxelShape getCollisionShape(@Nonnull BlockState state, @Nonnull BlockGetter level,
+                                        @Nonnull BlockPos pos, @Nonnull CollisionContext context) {
+        return Objects.requireNonNull(Shapes.empty());
     }
 }

@@ -4,33 +4,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nonnull;
-
-import com.devmod.config.Config;
+import com.google.errorprone.annotations.Immutable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.PlayerTeam;
+
+import com.devmod.config.Config;
 
 /**
  * Selects spawn pads in the Nexus hub.
  */
 public final class NexusSpawnManager {
     private static final AtomicInteger ROUND_ROBIN = new AtomicInteger();
-    private static final BlockPos DEFAULT_OFFSET = new BlockPos(0, 0, 34);
-    private static final BlockPos COMBAT_OFFSET = new BlockPos(-64, 0, -81);
-    private static final BlockPos ARENA_OFFSET = new BlockPos(-64, 0, -47);
-    private static final BlockPos UI_OFFSET = new BlockPos(63, 0, -81);
-    private static final BlockPos TELEMETRY_OFFSET = new BlockPos(63, 0, -47);
-    private static final BlockPos SHOWCASE_OFFSET = new BlockPos(-81, 0, 63);
-    private static final BlockPos INTEGRATION_OFFSET = new BlockPos(-47, 0, 63);
-    private static final BlockPos SANDBOX_OFFSET = new BlockPos(46, 0, 63);
-    private static final BlockPos MECHANICS_OFFSET = new BlockPos(80, 0, 63);
-    private static final BlockPos OVERVIEW_OFFSET = new BlockPos(18, 20, 0);
+    private static final Offset DEFAULT_OFFSET = new Offset(0, 0, 34);
+    private static final Offset COMBAT_OFFSET = new Offset(-64, 0, -81);
+    private static final Offset ARENA_OFFSET = new Offset(-64, 0, -47);
+    private static final Offset UI_OFFSET = new Offset(63, 0, -81);
+    private static final Offset TELEMETRY_OFFSET = new Offset(63, 0, -47);
+    private static final Offset SHOWCASE_OFFSET = new Offset(-81, 0, 63);
+    private static final Offset INTEGRATION_OFFSET = new Offset(-47, 0, 63);
+    private static final Offset SANDBOX_OFFSET = new Offset(46, 0, 63);
+    private static final Offset MECHANICS_OFFSET = new Offset(80, 0, 63);
+    private static final Offset OVERVIEW_OFFSET = new Offset(18, 20, 0);
+
+    @Immutable
+    private record Offset(int x, int y, int z) {
+        BlockPos toBlockPos() {
+            return new BlockPos(x, y, z);
+        }
+    }
 
     public enum Zone {
         HUB("hub", "Central Hub", DEFAULT_OFFSET),
@@ -46,9 +52,9 @@ public final class NexusSpawnManager {
 
         private final String id;
         private final String label;
-        private final BlockPos offset;
+        private final Offset offset;
 
-        Zone(String id, String label, BlockPos offset) {
+        Zone(String id, String label, Offset offset) {
             this.id = id;
             this.label = label;
             this.offset = offset;
@@ -63,7 +69,7 @@ public final class NexusSpawnManager {
         }
 
         public BlockPos offset() {
-            return offset;
+            return offset.toBlockPos();
         }
     }
 
@@ -107,27 +113,29 @@ public final class NexusSpawnManager {
     private NexusSpawnManager() {}
 
     public static BlockPos getDefaultSpawnOffset() {
-        return DEFAULT_OFFSET;
+        return DEFAULT_OFFSET.toBlockPos();
     }
 
     public static BlockPos getDefaultSpawn(BlockPos hubOrigin) {
-        return hubOrigin.offset(nn(DEFAULT_OFFSET, "DEFAULT_OFFSET"));
+        return hubOrigin.offset(DEFAULT_OFFSET.x(), DEFAULT_OFFSET.y(), DEFAULT_OFFSET.z());
     }
 
     public static BlockPos getSpawnForZone(BlockPos hubOrigin, Zone zone) {
         if (hubOrigin == null || zone == null) {
-            return hubOrigin == null ? BlockPos.ZERO : hubOrigin.offset(nn(DEFAULT_OFFSET, "DEFAULT_OFFSET"));
+            return hubOrigin == null ? BlockPos.ZERO
+                : hubOrigin.offset(DEFAULT_OFFSET.x(), DEFAULT_OFFSET.y(), DEFAULT_OFFSET.z());
         }
-        return hubOrigin.offset(nn(zone.offset(), "zone.offset"));
+        return hubOrigin.offset(zone.offset());
     }
 
     public static BlockPos getSpawnForPlayer(ServerPlayer player, BlockPos hubOrigin) {
         Config.NexusSpawnMode mode = Config.NEXUS_SPAWN_MODE.get();
-        return switch (mode) {
-            case BY_TEAM -> hubOrigin.offset(nn(resolveTeamOffset(player), "teamOffset"));
-            case ROUND_ROBIN -> hubOrigin.offset(nn(nextRoundRobinOffset(), "roundRobinOffset"));
-            default -> getDefaultSpawn(hubOrigin);
+        BlockPos offset = switch (mode) {
+            case BY_TEAM -> resolveTeamOffset(player);
+            case ROUND_ROBIN -> nextRoundRobinOffset();
+            default -> DEFAULT_OFFSET.toBlockPos();
         };
+        return hubOrigin.offset(offset);
     }
 
     private static BlockPos nextRoundRobinOffset() {
@@ -137,7 +145,7 @@ public final class NexusSpawnManager {
 
     private static BlockPos resolveTeamOffset(ServerPlayer player) {
         if (player == null) {
-            return DEFAULT_OFFSET;
+            return DEFAULT_OFFSET.toBlockPos();
         }
 
         Zone tagZone = resolveZoneFromTags(player.getTags());
@@ -243,8 +251,4 @@ public final class NexusSpawnManager {
         return builder.toString();
     }
 
-    @Nonnull
-    private static <T> T nn(T value, String context) {
-        return Objects.requireNonNull(value, context);
-    }
 }

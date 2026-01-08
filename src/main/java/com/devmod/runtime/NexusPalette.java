@@ -1,5 +1,4 @@
 package com.devmod.runtime;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -8,14 +7,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.config.Config;
-import com.devmod.util.ConfigPaths;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
@@ -26,6 +24,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+
+import com.devmod.config.Config;
+import com.devmod.util.ConfigPaths;
 
 /**
  * Palette provider for Nexus hub materials.
@@ -70,6 +71,9 @@ public final class NexusPalette {
         TELEMETRY_GLASS("telemetry_glass"),
         ARENA_RING("arena_ring"),
         ARENA_RING_INNER("arena_ring_inner"),
+        ARENA_BARRIER("arena_barrier"),
+        PORTAL_FRAME("portal_frame"),
+        PORTAL_GLASS("portal_glass"),
         PAD_BLUE("pad_blue"),
         PAD_GREEN("pad_green"),
         PAD_ORANGE("pad_orange"),
@@ -92,7 +96,7 @@ public final class NexusPalette {
             if (id == null) {
                 return null;
             }
-            String normalized = id.trim().toLowerCase();
+            String normalized = id.trim().toLowerCase(Locale.ROOT);
             for (Key key : values()) {
                 if (key.id.equals(normalized)) {
                     return key;
@@ -160,12 +164,15 @@ public final class NexusPalette {
         map.put(Key.TELEMETRY_GLASS, Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState());
         map.put(Key.ARENA_RING, Blocks.POLISHED_TUFF.defaultBlockState());
         map.put(Key.ARENA_RING_INNER, Blocks.TUFF_BRICKS.defaultBlockState());
-        map.put(Key.PAD_BLUE, Blocks.SMOOTH_QUARTZ.defaultBlockState());
-        map.put(Key.PAD_GREEN, Blocks.SMOOTH_SANDSTONE.defaultBlockState());
-        map.put(Key.PAD_ORANGE, Blocks.CUT_SANDSTONE.defaultBlockState());
-        map.put(Key.PAD_RED, Blocks.POLISHED_TUFF.defaultBlockState());
-        map.put(Key.PAD_YELLOW, Blocks.CALCITE.defaultBlockState());
-        map.put(Key.PAD_PURPLE, Blocks.TUFF_BRICKS.defaultBlockState());
+        map.put(Key.ARENA_BARRIER, Blocks.BLACKSTONE_WALL.defaultBlockState());
+        map.put(Key.PORTAL_FRAME, Blocks.OBSIDIAN.defaultBlockState());
+        map.put(Key.PORTAL_GLASS, Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState());
+        map.put(Key.PAD_BLUE, Blocks.LIGHT_BLUE_CONCRETE.defaultBlockState());
+        map.put(Key.PAD_GREEN, Blocks.LIME_CONCRETE.defaultBlockState());
+        map.put(Key.PAD_ORANGE, Blocks.ORANGE_CONCRETE.defaultBlockState());
+        map.put(Key.PAD_RED, Blocks.RED_CONCRETE.defaultBlockState());
+        map.put(Key.PAD_YELLOW, Blocks.YELLOW_CONCRETE.defaultBlockState());
+        map.put(Key.PAD_PURPLE, Blocks.PURPLE_CONCRETE.defaultBlockState());
         map.put(Key.AIR, Blocks.AIR.defaultBlockState());
         return new NexusPalette(map);
     }
@@ -221,10 +228,15 @@ public final class NexusPalette {
     }
 
     private static void writePalette(Path path, NexusPalette palette) {
+        Path parent = path.getParent();
+        if (parent == null) {
+            LOGGER.warn("[Nexus] Palette path has no parent directory: {}", path);
+            return;
+        }
         try {
-            Files.createDirectories(path.getParent());
+            Files.createDirectories(parent);
         } catch (IOException e) {
-            LOGGER.warn("[Nexus] Failed to create palette directory {}: {}", path.getParent(), e.getMessage());
+            LOGGER.warn("[Nexus] Failed to create palette directory {}: {}", parent, e.getMessage());
             return;
         }
 

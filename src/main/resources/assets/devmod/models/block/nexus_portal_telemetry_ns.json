@@ -1,5 +1,6 @@
 {
   "parent": "minecraft:block/nether_portal_ns",
+  "render_type": "translucent",
   "textures": {
     "portal": "devmod:block/nexus_portal_telemetry",
     "particle": "devmod:block/nexus_portal_telemetry"

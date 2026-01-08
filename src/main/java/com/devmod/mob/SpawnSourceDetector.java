@@ -328,6 +328,9 @@ public class SpawnSourceDetector {
                     else if (mobPath.contains("lightning")) structures.add("iceandfire:lightning_dragon_cave");
                 }
             }
+            default -> {
+                // Unknown mod namespace
+            }
             // Add more mod-specific patterns as needed
         }
 

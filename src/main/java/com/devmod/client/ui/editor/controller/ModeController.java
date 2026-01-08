@@ -118,7 +118,7 @@ public final class ModeController {
      * @param global true for global (all items of type), false for specific
      */
     public void setGlobalMode(boolean global) {
-        state.setGlobalMode(global);
+        state.setGlobalMode(false);
         onModeChanged.run();
     }
 

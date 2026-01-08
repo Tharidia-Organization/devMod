@@ -5,11 +5,15 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
 import net.minecraft.sounds.SoundEvents;
 
 import net.neoforged.api.distmarker.Dist;
@@ -26,6 +30,7 @@ import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
 public class QuestDeathScreen extends Screen {
+    private static final Logger LOGGER = LoggerFactory.getLogger(QuestDeathScreen.class);
 
     // === Colors - Thematic death screen (red theme, using DesignTokens) ===
     private static final int COLOR_BG = EnduranceUiTheme.DeathScreen.BG;           // Dark red-tinted background (death-specific)
@@ -77,6 +82,8 @@ public class QuestDeathScreen extends Screen {
     protected void init() {
         super.init();
         openTime = System.currentTimeMillis();
+        LOGGER.info("[EnduranceQuest][Client] QuestDeathScreen opened (wave={}/{}, deathsThisRun={})",
+            currentWave, totalWaves, deathsThisRun);
 
         respawnButton = EditorButton.builder("respawn", I18n.translate("devmod.endurance.respawn_cost").getString())
             .style(EditorButton.Style.PRIMARY)
@@ -253,10 +260,16 @@ public class QuestDeathScreen extends Screen {
     }
 
     private void respawnAndContinue() {
+        LOGGER.info("[EnduranceQuest][Client] QuestDeathScreen respawn clicked");
+        ClientQuestCache.startDeathScreenSuppression();
         ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_CONTINUE,
             ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.CONTINUE_AFTER_DEATH));
         var mc = minecraft;
         if (mc != null) {
+            var connection = mc.getConnection();
+            if (connection != null) {
+                connection.send(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));
+            }
             mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.PLAYER_LEVELUP), 1.0f)));
             mc.setScreen(null);
 
@@ -272,12 +285,18 @@ public class QuestDeathScreen extends Screen {
     }
 
     private void giveUpAndCollect() {
+        LOGGER.info("[EnduranceQuest][Client] QuestDeathScreen give up clicked");
         // Stop suppression immediately since quest is ending
         ClientQuestCache.stopDeathScreenSuppression();
 
         ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT,
             ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
                 .withConfirmed(true));
+        java.util.concurrent.CompletableFuture.delayedExecutor(
+            150, java.util.concurrent.TimeUnit.MILLISECONDS
+        ).execute(() -> ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT,
+            ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
+                .withConfirmed(true)));
         var mc = minecraft;
         if (mc != null) {
             mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f)));

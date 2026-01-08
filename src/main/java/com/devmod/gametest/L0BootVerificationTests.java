@@ -15,7 +15,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import com.devmod.DevMod;
 import com.devmod.config.MobConfigManager;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
+import com.devmod.stats.WeaponStats;
 import com.devmod.runtime.DynamicDimensionManager;
 import com.devmod.runtime.InstanceData;
 import com.devmod.runtime.InstanceManager;
@@ -158,19 +159,19 @@ public class L0BootVerificationTests {
     }
 
     /**
-     * L0-06b: WeaponConfigManager accessible
+     * L0-06b: WeaponConfigHandler accessible
      */
     @GameTest(template = TEMPLATE, batch = "l0_boot", required = true)
     public static void l0_06b_weaponConfigAccessible(GameTestHelper helper) {
         try {
             net.minecraft.world.item.ItemStack sword = new net.minecraft.world.item.ItemStack(
                 Objects.requireNonNull(Items.DIAMOND_SWORD));
-            var stats = WeaponConfigManager.getStats(sword);
+            WeaponStats stats = WeaponConfigHandler.INSTANCE.getStats(sword);
             helper.assertTrue(stats != null, "WeaponStats should not be null");
-            DevMod.LOGGER.info("[L0-06b] PASS: WeaponConfigManager accessible");
+            DevMod.LOGGER.info("[L0-06b] PASS: WeaponConfigHandler accessible");
             helper.succeed();
         } catch (Exception e) {
-            helper.fail("WeaponConfigManager not accessible: " + e.getMessage());
+            helper.fail("WeaponConfigHandler not accessible: " + e.getMessage());
         }
     }
 

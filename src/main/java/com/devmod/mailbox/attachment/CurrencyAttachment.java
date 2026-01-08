@@ -86,6 +86,20 @@ public record CurrencyAttachment(
         };
     }
 
+    @Nullable
+    public static String toCurrencyType(@Nullable RewardSystem.Currency currency) {
+        if (currency == null) {
+            return null;
+        }
+        return switch (currency) {
+            case TOKENS -> TOKENS;
+            case COINS -> COINS;
+            case GEMS -> GEMS;
+            case BLOOD_GEMS -> BLOOD_GEMS;
+            case PRESTIGE -> PRESTIGE;
+        };
+    }
+
     // ============================================================================
     // CURRENCY RULES CONFIGURATION
     // ============================================================================

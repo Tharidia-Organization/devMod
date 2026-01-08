@@ -187,8 +187,8 @@ public class FuelModule extends AbstractEditorModule {
             DevMod.LOGGER.info("[Editor][Fuel][ApplyPreview] item={} burnTime={} efficiency={}",
                 item.getItem(), stats.getBurnTime(), stats.getEfficiencyMultiplier());
 
-            com.devmod.config.FuelConfigManager.setSpecificStats(copy, stats.copy());
-            FuelStats applied = com.devmod.config.FuelConfigManager.getStats(copy).copy();
+            com.devmod.config.handler.impl.FuelConfigHandler.INSTANCE.setSpecificStats(copy, stats.copy());
+            FuelStats applied = com.devmod.config.handler.impl.FuelConfigHandler.INSTANCE.getStats(copy).copy();
             core.setStats(applied.copy());
             withDirtyTrackingDisabled(ui::updateComponentsFromStats);
             setPreviewItem(copy);
@@ -219,6 +219,16 @@ public class FuelModule extends AbstractEditorModule {
         FuelModuleCore core = requireCore();
         FuelModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
+        ui.updateComponentsFromStats();
+        clearDirty();
+    }
+
+    @Override
+    public void resetToDefaults() {
+        FuelModuleUI ui = requireUi();
+        ItemStack baseline = originalItem.copy();
+        com.devmod.config.handler.impl.FuelConfigHandler.clearItemSpecificStats(baseline);
+        setItem(baseline);
         ui.updateComponentsFromStats();
         clearDirty();
     }

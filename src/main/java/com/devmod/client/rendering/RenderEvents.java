@@ -2,6 +2,9 @@ package com.devmod.client.rendering;
 
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 
@@ -41,13 +44,14 @@ import com.devmod.client.rendering.shield.EnergyShieldRenderer;
 import com.devmod.client.telemetry.PerformanceProfiler;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.config.Config;
 import com.devmod.stats.ArmorStats;
 import com.devmod.util.I18n;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class RenderEvents {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RenderEvents.class);
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
@@ -421,6 +425,12 @@ public class RenderEvents {
             return;
         }
 
+        if (mc.screen instanceof net.minecraft.client.gui.screens.DeathScreen
+            && com.devmod.client.endurance.ClientQuestCache.shouldSuppressVanillaDeathScreen()) {
+            LOGGER.info("[EnduranceQuest][Client] Replacing vanilla DeathScreen with QuestDeathScreen");
+            mc.setScreen(new com.devmod.client.endurance.QuestDeathScreen());
+        }
+
         // === KEYBIND HANDLING (correct way for NeoForge) ===
         handleKeyBindings(mc);
 
@@ -572,7 +582,7 @@ public class RenderEvents {
             if (useItem.isEmpty() || !(useItem.getItem() instanceof ShieldItem)) continue;
 
             // Get shield visual properties from ArmorStats
-            ArmorStats stats = ArmorConfigManager.getStats(useItem);
+            ArmorStats stats = ArmorConfigHandler.INSTANCE.getStats(useItem);
 
             // Only render if shield has visual properties enabled (opacity > 0)
             if (stats.getShieldOpacity() <= 0.01f) continue;

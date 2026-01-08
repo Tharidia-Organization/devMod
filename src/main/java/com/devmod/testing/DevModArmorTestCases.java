@@ -12,7 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import com.devmod.components.ArmorComponents;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.stats.ArmorStats;
 import com.devmod.testing.TestCase.TestPriority;
 import com.devmod.util.DatapackIO;
@@ -121,7 +121,7 @@ public final class DevModArmorTestCases {
             CompoundTag loaded = testStack.get(component);
             if (loaded == null) return false;
 
-            ArmorStats restored = ArmorStats.load(loaded);
+            ArmorStats restored = ArmorStats.fromTag(loaded);
 
             // Verify values match
             return Math.abs(restored.getPhysicalReduction() - 0.5f) < 0.001f &&
@@ -152,7 +152,7 @@ public final class DevModArmorTestCases {
             () -> {
                 // Validate shield stats can be set
                 ItemStack shield = new ItemStack(Objects.requireNonNull(Items.SHIELD));
-                ArmorStats stats = ArmorConfigManager.getStats(shield);
+                ArmorStats stats = ArmorConfigHandler.INSTANCE.getStats(shield);
                 return stats != null;
             }
         );
@@ -173,7 +173,7 @@ public final class DevModArmorTestCases {
             () -> {
                 // Validate reflect toggle can be set
                 ItemStack shield = new ItemStack(Objects.requireNonNull(Items.SHIELD));
-                ArmorStats stats = ArmorConfigManager.getStats(shield);
+                ArmorStats stats = ArmorConfigHandler.INSTANCE.getStats(shield);
                 stats.setShieldReflectProjectiles(true);
                 return stats.isShieldReflectProjectiles();
             }
@@ -194,7 +194,7 @@ public final class DevModArmorTestCases {
             TestPriority.LOW,
             () -> {
                 ItemStack shield = new ItemStack(Objects.requireNonNull(Items.SHIELD));
-                ArmorStats stats = ArmorConfigManager.getStats(shield);
+                ArmorStats stats = ArmorConfigHandler.INSTANCE.getStats(shield);
                 stats.setShieldRecoverySpeed(2.0f);
                 return Math.abs(stats.getShieldRecoverySpeed() - 2.0f) < 0.001f;
             }
@@ -273,7 +273,7 @@ public final class DevModArmorTestCases {
                 // Test clamp logic
                 ArmorStats stats = new ArmorStats();
                 stats.setPhysicalReduction(1.5f); // Over 100%
-                ArmorStats clamped = ArmorConfigManager.clampStats(stats);
+                ArmorStats clamped = ArmorConfigHandler.clampStats(stats);
                 return clamped.getPhysicalReduction() <= 0.8f;
             }
         );
@@ -293,8 +293,8 @@ public final class DevModArmorTestCases {
             TestPriority.HIGH,
             () -> {
                 // This requires in-game validation with attribute modifiers
-                // Auto-pass if ArmorConfigManager exists
-                return ArmorConfigManager.class != null;
+                // Auto-pass if ArmorConfigHandler exists
+                return ArmorConfigHandler.class != null;
             }
         );
     }

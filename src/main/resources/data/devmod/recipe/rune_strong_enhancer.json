@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "rune_blocks",
+  "pattern": [
+    "DED",
+    "ERE",
+    "DED"
+  ],
+  "key": {
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "E": {
+      "item": "minecraft:emerald"
+    },
+    "R": {
+      "item": "devmod:rune_enhancer"
+    }
+  },
+  "result": {
+    "id": "devmod:rune_strong_enhancer",
+    "count": 1
+  }
+}

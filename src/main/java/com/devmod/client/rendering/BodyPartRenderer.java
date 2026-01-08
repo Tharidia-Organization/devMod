@@ -18,7 +18,7 @@ import net.minecraft.world.phys.Vec3;
 import com.devmod.ModConfig;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.combat.HitHelper;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.stats.WeaponStats;
 
 public class BodyPartRenderer {
@@ -50,7 +50,7 @@ public class BodyPartRenderer {
             BodyPartCalculator.calculateAllBodyParts(entity), "body parts");
 
         // Get stats for multipliers (only for labels)
-        WeaponStats stats = WeaponConfigManager.getGlobalStats();
+        WeaponStats stats = WeaponConfigHandler.getGlobalStats();
 
         PoseStack.Pose pose = Objects.requireNonNull(poseStack.last(), "pose stack");
         Matrix4f matrix = Objects.requireNonNull(pose.pose(), "pose matrix");

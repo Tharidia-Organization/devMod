@@ -46,6 +46,10 @@ import com.devmod.config.GameplayOverridesManager;
 import com.devmod.core.Services;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.integration.ModIntegrationManager;
+import com.devmod.portal.PortalBlocks;
+import com.devmod.portal.PortalConfig;
+import com.devmod.portal.PortalCreativeTab;
+import com.devmod.portal.PortalItems;
 import com.devmod.runtime.NexusDimensionManager;
 
 @Mod("devmod")
@@ -112,9 +116,15 @@ public class DevMod {
         // Register custom chunk generators for arena dimensions
         com.devmod.runtime.generator.ModChunkGenerators.register(eventBus);
 
+        // Initialize Portal module (blocks, items, creative tab)
+        PortalBlocks.init();
+        PortalItems.init();
+        PortalCreativeTab.init(eventBus);
+
         // Register configuration
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         modContainer.registerConfig(ModConfig.Type.COMMON, GameMechanicsConfig.SPEC, "devmod-mechanics.toml");
+        modContainer.registerConfig(ModConfig.Type.COMMON, PortalConfig.SPEC, "devmod-portals.toml");
         modContainer.registerConfig(ModConfig.Type.CLIENT, EditorClientConfig.SPEC);
 
         // Register config reload listener for runtime updates

@@ -63,7 +63,7 @@ public record GoldenReference(
         int wallBlocks = (2 * (size + size - 2)) * 12; // perimeter * (height - floor overlap) = 316 * 12 = 3,792
         int ceilingBlocks = size * size * 1; // 6,400
         int underfloorBlocks = size * size * 3; // 19,200
-        int hazardBlocks = (int) Math.round(Math.PI * ((32 * 32) - (30 * 30))); // ~390
+        int hazardBlocks = 0; // lava ring overlays the floor, so unique blocks are already counted in floor blocks
         // Lighting: blockLight=12, spacing=8, grid=10x10=100 ambient + 1 explicit
         int lightingBlocks = 101;
         int total = floorBlocks + wallBlocks + ceilingBlocks + underfloorBlocks + hazardBlocks + lightingBlocks;

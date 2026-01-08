@@ -1,0 +1,30 @@
+{
+  "render_type": "cutout",
+  "textures": {
+    "rune": "devmod:block/rune_strong_enhancer",
+    "particle": "devmod:block/rune_strong_enhancer"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        15
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#rune"
+        },
+        "south": {
+          "texture": "#rune",
+          "cullface": "south"
+        }
+      }
+    }
+  ]
+}

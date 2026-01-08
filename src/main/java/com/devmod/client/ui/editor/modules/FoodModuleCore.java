@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.DevMod;
 import com.devmod.client.ui.editor.components.SourceBadge;
-import com.devmod.config.FoodConfigManager;
+import com.devmod.config.handler.impl.FoodConfigHandler;
 import com.devmod.stats.FoodStats;
 
 public class FoodModuleCore {
@@ -73,8 +73,8 @@ public class FoodModuleCore {
             return;
         }
 
-        // Use FoodConfigManager which handles priority
-        stats = FoodConfigManager.getStats(item);
+        // Use FoodConfigHandler which handles priority
+        stats = FoodConfigHandler.INSTANCE.getStats(item);
         originalStats = stats.copy();
 
         // Determine source for badge display

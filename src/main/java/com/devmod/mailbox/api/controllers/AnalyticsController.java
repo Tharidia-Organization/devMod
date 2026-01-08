@@ -12,6 +12,7 @@ import com.devmod.mailbox.analytics.MailboxAnalyticsEngine.DashboardMetrics;
 import com.devmod.mailbox.analytics.MailboxAnalyticsEngine.HourlyVolume;
 import com.devmod.mailbox.analytics.MailboxAnalyticsEngine.PlayerRanking;
 import com.devmod.mailbox.broadcast.BroadcastQueueWorker;
+import com.devmod.mailbox.delivery.MailboxDeliveryRuntime;
 import com.devmod.mailbox.digest.DigestManager;
 import com.devmod.mailbox.persistence.DbPerformanceMonitor;
 import com.devmod.mailbox.scheduler.MessageScheduler;
@@ -146,6 +147,9 @@ public final class AnalyticsController {
         // Digest stats
         var digestStats = DigestManager.INSTANCE.getStats();
 
+        // Delivery stats
+        var deliveryStats = MailboxDeliveryRuntime.INSTANCE.getStats();
+
         // DB performance
         var dbMetrics = DbPerformanceMonitor.INSTANCE.getMetrics();
         var slowQueries = DbPerformanceMonitor.INSTANCE.getSlowQueryHistory(5);
@@ -168,6 +172,16 @@ public final class AnalyticsController {
                 digestStats.playersWithPreferences(),
                 digestStats.digestsSent(),
                 digestStats.immediateDeliveries()
+            ),
+            new DeliveryStatusDto(
+                deliveryStats.totalAttempts(),
+                deliveryStats.totalDelivered(),
+                deliveryStats.totalFailed(),
+                deliveryStats.totalRetried(),
+                deliveryStats.totalRecalls(),
+                deliveryStats.totalExpired(),
+                deliveryStats.inFlight(),
+                deliveryStats.running()
             ),
             new DbPerformanceStatusDto(
                 dbMetrics.totalQueries(),
@@ -231,6 +245,7 @@ public final class AnalyticsController {
         BroadcastQueueStatusDto broadcastQueue,
         SchedulerStatusDto scheduler,
         DigestStatusDto digest,
+        DeliveryStatusDto delivery,
         DbPerformanceStatusDto dbPerformance
     ) {}
 
@@ -253,6 +268,17 @@ public final class AnalyticsController {
         int playersWithPending,
         int digestsSent,
         int immediateDeliveries
+    ) {}
+
+    public record DeliveryStatusDto(
+        long totalAttempts,
+        long totalDelivered,
+        long totalFailed,
+        long totalRetried,
+        long totalRecalls,
+        long totalExpired,
+        int inFlight,
+        boolean running
     ) {}
 
     public record DbPerformanceStatusDto(

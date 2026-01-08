@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/nether_portal_ns",
+  "render_type": "translucent",
+  "textures": {
+    "portal": "devmod:block/custom_portal_cyan",
+    "particle": "devmod:block/custom_portal_cyan"
+  }
+}

@@ -1,5 +1,4 @@
 package com.devmod.runtime.network;
-
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
@@ -25,12 +24,12 @@ import com.devmod.network.ChannelId;
 import com.devmod.network.PayloadValidation.PayloadLimits;
 import com.devmod.network.handlers.NetworkHandlerBase;
 import com.devmod.network.handlers.PayloadRegistrar;
-import com.devmod.runtime.NexusDimensionManager;
 import com.devmod.runtime.NexusDialogContext;
 import com.devmod.runtime.NexusDialogManager;
 import com.devmod.runtime.NexusDialogManager.DialogOption;
 import com.devmod.runtime.NexusDialogManager.DialogResponse;
 import com.devmod.runtime.NexusDialogManager.DialogType;
+import com.devmod.runtime.NexusDimensionManager;
 
 import static com.devmod.network.PayloadValidation.validated;
 
@@ -41,6 +40,32 @@ public final class NexusNetworkHandler extends NetworkHandlerBase implements Pay
     private static final Logger LOGGER = LoggerFactory.getLogger(NexusNetworkHandler.class);
     private static final int LOG_MAX_LINES = 120;
     private static final int LOG_MAX_LINE_LENGTH = 240;
+
+    // Cached reflection for client handlers (avoids Class.forName on every packet)
+    private static final java.lang.reflect.Method OPEN_DIALOG_METHOD;
+    private static final java.lang.reflect.Method OPEN_UI_METHOD;
+    private static final java.lang.reflect.Method APPLY_SNAPSHOT_METHOD;
+
+    static {
+        java.lang.reflect.Method dialogMethod = null;
+        java.lang.reflect.Method uiMethod = null;
+        java.lang.reflect.Method snapshotMethod = null;
+
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            try {
+                Class<?> handlerClass = Class.forName("com.devmod.client.nexus.NexusDialogClientHandler");
+                dialogMethod = handlerClass.getMethod("openDialog", NexusDialogPayload.class);
+                uiMethod = handlerClass.getMethod("openUi", NexusUiPayload.class);
+                snapshotMethod = handlerClass.getMethod("applyLogSnapshot", NexusLogSnapshotPayload.class);
+            } catch (ClassNotFoundException | NoSuchMethodException e) {
+                // Expected on dedicated servers - client handler not available
+            }
+        }
+
+        OPEN_DIALOG_METHOD = dialogMethod;
+        OPEN_UI_METHOD = uiMethod;
+        APPLY_SNAPSHOT_METHOD = snapshotMethod;
+    }
 
     public static final NexusNetworkHandler INSTANCE = new NexusNetworkHandler();
 
@@ -115,13 +140,11 @@ public final class NexusNetworkHandler extends NetworkHandlerBase implements Pay
     }
 
     private static void openDialogScreen(NexusDialogPayload payload) {
-        // Use reflection to avoid class loading on server
+        if (OPEN_DIALOG_METHOD == null) {
+            return; // Client handler not available (dedicated server)
+        }
         try {
-            Class<?> handlerClass = Class.forName("com.devmod.client.nexus.NexusDialogClientHandler");
-            java.lang.reflect.Method method = handlerClass.getMethod("openDialog", NexusDialogPayload.class);
-            method.invoke(null, payload);
-        } catch (ClassNotFoundException e) {
-            // Client handler not available on dedicated servers
+            OPEN_DIALOG_METHOD.invoke(null, payload);
         } catch (Exception e) {
             LOGGER.debug("[NexusNetwork] Client dialog handler unavailable: {}", e.getMessage());
         }
@@ -142,13 +165,11 @@ public final class NexusNetworkHandler extends NetworkHandlerBase implements Pay
     }
 
     private static void openNexusUi(NexusUiPayload payload) {
-        // Use reflection to avoid class loading on server
+        if (OPEN_UI_METHOD == null) {
+            return; // Client handler not available (dedicated server)
+        }
         try {
-            Class<?> handlerClass = Class.forName("com.devmod.client.nexus.NexusDialogClientHandler");
-            java.lang.reflect.Method method = handlerClass.getMethod("openUi", NexusUiPayload.class);
-            method.invoke(null, payload);
-        } catch (ClassNotFoundException e) {
-            // Client handler not available on dedicated servers
+            OPEN_UI_METHOD.invoke(null, payload);
         } catch (Exception e) {
             LOGGER.debug("[NexusNetwork] Client UI handler unavailable: {}", e.getMessage());
         }
@@ -158,14 +179,13 @@ public final class NexusNetworkHandler extends NetworkHandlerBase implements Pay
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
+        if (APPLY_SNAPSHOT_METHOD == null) {
+            return; // Client handler not available (dedicated server)
+        }
 
         ignoreFuture(ctx.enqueueWork(() -> {
             try {
-                Class<?> handlerClass = Class.forName("com.devmod.client.nexus.NexusDialogClientHandler");
-                java.lang.reflect.Method method = handlerClass.getMethod("applyLogSnapshot", NexusLogSnapshotPayload.class);
-                method.invoke(null, payload);
-            } catch (ClassNotFoundException e) {
-                // Client handler not available on dedicated servers
+                APPLY_SNAPSHOT_METHOD.invoke(null, payload);
             } catch (Exception e) {
                 LOGGER.debug("[NexusNetwork] Client log snapshot handler unavailable: {}", e.getMessage());
             }

@@ -19,6 +19,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -27,10 +28,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.UiSounds;
-import com.devmod.mailbox.MessageType;
 import com.devmod.mailbox.attachment.MailAttachment;
 import com.devmod.mailbox.client.ClientMailboxCache;
-import com.devmod.mailbox.client.MailboxUiTheme;
+import com.devmod.mailbox.client.MailboxUiSkin;
 import com.devmod.mailbox.network.payload.MailboxActionPayload;
 import com.devmod.mailbox.network.payload.MailboxStatusPayload;
 import com.devmod.mailbox.network.payload.MailboxSyncPayload.MailboxMessageData;
@@ -64,7 +64,7 @@ public class MailboxScreen extends Screen {
     private int hoveredMessageIndex = -1;
     @Nullable
     private String statusMessage = null;
-    private int statusColor = DesignTokens.Text.MUTED();
+    private int statusColor = MailboxUiSkin.textMuted();
     private long statusMessageAt = 0;
 
     // Buttons
@@ -180,8 +180,8 @@ public class MailboxScreen extends Screen {
     }
 
     private void renderMainPanel(GuiGraphics graphics) {
-        // Background with gradient
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, MailboxUiTheme.Panel.BG);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, MailboxUiSkin.panelBg());
+        MailboxUiSkin.renderScrollPanel(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT);
 
         int contentTop = panelY + 45;
         int contentBottom = panelY + PANEL_HEIGHT - 45;
@@ -192,16 +192,16 @@ public class MailboxScreen extends Screen {
             contentTop,
             listX + LIST_WIDTH,
             contentBottom,
-            DesignTokens.setAlpha(DesignTokens.Background.DARKER(), 0x80));
+            MailboxUiSkin.listBg());
         graphics.fill(
             detailX,
             contentTop,
             detailX + DETAIL_WIDTH,
             contentBottom,
-            DesignTokens.setAlpha(DesignTokens.Background.CONTENT(), 0x70));
+            MailboxUiSkin.detailBg());
 
         // Border
-        int borderColor = DesignTokens.Border.DEFAULT();
+        int borderColor = MailboxUiSkin.border();
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 1, borderColor);
         graphics.fill(panelX, panelY + PANEL_HEIGHT - 1, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
         graphics.fill(panelX, panelY, panelX + 1, panelY + PANEL_HEIGHT, borderColor);
@@ -209,7 +209,7 @@ public class MailboxScreen extends Screen {
 
         // Divider between list and detail
         int dividerX = panelX + LIST_WIDTH + 10;
-        graphics.fill(dividerX, panelY + 50, dividerX + 1, panelY + PANEL_HEIGHT - 45, MailboxUiTheme.Divider.LINE);
+        graphics.fill(dividerX, panelY + 50, dividerX + 1, panelY + PANEL_HEIGHT - 45, MailboxUiSkin.divider());
     }
 
     private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -217,21 +217,29 @@ public class MailboxScreen extends Screen {
 
         // Title
         String title = "Mailbox";
-        graphics.drawString(getFont(), title, panelX + 15, headerY, DesignTokens.Text.PRIMARY(), false);
+        MailboxUiSkin.drawText(graphics, getFont(), title, panelX + 15, headerY, MailboxUiSkin.textPrimary(), false);
+        int titleWidth = MailboxUiSkin.textWidth(getFont(), title);
 
         // Unread count badge
         int unread = ClientMailboxCache.getUnreadCount();
         if (unread > 0) {
             String badge = "(" + unread + " unread)";
-            graphics.drawString(getFont(), badge, panelX + 15 + getFont().width(title) + 8, headerY, DesignTokens.Accent.BLUE(), false);
+            MailboxUiSkin.drawText(
+                graphics,
+                getFont(),
+                badge,
+                panelX + 15 + titleWidth + 8,
+                headerY,
+                MailboxUiSkin.unreadAccent(),
+                false);
         }
 
         // Message count
         int total = ClientMailboxCache.getMessageCount();
         int max = ClientMailboxCache.getMaxMessages();
         String countText = total + "/" + max + " messages";
-        int countX = panelX + PANEL_WIDTH - getFont().width(countText) - 50;
-        graphics.drawString(getFont(), countText, countX, headerY, DesignTokens.Text.MUTED(), false);
+        int countX = panelX + PANEL_WIDTH - MailboxUiSkin.textWidth(getFont(), countText) - 50;
+        MailboxUiSkin.drawText(graphics, getFont(), countText, countX, headerY, MailboxUiSkin.textMuted(), false);
 
         // Refresh button
         if (refreshButton != null) {
@@ -239,7 +247,7 @@ public class MailboxScreen extends Screen {
         }
 
         // Separator line
-        graphics.fill(panelX + 10, panelY + 35, panelX + PANEL_WIDTH - 10, panelY + 36, DesignTokens.Border.DEFAULT());
+        graphics.fill(panelX + 10, panelY + 35, panelX + PANEL_WIDTH - 10, panelY + 36, MailboxUiSkin.border());
     }
 
     private int renderMessageList(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -247,14 +255,15 @@ public class MailboxScreen extends Screen {
         int listX = panelX + 10;
         int listY = panelY + 45;
         int listHeight = PANEL_HEIGHT - 90;
-        int textStartX = listX + 22;
+        boolean feathered = MailboxUiSkin.isFeatheredTheme();
+        int textStartX = listX + (feathered ? 26 : 22);
 
         // Empty state
         if (messages.isEmpty()) {
             String emptyText = "No messages";
-            int textX = listX + (LIST_WIDTH - getFont().width(emptyText)) / 2;
+            int textX = listX + (LIST_WIDTH - MailboxUiSkin.textWidth(getFont(), emptyText)) / 2;
             int textY = listY + listHeight / 2;
-            graphics.drawString(getFont(), emptyText, textX, textY, DesignTokens.Text.MUTED(), false);
+            MailboxUiSkin.drawText(graphics, getFont(), emptyText, textX, textY, MailboxUiSkin.textMuted(), false);
             return -1;
         }
 
@@ -278,40 +287,64 @@ public class MailboxScreen extends Screen {
             // Selection/hover background
             boolean isSelected = msg.id().equals(selectedMessageId);
             if (isSelected) {
-                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + MESSAGE_HEIGHT - 2, MailboxUiTheme.List.SELECTED_BG);
+                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + MESSAGE_HEIGHT - 2, MailboxUiSkin.listSelected());
             } else if (isHovered) {
-                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + MESSAGE_HEIGHT - 2, MailboxUiTheme.List.HOVER_BG);
+                graphics.fill(listX, itemY, listX + LIST_WIDTH, itemY + MESSAGE_HEIGHT - 2, MailboxUiSkin.listHover());
             }
 
-            // Unread indicator
-            if (!msg.isRead()) {
+            boolean drewScrollIcon = false;
+            if (feathered) {
+                ItemStack scrollStack = MailboxUiSkin.scrollIcon(!msg.isRead());
+                if (scrollStack != null) {
+                    int iconX = listX + 4;
+                    int iconY = itemY + (MESSAGE_HEIGHT - 16) / 2;
+                    graphics.renderItem(scrollStack, iconX, iconY);
+                    graphics.renderItemDecorations(getFont(), scrollStack, iconX, iconY);
+                    drewScrollIcon = true;
+                }
+            }
+
+            // Unread indicator (fallback)
+            if (!msg.isRead() && !drewScrollIcon) {
                 int dotX = listX + 5;
                 int dotY = itemY + MESSAGE_HEIGHT / 2 - 3;
-                graphics.fill(dotX, dotY, dotX + 6, dotY + 6, DesignTokens.Accent.BLUE());
+                graphics.fill(dotX, dotY, dotX + 6, dotY + 6, MailboxUiSkin.unreadAccent());
             }
 
             // Message type icon color
             int typeColor = getMessageTypeColor(msg.messageTypeOrdinal());
-            graphics.fill(listX + 14, itemY + 4, listX + 16, itemY + MESSAGE_HEIGHT - 6, typeColor);
+            int typeBarX = listX + (feathered ? 22 : 14);
+            graphics.fill(typeBarX, itemY + 4, typeBarX + 2, itemY + MESSAGE_HEIGHT - 6, typeColor);
 
             // Sender or subject
             String senderText = msg.senderName() != null ? msg.senderName() : "System";
             int rightPadding = msg.hasAttachment() ? 20 : 8;
             int textMaxWidth = LIST_WIDTH - (textStartX - listX) - rightPadding;
             senderText = truncateToWidth(senderText, textMaxWidth);
-            int textColor = msg.isRead() ? DesignTokens.Text.MUTED() : DesignTokens.Text.PRIMARY();
-            graphics.drawString(getFont(), senderText, textStartX, itemY + 4, textColor, false);
+            int textColor = msg.isRead() ? MailboxUiSkin.textMuted() : MailboxUiSkin.textPrimary();
+            MailboxUiSkin.drawText(graphics, getFont(), senderText, textStartX, itemY + 4, textColor, false);
 
             // Subject preview
             String subjectPreview = msg.subject();
             subjectPreview = truncateToWidth(subjectPreview, textMaxWidth);
-            graphics.drawString(getFont(), subjectPreview, textStartX, itemY + 16, DesignTokens.Text.SECONDARY(), false);
+            MailboxUiSkin.drawText(
+                graphics,
+                getFont(),
+                subjectPreview,
+                textStartX,
+                itemY + 16,
+                MailboxUiSkin.textSecondary(),
+                false);
 
             // Attachment icon
             if (msg.hasAttachment()) {
                 int iconX = listX + LIST_WIDTH - 18;
-                int iconColor = msg.attachmentClaimed() ? DesignTokens.Text.MUTED() : DesignTokens.Accent.GOLD();
-                graphics.drawString(getFont(), "📎", iconX, itemY + 10, iconColor, false);
+                if (feathered) {
+                    MailboxUiSkin.renderPearlIcon(graphics, iconX, itemY + 8, 10);
+                } else {
+                    int iconColor = msg.attachmentClaimed() ? DesignTokens.Text.MUTED() : DesignTokens.Accent.GOLD();
+                    graphics.drawString(getFont(), "📎", iconX, itemY + 10, iconColor, false);
+                }
             }
         }
 
@@ -322,8 +355,8 @@ public class MailboxScreen extends Screen {
             int thumbHeight = Math.max(20, scrollbarH * VISIBLE_MESSAGES / messages.size());
             int thumbY = listY + 2 + (scrollbarH - thumbHeight) * scrollOffset / Math.max(1, messages.size() - VISIBLE_MESSAGES);
 
-            graphics.fill(scrollbarX, listY + 2, scrollbarX + 3, listY + scrollbarH, MailboxUiTheme.Scrollbar.TRACK);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, MailboxUiTheme.Scrollbar.THUMB);
+            graphics.fill(scrollbarX, listY + 2, scrollbarX + 3, listY + scrollbarH, MailboxUiSkin.scrollbarTrack());
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, MailboxUiSkin.scrollbarThumb());
         }
 
         return hovered;
@@ -343,9 +376,9 @@ public class MailboxScreen extends Screen {
 
         if (selected == null) {
             String noSelection = "Select a message";
-            int textX = detailX + (DETAIL_WIDTH - getFont().width(noSelection)) / 2;
+            int textX = detailX + (DETAIL_WIDTH - MailboxUiSkin.textWidth(getFont(), noSelection)) / 2;
             int textY = detailY + detailHeight / 2;
-            graphics.drawString(getFont(), noSelection, textX, textY, DesignTokens.Text.MUTED(), false);
+            MailboxUiSkin.drawText(graphics, getFont(), noSelection, textX, textY, MailboxUiSkin.textMuted(), false);
             return;
         }
 
@@ -355,10 +388,11 @@ public class MailboxScreen extends Screen {
         // Sender
         String senderLabel = "From: ";
         String senderValue = selected.senderName() != null ? selected.senderName() : "System";
-        int senderLabelWidth = getFont().width(senderLabel);
+        int senderLabelWidth = MailboxUiSkin.textWidth(getFont(), senderLabel);
         String senderText = truncateToWidth(senderValue, detailTextWidth - senderLabelWidth);
-        graphics.drawString(getFont(), senderLabel, detailTextX, y, DesignTokens.Text.MUTED(), false);
-        graphics.drawString(
+        MailboxUiSkin.drawText(graphics, getFont(), senderLabel, detailTextX, y, MailboxUiSkin.textMuted(), false);
+        MailboxUiSkin.drawText(
+            graphics,
             getFont(),
             senderText,
             detailTextX + senderLabelWidth,
@@ -369,23 +403,23 @@ public class MailboxScreen extends Screen {
 
         // Subject
         String subjectLabel = "Subject: ";
-        int subjectLabelWidth = getFont().width(subjectLabel);
+        int subjectLabelWidth = MailboxUiSkin.textWidth(getFont(), subjectLabel);
         String subjectText = selected.subject();
         subjectText = truncateToWidth(subjectText, detailTextWidth - subjectLabelWidth);
-        graphics.drawString(getFont(), subjectLabel, detailTextX, y, DesignTokens.Text.MUTED(), false);
-        graphics.drawString(getFont(), subjectText, detailTextX + subjectLabelWidth, y, DesignTokens.Text.PRIMARY(), false);
+        MailboxUiSkin.drawText(graphics, getFont(), subjectLabel, detailTextX, y, MailboxUiSkin.textMuted(), false);
+        MailboxUiSkin.drawText(graphics, getFont(), subjectText, detailTextX + subjectLabelWidth, y, MailboxUiSkin.textPrimary(), false);
         y += 14;
 
         // Date
         String dateStr = DATE_FORMAT.format(Instant.ofEpochMilli(selected.createdAtMillis()));
         String dateLabel = "Date: ";
-        int dateLabelWidth = getFont().width(dateLabel);
-        graphics.drawString(getFont(), dateLabel, detailTextX, y, DesignTokens.Text.MUTED(), false);
-        graphics.drawString(getFont(), dateStr, detailTextX + dateLabelWidth, y, DesignTokens.Text.SECONDARY(), false);
+        int dateLabelWidth = MailboxUiSkin.textWidth(getFont(), dateLabel);
+        MailboxUiSkin.drawText(graphics, getFont(), dateLabel, detailTextX, y, MailboxUiSkin.textMuted(), false);
+        MailboxUiSkin.drawText(graphics, getFont(), dateStr, detailTextX + dateLabelWidth, y, MailboxUiSkin.textSecondary(), false);
         y += 20;
 
         // Separator
-        graphics.fill(detailTextX, y, detailTextX + detailTextWidth, y + 1, DesignTokens.Border.DEFAULT());
+        graphics.fill(detailTextX, y, detailTextX + detailTextWidth, y + 1, MailboxUiSkin.divider());
         y += 10;
 
         // Body
@@ -395,25 +429,25 @@ public class MailboxScreen extends Screen {
         int bodyMaxY = detailY + detailHeight - footerReserve;
         for (String line : lines) {
             if (y > bodyMaxY) {
-                graphics.drawString(getFont(), "...", detailTextX, y, DesignTokens.Text.MUTED(), false);
+                MailboxUiSkin.drawText(graphics, getFont(), "...", detailTextX, y, MailboxUiSkin.textMuted(), false);
                 break;
             }
-            graphics.drawString(getFont(), line, detailTextX, y, DesignTokens.Text.PRIMARY(), false);
+            MailboxUiSkin.drawText(graphics, getFont(), line, detailTextX, y, MailboxUiSkin.textPrimary(), false);
             y += 12;
         }
 
         // Attachment section
         if (selected.hasAttachment()) {
             y = detailY + detailHeight - 50;
-            graphics.fill(detailTextX, y, detailTextX + detailTextWidth, y + 1, DesignTokens.Border.DEFAULT());
+            graphics.fill(detailTextX, y, detailTextX + detailTextWidth, y + 1, MailboxUiSkin.divider());
             y += 8;
 
             String attachLabel = "Attachment:";
-            int attachLabelWidth = getFont().width(attachLabel);
+            int attachLabelWidth = MailboxUiSkin.textWidth(getFont(), attachLabel);
             String claimedLabel = selected.attachmentClaimed() ? "(Claimed)" : null;
-            int claimedWidth = claimedLabel != null ? getFont().width(claimedLabel) : 0;
+            int claimedWidth = claimedLabel != null ? MailboxUiSkin.textWidth(getFont(), claimedLabel) : 0;
             int descMaxWidth = detailTextWidth - attachLabelWidth - 8 - (claimedWidth > 0 ? claimedWidth + 6 : 0);
-            graphics.drawString(getFont(), attachLabel, detailTextX, y, DesignTokens.Text.ACCENT(), false);
+            MailboxUiSkin.drawText(graphics, getFont(), attachLabel, detailTextX, y, MailboxUiSkin.textAccent(), false);
 
             String desc = "Unknown";
             if (selected.attachmentData() != null) {
@@ -424,16 +458,24 @@ public class MailboxScreen extends Screen {
             }
             if (!desc.isEmpty()) {
                 desc = truncateToWidth(desc, descMaxWidth);
-                graphics.drawString(getFont(), desc, detailTextX + attachLabelWidth + 8, y, DesignTokens.Accent.GOLD(), false);
+                MailboxUiSkin.drawText(
+                    graphics,
+                    getFont(),
+                    desc,
+                    detailTextX + attachLabelWidth + 8,
+                    y,
+                    DesignTokens.Accent.GOLD(),
+                    false);
             }
 
             if (claimedLabel != null) {
-                graphics.drawString(
+                MailboxUiSkin.drawText(
+                    graphics,
                     getFont(),
                     claimedLabel,
                     detailTextX + detailTextWidth - claimedWidth,
                     y,
-                    DesignTokens.Text.MUTED(),
+                    MailboxUiSkin.textMuted(),
                     false);
             }
         }
@@ -497,7 +539,7 @@ public class MailboxScreen extends Screen {
             return;
         }
         int y = panelY + PANEL_HEIGHT - 55;
-        graphics.drawString(getFont(), statusMessage, panelX + 15, y, statusColor, false);
+        MailboxUiSkin.drawText(graphics, getFont(), statusMessage, panelX + 15, y, statusColor, false);
     }
 
     // ========== EVENT HANDLERS ==========
@@ -699,55 +741,15 @@ public class MailboxScreen extends Screen {
     // ========== UTILITIES ==========
 
     private int getMessageTypeColor(int typeOrdinal) {
-        MessageType type = MessageType.values()[Mth.clamp(typeOrdinal, 0, MessageType.values().length - 1)];
-        return switch (type) {
-            case PLAYER -> DesignTokens.Accent.BLUE();
-            case SYSTEM -> DesignTokens.Text.SECONDARY();
-            case ADMIN -> DesignTokens.Accent.GOLD();
-            case REWARD -> DesignTokens.Status.SUCCESS();
-        };
+        return MailboxUiSkin.messageTypeColor(typeOrdinal);
     }
 
     private String truncateToWidth(String text, int maxWidth) {
-        if (text.isEmpty() || maxWidth <= 0) return "";
-        String slice = Objects.requireNonNull(getFont().plainSubstrByWidth(text, maxWidth));
-        if (slice.length() >= text.length()) return text;
-        int ellipsisWidth = getFont().width("...");
-        if (maxWidth <= ellipsisWidth) return slice;
-        String trimmed = Objects.requireNonNull(getFont().plainSubstrByWidth(text, maxWidth - ellipsisWidth));
-        return trimmed + "...";
+        return MailboxUiSkin.trimToWidth(getFont(), text, maxWidth);
     }
 
     private List<String> wrapText(String text, int maxWidth) {
-        List<String> lines = new java.util.ArrayList<>();
-        List<String> words = new java.util.ArrayList<>();
-        int start = 0;
-        for (int i = 0; i <= text.length(); i++) {
-            if (i == text.length() || text.charAt(i) == ' ') {
-                if (i > start) {
-                    words.add(text.substring(start, i));
-                }
-                start = i + 1;
-            }
-        }
-        StringBuilder currentLine = new StringBuilder();
-
-        for (String word : words) {
-            if (currentLine.isEmpty()) {
-                currentLine.append(word);
-            } else if (getFont().width(currentLine + " " + word) <= maxWidth) {
-                currentLine.append(" ").append(word);
-            } else {
-                lines.add(currentLine.toString());
-                currentLine = new StringBuilder(word);
-            }
-        }
-
-        if (!currentLine.isEmpty()) {
-            lines.add(currentLine.toString());
-        }
-
-        return lines;
+        return MailboxUiSkin.wrapText(getFont(), text, maxWidth);
     }
 
     private void setStatusMessage(String message, int color) {

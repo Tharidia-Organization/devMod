@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import com.devmod.mailbox.news.NewsArticle;
 import com.devmod.mailbox.news.NewsCategory;
+import com.devmod.mailbox.delivery.MailboxDeliveryJob;
 import com.devmod.mailbox.persistence.DuckDbMailboxRepository;
 import com.devmod.mailbox.task.TaskAuditEntry;
 import com.devmod.mailbox.task.TestTask;
@@ -143,6 +144,104 @@ class MailboxRepositoryIntegrationTest {
 
             int unread = repository.getUnreadCount(playerUuid).get(5, TimeUnit.SECONDS);
             assertEquals(3, unread);
+        }
+    }
+
+    @Nested
+    @DisplayName("Delivery Queue Operations")
+    class DeliveryQueueOperations {
+
+        @Test
+        @DisplayName("Save and retrieve delivery job")
+        void saveAndRetrieveDeliveryJob() throws Exception {
+            UUID recipientUuid = UUID.randomUUID();
+            MailboxDeliveryJob job = MailboxDeliveryJob.builder()
+                .sender(null, "System")
+                .recipient(recipientUuid)
+                .subject("Queued Subject")
+                .body("Queued body")
+                .messageType(MessageType.SYSTEM)
+                .build();
+
+            MailboxDeliveryJob saved = repository.saveDeliveryJob(job).get(5, TimeUnit.SECONDS);
+            assertNotNull(saved);
+            assertEquals(job.id(), saved.id());
+
+            var retrieved = repository.getDeliveryJob(saved.id()).get(5, TimeUnit.SECONDS);
+            assertTrue(retrieved.isPresent());
+            assertEquals(saved.messageId(), retrieved.get().messageId());
+            assertEquals(MailboxDeliveryJob.DeliveryStatus.PENDING, retrieved.get().status());
+        }
+
+        @Test
+        @DisplayName("List jobs by status")
+        void listJobsByStatus() throws Exception {
+            UUID recipientUuid = UUID.randomUUID();
+            MailboxDeliveryJob pending = MailboxDeliveryJob.builder()
+                .sender(null, "System")
+                .recipient(recipientUuid)
+                .subject("Pending Job")
+                .messageType(MessageType.SYSTEM)
+                .build();
+
+            MailboxDeliveryJob failed = MailboxDeliveryJob.builder()
+                .sender(null, "System")
+                .recipient(recipientUuid)
+                .subject("Failed Job")
+                .messageType(MessageType.SYSTEM)
+                .status(MailboxDeliveryJob.DeliveryStatus.FAILED)
+                .failureCount(1)
+                .lastFailureReason("test failure")
+                .build();
+
+            repository.saveDeliveryJob(pending).get(5, TimeUnit.SECONDS);
+            repository.saveDeliveryJob(failed).get(5, TimeUnit.SECONDS);
+
+            List<MailboxDeliveryJob> pendingJobs = repository
+                .getDeliveryJobsByStatus(MailboxDeliveryJob.DeliveryStatus.PENDING, 10)
+                .get(5, TimeUnit.SECONDS);
+            assertFalse(pendingJobs.isEmpty());
+            assertTrue(pendingJobs.stream().allMatch(job -> job.status() == MailboxDeliveryJob.DeliveryStatus.PENDING));
+        }
+
+        @Test
+        @DisplayName("Update delivery job")
+        void updateDeliveryJob() throws Exception {
+            UUID recipientUuid = UUID.randomUUID();
+            MailboxDeliveryJob job = MailboxDeliveryJob.builder()
+                .sender(null, "System")
+                .recipient(recipientUuid)
+                .subject("Update Job")
+                .messageType(MessageType.SYSTEM)
+                .build();
+
+            MailboxDeliveryJob saved = repository.saveDeliveryJob(job).get(5, TimeUnit.SECONDS);
+
+            MailboxDeliveryJob updated = MailboxDeliveryJob.builder()
+                .id(saved.id())
+                .messageId(saved.messageId())
+                .sender(saved.senderUuid(), saved.senderName())
+                .recipient(saved.recipientUuid())
+                .subject(saved.subject())
+                .body(saved.body())
+                .messageType(saved.messageType())
+                .createdAt(saved.createdAt())
+                .availableAt(saved.availableAt())
+                .expiresAt(saved.expiresAt())
+                .attachment(saved.attachmentData())
+                .status(MailboxDeliveryJob.DeliveryStatus.DELIVERED)
+                .attemptCount(1)
+                .failureCount(saved.failureCount())
+                .lastAttemptAt(Instant.now())
+                .deliveredAt(Instant.now())
+                .build();
+
+            boolean updatedOk = repository.updateDeliveryJob(updated).get(5, TimeUnit.SECONDS);
+            assertTrue(updatedOk);
+
+            var retrieved = repository.getDeliveryJob(saved.id()).get(5, TimeUnit.SECONDS);
+            assertTrue(retrieved.isPresent());
+            assertEquals(MailboxDeliveryJob.DeliveryStatus.DELIVERED, retrieved.get().status());
         }
     }
 

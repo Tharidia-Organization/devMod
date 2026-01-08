@@ -66,6 +66,22 @@ public class RecipeModuleCore {
         validationDirty = true;
     }
 
+    /**
+     * Load core state from an existing recipe snapshot.
+     */
+    public void loadFromRecipe(@Nonnull CraftingRecipeData recipe) {
+        Objects.requireNonNull(recipe, "recipe cannot be null");
+        craftingType = recipe.craftingType();
+        recipeId = recipe.id().toString();
+        recipeGroup = recipe.group() == null ? "" : recipe.group();
+        category = recipe.category();
+        resultQuantity = recipe.result().count();
+        ResourceLocation originalId = recipe.originalId();
+        replaceVanillaRecipe = originalId != null;
+        vanillaRecipeToReplace = originalId;
+        validationDirty = true;
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // BUILD RECIPE
     // ═══════════════════════════════════════════════════════════════

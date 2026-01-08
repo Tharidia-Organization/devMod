@@ -210,7 +210,7 @@ public final class ConfigValidator {
 
         try {
             // Validate global multipliers are in reasonable range
-            // WeaponConfigManager uses static methods, no instance check needed
+            // WeaponConfigHandler uses static methods, no instance check needed
 
         } catch (Exception e) {
             errors.add(ValidationError.error(
@@ -229,7 +229,7 @@ public final class ConfigValidator {
         List<ValidationError> errors = new ArrayList<>();
 
         try {
-            // ArmorConfigManager uses static methods, no instance check needed
+            // ArmorConfigHandler uses static methods, no instance check needed
 
         } catch (Exception e) {
             errors.add(ValidationError.error(
@@ -278,14 +278,14 @@ public final class ConfigValidator {
             }
 
             // Validate arena templates directory exists (uses helper)
-            ValidationError templatesError = validatePathExists(
+            ValidationError templatesError = ensureDirectoryExists(
                 "endurance", "templates", "config/devmod/arena_templates");
             if (templatesError != null) {
                 errors.add(templatesError);
             }
 
             // Validate kits directory (uses helper)
-            ValidationError kitsError = validatePathExists(
+            ValidationError kitsError = ensureDirectoryExists(
                 "endurance", "kits", "config/devmod/kits");
             if (kitsError != null) {
                 errors.add(kitsError);
@@ -434,6 +434,27 @@ public final class ConfigValidator {
             );
         }
         return null;
+    }
+
+    /**
+     * Ensure a directory exists, creating it if missing.
+     */
+    @Nullable
+    public static ValidationError ensureDirectoryExists(String subsystem, String field, String path) {
+        java.nio.file.Path dir = java.nio.file.Paths.get(path);
+        if (java.nio.file.Files.exists(dir)) {
+            return null;
+        }
+        try {
+            java.nio.file.Files.createDirectories(dir);
+            LOGGER.info("[ConfigValidator] Created missing directory for {}.{}: {}", subsystem, field, path);
+            return null;
+        } catch (java.io.IOException e) {
+            return ValidationError.warning(
+                subsystem, field,
+                "Path does not exist and could not be created: " + path + " (" + e.getMessage() + ")"
+            );
+        }
     }
 
     // ============================================================================

@@ -37,6 +37,7 @@ public final class ImpactHudController {
     // === State ===
     private ImpactDisplayMode displayMode = ImpactDisplayMode.DETAILED;
     private ImpactDisplayMode userPreferredCombatMode = ImpactDisplayMode.DETAILED;
+    private boolean user3dPanelsEnabled = true;
     private boolean initialized = false;
 
     // === Listener for external mode change notifications ===
@@ -55,6 +56,7 @@ public final class ImpactHudController {
 
         // Load user preference from config
         loadUserPreference();
+        apply3dPanelState();
 
         // Register context change listener
         ContextDetector.INSTANCE.addModeChangeListener(this::onContextChange);
@@ -204,7 +206,7 @@ public final class ImpactHudController {
         this.displayMode = mode;
 
         // Update subsystem states
-        Impact3DPanelManager.INSTANCE.setEnabled(mode.shouldShow3DPanels());
+        apply3dPanelState();
 
         // Notify listener
         if (modeChangeListener != null && oldMode != mode) {
@@ -312,6 +314,34 @@ public final class ImpactHudController {
     public void reset() {
         displayMode = ImpactDisplayMode.DETAILED;
         userPreferredCombatMode = ImpactDisplayMode.DETAILED;
+        user3dPanelsEnabled = true;
+        apply3dPanelState();
         Impact3DPanelManager.INSTANCE.clear();
+    }
+
+    /**
+     * Returns whether 3D panels are allowed by the user preference.
+     */
+    public boolean is3dPanelsEnabled() {
+        return user3dPanelsEnabled;
+    }
+
+    /**
+     * Enables/disables 3D panels while respecting the current display mode.
+     */
+    public void set3dPanelsEnabled(boolean enabled) {
+        user3dPanelsEnabled = enabled;
+        apply3dPanelState();
+    }
+
+    /**
+     * Toggle 3D panels on/off (user preference).
+     */
+    public void toggle3dPanels() {
+        set3dPanelsEnabled(!user3dPanelsEnabled);
+    }
+
+    private void apply3dPanelState() {
+        Impact3DPanelManager.INSTANCE.setEnabled(displayMode.shouldShow3DPanels() && user3dPanelsEnabled);
     }
 }

@@ -869,7 +869,7 @@ public final class DevModClientActions {
             .toggle(context -> Impact3DPanelManager.INSTANCE.isEnabled())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
-                Impact3DPanelManager.INSTANCE.toggle();
+                ImpactHudController.INSTANCE.toggle3dPanels();
                 String status = Impact3DPanelManager.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.impact_3d_status", status), true);
             })
@@ -2812,7 +2812,7 @@ public final class DevModClientActions {
         Config.IMPACT_HUD_DPS_ENABLED.set(true);
 
         ImpactHudOverlay.setEnabled(true);
-        Impact3DPanelManager.INSTANCE.setEnabled(true);
+        ImpactHudController.INSTANCE.set3dPanelsEnabled(true);
     }
 
     private static void resetImpactVfxDefaults() {

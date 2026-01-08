@@ -63,6 +63,7 @@ public class HeaderComponent {
     // Mode badges
     private final ModeBadge modeBadge;
     private final ModeBadge scopeBadge;
+    private boolean showScopeBadge = true;
 
     // Bounds
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
@@ -146,6 +147,11 @@ public class HeaderComponent {
         return scopeBadge;
     }
 
+    public HeaderComponent showScopeBadge(boolean show) {
+        this.showScopeBadge = show;
+        return this;
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // RENDERING
     // ═══════════════════════════════════════════════════════════════
@@ -198,11 +204,15 @@ public class HeaderComponent {
 
         // Scope badge (left of close button)
         int badgeY = row1Y + (rowHeight - scopeBadge.getHeight()) / 2;
-        int scopeX = closeX - badgeGap - scopeBadge.getWidth();
-        scopeBadge.render(graphics, scopeX, badgeY, mouseX, mouseY);
+        int badgeAnchorX = closeX - badgeGap;
+        if (showScopeBadge) {
+            int scopeX = badgeAnchorX - scopeBadge.getWidth();
+            scopeBadge.render(graphics, scopeX, badgeY, mouseX, mouseY);
+            badgeAnchorX = scopeX - badgeGap;
+        }
 
-        // Mode badge (left of scope badge)
-        int modeX = scopeX - badgeGap - modeBadge.getWidth();
+        // Mode badge (left of scope badge or close button)
+        int modeX = badgeAnchorX - modeBadge.getWidth();
         modeBadge.render(graphics, modeX, badgeY, mouseX, mouseY);
 
         // ═══════════════════════════════════════════════════════════════
@@ -299,7 +309,9 @@ public class HeaderComponent {
      */
     public void renderOverlays(GuiGraphics graphics, int mouseX, int mouseY) {
         modeBadge.renderOverlay(graphics, mouseX, mouseY);
-        scopeBadge.renderOverlay(graphics, mouseX, mouseY);
+        if (showScopeBadge) {
+            scopeBadge.renderOverlay(graphics, mouseX, mouseY);
+        }
     }
 
     private void renderTab(GuiGraphics graphics, net.minecraft.client.gui.Font font,
@@ -383,8 +395,10 @@ public class HeaderComponent {
         if (modeBadge.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
-        if (scopeBadge.mouseClicked(mouseX, mouseY, button)) {
-            return true;
+        if (showScopeBadge) {
+            if (scopeBadge.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
         }
 
         // Check close button

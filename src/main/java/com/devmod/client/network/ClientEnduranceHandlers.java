@@ -1,5 +1,8 @@
 package com.devmod.client.network;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
 
 import net.neoforged.api.distmarker.Dist;
@@ -34,6 +37,7 @@ import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
 public final class ClientEnduranceHandlers {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientEnduranceHandlers.class);
 
     private ClientEnduranceHandlers() {}
 
@@ -94,6 +98,15 @@ public final class ClientEnduranceHandlers {
         ClientQuestCache.startDeathScreenSuppression();
 
         Minecraft mc = Minecraft.getInstance();
+        if (mc != null && mc.player != null) {
+            LOGGER.info("[EnduranceQuest][Client] QuestDeath packet received (player={}, dimension={}, isDead={}, hasActiveQuest={})",
+                mc.player.getName().getString(),
+                mc.player.level().dimension().location(),
+                mc.player.isDeadOrDying(),
+                ClientQuestCache.hasActiveQuest());
+        } else {
+            LOGGER.info("[EnduranceQuest][Client] QuestDeath packet received (player=unknown)");
+        }
         if (mc != null) {
             mc.execute(() -> mc.setScreen(new QuestDeathScreen()));
         }

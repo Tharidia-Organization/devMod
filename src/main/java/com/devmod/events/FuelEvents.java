@@ -11,7 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.furnace.FurnaceFuelBurnTimeEvent;
 
 import com.devmod.DevMod;
-import com.devmod.config.FuelConfigManager;
+import com.devmod.config.handler.impl.FuelConfigHandler;
 import com.devmod.stats.FuelStats;
 
 @EventBusSubscriber(modid = DevMod.MODID)
@@ -31,7 +31,7 @@ public class FuelEvents {
         }
 
         // Check if this item has custom fuel stats
-        FuelStats stats = FuelConfigManager.getStats(stack);
+        FuelStats stats = FuelConfigHandler.INSTANCE.getStats(stack);
 
         // Only modify if override is enabled or we have custom component/global settings
         if (!stats.isOverrideDefault() && stats.getBurnTime() == 0) {

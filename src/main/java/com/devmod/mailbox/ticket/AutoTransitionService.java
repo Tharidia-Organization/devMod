@@ -201,7 +201,7 @@ public final class AutoTransitionService {
                         // Log response SLA breaches for monitoring/alerting
                         Set<UUID> breachingResponse = TicketWorkflow.findTicketsBreachingResponseSla(tickets);
                         if (!breachingResponse.isEmpty()) {
-                            LOGGER.warn("[AutoTransition] {} tickets breaching response SLA: {}",
+                            LOGGER.info("[AutoTransition] {} tickets breaching response SLA: {}",
                                 breachingResponse.size(), breachingResponse);
                         }
                     }

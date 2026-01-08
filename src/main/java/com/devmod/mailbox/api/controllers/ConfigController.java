@@ -46,6 +46,16 @@ public final class ConfigController {
             config.getBroadcastBatchDelayMs(),
             config.isBroadcastQueueEnabled(),
             config.getBroadcastQueueThreshold(),
+            config.isDeliveryDispatchEnabled(),
+            config.isDeliveryImmediateDispatchEnabled(),
+            config.getDeliveryDispatchIntervalSeconds(),
+            config.getDeliveryDispatchBatchSize(),
+            config.getDeliveryMaxAttempts(),
+            config.getDeliveryRetryDelaySeconds(),
+            config.getDeliveryRetryMaxDelaySeconds(),
+            config.getDeliveryRetryBackoffMultiplier(),
+            config.getDeliveryRetryJitterRatio(),
+            config.isDeliveryRecallEnabled(),
             config.getMinLevelToSend(),
             config.isItemAttachmentsEnabled(),
             config.isCurrencyAttachmentsEnabled(),
@@ -88,6 +98,16 @@ public final class ConfigController {
         recordChange(changes, "broadcastBatchDelayMs", config.getBroadcastBatchDelayMs(), request.broadcastBatchDelayMs());
         recordChange(changes, "broadcastQueueEnabled", config.isBroadcastQueueEnabled(), request.broadcastQueueEnabled());
         recordChange(changes, "broadcastQueueThreshold", config.getBroadcastQueueThreshold(), request.broadcastQueueThreshold());
+        recordChange(changes, "deliveryDispatchEnabled", config.isDeliveryDispatchEnabled(), request.deliveryDispatchEnabled());
+        recordChange(changes, "deliveryImmediateDispatchEnabled", config.isDeliveryImmediateDispatchEnabled(), request.deliveryImmediateDispatchEnabled());
+        recordChange(changes, "deliveryDispatchIntervalSeconds", config.getDeliveryDispatchIntervalSeconds(), request.deliveryDispatchIntervalSeconds());
+        recordChange(changes, "deliveryDispatchBatchSize", config.getDeliveryDispatchBatchSize(), request.deliveryDispatchBatchSize());
+        recordChange(changes, "deliveryMaxAttempts", config.getDeliveryMaxAttempts(), request.deliveryMaxAttempts());
+        recordChange(changes, "deliveryRetryDelaySeconds", config.getDeliveryRetryDelaySeconds(), request.deliveryRetryDelaySeconds());
+        recordChange(changes, "deliveryRetryMaxDelaySeconds", config.getDeliveryRetryMaxDelaySeconds(), request.deliveryRetryMaxDelaySeconds());
+        recordChange(changes, "deliveryRetryBackoffMultiplier", config.getDeliveryRetryBackoffMultiplier(), request.deliveryRetryBackoffMultiplier());
+        recordChange(changes, "deliveryRetryJitterRatio", config.getDeliveryRetryJitterRatio(), request.deliveryRetryJitterRatio());
+        recordChange(changes, "deliveryRecallEnabled", config.isDeliveryRecallEnabled(), request.deliveryRecallEnabled());
         recordChange(changes, "minLevelToSend", config.getMinLevelToSend(), request.minLevelToSend());
         recordChange(changes, "itemAttachmentsEnabled", config.isItemAttachmentsEnabled(), request.itemAttachmentsEnabled());
         recordChange(changes, "currencyAttachmentsEnabled", config.isCurrencyAttachmentsEnabled(), request.currencyAttachmentsEnabled());
@@ -148,6 +168,36 @@ public final class ConfigController {
         }
         if (request.broadcastQueueThreshold() != null) {
             config.setBroadcastQueueThreshold(request.broadcastQueueThreshold());
+        }
+        if (request.deliveryDispatchEnabled() != null) {
+            config.setDeliveryDispatchEnabled(request.deliveryDispatchEnabled());
+        }
+        if (request.deliveryImmediateDispatchEnabled() != null) {
+            config.setDeliveryImmediateDispatchEnabled(request.deliveryImmediateDispatchEnabled());
+        }
+        if (request.deliveryDispatchIntervalSeconds() != null) {
+            config.setDeliveryDispatchIntervalSeconds(request.deliveryDispatchIntervalSeconds());
+        }
+        if (request.deliveryDispatchBatchSize() != null) {
+            config.setDeliveryDispatchBatchSize(request.deliveryDispatchBatchSize());
+        }
+        if (request.deliveryMaxAttempts() != null) {
+            config.setDeliveryMaxAttempts(request.deliveryMaxAttempts());
+        }
+        if (request.deliveryRetryDelaySeconds() != null) {
+            config.setDeliveryRetryDelaySeconds(request.deliveryRetryDelaySeconds());
+        }
+        if (request.deliveryRetryMaxDelaySeconds() != null) {
+            config.setDeliveryRetryMaxDelaySeconds(request.deliveryRetryMaxDelaySeconds());
+        }
+        if (request.deliveryRetryBackoffMultiplier() != null) {
+            config.setDeliveryRetryBackoffMultiplier(request.deliveryRetryBackoffMultiplier());
+        }
+        if (request.deliveryRetryJitterRatio() != null) {
+            config.setDeliveryRetryJitterRatio(request.deliveryRetryJitterRatio());
+        }
+        if (request.deliveryRecallEnabled() != null) {
+            config.setDeliveryRecallEnabled(request.deliveryRecallEnabled());
         }
         if (request.minLevelToSend() != null) {
             config.setMinLevelToSend(request.minLevelToSend());
@@ -466,6 +516,16 @@ public final class ConfigController {
         int broadcastBatchDelayMs,
         boolean broadcastQueueEnabled,
         int broadcastQueueThreshold,
+        boolean deliveryDispatchEnabled,
+        boolean deliveryImmediateDispatchEnabled,
+        int deliveryDispatchIntervalSeconds,
+        int deliveryDispatchBatchSize,
+        int deliveryMaxAttempts,
+        int deliveryRetryDelaySeconds,
+        int deliveryRetryMaxDelaySeconds,
+        double deliveryRetryBackoffMultiplier,
+        double deliveryRetryJitterRatio,
+        boolean deliveryRecallEnabled,
         int minLevelToSend,
         boolean itemAttachmentsEnabled,
         boolean currencyAttachmentsEnabled,
@@ -500,6 +560,16 @@ public final class ConfigController {
         Integer broadcastBatchDelayMs,
         Boolean broadcastQueueEnabled,
         Integer broadcastQueueThreshold,
+        Boolean deliveryDispatchEnabled,
+        Boolean deliveryImmediateDispatchEnabled,
+        Integer deliveryDispatchIntervalSeconds,
+        Integer deliveryDispatchBatchSize,
+        Integer deliveryMaxAttempts,
+        Integer deliveryRetryDelaySeconds,
+        Integer deliveryRetryMaxDelaySeconds,
+        Double deliveryRetryBackoffMultiplier,
+        Double deliveryRetryJitterRatio,
+        Boolean deliveryRecallEnabled,
         Integer minLevelToSend,
         Boolean itemAttachmentsEnabled,
         Boolean currencyAttachmentsEnabled,

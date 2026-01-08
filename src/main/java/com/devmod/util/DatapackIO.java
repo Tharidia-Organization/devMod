@@ -20,8 +20,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 
@@ -56,7 +56,7 @@ public final class DatapackIO {
 
             // Armor overrides
             Path armorDir = base.resolve("data/devmod/item_modifiers/armor");
-            for (Map.Entry<Item, ArmorStats> entry : ArmorConfigManager.getAllGlobalStats().entrySet()) {
+            for (Map.Entry<Item, ArmorStats> entry : ArmorConfigHandler.getEveryGlobalStats().entrySet()) {
                 Item item = entry.getKey();
                 if (item == null) {
                     LOGGER.warn("[DatapackIO] Skipping null armor item in export");
@@ -70,7 +70,7 @@ public final class DatapackIO {
 
             // Weapon overrides
             Path weaponDir = base.resolve("data/devmod/item_modifiers/weapons");
-            for (Map.Entry<Item, WeaponStats> entry : WeaponConfigManager.getAllGlobalStats().entrySet()) {
+            for (Map.Entry<Item, WeaponStats> entry : WeaponConfigHandler.getEveryGlobalStats().entrySet()) {
                 Item item = entry.getKey();
                 if (item == null) {
                     LOGGER.warn("[DatapackIO] Skipping null weapon item in export");
@@ -120,7 +120,7 @@ public final class DatapackIO {
                         if (id == null) continue;
                         ArmorStats stats = parseArmor(json.getAsJsonObject("values"));
                         Item armorItem = ItemLookup.getItem(id);
-                        ArmorConfigManager.setGlobalStats(armorItem, stats);
+                        ArmorConfigHandler.INSTANCE.setGlobalStats(armorItem, stats);
                         imported++;
                     } catch (Exception e) {
                         LOGGER.warn("[DatapackIO] Failed to import armor file {}", file.getFileName(), e);
@@ -146,7 +146,7 @@ public final class DatapackIO {
                         if (id == null) continue;
                         WeaponStats stats = parseWeapon(json.getAsJsonObject("values"));
                         Item weaponItem = ItemLookup.getItem(id);
-                        WeaponConfigManager.setGlobalStats(weaponItem, stats);
+                        WeaponConfigHandler.INSTANCE.setGlobalStats(weaponItem, stats);
                         imported++;
                     } catch (Exception e) {
                         LOGGER.warn("[DatapackIO] Failed to import weapon file {}", file.getFileName(), e);

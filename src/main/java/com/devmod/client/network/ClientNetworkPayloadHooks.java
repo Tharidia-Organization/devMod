@@ -38,6 +38,8 @@ import com.devmod.network.ShieldStatePayload;
 import com.devmod.network.ZoneDebugPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
+import com.devmod.portal.client.PortalTeleportOverlay;
+import com.devmod.portal.network.PortalStatePayload;
 import com.devmod.runtime.environment.EnvironmentSyncPayload;
 import com.devmod.telemetry.network.LVCSyncPayload;
 
@@ -306,6 +308,18 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
     public void handleSeasonPassSync(com.devmod.endurance.season.SeasonPassPayload payload) {
         if (payload != null) {
             com.devmod.client.season.ClientSeasonPassCache.INSTANCE.update(payload);
+        }
+    }
+
+    // ==================== Portal State ====================
+
+    @Override
+    public void handlePortalState(PortalStatePayload payload) {
+        if (payload.inPortal()) {
+            PortalTeleportOverlay.enterPortal(payload.getColor(), payload.requiredDelay());
+            PortalTeleportOverlay.updateTicks(payload.ticksInPortal());
+        } else {
+            PortalTeleportOverlay.exitPortal();
         }
     }
 }

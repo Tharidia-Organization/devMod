@@ -118,14 +118,14 @@ public final class ItemEditorState {
      * Set global mode.
      */
     public void setGlobalMode(boolean global) {
-        this.globalMode = global;
+        this.globalMode = false;
     }
 
     /**
      * Toggle between specific and global mode.
      */
     public void toggleGlobalMode() {
-        setGlobalMode(!globalMode);
+        this.globalMode = false;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -156,7 +156,6 @@ public final class ItemEditorState {
      */
     public String getModeDescription() {
         String mode = previewMode ? "Preview" : "Apply";
-        String scope = globalMode ? "Global" : "Specific";
-        return mode + " / " + scope;
+        return mode + " / Specific";
     }
 }

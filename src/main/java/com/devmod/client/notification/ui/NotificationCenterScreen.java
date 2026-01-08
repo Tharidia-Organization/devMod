@@ -37,6 +37,7 @@ import com.devmod.mailbox.client.ClientNewsCache;
 import com.devmod.mailbox.client.ClientTaskCache;
 import com.devmod.mailbox.client.ClientTicketCache;
 import com.devmod.mailbox.client.ClientTicketCache.TicketData;
+import com.devmod.mailbox.client.MailboxUiSkin;
 import com.devmod.mailbox.client.screen.MailboxScreen;
 import com.devmod.mailbox.client.screen.NewsScreen;
 import com.devmod.mailbox.client.screen.TesterTaskScreen;
@@ -900,24 +901,38 @@ public class NotificationCenterScreen extends Screen {
         int accent = NotificationUiTheme.getCategoryColor(NotificationCategory.MAILBOX);
         renderListRowBackground(graphics, rect, selected, hovered, panelAlpha, accent);
 
+        boolean feathered = MailboxUiSkin.isFeatheredTheme();
         Font font = Objects.requireNonNull(this.font);
-        String subject = trimText(font, nn(message.subject()), rect.w() - 60);
-        String sender = message.senderName();
+        String subject = feathered
+            ? MailboxUiSkin.trimToWidth(font, nn(message.subject()), rect.w() - 60)
+            : trimText(font, nn(message.subject()), rect.w() - 60);
+        String sender = message.senderName() != null ? message.senderName() : "System";
         String meta = nn(formatAge(Instant.ofEpochMilli(message.createdAtMillis())));
 
         if (!message.isRead()) {
+            int unreadColor = feathered
+                ? DesignTokens.withAlpha(MailboxUiSkin.unreadAccent(), Math.min(panelAlpha, DesignTokens.Alpha.A93))
+                : NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, Math.min(panelAlpha, DesignTokens.Alpha.A93));
             graphics.fill(rect.x() + rect.w() - 6, rect.y() + 8, rect.x() + rect.w() - 4, rect.y() + 14,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, Math.min(panelAlpha, DesignTokens.Alpha.A93)));
+                unreadColor);
         }
 
-        graphics.drawString(font, subject, rect.x() + 10, rect.y() + 8,
-            NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
-        graphics.drawString(font, sender, rect.x() + 10, rect.y() + 24,
-            NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 221), false);
+        int titleColor = feathered
+            ? DesignTokens.withAlpha(MailboxUiSkin.textPrimary(), Math.min(panelAlpha, DesignTokens.Alpha.A100))
+            : NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100);
+        int senderColor = feathered
+            ? DesignTokens.withAlpha(MailboxUiSkin.textSecondary(), 221)
+            : NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 221);
+        int metaColor = feathered
+            ? DesignTokens.withAlpha(MailboxUiSkin.textMuted(), DesignTokens.Alpha.A80)
+            : NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80);
 
-        int metaW = font.width(meta);
-        graphics.drawString(font, meta, rect.x() + rect.w() - metaW - 8, rect.y() + 24,
-            NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80), false);
+        MailboxUiSkin.drawText(graphics, font, subject, rect.x() + 10, rect.y() + 8, titleColor, true);
+        MailboxUiSkin.drawText(graphics, font, sender, rect.x() + 10, rect.y() + 24, senderColor, false);
+
+        int metaW = MailboxUiSkin.textWidth(font, meta);
+        MailboxUiSkin.drawText(graphics, font, meta, rect.x() + rect.w() - metaW - 8, rect.y() + 24,
+            metaColor, false);
     }
 
     private void renderNewsRow(GuiGraphics graphics, Rect rect, NewsArticleData article,
@@ -1070,6 +1085,7 @@ public class NotificationCenterScreen extends Screen {
             return;
         }
 
+        boolean feathered = MailboxUiSkin.isFeatheredTheme();
         Font font = Objects.requireNonNull(this.font);
         List<DetailAction> actions = new ArrayList<>();
         if (message.hasAttachment()) {
@@ -1089,19 +1105,33 @@ public class NotificationCenterScreen extends Screen {
         int contentWidth = rect.w() - 24;
         int cursorY = rect.y() + 12;
 
-        graphics.drawString(font, trimText(font, nn(message.subject()), contentWidth), contentX, cursorY,
-            NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
+        int titleColor = feathered
+            ? DesignTokens.withAlpha(MailboxUiSkin.textPrimary(), Math.min(panelAlpha, DesignTokens.Alpha.A100))
+            : NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100);
+        int metaColor = feathered
+            ? DesignTokens.withAlpha(MailboxUiSkin.textMuted(), DesignTokens.Alpha.A80)
+            : NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80);
+        int bodyColor = feathered
+            ? DesignTokens.withAlpha(MailboxUiSkin.textSecondary(), 221)
+            : NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 221);
+
+        String subject = feathered
+            ? MailboxUiSkin.trimToWidth(font, nn(message.subject()), contentWidth)
+            : trimText(font, nn(message.subject()), contentWidth);
+        MailboxUiSkin.drawText(graphics, font, subject, contentX, cursorY, titleColor, true);
         cursorY += 16;
 
         MessageType type = resolveMessageType(message.messageTypeOrdinal());
-        String meta = message.senderName() + " • " + type.getId();
-        graphics.drawString(font, meta, contentX, cursorY,
-            NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80), false);
+        String senderName = message.senderName() != null ? message.senderName() : "System";
+        String meta = senderName + " • " + type.getId();
+        MailboxUiSkin.drawText(graphics, font, meta, contentX, cursorY, metaColor, false);
         cursorY += 16;
 
         String body = message.body() != null ? message.body() : tr(
             "devmod.notification.center.mailbox.preview_missing");
-        List<String> lines = wrapText(font, body, contentWidth);
+        List<String> lines = feathered
+            ? MailboxUiSkin.wrapText(font, body, contentWidth)
+            : wrapText(font, body, contentWidth);
 
         int contentTop = cursorY + 6;
         int actionAreaHeight = getDetailActionAreaHeight(actions, rect.w());
@@ -1117,8 +1147,7 @@ public class NotificationCenterScreen extends Screen {
             int lineY = contentTop - detailScrollOffset;
             for (String line : lines) {
                 if (lineY + 10 >= contentTop && lineY <= contentTop + contentHeight) {
-                    graphics.drawString(font, line, contentX, lineY,
-                        NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, 221), false);
+                    MailboxUiSkin.drawText(graphics, font, line, contentX, lineY, bodyColor, false);
                 }
                 lineY += 12;
             }

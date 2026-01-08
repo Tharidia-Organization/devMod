@@ -28,7 +28,7 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.sections.ModuleSummarySection;
-import com.devmod.config.FuelConfigManager;
+import com.devmod.config.handler.impl.FuelConfigHandler;
 
 /**
  * Core data management for GeneralModule.
@@ -73,7 +73,7 @@ public class GeneralModuleCore {
 
     public boolean isFuelItem(@Nullable ItemStack item) {
         if (item == null) return false;
-        return FuelConfigManager.isFuel(item);
+        return FuelConfigHandler.isFuel(item);
     }
 
     public boolean hasEnchantments(@Nullable ItemStack item) {

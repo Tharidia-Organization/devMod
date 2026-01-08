@@ -1,11 +1,10 @@
 package com.devmod.runtime;
+import javax.annotation.Nonnull;
 
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
-
-import javax.annotation.Nonnull;
 
 /**
  * Persists Nexus hub build state per world.

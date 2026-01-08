@@ -1,24 +1,23 @@
 package com.devmod.runtime;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.client.ui.editor.core.DesignTokens;
-import com.devmod.compat.mods.easynpc.EasyNpcCompat;
-import com.devmod.config.Config;
-import com.mojang.math.Transformation;
 import com.mojang.authlib.properties.PropertyMap;
+import com.mojang.math.Transformation;
 import com.mojang.serialization.DataResult;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -31,16 +30,20 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Interaction;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.compat.mods.easynpc.EasyNpcCompat;
+import com.devmod.config.Config;
 
 /**
  * Spawns and maintains the Nexus AI avatar.
@@ -83,6 +86,9 @@ public final class NexusAvatarManager {
         resetAnimator();
 
         BlockPos spawnPos = resolveSpawnPos(hubOrigin);
+        // Initialize animator with target Y position at spawn time to avoid race condition
+        animator.initializeWithTargetY(spawnPos.getY());
+
         String name = resolveName();
         ItemStack headItem = buildHeadItem(Config.NEXUS_AVATAR_SKIN.get());
 
@@ -242,7 +248,8 @@ public final class NexusAvatarManager {
 
     private static void spawnFallback(ServerLevel level, BlockPos pos, String name, ItemStack headItem) {
         Vec3 anchorPos = new Vec3(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
-        Interaction anchor = new Interaction(EntityType.INTERACTION, Objects.requireNonNull(level));
+        Interaction anchor = new Interaction(
+            Objects.requireNonNull(EntityType.INTERACTION), Objects.requireNonNull(level));
         anchor.setPos(anchorPos.x, anchorPos.y, anchorPos.z);
         anchor.setNoGravity(true);
         anchor.setInvulnerable(true);
@@ -267,23 +274,25 @@ public final class NexusAvatarManager {
     }
 
     private static void spawnFallbackVisuals(ServerLevel level, Vec3 anchorPos, String name, ItemStack headItem) {
+        Vec3 safeAnchor = Objects.requireNonNull(anchorPos);
         if (!headItem.isEmpty()) {
-            createHeadDisplay(level, anchorPos.add(HEAD_OFFSET), headItem);
+            createHeadDisplay(level, offsetVec(safeAnchor, Objects.requireNonNull(HEAD_OFFSET)), headItem);
         }
-        createCoreDisplay(level, anchorPos.add(CORE_OFFSET));
+        createCoreDisplay(level, offsetVec(safeAnchor, Objects.requireNonNull(CORE_OFFSET)));
         if (name != null && !name.isBlank()) {
-            createNameDisplay(level, anchorPos.add(LABEL_OFFSET), name.trim());
+            createNameDisplay(level, offsetVec(safeAnchor, Objects.requireNonNull(LABEL_OFFSET)), name.trim());
         }
     }
 
     private static void createHeadDisplay(ServerLevel level, Vec3 pos, ItemStack headItem) {
-        Display.ItemDisplay display = new Display.ItemDisplay(EntityType.ITEM_DISPLAY, level);
+        Display.ItemDisplay display = new Display.ItemDisplay(
+            Objects.requireNonNull(EntityType.ITEM_DISPLAY), Objects.requireNonNull(level));
         display.setPos(pos.x, pos.y, pos.z);
 
         CompoundTag nbt = new CompoundTag();
         display.saveWithoutId(nbt);
-        nbt.put("item", headItem.save(level.registryAccess()));
-        nbt.putString("item_display", ItemDisplayContext.HEAD.getSerializedName());
+        nbt.put("item", Objects.requireNonNull(headItem.save(Objects.requireNonNull(level.registryAccess()))));
+        nbt.putString("item_display", Objects.requireNonNull(ItemDisplayContext.HEAD.getSerializedName()));
         nbt.putString("billboard", "center");
         applyDisplayScale(nbt, HEAD_SCALE, HEAD_SCALE, HEAD_SCALE);
         display.load(nbt);
@@ -293,13 +302,15 @@ public final class NexusAvatarManager {
     }
 
     private static void createCoreDisplay(ServerLevel level, Vec3 pos) {
-        Display.BlockDisplay display = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, level);
+        Display.BlockDisplay display = new Display.BlockDisplay(
+            Objects.requireNonNull(EntityType.BLOCK_DISPLAY), Objects.requireNonNull(level));
         display.setPos(pos.x, pos.y, pos.z);
 
         CompoundTag nbt = new CompoundTag();
         display.saveWithoutId(nbt);
-        nbt.put(Display.BlockDisplay.TAG_BLOCK_STATE,
-            NbtUtils.writeBlockState(Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState()));
+        nbt.put(Objects.requireNonNull(Display.BlockDisplay.TAG_BLOCK_STATE),
+            Objects.requireNonNull(NbtUtils.writeBlockState(
+                Objects.requireNonNull(Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState()))));
         nbt.putString("billboard", "fixed");
         applyDisplayScale(nbt, CORE_SCALE, CORE_SCALE * 1.2f, CORE_SCALE);
         display.load(nbt);
@@ -309,14 +320,18 @@ public final class NexusAvatarManager {
     }
 
     private static void createNameDisplay(ServerLevel level, Vec3 pos, String name) {
-        Display.TextDisplay display = new Display.TextDisplay(EntityType.TEXT_DISPLAY, level);
+        Display.TextDisplay display = new Display.TextDisplay(
+            Objects.requireNonNull(EntityType.TEXT_DISPLAY), Objects.requireNonNull(level));
         display.setPos(pos.x, pos.y, pos.z);
 
         CompoundTag nbt = new CompoundTag();
         display.saveWithoutId(nbt);
-        Component label = Component.literal(name)
-            .withStyle(Style.EMPTY.withBold(true).withColor(DesignTokens.Nexus.AVATAR_LABEL));
-        String json = Component.Serializer.toJson(label, level.registryAccess());
+        Component label = Objects.requireNonNull(
+            Component.literal(Objects.requireNonNull(name))
+                .withStyle(Objects.requireNonNull(
+                    Objects.requireNonNull(Style.EMPTY).withBold(true).withColor(DesignTokens.Nexus.AVATAR_LABEL))));
+        String json = Objects.requireNonNull(
+            Component.Serializer.toJson(label, Objects.requireNonNull(level.registryAccess())));
         nbt.putString("text", json);
         nbt.putInt("line_width", 120);
         nbt.putInt("background", 0);
@@ -352,7 +367,16 @@ public final class NexusAvatarManager {
             new Quaternionf(), new Vector3f(sx, sy, sz), new Quaternionf());
         DataResult<Tag> encoded = Transformation.EXTENDED_CODEC.encodeStart(NbtOps.INSTANCE, transform);
         encoded.resultOrPartial(msg -> LOGGER.warn("[NexusAvatar] Failed to encode display transform: {}", msg))
-            .ifPresent(tag -> nbt.put("transformation", tag));
+            .ifPresent(tag -> nbt.put("transformation", Objects.requireNonNull(tag)));
+    }
+
+    @Nonnull
+    private static Vec3 offsetVec(@Nonnull Vec3 base, @Nonnull Vec3 offset) {
+        @Nullable Vec3 result = base.add(offset);
+        if (result == null) {
+            throw new IllegalStateException("Vec3.add returned null unexpectedly");
+        }
+        return result;
     }
 
     private static void syncFallbackVisuals(ServerLevel level, BlockPos hubOrigin, Entity anchor) {

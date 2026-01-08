@@ -4,12 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
+
+import com.devmod.arena.registry.ArenaTemplate;
 
 /**
  * P1: Block integrity verification after arena build.
@@ -108,6 +112,12 @@ public class BlockIntegrityVerifier {
      */
     public VerificationResult verify(ServerLevel level, int minX, int minY, int minZ,
                                       int maxX, int maxY, int maxZ, int expectedBlockCount) {
+        return verify(level, minX, minY, minZ, maxX, maxY, maxZ, expectedBlockCount, null, 0, 0);
+    }
+
+    public VerificationResult verify(ServerLevel level, int minX, int minY, int minZ,
+                                      int maxX, int maxY, int maxZ, int expectedBlockCount,
+                                      @Nullable ArenaTemplate template, int originX, int originZ) {
         if (!config.enabled()) {
             return VerificationResult.success(expectedBlockCount, expectedBlockCount, 0);
         }
@@ -141,6 +151,14 @@ public class BlockIntegrityVerifier {
             int volumeZ = maxZ - minZ + 1;
 
             ThreadLocalRandom random = ThreadLocalRandom.current();
+            ArenaTemplate.Floor floor = template != null ? template.floor() : null;
+            int floorY = floor != null ? floor.y() : minY;
+            int floorMaxY = floor != null ? floor.y() + Math.max(1, floor.thickness()) - 1 : minY;
+            ArenaTemplate.Walls walls = template != null ? template.walls() : null;
+            boolean wallsEnabled = walls != null && walls.enabled();
+            int wallThickness = wallsEnabled ? Math.max(1, walls.thickness()) : 0;
+            int wallStartY = wallsEnabled ? walls.startY() : minY;
+            int wallEndY = wallsEnabled ? walls.startY() + Math.max(1, walls.height()) - 1 : minY;
 
             for (int i = 0; i < config.sampleSize(); i++) {
                 int x = minX + random.nextInt(volumeX);
@@ -151,10 +169,29 @@ public class BlockIntegrityVerifier {
                 BlockState state = level.getBlockState(pos);
                 sampleChecks++;
 
-                // Check for unexpected air in floor/wall regions (heuristic)
-                // Floor is typically at minY, walls at edges
-                boolean isFloorLevel = (y == minY);
-                boolean isWallEdge = (x == minX || x == maxX || z == minZ || z == maxZ);
+                // Check for unexpected air in floor/wall regions (template-aware when available)
+                boolean isFloorLevel = false;
+                boolean isWallEdge = false;
+                if (template != null && floor != null) {
+                    int dx = x - originX;
+                    int dz = z - originZ;
+                    boolean inFloorBounds = isWithinFloorBounds(dx, dz, template);
+                    boolean inShape = isInArenaShape(dx, dz, template);
+                    isFloorLevel = inFloorBounds && inShape && y >= floorY && y <= floorMaxY;
+                    if (wallsEnabled && y >= wallStartY && y <= wallEndY) {
+                        ArenaTemplate.ArenaShape shape = template.arenaShape();
+                        if (shape == null) {
+                            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+                        }
+                        isWallEdge = switch (shape) {
+                            case RECTANGULAR -> isOnRectWallEdge(dx, dz, template, wallThickness);
+                            case CIRCULAR, RING -> isOnCircularBorder(dx, dz, template, wallThickness);
+                        };
+                    }
+                } else {
+                    isFloorLevel = (y == minY);
+                    isWallEdge = (x == minX || x == maxX || z == minZ || z == maxZ);
+                }
 
                 if ((isFloorLevel || isWallEdge) && state.isAir()) {
                     sampleFailures++;
@@ -175,6 +212,7 @@ public class BlockIntegrityVerifier {
         double integrityPercent = expectedBlockCount > 0
             ? (double) actualNonAirBlocks / expectedBlockCount * 100
             : 100.0;
+        double roundedPercent = Math.round(integrityPercent * 10.0) / 10.0;
         boolean passed = integrityPercent >= config.minIntegrityPercent()
             && sampleFailures == 0;
 
@@ -193,11 +231,11 @@ public class BlockIntegrityVerifier {
         }
 
         if (!passed) {
-            LOGGER.warn("[BlockIntegrity] Verification FAILED: {:.1f}% integrity ({}/{} blocks), {} sample failures",
-                integrityPercent, actualNonAirBlocks, expectedBlockCount, sampleFailures);
+            LOGGER.warn("[BlockIntegrity] Verification FAILED: {}% integrity ({}/{} blocks), {} sample failures",
+                roundedPercent, actualNonAirBlocks, expectedBlockCount, sampleFailures);
         } else if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("[BlockIntegrity] Verification PASSED: {:.1f}% integrity ({}/{} blocks)",
-                integrityPercent, actualNonAirBlocks, expectedBlockCount);
+            LOGGER.debug("[BlockIntegrity] Verification PASSED: {}% integrity ({}/{} blocks)",
+                roundedPercent, actualNonAirBlocks, expectedBlockCount);
         }
 
         long durationMs = (System.nanoTime() - startNs) / 1_000_000;
@@ -236,5 +274,116 @@ public class BlockIntegrityVerifier {
             ? (double) actualNonAirBlocks / expectedBlockCount * 100
             : 100.0;
         return integrityPercent >= 95.0;
+    }
+
+    private boolean isWithinFloorBounds(int dx, int dz, ArenaTemplate template) {
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
+        int halfX = getSizeX(template) / 2;
+        int halfZ = getSizeZ(template) / 2;
+        int radius = Math.max(halfX, halfZ);
+
+        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
+        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
+
+        return dx >= -iterHalfX && dx < iterHalfX && dz >= -iterHalfZ && dz < iterHalfZ;
+    }
+
+    private boolean isInArenaShape(int dx, int dz, ArenaTemplate template) {
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
+        int halfX = getSizeX(template) / 2;
+        int halfZ = getSizeZ(template) / 2;
+
+        return switch (shape) {
+            case RECTANGULAR -> dx >= -halfX && dx < halfX && dz >= -halfZ && dz < halfZ;
+            case CIRCULAR -> {
+                int radius = Math.max(halfX, halfZ);
+                yield (dx * dx + dz * dz) <= (radius * radius);
+            }
+            case RING -> {
+                int outerRadius = Math.max(halfX, halfZ);
+                Integer innerRadiusVal = template.ringInnerRadius();
+                int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+                int distSq = dx * dx + dz * dz;
+                yield distSq <= (outerRadius * outerRadius) && distSq >= (innerRadius * innerRadius);
+            }
+        };
+    }
+
+    private boolean isOnRectWallEdge(int dx, int dz, ArenaTemplate template, int thickness) {
+        if (thickness <= 0) {
+            return false;
+        }
+
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+
+        int startX = -halfX;
+        int startZ = -halfZ;
+        int endX = startX + sizeX - 1;
+        int endZ = startZ + sizeZ - 1;
+
+        int pad = thickness - 1;
+
+        boolean onNorthSouth = (dz >= startZ - pad && dz <= startZ)
+            || (dz >= endZ && dz <= endZ + pad);
+        boolean onEastWest = (dx >= startX - pad && dx <= startX)
+            || (dx >= endX && dx <= endX + pad);
+
+        boolean inNorthSouthSpan = dx >= startX && dx <= endX;
+        boolean inEastWestSpan = dz >= startZ && dz <= endZ;
+
+        return (onNorthSouth && inNorthSouthSpan) || (onEastWest && inEastWestSpan);
+    }
+
+    private boolean isOnCircularBorder(int dx, int dz, ArenaTemplate template, int thickness) {
+        if (thickness <= 0) {
+            return false;
+        }
+
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null || shape == ArenaTemplate.ArenaShape.RECTANGULAR) {
+            return false;
+        }
+
+        int halfX = getSizeX(template) / 2;
+        int halfZ = getSizeZ(template) / 2;
+        int outerRadius = Math.max(halfX, halfZ);
+        int distSq = dx * dx + dz * dz;
+
+        int outerWallInnerSq = outerRadius * outerRadius;
+        int outerWallOuterSq = (outerRadius + thickness) * (outerRadius + thickness);
+        boolean onOuterWall = distSq >= outerWallInnerSq && distSq < outerWallOuterSq;
+
+        if (shape == ArenaTemplate.ArenaShape.CIRCULAR) {
+            return onOuterWall;
+        }
+
+        Integer innerRadiusVal = template.ringInnerRadius();
+        int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+        int innerWallOuterSq = innerRadius * innerRadius;
+        int innerWallInnerSq = Math.max(0, (innerRadius - thickness) * (innerRadius - thickness));
+        boolean onInnerWall = distSq <= innerWallOuterSq && distSq >= innerWallInnerSq;
+
+        return onOuterWall || onInnerWall;
+    }
+
+    private int getSizeX(ArenaTemplate template) {
+        Integer sx = template.sizeX();
+        return sx != null ? sx.intValue() : template.size();
+    }
+
+    private int getSizeZ(ArenaTemplate template) {
+        Integer sz = template.sizeZ();
+        return sz != null ? sz.intValue() : template.size();
     }
 }

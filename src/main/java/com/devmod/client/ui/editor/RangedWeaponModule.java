@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
@@ -13,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.ammo.AmmoSystem;
+import com.devmod.util.ItemStackResetUtils;
 public class RangedWeaponModule {
     public enum ValueSource {
         VANILLA_DEFAULT,
@@ -266,6 +268,39 @@ public class RangedWeaponModule {
         } catch (Exception ignored) {
             // best effort
         }
+    }
+
+    /**
+     * Clear ranged stats from CustomData and components (reset to vanilla defaults).
+     */
+    public static void clearStats(ItemStack item) {
+        if (item == null || item.isEmpty()) return;
+
+        var customComponent = Objects.requireNonNull(DataComponents.CUSTOM_DATA, "custom data component");
+        CustomData customData = item.get(customComponent);
+        if (customData != null) {
+            CompoundTag tag = customData.copyTag();
+            tag.remove("RangedStats");
+            if (tag.isEmpty()) {
+                item.remove(customComponent);
+            } else {
+                item.set(customComponent, CustomData.of(tag));
+            }
+        }
+
+        try {
+            item.remove(Objects.requireNonNull(com.devmod.components.RangedComponents.DRAW_TIME_TICKS.get()));
+            item.remove(Objects.requireNonNull(com.devmod.components.RangedComponents.PROJECTILE_SPEED.get()));
+            item.remove(Objects.requireNonNull(com.devmod.components.RangedComponents.PROJECTILE_GRAVITY.get()));
+            item.remove(Objects.requireNonNull(com.devmod.components.RangedComponents.PROJECTILE_SPREAD.get()));
+            item.remove(Objects.requireNonNull(com.devmod.components.RangedComponents.BASE_ARROW_DAMAGE.get()));
+            item.remove(Objects.requireNonNull(com.devmod.components.RangedComponents.MULTISHOT_COUNT.get()));
+            item.remove(Objects.requireNonNull(com.devmod.components.RangedComponents.PIERCING_LEVEL.get()));
+            item.remove(Objects.requireNonNull(com.devmod.components.RangedComponents.AMMO_TAG_FILTER.get()));
+        } catch (Exception ignored) {
+            // best effort
+        }
+        ItemStackResetUtils.clearNonEditorComponents(item);
     }
 
     /**

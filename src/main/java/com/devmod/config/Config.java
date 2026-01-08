@@ -201,6 +201,7 @@ public class Config {
     public static final ModConfigSpec.IntValue NEXUS_ZONE_CUE_COOLDOWN;
     public static final ModConfigSpec.BooleanValue NEXUS_DUMMY_FEEDBACK;
     public static final ModConfigSpec.IntValue NEXUS_DUMMY_FEEDBACK_COOLDOWN;
+    public static final ModConfigSpec.BooleanValue NEXUS_ALLOW_BUILD_ANYWHERE;
     public static final ModConfigSpec.BooleanValue NEXUS_RESTRICT_BUILDING;
     public static final ModConfigSpec.BooleanValue NEXUS_HIDE_MISSING_MOD_PODS;
     public static final ModConfigSpec.BooleanValue NEXUS_DYNAMIC_MOD_PODS;
@@ -548,8 +549,12 @@ public class Config {
                 .comment("Ticks between dummy feedback updates per player")
                 .defineInRange("dummyFeedbackCooldown", 4, 0, 40);
 
+        NEXUS_ALLOW_BUILD_ANYWHERE = BUILDER
+                .comment("Allow block break/place anywhere in the Nexus (recommended for testing)")
+                .define("allowBuildAnywhere", true);
+
         NEXUS_RESTRICT_BUILDING = BUILDER
-                .comment("Restrict block break/place to the Sandbox test zone in Nexus")
+                .comment("Restrict block break/place to the Sandbox test zone in Nexus when allowBuildAnywhere is false")
                 .define("restrictBuilding", true);
 
         NEXUS_HIDE_MISSING_MOD_PODS = BUILDER

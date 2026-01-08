@@ -160,6 +160,11 @@ public enum ChannelId {
     NEXUS_UI(142, Direction.SERVER_TO_CLIENT, "NexusUiPayload"),
     NEXUS_LOG_REQUEST(143, Direction.CLIENT_TO_SERVER, "NexusLogRequestPayload"),
     NEXUS_LOG_SNAPSHOT(144, Direction.SERVER_TO_CLIENT, "NexusLogSnapshotPayload"),
+
+    // ============================================================================
+    // PORTAL CHANNELS (150-159)
+    // ============================================================================
+    PORTAL_STATE(150, Direction.SERVER_TO_CLIENT, "PortalStatePayload"),
     ;
 
     // ============================================================================

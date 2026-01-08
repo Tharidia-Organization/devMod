@@ -4,7 +4,9 @@ import java.util.Objects;
 
 import net.minecraft.nbt.CompoundTag;
 
-public class FuelStats {
+import com.devmod.config.stats.IItemStats;
+
+public class FuelStats implements IItemStats {
 
     // ═══════════════════════════════════════════════════════════════
     // BURN TIME PROPERTIES
@@ -136,7 +138,11 @@ public class FuelStats {
         tag.putBoolean("customCookTimesEnabled", customCookTimesEnabled);
     }
 
-    public void loadFrom(CompoundTag tag) {
+    /**
+     * Load fuel stats from NBT compound tag (instance method for IItemStats).
+     */
+    @Override
+    public void load(CompoundTag tag) {
         burnTime = tag.getInt("burnTime");
         overrideDefault = tag.getBoolean("overrideDefault");
         efficiencyMultiplier = tag.contains("efficiencyMultiplier") ? tag.getFloat("efficiencyMultiplier") : 1.0f;
@@ -147,9 +153,12 @@ public class FuelStats {
         customCookTimesEnabled = tag.getBoolean("customCookTimesEnabled");
     }
 
-    public static FuelStats load(CompoundTag tag) {
+    /**
+     * Load fuel stats from NBT compound tag (static factory).
+     */
+    public static FuelStats fromTag(CompoundTag tag) {
         FuelStats stats = new FuelStats();
-        stats.loadFrom(tag);
+        stats.load(tag);
         return stats;
     }
 

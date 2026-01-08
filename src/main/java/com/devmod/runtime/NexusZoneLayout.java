@@ -3,7 +3,7 @@ package com.devmod.runtime;
 import net.minecraft.core.BlockPos;
 
 public final class NexusZoneLayout {
-    private static final int HUB_HALF_SIZE = 80;
+    private static final int HUB_HALF_SIZE = 96;
     private static final int CENTER_HALF_SIZE = 24;
     private static final int WALL_HEIGHT = 8;
 

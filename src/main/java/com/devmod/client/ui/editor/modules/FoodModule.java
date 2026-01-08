@@ -189,8 +189,8 @@ public class FoodModule extends AbstractEditorModule {
             DevMod.LOGGER.info("[Editor][Food][ApplyPreview] item={} nutrition={} saturation={} effects={}",
                 item.getItem(), stats.getNutrition(), stats.getSaturation(), stats.getEffects().size());
 
-            com.devmod.config.FoodConfigManager.setSpecificStats(copy, stats.copy());
-            FoodStats applied = com.devmod.config.FoodConfigManager.getStats(copy).copy();
+            com.devmod.config.handler.impl.FoodConfigHandler.INSTANCE.setSpecificStats(copy, stats.copy());
+            FoodStats applied = com.devmod.config.handler.impl.FoodConfigHandler.INSTANCE.getStats(copy).copy();
             core.setStats(applied.copy());
             withDirtyTrackingDisabled(ui::updateComponentsFromStats);
             setPreviewItem(copy);
@@ -221,6 +221,16 @@ public class FoodModule extends AbstractEditorModule {
         FoodModuleCore core = requireCore();
         FoodModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
+        ui.updateComponentsFromStats();
+        clearDirty();
+    }
+
+    @Override
+    public void resetToDefaults() {
+        FoodModuleUI ui = requireUi();
+        ItemStack baseline = originalItem.copy();
+        com.devmod.config.handler.impl.FoodConfigHandler.clearItemSpecificStats(baseline);
+        setItem(baseline);
         ui.updateComponentsFromStats();
         clearDirty();
     }

@@ -1,5 +1,4 @@
 package com.devmod.client.ui.editor;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,10 +23,16 @@ import javax.annotation.Nullable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
+import net.minecraft.world.item.ItemStack;
+
 import com.devmod.DevMod;
+import com.devmod.client.ui.editor.snapshot.ItemEditorSnapshot;
+import com.devmod.recipe.CraftingRecipeData;
+import com.devmod.recipe.export.RecipeExportHelper;
 import com.devmod.util.ConfigPaths;
 
 public class ItemEditorDataManager {
@@ -325,6 +330,8 @@ public class ItemEditorDataManager {
         public String itemCategory; // "sword", "axe", "pickaxe", "bow", "armor", etc.
         public List<EnchantData> enchantments = new ArrayList<>();
         public List<AttrData> attributes = new ArrayList<>();
+        @Nullable
+        public ItemEditorSnapshot snapshot;
         public boolean isBuiltIn = false;
     }
 
@@ -511,6 +518,93 @@ public class ItemEditorDataManager {
         return importFromJson(json);
     }
 
+    public boolean exportSnapshotToFile(ItemEditorSnapshot snapshot, String filename) {
+        ensureInitialized();
+        if (snapshot == null || snapshot.item == null) return false;
+        try {
+            Files.createDirectories(getDataDirectory().resolve("exports"));
+            Path file = getDataDirectory().resolve("exports").resolve(filename + ".snapshot.json");
+            Files.writeString(file, GSON.toJson(snapshot), StandardCharsets.UTF_8);
+            return true;
+        } catch (IOException e) {
+            DevMod.LOGGER.error("Failed to export snapshot to file: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public @Nullable ItemEditorSnapshot importSnapshotFromFile(String filename) throws IOException {
+        ensureInitialized();
+        Path file = getDataDirectory().resolve("exports").resolve(filename + ".snapshot.json");
+        String json = Files.readString(file, StandardCharsets.UTF_8);
+        return GSON.fromJson(json, ItemEditorSnapshot.class);
+    }
+
+    public boolean exportVanillaItemToFile(ItemStack item, String filename) {
+        ensureInitialized();
+        if (item == null || item.isEmpty()) return false;
+        try {
+            Files.createDirectories(getDataDirectory().resolve("exports"));
+            Path file = getDataDirectory().resolve("exports").resolve(filename + ".json");
+            JsonElement element = ItemEditorSnapshot.encodeItem(item);
+            Files.writeString(file, GSON.toJson(element), StandardCharsets.UTF_8);
+            return true;
+        } catch (IOException e) {
+            DevMod.LOGGER.error("Failed to export vanilla item to file: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Export a crafting recipe to JSON file (datapack format).
+     *
+     * @param recipe the recipe to export
+     * @param filename the base filename (without extension)
+     * @return true if successful
+     */
+    public boolean exportRecipeToFile(CraftingRecipeData recipe, String filename) {
+        ensureInitialized();
+        if (recipe == null) return false;
+        try {
+            Files.createDirectories(getDataDirectory().resolve("exports"));
+            Path file = getDataDirectory().resolve("exports").resolve(filename + ".json");
+            JsonObject json = recipe.toJson();
+            Files.writeString(file, GSON.toJson(json), StandardCharsets.UTF_8);
+            return true;
+        } catch (IOException e) {
+            DevMod.LOGGER.error("Failed to export recipe to file: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Export a crafting recipe to command string format (.ds file).
+     *
+     * @param recipe the recipe to export
+     * @param filename the base filename (without extension)
+     * @return true if successful
+     */
+    public boolean exportRecipeCommandToFile(CraftingRecipeData recipe, String filename) {
+        ensureInitialized();
+        if (recipe == null) return false;
+        try {
+            Files.createDirectories(getDataDirectory().resolve("exports"));
+            Path file = getDataDirectory().resolve("exports").resolve(filename + ".ds");
+            String commandString = RecipeExportHelper.toCommandString(recipe, true);
+            Files.writeString(file, commandString, StandardCharsets.UTF_8);
+            return true;
+        } catch (IOException e) {
+            DevMod.LOGGER.error("Failed to export recipe command to file: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public @Nullable JsonElement importVanillaJsonFromFile(String filename) throws IOException {
+        ensureInitialized();
+        Path file = getDataDirectory().resolve("exports").resolve(filename + ".json");
+        String json = Files.readString(file, StandardCharsets.UTF_8);
+        return GSON.fromJson(json, JsonElement.class);
+    }
+
     public List<String> listExportFiles() {
         ensureInitialized();
         try {
@@ -527,6 +621,120 @@ public class ItemEditorDataManager {
         } catch (IOException e) {
             return Collections.emptyList();
         }
+    }
+
+    public List<String> listSnapshotFiles() {
+        ensureInitialized();
+        try {
+            Path exportDir = getDataDirectory().resolve("exports");
+            if (!Files.exists(exportDir)) return Collections.emptyList();
+
+            try (var stream = Files.list(exportDir)) {
+                return stream
+                    .filter(p -> p.toString().endsWith(".snapshot.json"))
+                    .map(p -> p.getFileName().toString().replace(".snapshot.json", ""))
+                    .sorted()
+                    .toList();
+            }
+        } catch (IOException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * List recipe JSON files in the exports directory.
+     * Only includes files that have a corresponding .ds file (recipe exports create both).
+     * Sorted by timestamp descending (most recent first for UI display).
+     */
+    public List<String> listRecipeExportFiles() {
+        ensureInitialized();
+        try {
+            Path exportDir = getDataDirectory().resolve("exports");
+            if (!Files.exists(exportDir)) return Collections.emptyList();
+
+            // Single directory read - collect both .ds and .json files in one pass
+            // Use thread-safe collections since Files.list may be processed in parallel
+            java.util.Set<String> dsBaseNames = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+            List<String> jsonBaseNames = java.util.Collections.synchronizedList(new ArrayList<>());
+
+            try (var stream = Files.list(exportDir)) {
+                stream.forEach(p -> {
+                    String name = p.getFileName().toString();
+                    if (name.endsWith(".ds")) {
+                        dsBaseNames.add(name.substring(0, name.length() - 3)); // Remove .ds
+                    } else if (name.endsWith(".json") && !name.endsWith(".snapshot.json")) {
+                        jsonBaseNames.add(name.substring(0, name.length() - 5)); // Remove .json
+                    }
+                });
+            }
+
+            // Filter JSON files that have matching .ds files (these are recipe exports)
+            // Sort by timestamp DESCENDING (most recent first for import UI)
+            return jsonBaseNames.stream()
+                .filter(dsBaseNames::contains)
+                .sorted((a, b) -> {
+                    long tsA = extractTimestamp(a, exportDir);
+                    long tsB = extractTimestamp(b, exportDir);
+                    return Long.compare(tsB, tsA); // Descending order
+                })
+                .toList();
+        } catch (IOException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Extract timestamp from filename (format: prefix_TIMESTAMP).
+     * Falls back to file modification time if no timestamp in filename.
+     *
+     * @param filename the base filename (without extension)
+     * @param exportDir the directory containing the file (for modification time fallback)
+     * @return timestamp in millis, or file mod time, or 0 if all else fails
+     */
+    private long extractTimestamp(String filename, Path exportDir) {
+        if (filename == null || filename.isEmpty()) {
+            return 0;
+        }
+
+        // Try to extract timestamp from filename first
+        // Look for pattern: anything_TIMESTAMP where TIMESTAMP is 13 digits (millis since epoch)
+        int lastUnderscore = filename.lastIndexOf('_');
+        // Must have content before underscore (lastUnderscore > 0) and after it
+        if (lastUnderscore > 0 && lastUnderscore < filename.length() - 1) {
+            String suffix = filename.substring(lastUnderscore + 1);
+            // Timestamps are typically 13 digits (millis since ~2001 to ~2286)
+            // Validate it looks like a reasonable timestamp (between year 2000 and 2100)
+            if (suffix.length() >= 13 && suffix.length() <= 14) {
+                try {
+                    long ts = Long.parseLong(suffix);
+                    // Sanity check: between 2000 and 2100 in millis
+                    if (ts > 946684800000L && ts < 4102444800000L) {
+                        return ts;
+                    }
+                } catch (NumberFormatException e) {
+                    // Not a valid number, fall through
+                }
+            }
+        }
+
+        // Fallback: use file modification time
+        try {
+            Path jsonFile = exportDir.resolve(filename + ".json");
+            if (Files.exists(jsonFile)) {
+                return Files.getLastModifiedTime(jsonFile).toMillis();
+            }
+        } catch (IOException e) {
+            // Ignore, return 0
+        }
+        return 0;
+    }
+
+    /**
+     * Get the exports directory path.
+     */
+    public Path getExportsDirectory() {
+        ensureInitialized();
+        return getDataDirectory().resolve("exports");
     }
 
     // ==================== PERSISTENCE ====================

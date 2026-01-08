@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "b0aa541b33bfc383",
+        "id": "e6e411b20cf79df9",
         "type": "tabs",
         "children": [
           {
-            "id": "c1e04ac6cf96a264",
+            "id": "5094c86b5cf96ef5",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "docs/reorg/ARCHITECTURE_DIAGRAM.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "ARCHITECTURE_DIAGRAM"
+              "title": "New tab"
             }
           }
         ]
@@ -216,35 +212,28 @@
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
       "bases:Create new base": false,
-      "tasknotes:Open mini calendar": false,
-      "tasknotes:Open advanced calendar": false,
-      "tasknotes:Open task list": false,
-      "tasknotes:Open agenda": false,
-      "tasknotes:Open kanban board": false,
-      "tasknotes:Open pomodoro": false,
-      "tasknotes:Open pomodoro stats": false,
-      "tasknotes:Create new task": false,
       "templater-obsidian:Templater": false,
       "smart-connections:Smart Connections: Open connections view": false,
       "smart-connections:Smart Lookup: Open lookup view": false,
       "smart-connections:Smart Connections: Open random connection": false,
-      "task-board:Open task board": false,
-      "card-board:CardBoard": false
+      "task-board:Open task board": false
     }
   },
-  "active": "c1e04ac6cf96a264",
+  "active": "5094c86b5cf96ef5",
   "lastOpenFiles": [
-    "build/classes/java/main/com/devmod/hud/ImpactData.class",
-    "build/classes/java/main/com/devmod/hud/ImpactData$1.class",
-    "build/classes/java/main/com/devmod/endurance/QuestExitConfirmScreen.class",
-    "build/classes/java/main/com/devmod/damage/DamageBreakdown.class",
-    "build/classes/java/main/com/devmod/damage/DamageBreakdown$EnchantBonus.class",
-    "build/classes/java/main/com/devmod/client/ClientUiBridgeImpl.class",
-    "build/classes/java/main/com/devmod/actions/client/DevModClientActions.class",
-    "build/classes/java/main/com/devmod/actions/client/DevModClientActions$1.class",
-    "build/classes/java/main/com/devmod/attributes/TrackedEntity.class",
-    "build/classes/java/main/com/devmod/network/handlers/ConfigNetworkHandler.class",
-    "build/classes/java/main/com/devmod/network/handlers/ConfigNetworkHandler$1.class",
+    "docs/Game design alpha 0,0,012.canvas",
+    "docs/reorg/ARCHITECTURE_DIAGRAM.md",
+    "run/saves/New World (18)/playerdata/380df991-f603-344c-a090-369bad2a924a.dat_old",
+    "run/saves/New World (18)/dimensions/devmod/instance_4ad3323bcd3a4a25b8249dc0dff8810f/data/raids.dat",
+    "run/saves/New World (18)/dimensions/devmod/instance_4ad3323bcd3a4a25b8249dc0dff8810f/data/neoforge_data_attachments.dat",
+    "run/saves/New World (18)/DIM-1/data/neoforge_data_attachments.dat",
+    "run/saves/New World (18)/DIM-1/data/raids.dat",
+    "run/saves/New World (18)/DIM1/data/neoforge_data_attachments.dat",
+    "run/saves/New World (18)/DIM1/data/raids_end.dat",
+    "run/saves/New World (18)/data/neoforge_data_attachments.dat",
+    "run/saves/New World (18)/data/random_sequences.dat",
+    "run/saves/New World (18)/data/raids.dat",
+    "run/saves/New World (18)/icon.png",
     "docs/compat/irons_spellbooks.md",
     "build/reports/jacoco/test/html/jacoco-resources/up.gif",
     "build/reports/jacoco/test/html/jacoco-resources/source.gif",
@@ -255,7 +244,6 @@
     "build/reports/jacoco/test/html/jacoco-resources/redbar.gif",
     "build/reports/jacoco/test/html/jacoco-resources/package.gif",
     "build/reports/jacoco/test/html/jacoco-resources/method.gif",
-    "build/reports/jacoco/test/html/jacoco-resources/group.gif",
     "docs/compat/curios.md",
     "docs/compat/clothconfig.md",
     "docs/compat/README.md",
@@ -264,7 +252,6 @@
     "docs/reorg/REFACTOR_AUDIT.md",
     "Untitled.md",
     "Untitled Kanban.md",
-    "docs/reorg/ARCHITECTURE_DIAGRAM.md",
     "docs/reorg/REORG_COMPLETE.md",
     "docs/reorg/BASELINE_AUDIT.md",
     "docs/UX_PLAYER_JOURNEY.md",

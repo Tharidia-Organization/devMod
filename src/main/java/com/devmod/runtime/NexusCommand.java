@@ -1,10 +1,6 @@
 package com.devmod.runtime;
-
 import java.util.Objects;
 
-import com.devmod.config.Config;
-import com.devmod.mailbox.ticket.TicketCategory;
-import com.devmod.mailbox.ticket.TicketManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -17,6 +13,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+
+import com.devmod.config.Config;
+import com.devmod.mailbox.ticket.TicketCategory;
+import com.devmod.mailbox.ticket.TicketManager;
 
 /**
  * Admin commands for Nexus hub control.

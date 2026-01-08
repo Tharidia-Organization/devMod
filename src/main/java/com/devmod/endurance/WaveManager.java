@@ -659,6 +659,12 @@ public class WaveManager {
                     applyEliteBuffs(mob, waveState.waveNumber);
                 }
 
+                if (shouldLogBossHp(mobConfig)) {
+                    LOGGER.info("[EnduranceQuest] Boss HP final for {}: maxHp={}, currentHp={}, affix={}, wave={}, questId={}",
+                        mobConfig.mobId, mob.getMaxHealth(), mob.getHealth(), appliedAffix.name(),
+                        waveState.waveNumber, waveState.quest.getQuestId());
+                }
+
                 finalizeMobSpawn(mob, level, spawnPos);
 
                 CompoundTag tag = mob.getPersistentData();
@@ -1480,8 +1486,9 @@ public class WaveManager {
             // Use mobConfig.getScaledHealth() which applies preset multiplier
             float scaledHP = mobConfig.getScaledHealth(playerCount, questType);
             // If mob has different base HP than estimated, scale proportionally
+            float ratio = 1.0f;
             if (Math.abs(baseHP - mobConfig.baseHealth) > 0.1f && mobConfig.baseHealth > 0) {
-                float ratio = baseHP / mobConfig.baseHealth;
+                ratio = baseHP / mobConfig.baseHealth;
                 scaledHP = scaledHP * ratio;
             }
 
@@ -1491,6 +1498,12 @@ public class WaveManager {
 
             LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, preset={}, type={}, waveScale={}, globalMult={})",
                 baseHP, scaledHP, playerCount, mobConfig.difficultyPreset.displayName, questType, waveScale, globalHealthMult);
+            if (shouldLogBossHp(mobConfig)) {
+                LOGGER.info("[EnduranceQuest] Boss HP scaling (pre-affix) for {}: baseAttr={}, baseEstimated={}, ratio={}, scaled={}, maxHp={}, wave={}, players={}, type={}, waveScale={}, globalMult={}, questId={}",
+                    mobConfig.mobId, baseHP, mobConfig.baseHealth, ratio, scaledHP, mob.getMaxHealth(),
+                    waveState.waveNumber, playerCount, questType, waveScale, globalHealthMult,
+                    waveState.quest.getQuestId());
+            }
         }
 
         // Apply damage scaling using MobQuestConfig (includes difficultyPreset.damageMultiplier)
@@ -1523,6 +1536,13 @@ public class WaveManager {
                     baseSpeed, scaledSpeed, globalSpeedMult);
             }
         }
+    }
+
+    private static boolean shouldLogBossHp(EnduranceQuestRegistry.MobQuestConfig mobConfig) {
+        if (mobConfig == null || mobConfig.mobId == null) {
+            return false;
+        }
+        return "ender_dragon".equals(mobConfig.mobId.getPath());
     }
 
     private float getEliteChance(float baseChance, int waveNumber,

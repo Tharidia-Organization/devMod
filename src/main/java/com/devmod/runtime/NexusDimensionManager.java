@@ -1,5 +1,4 @@
 package com.devmod.runtime;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,18 +16,18 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.server.level.TicketType;
-import net.minecraft.world.level.Level;
+import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.border.WorldBorder;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
 import net.minecraft.world.level.dimension.LevelStem;
@@ -39,9 +38,9 @@ import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.storage.DerivedLevelData;
 
 import com.devmod.DevMod;
-import com.devmod.mixin.MinecraftServerAccessor;
 import com.devmod.arena.zone.ArenaZone;
 import com.devmod.config.Config;
+import com.devmod.mixin.MinecraftServerAccessor;
 import com.devmod.runtime.biome.ZoneBiomeSource;
 import com.devmod.runtime.generator.ArenaChunkGenerator;
 import com.devmod.runtime.generator.ArenaFlatChunkGenerator;
@@ -56,7 +55,7 @@ public class NexusDimensionManager {
     );
 
     private static final BlockPos HUB_ORIGIN = new BlockPos(0, 64, 0);
-    private static final int HUB_HALF_SIZE = 80;
+    private static final int HUB_HALF_SIZE = 96;
 
     private final Set<ChunkPos> forcedChunks = new HashSet<>();
     private ChunkPos forcedCenter;

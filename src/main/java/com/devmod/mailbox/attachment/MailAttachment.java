@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import net.minecraft.server.level.ServerPlayer;
@@ -108,6 +109,34 @@ public interface MailAttachment {
             }
         }
         return flat;
+    }
+
+    /**
+     * Serialize a list of attachments into a JSON payload.
+     *
+     * @return JSON string or null if no attachments
+     */
+    @Nullable
+    static String toJsonPayload(@Nullable List<MailAttachment> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return null;
+        }
+
+        List<MailAttachment> flat = flattenAttachments(attachments);
+        if (flat.isEmpty()) {
+            return null;
+        }
+        if (flat.size() == 1) {
+            return flat.get(0).toJson().toString();
+        }
+
+        JsonArray array = new JsonArray();
+        for (MailAttachment attachment : flat) {
+            if (attachment != null) {
+                array.add(attachment.toJson());
+            }
+        }
+        return array.size() > 0 ? array.toString() : null;
     }
 
     /**

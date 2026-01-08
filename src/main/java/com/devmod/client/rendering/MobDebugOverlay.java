@@ -13,7 +13,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.config.MobConfigManager;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.stats.WeaponStats;
 
 public class MobDebugOverlay {
@@ -113,7 +113,7 @@ public class MobDebugOverlay {
             if (!(entity instanceof Mob mob)) continue;
 
             AABB box = Objects.requireNonNull(mob.getBoundingBox().inflate(0.3));
-            var clip = box.clip(eye, end);
+            java.util.Optional<Vec3> clip = box.clip(eye, end);
 
             if (clip.isPresent()) {
                 double distance = eye.distanceTo(clip.get());
@@ -133,7 +133,7 @@ public class MobDebugOverlay {
     }
 
     private static void renderBodyParts(LivingEntity entity) {
-        WeaponStats stats = WeaponConfigManager.getGlobalStats();
+        WeaponStats stats = WeaponConfigHandler.getGlobalStats();
 
         // Use BodyPartCalculator as SINGLE SOURCE OF TRUTH for body part AABBs
         BodyPartCalculator.BodyPartAABB[] bodyParts = BodyPartCalculator.calculateAllBodyParts(Objects.requireNonNull(entity));

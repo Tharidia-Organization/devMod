@@ -19,7 +19,7 @@ import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-import com.devmod.config.FuelConfigManager;
+import com.devmod.config.handler.impl.FuelConfigHandler;
 import com.devmod.stats.FuelStats;
 
 public class FuelModuleUI {
@@ -205,7 +205,7 @@ public class FuelModuleUI {
             sections.add(new TextNoteSection("debug-source", "Data Source: " + core.getSourcePrefix()));
 
             // Vanilla burn time
-            int vanillaBurn = FuelConfigManager.getVanillaBurnTime(item);
+            int vanillaBurn = FuelConfigHandler.getVanillaBurnTime(item);
             sections.add(new TextNoteSection("debug-vanilla", "Vanilla Burn Time: " + vanillaBurn + " ticks"));
 
             FuelStats stats = core.getStats();

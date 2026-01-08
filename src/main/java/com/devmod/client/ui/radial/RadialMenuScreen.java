@@ -1,5 +1,4 @@
 package com.devmod.client.ui.radial;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +14,8 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.lwjgl.glfw.GLFW;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -27,8 +28,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-
-import org.lwjgl.glfw.GLFW;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -950,9 +949,11 @@ public final class RadialMenuScreen extends Screen {
                 if (menuPath != null) {
                     if (menuPath.startsWith("Root/Tools/Mob Editor")
                         || menuPath.startsWith("Root/Tools/Testing")
+                        || menuPath.startsWith("Root/Tools/Commands")
                         || menuPath.startsWith("Root/Arena/Ops")
                         || menuPath.startsWith("Root/Arena/Templates")
                         || menuPath.startsWith("Root/Telemetry/Dashboard")
+                        || menuPath.startsWith("Root/Debug")
                         || menuPath.startsWith("Root/Combat")
                         || menuPath.startsWith("Root/Play/Endurance")
                         || menuPath.startsWith("Root/Play/Endurance HUD")

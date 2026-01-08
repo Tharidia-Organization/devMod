@@ -1,10 +1,11 @@
 package com.devmod.client.ui.radial.render;
-
 import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import com.google.common.base.Splitter;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -21,6 +22,7 @@ import com.devmod.client.ui.radial.model.MacroCategory;
 import com.devmod.util.I18n;
 
 public final class RadialTooltipRenderer {
+    private static final Splitter WORD_SPLITTER = Splitter.on(' ').omitEmptyStrings();
 
     private RadialTooltipRenderer() {
         // Utility class - no instantiation
@@ -127,7 +129,7 @@ public final class RadialTooltipRenderer {
             return java.util.List.of(line);
         }
 
-        String[] words = line.split(" ");
+        Iterable<String> words = WORD_SPLITTER.split(line);
         List<String> wrapped = new java.util.ArrayList<>();
         StringBuilder current = new StringBuilder();
         String carryFormat = "";

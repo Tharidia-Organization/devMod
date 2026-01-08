@@ -490,6 +490,7 @@ tasks.withType(JavaCompile).configureEach {
         '-Xlint:-processing',
         '-Xlint:-path'
     ]
+
 }
 
 // Configure JUnit 5 testing
@@ -626,7 +627,7 @@ jacoco {
 }
 
 jacocoTestReport {
-    dependsOn test
+    dependsOn "test", "classes", "generateBuildProperties"
     reports {
         xml.required = true
         html.required = true
@@ -798,7 +799,13 @@ def designTokenColorAllowlist = [
     'src/main/java/com/devmod/client/ui/editor/core/DesignTokens.java',
     'src/main/java/com/devmod/shared/SharedColorTokens.java',
     // Server-side enum with inlined colors to avoid client dependency (DesignTokens)
-    'src/main/java/com/devmod/endurance/nutrition/NutritionCategory.java'
+    'src/main/java/com/devmod/endurance/nutrition/NutritionCategory.java',
+    // Portal system - color enums with Minecraft dye colors
+    'src/main/java/com/devmod/portal/PortalColor.java',
+    'src/main/java/com/devmod/portal/RuneType.java',
+    'src/main/java/com/devmod/portal/PortalClientSetup.java',
+    // Config handler with inline color
+    'src/main/java/com/devmod/config/handler/impl/ArmorConfigHandler.java'
 ]
 
 tasks.register('checkDesignTokensColors') {

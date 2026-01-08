@@ -57,7 +57,6 @@ public class FooterComponent {
     private ResponsiveLayout.Rect historyBounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect exportBounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect importBounds = ResponsiveLayout.Rect.EMPTY;
-    private ResponsiveLayout.Rect presetsBounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect templatesBounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect recipeBounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect resetBounds = ResponsiveLayout.Rect.EMPTY;
@@ -183,7 +182,7 @@ public class FooterComponent {
         undoBounds = ResponsiveLayout.Rect.EMPTY;
         redoBounds = ResponsiveLayout.Rect.EMPTY;
 
-        // Action buttons row (History, Export, Import, Presets, Reset, Cancel)
+        // Action buttons row (History, Export, Import, Templates, Recipe, Reset, Cancel)
         int padding = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
         int applyMargin = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
         int startX = x + padding; // initial left padding
@@ -191,7 +190,7 @@ public class FooterComponent {
         int btnY = contentY;
         int minWidth = ScaledCoord.scaleDim(ACTION_MIN_WIDTH);
 
-        String[] labels = new String[] { "History", "Export", "Import", "Presets", "Templates", "Recipe", "Reset", "Cancel" };
+        String[] labels = new String[] { "History", "Export", "Import", "Templates", "Recipe", "Reset", "Cancel" };
         int[] widths = new int[labels.length];
         float btnFontScale = Typography.buttonScale();
         int innerPad = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
@@ -283,24 +282,20 @@ public class FooterComponent {
         importBounds = renderActionButton(graphics, font, cursorX, btnY, widths[2], actionsHeight, "Import", importHovered);
 
         cursorX = importBounds.right() + gap;
-        boolean presetsHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[3], actionsHeight).contains(mouseX, mouseY);
-        presetsBounds = renderActionButton(graphics, font, cursorX, btnY, widths[3], actionsHeight, "Presets", presetsHovered);
-
-        cursorX = presetsBounds.right() + gap;
-        boolean templatesHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[4], actionsHeight).contains(mouseX, mouseY);
-        templatesBounds = renderActionButton(graphics, font, cursorX, btnY, widths[4], actionsHeight, "Templates", templatesHovered);
+        boolean templatesHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[3], actionsHeight).contains(mouseX, mouseY);
+        templatesBounds = renderActionButton(graphics, font, cursorX, btnY, widths[3], actionsHeight, "Templates", templatesHovered);
 
         cursorX = templatesBounds.right() + gap;
-        boolean recipeHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[5], actionsHeight).contains(mouseX, mouseY);
-        recipeBounds = renderActionButton(graphics, font, cursorX, btnY, widths[5], actionsHeight, "Recipe", recipeHovered);
+        boolean recipeHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[4], actionsHeight).contains(mouseX, mouseY);
+        recipeBounds = renderActionButton(graphics, font, cursorX, btnY, widths[4], actionsHeight, "Recipe", recipeHovered);
 
         cursorX = recipeBounds.right() + gap;
-        boolean resetHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[6], actionsHeight).contains(mouseX, mouseY);
-        resetBounds = renderActionButton(graphics, font, cursorX, btnY, widths[6], actionsHeight, "Reset", resetHovered);
+        boolean resetHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[5], actionsHeight).contains(mouseX, mouseY);
+        resetBounds = renderActionButton(graphics, font, cursorX, btnY, widths[5], actionsHeight, "Reset", resetHovered);
 
         cursorX = resetBounds.right() + gap;
-        boolean cancelHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[7], actionsHeight).contains(mouseX, mouseY);
-        cancelBounds = renderActionButton(graphics, font, cursorX, btnY, widths[7], actionsHeight, "Cancel", cancelHovered);
+        boolean cancelHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[6], actionsHeight).contains(mouseX, mouseY);
+        cancelBounds = renderActionButton(graphics, font, cursorX, btnY, widths[6], actionsHeight, "Cancel", cancelHovered);
 
         if (actionsOverflow && !actionsViewport.isEmpty()) {
             graphics.disableScissor();
@@ -419,10 +414,6 @@ public class FooterComponent {
         }
         if (importBounds.contains(mouseX, mouseY) && withinActions) {
             triggerAction("import");
-            return true;
-        }
-        if (presetsBounds.contains(mouseX, mouseY) && withinActions) {
-            triggerAction("presets");
             return true;
         }
         if (templatesBounds.contains(mouseX, mouseY) && withinActions) {

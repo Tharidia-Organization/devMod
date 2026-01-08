@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
 
 import com.devmod.mailbox.MailboxMessage;
+import com.devmod.mailbox.delivery.MailboxDeliveryJob;
 import com.devmod.mailbox.moderation.AdminAuditLog;
 import com.devmod.mailbox.news.NewsArticle;
 import com.devmod.mailbox.task.TaskAuditEntry;
@@ -153,6 +154,54 @@ public interface MailboxRepository {
      * @return future completing with count
      */
     CompletableFuture<Integer> getTotalUnreadCount();
+
+    // ============================================================================
+    // DELIVERY QUEUE OPERATIONS
+    // ============================================================================
+
+    /**
+     * Save a new delivery job.
+     *
+     * @param job the delivery job to save
+     * @return future completing with the saved job
+     */
+    CompletableFuture<MailboxDeliveryJob> saveDeliveryJob(MailboxDeliveryJob job);
+
+    /**
+     * Get a delivery job by ID.
+     *
+     * @param jobId the job UUID
+     * @return future completing with the job if found
+     */
+    CompletableFuture<Optional<MailboxDeliveryJob>> getDeliveryJob(UUID jobId);
+
+    /**
+     * Get delivery jobs by status.
+     *
+     * @param status the delivery status
+     * @param limit maximum number to return
+     * @return future completing with job list
+     */
+    CompletableFuture<List<MailboxDeliveryJob>> getDeliveryJobsByStatus(
+        MailboxDeliveryJob.DeliveryStatus status,
+        int limit
+    );
+
+    /**
+     * Update a delivery job.
+     *
+     * @param job the updated delivery job
+     * @return future completing with success status
+     */
+    CompletableFuture<Boolean> updateDeliveryJob(MailboxDeliveryJob job);
+
+    /**
+     * Delete a delivery job.
+     *
+     * @param jobId the job UUID
+     * @return future completing with success status
+     */
+    CompletableFuture<Boolean> deleteDeliveryJob(UUID jobId);
 
     // ============================================================================
     // NEWS OPERATIONS

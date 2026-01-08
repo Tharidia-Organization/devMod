@@ -64,8 +64,12 @@ public final class BuildDryRunCalculator {
         // Hazards: rough estimate, per-type (lava_pool/void_pit use radius^2 pi, ring uses outer^2-inner^2)
         int hazardBlocks = 0;
         if (template.hazards() != null) {
+            int floorY = template.floor() != null ? template.floor().y() : Integer.MIN_VALUE;
             for (var hazard : template.hazards()) {
                 if (hazard.params() == null) continue;
+                if (isFloorOverlayHazard(hazard, floorY)) {
+                    continue;
+                }
                 switch (hazard.type()) {
                     case "lava_pool", "void_pit" -> {
                         Number r = (Number) hazard.params().getOrDefault("radius", 0);
@@ -101,6 +105,30 @@ public final class BuildDryRunCalculator {
         int lightingBlocks = estimateLightingBlocks(template, sizeX, sizeZ);
 
         return new BuildDryRun(floorBlocks, wallBlocks, ceilingBlocks, underfloorBlocks, hazardBlocks, lightingBlocks);
+    }
+
+    private static boolean isFloorOverlayHazard(ArenaTemplate.Hazard hazard, int floorY) {
+        if (floorY == Integer.MIN_VALUE) {
+            return false;
+        }
+        switch (hazard.type()) {
+            case "lava_ring", "lava_pool", "magma_floor", "fire_zone" -> {
+                int hazardY = resolveHazardY(hazard, floorY);
+                return hazardY == floorY;
+            }
+            default -> {
+                return false;
+            }
+        }
+    }
+
+    private static int resolveHazardY(ArenaTemplate.Hazard hazard, int floorY) {
+        Integer hazardY = hazard.y();
+        int baseY = hazardY != null ? hazardY : floorY;
+        if (hazard.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+            baseY += floorY;
+        }
+        return baseY;
     }
 
     /**

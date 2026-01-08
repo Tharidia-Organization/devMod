@@ -12,7 +12,7 @@ import net.minecraft.world.item.component.CustomData;
 import com.devmod.DevMod;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.client.ui.editor.core.EditorCache;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.stats.WeaponStats;
 
 public class WeaponModuleCore {
@@ -87,7 +87,7 @@ public class WeaponModuleCore {
             sourcePrefix = "[DEV] ";
             dataSource = SourceBadge.Source.DEV;
             DevMod.LOGGER.info("[Editor][Weapon] Loaded stats from component tag (size={})", statsTag.size());
-            stats = statsTag.contains(NBT_KEY) ? WeaponStats.load(statsTag.getCompound(NBT_KEY)) : WeaponStats.load(statsTag);
+            stats = statsTag.contains(NBT_KEY) ? WeaponStats.fromTag(statsTag.getCompound(NBT_KEY)) : WeaponStats.fromTag(statsTag);
         } else {
             boolean hasCustomData = customTag != null && !customTag.isEmpty();
             sourcePrefix = hasCustomData ? "[NBT] " : "[VANILLA] ";
@@ -115,6 +115,7 @@ public class WeaponModuleCore {
             double dmg = 0, spd = 0, kb = 0, reach = 0, sweep = 0;
             double critCh = 0, critDmg = 0, shred = 0, lifesteal = 0, dmgBonus = 0;
             double vsUndead = 0, vsArthro = 0, vsPlayers = 0, trueDmg = 0;
+            target.getCustomAttributeModifiers().clear();
 
             DevMod.LOGGER.info("[Editor][Weapon] Attribute modifiers merged: {}", mods.modifiers().size());
             for (net.minecraft.world.item.component.ItemAttributeModifiers.Entry entry : mods.modifiers()) {
@@ -122,10 +123,14 @@ public class WeaponModuleCore {
                 if (slotGroup != null && !slotGroup.test(net.minecraft.world.entity.EquipmentSlot.MAINHAND)) continue;
                 @Nonnull var attrHolder = Objects.requireNonNull(entry.attribute(), "attribute holder cannot be null");
                 var mod = entry.modifier();
-                if (attrHolder == null || mod == null) continue;
+                if (mod == null) continue;
                 @Nonnull var attrKey = Objects.requireNonNull(attrHolder.unwrapKey().orElse(null),
                     "attribute resource key cannot be null");
                 var attr = attrHolder.value();
+                var attrId = attrKey.location();
+                boolean isModded = attrId != null
+                    && !"minecraft".equals(attrId.getNamespace())
+                    && !"devmod".equals(attrId.getNamespace());
 
                 boolean isDmg = attrKey == net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE ||
                     attr == net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE.value();
@@ -170,6 +175,16 @@ public class WeaponModuleCore {
                 else if (isVsArthro) vsArthro += mod.amount();
                 else if (isVsPlayers) vsPlayers += mod.amount();
                 else if (isTrueDmg) trueDmg += mod.amount();
+                else if (isModded && attrId != null) {
+                    int op = switch (mod.operation()) {
+                        case ADD_MULTIPLIED_BASE -> 1;
+                        case ADD_MULTIPLIED_TOTAL -> 2;
+                        default -> 0;
+                    };
+                    target.getCustomAttributeModifiers().add(
+                        new WeaponStats.AttributeModifierData(attrId.toString(), mod.amount(), op)
+                    );
+                }
             }
 
             if (dmg != 0) target.setAttackDamage((float) dmg);
@@ -177,15 +192,15 @@ public class WeaponModuleCore {
             if (kb != 0) target.setAttackKnockback((float) kb);
             if (reach != 0) target.setAttackReach((float) reach);
             if (sweep != 0) target.setSweepingRatio((float) sweep);
-            if (critCh != 0) target.setCritChance((float) (critCh / 100f));
+            if (critCh != 0) target.setCritChance((float) critCh);
             if (critDmg != 0) target.setCritDamage((float) critDmg);
             if (shred != 0) target.setArmorShred((float) shred);
-            if (lifesteal != 0) target.setLifesteal((float) (lifesteal / 100f));
-            if (dmgBonus != 0) target.setDamageBonus((float) (dmgBonus / 100f));
-            if (vsUndead != 0) target.setDamageVsUndead((float) (vsUndead / 100f));
-            if (vsArthro != 0) target.setDamageVsArthropods((float) (vsArthro / 100f));
-            if (vsPlayers != 0) target.setDamageVsPlayers((float) (vsPlayers / 100f));
-            if (trueDmg != 0) target.setTrueDamagePercent((float) (trueDmg / 100f));
+            if (lifesteal != 0) target.setLifesteal((float) lifesteal);
+            if (dmgBonus != 0) target.setDamageBonus((float) dmgBonus);
+            if (vsUndead != 0) target.setDamageVsUndead((float) vsUndead);
+            if (vsArthro != 0) target.setDamageVsArthropods((float) vsArthro);
+            if (vsPlayers != 0) target.setDamageVsPlayers((float) vsPlayers);
+            if (trueDmg != 0) target.setTrueDamagePercent((float) trueDmg);
 
             DevMod.LOGGER.info("[Editor][Weapon] From attributes -> dmg={} spd={} kb={} reach={} sweep={} critCh={} critDmg={} shred={} lifesteal={} dmgBonus={} vsUndead={} vsArthro={} vsPlayers={} trueDmg={}",
                 target.getAttackDamage(), target.getAttackSpeed(), target.getAttackKnockback(), target.getAttackReach(), target.getSweepingRatio(),
@@ -266,7 +281,9 @@ public class WeaponModuleCore {
                     }
                     float speed = rule.speed().orElse(stats.getToolDefaultMiningSpeed());
                     Boolean drops = rule.correctForDrops().orElse(null);
-                    stats.toolRules.add(new WeaponStats.ToolRuleData(blockTag, speed, drops));
+                    WeaponStats.ToolRuleData ruleData = new WeaponStats.ToolRuleData(blockTag, speed, drops);
+                    ruleData.isTag = false;
+                    stats.toolRules.add(ruleData);
                 }
             }
         } catch (Exception e) {
@@ -310,7 +327,8 @@ public class WeaponModuleCore {
         putIfChanged(delta, "AtkSpd", baseline.getAttackSpeed(), current.getAttackSpeed());
         putIfChanged(delta, "AtkRch", baseline.getAttackReach(), current.getAttackReach());
         putIfChanged(delta, "AtkKB", baseline.getAttackKnockback(), current.getAttackKnockback());
-        putIfChanged(delta, "Sweep", baseline.getDamageBonus(), current.getDamageBonus());
+        putIfChanged(delta, "DmgBonus", baseline.getDamageBonus(), current.getDamageBonus());
+        putIfChanged(delta, "SweepRatio", baseline.getSweepingRatio(), current.getSweepingRatio());
 
         putIfChanged(delta, "CritCh", baseline.getCritChance(), current.getCritChance());
         putIfChanged(delta, "CritDmg", baseline.getCritDamage(), current.getCritDamage());
@@ -331,8 +349,30 @@ public class WeaponModuleCore {
         if (baseline.isClearToolRules() != current.isClearToolRules()) delta.putBoolean("ClearToolRules", current.isClearToolRules());
         putIfChanged(delta, "DefaultSpeed", baseline.getToolDefaultMiningSpeed(), current.getToolDefaultMiningSpeed());
         putIfChanged(delta, "DamagePerBlock", baseline.getToolDamagePerBlock(), current.getToolDamagePerBlock());
+        if (!attributeModsEqual(baseline.getCustomAttributeModifiers(), current.getCustomAttributeModifiers())) {
+            delta.put("AttrMods", Objects.requireNonNull(
+                WeaponStats.writeAttributeModifiers(current.getCustomAttributeModifiers()),
+                "writeAttributeModifiers cannot return null"));
+        }
 
         return delta;
+    }
+
+    private boolean attributeModsEqual(java.util.List<WeaponStats.AttributeModifierData> a,
+                                       java.util.List<WeaponStats.AttributeModifierData> b) {
+        if (a == b) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            WeaponStats.AttributeModifierData left = a.get(i);
+            WeaponStats.AttributeModifierData right = b.get(i);
+            if (left == right) continue;
+            if (left == null || right == null) return false;
+            if (!Objects.equals(left.attributeId, right.attributeId)) return false;
+            if (Double.compare(left.amount, right.amount) != 0) return false;
+            if (left.operation != right.operation) return false;
+        }
+        return true;
     }
 
     private void putIfChanged(CompoundTag tag, String key, float base, float cur) {
@@ -368,6 +408,7 @@ public class WeaponModuleCore {
             && Float.compare(a.getAttackReach(), b.getAttackReach()) == 0
             && Float.compare(a.getAttackKnockback(), b.getAttackKnockback()) == 0
             && Float.compare(a.getDamageBonus(), b.getDamageBonus()) == 0
+            && Float.compare(a.getSweepingRatio(), b.getSweepingRatio()) == 0
             && Float.compare(a.getArmorPenetration(), b.getArmorPenetration()) == 0
             && Float.compare(a.getBaseDamageBonus(), b.getBaseDamageBonus()) == 0
             && Float.compare(a.getArmorShred(), b.getArmorShred()) == 0
@@ -388,6 +429,7 @@ public class WeaponModuleCore {
             && Float.compare(a.getToolDefaultMiningSpeed(), b.getToolDefaultMiningSpeed()) == 0
             && a.getToolDamagePerBlock() == b.getToolDamagePerBlock()
             && toolRulesEqual(a.toolRules, b.toolRules)
+            && attributeModsEqual(a.getCustomAttributeModifiers(), b.getCustomAttributeModifiers())
             && !module.getVariants().variantChanged();
     }
 
@@ -405,6 +447,7 @@ public class WeaponModuleCore {
             if (!Objects.equals(ra.blockTag, rb.blockTag)) return false;
             if (Float.compare(ra.speed, rb.speed) != 0) return false;
             if (!Objects.equals(ra.correctForDrops, rb.correctForDrops)) return false;
+            if (ra.isTag != rb.isTag) return false;
         }
         return true;
     }
@@ -417,13 +460,13 @@ public class WeaponModuleCore {
         if (tag.contains(NBT_KEY)) {
             return loadStatsFromTag(tag);
         }
-        WeaponStats global = WeaponConfigManager.getGlobalStats(item.getItem());
+        WeaponStats global = WeaponConfigHandler.getItemGlobalStats(item.getItem());
         return global == null ? new WeaponStats() : global;
     }
 
     WeaponStats loadStatsFromTag(CompoundTag tag) {
         if (tag.contains(NBT_KEY)) {
-            return WeaponStats.load(tag.getCompound(NBT_KEY));
+            return WeaponStats.fromTag(tag.getCompound(NBT_KEY));
         }
         return new WeaponStats();
     }

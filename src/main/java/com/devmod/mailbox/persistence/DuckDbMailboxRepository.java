@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.mailbox.MailboxMessage;
 import com.devmod.mailbox.MessageType;
+import com.devmod.mailbox.delivery.MailboxDeliveryJob;
 import com.devmod.mailbox.moderation.AdminAuditLog;
 import com.devmod.mailbox.news.NewsArticle;
 import com.devmod.mailbox.news.NewsCategory;
@@ -40,7 +41,7 @@ import com.devmod.telemetry.duckdb.DuckDBConnectionManager;
 public class DuckDbMailboxRepository implements MailboxRepository {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDbMailboxRepository.class);
-    private static final int CURRENT_SCHEMA_VERSION = 6;
+    private static final int CURRENT_SCHEMA_VERSION = 7;
 
     private final DuckDBConnectionManager connectionManager;
     private final ExecutorService executor;
@@ -483,6 +484,187 @@ public class DuckDbMailboxRepository implements MailboxRepository {
             } catch (SQLException e) {
                 LOGGER.error("[Mailbox] Failed to get total unread count", e);
                 throw new RuntimeException("Failed to get total unread count", e);
+            }
+        }, executor);
+    }
+
+    // ============================================================================
+    // DELIVERY QUEUE OPERATIONS
+    // ============================================================================
+
+    @Override
+    public CompletableFuture<MailboxDeliveryJob> saveDeliveryJob(MailboxDeliveryJob job) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = """
+                INSERT INTO mailbox_delivery_jobs
+                (id, message_id, sender_uuid, sender_name, recipient_uuid, subject, body,
+                 message_type, created_at, available_at, expires_at, has_attachment, attachment_data,
+                 status, attempt_count, failure_count, last_attempt_at, last_failure_at, last_failure_reason, delivered_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, job.id().toString());
+                stmt.setString(2, job.messageId().toString());
+                setNullableUuid(stmt, 3, job.senderUuid());
+                setNullableString(stmt, 4, job.senderName());
+                stmt.setString(5, job.recipientUuid().toString());
+                stmt.setString(6, job.subject());
+                setNullableString(stmt, 7, job.body());
+                stmt.setString(8, job.messageType().getId());
+                stmt.setTimestamp(9, Timestamp.from(job.createdAt()));
+                stmt.setTimestamp(10, Timestamp.from(job.availableAt()));
+                setNullableTimestamp(stmt, 11, job.expiresAt());
+                stmt.setBoolean(12, job.hasAttachment());
+                setNullableString(stmt, 13, job.attachmentData());
+                stmt.setString(14, job.status().getId());
+                stmt.setInt(15, job.attemptCount());
+                stmt.setInt(16, job.failureCount());
+                setNullableTimestamp(stmt, 17, job.lastAttemptAt());
+                setNullableTimestamp(stmt, 18, job.lastFailureAt());
+                setNullableString(stmt, 19, job.lastFailureReason());
+                setNullableTimestamp(stmt, 20, job.deliveredAt());
+
+                stmt.executeUpdate();
+                LOGGER.debug("[Mailbox] Saved delivery job {}", job.id());
+                return job;
+            } catch (SQLException e) {
+                LOGGER.error("[Mailbox] Failed to save delivery job {}", job.id(), e);
+                throw new RuntimeException("Failed to save delivery job", e);
+            }
+        }, executor);
+    }
+
+    @Override
+    public CompletableFuture<Optional<MailboxDeliveryJob>> getDeliveryJob(UUID jobId) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "SELECT * FROM mailbox_delivery_jobs WHERE id = ?";
+
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, jobId.toString());
+
+                Optional<MailboxDeliveryJob> result;
+                try (ResultSet rs = stmt.executeQuery()) {
+                    result = rs.next()
+                        ? Optional.of(mapResultSetToDeliveryJob(rs))
+                        : Optional.empty();
+                }
+                return result;
+            } catch (SQLException e) {
+                LOGGER.error("[Mailbox] Failed to get delivery job {}", jobId, e);
+                throw new RuntimeException("Failed to get delivery job", e);
+            }
+        }, executor);
+    }
+
+    @Override
+    public CompletableFuture<List<MailboxDeliveryJob>> getDeliveryJobsByStatus(
+            MailboxDeliveryJob.DeliveryStatus status, int limit) {
+        return CompletableFuture.supplyAsync(() -> {
+            if (limit <= 0) {
+                return List.of();
+            }
+
+            String sql = """
+                SELECT * FROM mailbox_delivery_jobs
+                WHERE status = ?
+                ORDER BY available_at ASC, created_at ASC
+                LIMIT ?
+                """;
+
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, status.getId());
+                stmt.setInt(2, limit);
+
+                List<MailboxDeliveryJob> jobs = new ArrayList<>();
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        jobs.add(mapResultSetToDeliveryJob(rs));
+                    }
+                }
+                return jobs;
+            } catch (SQLException e) {
+                LOGGER.error("[Mailbox] Failed to get delivery jobs by status {}", status, e);
+                throw new RuntimeException("Failed to get delivery jobs", e);
+            }
+        }, executor);
+    }
+
+    @Override
+    public CompletableFuture<Boolean> updateDeliveryJob(MailboxDeliveryJob job) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = """
+                UPDATE mailbox_delivery_jobs
+                SET message_id = ?,
+                    sender_uuid = ?,
+                    sender_name = ?,
+                    recipient_uuid = ?,
+                    subject = ?,
+                    body = ?,
+                    message_type = ?,
+                    created_at = ?,
+                    available_at = ?,
+                    expires_at = ?,
+                    has_attachment = ?,
+                    attachment_data = ?,
+                    status = ?,
+                    attempt_count = ?,
+                    failure_count = ?,
+                    last_attempt_at = ?,
+                    last_failure_at = ?,
+                    last_failure_reason = ?,
+                    delivered_at = ?
+                WHERE id = ?
+                """;
+
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, job.messageId().toString());
+                setNullableUuid(stmt, 2, job.senderUuid());
+                setNullableString(stmt, 3, job.senderName());
+                stmt.setString(4, job.recipientUuid().toString());
+                stmt.setString(5, job.subject());
+                setNullableString(stmt, 6, job.body());
+                stmt.setString(7, job.messageType().getId());
+                stmt.setTimestamp(8, Timestamp.from(job.createdAt()));
+                stmt.setTimestamp(9, Timestamp.from(job.availableAt()));
+                setNullableTimestamp(stmt, 10, job.expiresAt());
+                stmt.setBoolean(11, job.hasAttachment());
+                setNullableString(stmt, 12, job.attachmentData());
+                stmt.setString(13, job.status().getId());
+                stmt.setInt(14, job.attemptCount());
+                stmt.setInt(15, job.failureCount());
+                setNullableTimestamp(stmt, 16, job.lastAttemptAt());
+                setNullableTimestamp(stmt, 17, job.lastFailureAt());
+                setNullableString(stmt, 18, job.lastFailureReason());
+                setNullableTimestamp(stmt, 19, job.deliveredAt());
+                stmt.setString(20, job.id().toString());
+
+                int updated = stmt.executeUpdate();
+                return updated > 0;
+            } catch (SQLException e) {
+                LOGGER.error("[Mailbox] Failed to update delivery job {}", job.id(), e);
+                throw new RuntimeException("Failed to update delivery job", e);
+            }
+        }, executor);
+    }
+
+    @Override
+    public CompletableFuture<Boolean> deleteDeliveryJob(UUID jobId) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "DELETE FROM mailbox_delivery_jobs WHERE id = ?";
+
+            Connection conn = connectionManager.getConnectionUnchecked();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, jobId.toString());
+                int updated = stmt.executeUpdate();
+                return updated > 0;
+            } catch (SQLException e) {
+                LOGGER.error("[Mailbox] Failed to delete delivery job {}", jobId, e);
+                throw new RuntimeException("Failed to delete delivery job", e);
             }
         }, executor);
     }
@@ -1178,6 +1360,9 @@ public class DuckDbMailboxRepository implements MailboxRepository {
                 case 6 -> {
                     createAdminAuditTable(conn);
                 }
+                case 7 -> {
+                    createDeliveryJobsTable(conn);
+                }
                 default -> throw new SQLException("Unknown mailbox schema version: " + next);
             }
             current = next;
@@ -1234,6 +1419,7 @@ public class DuckDbMailboxRepository implements MailboxRepository {
 
         try (var stmt = conn.createStatement()) {
             stmt.execute(messagesTable);
+            createDeliveryJobsTable(conn);
             stmt.execute(newsTable);
             stmt.execute(newsReadTable);
             createTasksTable(conn);
@@ -1247,6 +1433,40 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         }
 
         LOGGER.debug("[Mailbox] Database tables created");
+    }
+
+    private void createDeliveryJobsTable(Connection conn) throws SQLException {
+        String deliveryJobsTable = """
+            CREATE TABLE IF NOT EXISTS mailbox_delivery_jobs (
+                id VARCHAR PRIMARY KEY,
+                message_id VARCHAR NOT NULL,
+                sender_uuid VARCHAR,
+                sender_name VARCHAR(64),
+                recipient_uuid VARCHAR NOT NULL,
+                subject VARCHAR(256) NOT NULL,
+                body TEXT,
+                message_type VARCHAR(32) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                available_at TIMESTAMP,
+                expires_at TIMESTAMP,
+                has_attachment BOOLEAN DEFAULT FALSE,
+                attachment_data TEXT,
+                status VARCHAR(32) NOT NULL DEFAULT 'pending',
+                attempt_count INTEGER DEFAULT 0,
+                failure_count INTEGER DEFAULT 0,
+                last_attempt_at TIMESTAMP,
+                last_failure_at TIMESTAMP,
+                last_failure_reason TEXT,
+                delivered_at TIMESTAMP
+            )
+            """;
+
+        try (var stmt = conn.createStatement()) {
+            stmt.execute(deliveryJobsTable);
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_delivery_recipient ON mailbox_delivery_jobs(recipient_uuid)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_delivery_status ON mailbox_delivery_jobs(status, available_at)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_delivery_message ON mailbox_delivery_jobs(message_id)");
+        }
     }
 
     private void createTasksTable(Connection conn) throws SQLException {
@@ -1360,6 +1580,38 @@ public class DuckDbMailboxRepository implements MailboxRepository {
             .attachment(rs.getString("attachment_data"))
             .attachmentClaimed(rs.getBoolean("attachment_claimed"))
             .deleted(rs.getBoolean("deleted"))
+            .build();
+    }
+
+    private MailboxDeliveryJob mapResultSetToDeliveryJob(ResultSet rs) throws SQLException {
+        Instant createdAt = rs.getTimestamp("created_at").toInstant();
+        Instant availableAt = getNullableInstant(rs, "available_at");
+        if (availableAt == null) {
+            availableAt = createdAt;
+        }
+
+        return MailboxDeliveryJob.builder()
+            .id(UUID.fromString(rs.getString("id")))
+            .messageId(UUID.fromString(rs.getString("message_id")))
+            .sender(
+                getNullableUuid(rs, "sender_uuid"),
+                rs.getString("sender_name")
+            )
+            .recipient(UUID.fromString(rs.getString("recipient_uuid")))
+            .subject(rs.getString("subject"))
+            .body(rs.getString("body"))
+            .messageType(MessageType.fromId(rs.getString("message_type")))
+            .createdAt(createdAt)
+            .availableAt(availableAt)
+            .expiresAt(getNullableInstant(rs, "expires_at"))
+            .attachment(rs.getString("attachment_data"))
+            .status(MailboxDeliveryJob.DeliveryStatus.fromId(rs.getString("status")))
+            .attemptCount(rs.getInt("attempt_count"))
+            .failureCount(rs.getInt("failure_count"))
+            .lastAttemptAt(getNullableInstant(rs, "last_attempt_at"))
+            .lastFailureAt(getNullableInstant(rs, "last_failure_at"))
+            .lastFailureReason(rs.getString("last_failure_reason"))
+            .deliveredAt(getNullableInstant(rs, "delivered_at"))
             .build();
     }
 

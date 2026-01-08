@@ -12,9 +12,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 
+import com.devmod.config.stats.IItemStats;
 import com.devmod.endurance.nutrition.NutritionCategory;
 
-public class FoodStats {
+public class FoodStats implements IItemStats {
 
     // ═══════════════════════════════════════════════════════════════
     // NUTRITION PROPERTIES
@@ -256,6 +257,7 @@ public class FoodStats {
 
     public FoodStats() {}
 
+    @Override
     public FoodStats copy() {
         FoodStats copy = new FoodStats();
         copy.setNutrition(this.getNutrition());
@@ -278,6 +280,7 @@ public class FoodStats {
     // NBT SERIALIZATION
     // ═══════════════════════════════════════════════════════════════
 
+    @Override
     public void save(CompoundTag tag) {
         tag.putInt("nutrition", nutrition);
         tag.putFloat("saturation", saturation);
@@ -310,6 +313,7 @@ public class FoodStats {
         }
     }
 
+    @Override
     public void load(CompoundTag tag) {
         nutrition = tag.getInt("nutrition");
         saturation = tag.getFloat("saturation");
@@ -331,7 +335,7 @@ public class FoodStats {
         nutritionProfile.clear();
         if (tag.contains("nutritionProfile", Tag.TAG_COMPOUND)) {
             CompoundTag dietTag = tag.getCompound("nutritionProfile");
-            for (NutritionCategory cat : NutritionCategory.VALUES) {
+            for (NutritionCategory cat : NutritionCategory.ALL) {
                 String catKey = cat.key;
                 if (dietTag.contains(catKey)) {
                     float value = dietTag.getFloat(catKey);
@@ -357,6 +361,22 @@ public class FoodStats {
      */
     public float getActualSaturation() {
         return nutrition * saturation * 2.0f;
+    }
+
+    /**
+     * Check if all values are at defaults (no modifications).
+     */
+    @Override
+    public boolean isDefault() {
+        return nutrition == 0
+            && Float.compare(saturation, 0.0f) == 0
+            && consumptionTime == 32
+            && !canAlwaysEat
+            && !isMeat
+            && !isFastFood
+            && effects.isEmpty()
+            && nutritionProfile.isEmpty()
+            && primaryCategory == null;
     }
 
     @Override

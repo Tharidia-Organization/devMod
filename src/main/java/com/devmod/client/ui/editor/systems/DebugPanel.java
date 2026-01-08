@@ -468,12 +468,12 @@ public class DebugPanel {
         StringBuilder sb = new StringBuilder();
         if (tag.contains(WEAPON_STATS_KEY)) {
             CompoundTag wtag = tag.getCompound(WEAPON_STATS_KEY);
-            WeaponStats ws = WeaponStats.load(wtag);
+            WeaponStats ws = WeaponStats.fromTag(wtag);
             sb.append(WEAPON_STATS_PREFIX).append(ws).append(NEWLINE).append(wtag).append(NEWLINE);
         }
         if (tag.contains(ARMOR_STATS_KEY)) {
             CompoundTag atag = tag.getCompound(ARMOR_STATS_KEY);
-            ArmorStats as = ArmorStats.load(atag);
+            ArmorStats as = ArmorStats.fromTag(atag);
             sb.append(ARMOR_STATS_PREFIX).append(as).append(NEWLINE).append(atag).append(NEWLINE);
         }
         if (sb.length() == 0) {

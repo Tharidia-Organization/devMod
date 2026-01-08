@@ -1,5 +1,4 @@
 package com.devmod.client.ui.editor.modules;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -11,8 +10,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorTextField;
@@ -28,7 +32,7 @@ import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.stats.WeaponStats;
 
 public class WeaponModuleUI {
@@ -103,6 +107,8 @@ public class WeaponModuleUI {
     EditorSlider vsPlayersSlider;
     @Nullable
     EditorSlider trueDamageSlider;
+    @Nullable
+    DamageAttributeSection damageAttributeSection;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Durability Tab
@@ -112,8 +118,6 @@ public class WeaponModuleUI {
     EditorSlider maxDurabilitySlider;
     @Nullable
     EditorSlider currentDamageSlider;
-    @Nullable
-    EditorSlider repairCostSlider;
     @Nullable
     EditorToggle unbreakableToggle;
     @Nullable
@@ -335,7 +339,7 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.PERCENT)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.getCritChance() > 0)
+            .enabled(stats.getCritChance() != 0)
             .info("Chance to deal critical hit. Rolled on each attack. Uses devmod:crit_chance attribute.")
             .onChange(v -> { stats.setCritChance(v / 100f); module.markDirty("Critical chance"); });
 
@@ -346,14 +350,14 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.getCritChance() > 0)
+            .enabled(stats.getCritChance() != 0)
             .info("Damage multiplier on critical hit. 2.0x = double damage. Uses devmod:crit_multiplier attribute.")
             .onChange(v -> { stats.setCritDamage(v); module.markDirty("Critical damage"); });
 
         critChanceSlider = critChance;
         critDamageSlider = critDamage;
 
-        critEnabledToggle = new EditorToggle("critEnabled", "Enable Critical Hits", stats.getCritChance() > 0)
+        critEnabledToggle = new EditorToggle("critEnabled", "Enable Critical Hits", stats.getCritChance() != 0)
             .source(dataSource)
             .tooltip("Enable critical hit mechanics for this weapon")
             .onChange(enabled -> {
@@ -373,13 +377,13 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.getLifesteal() > 0)
+            .enabled(stats.getLifesteal() != 0)
             .info("Heals attacker for percentage of damage dealt. 10% lifesteal on 20 damage = 2 HP healed.")
             .onChange(v -> { stats.setLifesteal(v / 100f); module.markDirty("Lifesteal"); });
 
         lifestealSlider = lifesteal;
 
-        lifestealEnabledToggle = new EditorToggle("lifestealEnabled", "Enable Lifesteal", stats.getLifesteal() > 0)
+        lifestealEnabledToggle = new EditorToggle("lifestealEnabled", "Enable Lifesteal", stats.getLifesteal() != 0)
             .source(dataSource)
             .tooltip("Heal a percentage of damage dealt")
             .onChange(enabled -> {
@@ -397,13 +401,13 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.DAMAGE)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.getFireDamageBonus() > 0)
+            .enabled(stats.getFireDamageBonus() != 0)
             .info("Extra fire damage added to attacks. Sets target on fire. Ignores some armor.")
             .onChange(v -> { stats.setFireDamageBonus(v); module.markDirty("Fire damage"); });
 
         fireDamageSlider = fireDamage;
 
-        fireDamageEnabledToggle = new EditorToggle("fireEnabled", "Enable Fire Damage", stats.getFireDamageBonus() > 0)
+        fireDamageEnabledToggle = new EditorToggle("fireEnabled", "Enable Fire Damage", stats.getFireDamageBonus() != 0)
             .source(dataSource)
             .tooltip("Add fire damage to attacks")
             .onChange(enabled -> {
@@ -421,13 +425,13 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.SPECIAL)
             .showInput(true)
             .source(dataSource)
-            .enabled(stats.getMagicDamageBonus() > 0)
+            .enabled(stats.getMagicDamageBonus() != 0)
             .info("Extra magic damage added to attacks. Bypasses physical armor. Affected by magic resistance.")
             .onChange(v -> { stats.setMagicDamageBonus(v); module.markDirty("Magic damage"); });
 
         magicDamageSlider = magicDamage;
 
-        magicDamageEnabledToggle = new EditorToggle("magicEnabled", "Enable Magic Damage", stats.getMagicDamageBonus() > 0)
+        magicDamageEnabledToggle = new EditorToggle("magicEnabled", "Enable Magic Damage", stats.getMagicDamageBonus() != 0)
             .source(dataSource)
             .tooltip("Add magic damage to attacks")
             .onChange(enabled -> {
@@ -461,6 +465,8 @@ public class WeaponModuleUI {
 
     private void createDamageTypeComponents(SourceBadge.Source dataSource) {
         WeaponStats stats = core.getStats();
+
+        damageAttributeSection = new DamageAttributeSection("damageAttributes");
 
         vsUndeadSlider = new EditorSlider("vsUndead", "Damage vs Undead", 0f, 200f, 0f)
             .step(1f)
@@ -504,6 +510,7 @@ public class WeaponModuleUI {
     }
 
     public List<EditorSection> getDamageTypeSections() {
+        DamageAttributeSection damageAttributes = Objects.requireNonNull(damageAttributeSection, "damageAttributeSection");
         EditorSlider vsUndead = Objects.requireNonNull(vsUndeadSlider, "vsUndeadSlider");
         EditorSlider vsArthro = Objects.requireNonNull(vsArthroSlider, "vsArthroSlider");
         EditorSlider vsPlayers = Objects.requireNonNull(vsPlayersSlider, "vsPlayersSlider");
@@ -513,6 +520,7 @@ public class WeaponModuleUI {
         EditorSlider magicDamage = Objects.requireNonNull(magicDamageSlider, "magicDamageSlider");
         EditorSlider trueDamage = Objects.requireNonNull(trueDamageSlider, "trueDamageSlider");
         return withDps(List.of(
+            damageAttributes,
             new SliderSectionAdapter(vsUndead),
             new SliderSectionAdapter(vsArthro),
             new SliderSectionAdapter(vsPlayers),
@@ -549,15 +557,6 @@ public class WeaponModuleUI {
             .info("Current damage taken. 0 = full durability. When this reaches max durability, item breaks.")
             .onChange(v -> { stats.setCurrentDamage(Math.round(v)); module.markDirty("Current damage"); });
 
-        repairCostSlider = new EditorSlider("repair", "Repair Cost", 0f, 100f, 0f)
-            .step(1f)
-            .format("%.0f")
-            .trackColor(DesignTokens.SliderColors.DURABILITY)
-            .showInput(true)
-            .source(dataSource)
-            .info("XP level cost to repair/rename in anvil. Increases each repair. Max 39 before 'Too Expensive'.")
-            .onChange(v -> { stats.setRepairCost(Math.round(v)); module.markDirty("Repair cost"); });
-
         unbreakableToggle = new EditorToggle("unbreakable", "Unbreakable", stats.isUnbreakable())
             .source(dataSource)
             .tooltip("When enabled, item never loses durability. Sets minecraft:unbreakable component.")
@@ -572,12 +571,10 @@ public class WeaponModuleUI {
     public List<EditorSection> getDurabilitySections() {
         EditorSlider maxDurability = Objects.requireNonNull(maxDurabilitySlider, "maxDurabilitySlider");
         EditorSlider currentDamage = Objects.requireNonNull(currentDamageSlider, "currentDamageSlider");
-        EditorSlider repairCost = Objects.requireNonNull(repairCostSlider, "repairCostSlider");
         EditorToggle unbreakable = Objects.requireNonNull(unbreakableToggle, "unbreakableToggle");
         return List.of(
             new SliderSectionAdapter(maxDurability),
             new SliderSectionAdapter(currentDamage),
-            new SliderSectionAdapter(repairCost),
             new ToggleSectionAdapter(unbreakable)
         );
     }
@@ -602,7 +599,7 @@ public class WeaponModuleUI {
             .trackColor(DesignTokens.SliderColors.DURABILITY)
             .onChange(v -> { stats.setToolDamagePerBlock(Math.round(v)); module.markDirty("Tool damage per block"); });
 
-        int maxRules = 3;
+        int maxRules = com.devmod.network.PacketValidator.MAX_TOOL_RULES;
         for (int i = 0; i < maxRules; i++) {
             WeaponStats.ToolRuleData data = (stats.toolRules.size() > i)
                 ? stats.toolRules.get(i)
@@ -698,7 +695,7 @@ public class WeaponModuleUI {
         List<ValueComparison> comparisons = new ArrayList<>();
         CompoundTag customTag = core.getCustomDataTag(item);
         boolean hasSpecific = customTag.contains(WeaponModuleCore.NBT_KEY);
-        boolean hasGlobal = WeaponConfigManager.hasGlobalConfig(item.getItem());
+        boolean hasGlobal = WeaponConfigHandler.hasGlobalConfig(item.getItem());
         boolean hasServerStats = hasSpecific || hasGlobal;
         WeaponStats serverStats = core.resolveServerStats(customTag, item);
         WeaponStats baseline = core.getOriginalStats() == null ? new WeaponStats() : core.getOriginalStats();
@@ -799,6 +796,385 @@ public class WeaponModuleUI {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // DAMAGE ATTRIBUTE SECTION (Modpack-driven)
+    // ═══════════════════════════════════════════════════════════════
+
+    class DamageAttributeSection implements EditorSection.CustomSection {
+        private static final int HEADER_HEIGHT = EditorDimensions.SECTION_HEADER_HEIGHT;
+        private static final int TEXT_INSET_X = 8;
+        private static final int SUGGESTION_ROW_HEIGHT = 14;
+        private static final int MAX_SUGGESTIONS = 6;
+        private static final int ACTION_ROW_HEIGHT = 14;
+        private static final int ACTION_PADDING_X = 6;
+        private static final int ENTRY_ROW_HEIGHT = 16;
+        private static final int ENTRY_ROW_GAP = 4;
+        private static final int ENTRY_REMOVE_WIDTH = 28;
+        private static final int LIST_EMPTY_HEIGHT = 14;
+        private static final int BOTTOM_PADDING = 8;
+        private static final String EMPTY_LIST_TEXT = "No custom attributes yet";
+
+        private final String id;
+        private final EditorTextField attributeField;
+        private final EditorSlider valueSlider;
+        private final List<AttributeOption> allOptions = new ArrayList<>();
+        private final List<AttributeOption> filteredOptions = new ArrayList<>();
+        private final List<SuggestionHit> suggestionHits = new ArrayList<>();
+        private final List<EntryHit> entryHits = new ArrayList<>();
+        private String searchQuery = "";
+        private AttributeModifier.Operation operation = AttributeModifier.Operation.ADD_VALUE;
+        private ResponsiveLayout.Rect operationBounds = ResponsiveLayout.Rect.EMPTY;
+        private ResponsiveLayout.Rect actionBounds = ResponsiveLayout.Rect.EMPTY;
+        private int selectedIndex = -1;
+
+        DamageAttributeSection(String id) {
+            this.id = id;
+            attributeField = new EditorTextField(id + "_attr", "Attribute")
+                .placeholder("Attribute id (e.g. irons_spellbooks:spell_power)")
+                .maxLength(80)
+                .onChange(this::onQueryChanged)
+                .onSubmit(this::applyEntry);
+            valueSlider = new EditorSlider(id + "_value", "Attribute Value", -50f, 50f, 0f)
+                .step(0.1f)
+                .format("%.2f")
+                .trackColor(DesignTokens.SliderColors.DAMAGE)
+                .showInput(true)
+                .onChange(v -> {});
+            loadAttributes();
+            updateFilter();
+        }
+
+        void syncFromStats() {
+            if (attributeField.isFocused()) {
+                updateFilter();
+                return;
+            }
+            selectedIndex = -1;
+            operation = AttributeModifier.Operation.ADD_VALUE;
+            attributeField.setValue("");
+            valueSlider.setValue(0f);
+            updateFilter();
+        }
+
+        @Override
+        public String getId() { return id; }
+
+        @Override
+        public String getLabel() { return "Damage Attributes"; }
+
+        @Override
+        public int getHeight() {
+            int height = HEADER_HEIGHT + DesignTokens.Spacing.SM;
+            height += attributeField.calculateHeight();
+            int suggestions = getSuggestionCount();
+            if (suggestions > 0) {
+                height += suggestions * SUGGESTION_ROW_HEIGHT + DesignTokens.Spacing.SM;
+            } else {
+                height += DesignTokens.Spacing.SM;
+            }
+            height += ACTION_ROW_HEIGHT + DesignTokens.Spacing.SM;
+            height += valueSlider.calculateHeight() + DesignTokens.Spacing.SM;
+            int listSize = core.getStats().getCustomAttributeModifiers().size();
+            if (listSize == 0) {
+                height += LIST_EMPTY_HEIGHT;
+            } else {
+                height += listSize * ENTRY_ROW_HEIGHT + Math.max(0, listSize - 1) * ENTRY_ROW_GAP;
+            }
+            return height + BOTTOM_PADDING;
+        }
+
+        @Override
+        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
+            var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
+            int x = bounds.x();
+            int y = bounds.y();
+            int width = bounds.width();
+
+            // Header
+            graphics.fill(x, y, x + width, y + HEADER_HEIGHT, DesignTokens.Background.HEADER());
+            graphics.drawString(font, "Damage Attributes", x + TEXT_INSET_X,
+                y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.TITLE(), false);
+            int activeCount = core.getStats().getCustomAttributeModifiers().size();
+            String countText = "(" + activeCount + " active)";
+            int countWidth = font.width(countText);
+            graphics.drawString(font, countText, x + width - countWidth - TEXT_INSET_X,
+                y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.MUTED(), false);
+            y += HEADER_HEIGHT + DesignTokens.Spacing.SM;
+
+            attributeField.render(graphics, x + TEXT_INSET_X, y, width - TEXT_INSET_X * 2, mouseX, mouseY);
+            y += attributeField.calculateHeight();
+
+            suggestionHits.clear();
+            int suggestionCount = getSuggestionCount();
+            if (suggestionCount > 0) {
+                int listY = y;
+                for (int i = 0; i < suggestionCount; i++) {
+                    AttributeOption option = filteredOptions.get(i);
+                    ResponsiveLayout.Rect row = new ResponsiveLayout.Rect(
+                        x + TEXT_INSET_X, listY, width - TEXT_INSET_X * 2, SUGGESTION_ROW_HEIGHT);
+                    boolean hovered = row.contains(mouseX, mouseY);
+                    int bg = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT();
+                    graphics.fill(row.x(), row.y(), row.right(), row.bottom(), bg);
+                    graphics.drawString(font, option.display(), row.x() + 4, row.y() + 3,
+                        DesignTokens.Text.PRIMARY(), false);
+                    suggestionHits.add(new SuggestionHit(row, option));
+                    listY += SUGGESTION_ROW_HEIGHT;
+                }
+                y = listY + DesignTokens.Spacing.SM;
+            } else {
+                y += DesignTokens.Spacing.SM;
+            }
+
+            String opLabel = operationLabel();
+            String actionLabel = selectedIndex >= 0 ? "Update" : "Add";
+            int actionWidth = Math.max(50, font.width(actionLabel) + ACTION_PADDING_X * 2);
+            int opWidth = Math.max(90, font.width(opLabel) + ACTION_PADDING_X * 2);
+            int labelWidth = font.width("Operation") + 6;
+            int opX = x + TEXT_INSET_X + labelWidth;
+            int actionX = x + width - TEXT_INSET_X - actionWidth;
+            int opY = y;
+
+            graphics.drawString(font, "Operation", x + TEXT_INSET_X, opY + 3, DesignTokens.Text.MUTED(), false);
+            operationBounds = new ResponsiveLayout.Rect(opX, opY, opWidth, ACTION_ROW_HEIGHT);
+            renderMiniButton(graphics, font, operationBounds, opLabel, operationBounds.contains(mouseX, mouseY), true);
+            actionBounds = new ResponsiveLayout.Rect(actionX, opY, actionWidth, ACTION_ROW_HEIGHT);
+            renderMiniButton(graphics, font, actionBounds, actionLabel, actionBounds.contains(mouseX, mouseY), true);
+            y += ACTION_ROW_HEIGHT + DesignTokens.Spacing.SM;
+
+            valueSlider.render(graphics, x + TEXT_INSET_X, y, width - TEXT_INSET_X * 2, mouseX, mouseY);
+            y += valueSlider.calculateHeight() + DesignTokens.Spacing.SM;
+
+            entryHits.clear();
+            List<WeaponStats.AttributeModifierData> entries = core.getStats().getCustomAttributeModifiers();
+            if (entries.isEmpty()) {
+                graphics.drawString(font, EMPTY_LIST_TEXT, x + TEXT_INSET_X, y,
+                    DesignTokens.Text.MUTED(), false);
+                return;
+            }
+
+            for (int i = 0; i < entries.size(); i++) {
+                WeaponStats.AttributeModifierData entry = entries.get(i);
+                ResponsiveLayout.Rect row = new ResponsiveLayout.Rect(
+                    x + TEXT_INSET_X, y, width - TEXT_INSET_X * 2, ENTRY_ROW_HEIGHT);
+                boolean hovered = row.contains(mouseX, mouseY);
+                int bg = (i == selectedIndex)
+                    ? DesignTokens.Background.ACTIVE()
+                    : (hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT());
+                graphics.fill(row.x(), row.y(), row.right(), row.bottom(), bg);
+                String opText = operationLabel(entry.operation);
+                String valueText = formatValue(entry.amount);
+                String line = entry.attributeId + " " + opText + " " + valueText;
+                graphics.drawString(font, line, row.x() + 4, row.y() + 3, DesignTokens.Text.PRIMARY(), false);
+                ResponsiveLayout.Rect remove = new ResponsiveLayout.Rect(
+                    row.right() - ENTRY_REMOVE_WIDTH, row.y(), ENTRY_REMOVE_WIDTH, ENTRY_ROW_HEIGHT);
+                renderMiniButton(graphics, font, remove, "X", remove.contains(mouseX, mouseY), true);
+                entryHits.add(new EntryHit(row, remove, i));
+                y += ENTRY_ROW_HEIGHT + ENTRY_ROW_GAP;
+            }
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (button != 0) return false;
+
+            for (SuggestionHit hit : suggestionHits) {
+                if (hit.bounds().contains(mouseX, mouseY)) {
+                    attributeField.setValue(hit.option().id());
+                    attributeField.setFocused(true);
+                    onQueryChanged(hit.option().id());
+                    return true;
+                }
+            }
+
+            if (operationBounds.contains(mouseX, mouseY)) {
+                cycleOperation();
+                return true;
+            }
+            if (actionBounds.contains(mouseX, mouseY)) {
+                applyEntry();
+                return true;
+            }
+
+            for (EntryHit hit : entryHits) {
+                if (hit.removeBounds().contains(mouseX, mouseY)) {
+                    removeEntry(hit.index());
+                    return true;
+                }
+                if (hit.rowBounds().contains(mouseX, mouseY)) {
+                    selectEntry(hit.index());
+                    return true;
+                }
+            }
+
+            if (attributeField.mouseClicked(mouseX, mouseY, button)) return true;
+            return valueSlider.mouseClicked(mouseX, mouseY, button);
+        }
+
+        @Override
+        public boolean mouseReleased(double mouseX, double mouseY, int button) {
+            return valueSlider.mouseReleased(mouseX, mouseY, button);
+        }
+
+        @Override
+        public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+            return valueSlider.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        }
+
+        @Override
+        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+            return attributeField.keyPressed(keyCode, scanCode, modifiers)
+                || valueSlider.keyPressed(keyCode, scanCode, modifiers);
+        }
+
+        @Override
+        public boolean charTyped(char chr, int modifiers) {
+            return attributeField.charTyped(chr, modifiers)
+                || valueSlider.charTyped(chr, modifiers);
+        }
+
+        private void loadAttributes() {
+            allOptions.clear();
+            for (var entry : BuiltInRegistries.ATTRIBUTE.entrySet()) {
+                ResourceLocation id = entry.getKey().location();
+                Attribute attr = entry.getValue();
+                String descId = attr.getDescriptionId();
+                String display = Component.translatable(descId).getString();
+                if (display.equals(descId)) {
+                    display = id.toString();
+                }
+                String full = display + " (" + id + ")";
+                allOptions.add(new AttributeOption(id.toString(), full,
+                    (display + " " + id).toLowerCase(Locale.ROOT)));
+            }
+            allOptions.sort((a, b) -> a.id.compareToIgnoreCase(b.id));
+        }
+
+        private void onQueryChanged(String text) {
+            searchQuery = text == null ? "" : text.trim().toLowerCase(Locale.ROOT);
+            updateFilter();
+        }
+
+        private void updateFilter() {
+            filteredOptions.clear();
+            if (searchQuery.isEmpty()) {
+                return;
+            }
+            for (AttributeOption option : allOptions) {
+                if (option.search().contains(searchQuery)) {
+                    filteredOptions.add(option);
+                }
+            }
+        }
+
+        private int getSuggestionCount() {
+            if (!attributeField.isFocused()) return 0;
+            if (filteredOptions.isEmpty()) return 0;
+            return Math.min(filteredOptions.size(), MAX_SUGGESTIONS);
+        }
+
+        private void cycleOperation() {
+            operation = switch (operation) {
+                case ADD_MULTIPLIED_BASE -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
+                case ADD_MULTIPLIED_TOTAL -> AttributeModifier.Operation.ADD_VALUE;
+                default -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+            };
+        }
+
+        private String operationLabel() {
+            return switch (operation) {
+                case ADD_MULTIPLIED_BASE -> "Multiply Base";
+                case ADD_MULTIPLIED_TOTAL -> "Multiply Total";
+                default -> "Add";
+            };
+        }
+
+        private String operationLabel(int op) {
+            return switch (op) {
+                case 1 -> "Multiply Base";
+                case 2 -> "Multiply Total";
+                default -> "Add";
+            };
+        }
+
+        private void applyEntry() {
+            String raw = attributeField.getValue();
+            String trimmed = raw == null ? "" : raw.trim();
+            if (trimmed.isEmpty()) {
+                module.reportStatusPublic("Attribute id required", DesignTokens.Semantic.WARNING);
+                return;
+            }
+            String normalized = trimmed.contains(":") ? trimmed : "minecraft:" + trimmed;
+            ResourceLocation attrId = ResourceLocation.tryParse(normalized);
+            if (attrId == null || !BuiltInRegistries.ATTRIBUTE.containsKey(attrId)) {
+                module.reportStatusPublic("Unknown attribute: " + normalized, DesignTokens.Semantic.ERROR);
+                return;
+            }
+            attributeField.setValue(attrId.toString());
+            onQueryChanged(attrId.toString());
+            double value = valueSlider.getValue();
+            int op = switch (operation) {
+                case ADD_MULTIPLIED_BASE -> 1;
+                case ADD_MULTIPLIED_TOTAL -> 2;
+                default -> 0;
+            };
+            WeaponStats.AttributeModifierData data = new WeaponStats.AttributeModifierData(attrId.toString(), value, op);
+            List<WeaponStats.AttributeModifierData> entries = core.getStats().getCustomAttributeModifiers();
+            if (selectedIndex >= 0 && selectedIndex < entries.size()) {
+                entries.set(selectedIndex, data);
+            } else {
+                entries.add(data);
+                selectedIndex = entries.size() - 1;
+            }
+            module.markDirty("Custom attribute");
+        }
+
+        private void selectEntry(int index) {
+            List<WeaponStats.AttributeModifierData> entries = core.getStats().getCustomAttributeModifiers();
+            if (index < 0 || index >= entries.size()) return;
+            WeaponStats.AttributeModifierData data = entries.get(index);
+            selectedIndex = index;
+            attributeField.setValue(data.attributeId);
+            valueSlider.setValue((float) data.amount);
+            operation = switch (data.operation) {
+                case 1 -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+                case 2 -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
+                default -> AttributeModifier.Operation.ADD_VALUE;
+            };
+            onQueryChanged(data.attributeId);
+        }
+
+        private void removeEntry(int index) {
+            List<WeaponStats.AttributeModifierData> entries = core.getStats().getCustomAttributeModifiers();
+            if (index < 0 || index >= entries.size()) return;
+            entries.remove(index);
+            if (selectedIndex == index) {
+                selectedIndex = -1;
+            } else if (selectedIndex > index) {
+                selectedIndex -= 1;
+            }
+            module.markDirty("Custom attribute");
+        }
+
+        private void renderMiniButton(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                      ResponsiveLayout.Rect rect, String label, boolean hovered, boolean enabled) {
+            int bg = !enabled ? DesignTokens.Button.DISABLED()
+                : (hovered ? DesignTokens.Button.HOVER() : DesignTokens.Button.NORMAL());
+            graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), bg);
+            int border = hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT();
+            AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), border);
+            int textColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.DISABLED();
+            int textX = rect.x() + (rect.width() - font.width(label)) / 2;
+            int textY = rect.y() + (rect.height() - 8) / 2;
+            graphics.drawString(font, label, textX, textY, textColor, false);
+        }
+
+        private record AttributeOption(String id, String display, String search) {}
+
+        private record SuggestionHit(ResponsiveLayout.Rect bounds, AttributeOption option) {}
+
+        private record EntryHit(ResponsiveLayout.Rect rowBounds, ResponsiveLayout.Rect removeBounds, int index) {}
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // DPS PREVIEW SECTION
     // ═══════════════════════════════════════════════════════════════
 
@@ -853,7 +1229,10 @@ public class WeaponModuleUI {
                 .placeholder("minecraft:mineable/pickaxe")
                 .maxLength(64)
                 .onChange(val -> {
-                    data.blockTag = val == null ? "" : val.trim();
+                    String raw = val == null ? "" : val.trim();
+                    boolean isTag = raw.startsWith("#");
+                    data.blockTag = isTag ? raw.substring(1) : raw;
+                    data.isTag = isTag;
                     sync();
                     module.markDirty("Tool rule tag");
                 });
@@ -877,7 +1256,8 @@ public class WeaponModuleUI {
 
         void setData(WeaponStats.ToolRuleData newData) {
             data = newData == null ? new WeaponStats.ToolRuleData() : newData.copy();
-            tagField.setValue(data.blockTag == null ? "" : data.blockTag);
+            String tagValue = data.blockTag == null ? "" : data.blockTag;
+            tagField.setValue(data.isTag && !tagValue.isBlank() ? "#" + tagValue : tagValue);
             speedSlider.setValue(data.speed);
             dropsToggle.setValue(data.correctForDrops == null ? true : data.correctForDrops);
         }
@@ -946,7 +1326,8 @@ public class WeaponModuleUI {
 
         @Override
         public boolean charTyped(char chr, int modifiers) {
-            return tagField.charTyped(chr, modifiers);
+            return tagField.charTyped(chr, modifiers)
+                || speedSlider.charTyped(chr, modifiers);
         }
     }
 
@@ -984,7 +1365,6 @@ public class WeaponModuleUI {
 
         if (maxDurabilitySlider != null) maxDurabilitySlider.setValue(stats.getMaxDurability());
         if (currentDamageSlider != null) currentDamageSlider.setValue(stats.getCurrentDamage());
-        if (repairCostSlider != null) repairCostSlider.setValue(stats.getRepairCost());
         if (unbreakableToggle != null) unbreakableToggle.setValue(stats.isUnbreakable());
         if (clearToolRulesToggle != null) clearToolRulesToggle.setValue(stats.isClearToolRules());
         if (toolDefaultSpeedSlider != null) toolDefaultSpeedSlider.setValue(stats.getToolDefaultMiningSpeed());
@@ -997,34 +1377,37 @@ public class WeaponModuleUI {
             toolRuleSections.get(i).setData(data);
         }
 
+        if (damageAttributeSection != null) {
+            damageAttributeSection.syncFromStats();
+        }
+
         applySourceLabels();
     }
 
     private void applySourceLabels() {
-        String prefix = core.getSourcePrefix();
-        applySourceLabel(attackDamageSlider, prefix);
-        applySourceLabel(attackSpeedSlider, prefix);
-        applySourceLabel(attackReachSlider, prefix);
-        applySourceLabel(attackKnockbackSlider, prefix);
-        applySourceLabel(damageBonusSlider, prefix);
-        applySourceLabel(sweepingRatioSlider, prefix);
-        applySourceLabel(armorPenetrationSlider, prefix);
-        applySourceLabel(baseDamageBonusSlider, prefix);
-        applySourceLabel(armorShredSlider, prefix);
-        applySourceLabel(critChanceSlider, prefix);
-        applySourceLabel(critDamageSlider, prefix);
-        applySourceLabel(lifestealSlider, prefix);
-        applySourceLabel(fireDamageSlider, prefix);
-        applySourceLabel(magicDamageSlider, prefix);
-        applySourceLabel(trueDamageSlider, prefix);
-        applySourceLabel(vsUndeadSlider, prefix);
-        applySourceLabel(vsArthroSlider, prefix);
-        applySourceLabel(vsPlayersSlider, prefix);
+        applySourceLabel(attackDamageSlider);
+        applySourceLabel(attackSpeedSlider);
+        applySourceLabel(attackReachSlider);
+        applySourceLabel(attackKnockbackSlider);
+        applySourceLabel(damageBonusSlider);
+        applySourceLabel(sweepingRatioSlider);
+        applySourceLabel(armorPenetrationSlider);
+        applySourceLabel(baseDamageBonusSlider);
+        applySourceLabel(armorShredSlider);
+        applySourceLabel(critChanceSlider);
+        applySourceLabel(critDamageSlider);
+        applySourceLabel(lifestealSlider);
+        applySourceLabel(fireDamageSlider);
+        applySourceLabel(magicDamageSlider);
+        applySourceLabel(trueDamageSlider);
+        applySourceLabel(vsUndeadSlider);
+        applySourceLabel(vsArthroSlider);
+        applySourceLabel(vsPlayersSlider);
     }
 
-    private void applySourceLabel(@Nullable EditorSlider slider, String prefix) {
+    private void applySourceLabel(@Nullable EditorSlider slider) {
         if (slider == null) return;
         String label = slider.getLabel();
-        slider.setLabel(prefix + label.replaceFirst("^\\[[^]]+\\] ", ""));
+        slider.setLabel(label.replaceFirst("^\\[[^]]+\\] ", ""));
     }
 }

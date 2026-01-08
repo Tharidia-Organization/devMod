@@ -29,9 +29,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
 import com.devmod.components.ArmorComponents;
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.config.FuelConfigManager;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.config.GlobalMobConfigStorage;
 import com.devmod.mailbox.MailboxPermissions;
@@ -142,36 +140,16 @@ public class CommonModEvents {
             LOGGER.error("[DevMod] Failed to load GlobalMobConfigStorage", e);
         }
 
-        // Initialize ArmorConfigManager for custom armor stats
+        // Initialize ConfigHandlerRegistry (handles all config handlers including weapon stats)
         try {
             var serverConfigDir = event.getServer()
                 .getWorldPath(Objects.requireNonNull(LevelResource.ROOT))
-                .resolve("serverconfig")
-                .resolve("devmod");
-            ArmorConfigManager.initialize(serverConfigDir);
-            LOGGER.info("[DevMod] ArmorConfigManager initialized successfully");
+                .resolve("serverconfig");
+            com.devmod.config.handler.ConfigHandlerRegistry.registerAll();
+            com.devmod.config.handler.ConfigHandlerRegistry.initializeAll(serverConfigDir);
+            LOGGER.info("[DevMod] ConfigHandlerRegistry initialized successfully");
         } catch (Exception e) {
-            LOGGER.error("[DevMod] Failed to initialize ArmorConfigManager", e);
-        }
-
-        // Initialize WeaponConfigManager for weapon stats persistence
-        try {
-            var serverConfigDir = event.getServer()
-                .getWorldPath(Objects.requireNonNull(LevelResource.ROOT))
-                .resolve("serverconfig")
-                .resolve("devmod");
-            WeaponConfigManager.initialize(serverConfigDir);
-            LOGGER.info("[DevMod] WeaponConfigManager initialized successfully");
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Failed to initialize WeaponConfigManager", e);
-        }
-
-        // Initialize FuelConfigManager for fuel stats persistence
-        try {
-            FuelConfigManager.initialize();
-            LOGGER.info("[DevMod] FuelConfigManager initialized successfully");
-        } catch (Exception e) {
-            LOGGER.error("[DevMod] Failed to initialize FuelConfigManager", e);
+            LOGGER.error("[DevMod] Failed to initialize ConfigHandlerRegistry", e);
         }
 
         // NOTE: WeaponTypeDetector.reloadWeaponLists() is called client-side only
@@ -516,17 +494,17 @@ public class CommonModEvents {
                 logComponentAccessFailure("Weapon custom data read", e);
             }
             try {
-                hasDevmodData = hasDevmodData || (com.devmod.config.WeaponConfigManager.loadFromAttributeModifiers(stack) != null);
+                hasDevmodData = hasDevmodData || (WeaponConfigHandler.loadFromAttributeModifiers(stack) != null);
             } catch (Exception e) {
                 logComponentAccessFailure("Weapon attribute modifier load", e);
             }
 
             if (hasDevmodData) {
                 try {
-                    com.devmod.stats.WeaponStats stats = com.devmod.config.WeaponConfigManager.getStats(stack);
+                    com.devmod.stats.WeaponStats stats = WeaponConfigHandler.INSTANCE.getStats(stack);
                     // Clamp and reapply (ensures modifiers/tool clear) and log if modifiers exceeded limits
-                    stats = com.devmod.config.WeaponConfigManager.clampStats(stats);
-                    com.devmod.config.WeaponConfigManager.setSpecificStats(stack, stats);
+                    stats = WeaponConfigHandler.clampStats(stats);
+                    WeaponConfigHandler.INSTANCE.setSpecificStats(stack, stats);
                     LOGGER.debug("[DevMod] Sanitized weapon stats on equip for {}", stack.getItem());
                     // Warn if any modifier ids are non-DevMod for tracked attributes
                     try {
@@ -570,18 +548,18 @@ public class CommonModEvents {
             ArmorStats stats = null;
             if (hasDevmodArmor) {
                 try {
-                    stats = ArmorConfigManager.getStats(stack);
+                    stats = com.devmod.config.handler.impl.ArmorConfigHandler.INSTANCE.getStats(stack);
                 } catch (Exception e) {
                     LOGGER.warn("[DevMod] Failed to read armor stats on equip: {}", e.getMessage());
                 }
-            } else if (ArmorConfigManager.hasGlobalConfig(stack.getItem())) {
-                stats = ArmorConfigManager.getGlobalStats(stack.getItem());
+            } else if (com.devmod.config.handler.impl.ArmorConfigHandler.hasGlobalConfig(stack.getItem())) {
+                stats = com.devmod.config.handler.impl.ArmorConfigHandler.getItemGlobalStats(stack.getItem());
             }
 
             if (stats != null) {
                 try {
-                    stats = ArmorConfigManager.clampStats(stats);
-                    ArmorConfigManager.setSpecificStats(stack, stats);
+                    stats = com.devmod.config.handler.impl.ArmorConfigHandler.clampStats(stats);
+                    com.devmod.config.handler.impl.ArmorConfigHandler.INSTANCE.setSpecificStats(stack, stats);
                     LOGGER.debug("[DevMod] Sanitized armor stats on equip for {}", stack.getItem());
                     try {
                         var mods = stack.getOrDefault(
@@ -631,9 +609,9 @@ public class CommonModEvents {
         if (!hasDevmodData) return;
 
         try {
-            com.devmod.stats.WeaponStats stats = com.devmod.config.WeaponConfigManager.getStats(stack);
-            stats = com.devmod.config.WeaponConfigManager.clampStats(stats);
-            com.devmod.config.WeaponConfigManager.setSpecificStats(stack, stats);
+            com.devmod.stats.WeaponStats stats = WeaponConfigHandler.INSTANCE.getStats(stack);
+            stats = WeaponConfigHandler.clampStats(stats);
+            WeaponConfigHandler.INSTANCE.setSpecificStats(stack, stats);
             // If clear tool rules is set, ensure no extra speed modifiers are added here; vanilla will use default
         } catch (Exception e) {
             LOGGER.debug("[DevMod] BreakSpeed sanitize failed: {}", e.getMessage());
@@ -662,7 +640,7 @@ public class CommonModEvents {
         }
         if (!hasDevmodData) return;
         try {
-            com.devmod.stats.WeaponStats stats = com.devmod.config.WeaponConfigManager.getStats(stack);
+            com.devmod.stats.WeaponStats stats = WeaponConfigHandler.INSTANCE.getStats(stack);
             if (stats.isClearToolRules()) {
                 // Remove any custom tool component; vanilla drop logic will apply
                 stack.remove(Objects.requireNonNull(net.minecraft.core.component.DataComponents.TOOL));

@@ -81,8 +81,8 @@ public class ModeControllerTest {
 
         controller.setGlobalMode(true);
 
-        assertTrue(controller.isGlobalMode());
-        assertTrue(state.isGlobalMode());
+        assertFalse(controller.isGlobalMode());
+        assertFalse(state.isGlobalMode());
     }
 
     @Test
@@ -90,7 +90,7 @@ public class ModeControllerTest {
         state.setGlobalMode(false);
 
         controller.toggleGlobalMode();
-        assertTrue(controller.isGlobalMode());
+        assertFalse(controller.isGlobalMode());
 
         controller.toggleGlobalMode();
         assertFalse(controller.isGlobalMode());
@@ -104,7 +104,7 @@ public class ModeControllerTest {
 
         state.setPreviewMode(false);
         state.setGlobalMode(true);
-        assertEquals("Apply / Global", controller.getModeDescription());
+        assertEquals("Apply / Specific", controller.getModeDescription());
     }
 
     @Test

@@ -40,6 +40,8 @@ public class EnduranceEventTick {
     private static final int ARENA_CLEANUP_INTERVAL = 40; // Check every 2 seconds
     private static final int MOB_VALIDATION_INTERVAL = 60; // Check every 3 seconds
     private static final int MOB_AI_DEBUG_INTERVAL = 100; // Debug AI state every 5 seconds (just for monitoring)
+    private static final long DIMENSION_RECOVERY_COOLDOWN_MS = 2000;
+    private static final long CONFINEMENT_LOG_COOLDOWN_MS = 1000;
 
     // ═══════════════════════════════════════════════════════════════
     // MAIN TICK HANDLER
@@ -116,6 +118,7 @@ public class EnduranceEventTick {
                         }
 
                         if (tickCounter % 10 == 0) {
+                            ensurePlayerInQuestDimension(player, session);
                             enforceArenaConfinement(player);
                         }
                     }
@@ -633,13 +636,87 @@ public class EnduranceEventTick {
             if (bounds == null) {
                 return;
             }
-            if (!bounds.contains(Objects.requireNonNull(player.position()))) {
+            double x = player.getX();
+            double y = player.getY();
+            double z = player.getZ();
+            boolean outsideXZ = x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ;
+            double verticalSpan = bounds.maxY - bounds.minY;
+            boolean enforceY = verticalSpan >= 4.0;
+            boolean outsideY = enforceY && (y < (bounds.minY - 2.0) || y > (bounds.maxY + 2.0));
+
+            if (outsideXZ || outsideY) {
                 ArenaHandle handle = activeSession.getArenaHandle();
-                net.minecraft.core.BlockPos center = handle != null
-                    ? new net.minecraft.core.BlockPos(handle.center().x(), handle.center().y(), handle.center().z())
+                net.minecraft.core.BlockPos targetPos = handle != null && handle.playerSpawnPositions() != null
+                    && !handle.playerSpawnPositions().isEmpty()
+                    ? new net.minecraft.core.BlockPos(handle.primaryPlayerSpawn().x(),
+                        handle.primaryPlayerSpawn().y(),
+                        handle.primaryPlayerSpawn().z())
                     : arena.getCenter();
-                player.teleportTo(center.getX() + 0.5, center.getY(), center.getZ() + 0.5);
+                double targetY = enforceY ? targetPos.getY() : Math.max(targetPos.getY(), bounds.minY + 1.0);
+                long now = System.currentTimeMillis();
+                if (activeSession.canLogConfinement(now, CONFINEMENT_LOG_COOLDOWN_MS)) {
+                    activeSession.markConfinementLog(now);
+                    LOGGER.warn("[EnduranceQuest] Arena confinement teleport for {} (pos=({}, {}, {}), outsideXZ={}, outsideY={}, bounds=({}, {}, {})..({}, {}, {}), target=({}, {}, {}), wave={}, questId={})",
+                        player.getName().getString(),
+                        x, y, z,
+                        outsideXZ, outsideY,
+                        bounds.minX, bounds.minY, bounds.minZ,
+                        bounds.maxX, bounds.maxY, bounds.maxZ,
+                        targetPos.getX(), targetPos.getY(), targetPos.getZ(),
+                        activeSession.getQuest().getCurrentWave(),
+                        activeSession.getQuest().getQuestId());
+                }
+                player.teleportTo(targetPos.getX() + 0.5, targetY, targetPos.getZ() + 0.5);
             }
+        }
+    }
+
+    private static void ensurePlayerInQuestDimension(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session) {
+        if (player == null || session == null || !session.isInInstanceDimension()) {
+            return;
+        }
+        ArenaContext arena = session.getArena();
+        if (arena == null || arena.getLevel() == null) {
+            return;
+        }
+        if (player.level().dimension().equals(arena.getLevel().dimension())) {
+            return;
+        }
+        if (player.isDeadOrDying()) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (!session.canAttemptDimensionRecovery(now, DIMENSION_RECOVERY_COOLDOWN_MS)) {
+            return;
+        }
+        session.markDimensionRecoveryAttempt(now);
+
+        boolean awaitingRespawn = session.isAwaitingRespawnChoice() || session.isRespawnRequested();
+        LOGGER.warn("[EnduranceQuest] Player {} out of arena dimension during quest (state={}, awaitingRespawn={})",
+            player.getName().getString(), session.getQuest().getState(), awaitingRespawn);
+
+        if (awaitingRespawn) {
+            EnduranceQuestManager.INSTANCE.handleVanillaRespawn(player);
+            return;
+        }
+
+        UUID instanceId = session.getInstanceId();
+        if (instanceId == null) {
+            LOGGER.error("[EnduranceQuest] Cannot recover player {} - missing instance id",
+                player.getName().getString());
+            return;
+        }
+        boolean teleported = com.devmod.runtime.DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
+        if (teleported) {
+            EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
+                List.of(player), arena, session.getArenaHandle(), true);
+            EndurancePlayerStateManager.INSTANCE.applySafeWindowEffects(player, EnduranceQuestManager.SAFE_WINDOW_TICKS);
+            LOGGER.info("[EnduranceQuest] Recovered player {} to instance {}",
+                player.getName().getString(), instanceId);
+        } else {
+            LOGGER.error("[EnduranceQuest] Failed to recover player {} to instance {}",
+                player.getName().getString(), instanceId);
         }
     }
 

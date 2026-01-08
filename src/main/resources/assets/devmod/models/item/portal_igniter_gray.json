@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "devmod:item/portal_igniter_gray"
+  }
+}

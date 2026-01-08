@@ -142,6 +142,27 @@ public class RecipeModule extends AbstractEditorModule {
         return RecipeSyncPayload.add(recipe, isGlobal);
     }
 
+    @Nullable
+    public CraftingRecipeData buildCurrentRecipeSnapshot() {
+        if (item == null || item.isEmpty()) {
+            return null;
+        }
+        return requireCore().buildCurrentRecipe(item, recipeGrid);
+    }
+
+    public void applyRecipeSnapshot(@Nullable CraftingRecipeData recipe) {
+        if (recipe == null) {
+            return;
+        }
+        ensureDelegates();
+        recipeGrid.loadFromRecipe(recipe);
+        requireCore().loadFromRecipe(recipe);
+        RecipeModuleUI uiRef = ui;
+        if (uiRef != null) {
+            uiRef.syncFromCore();
+        }
+    }
+
     @Override
     public void applyPreview() {
         RecipeModuleCore coreRef = requireCore();

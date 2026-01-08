@@ -12,7 +12,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.combat.HitHelper;
 import com.devmod.combat.signature.SoulImprintManager;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.config.Config;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
@@ -370,7 +370,7 @@ public final class DamageCalculator {
             ItemStack armor = player.getItemBySlot(slot);
             if (armor.isEmpty() || !(armor.getItem() instanceof ArmorItem)) continue;
 
-            ArmorStats stats = ArmorConfigManager.getStats(armor);
+            ArmorStats stats = ArmorConfigHandler.INSTANCE.getStats(armor);
             if (stats.isDefault()) continue;
 
             totalReduction += stats.getReductionFor(isPhysical, isFire, isMagic, isExplosion, isProjectile);

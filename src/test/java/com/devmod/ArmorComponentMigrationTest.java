@@ -48,7 +48,7 @@ public class ArmorComponentMigrationTest {
         // Simulate migration by reading from NBT and setting component
         CustomData customData = helmet.get(java.util.Objects.requireNonNull(DataComponents.CUSTOM_DATA));
         if (customData != null && customData.contains("ArmorModStats")) {
-            ArmorStats migratedStats = ArmorStats.load(java.util.Objects.requireNonNull(customData.copyTag()).getCompound("ArmorModStats"));
+            ArmorStats migratedStats = ArmorStats.fromTag(java.util.Objects.requireNonNull(customData.copyTag()).getCompound("ArmorModStats"));
             CompoundTag migratedTag = new CompoundTag();
             migratedStats.save(migratedTag);
             helmet.set(armorComponent, java.util.Objects.requireNonNull(migratedTag.copy()));
@@ -56,7 +56,7 @@ public class ArmorComponentMigrationTest {
         
         // Verify component was set correctly
         CompoundTag componentTag = helmet.get(armorComponent);
-        ArmorStats componentStats = componentTag == null ? null : ArmorStats.load(componentTag.copy());
+        ArmorStats componentStats = componentTag == null ? null : ArmorStats.fromTag(componentTag.copy());
         assertNotNull(componentStats);
         assertEquals(0.3f, componentStats.getPhysicalReduction(), 0.001f);
         assertEquals(0.2f, componentStats.getFireReduction(), 0.001f);
@@ -86,7 +86,7 @@ public class ArmorComponentMigrationTest {
         
         // Retrieve component
         CompoundTag retrievedTag = chestplate.get(armorComponent);
-        ArmorStats retrieved = retrievedTag == null ? null : ArmorStats.load(retrievedTag.copy());
+        ArmorStats retrieved = retrievedTag == null ? null : ArmorStats.fromTag(retrievedTag.copy());
         
         assertNotNull(retrieved);
         assertEquals(0.4f, retrieved.getMagicReduction(), 0.001f);
@@ -106,7 +106,7 @@ public class ArmorComponentMigrationTest {
         // No component set
         CompoundTag statsTag = boots.get(armorComponent);
         
-        // Should be null (no component), fallback to defaults handled by ArmorConfigManager
+        // Should be null (no component), fallback to defaults handled by ArmorConfigHandler
         assertNull(statsTag);
     }
 }

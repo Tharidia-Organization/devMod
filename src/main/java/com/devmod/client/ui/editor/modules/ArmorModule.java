@@ -14,7 +14,7 @@ import com.devmod.client.ui.editor.AbstractEditorModule;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.ModuleTab;
 import com.devmod.client.ui.editor.core.EditorCache;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.network.ArmorStatsPayload;
 import com.devmod.stats.ArmorStats;
 
@@ -226,7 +226,7 @@ public class ArmorModule extends AbstractEditorModule {
         try {
             ItemStack copy = item.copy();
             // Leverage config manager to set both component and custom data
-            ArmorConfigManager.setSpecificStats(copy, core.getStats().copy());
+            ArmorConfigHandler.INSTANCE.setSpecificStats(copy, core.getStats().copy());
             setPreviewItem(copy);
         } catch (Exception ignored) {
             clearPreview();
@@ -238,6 +238,16 @@ public class ArmorModule extends AbstractEditorModule {
         ArmorModuleCore core = requireCore();
         ArmorModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
+        ui.updateComponentsFromStats();
+        clearDirty();
+    }
+
+    @Override
+    public void resetToDefaults() {
+        ArmorModuleUI ui = requireUi();
+        ItemStack baseline = originalItem.copy();
+        com.devmod.config.handler.impl.ArmorConfigHandler.clearItemSpecificStats(baseline);
+        setItem(baseline);
         ui.updateComponentsFromStats();
         clearDirty();
     }

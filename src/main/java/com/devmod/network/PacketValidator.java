@@ -43,6 +43,10 @@ public class PacketValidator {
     public static final double MAX_DAMAGE_VS = 2.0;
     public static final double MAX_TRUE_DAMAGE = 1.0;
     public static final double MAX_SWEEPING = 1.0;
+    public static final double MAX_GUARD_VALUE = 1_000_000.0;
+    public static final double MIN_GUARD_VALUE = -MAX_GUARD_VALUE;
+    public static final int MAX_GUARD_INT = 1_000_000;
+    public static final int MIN_GUARD_INT = -MAX_GUARD_INT;
     public static final int MAX_DURABILITY = 4096;
     public static final int MAX_REPAIR_COST = 1000;
     public static final double MAX_TOOL_SPEED = 128.0;
@@ -152,7 +156,7 @@ public class PacketValidator {
      * @return Clamped health value
      */
     public double validateHealth(double health) {
-        return clamp(health, MIN_ATTRIBUTE_VALUE, MAX_HEALTH);
+        return clamp(health, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     /**
@@ -162,7 +166,7 @@ public class PacketValidator {
      * @return Clamped damage value
      */
     public double validateDamage(double damage) {
-        return clamp(damage, MIN_ATTRIBUTE_VALUE, MAX_DAMAGE);
+        return clamp(damage, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     /**
@@ -172,7 +176,7 @@ public class PacketValidator {
      * @return Clamped follow range value
      */
     public double validateFollowRange(double followRange) {
-        return clamp(followRange, MIN_ATTRIBUTE_VALUE, MAX_FOLLOW_RANGE);
+        return clamp(followRange, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     /**
@@ -182,87 +186,91 @@ public class PacketValidator {
      * @return Clamped armor value
      */
     public double validateArmor(double armor) {
-        return clamp(armor, MIN_ATTRIBUTE_VALUE, MAX_ARMOR);
+        return clamp(armor, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
+    }
+
+    public double validateAttributeModifier(double value) {
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateArmorShred(double shredPercent) {
-        return clamp(shredPercent, MIN_ATTRIBUTE_VALUE, MAX_ARMOR_SHRED);
+        return clamp(shredPercent, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateDamageVs(double percent) {
-        return clamp(percent, MIN_ATTRIBUTE_VALUE, MAX_DAMAGE_VS);
+        return clamp(percent, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateTrueDamage(double percent) {
-        return clamp(percent, MIN_ATTRIBUTE_VALUE, MAX_TRUE_DAMAGE);
+        return clamp(percent, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateSweeping(double percent) {
-        return clamp(percent, MIN_ATTRIBUTE_VALUE, MAX_SWEEPING);
+        return clamp(percent, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public int validateDurability(int value) {
-        return (int) clamp(value, 0, MAX_DURABILITY);
+        return (int) clamp(value, MIN_GUARD_INT, MAX_GUARD_INT);
     }
 
     public int validateRepairCost(int value) {
-        return (int) clamp(value, 0, MAX_REPAIR_COST);
+        return (int) clamp(value, MIN_GUARD_INT, MAX_GUARD_INT);
     }
 
     public double validateToolSpeed(double speed) {
-        return clamp(speed, 0.0, MAX_TOOL_SPEED);
+        return clamp(speed, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public int validateToolDamagePerBlock(int value) {
-        return (int) clamp(value, 0, MAX_TOOL_DAMAGE_PER_BLOCK);
+        return (int) clamp(value, MIN_GUARD_INT, MAX_GUARD_INT);
     }
 
     public double validateRangedMultiplier(double value) {
-        return clamp(value, MIN_RANGED_MULT, MAX_RANGED_MULT);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateRangedSpeed(double value) {
-        return clamp(value, 0.0, MAX_RANGED_SPEED);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateRangedGravity(double value) {
-        return clamp(value, 0.0, MAX_RANGED_GRAVITY);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateRangedSpread(double value) {
-        return clamp(value, 0.0, MAX_RANGED_SPREAD);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateRangedBaseDamage(double value) {
-        return clamp(value, 0.0, MAX_RANGED_BASE_DAMAGE);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateArmorReduction(double value) {
-        return clamp(value, MIN_ARMOR_REDUCTION, MAX_ARMOR_REDUCTION);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateArmorBonus(double value) {
-        return clamp(value, MIN_ARMOR_BONUS, MAX_ARMOR_BONUS);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateToughnessBonus(double value) {
-        return clamp(value, MIN_TOUGHNESS_BONUS, MAX_TOUGHNESS_BONUS);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateKnockbackResistance(double value) {
-        return clamp(value, MIN_KNOCKBACK_RESIST, MAX_KNOCKBACK_RESIST);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateThornsPercent(double value) {
-        return clamp(value, MIN_THORNS_PERCENT, MAX_THORNS_PERCENT);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateShieldBlock(double value) {
-        return clamp(value, MIN_SHIELD_BLOCK, MAX_SHIELD_BLOCK);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     public double validateShieldRecovery(double value) {
-        return clamp(value, MIN_SHIELD_RECOVERY, MAX_SHIELD_RECOVERY);
+        return clamp(value, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     /**
@@ -272,14 +280,14 @@ public class PacketValidator {
      * @return Clamped multiplier value
      */
     public double validateMultiplier(double multiplier) {
-        return clamp(multiplier, MIN_MULTIPLIER, MAX_MULTIPLIER);
+        return clamp(multiplier, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     /**
      * Validate an attack speed value (allows negative speeds for vanilla weapons).
      */
     public double validateAttackSpeed(double speed) {
-        return clamp(speed, MIN_ATTACK_SPEED, MAX_MULTIPLIER);
+        return clamp(speed, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     /**
@@ -289,7 +297,7 @@ public class PacketValidator {
      * @return Clamped penetration value
      */
     public double validatePenetration(double penetration) {
-        return clamp(penetration, MIN_PENETRATION, MAX_PENETRATION);
+        return clamp(penetration, MIN_GUARD_VALUE, MAX_GUARD_VALUE);
     }
 
     /**
@@ -338,6 +346,24 @@ public class PacketValidator {
         }
 
         return itemId;
+    }
+
+    /**
+     * Validate a tag ID string (allows optional leading '#').
+     *
+     * @param tagId The tag ID to validate
+     * @return Normalized tag ID without '#' or null if invalid
+     */
+    @Nullable
+    public String validateTagId(String tagId) {
+        if (tagId == null || tagId.isEmpty()) return null;
+        String normalized = tagId.startsWith("#") ? tagId.substring(1) : tagId;
+        if (normalized.isEmpty()) return null;
+        if (normalized.length() > 256) return null;
+        if (!normalized.matches("^[a-z0-9_.-]+(:[a-z0-9_/.-]*)?$")) {
+            return null;
+        }
+        return normalized;
     }
 
     // ===== Rate Limiting =====

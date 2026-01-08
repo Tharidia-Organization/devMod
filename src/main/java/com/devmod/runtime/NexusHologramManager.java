@@ -2,9 +2,11 @@ package com.devmod.runtime;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,8 +15,7 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.client.ui.editor.core.DesignTokens;
-import com.devmod.config.Config;
+import com.google.errorprone.annotations.Immutable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -28,6 +29,9 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.config.Config;
+
 /**
  * Manages holographic text displays in the Nexus hub.
  * Includes leaderboards, zone stats, and server announcements.
@@ -40,6 +44,7 @@ public final class NexusHologramManager {
 
     public static final String HOLOGRAM_TAG = "devmod_nexus_hologram";
     private static final String HOLOGRAM_TYPE_PREFIX = "devmod_holo_";
+    private static final int MAX_LEADERBOARD_ENTRIES = 100;
 
     // NBT keys for TextDisplay configuration
     private static final String NBT_TEXT = "text";
@@ -51,21 +56,21 @@ public final class NexusHologramManager {
 
     // Hologram types
     public enum HologramType {
-        LEADERBOARD("leaderboard", new BlockPos(0, 4, 20)),
-        ZONE_STATS("zone_stats", new BlockPos(-15, 3, 0)),
-        ANNOUNCEMENTS("announcements", new BlockPos(0, 5, -15)),
-        WELCOME("welcome", new BlockPos(0, 3, 30));
+        LEADERBOARD("leaderboard", new Offset(0, 4, 20)),
+        ZONE_STATS("zone_stats", new Offset(-15, 3, 0)),
+        ANNOUNCEMENTS("announcements", new Offset(0, 5, -15)),
+        WELCOME("welcome", new Offset(0, 3, 30));
 
         private final String id;
-        private final BlockPos offset;
+        private final Offset offset;
 
-        HologramType(String id, BlockPos offset) {
+        HologramType(String id, Offset offset) {
             this.id = id;
             this.offset = offset;
         }
 
         public String id() { return id; }
-        public BlockPos offset() { return offset; }
+        public Offset offset() { return offset; }
     }
 
     // Active holograms by type
@@ -82,6 +87,9 @@ public final class NexusHologramManager {
             holograms.put(type, new ArrayList<>());
         }
     }
+
+    @Immutable
+    private record Offset(int x, int y, int z) {}
 
     /**
      * Initialize holograms in the Nexus hub.
@@ -110,7 +118,7 @@ public final class NexusHologramManager {
      * Create the welcome hologram at the spawn area.
      */
     private void createWelcomeHologram(@Nonnull ServerLevel level, @Nonnull BlockPos hubOrigin) {
-        BlockPos pos = nn(hubOrigin.offset(nn(HologramType.WELCOME.offset(), "offset")), "welcomePos");
+        BlockPos pos = nn(offset(hubOrigin, HologramType.WELCOME.offset()), "welcomePos");
         Vec3 spawnPos = nn(Vec3.atCenterOf(pos), "welcomeSpawnPos");
 
         List<Component> lines = nn(List.of(
@@ -128,7 +136,7 @@ public final class NexusHologramManager {
      * Create the leaderboard hologram.
      */
     private void createLeaderboardHologram(@Nonnull ServerLevel level, @Nonnull BlockPos hubOrigin) {
-        BlockPos pos = nn(hubOrigin.offset(nn(HologramType.LEADERBOARD.offset(), "offset")), "leaderboardPos");
+        BlockPos pos = nn(offset(hubOrigin, HologramType.LEADERBOARD.offset()), "leaderboardPos");
         Vec3 spawnPos = nn(Vec3.atCenterOf(pos), "leaderboardSpawnPos");
 
         List<Component> lines = new ArrayList<>();
@@ -150,7 +158,7 @@ public final class NexusHologramManager {
      * Create the zone stats hologram.
      */
     private void createZoneStatsHologram(@Nonnull ServerLevel level, @Nonnull BlockPos hubOrigin) {
-        BlockPos pos = nn(hubOrigin.offset(nn(HologramType.ZONE_STATS.offset(), "offset")), "zoneStatsPos");
+        BlockPos pos = nn(offset(hubOrigin, HologramType.ZONE_STATS.offset()), "zoneStatsPos");
         Vec3 spawnPos = nn(Vec3.atCenterOf(pos), "zoneStatsSpawnPos");
 
         List<Component> lines = nn(List.of(
@@ -173,7 +181,7 @@ public final class NexusHologramManager {
      * Create the announcements hologram.
      */
     private void createAnnouncementsHologram(@Nonnull ServerLevel level, @Nonnull BlockPos hubOrigin) {
-        BlockPos pos = nn(hubOrigin.offset(nn(HologramType.ANNOUNCEMENTS.offset(), "offset")), "announcementsPos");
+        BlockPos pos = nn(offset(hubOrigin, HologramType.ANNOUNCEMENTS.offset()), "announcementsPos");
         Vec3 spawnPos = nn(Vec3.atCenterOf(pos), "announcementsSpawnPos");
 
         List<Component> lines = nn(List.of(
@@ -381,7 +389,7 @@ public final class NexusHologramManager {
         entityIds.clear();
 
         // Create new hologram with updated content
-        BlockPos pos = nn(hubOrigin.offset(nn(type.offset(), "offset")), "pos");
+        BlockPos pos = nn(offset(hubOrigin, type.offset()), "pos");
         Vec3 spawnPos = nn(Vec3.atCenterOf(pos), "spawnPos");
         createHologram(level, nn(spawnPos, "spawnPos"), lines, type);
     }
@@ -404,7 +412,27 @@ public final class NexusHologramManager {
         LeaderboardEntry existing = leaderboardCache.get(playerName);
         if (existing == null || existing.wave < wave) {
             leaderboardCache.put(playerName, new LeaderboardEntry(playerName, wave));
+
+            // Evict lowest-scoring entries if over limit
+            if (leaderboardCache.size() > MAX_LEADERBOARD_ENTRIES) {
+                trimLeaderboardCache();
+            }
         }
+    }
+
+    /**
+     * Trim leaderboard cache to MAX_LEADERBOARD_ENTRIES, keeping highest wave entries.
+     */
+    private void trimLeaderboardCache() {
+        List<Map.Entry<String, LeaderboardEntry>> entries = new ArrayList<>(leaderboardCache.entrySet());
+        entries.sort((a, b) -> Integer.compare(b.getValue().wave(), a.getValue().wave()));
+
+        Set<String> toKeep = new HashSet<>();
+        for (int i = 0; i < MAX_LEADERBOARD_ENTRIES && i < entries.size(); i++) {
+            toKeep.add(entries.get(i).getKey());
+        }
+        leaderboardCache.keySet().retainAll(toKeep);
+        LOGGER.debug("[NexusHolograms] Trimmed leaderboard cache to {} entries", leaderboardCache.size());
     }
 
     /**
@@ -432,7 +460,11 @@ public final class NexusHologramManager {
             entity.discard();
         }
 
-        LOGGER.debug("[NexusHolograms] Cleaned up hologram entities");
+        // Clear caches to prevent memory leaks
+        leaderboardCache.clear();
+        announcements.clear();
+
+        LOGGER.debug("[NexusHolograms] Cleaned up hologram entities and caches");
     }
 
     // Helper methods for styled text
@@ -456,6 +488,10 @@ public final class NexusHologramManager {
      * Leaderboard entry record.
      */
     public record LeaderboardEntry(String name, int wave) {}
+
+    private static BlockPos offset(BlockPos origin, Offset offset) {
+        return origin.offset(offset.x(), offset.y(), offset.z());
+    }
 
     @Nonnull
     private static <T> T nn(T value, String context) {

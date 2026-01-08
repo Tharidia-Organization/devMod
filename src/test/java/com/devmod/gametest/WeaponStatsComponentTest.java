@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import com.devmod.TestBootstrap;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.stats.WeaponStats;
 
 import static java.util.Objects.requireNonNull;
@@ -31,9 +31,9 @@ public class WeaponStatsComponentTest {
         stats.setCritDamage(2.0f);
         stats.setDamageVsUndead(1.0f);
 
-        WeaponConfigManager.setSpecificStats(sword, stats);
+        WeaponConfigHandler.INSTANCE.setSpecificStats(sword, stats);
 
-        WeaponStats loaded = WeaponConfigManager.getStats(sword);
+        WeaponStats loaded = WeaponConfigHandler.INSTANCE.getStats(sword);
         assertEquals(12.5f, loaded.getAttackDamage(), 0.01f, "Attack damage mismatch");
         assertEquals(0.25f, loaded.getCritChance(), 0.001f, "Crit chance mismatch");
         assertEquals(1.0f, loaded.getDamageVsUndead(), 0.001f, "Vs undead mismatch");
@@ -44,7 +44,7 @@ public class WeaponStatsComponentTest {
         ItemStack pickaxe = new ItemStack(requireNonNull(Items.DIAMOND_PICKAXE));
         WeaponStats stats = new WeaponStats();
         stats.setClearToolRules(true);
-        WeaponConfigManager.setSpecificStats(pickaxe, stats);
+        WeaponConfigHandler.INSTANCE.setSpecificStats(pickaxe, stats);
         // If no exception is thrown, tool clear path executed; detailed component checks require MC runtime.
         assertTrue(true);
     }

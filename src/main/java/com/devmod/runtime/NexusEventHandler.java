@@ -1,9 +1,19 @@
 package com.devmod.runtime;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,20 +27,9 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-
 import com.devmod.DevMod;
 import com.devmod.config.Config;
 import com.devmod.runtime.network.NexusUiPayload;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 
 @EventBusSubscriber(modid = DevMod.MODID)
 public class NexusEventHandler {
@@ -74,6 +73,15 @@ public class NexusEventHandler {
         if (event.getEntity() instanceof ServerPlayer player) {
             if (Config.NEXUS_ENABLED.get()
                 && event.getTo().equals(NexusDimensionManager.NEXUS_DIMENSION)) {
+                // Check if player arrived via custom portal - skip spawn override
+                String customPortalTag = com.devmod.portal.block.CustomPortalBlock.TAG_CUSTOM_PORTAL_TELEPORT;
+                if (player.getPersistentData().getBoolean(customPortalTag)) {
+                    player.getPersistentData().remove(customPortalTag);
+                    com.devmod.DevMod.LOGGER.info("[Nexus] Player {} arrived via custom portal, skipping spawn override",
+                        player.getName().getString());
+                    playEntryCue(player);
+                    return;
+                }
                 NexusDimensionManager.INSTANCE.teleportPlayerToSpawn(player);
                 playEntryCue(player);
             }
@@ -108,13 +116,19 @@ public class NexusEventHandler {
         if (player.level().isClientSide()) {
             return;
         }
-        if (!Config.NEXUS_ENABLED.get() || !Config.NEXUS_RESTRICT_BUILDING.get()) {
+        if (!Config.NEXUS_ENABLED.get()) {
             return;
         }
         if (!player.level().dimension().equals(NexusDimensionManager.NEXUS_DIMENSION)) {
             return;
         }
         if (player.hasPermissions(2)) {
+            return;
+        }
+        if (Config.NEXUS_ALLOW_BUILD_ANYWHERE.get()) {
+            return;
+        }
+        if (!Config.NEXUS_RESTRICT_BUILDING.get()) {
             return;
         }
         if (NexusZoneLayout.isBuildAllowed(event.getPos(), NexusDimensionManager.getHubOrigin())) {
@@ -132,13 +146,19 @@ public class NexusEventHandler {
         if (player.level().isClientSide()) {
             return;
         }
-        if (!Config.NEXUS_ENABLED.get() || !Config.NEXUS_RESTRICT_BUILDING.get()) {
+        if (!Config.NEXUS_ENABLED.get()) {
             return;
         }
         if (!player.level().dimension().equals(NexusDimensionManager.NEXUS_DIMENSION)) {
             return;
         }
         if (player.hasPermissions(2)) {
+            return;
+        }
+        if (Config.NEXUS_ALLOW_BUILD_ANYWHERE.get()) {
+            return;
+        }
+        if (!Config.NEXUS_RESTRICT_BUILDING.get()) {
             return;
         }
         if (NexusZoneLayout.isBuildAllowed(event.getPos(), NexusDimensionManager.getHubOrigin())) {

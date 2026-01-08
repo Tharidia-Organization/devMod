@@ -1,5 +1,6 @@
 package com.devmod.client.ui.editor;
-
+import java.awt.Desktop;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -9,6 +10,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
+
+import com.google.gson.JsonElement;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -73,6 +76,8 @@ import com.devmod.client.ui.editor.modules.GeneralModule;
 import com.devmod.client.ui.editor.modules.RangedModule;
 import com.devmod.client.ui.editor.modules.UsableModule;
 import com.devmod.client.ui.editor.modules.WeaponModule;
+import com.devmod.client.ui.editor.snapshot.ItemEditorHistoryEntry;
+import com.devmod.client.ui.editor.snapshot.ItemEditorSnapshot;
 import com.devmod.client.ui.editor.state.ItemEditorState;
 import com.devmod.client.ui.editor.systems.CraftingInfoPanel;
 import com.devmod.client.ui.editor.systems.DebugPanel;
@@ -82,12 +87,13 @@ import com.devmod.client.ui.editor.systems.MultiEditManager;
 import com.devmod.client.ui.editor.systems.MultiEditPanel;
 import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
 import com.devmod.client.ui.editor.systems.TemplateOverlay;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.config.EditorClientConfig;
-import com.devmod.config.WeaponConfigManager;
 import com.devmod.integration.PufferfishIntegration;
 import com.devmod.network.ArmorStatsPayload;
 import com.devmod.network.EditorApplyConfirmPayload;
+import com.devmod.recipe.CraftingRecipeData;
+import com.devmod.recipe.RecipeConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.DatapackIO;
@@ -113,6 +119,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int HISTORY_PANEL_MARGIN_TOP = 8;
     private static final int HISTORY_PANEL_TITLE_OFFSET_X = 8;
     private static final int HISTORY_PANEL_TITLE_OFFSET_Y = 8;
+    private static final int HISTORY_FILTER_OFFSET_Y = 18;
+    private static final int HISTORY_FILTER_HEIGHT = 12;
+    private static final int HISTORY_FILTER_GAP = 6;
     private static final int HISTORY_PANEL_LIST_OFFSET_Y = 24;
     private static final int HISTORY_PANEL_LIST_HEIGHT_PADDING = 50;
     private static final int HISTORY_PANEL_LINE_HEIGHT = 14;
@@ -124,6 +133,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int HISTORY_PANEL_CLEAR_OFFSET_Y = 2;
     private static final int HISTORY_PANEL_CLEAR_TEXT_OFFSET_X = 12;
     private static final int HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y = 3;
+    private static final int HISTORY_PANEL_ROLLBACK_WIDTH = 80;
+    private static final int HISTORY_PANEL_ROLLBACK_HEIGHT = 14;
+    private static final int HISTORY_PANEL_ROLLBACK_OFFSET_X = 76;
+    private static final int HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_X = 8;
+    private static final int HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_Y = 3;
     private static final String FAVORITES_TITLE_TEXT = "Favorites";
     private static final String FAVORITES_LABEL_PREFIX = "★ ";
     private static final String FAVORITES_LABEL_FALLBACK = "Preset";
@@ -136,8 +150,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final String HISTORY_SHOWING_PREFIX = "Showing ";
     private static final String HISTORY_SHOWING_SEPARATOR = "/";
     private static final String HISTORY_CLEAR_TEXT = "Clear";
+    private static final String HISTORY_ROLLBACK_TEXT = "Rollback";
     private static final String PINNED_PREFIX = "Pinned ";
     private static final String UNPINNED_PREFIX = "Unpinned ";
+    private static final boolean PRESETS_ENABLED = false;
     private static final String WEAPON_STATS_KEY = "WeaponModStats";
     private static final String ARMOR_STATS_KEY = "ArmorModStats";
     private static final String ARMOR_STATS_COMPONENT_KEY = "armor_stats_component";
@@ -148,8 +164,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final String MULTI_EDIT_PERSIST_FAILED_PREFIX = "MultiEdit persist failed: ";
     private static final String SOURCE_SPECIFIC_ARMOR = "Specific (CustomData: ArmorModStats)";
     private static final String SOURCE_SPECIFIC_WEAPON = "Specific (CustomData: WeaponModStats)";
-    private static final String SOURCE_GLOBAL_OVERRIDE = "Global override available (serverconfig/devmod/devmod-items.toml)";
-    private static final String SOURCE_GLOBAL = "Global (serverconfig/devmod/devmod-items.toml)";
     private static final String SOURCE_VANILLA = "Vanilla (no overrides)";
     private static final int FAVORITES_TITLE_OFFSET_X = 8;
     private static final int FAVORITES_TITLE_OFFSET_Y = 8;
@@ -233,6 +247,13 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private ConfirmDialog activeDialog = null;
     private long lastSaveTimestamp = 0;
     private int historyScrollOffset = 0;
+    private final List<ItemEditorHistoryEntry> historyEntries = new ArrayList<>();
+    private HistoryFilter historyFilter = HistoryFilter.ALL;
+    private int historySelectedIndex = -1;
+    private final List<HistoryFilterHit> historyFilterHits = new ArrayList<>();
+    private ResponsiveLayout.Rect historyRollbackBounds = ResponsiveLayout.Rect.EMPTY;
+    @Nullable
+    private ItemEditorSnapshot baselineSnapshot = null;
     // Low-confidence detection system
     private final LowConfidenceDetector lowConfidenceDetector = new LowConfidenceDetector();
     @Nullable
@@ -370,18 +391,25 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         templateOverlay = templateOverlayInstance;
         templateOverlayInstance.onClose(this::closeOverlay);
         templateOverlayInstance.onApply(this::handleTemplateApply);
-
-        PresetSelectorOverlay presetOverlay = new PresetSelectorOverlay();
-        presetSelectorOverlay = presetOverlay;
-        presetOverlay.setContext(getActiveItemType());
-        presetOverlay.onClose(this::closeOverlay);
-        presetOverlay.onApply(this::applyPreset);
-        presetOverlay.onDelete(this::deletePreset);
-        presetOverlay.onRename(this::renamePreset);
-        presetOverlay.onSaveCurrent(this::saveCurrentAsPreset);
+        if (PRESETS_ENABLED) {
+            PresetSelectorOverlay presetOverlay = new PresetSelectorOverlay();
+            presetSelectorOverlay = presetOverlay;
+            presetOverlay.setContext(getActiveItemType());
+            presetOverlay.onClose(this::closeOverlay);
+            presetOverlay.onApply(this::applyPreset);
+            presetOverlay.onDelete(this::deletePreset);
+            presetOverlay.onRename(this::renamePreset);
+            presetOverlay.onSaveCurrent(this::saveCurrentAsPreset);
+        } else {
+            presetSelectorOverlay = null;
+        }
 
         // Invalidate cache on init
         EditorCache.INSTANCE.invalidateAll();
+        historyEntries.clear();
+        historyFilter = HistoryFilter.ALL;
+        historySelectedIndex = -1;
+        baselineSnapshot = captureSnapshot("open", "Editor opened");
     }
 
     private EditorModule resolveModule(ItemStack stack, EditorStartTab requested) {
@@ -404,7 +432,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             case ARMOR -> new ArmorModule();
             case GENERAL -> {
                 // Auto-detect based on item type
-                if (ArmorConfigManager.isArmor(stack)) {
+                if (ArmorConfigHandler.isArmor(stack)) {
                     DevMod.LOGGER.warn("[ItemEditor] Requested GENERAL but item is armor; falling back to ARMOR module.");
                     yield new ArmorModule();
                 }
@@ -522,21 +550,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             }
         });
         header.onClose(this::handleCloseRequest);
+        header.showScopeBadge(false);
 
         header.getModeBadge()
             .badgeType(ModeBadge.BadgeType.MODE)
             .mode(isPreviewMode() ? ModeBadge.Mode.PREVIEW : ModeBadge.Mode.APPLY)
             .onModeChange(this::handleModeChange);
 
-        header.getScopeBadge()
-            .badgeType(ModeBadge.BadgeType.SCOPE)
-            .scope(isGlobalMode() ? ModeBadge.Scope.GLOBAL : ModeBadge.Scope.SPECIFIC)
-            .onScopeChange(scope -> {
-                editorState.setGlobalMode(scope == ModeBadge.Scope.GLOBAL);
-            });
-
         header.getModeBadge().clickable(!localOnlyMode);
-        header.getScopeBadge().clickable(!localOnlyMode);
     }
 
     private void configureLeftColumn() {
@@ -742,8 +763,19 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 EditorModule module = activeModule;
                 if (module != null) {
                     ConfirmDialog dialog = ConfirmDialog.resetToDefault(() -> {
-                        module.resetToOriginal();
-                        showStatus("Reset to original", DesignTokens.Semantic.WARNING);
+                        ItemEditorSnapshot before = captureSnapshot("reset", "Before reset");
+                        module.resetToDefaults();
+                        if (isPreviewMode()) {
+                            module.applyPreview();
+                        } else {
+                            module.clearPreview();
+                        }
+                        ItemEditorSnapshot after = captureSnapshot("reset", "After reset");
+                        recordHistoryEntry("reset", before, after);
+                        showStatus("Reset to defaults", DesignTokens.Semantic.WARNING);
+                        if (!localOnlyMode) {
+                            sendResetPayload(module);
+                        }
                     }, () -> {});
                     activeDialog = dialog;
                     dialog.show();
@@ -756,13 +788,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             }
             case "export" -> handleExport();
             case "import" -> handleImport();
-            case "presets" -> {
-                if (!supportsDataOps()) {
-                    showStatus("Presets available only for weapons/armors", DesignTokens.Semantic.WARNING);
-                    return;
-                }
-                overlayController.toggle(OverlayController.OverlayType.PRESETS);
-            }
             case "templates" -> {
                 openTemplatesOverlay();
             }
@@ -801,15 +826,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         } else {
             craftingPanel.hide();
         }
-        // Manage PresetSelectorOverlay visibility
-        PresetSelectorOverlay psOverlay = presetSelectorOverlay;
-        if (psOverlay != null) {
-            if (newOverlay == OverlayController.OverlayType.PRESETS) {
-                psOverlay.setContext(getActiveItemType());
-                psOverlay.show();
-            } else {
-                psOverlay.resetSearch();
-                psOverlay.hide();
+        // Manage PresetSelectorOverlay visibility (disabled but kept for future)
+        if (PRESETS_ENABLED) {
+            PresetSelectorOverlay psOverlay = presetSelectorOverlay;
+            if (psOverlay != null) {
+                if (newOverlay == OverlayController.OverlayType.PRESETS) {
+                    psOverlay.setContext(getActiveItemType());
+                    psOverlay.show();
+                } else {
+                    psOverlay.resetSearch();
+                    psOverlay.hide();
+                }
             }
         }
     }
@@ -862,13 +889,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 var bounds = header.getModeBadge().getBounds();
                 TooltipManager.INSTANCE.queueTooltip(
                     modeTip, bounds.x(), bounds.y(), bounds.width(), bounds.height(), TooltipManager.TooltipPosition.AUTO);
-            } else {
-                String scopeTip = header.getScopeBadge().getTooltipText();
-                if (scopeTip != null) {
-                    var bounds = header.getScopeBadge().getBounds();
-                    TooltipManager.INSTANCE.queueTooltip(
-                        scopeTip, bounds.x(), bounds.y(), bounds.width(), bounds.height(), TooltipManager.TooltipPosition.AUTO);
-                }
             }
         }
 
@@ -936,12 +956,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         if (blockBaseOverlays) {
             header.getModeBadge().closeDropdown();
-            header.getScopeBadge().closeDropdown();
             TooltipManager.INSTANCE.beginFrame(width, height);
         }
 
         if (overlayController.isHistoryVisible() && activeModule != null) {
-            renderHistoryPanel(graphics);
+            renderHistoryPanel(graphics, mouseX, mouseY);
         }
 
         // Dev panel
@@ -954,9 +973,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             header.renderOverlays(graphics, mouseX, mouseY);
         }
 
-        PresetSelectorOverlay psOverlay = presetSelectorOverlay;
-        if (overlayController.isPresetsVisible() && supportsDataOps() && psOverlay != null) {
-            psOverlay.render(graphics, font, width, height, mouseX, mouseY);
+        if (PRESETS_ENABLED) {
+            PresetSelectorOverlay psOverlay = presetSelectorOverlay;
+            if (overlayController.isPresetsVisible() && supportsDataOps() && psOverlay != null) {
+                psOverlay.render(graphics, font, width, height, mouseX, mouseY);
+            }
         }
         TemplateOverlay tOverlay = templateOverlay;
         if (overlayController.isTemplatesVisible() && tOverlay != null) {
@@ -1006,7 +1027,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
 
         // Left panel (favorites)
-        ResponsiveLayout.Rect leftPanel = layout.getFavoritesPanelArea();
+        ResponsiveLayout.Rect leftPanel = PRESETS_ENABLED ? layout.getFavoritesPanelArea() : ResponsiveLayout.Rect.EMPTY;
         if (!leftPanel.isEmpty()) {
             graphics.fill(leftPanel.x(), leftPanel.y(), leftPanel.right(), leftPanel.bottom(),
                          DesignTokens.Bg.LEVEL_2);
@@ -1111,9 +1132,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         Typography.drawText(graphics, safeFont, safeMessage, msgX + paddingX, msgY + paddingY, statusColor, fontScale);
     }
 
-    private void renderHistoryPanel(GuiGraphics graphics) {
-        EditorModule module = activeModule;
-        if (module == null) return;
+    private void renderHistoryPanel(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
         ResponsiveLayout.Rect historyBounds = getHistoryPanelBounds();
         int panelWidth = historyBounds.width();
@@ -1126,10 +1145,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         graphics.drawString(safeFont, HISTORY_TITLE_TEXT, x + HISTORY_PANEL_TITLE_OFFSET_X, y + HISTORY_PANEL_TITLE_OFFSET_Y,
             DesignTokens.Text.TITLE(), false);
-        int listY = y + HISTORY_PANEL_LIST_OFFSET_Y;
-        var entries = module.getHistoryEntries();
+        renderHistoryFilters(graphics, safeFont, x, y, mouseX, mouseY);
+        int listY = y + HISTORY_PANEL_LIST_OFFSET_Y + HISTORY_FILTER_HEIGHT;
+        List<ItemEditorHistoryEntry> entries = getFilteredHistoryEntries();
         int lineHeight = HISTORY_PANEL_LINE_HEIGHT;
-        int listHeight = panelHeight - HISTORY_PANEL_LIST_HEIGHT_PADDING;
+        int listHeight = panelHeight - HISTORY_PANEL_LIST_HEIGHT_PADDING - HISTORY_FILTER_HEIGHT;
         int maxScroll = Math.max(0, Math.max(0, entries.size() * lineHeight - listHeight));
         historyScrollOffset = Math.max(0, Math.min(historyScrollOffset, maxScroll));
 
@@ -1138,15 +1158,35 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             graphics.drawString(safeFont, HISTORY_EMPTY_TEXT, x + HISTORY_PANEL_TEXT_OFFSET_X, listY,
                 DesignTokens.Text.MUTED(), false);
         } else {
-            int startFromEnd = historyScrollOffset / lineHeight;
-            int startIndex = Math.max(0, entries.size() - visibleLines - startFromEnd);
+            int startIndex = Math.max(0, historyScrollOffset / lineHeight);
             int endIndex = Math.min(entries.size(), startIndex + visibleLines);
 
             for (int i = startIndex; i < endIndex; i++) {
-                String entry = entries.get(entries.size() - 1 - i);
+                ItemEditorHistoryEntry entry = entries.get(i);
                 int entryY = listY + (i - startIndex) * lineHeight;
-                graphics.drawString(safeFont, entry, x + HISTORY_PANEL_TEXT_OFFSET_X, entryY,
-                    DesignTokens.Text.SECONDARY(), false);
+                boolean hovered = mouseX >= x && mouseX <= x + panelWidth
+                    && mouseY >= entryY && mouseY <= entryY + lineHeight;
+                boolean selected = i == historySelectedIndex;
+                if (selected) {
+                    graphics.fill(x + 2, entryY - 1, x + panelWidth - 2, entryY + lineHeight - 1,
+                        DesignTokens.Background.ACTIVE());
+                } else if (hovered) {
+                    graphics.fill(x + 2, entryY - 1, x + panelWidth - 2, entryY + lineHeight - 1,
+                        DesignTokens.Background.HOVER());
+                }
+                String label = entry.formatLabel();
+                graphics.drawString(safeFont, label, x + HISTORY_PANEL_TEXT_OFFSET_X, entryY,
+                    selected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY(), false);
+                if (hovered) {
+                    TooltipManager.INSTANCE.queueTooltip(
+                        entry.formatDiffSummary(),
+                        x + HISTORY_PANEL_TEXT_OFFSET_X,
+                        entryY,
+                        panelWidth - HISTORY_PANEL_TEXT_OFFSET_X * 2,
+                        lineHeight,
+                        TooltipManager.TooltipPosition.AUTO
+                    );
+                }
             }
         }
 
@@ -1169,6 +1209,55 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int clearColor = entries.isEmpty() ? DesignTokens.Text.DISABLED() : DesignTokens.Text.PRIMARY();
         graphics.drawString(safeFont, HISTORY_CLEAR_TEXT, clearX + HISTORY_PANEL_CLEAR_TEXT_OFFSET_X,
             clearY + HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y, clearColor, false);
+
+        // Rollback button
+        int rollbackW = HISTORY_PANEL_ROLLBACK_WIDTH;
+        int rollbackH = HISTORY_PANEL_ROLLBACK_HEIGHT;
+        int rollbackX = clearX - rollbackW - HISTORY_PANEL_ROLLBACK_OFFSET_X;
+        int rollbackY = clearY;
+        boolean canRollback = historySelectedIndex >= 0 && historySelectedIndex < entries.size();
+        historyRollbackBounds = new ResponsiveLayout.Rect(rollbackX, rollbackY, rollbackW, rollbackH);
+        int rollbackBg = canRollback ? DesignTokens.Background.INPUT() : DesignTokens.Button.DISABLED();
+        graphics.fill(rollbackX, rollbackY, rollbackX + rollbackW, rollbackY + rollbackH, rollbackBg);
+        AxiomRenderer.drawBorder(graphics, rollbackX, rollbackY, rollbackW, rollbackH, DesignTokens.Stroke.DEFAULT);
+        int rollbackColor = canRollback ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.DISABLED();
+        graphics.drawString(safeFont, HISTORY_ROLLBACK_TEXT, rollbackX + HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_X,
+            rollbackY + HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_Y, rollbackColor, false);
+    }
+
+    private void renderHistoryFilters(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                      int x, int y, int mouseX, int mouseY) {
+        historyFilterHits.clear();
+        int cursorX = x + HISTORY_PANEL_TITLE_OFFSET_X;
+        int cursorY = y + HISTORY_PANEL_TITLE_OFFSET_Y + HISTORY_FILTER_OFFSET_Y;
+        for (HistoryFilter filter : HistoryFilter.values()) {
+            String label = filter.label;
+            int width = font.width(label) + 10;
+            ResponsiveLayout.Rect rect = new ResponsiveLayout.Rect(cursorX, cursorY, width, HISTORY_FILTER_HEIGHT);
+            boolean selected = historyFilter == filter;
+            boolean hovered = rect.contains(mouseX, mouseY);
+            int bg = selected ? DesignTokens.Background.ACTIVE() : (hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT());
+            graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), bg);
+            AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), DesignTokens.Stroke.DEFAULT);
+            int color = selected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY();
+            graphics.drawString(font, label, rect.x() + 5, rect.y() + 2, color, false);
+            historyFilterHits.add(new HistoryFilterHit(filter, rect));
+            cursorX = rect.right() + HISTORY_FILTER_GAP;
+        }
+    }
+
+    private List<ItemEditorHistoryEntry> getFilteredHistoryEntries() {
+        if (historyFilter == HistoryFilter.ALL) {
+            return historyEntries;
+        }
+        List<ItemEditorHistoryEntry> filtered = new ArrayList<>();
+        for (ItemEditorHistoryEntry entry : historyEntries) {
+            if (entry == null) continue;
+            if (historyFilter.matches(entry.action)) {
+                filtered.add(entry);
+            }
+        }
+        return filtered;
     }
 
     @Override
@@ -1185,6 +1274,54 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             return true;
         }
 
+        for (HistoryFilterHit hit : historyFilterHits) {
+            if (hit.bounds.contains(mouseX, mouseY)) {
+                historyFilter = hit.filter;
+                historySelectedIndex = -1;
+                return true;
+            }
+        }
+
+        List<ItemEditorHistoryEntry> entries = getFilteredHistoryEntries();
+        int lineHeight = HISTORY_PANEL_LINE_HEIGHT;
+        int listY = y + HISTORY_PANEL_LIST_OFFSET_Y + HISTORY_FILTER_HEIGHT;
+        int listHeight = panelHeight - HISTORY_PANEL_LIST_HEIGHT_PADDING - HISTORY_FILTER_HEIGHT;
+        int visibleLines = listHeight / lineHeight;
+        int startIndex = Math.max(0, historyScrollOffset / lineHeight);
+        int endIndex = Math.min(entries.size(), startIndex + visibleLines);
+        for (int i = startIndex; i < endIndex; i++) {
+            int entryY = listY + (i - startIndex) * lineHeight;
+            if (mouseY >= entryY && mouseY <= entryY + lineHeight) {
+                historySelectedIndex = i;
+                return true;
+            }
+        }
+
+        if (historyRollbackBounds.contains(mouseX, mouseY)) {
+            if (historySelectedIndex >= 0 && historySelectedIndex < entries.size()) {
+                ItemEditorHistoryEntry entry = entries.get(historySelectedIndex);
+                ConfirmDialog dialog = ConfirmDialog.create(
+                    "Rollback",
+                    "Rollback",
+                    "Cancel",
+                    ConfirmDialog.Style.WARNING,
+                    () -> {
+                        ItemEditorSnapshot before = captureSnapshot("rollback", "Before rollback");
+                        applySnapshotToModule(entry.after, "Rollback to " + entry.action);
+                        ItemEditorSnapshot after = captureSnapshot("rollback", "After rollback");
+                        recordHistoryEntry("rollback", before, after);
+                        baselineSnapshot = after;
+                        showStatus("Rolled back", DesignTokens.Semantic.INFO);
+                    },
+                    () -> {},
+                    "Rollback to the selected step?"
+                );
+                activeDialog = dialog;
+                dialog.show();
+                return true;
+            }
+        }
+
         // Clear button
         int clearW = HISTORY_PANEL_CLEAR_WIDTH;
         int clearH = HISTORY_PANEL_CLEAR_HEIGHT;
@@ -1192,11 +1329,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int clearX = x + panelWidth - clearW - HISTORY_PANEL_CLEAR_OFFSET_X;
         int clearY = footerY - HISTORY_PANEL_CLEAR_OFFSET_Y;
         if (mouseX >= clearX && mouseX <= clearX + clearW && mouseY >= clearY && mouseY <= clearY + clearH) {
-            EditorModule module = activeModule;
-            if (module != null) {
-                module.clearHistory();
-                historyScrollOffset = 0;
-            }
+            historyEntries.clear();
+            historyScrollOffset = 0;
+            historySelectedIndex = -1;
             return true;
         }
 
@@ -1464,6 +1599,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
         EditorModule module = activeModule;
         if (module == null) return;
+        ItemStack workingItem = module.getItem();
+        if (workingItem == null || workingItem.isEmpty()) {
+            showStatus("Apply failed: no item selected", DesignTokens.Semantic.ERROR);
+            module.logEvent("Apply skipped: empty item");
+            return;
+        }
 
         if (!module.hasUnsavedChanges()) {
             showStatus("No changes to apply", DesignTokens.Semantic.WARNING);
@@ -1472,6 +1613,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         try {
+            ItemEditorSnapshot before = resolveBaselineSnapshot();
             module.logEvent("Apply requested (" + (isGlobalMode() ? "GLOBAL" : "SPECIFIC") + ")");
             // Build and send payload
             CustomPacketPayload payload;
@@ -1520,6 +1662,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             playSound(SoundEvents.UI_BUTTON_CLICK.value());
             showStatus("Changes applied!", DesignTokens.Semantic.SUCCESS);
             module.logEvent("Apply sent to server");
+            ItemEditorSnapshot after = captureSnapshot("apply", "Apply");
+            recordHistoryEntry("apply", before, after);
+            baselineSnapshot = after;
 
         } catch (Exception e) {
             showStatus("Failed to apply: " + e.getMessage(), DesignTokens.Semantic.ERROR);
@@ -1527,6 +1672,121 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             if (errorModule != null) {
                 errorModule.logEvent("Apply error: " + e.getMessage());
             }
+        }
+    }
+
+    private void sendResetPayload(EditorModule module) {
+        if (module == null) return;
+        if (localOnlyMode) return;
+
+        CompoundTag resetTag = new CompoundTag();
+        resetTag.putBoolean("reset", true);
+        CustomPacketPayload payload = null;
+
+        if (module instanceof com.devmod.client.ui.editor.modules.ArmorModule armorModule) {
+            int slotIndex = -1;
+            SlotSelector.SlotInfo slot = getSelectedSlotInfo();
+            if (!isGlobalMode() && slot != null && slot.slot() != null) {
+                slotIndex = switch (slot.slot()) {
+                    case HEAD -> 0;
+                    case CHEST -> 1;
+                    case LEGS -> 2;
+                    case FEET -> 3;
+                    default -> -1;
+                };
+            }
+            ItemStack armorItem = Objects.requireNonNull(armorModule.getItem(), "armor item");
+            payload = new ArmorStatsPayload(Objects.requireNonNull(armorItem.copy()), resetTag, isGlobalMode(), slotIndex);
+        } else if (module instanceof com.devmod.client.ui.editor.modules.WeaponModule weaponModule) {
+            ItemStack weaponItem = Objects.requireNonNull(weaponModule.getItem(), "weapon item");
+            payload = new com.devmod.network.WeaponStatsPayload(Objects.requireNonNull(weaponItem.copy()), resetTag, isGlobalMode());
+        } else if (module instanceof com.devmod.client.ui.editor.modules.RangedModule rangedModule) {
+            ItemStack rangedItem = Objects.requireNonNull(rangedModule.getItem(), "ranged item");
+            payload = new com.devmod.network.RangedWeaponStatsPayload(Objects.requireNonNull(rangedItem.copy()), resetTag, isGlobalMode());
+        } else if (module instanceof com.devmod.client.ui.editor.modules.FoodModule foodModule) {
+            ItemStack foodItem = Objects.requireNonNull(foodModule.getItem(), "food item");
+            payload = new com.devmod.network.FoodStatsPayload(Objects.requireNonNull(foodItem.copy()), resetTag, isGlobalMode());
+        } else if (module instanceof com.devmod.client.ui.editor.modules.FuelModule fuelModule) {
+            ItemStack fuelItem = Objects.requireNonNull(fuelModule.getItem(), "fuel item");
+            payload = new com.devmod.network.FuelStatsPayload(Objects.requireNonNull(fuelItem.copy()), resetTag, isGlobalMode());
+        } else if (module instanceof com.devmod.client.ui.editor.modules.UsableModule usableModule) {
+            ItemStack usableItem = Objects.requireNonNull(usableModule.getItem(), "usable item");
+            payload = new com.devmod.network.UsableStatsPayload(Objects.requireNonNull(usableItem.copy()), resetTag, isGlobalMode());
+        }
+
+        if (payload == null) {
+            showStatus("Reset not supported for this module", DesignTokens.Semantic.WARNING);
+            return;
+        }
+
+        PacketDistributor.sendToServer(payload);
+        module.logEvent("Reset sent to server");
+    }
+
+    private ItemEditorSnapshot captureSnapshot(String action, @Nullable String note) {
+        ItemStack current = getEditedItem();
+        ItemEditorSnapshot.SnapshotMeta meta = new ItemEditorSnapshot.SnapshotMeta();
+        meta.action = action == null ? "snapshot" : action;
+        meta.note = note;
+        meta.previewMode = isPreviewMode();
+        meta.itemId = getCurrentItemId();
+        meta.itemName = current.getHoverName().getString();
+        EditorModule module = activeModule;
+        if (module != null) {
+            meta.moduleId = module.getId();
+            meta.tabIndex = module.getActiveTabIndex();
+            if (meta.tabIndex >= 0 && meta.tabIndex < module.getTabs().size()) {
+                meta.tabId = module.getTabs().get(meta.tabIndex).id();
+            }
+        }
+        SlotSelector.SlotInfo slot = getSelectedSlotInfo();
+        if (slot != null && slot.slot() != null) {
+            meta.slotId = slot.slot().getName();
+        }
+        CraftingRecipeData recipe = null;
+        if (module instanceof com.devmod.client.ui.editor.modules.RecipeModule recipeModule) {
+            recipe = recipeModule.buildCurrentRecipeSnapshot();
+        }
+        return ItemEditorSnapshot.capture(current, meta, recipe);
+    }
+
+    private ItemEditorSnapshot resolveBaselineSnapshot() {
+        if (baselineSnapshot != null) return baselineSnapshot;
+        baselineSnapshot = captureSnapshot("baseline", "Baseline");
+        return baselineSnapshot;
+    }
+
+    private void recordHistoryEntry(String action, ItemEditorSnapshot before, ItemEditorSnapshot after) {
+        historyEntries.add(new ItemEditorHistoryEntry(before, after, action));
+        while (historyEntries.size() > 100) {
+            historyEntries.remove(0);
+        }
+    }
+
+    private void applySnapshotToModule(ItemEditorSnapshot snapshot, String reason) {
+        if (snapshot == null) return;
+        EditorModule module = activeModule;
+        if (module == null) return;
+        ItemStack next = snapshot.toItemStack();
+        if (next.isEmpty()) {
+            next = module.getItem();
+        }
+        module.saveUndoState();
+        module.setItem(next);
+        int tabIndex = snapshot.meta.tabIndex;
+        if (tabIndex >= 0 && tabIndex < module.getTabs().size()) {
+            module.setActiveTab(tabIndex);
+        }
+        if (module instanceof com.devmod.client.ui.editor.modules.RecipeModule recipeModule) {
+            CraftingRecipeData recipe = snapshot.toRecipe();
+            if (recipe != null) {
+                recipeModule.applyRecipeSnapshot(recipe);
+            }
+        }
+        module.applyPreview();
+        module.clearDirty();
+        if (reason != null && !reason.isBlank()) {
+            module.markDirty(reason);
         }
     }
 
@@ -1578,43 +1838,212 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void handleExport() {
         if (!supportsDataOps()) {
-            showStatus("Export available only for weapons/armors", DesignTokens.Semantic.WARNING);
+            showStatus("Export available only for weapons/armors/recipes", DesignTokens.Semantic.WARNING);
+            return;
+        }
+
+        // Handle RecipeModule export separately
+        if (activeModule instanceof com.devmod.client.ui.editor.modules.RecipeModule recipeModule) {
+            handleRecipeExport(recipeModule);
             return;
         }
 
         ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
-        ItemEditorDataManager.ItemConfigExport config = new ItemEditorDataManager.ItemConfigExport();
-        config.itemId = getCurrentItemId();
-        config.itemName = getEditedItem().getHoverName().getString();
-        config.stats = collectStatsForExport();
-
-        // Export enchantments from item
-        config.enchantments = collectEnchantmentsForExport();
-        // Export attributes from item
-        config.attributes = collectAttributesForExport();
-        // Export durability info
         ItemStack currentItem = getEditedItem();
-        config.durability = currentItem.isDamageableItem() ? currentItem.getMaxDamage() - currentItem.getDamageValue() : null;
-        final var unbreakableType = Objects.requireNonNull(DataComponents.UNBREAKABLE, "unbreakable component");
-        config.unbreakable = currentItem.has(unbreakableType);
-        final var repairCostType = Objects.requireNonNull(DataComponents.REPAIR_COST, "repair cost component");
-        config.repairCost = currentItem.has(repairCostType) ? currentItem.get(repairCostType) : null;
+        String fileBase = buildSafeFileName(getCurrentItemId() + "_export_" + System.currentTimeMillis());
+        ItemEditorSnapshot snapshot = captureSnapshot("export", "Export snapshot");
+        boolean okSnapshot = data.exportSnapshotToFile(snapshot, fileBase + "_snapshot");
+        boolean okVanilla = data.exportVanillaItemToFile(currentItem, fileBase + "_vanilla");
 
-        String fileName = buildSafeFileName(config.itemId + "_export_" + System.currentTimeMillis());
-        boolean ok = data.exportToFile(config, fileName);
-        if (ok) {
-            data.addHistoryEntry("export", config.itemName, fileName);
-            showStatus("Exported to " + fileName + ".json", DesignTokens.Semantic.SUCCESS);
-            // Also emit datapack with current overrides for sharing (partial spec 06-persistence)
+        if (okVanilla) {
+            showStatus("Exported vanilla JSON: " + fileBase + "_vanilla.json", DesignTokens.Semantic.SUCCESS);
+        }
+        if (okSnapshot) {
+            data.addHistoryEntry("export", snapshot.meta.itemName, fileBase + "_snapshot");
+            showStatus("Snapshot saved: " + fileBase + "_snapshot.json", DesignTokens.Semantic.INFO);
+        }
+        if (!okVanilla && !okSnapshot) {
+            showStatus("Export failed", DesignTokens.Semantic.ERROR);
+        } else {
             int exported = DatapackIO.exportOverrides(DEFAULT_DATAPACK_NAME);
             if (exported > 0) {
                 showStatus("Datapack: " + DEFAULT_DATAPACK_NAME + " (" + exported + " items)", DesignTokens.Semantic.INFO);
             }
-        } else {
-            showStatus("Export failed", DesignTokens.Semantic.ERROR);
         }
     }
 
+    /**
+     * Export current recipe from RecipeModule.
+     * NOTE: Currently only supports CraftingRecipeData. SmeltingRecipeData, SmithingRecipeData,
+     * and StonecuttingRecipeData would require extending RecipeModule and RecipeModuleCore.
+     */
+    private void handleRecipeExport(com.devmod.client.ui.editor.modules.RecipeModule recipeModule) {
+        CraftingRecipeData recipe = recipeModule.buildCurrentRecipeSnapshot();
+        if (recipe == null) {
+            showStatus("No recipe to export", DesignTokens.Semantic.WARNING);
+            return;
+        }
+
+        // Validate recipe before export
+        com.devmod.recipe.RecipeValidator.ValidationResult validation =
+            com.devmod.recipe.RecipeValidator.validateCrafting(recipe);
+        if (!validation.valid()) {
+            showStatus("Invalid recipe: " + validation.getFirstError(), DesignTokens.Semantic.ERROR);
+            return;
+        }
+
+        ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
+        // Add unique counter suffix to prevent same-millisecond collision
+        String fileBase = buildSafeFileName(recipe.id().toString().replace(":", "_")
+            + "_" + System.currentTimeMillis()
+            + "_" + (exportCounter++ % 1000)); // Rolling counter 0-999
+
+        // Export .ds FIRST (listRecipeExportFiles uses .ds presence to identify recipe exports)
+        // This prevents race condition where .json exists but .ds doesn't yet
+        boolean okCommand = data.exportRecipeCommandToFile(recipe, fileBase);
+        boolean okJson = data.exportRecipeToFile(recipe, fileBase);
+
+        // Rollback: if .ds succeeded but .json failed, delete orphaned .ds
+        if (okCommand && !okJson) {
+            try {
+                java.nio.file.Path dsFile = data.getExportsDirectory().resolve(fileBase + ".ds");
+                java.nio.file.Files.deleteIfExists(dsFile);
+                DevMod.LOGGER.warn("[ItemEditor] Rolled back orphaned .ds file after .json export failure");
+            } catch (Exception e) {
+                DevMod.LOGGER.error("[ItemEditor] Failed to rollback .ds file: {}", e.getMessage());
+            }
+        }
+
+        if (!okJson && !okCommand) {
+            showStatus("Recipe export failed", DesignTokens.Semantic.ERROR);
+            return;
+        }
+
+        // Copy command string to clipboard for easy pasting
+        String commandString = com.devmod.recipe.export.RecipeExportHelper.toCommandString(recipe, false);
+        copyToClipboard(commandString);
+
+        // Build consolidated status message - include path as fallback if folder won't open
+        java.nio.file.Path exportDir = data.getExportsDirectory();
+        StringBuilder msg = new StringBuilder("Exported: ").append(fileBase);
+        if (okJson && okCommand) {
+            msg.append(" (.json + .ds) - command copied to clipboard");
+        } else if (okJson) {
+            msg.append(".json");
+        }
+        // Fallback: show path if Desktop not supported
+        if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+            msg.append(" | Path: ").append(exportDir);
+        }
+
+        data.addHistoryEntry("export_recipe", recipe.id().toString(), fileBase);
+        showStatus(msg.toString(), DesignTokens.Semantic.SUCCESS);
+
+        // Open export folder - doesn't call showStatus anymore to avoid overwriting
+        tryOpenExportFolder();
+    }
+
+    /** Counter to prevent same-millisecond filename collisions */
+    private static int exportCounter = 0;
+
+    /** Copy text to system clipboard */
+    private void copyToClipboard(String text) {
+        try {
+            java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(text);
+            java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+        } catch (Exception e) {
+            DevMod.LOGGER.warn("[ItemEditor] Could not copy to clipboard: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Try to open export folder in system file manager.
+     * Does NOT call showStatus to avoid overwriting the export success message.
+     */
+    private void tryOpenExportFolder() {
+        Path exportDir = com.devmod.util.ConfigPaths.getItemEditorDir().resolve("exports");
+        try {
+            // Ensure directory exists before trying to open
+            java.nio.file.Files.createDirectories(exportDir);
+
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                Desktop.getDesktop().open(exportDir.toFile());
+            }
+            // If Desktop not supported, we silently skip - the success message already shows
+        } catch (Exception e) {
+            // Log but don't show status - preserves the success message
+            DevMod.LOGGER.warn("[ItemEditor] Could not open export folder {}: {}", exportDir, e.getMessage());
+        }
+    }
+
+    /**
+     * Import a recipe from the most recent export file.
+     * NOTE: Currently only supports CraftingRecipeData. Other recipe types would need
+     * type detection and corresponding module support.
+     */
+    private void handleRecipeImport() {
+        ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
+        List<String> recipeFiles = data.listRecipeExportFiles();
+
+        if (recipeFiles.isEmpty()) {
+            showStatus("No recipe exports found", DesignTokens.Semantic.WARNING);
+            return;
+        }
+
+        // Get the most recent recipe file (list is sorted DESCENDING - first = most recent)
+        String fileName = recipeFiles.getFirst();
+        Path filePath = data.getExportsDirectory().resolve(fileName + ".json");
+
+        // Verify file exists before attempting import
+        if (!java.nio.file.Files.exists(filePath)) {
+            showStatus("Recipe file not found: " + fileName, DesignTokens.Semantic.ERROR);
+            return;
+        }
+
+        try {
+            // Load and validate the recipe JSON before importing
+            String jsonContent = java.nio.file.Files.readString(filePath, java.nio.charset.StandardCharsets.UTF_8);
+            com.google.gson.JsonObject jsonObj = com.google.gson.JsonParser.parseString(jsonContent).getAsJsonObject();
+
+            // Parse recipe to validate structure
+            net.minecraft.resources.ResourceLocation recipeId = net.minecraft.resources.ResourceLocation.parse(
+                fileName.contains("_") ? "devmod:" + fileName.substring(0, fileName.lastIndexOf('_')) : "devmod:" + fileName
+            );
+            CraftingRecipeData loadedRecipe = CraftingRecipeData.fromJson(recipeId, jsonObj);
+
+            // Validate recipe before applying
+            com.devmod.recipe.RecipeValidator.ValidationResult validation =
+                com.devmod.recipe.RecipeValidator.validateCrafting(loadedRecipe);
+            if (!validation.valid()) {
+                showStatus("Invalid recipe in file: " + validation.getFirstError(), DesignTokens.Semantic.ERROR);
+                return;
+            }
+
+            // Apply to RecipeConfigManager (persistent storage)
+            int imported = RecipeConfigManager.importFromFile(filePath);
+
+            // Also apply to current RecipeModule UI if active
+            if (activeModule instanceof com.devmod.client.ui.editor.modules.RecipeModule recipeModule) {
+                recipeModule.applyRecipeSnapshot(loadedRecipe);
+            }
+
+            if (imported > 0) {
+                data.addHistoryEntry("import_recipe", fileName, filePath.toString());
+                showStatus("Imported and applied: " + fileName, DesignTokens.Semantic.SUCCESS);
+            } else {
+                // Recipe was already in config, but we still applied to UI
+                showStatus("Loaded to editor: " + fileName + " (already in config)", DesignTokens.Semantic.INFO);
+            }
+        } catch (com.google.gson.JsonParseException e) {
+            DevMod.LOGGER.error("[ItemEditor] Invalid JSON in recipe file: {}", e.getMessage());
+            showStatus("Invalid JSON format: " + e.getMessage(), DesignTokens.Semantic.ERROR);
+        } catch (Exception e) {
+            DevMod.LOGGER.error("[ItemEditor] Failed to import recipe: {}", e.getMessage());
+            showStatus("Import failed: " + e.getMessage(), DesignTokens.Semantic.ERROR);
+        }
+    }
+
+    @SuppressWarnings("unused") // Reserved for future export presets.
     private List<ItemEditorDataManager.EnchantData> collectEnchantmentsForExport() {
         List<ItemEditorDataManager.EnchantData> result = new ArrayList<>();
         final var enchantType = Objects.requireNonNull(DataComponents.ENCHANTMENTS, "enchantments component");
@@ -1642,6 +2071,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         return result;
     }
 
+    @SuppressWarnings("unused") // Reserved for future export presets.
     private List<ItemEditorDataManager.AttrData> collectAttributesForExport() {
         List<ItemEditorDataManager.AttrData> result = new ArrayList<>();
         final var attrType = Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS, "attribute modifiers component");
@@ -1663,28 +2093,58 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void handleImport() {
         if (!supportsDataOps()) {
-            showStatus("Import available only for weapons/armors", DesignTokens.Semantic.WARNING);
+            showStatus("Import available only for weapons/armors/recipes", DesignTokens.Semantic.WARNING);
+            return;
+        }
+
+        // Handle RecipeModule import separately
+        if (activeModule instanceof com.devmod.client.ui.editor.modules.RecipeModule) {
+            handleRecipeImport();
             return;
         }
 
         ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
+        List<String> snapshots = data.listSnapshotFiles();
         List<String> exports = data.listExportFiles();
-        if (exports.isEmpty()) {
+        if (snapshots.isEmpty() && exports.isEmpty()) {
             showStatus("No exports found", DesignTokens.Semantic.WARNING);
             return;
         }
 
-        // Use most recent export (last in sorted list)
+        ItemEditorSnapshot before = captureSnapshot("import", "Before import");
+        if (!snapshots.isEmpty()) {
+            String fileName = snapshots.get(snapshots.size() - 1);
+            try {
+                ItemEditorSnapshot imported = data.importSnapshotFromFile(fileName);
+                if (imported != null) {
+                    applySnapshotToModule(imported, "Imported " + fileName);
+                    ItemEditorSnapshot after = captureSnapshot("import", "After import");
+                    recordHistoryEntry("import", before, after);
+                    baselineSnapshot = after;
+                    showStatus("Imported snapshot " + fileName, DesignTokens.Semantic.INFO);
+                } else {
+                    showStatus("Import failed: snapshot missing", DesignTokens.Semantic.ERROR);
+                }
+            } catch (Exception e) {
+                showStatus("Import failed: " + e.getMessage(), DesignTokens.Semantic.ERROR);
+            }
+            return;
+        }
+
         String fileName = exports.get(exports.size() - 1);
         try {
-            ItemEditorDataManager.ItemConfigExport imported = data.importFromFile(fileName);
-            applyImportedStats(imported, "Imported " + fileName);
-            data.addHistoryEntry("import", getEditedItem().getHoverName().getString(), fileName);
-            showStatus("Imported " + fileName, DesignTokens.Semantic.INFO);
-            int applied = DatapackIO.importOverrides(DEFAULT_DATAPACK_NAME);
-            if (applied > 0) {
-                showStatus("Imported datapack overrides (" + applied + ")", DesignTokens.Semantic.INFO);
-            }
+            JsonElement json = data.importVanillaJsonFromFile(fileName);
+            ItemEditorSnapshot imported = new ItemEditorSnapshot();
+            imported.item = json;
+            imported.meta = new ItemEditorSnapshot.SnapshotMeta();
+            imported.meta.action = "import";
+            imported.meta.itemId = getCurrentItemId();
+            imported.meta.itemName = getEditedItem().getHoverName().getString();
+            applySnapshotToModule(imported, "Imported " + fileName);
+            ItemEditorSnapshot after = captureSnapshot("import", "After import");
+            recordHistoryEntry("import", before, after);
+            baselineSnapshot = after;
+            showStatus("Imported vanilla JSON " + fileName, DesignTokens.Semantic.INFO);
         } catch (Exception e) {
             showStatus("Import failed: " + e.getMessage(), DesignTokens.Semantic.ERROR);
         }
@@ -1701,7 +2161,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private boolean supportsDataOps() {
-        return activeModule instanceof WeaponModule || activeModule instanceof ArmorModule;
+        return activeModule instanceof WeaponModule
+            || activeModule instanceof ArmorModule
+            || activeModule instanceof com.devmod.client.ui.editor.modules.RecipeModule;
     }
 
     private List<ItemEditorDataManager.PresetData> getFavoritePresetsForActiveType() {
@@ -1855,7 +2317,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             ConfirmDialog dialog = ConfirmDialog.unsavedChanges(
                 module.getPendingChanges().size(),
                 () -> {
+                    ItemEditorSnapshot before = captureSnapshot("template", "Before template");
                     applyTemplateInternal(template);
+                    ItemEditorSnapshot after = captureSnapshot("template", "After template");
+                    recordHistoryEntry("template", before, after);
+                    baselineSnapshot = after;
                     closeOverlay();
                 },
                 () -> {});
@@ -1863,11 +2329,20 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             dialog.show();
             return;
         }
+        ItemEditorSnapshot before = captureSnapshot("template", "Before template");
         applyTemplateInternal(template);
+        ItemEditorSnapshot after = captureSnapshot("template", "After template");
+        recordHistoryEntry("template", before, after);
+        baselineSnapshot = after;
         closeOverlay();
     }
 
     private void applyTemplateInternal(ItemEditorDataManager.TemplateData template) {
+        var snapshot = template.snapshot;
+        if (snapshot != null && snapshot.item != null) {
+            applySnapshotToModule(snapshot, "Applied template: " + template.name);
+            return;
+        }
         ItemStack target = isPreviewMode() ? getEditedItem().copy() : getEditedItem();
 
         // Enchantments
@@ -2024,6 +2499,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public boolean handleFavoritesClick(double mouseX, double mouseY) {
+        if (!PRESETS_ENABLED) {
+            return false;
+        }
         ResponsiveLayout.Rect leftPanel = layout.getFavoritesPanelArea();
         if (leftPanel.isEmpty()) return false;
         if (mouseX < leftPanel.x() || mouseX > leftPanel.right() || mouseY < leftPanel.y() || mouseY > leftPanel.bottom()) {
@@ -2358,30 +2836,17 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             }
         }
 
-        boolean isArmor = ArmorConfigManager.isArmor(stack);
-        boolean hasGlobal = isArmor
-            ? ArmorConfigManager.hasGlobalConfig(stack.getItem())
-            : WeaponConfigManager.hasGlobalConfig(stack.getItem());
+        boolean isArmor = ArmorConfigHandler.isArmor(stack);
 
         if (isArmor) {
             if (hasArmorSpecific) {
                 sources.add(SOURCE_SPECIFIC_ARMOR);
-                if (hasGlobal) {
-                    sources.add(SOURCE_GLOBAL_OVERRIDE);
-                }
-            } else if (hasGlobal) {
-                sources.add(SOURCE_GLOBAL);
             } else {
                 sources.add(SOURCE_VANILLA);
             }
         } else {
             if (hasWeaponSpecific) {
                 sources.add(SOURCE_SPECIFIC_WEAPON);
-                if (hasGlobal) {
-                    sources.add(SOURCE_GLOBAL_OVERRIDE);
-                }
-            } else if (hasGlobal) {
-                sources.add(SOURCE_GLOBAL);
             } else {
                 sources.add(SOURCE_VANILLA);
             }
@@ -2442,4 +2907,29 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private void setSelectedSlotInfo(@Nullable SlotSelector.SlotInfo slot) {
         editorState.setSelectedSlot(slot);
     }
+
+    private enum HistoryFilter {
+        ALL("All", ""),
+        APPLY("Apply", "apply"),
+        IMPORT("Import", "import"),
+        TEMPLATE("Template", "template"),
+        RESET("Reset", "reset"),
+        ROLLBACK("Rollback", "rollback");
+
+        @Nonnull private final String label;
+        @Nonnull private final String actionKey;
+
+        HistoryFilter(String label, String actionKey) {
+            this.label = label;
+            this.actionKey = actionKey;
+        }
+
+        public boolean matches(String action) {
+            if (this == ALL) return true;
+            if (action == null) return false;
+            return action.equalsIgnoreCase(actionKey);
+        }
+    }
+
+    private record HistoryFilterHit(HistoryFilter filter, ResponsiveLayout.Rect bounds) {}
 }

@@ -2,6 +2,8 @@ package com.devmod.mailbox.api;
 
 import java.nio.file.Path;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +23,8 @@ public final class ApiServerLauncher {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiServerLauncher.class);
 
     private static boolean startAttempted = false;
+    @Nullable
+    private static ClassLoader apiClassLoader = null;
 
     private ApiServerLauncher() {}
 
@@ -65,7 +69,7 @@ public final class ApiServerLauncher {
         // Javalin is available - start the server via reflection
         // We must load MailboxApiServer from the custom classloader so it can
         // access Javalin classes
-        ClassLoader javalinLoader = JavalinBootstrap.getClassLoader();
+        ClassLoader javalinLoader = resolveClassLoader();
         if (javalinLoader == null) {
             LOGGER.error("[API] Custom classloader not available");
             return false;
@@ -82,6 +86,7 @@ public final class ApiServerLauncher {
             java.lang.reflect.Method startMethod = serverClass.getMethod("start", int.class);
             startMethod.invoke(null, port);
 
+            apiClassLoader = javalinLoader;
             LOGGER.info("[API] Mailbox API server started successfully on port {}", port);
             return true;
         } catch (ClassNotFoundException e) {
@@ -107,7 +112,7 @@ public final class ApiServerLauncher {
      * the server was never started.
      */
     public static void stop() {
-        ClassLoader javalinLoader = JavalinBootstrap.getClassLoader();
+        ClassLoader javalinLoader = resolveApiClassLoader();
         if (javalinLoader == null) {
             return;
         }
@@ -123,8 +128,10 @@ public final class ApiServerLauncher {
             LOGGER.error("[API] Error stopping API server", e);
         }
 
-        // Also shutdown the classloader
-        JavalinBootstrap.shutdown();
+        // Also shutdown the custom classloader if we own it
+        if (javalinLoader == JavalinBootstrap.getClassLoader()) {
+            JavalinBootstrap.shutdown();
+        }
     }
 
     /**
@@ -133,7 +140,7 @@ public final class ApiServerLauncher {
      * @return true if server is running
      */
     public static boolean isRunning() {
-        ClassLoader javalinLoader = JavalinBootstrap.getClassLoader();
+        ClassLoader javalinLoader = resolveApiClassLoader();
         if (javalinLoader == null) {
             return false;
         }
@@ -155,7 +162,7 @@ public final class ApiServerLauncher {
      * @return port number, or -1 if not running
      */
     public static int getPort() {
-        ClassLoader javalinLoader = JavalinBootstrap.getClassLoader();
+        ClassLoader javalinLoader = resolveApiClassLoader();
         if (javalinLoader == null) {
             return -1;
         }
@@ -187,5 +194,26 @@ public final class ApiServerLauncher {
      */
     public static boolean needsDownload() {
         return !JavalinBootstrap.isAvailable();
+    }
+
+    @Nullable
+    private static ClassLoader resolveApiClassLoader() {
+        if (apiClassLoader != null) {
+            return apiClassLoader;
+        }
+        return resolveClassLoader();
+    }
+
+    @Nullable
+    private static ClassLoader resolveClassLoader() {
+        ClassLoader javalinLoader = JavalinBootstrap.getClassLoader();
+        if (javalinLoader != null) {
+            return javalinLoader;
+        }
+        if (JavalinBootstrap.isAvailable()) {
+            LOGGER.info("[API] Using default classloader for Mailbox API");
+            return ApiServerLauncher.class.getClassLoader();
+        }
+        return null;
     }
 }

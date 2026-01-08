@@ -29,7 +29,8 @@ void main() {
     // Normal.x = progress along trail (0 = weapon tip, 1 = trail end)
     // Normal.y = width factor (for edge softening)
     // Normal.z = age/fade factor
-    trailProgress = Normal.x;
+    float lengthScale = max(TrailLength, 0.001);
+    trailProgress = clamp(Normal.x / lengthScale, 0.0, 1.0);
     trailWidth = Normal.y;
     trailAge = Normal.z;
 }

@@ -211,9 +211,9 @@ public class UsableModule extends AbstractEditorModule {
             DevMod.LOGGER.info("[Editor][Usable][ApplyPreview] item={} useDur={} cooldown={} throwable={}",
                 item.getItem(), stats.getUseDuration(), stats.getCooldownDuration(), stats.isThrowable());
             // Apply full stack edits to the preview copy
-            com.devmod.config.UsableConfigManager.setSpecificStats(copy, stats.copy());
+            com.devmod.config.handler.impl.UsableConfigHandler.INSTANCE.setSpecificStats(copy, stats.copy());
             // Reload from the written stack to pick up server-side clamps/normalization
-            UsableStats applied = com.devmod.config.UsableConfigManager.getStats(copy).copy();
+            UsableStats applied = com.devmod.config.handler.impl.UsableConfigHandler.INSTANCE.getStats(copy).copy();
             core.setStats(applied.copy());
             withDirtyTrackingDisabled(ui::updateSlidersFromStats);
             // Store the preview copy in the base class so UI can render it without mutating the real item
@@ -255,6 +255,16 @@ public class UsableModule extends AbstractEditorModule {
         UsableModuleCore core = requireCore();
         UsableModuleUI ui = requireUi();
         core.setStats(core.getOriginalStats().copy());
+        ui.updateSlidersFromStats();
+        clearDirty();
+    }
+
+    @Override
+    public void resetToDefaults() {
+        UsableModuleUI ui = requireUi();
+        ItemStack baseline = originalItem.copy();
+        com.devmod.config.handler.impl.UsableConfigHandler.clearItemSpecificStats(baseline);
+        setItem(baseline);
         ui.updateSlidersFromStats();
         clearDirty();
     }

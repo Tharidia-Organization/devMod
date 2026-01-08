@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "rune_blocks",
+  "pattern": [
+    "SLS",
+    "LRL",
+    "SLS"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stone"
+    },
+    "L": {
+      "item": "minecraft:lapis_lazuli"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "result": {
+    "id": "devmod:rune_enhancer",
+    "count": 1
+  }
+}

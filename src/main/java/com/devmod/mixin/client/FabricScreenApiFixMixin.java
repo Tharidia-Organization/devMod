@@ -3,6 +3,9 @@ package com.devmod.mixin.client;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -29,6 +32,7 @@ import com.devmod.client.endurance.ClientQuestCache;
 @Mixin(value = Minecraft.class, priority = 500)
 @SuppressWarnings({"UnusedMethod", "UnusedVariable"}) // Mixin methods are invoked via bytecode injection
 public class FabricScreenApiFixMixin {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FabricScreenApiFixMixin.class);
 
     @Shadow
     @Nullable
@@ -82,9 +86,15 @@ public class FabricScreenApiFixMixin {
         // Suppress vanilla DeathScreen during quest death/respawn flow
         // Our custom QuestDeathScreen is sent via network packet from server
         // Uses shouldSuppressVanillaDeathScreen() which persists through respawn
-        if (newScreen instanceof DeathScreen && ClientQuestCache.shouldSuppressVanillaDeathScreen()) {
-            ci.cancel();
-            return;
+        if (newScreen instanceof DeathScreen) {
+            boolean suppress = ClientQuestCache.shouldSuppressVanillaDeathScreen();
+            boolean inInstance = ClientQuestCache.isInInstanceDimension();
+            if (suppress || inInstance) {
+                LOGGER.info("[EnduranceQuest][Client] Suppressing vanilla DeathScreen (suppress={}, inInstance={})",
+                    suppress, inInstance);
+                ci.cancel();
+                return;
+            }
         }
 
         if (this.screen == null) {

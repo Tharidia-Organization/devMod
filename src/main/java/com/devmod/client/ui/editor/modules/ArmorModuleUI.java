@@ -24,7 +24,7 @@ import com.devmod.client.ui.editor.debug.ItemDebugInfo;
 import com.devmod.client.ui.editor.debug.ValueComparison;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.stats.ArmorStats;
 
 public class ArmorModuleUI {
@@ -585,7 +585,7 @@ public class ArmorModuleUI {
         List<ValueComparison> comparisons = new ArrayList<>();
         CompoundTag tag = core.getCustomDataTag(item);
         boolean hasSpecific = tag.contains(NBT_KEY);
-        boolean hasGlobal = ArmorConfigManager.hasGlobalConfig(item.getItem());
+        boolean hasGlobal = ArmorConfigHandler.hasGlobalConfig(item.getItem());
         boolean hasServerStats = hasSpecific || hasGlobal;
         ArmorStats serverStats = core.resolveServerStats(tag, item);
         ArmorStats baseline = originalStats == null ? new ArmorStats() : originalStats;

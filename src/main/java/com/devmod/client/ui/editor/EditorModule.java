@@ -131,6 +131,12 @@ public interface EditorModule {
     /** Reset to original values */
     void resetToOriginal();
 
+    /**
+     * Reset to vanilla/mod defaults (clearing custom stats).
+     * Default behavior falls back to resetToOriginal().
+     */
+    default void resetToDefaults() { resetToOriginal(); }
+
     // ═══════════════════════════════════════════════════════════════
     // UNDO/REDO
     // ═══════════════════════════════════════════════════════════════

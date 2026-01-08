@@ -453,6 +453,15 @@ public class EnduranceEventCombat {
 
         if (session.isPresent()) {
             EnduranceQuestManager.ActiveQuestSession activeSession = session.get();
+            LOGGER.info("[EnduranceQuest][DeathEventCombat] player={}, questState={}, awaitingRespawn={}, respawnRequested={}, wave={}, questId={}, instanceId={}, dimension={}",
+                player.getName().getString(),
+                activeSession.getQuest().getState(),
+                activeSession.isAwaitingRespawnChoice(),
+                activeSession.isRespawnRequested(),
+                activeSession.getQuest().getCurrentWave(),
+                activeSession.getQuest().getQuestId(),
+                activeSession.getInstanceId(),
+                player.level().dimension().location());
             UUID questId = activeSession.getQuest().getQuestId();
             ArenaHandle handle = activeSession.getArenaHandle();
             if (handle != null) {

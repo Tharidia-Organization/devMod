@@ -23,7 +23,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import com.devmod.DevMod;
 import com.devmod.combat.HitHelper;
 import com.devmod.config.MobConfigManager;
-import com.devmod.config.WeaponConfigManager;
+import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.network.UpdateMobStatsPayload;
 import com.devmod.network.UpdateWeaponPayload;
 import com.devmod.stats.WeaponStats;
@@ -46,13 +46,13 @@ public class DevModGameTests {
     @BeforeBatch(batch = "core")
     public static void setupCoreBatch(ServerLevel level) {
         DevMod.LOGGER.info("[GameTest] Setting up 'core' batch - resetting weapon configs");
-        WeaponConfigManager.clearAllGlobalStats();
+        WeaponConfigHandler.clearAllGlobalStats();
     }
 
     @AfterBatch(batch = "core")
     public static void cleanupCoreBatch(ServerLevel level) {
         DevMod.LOGGER.info("[GameTest] Cleaning up 'core' batch");
-        WeaponConfigManager.clearAllGlobalStats();
+        WeaponConfigHandler.clearAllGlobalStats();
     }
 
     @BeforeBatch(batch = "network")
@@ -80,14 +80,14 @@ public class DevModGameTests {
     @BeforeBatch(batch = "config")
     public static void setupConfigBatch(ServerLevel level) {
         DevMod.LOGGER.info("[GameTest] Setting up 'config' batch - clearing all configs");
-        WeaponConfigManager.clearAllGlobalStats();
+        WeaponConfigHandler.clearAllGlobalStats();
         MobConfigManager.clearAllGlobalStats();
     }
 
     @AfterBatch(batch = "config")
     public static void cleanupConfigBatch(ServerLevel level) {
         DevMod.LOGGER.info("[GameTest] Cleaning up 'config' batch - final reset");
-        WeaponConfigManager.clearAllGlobalStats();
+        WeaponConfigHandler.clearAllGlobalStats();
         MobConfigManager.clearAllGlobalStats();
     }
 
@@ -144,7 +144,7 @@ public class DevModGameTests {
         original.save(tag);
 
         // Load from CompoundTag
-        WeaponStats loaded = WeaponStats.load(tag);
+        WeaponStats loaded = WeaponStats.fromTag(tag);
 
         // Verify all values match
         helper.assertTrue(Math.abs(loaded.getHeadMult() - original.getHeadMult()) < EPSILON,
@@ -494,7 +494,7 @@ public class DevModGameTests {
     // ============================================================
 
     /**
-     * TEST 13: WeaponConfigManager Global Stats by Item Type
+     * TEST 13: WeaponConfigHandler Global Stats by Item Type
      * Verifies that global weapon stats are stored and retrieved per item type.
      */
     @GameTest(template = TEMPLATE_EMPTY, batch = "config")
@@ -503,11 +503,11 @@ public class DevModGameTests {
         WeaponStats customStats = new WeaponStats();
         customStats.setHeadMult(3.0f);
         customStats.setBaseDamageBonus(5.0f);
-        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.DIAMOND_SWORD), customStats);
+        WeaponConfigHandler.INSTANCE.setGlobalStats(Objects.requireNonNull(Items.DIAMOND_SWORD), customStats);
 
         // Create item and get stats
         ItemStack sword = new ItemStack(Objects.requireNonNull(Items.DIAMOND_SWORD));
-        WeaponStats retrieved = WeaponConfigManager.getStats(sword);
+        WeaponStats retrieved = WeaponConfigHandler.INSTANCE.getStats(sword);
 
         helper.assertTrue(Math.abs(retrieved.getHeadMult() - 3.0f) < EPSILON,
             "Global head multiplier should be 3.0");
@@ -515,13 +515,13 @@ public class DevModGameTests {
             "Global base damage bonus should be 5.0");
 
         // Cleanup
-        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.DIAMOND_SWORD), new WeaponStats());
+        WeaponConfigHandler.INSTANCE.setGlobalStats(Objects.requireNonNull(Items.DIAMOND_SWORD), new WeaponStats());
 
         helper.succeed();
     }
 
     /**
-     * TEST 14: WeaponConfigManager Specific NBT Stats Priority
+     * TEST 14: WeaponConfigHandler Specific NBT Stats Priority
      * Verifies that item-specific NBT stats have highest priority over global stats.
      */
     @GameTest(template = TEMPLATE_EMPTY, batch = "config")
@@ -529,22 +529,22 @@ public class DevModGameTests {
         // Set global stats for iron sword
         WeaponStats globalStats = new WeaponStats();
         globalStats.setHeadMult(2.0f);
-        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.IRON_SWORD), globalStats);
+        WeaponConfigHandler.INSTANCE.setGlobalStats(Objects.requireNonNull(Items.IRON_SWORD), globalStats);
 
         // Create item with specific NBT stats (higher priority)
         ItemStack sword = new ItemStack(Objects.requireNonNull(Items.IRON_SWORD));
         WeaponStats specificStats = new WeaponStats();
         specificStats.setHeadMult(4.0f);
-        WeaponConfigManager.setSpecificStats(sword, specificStats);
+        WeaponConfigHandler.INSTANCE.setSpecificStats(sword, specificStats);
 
         // Get stats - should use specific NBT, not global
-        WeaponStats retrieved = WeaponConfigManager.getStats(sword);
+        WeaponStats retrieved = WeaponConfigHandler.INSTANCE.getStats(sword);
 
         helper.assertTrue(Math.abs(retrieved.getHeadMult() - 4.0f) < EPSILON,
             "Specific NBT stats should override global: expected 4.0, got " + retrieved.getHeadMult());
 
         // Cleanup
-        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.IRON_SWORD), new WeaponStats());
+        WeaponConfigHandler.INSTANCE.setGlobalStats(Objects.requireNonNull(Items.IRON_SWORD), new WeaponStats());
 
         helper.succeed();
     }
@@ -556,29 +556,29 @@ public class DevModGameTests {
     @GameTest(template = TEMPLATE_EMPTY, batch = "config")
     public static void configFallbackChain(GameTestHelper helper) {
         // Clear all configs
-        WeaponConfigManager.clearAllGlobalStats();
+        WeaponConfigHandler.clearAllGlobalStats();
 
         // 1. No config set - should return defaults
         ItemStack goldenSword = new ItemStack(Objects.requireNonNull(Items.GOLDEN_SWORD));
-        WeaponStats defaultStats = WeaponConfigManager.getStats(goldenSword);
+        WeaponStats defaultStats = WeaponConfigHandler.INSTANCE.getStats(goldenSword);
         helper.assertTrue(Math.abs(defaultStats.getHeadMult() - 1.5f) < EPSILON,
             "Default head multiplier should be 1.5");
 
         // 2. Set global config - should override defaults
         WeaponStats globalStats = new WeaponStats();
         globalStats.setHeadMult(2.5f);
-        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.GOLDEN_SWORD), globalStats);
+        WeaponConfigHandler.INSTANCE.setGlobalStats(Objects.requireNonNull(Items.GOLDEN_SWORD), globalStats);
 
-        WeaponStats afterGlobal = WeaponConfigManager.getStats(goldenSword);
+        WeaponStats afterGlobal = WeaponConfigHandler.INSTANCE.getStats(goldenSword);
         helper.assertTrue(Math.abs(afterGlobal.getHeadMult() - 2.5f) < EPSILON,
             "Global config should override defaults: expected 2.5, got " + afterGlobal.getHeadMult());
 
         // 3. Set specific NBT - should override global
         WeaponStats specificStats = new WeaponStats();
         specificStats.setHeadMult(3.5f);
-        WeaponConfigManager.setSpecificStats(goldenSword, specificStats);
+        WeaponConfigHandler.INSTANCE.setSpecificStats(goldenSword, specificStats);
 
-        WeaponStats afterSpecific = WeaponConfigManager.getStats(goldenSword);
+        WeaponStats afterSpecific = WeaponConfigHandler.INSTANCE.getStats(goldenSword);
         helper.assertTrue(Math.abs(afterSpecific.getHeadMult() - 3.5f) < EPSILON,
             "Specific NBT should override global: expected 3.5, got " + afterSpecific.getHeadMult());
 

@@ -64,6 +64,24 @@ public class RecipeModuleUI {
         createReplaceVanillaToggle();
     }
 
+    public void syncFromCore() {
+        if (shapedToggle != null) {
+            shapedToggle.setValue(core.getCraftingType() == CraftingType.SHAPED);
+        }
+        if (idField != null) {
+            idField.setValue(core.getRecipeId());
+        }
+        if (groupField != null) {
+            groupField.setValue(core.getRecipeGroup());
+        }
+        if (quantitySlider != null) {
+            quantitySlider.setValue(core.getResultQuantity());
+        }
+        if (replaceVanillaToggle != null) {
+            replaceVanillaToggle.setValue(core.isReplaceVanillaRecipe());
+        }
+    }
+
     private void createShapedToggle() {
         shapedToggle = new EditorToggle("shaped_toggle", "Shaped Recipe",
                 core.getCraftingType() == CraftingType.SHAPED)

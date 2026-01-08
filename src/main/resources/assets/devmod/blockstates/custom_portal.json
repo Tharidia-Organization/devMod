@@ -1,0 +1,196 @@
+{
+  "variants": {
+    "axis=x,color=white,linked=true": {
+      "model": "devmod:block/custom_portal_white_ns"
+    },
+    "axis=z,color=white,linked=true": {
+      "model": "devmod:block/custom_portal_white_ew"
+    },
+    "axis=x,color=white,linked=false": {
+      "model": "devmod:block/custom_portal_white_off_ns"
+    },
+    "axis=z,color=white,linked=false": {
+      "model": "devmod:block/custom_portal_white_off_ew"
+    },
+    "axis=x,color=orange,linked=true": {
+      "model": "devmod:block/custom_portal_orange_ns"
+    },
+    "axis=z,color=orange,linked=true": {
+      "model": "devmod:block/custom_portal_orange_ew"
+    },
+    "axis=x,color=orange,linked=false": {
+      "model": "devmod:block/custom_portal_orange_off_ns"
+    },
+    "axis=z,color=orange,linked=false": {
+      "model": "devmod:block/custom_portal_orange_off_ew"
+    },
+    "axis=x,color=magenta,linked=true": {
+      "model": "devmod:block/custom_portal_magenta_ns"
+    },
+    "axis=z,color=magenta,linked=true": {
+      "model": "devmod:block/custom_portal_magenta_ew"
+    },
+    "axis=x,color=magenta,linked=false": {
+      "model": "devmod:block/custom_portal_magenta_off_ns"
+    },
+    "axis=z,color=magenta,linked=false": {
+      "model": "devmod:block/custom_portal_magenta_off_ew"
+    },
+    "axis=x,color=light_blue,linked=true": {
+      "model": "devmod:block/custom_portal_light_blue_ns"
+    },
+    "axis=z,color=light_blue,linked=true": {
+      "model": "devmod:block/custom_portal_light_blue_ew"
+    },
+    "axis=x,color=light_blue,linked=false": {
+      "model": "devmod:block/custom_portal_light_blue_off_ns"
+    },
+    "axis=z,color=light_blue,linked=false": {
+      "model": "devmod:block/custom_portal_light_blue_off_ew"
+    },
+    "axis=x,color=yellow,linked=true": {
+      "model": "devmod:block/custom_portal_yellow_ns"
+    },
+    "axis=z,color=yellow,linked=true": {
+      "model": "devmod:block/custom_portal_yellow_ew"
+    },
+    "axis=x,color=yellow,linked=false": {
+      "model": "devmod:block/custom_portal_yellow_off_ns"
+    },
+    "axis=z,color=yellow,linked=false": {
+      "model": "devmod:block/custom_portal_yellow_off_ew"
+    },
+    "axis=x,color=lime,linked=true": {
+      "model": "devmod:block/custom_portal_lime_ns"
+    },
+    "axis=z,color=lime,linked=true": {
+      "model": "devmod:block/custom_portal_lime_ew"
+    },
+    "axis=x,color=lime,linked=false": {
+      "model": "devmod:block/custom_portal_lime_off_ns"
+    },
+    "axis=z,color=lime,linked=false": {
+      "model": "devmod:block/custom_portal_lime_off_ew"
+    },
+    "axis=x,color=pink,linked=true": {
+      "model": "devmod:block/custom_portal_pink_ns"
+    },
+    "axis=z,color=pink,linked=true": {
+      "model": "devmod:block/custom_portal_pink_ew"
+    },
+    "axis=x,color=pink,linked=false": {
+      "model": "devmod:block/custom_portal_pink_off_ns"
+    },
+    "axis=z,color=pink,linked=false": {
+      "model": "devmod:block/custom_portal_pink_off_ew"
+    },
+    "axis=x,color=gray,linked=true": {
+      "model": "devmod:block/custom_portal_gray_ns"
+    },
+    "axis=z,color=gray,linked=true": {
+      "model": "devmod:block/custom_portal_gray_ew"
+    },
+    "axis=x,color=gray,linked=false": {
+      "model": "devmod:block/custom_portal_gray_off_ns"
+    },
+    "axis=z,color=gray,linked=false": {
+      "model": "devmod:block/custom_portal_gray_off_ew"
+    },
+    "axis=x,color=light_gray,linked=true": {
+      "model": "devmod:block/custom_portal_light_gray_ns"
+    },
+    "axis=z,color=light_gray,linked=true": {
+      "model": "devmod:block/custom_portal_light_gray_ew"
+    },
+    "axis=x,color=light_gray,linked=false": {
+      "model": "devmod:block/custom_portal_light_gray_off_ns"
+    },
+    "axis=z,color=light_gray,linked=false": {
+      "model": "devmod:block/custom_portal_light_gray_off_ew"
+    },
+    "axis=x,color=cyan,linked=true": {
+      "model": "devmod:block/custom_portal_cyan_ns"
+    },
+    "axis=z,color=cyan,linked=true": {
+      "model": "devmod:block/custom_portal_cyan_ew"
+    },
+    "axis=x,color=cyan,linked=false": {
+      "model": "devmod:block/custom_portal_cyan_off_ns"
+    },
+    "axis=z,color=cyan,linked=false": {
+      "model": "devmod:block/custom_portal_cyan_off_ew"
+    },
+    "axis=x,color=purple,linked=true": {
+      "model": "devmod:block/custom_portal_purple_ns"
+    },
+    "axis=z,color=purple,linked=true": {
+      "model": "devmod:block/custom_portal_purple_ew"
+    },
+    "axis=x,color=purple,linked=false": {
+      "model": "devmod:block/custom_portal_purple_off_ns"
+    },
+    "axis=z,color=purple,linked=false": {
+      "model": "devmod:block/custom_portal_purple_off_ew"
+    },
+    "axis=x,color=blue,linked=true": {
+      "model": "devmod:block/custom_portal_blue_ns"
+    },
+    "axis=z,color=blue,linked=true": {
+      "model": "devmod:block/custom_portal_blue_ew"
+    },
+    "axis=x,color=blue,linked=false": {
+      "model": "devmod:block/custom_portal_blue_off_ns"
+    },
+    "axis=z,color=blue,linked=false": {
+      "model": "devmod:block/custom_portal_blue_off_ew"
+    },
+    "axis=x,color=brown,linked=true": {
+      "model": "devmod:block/custom_portal_brown_ns"
+    },
+    "axis=z,color=brown,linked=true": {
+      "model": "devmod:block/custom_portal_brown_ew"
+    },
+    "axis=x,color=brown,linked=false": {
+      "model": "devmod:block/custom_portal_brown_off_ns"
+    },
+    "axis=z,color=brown,linked=false": {
+      "model": "devmod:block/custom_portal_brown_off_ew"
+    },
+    "axis=x,color=green,linked=true": {
+      "model": "devmod:block/custom_portal_green_ns"
+    },
+    "axis=z,color=green,linked=true": {
+      "model": "devmod:block/custom_portal_green_ew"
+    },
+    "axis=x,color=green,linked=false": {
+      "model": "devmod:block/custom_portal_green_off_ns"
+    },
+    "axis=z,color=green,linked=false": {
+      "model": "devmod:block/custom_portal_green_off_ew"
+    },
+    "axis=x,color=red,linked=true": {
+      "model": "devmod:block/custom_portal_red_ns"
+    },
+    "axis=z,color=red,linked=true": {
+      "model": "devmod:block/custom_portal_red_ew"
+    },
+    "axis=x,color=red,linked=false": {
+      "model": "devmod:block/custom_portal_red_off_ns"
+    },
+    "axis=z,color=red,linked=false": {
+      "model": "devmod:block/custom_portal_red_off_ew"
+    },
+    "axis=x,color=black,linked=true": {
+      "model": "devmod:block/custom_portal_black_ns"
+    },
+    "axis=z,color=black,linked=true": {
+      "model": "devmod:block/custom_portal_black_ew"
+    },
+    "axis=x,color=black,linked=false": {
+      "model": "devmod:block/custom_portal_black_off_ns"
+    },
+    "axis=z,color=black,linked=false": {
+      "model": "devmod:block/custom_portal_black_off_ew"
+    }
+  }
+}
