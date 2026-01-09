@@ -45,6 +45,8 @@ import com.devmod.config.GameMechanicsConfig;
 import com.devmod.config.GameplayOverridesManager;
 import com.devmod.core.Services;
 import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.entity.ModEntities;
+import com.devmod.hologram.HologramModule;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.portal.PortalBlocks;
 import com.devmod.portal.PortalConfig;
@@ -110,6 +112,9 @@ public class DevMod {
         FOOD_COMPONENTS.register(eventBus);
         FUEL_COMPONENTS.register(eventBus);
 
+        // Register entity types
+        ModEntities.register(eventBus);
+
         // Register custom biome sources for multi-zone arenas
         com.devmod.runtime.biome.ModBiomeSources.register(eventBus);
 
@@ -120,6 +125,18 @@ public class DevMod {
         PortalBlocks.init();
         PortalItems.init();
         PortalCreativeTab.init(eventBus);
+
+        // Initialize Hologram module (projector block, rendering)
+        HologramModule.init(eventBus);
+
+        // Initialize Clone module (telepad, cloning system)
+        com.devmod.clone.CloneModule.init(eventBus);
+
+        // Initialize Debug module (entity scanner, debug tools)
+        com.devmod.debug.DebugModule.init(eventBus);
+
+        // Initialize Nexus decorative blocks
+        com.devmod.nexus.NexusDecorBlocks.register(eventBus);
 
         // Register configuration
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);

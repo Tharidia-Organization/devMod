@@ -1,9 +1,10 @@
 package com.devmod.portal.item;
 
-import com.devmod.portal.PortalColor;
-import com.devmod.portal.PortalData;
-import com.devmod.portal.PortalRegistry;
-import com.devmod.portal.block.CustomPortalBlock;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.annotation.Nonnull;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -23,10 +24,10 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import com.devmod.portal.PortalColor;
+import com.devmod.portal.PortalData;
+import com.devmod.portal.PortalRegistry;
+import com.devmod.portal.block.CustomPortalBlock;
 
 /**
  * Item used to link two portals together for bidirectional teleportation.

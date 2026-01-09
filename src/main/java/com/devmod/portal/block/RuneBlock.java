@@ -1,6 +1,7 @@
 package com.devmod.portal.block;
 
-import com.devmod.portal.RuneType;
+import javax.annotation.Nonnull;
+
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
@@ -21,7 +22,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import javax.annotation.Nonnull;
+import com.devmod.portal.RuneType;
 
 /**
  * Base block class for portal runes.

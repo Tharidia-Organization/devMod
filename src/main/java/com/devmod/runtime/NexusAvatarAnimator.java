@@ -16,7 +16,12 @@ import com.devmod.config.Config;
 /**
  * Handles tick-based animation for the Nexus avatar entity.
  * Provides floating movement, slow rotation, and ambient particle effects.
+ *
+ * @deprecated This class is no longer used. NexaEntity now handles its own animation
+ *             internally via {@link com.devmod.entity.NexaEntity#tick()}.
+ *             This class remains for backwards compatibility but will be removed in a future version.
  */
+@Deprecated
 public final class NexusAvatarAnimator {
     private static final Logger LOGGER = LoggerFactory.getLogger(NexusAvatarAnimator.class);
 
@@ -30,11 +35,12 @@ public final class NexusAvatarAnimator {
     private static final int END_ROD_COUNT = 3;
     private static final int ENCHANT_COUNT = 5;
 
-    // Animation state
-    private double phase = 0;
-    private int particleTick = 0;
-    private double baseY = Double.NaN;
-    private boolean initialized = false;
+    // Animation state - volatile for visibility across potential thread boundaries
+    // (e.g., initialization from spawn vs tick from server thread)
+    private volatile double phase = 0;
+    private volatile int particleTick = 0;
+    private volatile double baseY = Double.NaN;
+    private volatile boolean initialized = false;
 
     /**
      * Initialize the animator with the avatar's starting position.

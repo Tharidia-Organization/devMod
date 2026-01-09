@@ -1,14 +1,13 @@
 package com.devmod.config.handler.export;
 
-import net.minecraft.world.item.Item;
-
-import com.devmod.config.handler.IConfigHandler;
-import com.devmod.config.stats.IItemStats;
-
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+import net.minecraft.world.item.Item;
+
+import com.devmod.config.handler.IConfigHandler;
+import com.devmod.config.stats.IItemStats;
 /**
  * Extension of IConfigHandler that supports export to command strings.
  * Inspired by CraftTweaker's dumpToCommandString pattern.

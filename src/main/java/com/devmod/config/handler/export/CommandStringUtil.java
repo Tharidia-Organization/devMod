@@ -1,15 +1,14 @@
 package com.devmod.config.handler.export;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 /**
  * Utility class for serializing values to DevMod command string format.
  * Inspired by CraftTweaker's CommandStringDisplayable pattern.

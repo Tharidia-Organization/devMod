@@ -1,8 +1,10 @@
 package com.devmod.portal;
 
-import com.devmod.DevMod;
-import com.devmod.portal.block.CustomPortalBlock;
-import com.devmod.portal.block.RuneBlock;
+import java.util.EnumMap;
+import java.util.Map;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -10,10 +12,9 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.EnumMap;
-import java.util.Map;
+import com.devmod.DevMod;
+import com.devmod.portal.block.CustomPortalBlock;
+import com.devmod.portal.block.RuneBlock;
 
 /**
  * Portal module block registrations.

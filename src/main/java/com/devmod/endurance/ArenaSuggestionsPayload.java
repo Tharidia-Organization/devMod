@@ -72,6 +72,13 @@ public record ArenaSuggestionsPayload(
             String templateName = buf.readUtf(MAX_STRING_LENGTH);
             int size = buf.readVarInt();
             String biome = buf.readUtf(MAX_STRING_LENGTH);
+
+            // Preview data fields
+            String arenaShape = buf.readUtf(32);
+            boolean hasWalls = buf.readBoolean();
+            boolean hasHazards = buf.readBoolean();
+            int spawnSlotCount = buf.readVarInt();
+
             double score = buf.readDouble();
 
             // Decode score breakdown
@@ -91,7 +98,8 @@ public record ArenaSuggestionsPayload(
             }
 
             return new TemplateSuggestion(
-                templateId, templateName, size, biome, score, breakdown, isSelected, incompatibilityReason
+                templateId, templateName, size, biome, arenaShape, hasWalls, hasHazards, spawnSlotCount,
+                score, breakdown, isSelected, incompatibilityReason
             );
         }
 
@@ -101,6 +109,14 @@ public record ArenaSuggestionsPayload(
             buf.writeVarInt(suggestion.size());
             String biome = suggestion.biome();
             buf.writeUtf(biome != null ? biome : "");
+
+            // Preview data fields
+            String arenaShape = suggestion.arenaShape();
+            buf.writeUtf(arenaShape != null ? arenaShape : "RECTANGULAR");
+            buf.writeBoolean(suggestion.hasWalls());
+            buf.writeBoolean(suggestion.hasHazards());
+            buf.writeVarInt(suggestion.spawnSlotCount());
+
             buf.writeDouble(suggestion.compatibilityScore());
 
             // Encode score breakdown

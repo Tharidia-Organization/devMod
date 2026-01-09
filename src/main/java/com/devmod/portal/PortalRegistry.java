@@ -1,6 +1,18 @@
 package com.devmod.portal;
 
-import com.devmod.portal.block.CustomPortalBlock;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -14,10 +26,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import com.devmod.portal.block.CustomPortalBlock;
 
 /**
  * Central registry for all custom portals in the world.
@@ -348,6 +357,97 @@ public class PortalRegistry extends SavedData {
             }
         }
         return result;
+    }
+
+    /**
+     * Gets all portals in a named network.
+     *
+     * @param networkName the network name to search for
+     * @return list of portals in the network, empty if none found
+     */
+    @Nonnull
+    public List<PortalData> getByNetwork(@Nonnull String networkName) {
+        Objects.requireNonNull(networkName, "networkName");
+        List<PortalData> result = new ArrayList<>();
+        for (PortalData portal : portals.values()) {
+            if (portal.hasNetwork() && networkName.equals(portal.networkName())) {
+                result.add(portal);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Gets a random portal from a named network, excluding the source portal.
+     * Used for network teleportation where the destination is random.
+     *
+     * @param networkName the network name to search
+     * @param excludeId the portal ID to exclude (typically the source portal)
+     * @return a random destination portal, or empty if no valid destinations
+     */
+    @Nonnull
+    public Optional<PortalData> getRandomNetworkDestination(@Nonnull String networkName, @Nonnull UUID excludeId) {
+        Objects.requireNonNull(networkName, "networkName");
+        Objects.requireNonNull(excludeId, "excludeId");
+
+        List<PortalData> candidates = new ArrayList<>();
+        for (PortalData portal : portals.values()) {
+            if (portal.hasNetwork()
+                && networkName.equals(portal.networkName())
+                && !portal.id().equals(excludeId)
+                && portal.position().isPresent()) {
+                candidates.add(portal);
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // Pick random destination
+        int index = new Random().nextInt(candidates.size());
+        return Optional.of(candidates.get(index));
+    }
+
+    /**
+     * Adds a portal to a named network.
+     * Note: This clears any existing link or fixed destination on the portal.
+     *
+     * @param portalId the portal to add to the network
+     * @param networkName the network name
+     * @return true if successful, false if portal not found
+     */
+    public boolean addToNetwork(@Nonnull UUID portalId, @Nonnull String networkName) {
+        Objects.requireNonNull(portalId, "portalId");
+        Objects.requireNonNull(networkName, "networkName");
+
+        PortalData portal = portals.get(portalId);
+        if (portal == null) {
+            return false;
+        }
+
+        portals.put(portalId, portal.withNetwork(networkName));
+        setDirty();
+        return true;
+    }
+
+    /**
+     * Removes a portal from its network.
+     *
+     * @param portalId the portal to remove from its network
+     * @return true if successful, false if portal not found or not in a network
+     */
+    public boolean removeFromNetwork(@Nonnull UUID portalId) {
+        Objects.requireNonNull(portalId, "portalId");
+
+        PortalData portal = portals.get(portalId);
+        if (portal == null || !portal.hasNetwork()) {
+            return false;
+        }
+
+        portals.put(portalId, portal.withNetwork(null));
+        setDirty();
+        return true;
     }
 
     /**

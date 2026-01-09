@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_energy_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_energy"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_energy_slab_top"
+    }
+  }
+}

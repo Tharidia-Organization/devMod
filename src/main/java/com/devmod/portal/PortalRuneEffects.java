@@ -1,7 +1,8 @@
 package com.devmod.portal;
 
-import javax.annotation.Nonnull;
 import java.util.Set;
+
+import javax.annotation.Nonnull;
 
 /**
  * Calculated rune effects for a portal based on runes placed on its frame.

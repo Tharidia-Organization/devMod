@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "devmod:block/imprinter"
+    },
+    "facing=south": {
+      "model": "devmod:block/imprinter",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "devmod:block/imprinter",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "devmod:block/imprinter",
+      "y": 90
+    }
+  }
+}
+

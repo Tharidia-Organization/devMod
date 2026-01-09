@@ -1,79 +1,59 @@
 package com.devmod.runtime;
+
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.mojang.authlib.properties.PropertyMap;
-import com.mojang.math.Transformation;
-import com.mojang.serialization.DataResult;
-
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.nbt.Tag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Display;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.Interaction;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.ResolvableProfile;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.devmod.client.ui.editor.core.DesignTokens;
-import com.devmod.compat.mods.easynpc.EasyNpcCompat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
+
 import com.devmod.config.Config;
+import com.devmod.entity.ModEntities;
+import com.devmod.entity.NexaEntity;
 
 /**
- * Spawns and maintains the Nexus AI avatar.
+ * Spawns and maintains the Nexus AI avatar (NexaEntity).
+ *
+ * <p>This manager handles the lifecycle of the Nexa entity in the Nexus hub:
+ * <ul>
+ *   <li>Spawning when the hub is built</li>
+ *   <li>Cleanup on server shutdown</li>
+ *   <li>Finding the avatar for interaction handling</li>
+ * </ul>
+ *
+ * <p>The NexaEntity handles its own animation and interaction - this manager
+ * just handles spawn/remove lifecycle.
  */
 public final class NexusAvatarManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(NexusAvatarManager.class);
-    private static final String AVATAR_ID = "nexus_ai";
+
+    /**
+     * Tag used to identify avatar entities.
+     * @deprecated Use {@link NexaEntity#NEXA_TAG} instead. Kept for backwards compatibility cleanup.
+     */
+    @Deprecated
     public static final String AVATAR_TAG = "devmod_nexus_avatar";
-    private static final String AVATAR_ANCHOR_TAG = "devmod_nexus_avatar_anchor";
-    private static final String AVATAR_VISUAL_TAG = "devmod_nexus_avatar_visual";
-    private static final String AVATAR_HEAD_TAG = "devmod_nexus_avatar_head";
-    private static final String AVATAR_CORE_TAG = "devmod_nexus_avatar_core";
-    private static final String AVATAR_LABEL_TAG = "devmod_nexus_avatar_label";
-    private static final String AVATAR_FALLBACK_TAG = "devmod_nexus_avatar_fallback";
+
     private static final int BASE_Y_OFFSET = 2;
     private static final int CLEANUP_RADIUS = 40;
-    private static final float ANCHOR_WIDTH = 1.0f;
-    private static final float ANCHOR_HEIGHT = 2.2f;
-    private static final float HEAD_SCALE = 1.15f;
-    private static final float CORE_SCALE = 0.45f;
-    private static final Vec3 HEAD_OFFSET = new Vec3(0.0, 0.75, 0.0);
-    private static final Vec3 CORE_OFFSET = new Vec3(0.0, 0.25, 0.0);
-    private static final Vec3 LABEL_OFFSET = new Vec3(0.0, 1.45, 0.0);
-
-    // Animator instance for floating/particles
-    private static final NexusAvatarAnimator animator = new NexusAvatarAnimator();
 
     private NexusAvatarManager() {}
 
-    public static void spawn(ServerLevel level, BlockPos hubOrigin) {
+    /**
+     * Spawn the Nexa avatar at the hub origin.
+     *
+     * @param level The server level (Nexus dimension)
+     * @param hubOrigin The hub center position
+     */
+    public static void spawn(@Nullable ServerLevel level, @Nullable BlockPos hubOrigin) {
         if (level == null || hubOrigin == null) {
             return;
         }
@@ -82,127 +62,195 @@ public final class NexusAvatarManager {
             return;
         }
 
+        // Remove any existing avatar first
         remove(level, hubOrigin);
-        resetAnimator();
 
+        // Calculate spawn position
         BlockPos spawnPos = resolveSpawnPos(hubOrigin);
-        // Initialize animator with target Y position at spawn time to avoid race condition
-        animator.initializeWithTargetY(spawnPos.getY());
-
         String name = resolveName();
-        ItemStack headItem = buildHeadItem(Config.NEXUS_AVATAR_SKIN.get());
+        String skinName = resolveSkinName();
 
-        if (EasyNpcCompat.isAvailable()) {
-            UUID npcId = EasyNpcCompat.spawnNpc(level, spawnPos, AVATAR_ID, name);
-            if (npcId != null) {
-                Entity entity = level.getEntity(npcId);
-                if (entity != null) {
-                    tuneEntity(entity, name, headItem);
-                    return;
-                }
-            }
+        // Create the NexaEntity
+        NexaEntity nexa = new NexaEntity(ModEntities.NEXA.get(), level);
+        nexa.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
+        nexa.resetBaseY(spawnPos.getY());
+
+        // Configure the entity
+        nexa.setCustomName(Component.literal(name));
+        nexa.setCustomNameVisible(true);
+        nexa.setGlowingTag(Config.NEXUS_AVATAR_GLOW.get());
+
+        // Set skin if specified
+        if (!skinName.isEmpty()) {
+            nexa.setSkinName(skinName);
         }
 
-        spawnFallback(level, spawnPos, name, headItem);
+        // Spawn the entity
+        if (level.addFreshEntity(nexa)) {
+            LOGGER.info("[NexusAvatar] Spawned NexaEntity '{}' at {}", name, spawnPos);
+        } else {
+            LOGGER.warn("[NexusAvatar] Failed to spawn NexaEntity at {}", spawnPos);
+        }
     }
 
-    public static void remove(ServerLevel level, BlockPos hubOrigin) {
+    /**
+     * Remove any existing avatar from the level.
+     *
+     * @param level The server level
+     * @param hubOrigin The hub center position
+     */
+    public static void remove(@Nullable ServerLevel level, @Nullable BlockPos hubOrigin) {
         if (level == null) {
             return;
         }
-        if (EasyNpcCompat.isAvailable()) {
-            EasyNpcCompat.removeNpc(level, AVATAR_ID);
+
+        AABB bounds = resolveCleanupBounds(hubOrigin);
+
+        // Remove NexaEntity instances
+        List<NexaEntity> nexaEntities = level.getEntitiesOfClass(NexaEntity.class, bounds);
+        for (NexaEntity nexa : nexaEntities) {
+            nexa.discard();
         }
-        AABB bounds = Objects.requireNonNull(resolveCleanupBounds(hubOrigin));
-        List<Entity> tagged = level.getEntities((Entity) null, bounds,
-            entity -> entity.getTags().contains(AVATAR_TAG));
-        for (Entity entity : tagged) {
-            entity.discard();
+
+        // Also clean up legacy entities (for migration from old system)
+        cleanupLegacyEntities(level, bounds);
+
+        if (!nexaEntities.isEmpty()) {
+            LOGGER.debug("[NexusAvatar] Removed {} NexaEntity instance(s)", nexaEntities.size());
         }
     }
 
-    public static boolean hasAvatar(ServerLevel level, BlockPos hubOrigin) {
+    /**
+     * Clean up legacy avatar entities from the old EasyNPC/fallback system.
+     */
+    private static void cleanupLegacyEntities(@Nonnull ServerLevel level, @Nonnull AABB bounds) {
+        // Remove entities with old avatar tags
+        List<Entity> legacyEntities = level.getEntities((Entity) null, bounds,
+            entity -> entity.getTags().contains(AVATAR_TAG) ||
+                      entity.getTags().contains(NexaEntity.NEXA_TAG));
+
+        int legacyCount = 0;
+        for (Entity entity : legacyEntities) {
+            if (!(entity instanceof NexaEntity)) {
+                entity.discard();
+                legacyCount++;
+            }
+        }
+
+        if (legacyCount > 0) {
+            LOGGER.debug("[NexusAvatar] Cleaned up {} legacy avatar entities", legacyCount);
+        }
+    }
+
+    /**
+     * Check if an avatar exists in the level.
+     *
+     * @param level The server level
+     * @param hubOrigin The hub center position
+     * @return true if an avatar exists
+     */
+    public static boolean hasAvatar(@Nullable ServerLevel level, @Nullable BlockPos hubOrigin) {
         if (level == null) {
             return false;
         }
-        AABB bounds = Objects.requireNonNull(resolveCleanupBounds(hubOrigin));
-        if (!level.getEntities((Entity) null, bounds, entity -> entity.getTags().contains(AVATAR_ANCHOR_TAG)).isEmpty()) {
-            return true;
-        }
-        return !level.getEntities((Entity) null, bounds, entity -> entity.getTags().contains(AVATAR_TAG)).isEmpty();
+        AABB bounds = resolveCleanupBounds(hubOrigin);
+        return !level.getEntitiesOfClass(NexaEntity.class, bounds).isEmpty();
     }
 
     /**
      * Find the avatar entity in the level.
+     *
+     * @param level The server level
+     * @param hubOrigin The hub center position
+     * @return The NexaEntity, or null if not found
      */
-    public static Entity findAvatar(ServerLevel level, BlockPos hubOrigin) {
+    @Nullable
+    public static NexaEntity findAvatar(@Nullable ServerLevel level, @Nullable BlockPos hubOrigin) {
         if (level == null) {
             return null;
         }
-        AABB bounds = Objects.requireNonNull(resolveCleanupBounds(hubOrigin));
-        List<Entity> avatars = level.getEntities((Entity) null, bounds,
-            entity -> entity.getTags().contains(AVATAR_ANCHOR_TAG));
-        if (!avatars.isEmpty()) {
-            return avatars.get(0);
-        }
-        avatars = level.getEntities((Entity) null, bounds,
-            entity -> entity.getTags().contains(AVATAR_TAG));
+        AABB bounds = resolveCleanupBounds(hubOrigin);
+        List<NexaEntity> avatars = level.getEntitiesOfClass(NexaEntity.class, bounds);
         return avatars.isEmpty() ? null : avatars.get(0);
     }
 
     /**
-     * Called every server tick to animate the avatar.
+     * Called every server tick.
+     * NexaEntity handles its own animation, so this is just for respawn checks.
+     *
+     * @param level The server level
+     * @param hubOrigin The hub center position
      */
-    public static void tick(ServerLevel level, BlockPos hubOrigin) {
+    public static void tick(@Nullable ServerLevel level, @Nullable BlockPos hubOrigin) {
         if (level == null || !Config.NEXUS_AVATAR_ENABLED.get()) {
             return;
         }
-        Entity avatar = findAvatar(level, hubOrigin);
-        if (avatar != null) {
-            animator.tick(avatar, Objects.requireNonNull(level));
-            if (avatar.getTags().contains(AVATAR_FALLBACK_TAG)) {
-                syncFallbackVisuals(level, hubOrigin, avatar);
-            }
+
+        // Check if avatar needs to be respawned
+        if (!hasAvatar(level, hubOrigin)) {
+            LOGGER.debug("[NexusAvatar] Avatar not found, respawning...");
+            spawn(level, hubOrigin);
         }
     }
 
     /**
-     * Reset the animator state (call when avatar is respawned).
+     * Cleanup resources when shutting down.
+     * Called from NexusDimensionManager.shutdown().
+     *
+     * @param level The server level
+     * @param hubOrigin The hub center position
      */
-    public static void resetAnimator() {
-        animator.reset();
+    public static void cleanup(@Nullable ServerLevel level, @Nullable BlockPos hubOrigin) {
+        remove(level, hubOrigin);
+        LOGGER.debug("[NexusAvatar] Cleaned up avatar");
     }
 
     /**
-     * Handle player interaction with the avatar (right-click).
-     * Opens the dialog screen.
+     * Handle player interaction with the avatar.
+     * Note: NexaEntity handles interaction directly via mobInteract(),
+     * so this method is only needed for legacy entity support.
+     *
+     * @param player The interacting player
+     * @param avatar The avatar entity
+     * @deprecated NexaEntity handles interaction directly
      */
+    @Deprecated
     public static void handleInteraction(net.minecraft.server.level.ServerPlayer player, Entity avatar) {
         if (player == null || avatar == null) {
             return;
         }
-        if (!avatar.getTags().contains(AVATAR_TAG)) {
+
+        // NexaEntity handles this in mobInteract()
+        if (avatar instanceof NexaEntity) {
             return;
         }
 
-        LOGGER.debug("[NexusAvatar] Player {} interacted with avatar", player.getName().getString());
+        // Legacy support for old avatar entities
+        if (!avatar.getTags().contains(AVATAR_TAG) && !avatar.getTags().contains(NexaEntity.NEXA_TAG)) {
+            return;
+        }
 
-        // Open greeting dialog
+        LOGGER.debug("[NexusAvatar] Legacy interaction handler for player {}", player.getName().getString());
         com.devmod.runtime.network.NexusNetworkHandler.openGreetingDialog(player);
     }
 
-    private static BlockPos resolveSpawnPos(BlockPos hubOrigin) {
+    // === Helper Methods ===
+
+    @Nonnull
+    private static BlockPos resolveSpawnPos(@Nonnull BlockPos hubOrigin) {
         BlockPos anchor = resolveAnchor(hubOrigin);
         int y = anchor.getY() + BASE_Y_OFFSET + Config.NEXUS_AVATAR_FLOAT_OFFSET.get();
         return new BlockPos(anchor.getX(), y, anchor.getZ());
     }
 
-    private static BlockPos resolveAnchor(BlockPos hubOrigin) {
-        BlockPos offset = Objects.requireNonNull(NexusSpawnManager.getDefaultSpawnOffset());
+    @Nonnull
+    private static BlockPos resolveAnchor(@Nonnull BlockPos hubOrigin) {
+        BlockPos offset = Objects.requireNonNull(NexusSpawnManager.getDefaultSpawnOffset(), "spawn offset");
         return hubOrigin.offset(offset);
     }
 
-    private static AABB resolveCleanupBounds(BlockPos hubOrigin) {
+    @Nonnull
+    private static AABB resolveCleanupBounds(@Nullable BlockPos hubOrigin) {
         BlockPos anchor = hubOrigin == null ? BlockPos.ZERO : resolveAnchor(hubOrigin);
         int minX = anchor.getX() - CLEANUP_RADIUS;
         int maxX = anchor.getX() + CLEANUP_RADIUS;
@@ -213,6 +261,7 @@ public final class NexusAvatarManager {
         return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
+    @Nonnull
     private static String resolveName() {
         String name = Config.NEXUS_AVATAR_NAME.get();
         if (name == null || name.isBlank()) {
@@ -221,245 +270,29 @@ public final class NexusAvatarManager {
         return name.trim();
     }
 
-    private static void tuneEntity(Entity entity, String name, ItemStack headItem) {
-        entity.setNoGravity(true);
-        entity.setInvulnerable(true);
-        entity.setSilent(true);
-        entity.setCustomNameVisible(true);
-        entity.setGlowingTag(Config.NEXUS_AVATAR_GLOW.get());
-        entity.addTag(AVATAR_TAG);
-        entity.addTag(AVATAR_ANCHOR_TAG);
-
-        if (name != null && !name.isBlank()) {
-            entity.setCustomName(Component.literal(Objects.requireNonNull(name.trim())));
-        }
-
-        if (!headItem.isEmpty()) {
-            if (entity instanceof Mob mob) {
-                mob.setItemSlot(EquipmentSlot.HEAD, headItem);
-                mob.setDropChance(EquipmentSlot.HEAD, 0.0f);
-                mob.setNoAi(true);
-                mob.setPersistenceRequired();
-            } else if (entity instanceof LivingEntity living) {
-                living.setItemSlot(EquipmentSlot.HEAD, headItem);
-            }
-        }
-    }
-
-    private static void spawnFallback(ServerLevel level, BlockPos pos, String name, ItemStack headItem) {
-        Vec3 anchorPos = new Vec3(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
-        Interaction anchor = new Interaction(
-            Objects.requireNonNull(EntityType.INTERACTION), Objects.requireNonNull(level));
-        anchor.setPos(anchorPos.x, anchorPos.y, anchorPos.z);
-        anchor.setNoGravity(true);
-        anchor.setInvulnerable(true);
-        anchor.setSilent(true);
-        anchor.addTag(AVATAR_TAG);
-        anchor.addTag(AVATAR_ANCHOR_TAG);
-        anchor.addTag(AVATAR_FALLBACK_TAG);
-
-        CompoundTag anchorNbt = new CompoundTag();
-        anchor.saveWithoutId(anchorNbt);
-        anchorNbt.putFloat("width", ANCHOR_WIDTH);
-        anchorNbt.putFloat("height", ANCHOR_HEIGHT);
-        anchorNbt.putBoolean("response", true);
-        anchor.load(anchorNbt);
-        anchor.setNoGravity(true);
-        anchor.setInvulnerable(true);
-        anchor.setSilent(true);
-        anchor.setGlowingTag(Config.NEXUS_AVATAR_GLOW.get());
-
-        level.addFreshEntity(anchor);
-        spawnFallbackVisuals(level, anchorPos, name, headItem);
-    }
-
-    private static void spawnFallbackVisuals(ServerLevel level, Vec3 anchorPos, String name, ItemStack headItem) {
-        Vec3 safeAnchor = Objects.requireNonNull(anchorPos);
-        if (!headItem.isEmpty()) {
-            createHeadDisplay(level, offsetVec(safeAnchor, Objects.requireNonNull(HEAD_OFFSET)), headItem);
-        }
-        createCoreDisplay(level, offsetVec(safeAnchor, Objects.requireNonNull(CORE_OFFSET)));
-        if (name != null && !name.isBlank()) {
-            createNameDisplay(level, offsetVec(safeAnchor, Objects.requireNonNull(LABEL_OFFSET)), name.trim());
-        }
-    }
-
-    private static void createHeadDisplay(ServerLevel level, Vec3 pos, ItemStack headItem) {
-        Display.ItemDisplay display = new Display.ItemDisplay(
-            Objects.requireNonNull(EntityType.ITEM_DISPLAY), Objects.requireNonNull(level));
-        display.setPos(pos.x, pos.y, pos.z);
-
-        CompoundTag nbt = new CompoundTag();
-        display.saveWithoutId(nbt);
-        nbt.put("item", Objects.requireNonNull(headItem.save(Objects.requireNonNull(level.registryAccess()))));
-        nbt.putString("item_display", Objects.requireNonNull(ItemDisplayContext.HEAD.getSerializedName()));
-        nbt.putString("billboard", "center");
-        applyDisplayScale(nbt, HEAD_SCALE, HEAD_SCALE, HEAD_SCALE);
-        display.load(nbt);
-
-        tuneDisplay(display, AVATAR_HEAD_TAG);
-        level.addFreshEntity(display);
-    }
-
-    private static void createCoreDisplay(ServerLevel level, Vec3 pos) {
-        Display.BlockDisplay display = new Display.BlockDisplay(
-            Objects.requireNonNull(EntityType.BLOCK_DISPLAY), Objects.requireNonNull(level));
-        display.setPos(pos.x, pos.y, pos.z);
-
-        CompoundTag nbt = new CompoundTag();
-        display.saveWithoutId(nbt);
-        nbt.put(Objects.requireNonNull(Display.BlockDisplay.TAG_BLOCK_STATE),
-            Objects.requireNonNull(NbtUtils.writeBlockState(
-                Objects.requireNonNull(Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState()))));
-        nbt.putString("billboard", "fixed");
-        applyDisplayScale(nbt, CORE_SCALE, CORE_SCALE * 1.2f, CORE_SCALE);
-        display.load(nbt);
-
-        tuneDisplay(display, AVATAR_CORE_TAG);
-        level.addFreshEntity(display);
-    }
-
-    private static void createNameDisplay(ServerLevel level, Vec3 pos, String name) {
-        Display.TextDisplay display = new Display.TextDisplay(
-            Objects.requireNonNull(EntityType.TEXT_DISPLAY), Objects.requireNonNull(level));
-        display.setPos(pos.x, pos.y, pos.z);
-
-        CompoundTag nbt = new CompoundTag();
-        display.saveWithoutId(nbt);
-        Component label = Objects.requireNonNull(
-            Component.literal(Objects.requireNonNull(name))
-                .withStyle(Objects.requireNonNull(
-                    Objects.requireNonNull(Style.EMPTY).withBold(true).withColor(DesignTokens.Nexus.AVATAR_LABEL))));
-        String json = Objects.requireNonNull(
-            Component.Serializer.toJson(label, Objects.requireNonNull(level.registryAccess())));
-        nbt.putString("text", json);
-        nbt.putInt("line_width", 120);
-        nbt.putInt("background", 0);
-        nbt.putByte("text_opacity", (byte) -1);
-        nbt.putBoolean("see_through", true);
-        nbt.putBoolean("shadow", false);
-        nbt.putString("alignment", "center");
-        nbt.putString("billboard", "center");
-        display.load(nbt);
-
-        tuneDisplay(display, AVATAR_LABEL_TAG);
-        level.addFreshEntity(display);
-    }
-
-    private static void tuneDisplay(Entity entity, String typeTag) {
-        entity.setNoGravity(true);
-        entity.setInvulnerable(true);
-        entity.setSilent(true);
-        entity.setGlowingTag(Config.NEXUS_AVATAR_GLOW.get());
-        entity.addTag(AVATAR_TAG);
-        entity.addTag(AVATAR_VISUAL_TAG);
-        entity.addTag(AVATAR_FALLBACK_TAG);
-        if (typeTag != null && !typeTag.isBlank()) {
-            entity.addTag(typeTag);
-        }
-    }
-
-    private static void applyDisplayScale(CompoundTag nbt, float x, float y, float z) {
-        float sx = Mth.clamp(x, 0.05f, 5.0f);
-        float sy = Mth.clamp(y, 0.05f, 5.0f);
-        float sz = Mth.clamp(z, 0.05f, 5.0f);
-        Transformation transform = new Transformation(new Vector3f(0.0f, 0.0f, 0.0f),
-            new Quaternionf(), new Vector3f(sx, sy, sz), new Quaternionf());
-        DataResult<Tag> encoded = Transformation.EXTENDED_CODEC.encodeStart(NbtOps.INSTANCE, transform);
-        encoded.resultOrPartial(msg -> LOGGER.warn("[NexusAvatar] Failed to encode display transform: {}", msg))
-            .ifPresent(tag -> nbt.put("transformation", Objects.requireNonNull(tag)));
-    }
-
     @Nonnull
-    private static Vec3 offsetVec(@Nonnull Vec3 base, @Nonnull Vec3 offset) {
-        @Nullable Vec3 result = base.add(offset);
-        if (result == null) {
-            throw new IllegalStateException("Vec3.add returned null unexpectedly");
+    private static String resolveSkinName() {
+        String skin = Config.NEXUS_AVATAR_SKIN.get();
+        if (skin == null || skin.isBlank()) {
+            return "";
         }
-        return result;
-    }
 
-    private static void syncFallbackVisuals(ServerLevel level, BlockPos hubOrigin, Entity anchor) {
-        AABB bounds = Objects.requireNonNull(resolveCleanupBounds(hubOrigin));
-        List<Entity> visuals = level.getEntities((Entity) null, bounds,
-            entity -> entity.getTags().contains(AVATAR_VISUAL_TAG));
-        if (visuals.isEmpty()) {
-            return;
-        }
-        Vec3 base = anchor.position();
-        float yaw = anchor.getYRot();
-        for (Entity entity : visuals) {
-            Vec3 offset = resolveVisualOffset(entity);
-            entity.setPos(base.x + offset.x, base.y + offset.y, base.z + offset.z);
-            entity.setYRot(yaw);
-            entity.setXRot(0.0f);
-        }
-    }
-
-    private static Vec3 resolveVisualOffset(Entity entity) {
-        if (entity.getTags().contains(AVATAR_HEAD_TAG)) {
-            return HEAD_OFFSET;
-        }
-        if (entity.getTags().contains(AVATAR_CORE_TAG)) {
-            return CORE_OFFSET;
-        }
-        if (entity.getTags().contains(AVATAR_LABEL_TAG)) {
-            return LABEL_OFFSET;
-        }
-        return Vec3.ZERO;
-    }
-
-    private static ItemStack buildHeadItem(String skinSpec) {
-        ItemStack head = new ItemStack(Objects.requireNonNull(Items.PLAYER_HEAD));
-        if (skinSpec == null) {
-            return head;
-        }
-        String trimmed = skinSpec.trim();
-        if (trimmed.isEmpty()) {
-            return head;
-        }
+        String trimmed = skin.trim();
         if ("none".equalsIgnoreCase(trimmed) || "off".equalsIgnoreCase(trimmed)) {
-            return ItemStack.EMPTY;
+            return "";
         }
 
+        // Extract player name from various formats
         if (trimmed.startsWith("player:")) {
-            String name = trimmed.substring("player:".length()).trim();
-            if (!name.isEmpty()) {
-                setSkullOwner(head, name);
-            }
-            return head;
+            return trimmed.substring("player:".length()).trim();
         }
 
+        // For texture: or base64: formats, return empty (not supported in NexaEntity skin system yet)
         if (trimmed.startsWith("texture:") || trimmed.startsWith("base64:")) {
-            String value = trimmed.substring(trimmed.indexOf(':') + 1).trim();
-            if (!value.isEmpty()) {
-                applySkullTexture(head, value);
-            }
-            return head;
+            return "";
         }
 
-        setSkullOwner(head, trimmed);
-        return head;
-    }
-
-    private static void setSkullOwner(ItemStack head, String name) {
-        // MC 1.21 uses DataComponents instead of NBT
-        head.set(Objects.requireNonNull(DataComponents.PROFILE), new ResolvableProfile(
-            Objects.requireNonNull(Optional.of(name)),
-            Objects.requireNonNull(Optional.empty()),
-            new PropertyMap()
-        ));
-    }
-
-    private static void applySkullTexture(ItemStack head, String textureValue) {
-        // MC 1.21 uses DataComponents - for custom textures we create a profile with properties
-        PropertyMap properties = new PropertyMap();
-        properties.put("textures", new com.mojang.authlib.properties.Property("textures", textureValue));
-
-        head.set(Objects.requireNonNull(DataComponents.PROFILE), new ResolvableProfile(
-            Objects.requireNonNull(Optional.empty()),
-            Objects.requireNonNull(Optional.empty()),
-            properties
-        ));
+        // Assume it's a player name
+        return trimmed;
     }
 }

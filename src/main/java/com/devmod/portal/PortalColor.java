@@ -1,8 +1,8 @@
 package com.devmod.portal;
 
-import net.minecraft.util.StringRepresentable;
-
 import javax.annotation.Nonnull;
+
+import net.minecraft.util.StringRepresentable;
 
 /**
  * 16 portal color variants following Minecraft dye colors.

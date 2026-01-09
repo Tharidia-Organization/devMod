@@ -16,7 +16,6 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import com.devmod.DevMod;
 import com.devmod.config.MobConfigManager;
 import com.devmod.config.handler.impl.WeaponConfigHandler;
-import com.devmod.stats.WeaponStats;
 import com.devmod.runtime.DynamicDimensionManager;
 import com.devmod.runtime.InstanceData;
 import com.devmod.runtime.InstanceManager;
@@ -25,6 +24,7 @@ import com.devmod.runtime.InstanceState;
 import com.devmod.runtime.PlayerInstanceSnapshot;
 import com.devmod.runtime.PlayerInstanceState;
 import com.devmod.runtime.RecoverySystem;
+import com.devmod.stats.WeaponStats;
 
 @GameTestHolder(DevMod.MODID)
 @PrefixGameTestTemplate(false)

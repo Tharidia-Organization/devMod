@@ -115,6 +115,8 @@ public enum ChannelId {
     DEBUG_TOGGLE(90, Direction.CLIENT_TO_SERVER, "DebugTogglePayload"),
     DEBUG_SYNC(91, Direction.SERVER_TO_CLIENT, "DebugSyncPayload"),
     ENTITY_PATHING(92, Direction.SERVER_TO_CLIENT, "EntityPathingPayload"),
+    ENTITY_SCAN_DATA(93, Direction.SERVER_TO_CLIENT, "EntityScanDataPayload"),
+    ENTITY_SCANNER_OPEN(94, Direction.SERVER_TO_CLIENT, "EntityScannerOpenPayload"),
 
     // ============================================================================
     // MAILBOX SYSTEM CHANNELS (100-115)
@@ -165,6 +167,20 @@ public enum ChannelId {
     // PORTAL CHANNELS (150-159)
     // ============================================================================
     PORTAL_STATE(150, Direction.SERVER_TO_CLIENT, "PortalStatePayload"),
+    PORTAL_PREVIEW_REQUEST(151, Direction.CLIENT_TO_SERVER, "PortalPreviewRequestPayload"),
+    PORTAL_PREVIEW(152, Direction.SERVER_TO_CLIENT, "PortalPreviewPayload"),
+
+    // ============================================================================
+    // HOLOGRAM CHANNELS (160-169)
+    // ============================================================================
+    HOLOGRAM_CONFIG(160, Direction.CLIENT_TO_SERVER, "HologramConfigPayload"),
+    HOLOGRAM_OPEN_SCREEN(161, Direction.SERVER_TO_CLIENT, "HologramOpenScreenPayload"),
+
+    // ============================================================================
+    // CLONE MODULE CHANNELS (170-179)
+    // ============================================================================
+    TELEPAD_CONFIG(170, Direction.CLIENT_TO_SERVER, "TelepadConfigPayload"),
+    TELEPAD_OPEN_SCREEN(171, Direction.SERVER_TO_CLIENT, "TelepadOpenScreenPayload"),
     ;
 
     // ============================================================================

@@ -1,5 +1,11 @@
 package com.devmod.config.handler.export;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -7,13 +13,6 @@ import net.minecraft.world.item.Item;
 
 import com.devmod.config.handler.IConfigComponent;
 import com.devmod.config.handler.IDecomposedConfig;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 /**
  * Helper class for building command strings from decomposed configs.
  */

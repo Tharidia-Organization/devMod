@@ -1,18 +1,18 @@
 package com.devmod.portal;
 
-import com.devmod.DevMod;
-import com.devmod.portal.block.CustomPortalBlock;
-
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 
+import com.devmod.DevMod;
+import com.devmod.portal.block.CustomPortalBlock;
+
 /**
  * Client-side setup for the portal module.
  * Registers block and item color handlers for tinting.
  */
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public final class PortalClientSetup {
     private PortalClientSetup() {}
 

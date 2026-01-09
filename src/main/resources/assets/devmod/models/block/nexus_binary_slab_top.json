@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab_top",
+  "textures": {
+    "bottom": "devmod:block/nexus/nexus_binary",
+    "top": "devmod:block/nexus/nexus_binary",
+    "side": "devmod:block/nexus/nexus_binary"
+  }
+}

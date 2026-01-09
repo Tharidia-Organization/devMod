@@ -1,6 +1,7 @@
 package com.devmod.config.handler.impl;
 
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -14,6 +15,7 @@ import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TridentItem;
@@ -28,9 +30,6 @@ import com.devmod.config.handler.IConfigComponent;
 import com.devmod.config.handler.IDecomposedConfig;
 import com.devmod.network.PacketValidator;
 import com.devmod.stats.WeaponStats;
-
-import net.minecraft.world.item.Item;
-import java.util.Collections;
 
 /**
  * Config handler for weapon stats.

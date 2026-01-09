@@ -1,17 +1,19 @@
 package com.devmod.portal;
 
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.DevMod;
-
-import javax.annotation.Nonnull;
-import java.util.*;
-import java.util.function.Predicate;
-
 /**
  * Detects valid portal frames using a DFS-based algorithm.
  * Supports any block type as frame material (configurable).
@@ -71,7 +73,7 @@ public class PortalFrameDetector {
         DevMod.LOGGER.debug("[FrameDetector] axis={} edges: minW={} maxW={} minH={} maxH={}",
             axis, minWidth, maxWidth, minHeight, maxHeight);
 
-        if (minWidth == 0 && maxWidth == 0 || minHeight == 0 && maxHeight == 0) {
+        if ((minWidth == 0 && maxWidth == 0) || (minHeight == 0 && maxHeight == 0)) {
             DevMod.LOGGER.debug("[FrameDetector] FAIL: no frame edges found (width or height both 0)");
             return Optional.empty(); // No frame found
         }

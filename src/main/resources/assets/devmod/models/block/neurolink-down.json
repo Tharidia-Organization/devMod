@@ -1,0 +1,30 @@
+{
+	"format_version": "1.21.6",
+	"texture_size": [64, 64],
+	"textures": {
+		"0": "devmod:block/neurolink",
+		"particle": "devmod:block/neurolink"
+	},
+	"elements": [
+		{
+			"from": [6, 0, 6],
+			"to": [10, 1, 10],
+			"rotation": {"angle": 0, "axis": "x", "origin": [8, 0.5, 8]},
+			"faces": {
+				"north": {"uv": [5, 2, 4, 2.25], "rotation": 180, "texture": "#0"},
+				"east": {"uv": [2, 3, 2.25, 4], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [4, 2.25, 3, 2], "texture": "#0"},
+				"west": {"uv": [4.75, 3, 5, 4], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [3, 3, 4, 4], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [7, 3, 8, 4], "texture": "#0"}
+			}
+		}
+	],
+	"display": {
+		"gui": {
+			"rotation": [25, -135, 0],
+			"translation": [0, 3, 0],
+			"scale": [0.7832, 0.7832, 0.7832]
+		}
+	}
+}

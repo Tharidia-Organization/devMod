@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_pulse_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_pulse"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_pulse_slab_top"
+    }
+  }
+}

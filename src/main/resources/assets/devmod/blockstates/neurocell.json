@@ -1,0 +1,32 @@
+{
+  "variants": {
+    "facing=north,half=lower": {
+      "model": "devmod:block/neurocell"
+    },
+    "facing=south,half=lower": {
+      "model": "devmod:block/neurocell",
+      "y": 180
+    },
+    "facing=west,half=lower": {
+      "model": "devmod:block/neurocell",
+      "y": 270
+    },
+    "facing=east,half=lower": {
+      "model": "devmod:block/neurocell",
+      "y": 90
+    },
+    "facing=north,half=upper": {
+      "model": "devmod:block/neurocell_upper"
+    },
+    "facing=south,half=upper": {
+      "model": "devmod:block/neurocell_upper"
+    },
+    "facing=west,half=upper": {
+      "model": "devmod:block/neurocell_upper"
+    },
+    "facing=east,half=upper": {
+      "model": "devmod:block/neurocell_upper"
+    }
+  }
+}
+

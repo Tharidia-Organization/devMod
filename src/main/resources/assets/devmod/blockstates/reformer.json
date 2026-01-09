@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "devmod:block/reformer"
+    },
+    "facing=south": {
+      "model": "devmod:block/reformer",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "devmod:block/reformer",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "devmod:block/reformer",
+      "y": 90
+    }
+  }
+}
+

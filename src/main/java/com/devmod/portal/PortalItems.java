@@ -1,19 +1,20 @@
 package com.devmod.portal;
 
-import com.devmod.DevMod;
-import com.devmod.portal.item.PortalIgniterItem;
-import com.devmod.portal.item.PortalLinkerItem;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.portal.item.PortalIgniterItem;
+import com.devmod.portal.item.PortalLinkerItem;
 
 /**
  * Portal module item registrations.

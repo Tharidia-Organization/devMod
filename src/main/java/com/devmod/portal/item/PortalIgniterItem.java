@@ -1,14 +1,13 @@
 package com.devmod.portal.item;
 
-import com.devmod.portal.PortalColor;
-import com.devmod.portal.PortalData;
-import com.devmod.portal.PortalFrameDetector;
-import com.devmod.portal.PortalRegistry;
-import com.devmod.portal.PortalRuneEffects;
-import com.devmod.portal.RuneType;
-import com.devmod.portal.block.CustomPortalBlock;
-import com.devmod.portal.block.RuneBlock;
-import com.devmod.portal.PortalBlocks;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.annotation.Nonnull;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -26,15 +25,15 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.DevMod;
-
-import javax.annotation.Nonnull;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
+import com.devmod.portal.PortalBlocks;
+import com.devmod.portal.PortalColor;
+import com.devmod.portal.PortalData;
+import com.devmod.portal.PortalFrameDetector;
+import com.devmod.portal.PortalRegistry;
+import com.devmod.portal.PortalRuneEffects;
+import com.devmod.portal.RuneType;
+import com.devmod.portal.block.CustomPortalBlock;
+import com.devmod.portal.block.RuneBlock;
 /**
  * Item used to ignite (create) custom portals within a frame.
  * Each igniter is associated with a specific portal color.

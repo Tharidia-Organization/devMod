@@ -1,13 +1,14 @@
 package com.devmod.portal.block;
 
-import com.devmod.network.NetworkHandler;
-import com.devmod.portal.PortalColor;
-import com.devmod.portal.PortalConfig;
-import com.devmod.portal.PortalData;
-import com.devmod.portal.PortalRegistry;
-import com.devmod.portal.PortalRuneEffects;
-import com.devmod.portal.RuneType;
-import com.devmod.portal.network.PortalStatePayload;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -18,7 +19,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
@@ -34,17 +34,19 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-
+import com.devmod.network.NetworkHandler;
+import com.devmod.portal.PortalColor;
+import com.devmod.portal.PortalConfig;
+import com.devmod.portal.PortalData;
+import com.devmod.portal.PortalRegistry;
+import com.devmod.portal.PortalRuneEffects;
+import com.devmod.portal.RuneType;
+import com.devmod.portal.network.PortalStatePayload;
 /**
  * Custom portal block that fills the interior of a portal frame.
  * Supports 16 colors, bidirectional linking, and rune enhancements.
@@ -80,6 +82,14 @@ public class CustomPortalBlock extends Block {
 
     /** Tag to indicate player is teleporting via custom portal (skip nexus spawn override) */
     public static final String TAG_CUSTOM_PORTAL_TELEPORT = "devmod:custom_portal_teleport";
+
+    /** Cache for rune effects to avoid repeated DFS scans every tick */
+    private static final Map<Long, CachedRuneEffects> RUNE_EFFECT_CACHE = new ConcurrentHashMap<>();
+    /** Cache TTL in ticks (1 second) */
+    private static final int RUNE_CACHE_TTL = 20;
+
+    /** Cached rune effects with timestamp */
+    private record CachedRuneEffects(PortalRuneEffects effects, long timestamp) {}
 
     public CustomPortalBlock(Properties properties) {
         super(properties);
@@ -147,6 +157,17 @@ public class CustomPortalBlock extends Block {
         }
 
         PortalData portal = portalOpt.get();
+
+        // Check fixed destination first (Nexus zone portals)
+        // Fixed destinations have instant teleportation (no delay)
+        if (portal.hasFixedDestination()) {
+            teleportToFixedDestination(entity, serverLevel, portal);
+            resetPortalTime(entity);
+            entity.setPortalCooldown(TELEPORT_COOLDOWN);
+            return;
+        }
+
+        // Then check linked portals
         if (!portal.isLinked()) {
             // Only log once per second to avoid spam
             if (level.getGameTime() % 20 == 0) {
@@ -210,10 +231,16 @@ public class CustomPortalBlock extends Block {
         // Determine required delay based on HASTE rune and config
         int requiredDelay = calculateRequiredDelay(effects, entity);
 
-        // Sync portal state to client for overlay rendering
+        // Sync portal state to client for overlay rendering (rate limited to reduce spam)
         if (entity instanceof ServerPlayer player) {
-            NetworkHandler.sendPortalState(player,
-                PortalStatePayload.enterPortal(portalColor, timeInPortal, requiredDelay));
+            net.minecraft.nbt.CompoundTag data = entity.getPersistentData();
+            int lastSentTick = data.getInt(TAG_LAST_SENT_TICK);
+            // Send on first entry OR every NETWORK_SYNC_INTERVAL ticks
+            if (timeInPortal == 1 || (timeInPortal - lastSentTick) >= NETWORK_SYNC_INTERVAL) {
+                data.putInt(TAG_LAST_SENT_TICK, timeInPortal);
+                NetworkHandler.sendPortalState(player,
+                    PortalStatePayload.enterPortal(portalColor, timeInPortal, requiredDelay));
+            }
         }
 
         // Log progress every second
@@ -238,6 +265,10 @@ public class CustomPortalBlock extends Block {
     }
 
     private static final String TAG_LAST_TICK = "devmod:portal_last_tick";
+    private static final String TAG_LAST_SENT_TICK = "devmod:portal_last_sent_tick";
+
+    /** Network sync interval in ticks (reduces packet spam by 80%) */
+    private static final int NETWORK_SYNC_INTERVAL = 5;
 
     /**
      * Increments and returns the time an entity has spent in this portal.
@@ -273,6 +304,7 @@ public class CustomPortalBlock extends Block {
         data.remove(TAG_PORTAL_TIME);
         data.remove(TAG_PORTAL_POS);
         data.remove(TAG_LAST_TICK);
+        data.remove(TAG_LAST_SENT_TICK);
         data.remove(TAG_GATE_FEEDBACK_SHOWN);
 
         // Notify client to hide overlay
@@ -315,16 +347,38 @@ public class CustomPortalBlock extends Block {
 
     /**
      * Scans for rune blocks around the portal and calculates combined effects.
+     * Results are cached for RUNE_CACHE_TTL ticks to avoid repeated DFS scans.
      */
     @Nonnull
     private PortalRuneEffects scanForRuneEffects(Level level, BlockPos portalPos) {
+        long gameTime = level.getGameTime();
+        long posKey = portalPos.asLong();
+
+        // Check cache first
+        CachedRuneEffects cached = RUNE_EFFECT_CACHE.get(posKey);
+        if (cached != null && (gameTime - cached.timestamp()) < RUNE_CACHE_TTL) {
+            return cached.effects();
+        }
+
+        // Cache miss or expired - do the scan
         Set<RuneType> foundRunes = EnumSet.noneOf(RuneType.class);
         Set<BlockPos> visited = new HashSet<>();
 
         // Scan the portal structure and adjacent blocks for runes
         scanPortalForRunes(level, portalPos, foundRunes, visited, 0);
 
-        return PortalRuneEffects.calculate(foundRunes);
+        PortalRuneEffects effects = PortalRuneEffects.calculate(foundRunes);
+
+        // Cache the result
+        RUNE_EFFECT_CACHE.put(posKey, new CachedRuneEffects(effects, gameTime));
+
+        // Periodically clean old entries (every 100 ticks, clean entries older than 5 minutes)
+        if (gameTime % 100 == 0) {
+            long cutoff = gameTime - 6000; // 5 minutes
+            RUNE_EFFECT_CACHE.entrySet().removeIf(e -> e.getValue().timestamp() < cutoff);
+        }
+
+        return effects;
     }
 
     /**
@@ -463,6 +517,78 @@ public class CustomPortalBlock extends Block {
             }
         }
         // Note: Non-player cross-dimension teleport is blocked in entityInside()
+
+        // Play arrival sound at destination
+        level.playSound(null, destPos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
+    }
+
+    /**
+     * Teleports an entity to a fixed destination (unidirectional portal).
+     * Used for Nexus zone portals that always teleport to a specific position.
+     *
+     * <p>Fixed destination portals:
+     * <ul>
+     *   <li>Have instant teleportation (no delay)</li>
+     *   <li>Support cross-dimension teleportation for players</li>
+     *   <li>Support same-dimension teleportation for all entities</li>
+     * </ul>
+     *
+     * @param entity the entity to teleport
+     * @param level the current server level
+     * @param portal the portal data containing the fixed destination
+     */
+    private void teleportToFixedDestination(Entity entity, ServerLevel level, PortalData portal) {
+        BlockPos destPos = portal.fixedDestination().orElseThrow(
+            () -> new IllegalStateException("Portal has no fixed destination"));
+        ResourceLocation destDimRL = portal.fixedDestinationDimension().orElse(level.dimension().location());
+
+        double destX = destPos.getX() + 0.5;
+        double destY = destPos.getY();
+        double destZ = destPos.getZ() + 0.5;
+
+        boolean sameDimension = destDimRL.equals(level.dimension().location());
+
+        com.devmod.DevMod.LOGGER.info("[Portal] Fixed destination teleport: entity={} destPos={} destDim={} sameDim={}",
+            entity.getName().getString(), destPos, destDimRL, sameDimension);
+
+        // Play departure sound
+        level.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
+            SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
+
+        if (sameDimension) {
+            // Same dimension teleport - works for all entity types
+            entity.teleportTo(destX, destY, destZ);
+        } else if (entity instanceof ServerPlayer player) {
+            // Cross-dimension teleport - only for players
+            ServerLevel destLevel = level.getServer().getLevel(
+                ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, destDimRL));
+
+            if (destLevel == null) {
+                com.devmod.DevMod.LOGGER.warn("[Portal] Fixed destination level {} not found, aborting", destDimRL);
+                return;
+            }
+
+            // Set flag to prevent NexusEventHandler from overriding our position
+            player.getPersistentData().putBoolean(TAG_CUSTOM_PORTAL_TELEPORT, true);
+
+            // Use DimensionTransition for proper cross-dimension teleport
+            net.minecraft.world.phys.Vec3 destVec = new net.minecraft.world.phys.Vec3(destX, destY, destZ);
+            DimensionTransition transition = new DimensionTransition(
+                destLevel,
+                destVec,
+                net.minecraft.world.phys.Vec3.ZERO,
+                player.getYRot(),
+                player.getXRot(),
+                DimensionTransition.DO_NOTHING
+            );
+
+            player.changeDimension(transition);
+        } else {
+            // Non-player entities cannot cross dimensions via fixed portals
+            com.devmod.DevMod.LOGGER.debug("[Portal] Non-player entity {} cannot use cross-dimension fixed portal",
+                entity.getName().getString());
+            return;
+        }
 
         // Play arrival sound at destination
         level.playSound(null, destPos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);

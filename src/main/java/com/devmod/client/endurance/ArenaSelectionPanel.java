@@ -8,6 +8,8 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -19,6 +21,7 @@ import com.devmod.arena.policy.TemplateSuggestion;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.ArenaSuggestionsPayload;
 import com.devmod.endurance.RequestArenaSuggestionsPayload;
+import com.devmod.hologram.client.renderer.ArenaPreviewRenderer;
 
 /**
  * UI panel for selecting arena templates based on MobRequirements.
@@ -29,11 +32,16 @@ public class ArenaSelectionPanel {
 
     private static final int ITEM_HEIGHT = 24;
     private static final int MAX_VISIBLE_ITEMS = 5;
+    private static final int PREVIEW_SIZE = 60;
 
     private int x;
     private int y;
     private int width;
     private int height;
+
+    // 3D preview renderer
+    private final ArenaPreviewRenderer previewRenderer = new ArenaPreviewRenderer();
+    private boolean showPreview = true;
 
     private List<TemplateSuggestion> suggestions = new ArrayList<>();
     @Nullable
@@ -88,6 +96,29 @@ public class ArenaSelectionPanel {
         if (selectedTemplateId == null) {
             selectedTemplateId = autoSelectedTemplateId;
         }
+
+        // Update preview for current selection
+        updatePreview();
+    }
+
+    /**
+     * Updates the 3D preview renderer with current selection data.
+     */
+    private void updatePreview() {
+        TemplateSuggestion current = getCurrentSuggestion();
+        if (current == null) {
+            previewRenderer.setFromSuggestion(null, null, 0, false, false, 0);
+            return;
+        }
+
+        previewRenderer.setFromSuggestion(
+            current.templateId(),
+            current.arenaShape(),
+            current.size(),
+            current.hasWalls(),
+            current.hasHazards(),
+            current.spawnSlotCount()
+        );
     }
 
     /**
@@ -167,7 +198,19 @@ public class ArenaSelectionPanel {
      * Render the panel.
      */
     public void render(GuiGraphics graphics, @Nonnull Font font, int mouseX, int mouseY) {
+        render(graphics, font, mouseX, mouseY, 0.0f);
+    }
+
+    /**
+     * Render the panel with animation support.
+     *
+     * @param partialTick Partial tick for smooth preview animation
+     */
+    public void render(GuiGraphics graphics, @Nonnull Font font, int mouseX, int mouseY, float partialTick) {
         Font safeFont = Objects.requireNonNull(font);
+
+        // Calculate layout - text area and preview area
+        int textAreaWidth = showPreview ? width - PREVIEW_SIZE - 4 : width;
 
         // Background
         graphics.fill(x, y, x + width, y + height, DesignTokens.Surface.LEVEL_0);
@@ -185,7 +228,8 @@ public class ArenaSelectionPanel {
         TemplateSuggestion current = getCurrentSuggestion();
         if (current != null) {
             int textY = y + 18;
-            String displayName = truncate(current.templateName(), 20);
+            int maxNameLen = showPreview ? 14 : 20;
+            String displayName = truncate(current.templateName(), maxNameLen);
             graphics.drawString(safeFont, displayName, x + 6, textY, DesignTokens.Text.PRIMARY, false);
 
             // Score indicator
@@ -193,7 +237,7 @@ public class ArenaSelectionPanel {
             int scoreColor = current.compatibilityScore() >= 8 ? DesignTokens.Semantic.SUCCESS
                 : current.compatibilityScore() >= 4 ? DesignTokens.Semantic.WARNING
                 : DesignTokens.Text.SECONDARY;
-            graphics.drawString(safeFont, scoreText, x + width - 30, textY, scoreColor, false);
+            graphics.drawString(safeFont, scoreText, x + textAreaWidth - 24, textY, scoreColor, false);
 
             // Auto/Manual indicator
             String currentSelection = selectedTemplateId;
@@ -201,11 +245,27 @@ public class ArenaSelectionPanel {
             String modeText = isAuto ? "[Auto]" : "[Manual]";
             int modeColor = isAuto ? DesignTokens.Accent.PRIMARY : DesignTokens.Semantic.WARNING;
             graphics.drawString(safeFont, modeText, x + 6, textY + 12, modeColor, false);
+
+            // 3D Preview
+            if (showPreview && previewRenderer.hasTemplate()) {
+                int previewX = x + textAreaWidth + 2;
+                int previewY = y + 2;
+                int previewW = PREVIEW_SIZE;
+                int previewH = height - 4;
+
+                // Preview background
+                graphics.fill(previewX, previewY, previewX + previewW, previewY + previewH,
+                    DesignTokens.Surface.LEVEL_1);
+
+                // Render 3D preview
+                PoseStack poseStack = graphics.pose();
+                previewRenderer.render(poseStack, previewX, previewY, previewW, previewH, partialTick);
+            }
         }
 
         // Dropdown arrow
         String arrow = expanded ? "\u25B2" : "\u25BC";
-        graphics.drawString(safeFont, arrow, x + width - 14, y + 4, DesignTokens.Text.SECONDARY, false);
+        graphics.drawString(safeFont, arrow, x + textAreaWidth - 8, y + 4, DesignTokens.Text.SECONDARY, false);
 
         // Expanded dropdown
         if (expanded) {
@@ -307,6 +367,7 @@ public class ArenaSelectionPanel {
                     TemplateSuggestion clicked = suggestions.get(clickedIndex);
                     if (clicked.isCompatible()) {
                         selectedTemplateId = clicked.templateId();
+                        updatePreview();
                         if (onSelectionChanged != null) {
                             onSelectionChanged.accept(selectedTemplateId);
                         }
@@ -349,5 +410,20 @@ public class ArenaSelectionPanel {
      */
     public void cleanup() {
         ClientArenaSuggestionsCache.INSTANCE.removeListener(suggestionsListener);
+        previewRenderer.cleanup();
+    }
+
+    /**
+     * Sets whether to show the 3D preview.
+     */
+    public void setShowPreview(boolean show) {
+        this.showPreview = show;
+    }
+
+    /**
+     * Returns whether the 3D preview is enabled.
+     */
+    public boolean isShowPreview() {
+        return showPreview;
     }
 }

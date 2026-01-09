@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "CGC",
+    "RGR",
+    "BFB"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "B": {
+      "item": "minecraft:iron_block"
+    },
+    "F": {
+      "item": "devmod:reformer"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "devmod:neurocell"
+  }
+}

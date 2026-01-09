@@ -1,7 +1,6 @@
 package com.devmod.portal;
 
-import com.devmod.DevMod;
-import com.devmod.portal.item.PortalIgniterItem;
+import java.util.Objects;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -13,7 +12,8 @@ import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.portal.item.PortalIgniterItem;
 
 /**
  * Creative mode tab for portal items.

@@ -19,6 +19,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import com.devmod.DevMod;
 import com.devmod.abilities.StaminaSyncPayload;
 import com.devmod.arena.network.BuildProgressPayload;
+import com.devmod.clone.network.TelepadConfigPayload;
+import com.devmod.clone.network.TelepadOpenScreenPayload;
 import com.devmod.endurance.ArenaSuggestionsPayload;
 import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.CombatFlowSyncPayload;
@@ -51,6 +53,8 @@ import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
+import com.devmod.hologram.network.HologramConfigPayload;
+import com.devmod.hologram.network.HologramOpenScreenPayload;
 import com.devmod.mailbox.network.payload.TicketActionPayload;
 import com.devmod.mailbox.network.payload.TicketCreatePayload;
 import com.devmod.mailbox.network.payload.TicketSyncPayload;
@@ -71,6 +75,8 @@ import com.devmod.party.NamedInvitePayload;
 import com.devmod.party.PartyActionPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
+import com.devmod.portal.network.PortalPreviewPayload;
+import com.devmod.portal.network.PortalPreviewRequestPayload;
 import com.devmod.portal.network.PortalStatePayload;
 import com.devmod.runtime.environment.EnvironmentSyncPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
@@ -94,6 +100,8 @@ import static com.devmod.network.ChannelId.FOOD_STATS;
 import static com.devmod.network.ChannelId.FUEL_STATS;
 import static com.devmod.network.ChannelId.GAME_MECHANICS_SYNC;
 import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
+import static com.devmod.network.ChannelId.HOLOGRAM_CONFIG;
+import static com.devmod.network.ChannelId.HOLOGRAM_OPEN_SCREEN;
 import static com.devmod.network.ChannelId.IMPACT_SYNC;
 import static com.devmod.network.ChannelId.INSTANCE_LOADING;
 import static com.devmod.network.ChannelId.INVITE_RESPONSE;
@@ -120,6 +128,9 @@ import static com.devmod.network.ChannelId.PARTY_SYNC;
 import static com.devmod.network.ChannelId.PERK_CHOICES;
 import static com.devmod.network.ChannelId.PERK_SELECTION;
 import static com.devmod.network.ChannelId.PERSONAL_RECORDS_SYNC;
+import static com.devmod.network.ChannelId.PORTAL_PREVIEW;
+import static com.devmod.network.ChannelId.PORTAL_PREVIEW_REQUEST;
+import static com.devmod.network.ChannelId.PORTAL_STATE;
 import static com.devmod.network.ChannelId.QUEST_ACTION;
 import static com.devmod.network.ChannelId.QUEST_COMPLETION;
 import static com.devmod.network.ChannelId.QUEST_DEATH;
@@ -143,6 +154,8 @@ import static com.devmod.network.ChannelId.START_QUEST;
 import static com.devmod.network.ChannelId.TASK_ACTION;
 import static com.devmod.network.ChannelId.TASK_SYNC;
 import static com.devmod.network.ChannelId.TELEMETRY_BATCH;
+import static com.devmod.network.ChannelId.TELEPAD_CONFIG;
+import static com.devmod.network.ChannelId.TELEPAD_OPEN_SCREEN;
 import static com.devmod.network.ChannelId.TENSION_UPDATE;
 import static com.devmod.network.ChannelId.TICKET_ACTION;
 import static com.devmod.network.ChannelId.TICKET_CREATE;
@@ -156,7 +169,6 @@ import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_SELECTION;
 import static com.devmod.network.ChannelId.WEAPON_LEGACY;
 import static com.devmod.network.ChannelId.WEAPON_STATS_V2;
 import static com.devmod.network.ChannelId.ZONE_DEBUG;
-import static com.devmod.network.ChannelId.PORTAL_STATE;
 import static com.devmod.network.PayloadValidation.PayloadLimits;
 import static com.devmod.network.PayloadValidation.validated;
 
@@ -255,6 +267,12 @@ public class NetworkHandler {
         void handleSeasonPassSync(com.devmod.endurance.season.SeasonPassPayload payload);
 
         void handlePortalState(PortalStatePayload payload);
+
+        void handlePortalPreview(PortalPreviewPayload payload);
+
+        void handleHologramOpenScreen(HologramOpenScreenPayload payload);
+
+        void handleTelepadOpenScreen(TelepadOpenScreenPayload payload);
     }
 
     @Nullable
@@ -905,6 +923,83 @@ public class NetworkHandler {
                     }
                 }, PayloadLimits.SMALL)
         );
+
+        // Portal preview request (client -> server)
+        event.registrar(PORTAL_PREVIEW_REQUEST.asString()).playToServer(
+                nn(PortalPreviewRequestPayload.TYPE),
+                nn(PortalPreviewRequestPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        handlePortalPreviewRequest(player, payload);
+                    }
+                }, PayloadLimits.SMALL)
+        );
+
+        // Portal preview response (server -> client)
+        event.registrar(PORTAL_PREVIEW.asString()).playToClient(
+                nn(PortalPreviewPayload.TYPE),
+                nn(PortalPreviewPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handlePortalPreview(payload)));
+                    }
+                }, PayloadLimits.SMALL)
+        );
+
+        // ===================================================================
+        // HOLOGRAM CHANNELS (160-169)
+        // ===================================================================
+
+        // Hologram config (client -> server)
+        event.registrar(HOLOGRAM_CONFIG.asString()).playToServer(
+                nn(HologramConfigPayload.TYPE),
+                nn(HologramConfigPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        handleHologramConfig(player, payload);
+                    }
+                }, PayloadLimits.SMALL)
+        );
+
+        // Hologram open screen (server -> client)
+        event.registrar(HOLOGRAM_OPEN_SCREEN.asString()).playToClient(
+                nn(HologramOpenScreenPayload.TYPE),
+                nn(HologramOpenScreenPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleHologramOpenScreen(payload)));
+                    }
+                }, PayloadLimits.SMALL)
+        );
+
+        // ===================================================================
+        // CLONE MODULE CHANNELS (170-179)
+        // ===================================================================
+
+        // Telepad config (client -> server)
+        event.registrar(TELEPAD_CONFIG.asString()).playToServer(
+                nn(TelepadConfigPayload.TYPE),
+                nn(TelepadConfigPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        handleTelepadConfig(player, payload);
+                    }
+                }, PayloadLimits.SMALL)
+        );
+
+        // Telepad open screen (server -> client)
+        event.registrar(TELEPAD_OPEN_SCREEN.asString()).playToClient(
+                nn(TelepadOpenScreenPayload.TYPE),
+                nn(TelepadOpenScreenPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            withClientHooks(hooks -> hooks.handleTelepadOpenScreen(payload)));
+                    }
+                }, PayloadLimits.SMALL)
+        );
     }
 
     // ===================================================================
@@ -1043,6 +1138,130 @@ public class NetworkHandler {
     }
 
     /**
+     * Send portal preview to a player.
+     * Used to show destination info when looking at a portal.
+     */
+    public static void sendPortalPreview(ServerPlayer player, PortalPreviewPayload payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+            Objects.requireNonNull(player), Objects.requireNonNull(payload));
+    }
+
+    /**
+     * Handle portal preview request from a client.
+     * Looks up the portal data and sends back destination information.
+     */
+    private static void handlePortalPreviewRequest(ServerPlayer player, PortalPreviewRequestPayload request) {
+        var level = player.serverLevel();
+        var registry = com.devmod.portal.PortalRegistry.get(level);
+        var blockState = level.getBlockState(request.portalPos());
+
+        // Verify the block is actually a portal
+        if (!(blockState.getBlock() instanceof com.devmod.portal.block.CustomPortalBlock)) {
+            return;
+        }
+
+        var color = blockState.getValue(com.devmod.portal.block.CustomPortalBlock.COLOR);
+
+        // Find the portal data
+        var portalOpt = registry.findPortalContaining(level, request.portalPos(), color);
+        if (portalOpt.isEmpty()) {
+            return;
+        }
+
+        var portal = portalOpt.get();
+
+        // Build the preview response
+        PortalPreviewPayload response;
+
+        if (portal.hasFixedDestination()) {
+            // Fixed destination (Nexus zone portal)
+            String zoneName = getFixedDestinationName(portal, level);
+            String dimName = getDimensionDisplayName(portal.fixedDestinationDimension().orElse(null));
+            response = PortalPreviewPayload.forFixedDestination(
+                request.portalPos(), zoneName, dimName, color);
+        } else if (portal.isLinked()) {
+            // Linked portal
+            var linkedOpt = registry.get(portal.linkedPortalId().orElse(null));
+            if (linkedOpt.isEmpty()) {
+                return;
+            }
+            var linked = linkedOpt.get();
+            String ownerName = getLinkedPortalName(linked);
+            String dimName = getDimensionDisplayName(linked.dimension().orElse(null));
+            int distance = calculateDistance(portal, linked);
+            response = PortalPreviewPayload.forLinkedPortal(
+                request.portalPos(), ownerName, dimName, distance, color);
+        } else {
+            // Unlinked portal - no preview
+            return;
+        }
+
+        sendPortalPreview(player, response);
+    }
+
+    /**
+     * Get display name for a fixed destination portal (Nexus zone).
+     */
+    private static String getFixedDestinationName(com.devmod.portal.PortalData portal,
+                                                   net.minecraft.server.level.ServerLevel level) {
+        // Try to determine zone from destination position
+        var destPos = portal.fixedDestination().orElse(null);
+        if (destPos != null) {
+            var zone = com.devmod.runtime.NexusPortalManager.INSTANCE.getZoneAtPosition(
+                com.devmod.runtime.NexusDimensionManager.getHubOrigin(), destPos);
+            if (zone != null) {
+                return zone.label();
+            }
+        }
+        return "Portal Destination";
+    }
+
+    /**
+     * Get display name for a linked portal.
+     */
+    private static String getLinkedPortalName(com.devmod.portal.PortalData portal) {
+        var creatorOpt = portal.creator();
+        if (creatorOpt.isPresent()) {
+            // Try to get player name - for now just show "Linked Portal"
+            return "Linked Portal";
+        }
+        return "Linked Portal";
+    }
+
+    /**
+     * Get display name for a dimension.
+     */
+    private static String getDimensionDisplayName(@Nullable net.minecraft.resources.ResourceLocation dim) {
+        if (dim == null) {
+            return "Unknown";
+        }
+        // Format dimension ID nicely
+        String path = dim.getPath();
+        if (path.equals("overworld")) return "Overworld";
+        if (path.equals("the_nether")) return "Nether";
+        if (path.equals("the_end")) return "The End";
+        if (path.equals("nexus")) return "Nexus";
+        // Capitalize first letter
+        return path.substring(0, 1).toUpperCase() + path.substring(1).replace("_", " ");
+    }
+
+    /**
+     * Calculate distance between two portals.
+     * Returns -1 if cross-dimension.
+     */
+    private static int calculateDistance(com.devmod.portal.PortalData from, com.devmod.portal.PortalData to) {
+        if (from.isInterDimensional(to)) {
+            return -1;
+        }
+        var fromPos = from.position().orElse(null);
+        var toPos = to.position().orElse(null);
+        if (fromPos == null || toPos == null) {
+            return -1;
+        }
+        return (int) Math.sqrt(fromPos.distSqr(toPos));
+    }
+
+    /**
      * Send impact sync data to a player for HUD display.
      * Called from DamageHandler when a player deals damage.
      */
@@ -1072,6 +1291,75 @@ public class NetworkHandler {
                 sendSeasonPassSync(serverPlayer);
             }
         });
+    }
+
+    /**
+     * Send hologram open screen payload to a player.
+     */
+    public static void sendHologramOpenScreen(ServerPlayer player, HologramOpenScreenPayload payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+            Objects.requireNonNull(player), Objects.requireNonNull(payload));
+    }
+
+    /**
+     * Handle hologram configuration from client.
+     */
+    private static void handleHologramConfig(ServerPlayer player, HologramConfigPayload payload) {
+        var level = player.serverLevel();
+        var pos = payload.pos();
+
+        // Validate distance (max 8 blocks)
+        if (player.blockPosition().distManhattan(pos) > 8) {
+            return;
+        }
+
+        var blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof com.devmod.hologram.block.entity.HologramProjectorBlockEntity projector) {
+            // Apply settings
+            if (projector.getScanSize() != payload.scanSize()) {
+                projector.setScanSize(payload.scanSize());
+            }
+            if (projector.getBlockSize() != payload.blockSize()) {
+                projector.setBlockSize(payload.blockSize());
+            }
+            if (projector.isRotationEnabled() != payload.rotationEnabled()) {
+                projector.toggleRotation();
+            }
+            if (projector.isTransparentMode() != payload.transparentMode()) {
+                projector.toggleTransparency();
+            }
+
+            // Force rescan if requested
+            if (payload.rescan()) {
+                projector.setupScanRegion();
+            }
+        }
+    }
+
+    /**
+     * Send telepad open screen payload to a player.
+     */
+    public static void sendTelepadOpenScreen(ServerPlayer player, TelepadOpenScreenPayload payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+            Objects.requireNonNull(player), Objects.requireNonNull(payload));
+    }
+
+    /**
+     * Handle telepad configuration from client.
+     */
+    private static void handleTelepadConfig(ServerPlayer player, TelepadConfigPayload payload) {
+        var level = player.serverLevel();
+        var pos = payload.pos();
+
+        // Validate distance (max 8 blocks)
+        if (player.blockPosition().distManhattan(pos) > 8) {
+            return;
+        }
+
+        var blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof com.devmod.clone.block.entity.TelepadBlockEntity telepad) {
+            telepad.setTelepadName(payload.telepadName());
+        }
     }
 
     private static void enqueueWork(IPayloadContext context, Runnable work) {

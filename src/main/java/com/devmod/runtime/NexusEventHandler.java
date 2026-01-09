@@ -1,8 +1,8 @@
 package com.devmod.runtime;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -33,9 +33,10 @@ import com.devmod.runtime.network.NexusUiPayload;
 
 @EventBusSubscriber(modid = DevMod.MODID)
 public class NexusEventHandler {
-    private static final Map<UUID, Long> BUILD_WARNINGS = new HashMap<>();
+    // Thread-safe: accessed from event handlers which may run on different threads
+    private static final Map<UUID, Long> BUILD_WARNINGS = new ConcurrentHashMap<>();
     private static final long BUILD_WARNING_COOLDOWN_TICKS = 20;
-    private static final Map<UUID, Long> UI_INTERACTIONS = new HashMap<>();
+    private static final Map<UUID, Long> UI_INTERACTIONS = new ConcurrentHashMap<>();
     private static final long UI_INTERACT_COOLDOWN_TICKS = 10;
 
     @SubscribeEvent
@@ -309,13 +310,7 @@ public class NexusEventHandler {
             return;
         }
 
-        // Check if target is a portal pedestal
-        if (target.getTags().contains(NexusPortalManager.PORTAL_TAG)) {
-            if (NexusPortalManager.INSTANCE.handleInteraction(player, target)) {
-                event.setCanceled(true);
-                event.setCancellationResult(InteractionResult.SUCCESS);
-            }
-            return;
-        }
+        // Note: Portal pedestals now use real CustomPortalBlock and handle teleportation
+        // via entityInside() automatically - no entity interaction needed
     }
 }

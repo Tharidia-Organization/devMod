@@ -40,6 +40,10 @@ import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.portal.client.PortalTeleportOverlay;
 import com.devmod.portal.network.PortalStatePayload;
+import com.devmod.hologram.network.HologramOpenScreenPayload;
+import com.devmod.hologram.client.screen.HologramConfigScreen;
+import com.devmod.clone.network.TelepadOpenScreenPayload;
+import com.devmod.clone.client.screen.TelepadConfigScreen;
 import com.devmod.runtime.environment.EnvironmentSyncPayload;
 import com.devmod.telemetry.network.LVCSyncPayload;
 
@@ -321,5 +325,41 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
         } else {
             PortalTeleportOverlay.exitPortal();
         }
+    }
+
+    // ==================== Portal Preview ====================
+
+    @Override
+    public void handlePortalPreview(com.devmod.portal.network.PortalPreviewPayload payload) {
+        com.devmod.portal.client.PortalPreviewOverlay.showPreview(payload);
+    }
+
+    // ==================== Hologram Config ====================
+
+    @Override
+    public void handleHologramOpenScreen(HologramOpenScreenPayload payload) {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        mc.execute(() -> {
+            mc.setScreen(new HologramConfigScreen(
+                payload.pos(),
+                payload.scanSize(),
+                payload.blockSize(),
+                payload.rotationEnabled(),
+                payload.transparentMode()
+            ));
+        });
+    }
+
+    // ==================== Telepad Config ====================
+
+    @Override
+    public void handleTelepadOpenScreen(TelepadOpenScreenPayload payload) {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        mc.execute(() -> {
+            mc.setScreen(new TelepadConfigScreen(
+                payload.pos(),
+                payload.telepadName()
+            ));
+        });
     }
 }

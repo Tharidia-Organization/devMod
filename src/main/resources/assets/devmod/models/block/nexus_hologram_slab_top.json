@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab_top",
+  "textures": {
+    "bottom": "devmod:block/nexus/nexus_hologram",
+    "top": "devmod:block/nexus/nexus_hologram",
+    "side": "devmod:block/nexus/nexus_hologram"
+  }
+}

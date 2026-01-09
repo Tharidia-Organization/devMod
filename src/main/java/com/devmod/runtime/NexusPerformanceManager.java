@@ -47,8 +47,9 @@ public final class NexusPerformanceManager {
     // Culled entities tracking
     private final Set<UUID> culledEntities = ConcurrentHashMap.newKeySet();
 
-    private int cullTick = 0;
-    private boolean initialized = false;
+    // volatile for visibility across thread boundaries (init check in tick)
+    private volatile int cullTick = 0;
+    private volatile boolean initialized = false;
 
     private NexusPerformanceManager() {}
 
@@ -277,9 +278,7 @@ public final class NexusPerformanceManager {
         if (entity.getTags().contains(NexusAvatarManager.AVATAR_TAG)) {
             return true;
         }
-        if (entity.getTags().contains(NexusPortalManager.PORTAL_TAG)) {
-            return true;
-        }
+        // Note: Portal pedestals now use real CustomPortalBlock (not entities) so no tag check needed
         if (entity.getTags().contains(NexusHologramManager.HOLOGRAM_TAG)) {
             return true;
         }

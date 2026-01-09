@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab_top",
+  "textures": {
+    "bottom": "devmod:block/nexus/nexus_glow",
+    "top": "devmod:block/nexus/nexus_glow",
+    "side": "devmod:block/nexus/nexus_glow"
+  }
+}

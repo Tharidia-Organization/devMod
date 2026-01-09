@@ -21,6 +21,18 @@ public record TemplateSuggestion(
     /** Biome ID (e.g., "minecraft:plains") */
     String biome,
 
+    /** Arena shape for 3D preview (RECTANGULAR, CIRCULAR, RING) */
+    String arenaShape,
+
+    /** Whether walls are enabled */
+    boolean hasWalls,
+
+    /** Whether hazards are present */
+    boolean hasHazards,
+
+    /** Number of spawn slots */
+    int spawnSlotCount,
+
     /** Overall compatibility score (higher = better fit) */
     double compatibilityScore,
 
@@ -41,10 +53,15 @@ public record TemplateSuggestion(
             String templateName,
             int size,
             String biome,
+            String arenaShape,
+            boolean hasWalls,
+            boolean hasHazards,
+            int spawnSlotCount,
             double score,
             Map<String, Double> breakdown,
             boolean selected) {
-        return new TemplateSuggestion(templateId, templateName, size, biome, score, breakdown, selected, null);
+        return new TemplateSuggestion(templateId, templateName, size, biome, arenaShape,
+            hasWalls, hasHazards, spawnSlotCount, score, breakdown, selected, null);
     }
 
     /**
@@ -55,8 +72,13 @@ public record TemplateSuggestion(
             String templateName,
             int size,
             String biome,
+            String arenaShape,
+            boolean hasWalls,
+            boolean hasHazards,
+            int spawnSlotCount,
             String reason) {
-        return new TemplateSuggestion(templateId, templateName, size, biome, 0.0, Map.of(), false, reason);
+        return new TemplateSuggestion(templateId, templateName, size, biome, arenaShape,
+            hasWalls, hasHazards, spawnSlotCount, 0.0, Map.of(), false, reason);
     }
 
     /**

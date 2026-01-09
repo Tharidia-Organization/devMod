@@ -9,8 +9,6 @@ import javax.annotation.Nullable;
 
 import com.google.gson.reflect.TypeToken;
 
-import java.util.Map;
-
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ArmorItem;

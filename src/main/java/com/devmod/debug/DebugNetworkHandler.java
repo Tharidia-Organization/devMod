@@ -16,9 +16,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import com.devmod.network.PayloadValidation;
 
+import com.devmod.debug.network.EntityScanDataPayload;
+
 import static com.devmod.network.ChannelId.DEBUG_SYNC;
 import static com.devmod.network.ChannelId.DEBUG_TOGGLE;
 import static com.devmod.network.ChannelId.ENTITY_PATHING;
+import static com.devmod.network.ChannelId.ENTITY_SCAN_DATA;
+import static com.devmod.network.ChannelId.ENTITY_SCANNER_OPEN;
 
 public class DebugNetworkHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugNetworkHandler.class);
@@ -54,8 +58,23 @@ public class DebugNetworkHandler {
                 DebugNetworkHandler::handleEntityPathing
             );
 
-            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {})",
-                DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString(), ENTITY_PATHING.asString());
+            // Entity Scan Data (server to client) - send scanned entity data
+            event.registrar(ENTITY_SCAN_DATA.asString()).playToClient(
+                Objects.requireNonNull(EntityScanDataPayload.TYPE),
+                Objects.requireNonNull(EntityScanDataPayload.STREAM_CODEC),
+                DebugNetworkHandler::handleEntityScanData
+            );
+
+            // Entity Scanner Open (server to client) - open scanner screen
+            event.registrar(ENTITY_SCANNER_OPEN.asString()).playToClient(
+                Objects.requireNonNull(EntityScanDataPayload.OpenScreenPayload.TYPE),
+                Objects.requireNonNull(EntityScanDataPayload.OpenScreenPayload.STREAM_CODEC),
+                DebugNetworkHandler::handleEntityScannerOpen
+            );
+
+            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {}, {}, {})",
+                DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString(), ENTITY_PATHING.asString(),
+                ENTITY_SCAN_DATA.asString(), ENTITY_SCANNER_OPEN.asString());
         } catch (NoClassDefFoundError e) {
             LOGGER.error("[DevMod] Debug payload classes missing; debug networking disabled", e);
         }
@@ -129,6 +148,44 @@ public class DebugNetworkHandler {
             // Client handler not available on dedicated servers.
         } catch (Exception e) {
             LOGGER.debug("[Debug] Client entity pathing unavailable: {}", e.getMessage());
+        }
+    }
+
+    private static void handleEntityScanData(EntityScanDataPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> invokeClientEntityScanData(payload)), "entity scan data");
+    }
+
+    private static void invokeClientEntityScanData(EntityScanDataPayload payload) {
+        try {
+            Class<?> handlerClass = Class.forName("com.devmod.debug.client.EntityScannerClientHandler");
+            java.lang.reflect.Method method = handlerClass.getMethod("handleScanData", EntityScanDataPayload.class, IPayloadContext.class);
+            method.invoke(null, payload, null);
+        } catch (ClassNotFoundException e) {
+            // Client handler not available on dedicated servers.
+        } catch (Exception e) {
+            LOGGER.debug("[Debug] Client entity scan data unavailable: {}", e.getMessage());
+        }
+    }
+
+    private static void handleEntityScannerOpen(EntityScanDataPayload.OpenScreenPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> invokeClientEntityScannerOpen(payload)), "entity scanner open");
+    }
+
+    private static void invokeClientEntityScannerOpen(EntityScanDataPayload.OpenScreenPayload payload) {
+        try {
+            Class<?> handlerClass = Class.forName("com.devmod.debug.client.EntityScannerClientHandler");
+            java.lang.reflect.Method method = handlerClass.getMethod("handleOpenScreen", EntityScanDataPayload.OpenScreenPayload.class, IPayloadContext.class);
+            method.invoke(null, payload, null);
+        } catch (ClassNotFoundException e) {
+            // Client handler not available on dedicated servers.
+        } catch (Exception e) {
+            LOGGER.debug("[Debug] Client entity scanner open unavailable: {}", e.getMessage());
         }
     }
 }

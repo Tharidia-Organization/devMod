@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=bottom": { "model": "devmod:block/nexus_terminal_slab" },
+    "type=top": { "model": "devmod:block/nexus_terminal_slab_top" },
+    "type=double": { "model": "devmod:block/nexus_terminal" }
+  }
+}

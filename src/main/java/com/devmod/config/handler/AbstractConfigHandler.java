@@ -21,9 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
-import com.devmod.config.handler.export.ConfigExportHelper;
-import com.devmod.config.handler.export.IExportableConfigHandler;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +36,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
+import com.devmod.config.handler.export.ConfigExportHelper;
+import com.devmod.config.handler.export.IExportableConfigHandler;
 import com.devmod.config.stats.IItemStats;
 
 /**

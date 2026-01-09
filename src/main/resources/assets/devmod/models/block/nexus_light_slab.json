@@ -1,0 +1,1 @@
+{ "parent": "minecraft:block/slab", "textures": { "bottom": "devmod:block/nexus/nexus_light", "top": "devmod:block/nexus/nexus_light", "side": "devmod:block/nexus/nexus_light" } }

@@ -3907,4 +3907,23 @@ public final class DesignTokens {
 
         private Nexus() {}
     }
+
+    /**
+     * Colors for the Portal system UI elements.
+     * Includes preview overlay and teleport effects.
+     */
+    public static final class Portal {
+
+        // --- Preview Overlay ---
+        /** Preview box background (semi-transparent black) */
+        public static final int PREVIEW_BG = 0xC0000000;
+        /** Preview primary text (white) */
+        public static final int PREVIEW_TEXT = 0xFFFFFFFF;
+        /** Preview secondary/dim text (gray) */
+        public static final int PREVIEW_TEXT_DIM = 0xFFAAAAAA;
+        /** Color bar alpha mask (opaque) */
+        public static final int PREVIEW_COLOR_ALPHA = 0xFF000000;
+
+        private Portal() {}
+    }
 }

@@ -35,8 +35,8 @@ public final class PortalTeleportOverlay {
 
     // Visual constants
     private static final float MAX_ALPHA = 0.7f;
-    /** Max ticks without server update before auto-resetting overlay (3 ticks = 150ms) */
-    private static final int SERVER_UPDATE_TIMEOUT = 3;
+    /** Max ticks without server update before auto-resetting overlay (10 ticks = 500ms) */
+    private static final int SERVER_UPDATE_TIMEOUT = 10;
 
     private PortalTeleportOverlay() {}
 
@@ -103,13 +103,25 @@ public final class PortalTeleportOverlay {
     }
 
     /**
-     * Calculates teleport progress (0.0 to 1.0).
+     * Calculates teleport progress (0.0 to 1.0) with easing applied.
      */
     private static float calculateProgress(int currentTicks, int delay) {
         if (delay <= 0) {
             return 1.0f;
         }
-        return Math.max(0.0f, Math.min(1.0f, (float) currentTicks / delay));
+        float linear = Math.max(0.0f, Math.min(1.0f, (float) currentTicks / delay));
+        // Apply ease-in-out cubic for smoother visual transition
+        return easeInOutCubic(linear);
+    }
+
+    /**
+     * Ease-in-out cubic function for smooth animation.
+     * Starts slow, speeds up in middle, slows down at end.
+     */
+    private static float easeInOutCubic(float t) {
+        return t < 0.5f
+            ? 4.0f * t * t * t
+            : 1.0f - (float) Math.pow(-2.0 * t + 2.0, 3) / 2.0f;
     }
 
     // === Public API ===

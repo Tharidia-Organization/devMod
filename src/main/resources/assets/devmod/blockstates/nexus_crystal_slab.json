@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_crystal_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_crystal"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_crystal_slab_top"
+    }
+  }
+}

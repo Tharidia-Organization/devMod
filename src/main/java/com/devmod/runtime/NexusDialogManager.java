@@ -25,7 +25,16 @@ public final class NexusDialogManager {
         STATS,          // Player statistics
         TIPS,           // Gameplay tips
         ZONE_GUIDE,     // Guide to Nexus zones
-        FAREWELL        // Goodbye message
+        FAREWELL,       // Goodbye message
+
+        // === Manual System ===
+        MANUAL_INDEX,           // Manual main index
+        MANUAL_CLONE,           // Clone module overview
+        MANUAL_CLONE_BIOSCANNER,// Bioscanner item guide
+        MANUAL_CLONE_TELEPAD,   // Telepad block guide
+        MANUAL_CLONE_NEUROCELL, // Neurocell block guide
+        MANUAL_CLONE_REFORMER,  // Reformer block guide
+        MANUAL_CLONE_ENTITY     // Player Clone entity guide
     }
 
     /**
@@ -217,6 +226,210 @@ public final class NexusDialogManager {
         return new DialogResponse("NEXA", lines, getBackOption());
     }
 
+    // ==========================================================================
+    // MANUAL SYSTEM
+    // ==========================================================================
+
+    /**
+     * Get manual index - main manual menu.
+     */
+    @Nonnull
+    public DialogResponse getManualIndex(@Nonnull NexusDialogContext ctx) {
+        Objects.requireNonNull(ctx, "ctx");
+        List<String> lines = new ArrayList<>();
+
+        lines.add("DevMod Manual");
+        lines.add("");
+        lines.add("Select a topic to learn more:");
+        lines.add("");
+        lines.add("The manual contains guides for all DevMod");
+        lines.add("systems, blocks, items, and entities.");
+
+        List<DialogOption> options = new ArrayList<>();
+        options.add(new DialogOption("manual_clone", "Clone System", "\uD83E\uDDEC", DialogType.MANUAL_CLONE));
+        options.add(new DialogOption("back", "Back to menu", "\u2B05", DialogType.GREETING));
+
+        return new DialogResponse("NEXA", lines, options);
+    }
+
+    /**
+     * Get Clone module overview.
+     */
+    @Nonnull
+    public DialogResponse getManualClone(@Nonnull NexusDialogContext ctx) {
+        Objects.requireNonNull(ctx, "ctx");
+        List<String> lines = new ArrayList<>();
+
+        lines.add("Clone System Overview");
+        lines.add("");
+        lines.add("The Clone system allows you to create");
+        lines.add("entity clones that follow and fight for you.");
+        lines.add("");
+        lines.add("Workflow:");
+        lines.add("1. Use BIOSCANNER to scan an entity");
+        lines.add("2. Place data in NEUROCELL to process");
+        lines.add("3. Connect NEUROCELL to REFORMER via NEUROLINK");
+        lines.add("4. REFORMER spawns the clone!");
+        lines.add("");
+        lines.add("Select a component to learn more:");
+
+        List<DialogOption> options = new ArrayList<>();
+        options.add(new DialogOption("bioscanner", "Bioscanner", "\uD83D\uDD2C", DialogType.MANUAL_CLONE_BIOSCANNER));
+        options.add(new DialogOption("telepad", "Telepad", "\u2728", DialogType.MANUAL_CLONE_TELEPAD));
+        options.add(new DialogOption("neurocell", "Neurocell", "\uD83E\uDDE0", DialogType.MANUAL_CLONE_NEUROCELL));
+        options.add(new DialogOption("reformer", "Reformer", "\u2699", DialogType.MANUAL_CLONE_REFORMER));
+        options.add(new DialogOption("clone_entity", "Player Clone", "\uD83D\uDC64", DialogType.MANUAL_CLONE_ENTITY));
+        options.add(new DialogOption("back", "Back to manual", "\u2B05", DialogType.MANUAL_INDEX));
+
+        return new DialogResponse("NEXA", lines, options);
+    }
+
+    /**
+     * Get Bioscanner item guide.
+     */
+    @Nonnull
+    public DialogResponse getManualCloneBioscanner(@Nonnull NexusDialogContext ctx) {
+        Objects.requireNonNull(ctx, "ctx");
+        List<String> lines = new ArrayList<>();
+
+        lines.add("Bioscanner");
+        lines.add("");
+        lines.add("A handheld device that scans and stores");
+        lines.add("entity data for cloning.");
+        lines.add("");
+        lines.add("Usage:");
+        lines.add("- Right-click any entity to scan");
+        lines.add("- Stores: entity type, name, UUID, NBT data");
+        lines.add("- Item glows when containing data");
+        lines.add("- Shift+right-click to clear data");
+        lines.add("");
+        lines.add("Tip: Works on players too!");
+
+        return new DialogResponse("NEXA", lines, getManualCloneBackOption());
+    }
+
+    /**
+     * Get Telepad block guide.
+     */
+    @Nonnull
+    public DialogResponse getManualCloneTelepad(@Nonnull NexusDialogContext ctx) {
+        Objects.requireNonNull(ctx, "ctx");
+        List<String> lines = new ArrayList<>();
+
+        lines.add("Telepad");
+        lines.add("");
+        lines.add("A teleportation pad that connects to a");
+        lines.add("network of other telepads.");
+        lines.add("");
+        lines.add("Setup:");
+        lines.add("1. Place the telepad");
+        lines.add("2. Right-click to open config screen");
+        lines.add("3. Set a network name (e.g. 'base')");
+        lines.add("4. Stand on pad for 2 seconds to teleport");
+        lines.add("");
+        lines.add("Features:");
+        lines.add("- Cross-dimensional travel");
+        lines.add("- Random destination in same network");
+        lines.add("- Configurable charge time");
+
+        return new DialogResponse("NEXA", lines, getManualCloneBackOption());
+    }
+
+    /**
+     * Get Neurocell block guide.
+     */
+    @Nonnull
+    public DialogResponse getManualCloneNeurocell(@Nonnull NexusDialogContext ctx) {
+        Objects.requireNonNull(ctx, "ctx");
+        List<String> lines = new ArrayList<>();
+
+        lines.add("Neurocell");
+        lines.add("");
+        lines.add("A cloning chamber that processes entity");
+        lines.add("data from a Bioscanner.");
+        lines.add("");
+        lines.add("Usage:");
+        lines.add("1. Right-click with filled Bioscanner");
+        lines.add("2. Wait for processing (15 seconds)");
+        lines.add("3. Connect to Reformer via Neurolink");
+        lines.add("");
+        lines.add("Visual:");
+        lines.add("- Shows entity preview during processing");
+        lines.add("- Glows when ready for Reformer");
+
+        return new DialogResponse("NEXA", lines, getManualCloneBackOption());
+    }
+
+    /**
+     * Get Reformer block guide.
+     */
+    @Nonnull
+    public DialogResponse getManualCloneReformer(@Nonnull NexusDialogContext ctx) {
+        Objects.requireNonNull(ctx, "ctx");
+        List<String> lines = new ArrayList<>();
+
+        lines.add("Reformer");
+        lines.add("");
+        lines.add("The final stage - spawns cloned entities");
+        lines.add("from processed Neurocell data.");
+        lines.add("");
+        lines.add("Setup:");
+        lines.add("1. Connect to Neurocell via Neurolink");
+        lines.add("2. Neurocell must have processed data");
+        lines.add("3. Reformer auto-starts reconstruction");
+        lines.add("");
+        lines.add("Spawn Time:");
+        lines.add("- Based on entity max health");
+        lines.add("- Players: ~60 seconds");
+        lines.add("- Zombies: ~24 seconds");
+        lines.add("");
+        lines.add("Note: Neurolink max distance is 16 blocks");
+
+        return new DialogResponse("NEXA", lines, getManualCloneBackOption());
+    }
+
+    /**
+     * Get Player Clone entity guide.
+     */
+    @Nonnull
+    public DialogResponse getManualCloneEntity(@Nonnull NexusDialogContext ctx) {
+        Objects.requireNonNull(ctx, "ctx");
+        List<String> lines = new ArrayList<>();
+
+        lines.add("Player Clone");
+        lines.add("");
+        lines.add("A tamed companion that follows and fights");
+        lines.add("for its owner.");
+        lines.add("");
+        lines.add("Behavior Modes:");
+        lines.add("- FOLLOW: Follows owner (default)");
+        lines.add("- GUARD: Stays in position");
+        lines.add("- ATTACK: Actively hunts hostiles");
+        lines.add("");
+        lines.add("Controls:");
+        lines.add("- Right-click: Cycle behavior mode");
+        lines.add("- Shift+right-click: Toggle sit/stand");
+        lines.add("");
+        lines.add("Combat:");
+        lines.add("- Attacks owner's targets");
+        lines.add("- Defends owner when hurt");
+        lines.add("- Won't attack owner's other pets");
+
+        return new DialogResponse("NEXA", lines, getManualCloneBackOption());
+    }
+
+    /**
+     * Get back option for Clone manual pages.
+     */
+    @Nonnull
+    private List<DialogOption> getManualCloneBackOption() {
+        return List.of(
+            new DialogOption("back", "Back to Clone", "\u2B05", DialogType.MANUAL_CLONE),
+            new DialogOption("manual", "Manual Index", "\uD83D\uDCD6", DialogType.MANUAL_INDEX),
+            new DialogOption("farewell", "Close", "\u2716", DialogType.FAREWELL)
+        );
+    }
+
     /**
      * Get farewell dialog.
      */
@@ -254,6 +467,14 @@ public final class NexusDialogManager {
             case TIPS -> getTips(ctx);
             case ZONE_GUIDE -> getZoneGuide(ctx);
             case FAREWELL -> getFarewell(ctx);
+            // Manual System
+            case MANUAL_INDEX -> getManualIndex(ctx);
+            case MANUAL_CLONE -> getManualClone(ctx);
+            case MANUAL_CLONE_BIOSCANNER -> getManualCloneBioscanner(ctx);
+            case MANUAL_CLONE_TELEPAD -> getManualCloneTelepad(ctx);
+            case MANUAL_CLONE_NEUROCELL -> getManualCloneNeurocell(ctx);
+            case MANUAL_CLONE_REFORMER -> getManualCloneReformer(ctx);
+            case MANUAL_CLONE_ENTITY -> getManualCloneEntity(ctx);
         };
     }
 
@@ -268,6 +489,7 @@ public final class NexusDialogManager {
         options.add(new DialogOption("stats", "Show my statistics", "\uD83D\uDCCA", DialogType.STATS));
         options.add(new DialogOption("tips", "Give me tips", "\uD83D\uDCA1", DialogType.TIPS));
         options.add(new DialogOption("zones", "Zone guide", "\uD83D\uDDFA", DialogType.ZONE_GUIDE));
+        options.add(new DialogOption("manual", "Open Manual", "\uD83D\uDCD6", DialogType.MANUAL_INDEX));
         options.add(new DialogOption("farewell", "Goodbye", "\uD83D\uDC4B", DialogType.FAREWELL));
 
         return options;

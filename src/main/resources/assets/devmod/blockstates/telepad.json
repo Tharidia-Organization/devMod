@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "devmod:block/telepad"
+    },
+    "facing=south": {
+      "model": "devmod:block/telepad",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "devmod:block/telepad",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "devmod:block/telepad",
+      "y": 90
+    }
+  }
+}

@@ -719,6 +719,10 @@ public class PolicyResolver implements AutoCloseable {
                     template.id(),
                     template.size(),
                     template.biome() != null ? template.biome().id() : "unknown",
+                    getArenaShapeName(template),
+                    template.walls() != null && template.walls().enabled(),
+                    template.hazards() != null && !template.hazards().isEmpty(),
+                    template.spawnSlots() != null ? template.spawnSlots().size() : 0,
                     "Too small (need " + minRadius + " radius)"
                 ));
                 continue;
@@ -770,6 +774,10 @@ public class PolicyResolver implements AutoCloseable {
                 template.id(),
                 template.size(),
                 template.biome() != null ? template.biome().id() : "unknown",
+                getArenaShapeName(template),
+                template.walls() != null && template.walls().enabled(),
+                template.hazards() != null && !template.hazards().isEmpty(),
+                template.spawnSlots() != null ? template.spawnSlots().size() : 0,
                 score,
                 breakdown,
                 false // Will be updated after sorting
@@ -785,7 +793,8 @@ public class PolicyResolver implements AutoCloseable {
             suggestions = suggestions.stream()
                 .map(s -> s.templateId().equals(finalSelectedId) && s.isCompatible()
                     ? TemplateSuggestion.compatible(s.templateId(), s.templateName(), s.size(),
-                        s.biome(), s.compatibilityScore(), s.scoreBreakdown(), true)
+                        s.biome(), s.arenaShape(), s.hasWalls(), s.hasHazards(), s.spawnSlotCount(),
+                        s.compatibilityScore(), s.scoreBreakdown(), true)
                     : s)
                 .toList();
         }
@@ -1058,6 +1067,10 @@ public class PolicyResolver implements AutoCloseable {
             "Custom: " + mobReqs.mobId().getPath(),
             dynamic.size(),
             dynamic.biome() != null ? dynamic.biome().id() : "minecraft:plains",
+            getArenaShapeName(dynamic),
+            dynamic.walls() != null && dynamic.walls().enabled(),
+            dynamic.hazards() != null && !dynamic.hazards().isEmpty(),
+            dynamic.spawnSlots() != null ? dynamic.spawnSlots().size() : 0,
             15.0, // High score for dynamic templates
             breakdown,
             false // Will be marked selected if highest
@@ -1070,6 +1083,16 @@ public class PolicyResolver implements AutoCloseable {
      */
     public TemplateSuggestion createDynamicSuggestion(MobRequirements mobReqs) {
         return createDynamicSuggestion(mobReqs, null);
+    }
+
+    /**
+     * Gets the arena shape name for preview purposes.
+     */
+    private static String getArenaShapeName(ArenaTemplate template) {
+        if (template.arenaShape() == null) {
+            return "RECTANGULAR";
+        }
+        return template.arenaShape().name();
     }
 
     // ===================

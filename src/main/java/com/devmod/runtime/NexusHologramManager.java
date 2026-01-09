@@ -54,6 +54,10 @@ public final class NexusHologramManager {
     private static final String NBT_BILLBOARD = "billboard";
     private static final String NBT_VIEW_RANGE = "view_range";
 
+    // TTL for leaderboard cache entries (1 hour) to prevent memory leaks
+    private static final long LEADERBOARD_CACHE_TTL_MS = 60 * 60 * 1000L;
+    private static final int CACHE_EVICTION_INTERVAL = 1200; // 1 minute in ticks
+
     // Hologram types
     public enum HologramType {
         LEADERBOARD("leaderboard", new Offset(0, 4, 20)),
@@ -80,6 +84,7 @@ public final class NexusHologramManager {
     private final Map<String, LeaderboardEntry> leaderboardCache = new ConcurrentHashMap<>();
     private final List<String> announcements = new ArrayList<>();
     private int updateTick = 0;
+    private int evictionTick = 0;
     private boolean useTextDisplay = true; // Will be set based on entity creation success
 
     private NexusHologramManager() {
@@ -313,6 +318,13 @@ public final class NexusHologramManager {
             return;
         }
 
+        // Periodic cache eviction to prevent memory leaks
+        evictionTick++;
+        if (evictionTick >= CACHE_EVICTION_INTERVAL) {
+            evictionTick = 0;
+            evictExpiredCacheEntries();
+        }
+
         updateTick++;
         int updateInterval = Config.NEXUS_HOLOGRAM_UPDATE_INTERVAL.get();
         if (updateTick < updateInterval) {
@@ -322,6 +334,18 @@ public final class NexusHologramManager {
 
         // Update leaderboard
         updateLeaderboard(level, hubOrigin);
+    }
+
+    /**
+     * Evict expired entries from leaderboard cache to prevent memory leaks.
+     */
+    private void evictExpiredCacheEntries() {
+        int before = leaderboardCache.size();
+        leaderboardCache.entrySet().removeIf(entry -> entry.getValue().isExpired(LEADERBOARD_CACHE_TTL_MS));
+        int evicted = before - leaderboardCache.size();
+        if (evicted > 0) {
+            LOGGER.debug("[NexusHolograms] Evicted {} expired leaderboard cache entries", evicted);
+        }
     }
 
     /**
@@ -485,9 +509,20 @@ public final class NexusHologramManager {
     }
 
     /**
-     * Leaderboard entry record.
+     * Leaderboard entry record with timestamp for TTL expiration.
      */
-    public record LeaderboardEntry(String name, int wave) {}
+    public record LeaderboardEntry(String name, int wave, long timestamp) {
+        public LeaderboardEntry(String name, int wave) {
+            this(name, wave, System.currentTimeMillis());
+        }
+
+        /**
+         * Check if this entry has expired based on TTL.
+         */
+        public boolean isExpired(long ttlMillis) {
+            return System.currentTimeMillis() - timestamp > ttlMillis;
+        }
+    }
 
     private static BlockPos offset(BlockPos origin, Offset offset) {
         return origin.offset(offset.x(), offset.y(), offset.z());

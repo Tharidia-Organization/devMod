@@ -1,10 +1,10 @@
 package com.devmod.runtime;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 
@@ -19,7 +19,8 @@ import net.minecraft.sounds.SoundSource;
 import com.devmod.config.Config;
 
 public final class NexusZoneTracker {
-    private static final Map<UUID, ZoneState> STATES = new HashMap<>();
+    // Thread-safe: accessed from server tick and event handlers (logout cleanup)
+    private static final Map<UUID, ZoneState> STATES = new ConcurrentHashMap<>();
 
     private NexusZoneTracker() {}
 

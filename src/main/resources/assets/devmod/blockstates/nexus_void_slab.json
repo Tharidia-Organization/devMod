@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_void_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_void"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_void_slab_top"
+    }
+  }
+}

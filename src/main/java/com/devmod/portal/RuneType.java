@@ -1,10 +1,11 @@
 package com.devmod.portal;
 
-import com.mojang.serialization.Codec;
-import net.minecraft.util.StringRepresentable;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import com.mojang.serialization.Codec;
+
+import net.minecraft.util.StringRepresentable;
 
 /**
  * Rune types that can be placed on portal frames as blocks.

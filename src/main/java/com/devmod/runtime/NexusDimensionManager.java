@@ -1,5 +1,4 @@
 package com.devmod.runtime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,14 +56,15 @@ public class NexusDimensionManager {
     private static final BlockPos HUB_ORIGIN = new BlockPos(0, 64, 0);
     private static final int HUB_HALF_SIZE = 96;
 
-    private final Set<ChunkPos> forcedChunks = new HashSet<>();
-    private ChunkPos forcedCenter;
-    private int forcedRadius = -1;
-    private int forcedTickDistance = -1;
-    private boolean forcedEnabled = false;
-    private NexusBuildTask buildTask;
-    private int pendingBuildVersion = NexusHubSavedData.CURRENT_VERSION;
-    private long tickCounter;
+    // Thread-safe: accessed from server thread and potentially config reload callbacks
+    private final Set<ChunkPos> forcedChunks = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private volatile ChunkPos forcedCenter;
+    private volatile int forcedRadius = -1;
+    private volatile int forcedTickDistance = -1;
+    private volatile boolean forcedEnabled = false;
+    private volatile NexusBuildTask buildTask;
+    private volatile int pendingBuildVersion = NexusHubSavedData.CURRENT_VERSION;
+    private volatile long tickCounter;
 
     private NexusDimensionManager() {}
 
@@ -612,6 +612,7 @@ public class NexusDimensionManager {
             clearForcedChunks(level);
             NexusPortalManager.INSTANCE.cleanup(level);
             NexusHologramManager.INSTANCE.cleanup(level);
+            NexusAvatarManager.cleanup(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
         }
         NexusPerformanceManager.INSTANCE.cleanup();
         buildTask = null;
