@@ -1,12 +1,12 @@
 package com.devmod.debug.block;
 
-import com.devmod.DevMod;
-
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
+
+import com.devmod.DevMod;
 
 /**
  * Debug module block registrations.

@@ -475,10 +475,17 @@ public class ArenaPreviewMesh {
      * A quad with four vertices and a color.
      */
     private static class Quad {
-        float[] v1, v2, v3, v4;
+        float[] v1;
+        float[] v2;
+        float[] v3;
+        float[] v4;
         final float r, g, b;
 
         Quad(float r, float g, float b) {
+            this.v1 = new float[3];
+            this.v2 = new float[3];
+            this.v3 = new float[3];
+            this.v4 = new float[3];
             this.r = r;
             this.g = g;
             this.b = b;

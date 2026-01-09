@@ -44,8 +44,8 @@ import com.devmod.client.rendering.shield.EnergyShieldRenderer;
 import com.devmod.client.telemetry.PerformanceProfiler;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.config.Config;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.stats.ArmorStats;
 import com.devmod.util.I18n;
 

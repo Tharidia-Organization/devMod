@@ -47,8 +47,11 @@ public class HologramProjectorBlockEntity extends BlockEntity {
 
     // Transient render state (client-side only)
     private transient BuildState buildState = BuildState.EMPTY;
+    @Nullable
     private transient CompletableFuture<HologramMesh> buildTask = null;
+    @Nullable
     private transient HologramMesh mesh = null;
+    @Nullable
     private transient HologramVBO vbo = null;
 
     public HologramProjectorBlockEntity(BlockPos pos, BlockState state) {

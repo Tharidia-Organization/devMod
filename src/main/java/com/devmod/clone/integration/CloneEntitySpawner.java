@@ -61,6 +61,7 @@ public class CloneEntitySpawner implements ArenaBuilder.EntitySpawner {
     }
 
     @Override
+    @Nullable
     public UUID spawnEntity(int x, int y, int z, String entityType) {
         // For standard entity types, delegate to normal spawning
         if (entityType == null || !entityType.startsWith("clone:")) {

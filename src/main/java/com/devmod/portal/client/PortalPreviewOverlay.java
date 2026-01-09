@@ -2,6 +2,8 @@ package com.devmod.portal.client;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,13 +24,14 @@ import com.devmod.portal.network.PortalPreviewPayload;
  * Client-side overlay showing portal destination preview when looking at a portal.
  * Displays a small info box with destination name, dimension, and distance.
  */
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public final class PortalPreviewOverlay {
 
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "portal_preview_hud");
 
     // Current preview state
+    @Nullable
     private static PortalPreviewPayload currentPreview = null;
     private static long previewExpiry = 0;
 

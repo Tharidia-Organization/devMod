@@ -26,7 +26,7 @@ import net.minecraft.client.renderer.ShaderInstance;
 public class HologramVBO {
     @Nullable
     private VertexBuffer vertexBuffer;
-    private VertexFormat.Mode drawMode;
+    private VertexFormat.Mode drawMode = VertexFormat.Mode.QUADS;
     private int vertexCount;
 
     /**

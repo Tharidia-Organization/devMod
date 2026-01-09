@@ -29,6 +29,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
 import com.devmod.config.Config;
+import com.devmod.entity.NexaEntity;
+import com.devmod.runtime.network.NexusNetworkHandler;
 import com.devmod.runtime.network.NexusUiPayload;
 
 @EventBusSubscriber(modid = DevMod.MODID)
@@ -38,6 +40,7 @@ public class NexusEventHandler {
     private static final long BUILD_WARNING_COOLDOWN_TICKS = 20;
     private static final Map<UUID, Long> UI_INTERACTIONS = new ConcurrentHashMap<>();
     private static final long UI_INTERACT_COOLDOWN_TICKS = 10;
+    private static final String LEGACY_AVATAR_TAG = "devmod_nexus_avatar";
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -187,9 +190,12 @@ public class NexusEventHandler {
             return;
         }
 
-        BlockPos pos = event.getPos();
-        BlockState state = event.getLevel().getBlockState(pos);
-        NexusZoneLayout.Zone zone = NexusZoneLayout.resolveZone(pos, NexusDimensionManager.getHubOrigin());
+        BlockPos pos = Objects.requireNonNull(event.getPos(), "pos");
+        BlockState state = Objects.requireNonNull(event.getLevel().getBlockState(pos), "state");
+        BlockPos hubOrigin = Objects.requireNonNull(NexusDimensionManager.getHubOrigin(), "hubOrigin");
+        NexusZoneLayout.Zone zone = NexusZoneLayout.resolveZone(pos, hubOrigin);
+        var lectern = Objects.requireNonNull(Blocks.LECTERN, "Blocks.LECTERN");
+        var respawnAnchor = Objects.requireNonNull(Blocks.RESPAWN_ANCHOR, "Blocks.RESPAWN_ANCHOR");
 
         if (zone == NexusZoneLayout.Zone.UI && isUiScreenBlock(state)) {
             if (!consumeUiCooldown(player)) {
@@ -201,7 +207,7 @@ public class NexusEventHandler {
             return;
         }
 
-        if (zone == NexusZoneLayout.Zone.TELEMETRY && state.is(Blocks.LECTERN)) {
+        if (zone == NexusZoneLayout.Zone.TELEMETRY && state.is(lectern)) {
             if (!consumeUiCooldown(player)) {
                 return;
             }
@@ -214,13 +220,14 @@ public class NexusEventHandler {
             event.setCancellationResult(InteractionResult.SUCCESS);
         }
 
-        if (state.is(Blocks.RESPAWN_ANCHOR)) {
+        if (state.is(respawnAnchor)) {
             if (!consumeUiCooldown(player)) {
                 return;
             }
             boolean returned = NexusDimensionManager.INSTANCE.teleportPlayerToReturn(player);
             if (!returned) {
-                player.displayClientMessage(Component.literal("No return point saved."), true);
+                Component message = Objects.requireNonNull(Component.literal("No return point saved."), "noReturnMessage");
+                player.displayClientMessage(message, true);
             }
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
@@ -252,18 +259,25 @@ public class NexusEventHandler {
     }
 
     private static void sendUi(ServerPlayer player, NexusUiPayload.UiAction action) {
-        PacketDistributor.sendToPlayer(player, new NexusUiPayload(action));
+        PacketDistributor.sendToPlayer(Objects.requireNonNull(player, "player"), new NexusUiPayload(action));
     }
 
     private static boolean isUiScreenBlock(BlockState state) {
-        return state.is(Blocks.BLUE_STAINED_GLASS) || state.is(Blocks.LIGHT_BLUE_STAINED_GLASS);
+        var blueGlass = Objects.requireNonNull(Blocks.BLUE_STAINED_GLASS, "Blocks.BLUE_STAINED_GLASS");
+        var lightBlueGlass = Objects.requireNonNull(Blocks.LIGHT_BLUE_STAINED_GLASS, "Blocks.LIGHT_BLUE_STAINED_GLASS");
+        return state.is(blueGlass) || state.is(lightBlueGlass);
     }
 
     private static boolean isLogDeskLectern(Level level, BlockPos pos) {
-        return level.getBlockState(pos.north()).is(Blocks.BOOKSHELF)
-            || level.getBlockState(pos.south()).is(Blocks.BOOKSHELF)
-            || level.getBlockState(pos.east()).is(Blocks.BOOKSHELF)
-            || level.getBlockState(pos.west()).is(Blocks.BOOKSHELF);
+        BlockPos north = Objects.requireNonNull(pos.north(), "pos.north");
+        BlockPos south = Objects.requireNonNull(pos.south(), "pos.south");
+        BlockPos east = Objects.requireNonNull(pos.east(), "pos.east");
+        BlockPos west = Objects.requireNonNull(pos.west(), "pos.west");
+        var bookshelf = Objects.requireNonNull(Blocks.BOOKSHELF, "Blocks.BOOKSHELF");
+        return level.getBlockState(north).is(bookshelf)
+            || level.getBlockState(south).is(bookshelf)
+            || level.getBlockState(east).is(bookshelf)
+            || level.getBlockState(west).is(bookshelf);
     }
 
     private static boolean consumeUiCooldown(ServerPlayer player) {
@@ -303,8 +317,13 @@ public class NexusEventHandler {
 
         // Check if target is the Nexus avatar
         var target = Objects.requireNonNull(event.getTarget(), "event.getTarget");
-        if (target.getTags().contains(NexusAvatarManager.AVATAR_TAG)) {
-            NexusAvatarManager.handleInteraction(player, target);
+        if (target instanceof NexaEntity) {
+            return;
+        }
+
+        var tags = target.getTags();
+        if (tags.contains(NexaEntity.NEXA_TAG) || tags.contains(LEGACY_AVATAR_TAG)) {
+            NexusNetworkHandler.openGreetingDialog(player);
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
             return;

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_onyx_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_onyx"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_onyx_slab_top"
+    }
+  }
+}

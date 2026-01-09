@@ -387,6 +387,7 @@ public class WeaponStats implements IItemStats {
      * Save weapon stats to NBT compound tag.
      * Uses short keys to minimize storage overhead.
      */
+    @Override
     public void save(CompoundTag tag) {
         // Hit location multipliers
         tag.putFloat("HeadMult", headMult);
@@ -580,6 +581,7 @@ public class WeaponStats implements IItemStats {
     /**
      * Check if all values are at defaults (no modifications).
      */
+    @Override
     public boolean isDefault() {
         return isDefaultValue(headMult, getDefaultHeadMult())
             && isDefaultValue(bodyMult, getDefaultBodyMult())
@@ -617,6 +619,7 @@ public class WeaponStats implements IItemStats {
     /**
      * Create a copy of these stats.
      */
+    @Override
     public WeaponStats copy() {
         WeaponStats copy = new WeaponStats();
         copy.setHeadMult(this.getHeadMult());

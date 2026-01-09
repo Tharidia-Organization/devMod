@@ -28,7 +28,7 @@ import com.devmod.clone.CloneBlocks;
  *
  * <p>Automatically connects to adjacent clone blocks.
  */
-public class NeurolinkBlock extends Block {
+public final class NeurolinkBlock extends Block {
 
     public static final MapCodec<NeurolinkBlock> CODEC = simpleCodec(p -> new NeurolinkBlock());
 

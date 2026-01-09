@@ -22,7 +22,7 @@ public final class EntityScannerClientHandler {
      * Handle incoming scan data.
      */
     public static void handleScanData(EntityScanDataPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        var work = context.enqueueWork(() -> {
             Minecraft mc = Minecraft.getInstance();
             Screen currentScreen = mc.screen;
 
@@ -32,13 +32,14 @@ public final class EntityScannerClientHandler {
                 }
             }
         });
+        work.isDone();
     }
 
     /**
      * Handle request to open scanner screen.
      */
     public static void handleOpenScreen(EntityScanDataPayload.OpenScreenPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        var work = context.enqueueWork(() -> {
             Minecraft mc = Minecraft.getInstance();
             Screen currentScreen = mc.screen;
 
@@ -48,6 +49,7 @@ public final class EntityScannerClientHandler {
                 mc.setScreen(new EntityScannerScreen(payload.scannerPos()));
             }
         });
+        work.isDone();
     }
 
     /**

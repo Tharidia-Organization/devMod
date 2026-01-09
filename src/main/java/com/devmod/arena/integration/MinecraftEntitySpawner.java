@@ -50,6 +50,7 @@ public class MinecraftEntitySpawner implements ArenaBuilder.EntitySpawner {
     }
 
     @Override
+    @Nullable
     public UUID spawnEntity(int x, int y, int z, String entityType) {
         // Resolve entity type
         EntityType<?> type = resolveEntityType(entityType);

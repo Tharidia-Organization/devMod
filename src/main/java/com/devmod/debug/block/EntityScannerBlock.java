@@ -22,7 +22,6 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
 
 import com.devmod.debug.block.entity.EntityScannerBlockEntity;
@@ -32,7 +31,7 @@ import com.devmod.debug.block.entity.EntityScannerBlockEntity;
  * Right-click to open the scanner screen with entity details.
  * Shift-right-click to cycle scan radius.
  */
-public class EntityScannerBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class EntityScannerBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<EntityScannerBlock> CODEC = simpleCodec(EntityScannerBlock::new);
 
     public EntityScannerBlock(Properties properties) {
@@ -48,7 +47,7 @@ public class EntityScannerBlock extends HorizontalDirectionalBlock implements En
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(new Property[]{FACING});
+        builder.add(FACING);
     }
 
     @Override

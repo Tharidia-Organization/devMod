@@ -39,6 +39,9 @@ public final class CloneModule {
         // Register block entity types
         CloneBlockEntities.register(modEventBus);
 
+        // Register menu types
+        CloneMenus.register(modEventBus);
+
         // Register creative tab
         CloneCreativeTab.register(modEventBus);
 

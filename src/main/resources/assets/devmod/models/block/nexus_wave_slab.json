@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "devmod:block/nexus/nexus_wave",
+    "top": "devmod:block/nexus/nexus_wave",
+    "side": "devmod:block/nexus/nexus_wave"
+  }
+}

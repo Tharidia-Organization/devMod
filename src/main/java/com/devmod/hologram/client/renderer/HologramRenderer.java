@@ -102,13 +102,13 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
                                   @Nonnull HologramProjectorBlockEntity blockEntity) {
         blockEntity.setBuildState(BuildState.BUILDING);
 
-        CompletableFuture<HologramMesh> buildTask = HologramMeshBuilder.buildAsync(level, minX, maxX, minZ, maxZ);
+        CompletableFuture<HologramMesh> buildTask = HologramMeshBuilder.buildAsync(level, minX, maxX, minZ, maxZ)
+            .thenApply(mesh -> {
+                blockEntity.setMesh(mesh);
+                blockEntity.setBuildState(BuildState.READY);
+                return mesh;
+            });
         blockEntity.setBuildTask(buildTask);
-
-        buildTask.thenAccept(mesh -> {
-            blockEntity.setMesh(mesh);
-            blockEntity.setBuildState(BuildState.READY);
-        });
     }
 
     /**

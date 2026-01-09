@@ -35,7 +35,6 @@ public class EntityScannerScreen extends Screen {
     @Nullable
     private EntityScanDataPayload.ScannedEntity selectedEntity;
     private int scrollOffset = 0;
-    private int detailScrollOffset = 0;
 
     public EntityScannerScreen(BlockPos scannerPos) {
         super(Component.literal("Entity Scanner"));
@@ -243,7 +242,6 @@ public class EntityScannerScreen extends Screen {
 
                 if (clickedIndex >= 0 && clickedIndex < entities.size()) {
                     selectedEntity = entities.get(clickedIndex);
-                    detailScrollOffset = 0;
                     return true;
                 }
             }

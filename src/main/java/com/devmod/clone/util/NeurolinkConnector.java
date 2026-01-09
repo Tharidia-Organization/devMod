@@ -88,4 +88,61 @@ public final class NeurolinkConnector {
     public static boolean hasConnectedNeurocell(Level level, BlockPos reformerPos) {
         return findConnectedNeurocell(level, reformerPos) != null;
     }
+
+    /**
+     * Find a connected NEUROCELL with an EMPTY bioscanner via NEUROLINK cables.
+     * Used by the Imprinter to find a target for scanning.
+     *
+     * @param level The world
+     * @param startPos Starting position (typically IMPRINTER position)
+     * @return The first connected NEUROCELL with empty bioscanner, or null if none found
+     */
+    @Nullable
+    public static NeurocellBlockEntity findConnectedNeurocellWithEmptyBioscanner(Level level, BlockPos startPos) {
+        Set<BlockPos> visited = new HashSet<>();
+        Queue<BlockPos> queue = new ArrayDeque<>();
+
+        // Start with adjacent positions
+        for (Direction dir : Direction.values()) {
+            queue.add(startPos.relative(dir));
+        }
+        visited.add(startPos);
+
+        while (!queue.isEmpty()) {
+            BlockPos current = queue.poll();
+
+            // Skip if already visited or too far
+            if (visited.contains(current)) {
+                continue;
+            }
+            if (current.distManhattan(startPos) > MAX_SEARCH_DISTANCE) {
+                continue;
+            }
+
+            visited.add(current);
+
+            BlockState state = level.getBlockState(current);
+            Block block = state.getBlock();
+
+            // Check if it's a NEUROCELL with an empty bioscanner
+            if (block == CloneBlocks.NEUROCELL.get()) {
+                BlockEntity be = level.getBlockEntity(current);
+                if (be instanceof NeurocellBlockEntity neurocell && neurocell.hasEmptyBioscanner()) {
+                    return neurocell;
+                }
+            }
+
+            // If it's a NEUROLINK, continue searching through it
+            if (block == CloneBlocks.NEUROLINK.get()) {
+                for (Direction dir : Direction.values()) {
+                    BlockPos nextPos = current.relative(dir);
+                    if (!visited.contains(nextPos)) {
+                        queue.add(nextPos);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
 }

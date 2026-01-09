@@ -2,6 +2,7 @@ package com.devmod.portal;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -77,11 +78,16 @@ public final class PortalBlocks {
     }
 
     // Convenience accessors
-    public static final DeferredHolder<Block, RuneBlock> RUNE_HASTE = RUNE_BLOCKS.get(RuneType.HASTE);
-    public static final DeferredHolder<Block, RuneBlock> RUNE_GATE = RUNE_BLOCKS.get(RuneType.GATE);
-    public static final DeferredHolder<Block, RuneBlock> RUNE_ENHANCER = RUNE_BLOCKS.get(RuneType.ENHANCER);
-    public static final DeferredHolder<Block, RuneBlock> RUNE_STRONG_ENHANCER = RUNE_BLOCKS.get(RuneType.STRONG_ENHANCER);
-    public static final DeferredHolder<Block, RuneBlock> RUNE_INFINITY = RUNE_BLOCKS.get(RuneType.INFINITY);
+    public static final DeferredHolder<Block, RuneBlock> RUNE_HASTE =
+        Objects.requireNonNull(RUNE_BLOCKS.get(RuneType.HASTE), "Missing rune block for HASTE");
+    public static final DeferredHolder<Block, RuneBlock> RUNE_GATE =
+        Objects.requireNonNull(RUNE_BLOCKS.get(RuneType.GATE), "Missing rune block for GATE");
+    public static final DeferredHolder<Block, RuneBlock> RUNE_ENHANCER =
+        Objects.requireNonNull(RUNE_BLOCKS.get(RuneType.ENHANCER), "Missing rune block for ENHANCER");
+    public static final DeferredHolder<Block, RuneBlock> RUNE_STRONG_ENHANCER =
+        Objects.requireNonNull(RUNE_BLOCKS.get(RuneType.STRONG_ENHANCER), "Missing rune block for STRONG_ENHANCER");
+    public static final DeferredHolder<Block, RuneBlock> RUNE_INFINITY =
+        Objects.requireNonNull(RUNE_BLOCKS.get(RuneType.INFINITY), "Missing rune block for INFINITY");
 
     /**
      * Called during mod initialization to ensure blocks are registered.

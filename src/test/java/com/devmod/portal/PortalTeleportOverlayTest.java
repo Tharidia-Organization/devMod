@@ -2,6 +2,8 @@ package com.devmod.portal;
 
 import com.devmod.TestBootstrap;
 import org.junit.jupiter.api.BeforeAll;
+import javax.annotation.Nullable;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -191,6 +193,7 @@ class PortalTeleportOverlayTest {
      */
     static class PortalTeleportState {
         private boolean active = false;
+        @Nullable
         private PortalColor color = null;
         private int ticksInPortal = 0;
 
@@ -216,6 +219,7 @@ class PortalTeleportOverlayTest {
             }
         }
 
+        @Nullable
         public PortalColor getColor() {
             return color;
         }

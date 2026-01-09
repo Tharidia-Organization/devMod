@@ -37,7 +37,7 @@ import com.devmod.portal.RuneType;
  *   <li>INFINITY - Unlimited linking range</li>
  * </ul>
  */
-public class RuneBlock extends FaceAttachedHorizontalDirectionalBlock {
+public final class RuneBlock extends FaceAttachedHorizontalDirectionalBlock {
 
     public static final MapCodec<RuneBlock> CODEC = RecordCodecBuilder.mapCodec(instance ->
         instance.group(

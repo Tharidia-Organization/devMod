@@ -150,7 +150,8 @@ public abstract class AbstractConfigHandler<S extends IItemStats>
         // 2. Check global stats
         S global = globalStats.get(stack.getItem());
         if (global != null) {
-            return global.copy() instanceof IItemStats ? castStats(global.copy()) : global;
+            IItemStats copy = global.copy();
+            return castStats(copy);
         }
 
         // 3. Return defaults
@@ -361,12 +362,23 @@ public abstract class AbstractConfigHandler<S extends IItemStats>
      */
     protected void cleanOldBackups(Path file) {
         try {
-            String prefix = file.getFileName().toString();
-            java.util.List<Path> backups = Files.list(file.getParent())
-                .filter(p -> p.getFileName().toString().startsWith(prefix) &&
-                            p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                .sorted((a, b) -> b.getFileName().toString().compareTo(a.getFileName().toString()))
-                .toList();
+            Path parent = file.getParent();
+            if (parent == null) {
+                return;
+            }
+            Path fileName = file.getFileName();
+            if (fileName == null) {
+                return;
+            }
+            String prefix = fileName.toString();
+            java.util.List<Path> backups;
+            try (var stream = Files.list(parent)) {
+                backups = stream
+                    .filter(p -> p.getFileName().toString().startsWith(prefix)
+                        && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
+                    .sorted((a, b) -> b.getFileName().toString().compareTo(a.getFileName().toString()))
+                    .toList();
+            }
 
             for (int i = MAX_BACKUPS; i < backups.size(); i++) {
                 Files.deleteIfExists(backups.get(i));

@@ -60,7 +60,7 @@ import com.devmod.portal.network.PortalStatePayload;
  *   <li>INFINITY - Unlimited linking range</li>
  * </ul>
  */
-public class CustomPortalBlock extends Block {
+public final class CustomPortalBlock extends Block {
     public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
     public static final EnumProperty<PortalColor> COLOR = EnumProperty.create("color", PortalColor.class);
     public static final BooleanProperty LINKED = BooleanProperty.create("linked");
@@ -178,7 +178,7 @@ public class CustomPortalBlock extends Block {
         }
 
         // Get linked portal
-        Optional<PortalData> linkedOpt = registry.get(portal.linkedPortalId().orElse(null));
+        Optional<PortalData> linkedOpt = portal.linkedPortalId().flatMap(registry::get);
         if (linkedOpt.isEmpty()) {
             resetPortalTime(entity);
             return;

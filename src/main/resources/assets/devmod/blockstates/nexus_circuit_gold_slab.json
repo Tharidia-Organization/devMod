@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_circuit_gold_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_circuit_gold"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_circuit_gold_slab_top"
+    }
+  }
+}

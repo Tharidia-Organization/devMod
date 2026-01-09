@@ -113,29 +113,41 @@ public final class NexusPortalManager {
             return;
         }
 
-        BlockPos portalCenter = hubOrigin.offset(offset);
-        PortalColor color = ZONE_TO_COLOR.getOrDefault(zone, PortalColor.BLUE);
+        BlockPos portalCenter = Objects.requireNonNull(
+            hubOrigin.offset(Objects.requireNonNull(offset, "offset")),
+            "portalCenter"
+        );
+        PortalColor color = Objects.requireNonNull(
+            ZONE_TO_COLOR.getOrDefault(zone, PortalColor.BLUE),
+            "color"
+        );
 
         // Build portal frame (obsidian-like structure)
         buildPortalFrame(level, portalCenter);
 
         // Get destination (zone spawn point)
-        BlockPos destination = NexusSpawnManager.getSpawnForZone(hubOrigin, zone);
-        ResourceLocation nexusDim = NexusDimensionManager.NEXUS_DIMENSION.location();
+        BlockPos destination = Objects.requireNonNull(
+            NexusSpawnManager.getSpawnForZone(hubOrigin, zone),
+            "destination"
+        );
+        ResourceLocation nexusDim = Objects.requireNonNull(
+            NexusDimensionManager.NEXUS_DIMENSION.location(),
+            "nexusDim"
+        );
 
         // Create portal data with fixed destination
-        PortalData portalData = PortalData.createWithFixedDestination(
+        PortalData portalData = Objects.requireNonNull(PortalData.createWithFixedDestination(
             color,
             nexusDim,
             portalCenter,
             nexusDim,  // Same dimension (Nexus)
             destination
-        );
+        ), "portalData");
 
         // Register portal in registry
         PortalRegistry registry = PortalRegistry.get(level);
         registry.register(portalData);
-        portalIds.put(zone, portalData.id());
+        portalIds.put(zone, Objects.requireNonNull(portalData.id(), "portalId"));
 
         // Fill interior with portal blocks
         fillPortalInterior(level, portalCenter, color);
@@ -149,7 +161,10 @@ public final class NexusPortalManager {
      * Creates a simple obsidian frame around the portal interior.
      */
     private void buildPortalFrame(@Nonnull ServerLevel level, @Nonnull BlockPos center) {
-        BlockState frameBlock = Blocks.OBSIDIAN.defaultBlockState();
+        BlockState frameBlock = Objects.requireNonNull(
+            Objects.requireNonNull(Blocks.OBSIDIAN, "Blocks.OBSIDIAN").defaultBlockState(),
+            "frameBlock"
+        );
 
         // Frame corners (relative to center bottom-left of interior)
         // Portal faces Z axis (players approach from north/south)
@@ -157,22 +172,26 @@ public final class NexusPortalManager {
 
         // Bottom frame (below interior)
         for (int x = -1; x <= PORTAL_WIDTH; x++) {
-            level.setBlock(center.offset(x, -1, 0), frameBlock, 3);
+            BlockPos framePos = Objects.requireNonNull(center.offset(x, -1, 0), "framePos");
+            level.setBlock(framePos, frameBlock, 3);
         }
 
         // Top frame (above interior)
         for (int x = -1; x <= PORTAL_WIDTH; x++) {
-            level.setBlock(center.offset(x, PORTAL_HEIGHT, 0), frameBlock, 3);
+            BlockPos framePos = Objects.requireNonNull(center.offset(x, PORTAL_HEIGHT, 0), "framePos");
+            level.setBlock(framePos, frameBlock, 3);
         }
 
         // Left pillar
         for (int y = -1; y <= PORTAL_HEIGHT; y++) {
-            level.setBlock(center.offset(-1, y, 0), frameBlock, 3);
+            BlockPos framePos = Objects.requireNonNull(center.offset(-1, y, 0), "framePos");
+            level.setBlock(framePos, frameBlock, 3);
         }
 
         // Right pillar
         for (int y = -1; y <= PORTAL_HEIGHT; y++) {
-            level.setBlock(center.offset(PORTAL_WIDTH, y, 0), frameBlock, 3);
+            BlockPos framePos = Objects.requireNonNull(center.offset(PORTAL_WIDTH, y, 0), "framePos");
+            level.setBlock(framePos, frameBlock, 3);
         }
     }
 
@@ -181,15 +200,19 @@ public final class NexusPortalManager {
      */
     private void fillPortalInterior(@Nonnull ServerLevel level, @Nonnull BlockPos center,
                                      @Nonnull PortalColor color) {
-        BlockState portalState = PortalBlocks.CUSTOM_PORTAL.get().defaultBlockState()
-            .setValue(CustomPortalBlock.AXIS, Direction.Axis.Z)
-            .setValue(CustomPortalBlock.COLOR, color)
-            .setValue(CustomPortalBlock.LINKED, true);  // Show as active
+        BlockState portalState = Objects.requireNonNull(
+            Objects.requireNonNull(PortalBlocks.CUSTOM_PORTAL.get(), "PortalBlocks.CUSTOM_PORTAL").defaultBlockState()
+                .setValue(CustomPortalBlock.AXIS, Direction.Axis.Z)
+                .setValue(CustomPortalBlock.COLOR, color)
+                .setValue(CustomPortalBlock.LINKED, true),
+            "portalState"
+        );
 
         // Fill interior
         for (int x = 0; x < PORTAL_WIDTH; x++) {
             for (int y = 0; y < PORTAL_HEIGHT; y++) {
-                level.setBlock(center.offset(x, y, 0), portalState, 3);
+                BlockPos portalPos = Objects.requireNonNull(center.offset(x, y, 0), "portalPos");
+                level.setBlock(portalPos, portalState, 3);
             }
         }
     }
@@ -237,7 +260,7 @@ public final class NexusPortalManager {
      */
     @Nonnull
     public PortalColor getZonePortalColor(@Nonnull NexusSpawnManager.Zone zone) {
-        return ZONE_TO_COLOR.getOrDefault(zone, PortalColor.BLUE);
+        return Objects.requireNonNull(ZONE_TO_COLOR.getOrDefault(zone, PortalColor.BLUE), "zoneColor");
     }
 
     /**
@@ -257,7 +280,10 @@ public final class NexusPortalManager {
         List<PortalInfo> list = new ArrayList<>();
         for (Map.Entry<NexusSpawnManager.Zone, BlockPos> entry : PORTAL_OFFSETS.entrySet()) {
             NexusSpawnManager.Zone zone = Objects.requireNonNull(entry.getKey(), "zone");
-            BlockPos pos = hubOrigin.offset(Objects.requireNonNull(entry.getValue(), "offset"));
+            BlockPos pos = Objects.requireNonNull(
+                hubOrigin.offset(Objects.requireNonNull(entry.getValue(), "offset")),
+                "portalPos"
+            );
             int color = getZoneColor(zone);
             list.add(new PortalInfo(zone, pos, color));
         }
@@ -270,7 +296,10 @@ public final class NexusPortalManager {
     @Nullable
     public NexusSpawnManager.Zone getZoneAtPosition(@Nonnull BlockPos hubOrigin, @Nonnull BlockPos pos) {
         for (Map.Entry<NexusSpawnManager.Zone, BlockPos> entry : PORTAL_OFFSETS.entrySet()) {
-            BlockPos portalPos = hubOrigin.offset(entry.getValue());
+            BlockPos portalPos = Objects.requireNonNull(
+                hubOrigin.offset(Objects.requireNonNull(entry.getValue(), "offset")),
+                "portalPos"
+            );
             // Check if position is within portal bounds
             if (isWithinPortalBounds(portalPos, pos)) {
                 return entry.getKey();

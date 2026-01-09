@@ -8,9 +8,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Containers;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -39,10 +37,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import com.devmod.clone.CloneBlockEntities;
-import com.devmod.clone.CloneItems;
 import com.devmod.clone.block.entity.NeurocellBlockEntity;
-import com.devmod.clone.item.BioscannerItem;
 
 /**
  * Neurocell block - the cloning chamber.
@@ -56,7 +51,7 @@ import com.devmod.clone.item.BioscannerItem;
  *   <li>Outputs processed data to connected REFORMER</li>
  * </ul>
  */
-public class NeurocellBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class NeurocellBlock extends HorizontalDirectionalBlock implements EntityBlock {
 
     public static final MapCodec<NeurocellBlock> CODEC = simpleCodec(p -> new NeurocellBlock());
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
@@ -195,55 +190,7 @@ public class NeurocellBlock extends HorizontalDirectionalBlock implements Entity
         @Nonnull BlockState state,
         @Nonnull BlockEntityType<T> type
     ) {
-        if (level.isClientSide || state.getValue(HALF) != DoubleBlockHalf.LOWER) {
-            return null;
-        }
-        return type == CloneBlockEntities.NEUROCELL.get()
-            ? (lvl, pos, st, be) -> ((NeurocellBlockEntity) be).tick()
-            : null;
-    }
-
-    @Override
-    @Nonnull
-    protected ItemInteractionResult useItemOn(
-        @Nonnull ItemStack stack,
-        @Nonnull BlockState state,
-        @Nonnull Level level,
-        @Nonnull BlockPos pos,
-        @Nonnull Player player,
-        @Nonnull InteractionHand hand,
-        @Nonnull BlockHitResult hit
-    ) {
-        if (level.isClientSide) {
-            return ItemInteractionResult.SUCCESS;
-        }
-
-        // Get the lower position (where the block entity is)
-        BlockPos lowerPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos : pos.below();
-        BlockEntity be = level.getBlockEntity(lowerPos);
-
-        if (!(be instanceof NeurocellBlockEntity neurocell)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
-
-        // Insert bioscanner
-        boolean isBioscanner = stack.is(CloneItems.BIOSCANNER.get());
-        boolean hasData = BioscannerItem.hasData(stack);
-        com.devmod.DevMod.LOGGER.info("[Neurocell] Click: isBioscanner={}, hasData={}, stack={}",
-            isBioscanner, hasData, stack);
-
-        if (isBioscanner && hasData) {
-            boolean inserted = neurocell.insertBioscanner(stack.copy());
-            com.devmod.DevMod.LOGGER.info("[Neurocell] Insertion result: {}", inserted);
-            if (inserted) {
-                if (!player.isCreative()) {
-                    stack.shrink(1);
-                }
-                return ItemInteractionResult.CONSUME;
-            }
-        }
-
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return null;
     }
 
     @Override
@@ -256,7 +203,7 @@ public class NeurocellBlock extends HorizontalDirectionalBlock implements Entity
         @Nonnull BlockHitResult hit
     ) {
         if (level.isClientSide) {
-            return InteractionResult.SUCCESS;
+            return InteractionResult.sidedSuccess(true);
         }
 
         // Get the lower position (where the block entity is)
@@ -264,20 +211,11 @@ public class NeurocellBlock extends HorizontalDirectionalBlock implements Entity
         BlockEntity be = level.getBlockEntity(lowerPos);
 
         if (be instanceof NeurocellBlockEntity neurocell) {
-            // Extract bioscanner if present
-            ItemStack extracted = neurocell.extractBioscanner();
-            if (!extracted.isEmpty()) {
-                if (!player.addItem(extracted)) {
-                    Containers.dropItemStack(level, pos.getX(), pos.getY() + 1, pos.getZ(), extracted);
-                }
-                return InteractionResult.CONSUME;
-            }
-
-            // Show status
-            neurocell.showStatus(player);
+            // Open the GUI
+            player.openMenu(neurocell);
         }
 
-        return InteractionResult.CONSUME;
+        return InteractionResult.sidedSuccess(false);
     }
 
     @Override
@@ -296,10 +234,8 @@ public class NeurocellBlock extends HorizontalDirectionalBlock implements Entity
             if (half == DoubleBlockHalf.LOWER) {
                 BlockEntity be = level.getBlockEntity(pos);
                 if (be instanceof NeurocellBlockEntity neurocell) {
-                    ItemStack bioscanner = neurocell.extractBioscanner();
-                    if (!bioscanner.isEmpty()) {
-                        Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), bioscanner);
-                    }
+                    // Drop inventory contents
+                    Containers.dropContents(level, pos, neurocell.getInventory());
                 }
             }
 

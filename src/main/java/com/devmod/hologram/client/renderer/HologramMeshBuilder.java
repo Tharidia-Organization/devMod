@@ -23,7 +23,6 @@ public final class HologramMeshBuilder {
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "DevMod-Hologram-Mesh-Builder");
         thread.setDaemon(true);
-        thread.setPriority(Thread.NORM_PRIORITY - 1); // Slightly lower priority
         return thread;
     });
 
@@ -48,7 +47,7 @@ public final class HologramMeshBuilder {
             // If another build is in progress, just build anyway but sequentially
             boolean acquired = BUILD_SEMAPHORE.tryAcquire();
             try {
-                return new HologramMesh(level, minX, maxX, minZ, maxZ);
+                return HologramMesh.build(level, minX, maxX, minZ, maxZ);
             } finally {
                 if (acquired) {
                     BUILD_SEMAPHORE.release();

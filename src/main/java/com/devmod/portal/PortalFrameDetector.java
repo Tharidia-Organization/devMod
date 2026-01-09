@@ -1,10 +1,10 @@
 package com.devmod.portal;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 import javax.annotation.Nonnull;
 
@@ -30,19 +30,19 @@ public class PortalFrameDetector {
     public static final int MIN_SIZE = 3;
     public static final int MAX_SIZE = 23;
 
-    private final Predicate<BlockState> isFrameBlock;
+    private final BiPredicate<BlockGetter, BlockPos> isFrameBlock;
 
     /**
      * Creates a detector that accepts any solid block as frame material.
      */
     public PortalFrameDetector() {
-        this(BlockState::isSolid);
+        this((level, pos) -> level.getBlockState(pos).isCollisionShapeFullBlock(level, pos));
     }
 
     /**
      * Creates a detector with a custom frame block predicate.
      */
-    public PortalFrameDetector(@Nonnull Predicate<BlockState> isFrameBlock) {
+    public PortalFrameDetector(@Nonnull BiPredicate<BlockGetter, BlockPos> isFrameBlock) {
         this.isFrameBlock = Objects.requireNonNull(isFrameBlock, "isFrameBlock");
     }
 
@@ -139,7 +139,7 @@ public class PortalFrameDetector {
             pos.move(dir);
             BlockState state = level.getBlockState(pos);
 
-            if (isFrameBlock.test(state)) {
+            if (isFrameBlock.test(level, pos)) {
                 return distance;
             }
 
@@ -163,7 +163,7 @@ public class PortalFrameDetector {
         // Check bottom edge
         for (int w = 0; w < width; w++) {
             BlockPos pos = bottomLeft.relative(widthDir, w).below();
-            if (!isFrameBlock.test(level.getBlockState(pos))) {
+            if (!isFrameBlock.test(level, pos)) {
                 return false;
             }
         }
@@ -171,7 +171,7 @@ public class PortalFrameDetector {
         // Check top edge
         for (int w = 0; w < width; w++) {
             BlockPos pos = bottomLeft.relative(widthDir, w).above(height - 1).above();
-            if (!isFrameBlock.test(level.getBlockState(pos))) {
+            if (!isFrameBlock.test(level, pos)) {
                 return false;
             }
         }
@@ -179,7 +179,7 @@ public class PortalFrameDetector {
         // Check left edge
         for (int h = 0; h < height; h++) {
             BlockPos pos = bottomLeft.relative(widthDir, -1).above(h);
-            if (!isFrameBlock.test(level.getBlockState(pos))) {
+            if (!isFrameBlock.test(level, pos)) {
                 return false;
             }
         }
@@ -187,7 +187,7 @@ public class PortalFrameDetector {
         // Check right edge
         for (int h = 0; h < height; h++) {
             BlockPos pos = bottomLeft.relative(widthDir, width).above(h);
-            if (!isFrameBlock.test(level.getBlockState(pos))) {
+            if (!isFrameBlock.test(level, pos)) {
                 return false;
             }
         }

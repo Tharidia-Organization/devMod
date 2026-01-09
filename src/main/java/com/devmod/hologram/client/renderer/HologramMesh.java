@@ -29,12 +29,15 @@ import net.minecraft.world.level.block.state.BlockState;
  *   <li>Running greedy meshing for each face direction</li>
  * </ol>
  */
-public class HologramMesh {
+public final class HologramMesh {
+    private final Level level;
     private final Map<BlockPos, BlockState> blocks = new HashMap<>();
     private final int width;
     private final int height;
     private final int depth;
-    private final int minY;
+    private final int originX;
+    private final int originY;
+    private final int originZ;
     private final List<Quad> quads = new ArrayList<>();
 
     /**
@@ -46,27 +49,37 @@ public class HologramMesh {
      * @param minZ Minimum Z coordinate
      * @param maxZ Maximum Z coordinate
      */
-    public HologramMesh(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ) {
-        Objects.requireNonNull(level, "level");
-
-        this.width = maxX - minX + 1;
-        this.depth = maxZ - minZ + 1;
+    @Nonnull
+    public static HologramMesh build(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ) {
+        int width = maxX - minX + 1;
+        int depth = maxZ - minZ + 1;
 
         // Find actual Y bounds
         int[] yBounds = findYBounds(level, minX, maxX, minZ, maxZ);
-        this.minY = yBounds[0];
+        int minY = yBounds[0];
         int maxY = yBounds[1];
-        this.height = maxY - minY + 1;
+        int height = maxY - minY + 1;
 
-        // Scan terrain and build mesh
-        scanTerrain(level, minX, maxX, minZ, maxZ, minY, maxY);
-        buildMesh();
+        HologramMesh mesh = new HologramMesh(level, minX, minZ, width, depth, minY, height);
+        mesh.scanTerrain(level, minX, maxX, minZ, maxZ, minY, maxY);
+        mesh.buildMesh();
+        return mesh;
+    }
+
+    private HologramMesh(@Nonnull Level level, int minX, int minZ, int width, int depth, int minY, int height) {
+        this.level = level;
+        this.width = width;
+        this.depth = depth;
+        this.height = height;
+        this.originX = minX;
+        this.originY = minY;
+        this.originZ = minZ;
     }
 
     /**
      * Find the Y bounds of actual terrain in the region.
      */
-    private int[] findYBounds(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ) {
+    private static int[] findYBounds(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ) {
         int foundMinY = level.getMaxBuildHeight();
         int foundMaxY = level.getMinBuildHeight();
 
@@ -173,7 +186,7 @@ public class HologramMesh {
 
                     // Get block color
                     BlockState state = getBlock(x, y, z);
-                    int color = state.getMapColor(null, BlockPos.ZERO).col;
+                    int color = getBlockColor(state, x, y, z);
 
                     // Extend in U direction
                     int uSize = 1;
@@ -187,7 +200,7 @@ public class HologramMesh {
                         }
 
                         BlockState testState = getBlock(tx, ty, tz);
-                        if (testState.getMapColor(null, BlockPos.ZERO).col != color) {
+                        if (getBlockColor(testState, tx, ty, tz) != color) {
                             break;
                         }
                         uSize++;
@@ -208,7 +221,7 @@ public class HologramMesh {
                             }
 
                             BlockState testState = getBlock(tx, ty, tz);
-                            if (testState.getMapColor(null, BlockPos.ZERO).col != color) {
+                            if (getBlockColor(testState, tx, ty, tz) != color) {
                                 canExtendV = false;
                                 break;
                             }
@@ -262,7 +275,12 @@ public class HologramMesh {
      * Get the block state at the given position.
      */
     private BlockState getBlock(int x, int y, int z) {
-        return blocks.get(new BlockPos(x, y, z));
+        return Objects.requireNonNull(blocks.get(new BlockPos(x, y, z)), "Missing block in mesh");
+    }
+
+    private int getBlockColor(BlockState state, int x, int y, int z) {
+        BlockPos worldPos = new BlockPos(originX + x, originY + y, originZ + z);
+        return state.getMapColor(level, worldPos).col;
     }
 
     /**
@@ -288,48 +306,46 @@ public class HologramMesh {
      * Add a quad for the given face.
      */
     private void addQuad(Direction direction, int x, int y, int z, int uSize, int vSize, float r, float g, float b) {
-        Quad quad = new Quad(r, g, b);
+        float[][] vertices = switch (direction) {
+            case UP -> new float[][]{
+                {x, y + 1, z + vSize},
+                {x + uSize, y + 1, z + vSize},
+                {x + uSize, y + 1, z},
+                {x, y + 1, z}
+            };
+            case DOWN -> new float[][]{
+                {x, y, z},
+                {x + uSize, y, z},
+                {x + uSize, y, z + vSize},
+                {x, y, z + vSize}
+            };
+            case NORTH -> new float[][]{
+                {x, y, z},
+                {x, y + vSize, z},
+                {x + uSize, y + vSize, z},
+                {x + uSize, y, z}
+            };
+            case SOUTH -> new float[][]{
+                {x + uSize, y, z + 1},
+                {x + uSize, y + vSize, z + 1},
+                {x, y + vSize, z + 1},
+                {x, y, z + 1}
+            };
+            case WEST -> new float[][]{
+                {x, y, z + uSize},
+                {x, y + vSize, z + uSize},
+                {x, y + vSize, z},
+                {x, y, z}
+            };
+            case EAST -> new float[][]{
+                {x + 1, y, z},
+                {x + 1, y + vSize, z},
+                {x + 1, y + vSize, z + uSize},
+                {x + 1, y, z + uSize}
+            };
+        };
 
-        switch (direction) {
-            case UP -> {
-                quad.v1 = new float[]{x, y + 1, z + vSize};
-                quad.v2 = new float[]{x + uSize, y + 1, z + vSize};
-                quad.v3 = new float[]{x + uSize, y + 1, z};
-                quad.v4 = new float[]{x, y + 1, z};
-            }
-            case DOWN -> {
-                quad.v1 = new float[]{x, y, z};
-                quad.v2 = new float[]{x + uSize, y, z};
-                quad.v3 = new float[]{x + uSize, y, z + vSize};
-                quad.v4 = new float[]{x, y, z + vSize};
-            }
-            case NORTH -> {
-                quad.v1 = new float[]{x, y, z};
-                quad.v2 = new float[]{x, y + vSize, z};
-                quad.v3 = new float[]{x + uSize, y + vSize, z};
-                quad.v4 = new float[]{x + uSize, y, z};
-            }
-            case SOUTH -> {
-                quad.v1 = new float[]{x + uSize, y, z + 1};
-                quad.v2 = new float[]{x + uSize, y + vSize, z + 1};
-                quad.v3 = new float[]{x, y + vSize, z + 1};
-                quad.v4 = new float[]{x, y, z + 1};
-            }
-            case WEST -> {
-                quad.v1 = new float[]{x, y, z + uSize};
-                quad.v2 = new float[]{x, y + vSize, z + uSize};
-                quad.v3 = new float[]{x, y + vSize, z};
-                quad.v4 = new float[]{x, y, z};
-            }
-            case EAST -> {
-                quad.v1 = new float[]{x + 1, y, z};
-                quad.v2 = new float[]{x + 1, y + vSize, z};
-                quad.v3 = new float[]{x + 1, y + vSize, z + uSize};
-                quad.v4 = new float[]{x + 1, y, z + uSize};
-            }
-        }
-
-        quads.add(quad);
+        quads.add(new Quad(vertices[0], vertices[1], vertices[2], vertices[3], r, g, b));
     }
 
     /**
@@ -367,10 +383,17 @@ public class HologramMesh {
      * A quad with four vertices and a color.
      */
     private static class Quad {
-        float[] v1, v2, v3, v4;
+        final float[] v1;
+        final float[] v2;
+        final float[] v3;
+        final float[] v4;
         final float r, g, b;
 
-        Quad(float r, float g, float b) {
+        Quad(float[] v1, float[] v2, float[] v3, float[] v4, float r, float g, float b) {
+            this.v1 = v1;
+            this.v2 = v2;
+            this.v3 = v3;
+            this.v4 = v4;
             this.r = r;
             this.g = g;
             this.b = b;

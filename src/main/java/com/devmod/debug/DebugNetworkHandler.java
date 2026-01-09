@@ -14,9 +14,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import com.devmod.network.PayloadValidation;
-
 import com.devmod.debug.network.EntityScanDataPayload;
+import com.devmod.network.PayloadValidation;
 
 import static com.devmod.network.ChannelId.DEBUG_SYNC;
 import static com.devmod.network.ChannelId.DEBUG_TOGGLE;

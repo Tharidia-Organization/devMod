@@ -17,7 +17,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -152,6 +154,30 @@ public class BioscannerItem extends Item {
         player.getCooldowns().addCooldown(this, 20);
 
         return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * Shift+right-click in air to clear bioscanner data.
+     */
+    @Override
+    @Nonnull
+    public InteractionResultHolder<ItemStack> use(@Nonnull Level level, @Nonnull Player player, @Nonnull InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+
+        if (player.isShiftKeyDown() && hasData(stack)) {
+            if (!level.isClientSide) {
+                clearData(stack);
+                player.displayClientMessage(
+                    Component.translatable("message.devmod.bioscanner.cleared")
+                        .withStyle(ChatFormatting.YELLOW),
+                    true
+                );
+                level.playSound(null, player.blockPosition(),
+                    SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.5f, 1.2f);
+            }
+            return InteractionResultHolder.success(stack);
+        }
+        return InteractionResultHolder.pass(stack);
     }
 
     /**

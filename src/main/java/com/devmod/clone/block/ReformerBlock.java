@@ -41,7 +41,7 @@ import com.devmod.clone.block.entity.ReformerBlockEntity;
  *   <li>Visual reconstruction effect during spawning</li>
  * </ul>
  */
-public class ReformerBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class ReformerBlock extends HorizontalDirectionalBlock implements EntityBlock {
 
     public static final MapCodec<ReformerBlock> CODEC = simpleCodec(p -> new ReformerBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;

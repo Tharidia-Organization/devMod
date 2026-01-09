@@ -12,8 +12,8 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.combat.HitHelper;
 import com.devmod.combat.signature.SoulImprintManager;
-import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.config.Config;
+import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 

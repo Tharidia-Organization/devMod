@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_neon_blue_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_neon_blue"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_neon_blue_slab_top"
+    }
+  }
+}

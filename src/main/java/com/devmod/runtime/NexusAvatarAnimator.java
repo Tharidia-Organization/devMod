@@ -35,17 +35,17 @@ public final class NexusAvatarAnimator {
     private static final int END_ROD_COUNT = 3;
     private static final int ENCHANT_COUNT = 5;
 
-    // Animation state - volatile for visibility across potential thread boundaries
-    // (e.g., initialization from spawn vs tick from server thread)
-    private volatile double phase = 0;
-    private volatile int particleTick = 0;
-    private volatile double baseY = Double.NaN;
-    private volatile boolean initialized = false;
+    // Animation state (server-thread usage)
+    private double phase = 0;
+    private int particleTick = 0;
+    private double baseY = Double.NaN;
+    private boolean initialized = false;
 
     /**
      * Initialize the animator with the avatar's starting position.
      * Call this once when the avatar is first spawned.
      */
+    @Deprecated
     public void initialize(@Nonnull Entity avatar) {
         this.baseY = avatar.getY();
         this.phase = 0;
@@ -60,6 +60,7 @@ public final class NexusAvatarAnimator {
      *
      * @param targetY The intended base Y position for floating animation
      */
+    @Deprecated
     public void initializeWithTargetY(double targetY) {
         this.baseY = targetY;
         this.phase = 0;
@@ -71,6 +72,7 @@ public final class NexusAvatarAnimator {
     /**
      * Reset the animator state. Call when avatar is respawned.
      */
+    @Deprecated
     public void reset() {
         this.baseY = Double.NaN;
         this.phase = 0;
@@ -84,6 +86,7 @@ public final class NexusAvatarAnimator {
      * @param avatar The avatar entity to animate
      * @param level The server level for particle spawning
      */
+    @Deprecated
     public void tick(@Nonnull Entity avatar, @Nonnull ServerLevel level) {
         Objects.requireNonNull(avatar, "avatar");
         Objects.requireNonNull(level, "level");
@@ -225,6 +228,7 @@ public final class NexusAvatarAnimator {
     /**
      * Check if the animator has been initialized.
      */
+    @Deprecated
     public boolean isInitialized() {
         return initialized;
     }

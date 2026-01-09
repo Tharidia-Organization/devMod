@@ -2362,6 +2362,7 @@ public class ArenaBuilder {
 
     @FunctionalInterface
     public interface EntitySpawner {
+        @Nullable
         UUID spawnEntity(int x, int y, int z, String entityType);
 
         default boolean removeEntity(UUID entityId) {

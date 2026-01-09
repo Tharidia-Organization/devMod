@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_display_red_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_display_red"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_display_red_slab_top"
+    }
+  }
+}

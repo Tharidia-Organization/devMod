@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_frame_white_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_frame_white"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_frame_white_slab_top"
+    }
+  }
+}

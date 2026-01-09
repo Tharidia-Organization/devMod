@@ -20,7 +20,6 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
 
 import com.devmod.hologram.block.entity.HologramProjectorBlockEntity;
@@ -31,7 +30,7 @@ import com.devmod.network.NetworkHandler;
  * A block that projects a 3D holographic miniature of nearby terrain.
  * Right-click to cycle settings (rotation, transparency, size).
  */
-public class HologramProjectorBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class HologramProjectorBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<HologramProjectorBlock> CODEC = simpleCodec(HologramProjectorBlock::new);
 
     public HologramProjectorBlock(Properties properties) {
@@ -47,7 +46,7 @@ public class HologramProjectorBlock extends HorizontalDirectionalBlock implement
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(new Property[]{FACING});
+        builder.add(FACING);
     }
 
     @Override

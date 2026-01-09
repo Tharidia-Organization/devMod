@@ -1,6 +1,7 @@
 package com.devmod.clone.block.entity;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -41,6 +42,7 @@ public class ReformerBlockEntity extends BlockEntity {
     private int spawnProgress = 0;
     private int maxSpawnProgress = 0;
     private String pendingEntityName = "";
+    @Nullable
     private BioscanData pendingData = null;
     private int searchCooldown = 0;
 

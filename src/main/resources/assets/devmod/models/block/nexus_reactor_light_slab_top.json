@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab_top",
+  "textures": {
+    "bottom": "devmod:block/nexus/nexus_reactor_light",
+    "top": "devmod:block/nexus/nexus_reactor_light",
+    "side": "devmod:block/nexus/nexus_reactor_light"
+  }
+}

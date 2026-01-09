@@ -3,6 +3,7 @@ package com.devmod.clone.entity.ai;
 import java.util.EnumSet;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
@@ -20,7 +21,7 @@ import com.devmod.clone.entity.PlayerCloneEntity;
  * AI goal for player clones to follow their owner.
  * Similar to FollowOwnerGoal but with clone-specific behavior.
  */
-public class CloneFollowOwnerGoal extends Goal {
+public final class CloneFollowOwnerGoal extends Goal {
 
     private final PlayerCloneEntity clone;
     private final double speedModifier;
@@ -29,6 +30,7 @@ public class CloneFollowOwnerGoal extends Goal {
     private final PathNavigation navigation;
     private final LevelReader level;
 
+    @Nullable
     private LivingEntity owner;
     private int timeToRecalcPath;
     private float oldWaterCost;
@@ -64,13 +66,17 @@ public class CloneFollowOwnerGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
+        LivingEntity currentOwner = owner;
+        if (currentOwner == null) {
+            return false;
+        }
         if (navigation.isDone()) {
             return false;
         }
         if (clone.isOrderedToSit()) {
             return false;
         }
-        return clone.distanceToSqr(owner) > stopDistance * stopDistance;
+        return clone.distanceToSqr(currentOwner) > stopDistance * stopDistance;
     }
 
     @Override
@@ -89,36 +95,40 @@ public class CloneFollowOwnerGoal extends Goal {
 
     @Override
     public void tick() {
-        clone.getLookControl().setLookAt(owner, 10.0F, clone.getMaxHeadXRot());
+        LivingEntity currentOwner = owner;
+        if (currentOwner == null) {
+            return;
+        }
+        clone.getLookControl().setLookAt(currentOwner, 10.0F, clone.getMaxHeadXRot());
 
         if (--timeToRecalcPath <= 0) {
             timeToRecalcPath = adjustedTickDelay(10);
 
-            if (clone.distanceToSqr(owner) >= 144.0) {
+            if (clone.distanceToSqr(currentOwner) >= 144.0) {
                 // Teleport if too far
-                tryTeleportToOwner();
+                tryTeleportToOwner(currentOwner);
             } else {
-                navigation.moveTo(owner, speedModifier);
+                navigation.moveTo(currentOwner, speedModifier);
             }
         }
     }
 
-    private void tryTeleportToOwner() {
-        BlockPos ownerPos = owner.blockPosition();
+    private void tryTeleportToOwner(LivingEntity currentOwner) {
+        BlockPos ownerPos = currentOwner.blockPosition();
 
         for (int i = 0; i < 10; i++) {
             int dx = randomIntInclusive(-3, 3);
             int dy = randomIntInclusive(-1, 1);
             int dz = randomIntInclusive(-3, 3);
 
-            if (maybeTeleportTo(ownerPos.getX() + dx, ownerPos.getY() + dy, ownerPos.getZ() + dz)) {
+            if (maybeTeleportTo(currentOwner, ownerPos.getX() + dx, ownerPos.getY() + dy, ownerPos.getZ() + dz)) {
                 return;
             }
         }
     }
 
-    private boolean maybeTeleportTo(int x, int y, int z) {
-        if (Math.abs(x - owner.getX()) < 2.0 && Math.abs(z - owner.getZ()) < 2.0) {
+    private boolean maybeTeleportTo(LivingEntity currentOwner, int x, int y, int z) {
+        if (Math.abs(x - currentOwner.getX()) < 2.0 && Math.abs(z - currentOwner.getZ()) < 2.0) {
             return false;
         }
 

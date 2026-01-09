@@ -7,11 +7,11 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestState;
@@ -210,10 +210,11 @@ public class ClientQuestCache {
 
     public static boolean isInInstanceDimension() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc == null || mc.level == null) {
+        var player = mc != null ? mc.player : null;
+        if (player == null) {
             return false;
         }
-        ResourceLocation id = mc.level.dimension().location();
+        ResourceLocation id = player.level().dimension().location();
         if (id == null) {
             return false;
         }

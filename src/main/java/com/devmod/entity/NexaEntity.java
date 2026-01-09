@@ -43,7 +43,7 @@ import com.devmod.config.Config;
  *
  * <p>Replaces the EasyNPC-dependent system for a native, reliable implementation.
  */
-public class NexaEntity extends PathfinderMob {
+public final class NexaEntity extends PathfinderMob {
     private static final Logger LOGGER = LoggerFactory.getLogger(NexaEntity.class);
 
     // Entity tag for identification

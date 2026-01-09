@@ -13,7 +13,7 @@ import com.devmod.hologram.client.renderer.HologramRenderer;
  * Client-side setup for the Hologram module.
  * Registers block entity renderers.
  */
-@EventBusSubscriber(modid = DevMod.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public final class HologramClientSetup {
     private HologramClientSetup() {}
 

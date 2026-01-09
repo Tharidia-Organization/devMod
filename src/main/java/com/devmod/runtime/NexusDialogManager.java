@@ -423,11 +423,11 @@ public final class NexusDialogManager {
      */
     @Nonnull
     private List<DialogOption> getManualCloneBackOption() {
-        return List.of(
+        return Objects.requireNonNull(List.of(
             new DialogOption("back", "Back to Clone", "\u2B05", DialogType.MANUAL_CLONE),
             new DialogOption("manual", "Manual Index", "\uD83D\uDCD6", DialogType.MANUAL_INDEX),
             new DialogOption("farewell", "Close", "\u2716", DialogType.FAREWELL)
-        );
+        ), "options");
     }
 
     /**
@@ -500,9 +500,9 @@ public final class NexusDialogManager {
      */
     @Nonnull
     private List<DialogOption> getBackOption() {
-        return List.of(
+        return Objects.requireNonNull(List.of(
             new DialogOption("back", "Back", "\u2B05", DialogType.GREETING),
             new DialogOption("farewell", "Goodbye", "\uD83D\uDC4B", DialogType.FAREWELL)
-        );
+        ), "options");
     }
 }

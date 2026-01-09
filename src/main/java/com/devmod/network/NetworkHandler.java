@@ -1,4 +1,5 @@
 package com.devmod.network;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -1175,13 +1176,13 @@ public class NetworkHandler {
 
         if (portal.hasFixedDestination()) {
             // Fixed destination (Nexus zone portal)
-            String zoneName = getFixedDestinationName(portal, level);
+            String zoneName = getFixedDestinationName(portal);
             String dimName = getDimensionDisplayName(portal.fixedDestinationDimension().orElse(null));
             response = PortalPreviewPayload.forFixedDestination(
                 request.portalPos(), zoneName, dimName, color);
         } else if (portal.isLinked()) {
             // Linked portal
-            var linkedOpt = registry.get(portal.linkedPortalId().orElse(null));
+            var linkedOpt = portal.linkedPortalId().flatMap(registry::get);
             if (linkedOpt.isEmpty()) {
                 return;
             }
@@ -1202,8 +1203,7 @@ public class NetworkHandler {
     /**
      * Get display name for a fixed destination portal (Nexus zone).
      */
-    private static String getFixedDestinationName(com.devmod.portal.PortalData portal,
-                                                   net.minecraft.server.level.ServerLevel level) {
+    private static String getFixedDestinationName(com.devmod.portal.PortalData portal) {
         // Try to determine zone from destination position
         var destPos = portal.fixedDestination().orElse(null);
         if (destPos != null) {
@@ -1242,7 +1242,7 @@ public class NetworkHandler {
         if (path.equals("the_end")) return "The End";
         if (path.equals("nexus")) return "Nexus";
         // Capitalize first letter
-        return path.substring(0, 1).toUpperCase() + path.substring(1).replace("_", " ");
+        return path.substring(0, 1).toUpperCase(Locale.ROOT) + path.substring(1).replace("_", " ");
     }
 
     /**

@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -197,14 +199,14 @@ class PortalLinkerTest {
             return entry != null ? Optional.ofNullable(entry.linkedTo) : Optional.empty();
         }
 
-        void setLinked(UUID portalId, UUID linkedTo) {
+        void setLinked(UUID portalId, @Nullable UUID linkedTo) {
             PortalEntry entry = portals.get(portalId);
             if (entry != null) {
                 portals.put(portalId, new PortalEntry(portalId, entry.color, linkedTo));
             }
         }
 
-        record PortalEntry(UUID id, PortalColor color, UUID linkedTo) {}
+        record PortalEntry(UUID id, PortalColor color, @Nullable UUID linkedTo) {}
     }
 
     /**

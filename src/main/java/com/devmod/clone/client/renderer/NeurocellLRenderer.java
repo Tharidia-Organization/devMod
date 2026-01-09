@@ -149,7 +149,7 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
 
                 poseStack.popPose();
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // Silently ignore rendering errors
         }
     }

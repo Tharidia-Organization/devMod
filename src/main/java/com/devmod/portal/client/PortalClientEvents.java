@@ -1,5 +1,7 @@
 package com.devmod.portal.client;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,6 +28,7 @@ public final class PortalClientEvents {
     private PortalClientEvents() {}
 
     // Raycast state for portal preview
+    @Nullable
     private static BlockPos lastLookedPortal = null;
     private static long lastRequestTime = 0;
     /** Minimum time between preview requests in milliseconds */

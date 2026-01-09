@@ -38,7 +38,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.CloneItems;
 import com.devmod.clone.block.entity.NeurocellLBlockEntity;
 import com.devmod.clone.item.BioscannerItem;
@@ -47,7 +46,7 @@ import com.devmod.clone.item.BioscannerItem;
  * NeurocellL block - Large cloning chamber (3x3x3).
  * Can render larger entities than the standard Neurocell.
  */
-public class NeurocellLBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class NeurocellLBlock extends HorizontalDirectionalBlock implements EntityBlock {
 
     public static final MapCodec<NeurocellLBlock> CODEC = simpleCodec(p -> new NeurocellLBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -127,9 +126,6 @@ public class NeurocellLBlock extends HorizontalDirectionalBlock implements Entit
     }
 
     public static final EnumProperty<MultiBlockPart> PART = EnumProperty.create("part", MultiBlockPart.class);
-
-    // Hitbox - each block returns a shape that covers the full 3x3x3 from its perspective
-    private static final VoxelShape SHAPE_CENTER = Shapes.box(-1.0, 0.0, -1.0, 2.0, 3.0, 2.0);
 
     @Override
     @Nonnull
@@ -224,8 +220,6 @@ public class NeurocellLBlock extends HorizontalDirectionalBlock implements Entit
         @Nullable LivingEntity placer,
         @Nonnull ItemStack stack
     ) {
-        Direction facing = state.getValue(FACING);
-
         // Place all 27 blocks
         for (MultiBlockPart part : MultiBlockPart.values()) {
             if (part.isCenter()) continue; // Center is already placed
@@ -279,12 +273,7 @@ public class NeurocellLBlock extends HorizontalDirectionalBlock implements Entit
         @Nonnull BlockState state,
         @Nonnull BlockEntityType<T> type
     ) {
-        if (level.isClientSide || !state.getValue(PART).isCenter()) {
-            return null;
-        }
-        return type == CloneBlockEntities.NEUROCELL_L.get()
-            ? (lvl, pos, st, be) -> ((NeurocellLBlockEntity) be).tick()
-            : null;
+        return null;
     }
 
     private BlockPos getCenterPos(BlockState state, BlockPos pos) {

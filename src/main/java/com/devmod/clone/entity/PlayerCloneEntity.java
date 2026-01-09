@@ -50,7 +50,7 @@ import com.devmod.clone.entity.ai.CloneFollowOwnerGoal;
  *   <li>Uses player skin from original UUID</li>
  * </ul>
  */
-public class PlayerCloneEntity extends TamableAnimal {
+public final class PlayerCloneEntity extends TamableAnimal {
 
     private static final EntityDataAccessor<Optional<UUID>> DATA_ORIGINAL_UUID =
         SynchedEntityData.defineId(PlayerCloneEntity.class, EntityDataSerializers.OPTIONAL_UUID);
@@ -231,6 +231,7 @@ public class PlayerCloneEntity extends TamableAnimal {
     // === Sounds ===
 
     @Override
+    @Nullable
     protected SoundEvent getAmbientSound() {
         return null; // Silent by default
     }

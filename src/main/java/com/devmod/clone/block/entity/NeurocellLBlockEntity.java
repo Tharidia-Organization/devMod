@@ -41,18 +41,13 @@ public class NeurocellLBlockEntity extends BlockEntity {
     private ItemStack storedBioscanner = ItemStack.EMPTY;
     private String entityType = "";
     private String entityName = "";
+    @Nullable
     private UUID playerUUID = null;
     private int cloningTime = 0;
     private boolean hasRagdoll = false;
 
     public NeurocellLBlockEntity(BlockPos pos, BlockState state) {
         super(CloneBlockEntities.NEUROCELL_L.get(), pos, state);
-    }
-
-    public void tick() {
-        if (level == null || level.isClientSide) {
-            return;
-        }
     }
 
     public void onInventoryChanged() {

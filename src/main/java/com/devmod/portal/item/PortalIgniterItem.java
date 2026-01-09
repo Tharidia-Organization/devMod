@@ -1,10 +1,7 @@
 package com.devmod.portal.item;
 
-import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -30,10 +27,7 @@ import com.devmod.portal.PortalColor;
 import com.devmod.portal.PortalData;
 import com.devmod.portal.PortalFrameDetector;
 import com.devmod.portal.PortalRegistry;
-import com.devmod.portal.PortalRuneEffects;
-import com.devmod.portal.RuneType;
 import com.devmod.portal.block.CustomPortalBlock;
-import com.devmod.portal.block.RuneBlock;
 /**
  * Item used to ignite (create) custom portals within a frame.
  * Each igniter is associated with a specific portal color.
@@ -130,40 +124,4 @@ public class PortalIgniterItem extends Item {
         tooltip.add(Component.translatable("item.devmod.portal_igniter.tooltip"));
     }
 
-    /**
-     * Scans for rune blocks around the portal frame and calculates combined effects.
-     */
-    private PortalRuneEffects scanForRuneEffects(Level level, PortalFrameDetector.FrameResult frame) {
-        Set<RuneType> foundRunes = EnumSet.noneOf(RuneType.class);
-        Set<BlockPos> visited = new HashSet<>();
-
-        // Check frame blocks and their adjacent blocks for runes
-        for (BlockPos framePos : frame.framePositions()) {
-            checkForRune(level, framePos, foundRunes, visited);
-        }
-
-        return PortalRuneEffects.calculate(foundRunes);
-    }
-
-    /**
-     * Checks if a position or its neighbors contain a rune block.
-     */
-    private void checkForRune(Level level, BlockPos pos, Set<RuneType> foundRunes, Set<BlockPos> visited) {
-        if (visited.contains(pos)) {
-            return;
-        }
-        visited.add(pos);
-
-        // Check adjacent blocks for runes
-        for (Direction dir : Direction.values()) {
-            BlockPos adjacentPos = pos.relative(dir);
-            if (!visited.contains(adjacentPos)) {
-                BlockState adjacentState = level.getBlockState(adjacentPos);
-                if (adjacentState.getBlock() instanceof RuneBlock runeBlock) {
-                    visited.add(adjacentPos);
-                    foundRunes.add(runeBlock.getRuneType());
-                }
-            }
-        }
-    }
 }

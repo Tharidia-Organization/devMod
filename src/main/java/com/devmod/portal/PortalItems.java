@@ -56,11 +56,16 @@ public final class PortalItems {
     }
 
     // Convenience accessors for common colors
-    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_BLUE = IGNITERS.get(PortalColor.BLUE);
-    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_ORANGE = IGNITERS.get(PortalColor.ORANGE);
-    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_PURPLE = IGNITERS.get(PortalColor.PURPLE);
-    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_RED = IGNITERS.get(PortalColor.RED);
-    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_GREEN = IGNITERS.get(PortalColor.GREEN);
+    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_BLUE =
+        Objects.requireNonNull(IGNITERS.get(PortalColor.BLUE), "Missing igniter for BLUE");
+    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_ORANGE =
+        Objects.requireNonNull(IGNITERS.get(PortalColor.ORANGE), "Missing igniter for ORANGE");
+    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_PURPLE =
+        Objects.requireNonNull(IGNITERS.get(PortalColor.PURPLE), "Missing igniter for PURPLE");
+    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_RED =
+        Objects.requireNonNull(IGNITERS.get(PortalColor.RED), "Missing igniter for RED");
+    public static final DeferredHolder<Item, PortalIgniterItem> IGNITER_GREEN =
+        Objects.requireNonNull(IGNITERS.get(PortalColor.GREEN), "Missing igniter for GREEN");
 
     // ========================================================================
     // Portal Linker
@@ -104,11 +109,16 @@ public final class PortalItems {
     }
 
     // Convenience accessors
-    public static final DeferredHolder<Item, BlockItem> RUNE_HASTE = RUNE_ITEMS.get(RuneType.HASTE);
-    public static final DeferredHolder<Item, BlockItem> RUNE_GATE = RUNE_ITEMS.get(RuneType.GATE);
-    public static final DeferredHolder<Item, BlockItem> RUNE_ENHANCER = RUNE_ITEMS.get(RuneType.ENHANCER);
-    public static final DeferredHolder<Item, BlockItem> RUNE_STRONG_ENHANCER = RUNE_ITEMS.get(RuneType.STRONG_ENHANCER);
-    public static final DeferredHolder<Item, BlockItem> RUNE_INFINITY = RUNE_ITEMS.get(RuneType.INFINITY);
+    public static final DeferredHolder<Item, BlockItem> RUNE_HASTE =
+        Objects.requireNonNull(RUNE_ITEMS.get(RuneType.HASTE), "Missing rune item for HASTE");
+    public static final DeferredHolder<Item, BlockItem> RUNE_GATE =
+        Objects.requireNonNull(RUNE_ITEMS.get(RuneType.GATE), "Missing rune item for GATE");
+    public static final DeferredHolder<Item, BlockItem> RUNE_ENHANCER =
+        Objects.requireNonNull(RUNE_ITEMS.get(RuneType.ENHANCER), "Missing rune item for ENHANCER");
+    public static final DeferredHolder<Item, BlockItem> RUNE_STRONG_ENHANCER =
+        Objects.requireNonNull(RUNE_ITEMS.get(RuneType.STRONG_ENHANCER), "Missing rune item for STRONG_ENHANCER");
+    public static final DeferredHolder<Item, BlockItem> RUNE_INFINITY =
+        Objects.requireNonNull(RUNE_ITEMS.get(RuneType.INFINITY), "Missing rune item for INFINITY");
 
     /**
      * Called during mod initialization to ensure items are registered.

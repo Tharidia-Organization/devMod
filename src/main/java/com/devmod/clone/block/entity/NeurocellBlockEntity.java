@@ -15,21 +15,28 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.MenuProvider;
 
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.CloneItems;
+import com.devmod.clone.data.BioscanData;
 import com.devmod.clone.item.BioscannerItem;
+import com.devmod.clone.menu.NeurocellMenu;
 
 /**
  * Block entity for the neurocell cloning chamber.
  * Processes bioscan data and prepares it for the reformer.
  * Uses CUSTOM_DATA component like Hologenica for compatibility.
  */
-public class NeurocellBlockEntity extends BlockEntity {
+public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
 
     private static final int PROCESS_TIME = 300; // 15 seconds
     private static final String TAG_ENTITY_TYPE = "EntityType";
@@ -326,5 +333,72 @@ public class NeurocellBlockEntity extends BlockEntity {
     @Override
     public void handleUpdateTag(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         loadAdditional(tag, registries);
+    }
+
+    // === MenuProvider implementation ===
+
+    @Override
+    @Nonnull
+    public Component getDisplayName() {
+        return Component.translatable("block.devmod.neurocell");
+    }
+
+    @Override
+    @Nullable
+    public AbstractContainerMenu createMenu(int containerId, @Nonnull Inventory playerInv, @Nonnull Player player) {
+        return new NeurocellMenu(containerId, playerInv, this);
+    }
+
+    // === Inventory access for menu ===
+
+    /**
+     * Get the inventory container for menu access.
+     */
+    @Nonnull
+    public Container getInventory() {
+        // Create a container view of the stored bioscanner
+        SimpleContainer container = new SimpleContainer(1) {
+            @Override
+            public void setChanged() {
+                super.setChanged();
+                NeurocellBlockEntity.this.setChanged();
+                NeurocellBlockEntity.this.onInventoryChanged();
+            }
+        };
+        container.setItem(0, storedBioscanner);
+        return container;
+    }
+
+    /**
+     * Check if the neurocell has an empty bioscanner slot or no bioscanner.
+     */
+    public boolean hasEmptyBioscanner() {
+        return storedBioscanner.isEmpty() || !BioscannerItem.hasData(storedBioscanner);
+    }
+
+    /**
+     * Fill the bioscanner slot from imprinter data.
+     */
+    public void fillBioscannerFromImprinter(@Nonnull BioscanData data) {
+        // Create a new bioscanner with the data
+        ItemStack newBioscanner = new ItemStack(CloneItems.BIOSCANNER.get());
+
+        // Set data using CUSTOM_DATA component like BioscannerItem does
+        newBioscanner.update(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+            net.minecraft.world.item.component.CustomData.EMPTY, customData -> {
+                CompoundTag tag = customData.copyTag();
+                tag.putString("EntityType", data.entityTypeId().toString());
+                tag.putString("EntityName", data.entityName());
+                if (data.playerUUID() != null) {
+                    tag.putUUID("PlayerUUID", data.playerUUID());
+                }
+                if (data.entityNBT() != null) {
+                    tag.put("EntityNBT", data.entityNBT());
+                }
+                return net.minecraft.world.item.component.CustomData.of(tag);
+            });
+
+        storedBioscanner = newBioscanner;
+        onInventoryChanged();
     }
 }

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -405,7 +405,7 @@ public class PortalRegistry extends SavedData {
         }
 
         // Pick random destination
-        int index = new Random().nextInt(candidates.size());
+        int index = ThreadLocalRandom.current().nextInt(candidates.size());
         return Optional.of(candidates.get(index));
     }
 

@@ -11,7 +11,7 @@ import com.devmod.clone.entity.PlayerCloneEntity;
  * Event handlers for entity registration (common side).
  * Registers entity attributes on the mod event bus.
  */
-@EventBusSubscriber(modid = DevMod.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DevMod.MODID)
 public final class ModEntityEvents {
     private ModEntityEvents() {}
 

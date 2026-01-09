@@ -246,7 +246,7 @@ public final class NexusAvatarManager {
     @Nonnull
     private static BlockPos resolveAnchor(@Nonnull BlockPos hubOrigin) {
         BlockPos offset = Objects.requireNonNull(NexusSpawnManager.getDefaultSpawnOffset(), "spawn offset");
-        return hubOrigin.offset(offset);
+        return Objects.requireNonNull(hubOrigin.offset(offset), "anchor");
     }
 
     @Nonnull
@@ -267,7 +267,7 @@ public final class NexusAvatarManager {
         if (name == null || name.isBlank()) {
             return "NEXA";
         }
-        return name.trim();
+        return Objects.requireNonNull(name.trim(), "name");
     }
 
     @Nonnull
@@ -284,7 +284,7 @@ public final class NexusAvatarManager {
 
         // Extract player name from various formats
         if (trimmed.startsWith("player:")) {
-            return trimmed.substring("player:".length()).trim();
+            return Objects.requireNonNull(trimmed.substring("player:".length()).trim(), "skinName");
         }
 
         // For texture: or base64: formats, return empty (not supported in NexaEntity skin system yet)

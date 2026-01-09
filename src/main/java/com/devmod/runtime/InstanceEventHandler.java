@@ -1,6 +1,7 @@
 package com.devmod.runtime;
 
 import java.util.UUID;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,7 +107,8 @@ public class InstanceEventHandler {
             return;
         }
 
-        ServerLevel overworld = player.server.getLevel(Level.OVERWORLD);
+        ResourceKey<Level> overworldKey = Objects.requireNonNull(Level.OVERWORLD, "overworldKey");
+        ServerLevel overworld = player.server.getLevel(overworldKey);
         if (overworld == null) {
             LOGGER.warn("[InstanceEvents] Cannot sanitize respawn dimension for {} (overworld missing, context={})",
                 player.getName().getString(), context);
@@ -115,7 +117,7 @@ public class InstanceEventHandler {
 
         BlockPos spawnPos = overworld.getSharedSpawnPos();
         float angle = overworld.getSharedSpawnAngle();
-        player.setRespawnPosition(Level.OVERWORLD, spawnPos, angle, false, false);
+        player.setRespawnPosition(overworldKey, spawnPos, angle, false, false);
         LOGGER.info("[InstanceEvents] Cleared invalid respawn dimension {} for player {} (context={})",
             respawnDim.location(), player.getName().getString(), context);
     }

@@ -8,6 +8,8 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -41,7 +43,7 @@ import com.devmod.clone.block.entity.ImprinterBlockEntity;
  *   <li>Redstone output when scanning</li>
  * </ul>
  */
-public class ImprinterBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class ImprinterBlock extends HorizontalDirectionalBlock implements EntityBlock {
 
     public static final MapCodec<ImprinterBlock> CODEC = simpleCodec(p -> new ImprinterBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -102,8 +104,32 @@ public class ImprinterBlock extends HorizontalDirectionalBlock implements Entity
             return null;
         }
         return type == CloneBlockEntities.IMPRINTER.get()
-            ? (lvl, pos, st, be) -> ((ImprinterBlockEntity) be).tick()
+            ? (lvl, pos, st, be) -> {
+                ImprinterBlockEntity imprinter = (ImprinterBlockEntity) be;
+                if (imprinter.needsTicking()) {
+                    imprinter.tick();
+                }
+            }
             : null;
+    }
+
+    /**
+     * Called when an entity is inside the block's collision box.
+     * Used to detect entities standing on the imprinter.
+     */
+    @Override
+    protected void entityInside(
+        @Nonnull BlockState state,
+        @Nonnull Level level,
+        @Nonnull BlockPos pos,
+        @Nonnull Entity entity
+    ) {
+        if (!level.isClientSide && entity instanceof LivingEntity) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof ImprinterBlockEntity imprinter) {
+                imprinter.setHasEntity(true);
+            }
+        }
     }
 
     @Override

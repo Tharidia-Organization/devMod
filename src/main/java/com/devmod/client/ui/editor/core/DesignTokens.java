@@ -3909,6 +3909,25 @@ public final class DesignTokens {
     }
 
     /**
+     * Colors for the Clone neurocell UI.
+     * Keeps vanilla-style tones centralized.
+     */
+    public static final class Neurocell {
+        /** Slot ghost highlight (semi-transparent white). */
+        public static final int SLOT_GHOST = 0x30FFFFFF;
+        /** Title and inventory label text (dark gray). */
+        public static final int LABEL_TEXT = 0x404040;
+        /** Status text when empty (gray). */
+        public static final int STATUS_EMPTY = 0x808080;
+        /** Status text while waiting for scan (amber). */
+        public static final int STATUS_WAITING = 0xFFAA00;
+        /** Status text when ready (green). */
+        public static final int STATUS_READY = 0x00AA00;
+
+        private Neurocell() {}
+    }
+
+    /**
      * Colors for the Portal system UI elements.
      * Includes preview overlay and teleport effects.
      */

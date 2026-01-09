@@ -23,7 +23,6 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -46,7 +45,7 @@ import com.devmod.network.NetworkHandler;
  *   <li>Cooldown on arrival to prevent loops</li>
  * </ul>
  */
-public class TelepadBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class TelepadBlock extends HorizontalDirectionalBlock implements EntityBlock {
 
     public static final MapCodec<TelepadBlock> CODEC = simpleCodec(TelepadBlock::new);
     private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 8, 16);
@@ -64,7 +63,7 @@ public class TelepadBlock extends HorizontalDirectionalBlock implements EntityBl
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(new Property[]{FACING});
+        builder.add(FACING);
     }
 
     @Override

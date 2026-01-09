@@ -64,7 +64,7 @@ public class NexusDimensionManager {
     private volatile boolean forcedEnabled = false;
     private volatile NexusBuildTask buildTask;
     private volatile int pendingBuildVersion = NexusHubSavedData.CURRENT_VERSION;
-    private volatile long tickCounter;
+    private long tickCounter;
 
     private NexusDimensionManager() {}
 

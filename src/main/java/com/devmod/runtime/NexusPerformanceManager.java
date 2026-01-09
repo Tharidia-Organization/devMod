@@ -20,6 +20,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.Config;
+import com.devmod.entity.NexaEntity;
 
 /**
  * Performance optimization manager for the Nexus dimension.
@@ -36,6 +37,7 @@ public final class NexusPerformanceManager {
 
     // Entity culling settings
     private static final int CULL_CHECK_INTERVAL = 20;  // ticks between cull checks
+    private static final String LEGACY_AVATAR_TAG = "devmod_nexus_avatar";
 
     // Player zone tracking for optimization
     private final Map<UUID, NexusZoneLayout.Zone> playerZones = new ConcurrentHashMap<>();
@@ -47,8 +49,8 @@ public final class NexusPerformanceManager {
     // Culled entities tracking
     private final Set<UUID> culledEntities = ConcurrentHashMap.newKeySet();
 
-    // volatile for visibility across thread boundaries (init check in tick)
-    private volatile int cullTick = 0;
+    // Visible across ticks on server thread
+    private int cullTick = 0;
     private volatile boolean initialized = false;
 
     private NexusPerformanceManager() {}
@@ -275,11 +277,15 @@ public final class NexusPerformanceManager {
      */
     private boolean isImportantEntity(@Nonnull Entity entity) {
         // Never cull nexus system entities
-        if (entity.getTags().contains(NexusAvatarManager.AVATAR_TAG)) {
+        if (entity instanceof NexaEntity) {
+            return true;
+        }
+        Set<String> tags = entity.getTags();
+        if (tags.contains(NexaEntity.NEXA_TAG) || tags.contains(LEGACY_AVATAR_TAG)) {
             return true;
         }
         // Note: Portal pedestals now use real CustomPortalBlock (not entities) so no tag check needed
-        if (entity.getTags().contains(NexusHologramManager.HOLOGRAM_TAG)) {
+        if (tags.contains(NexusHologramManager.HOLOGRAM_TAG)) {
             return true;
         }
 

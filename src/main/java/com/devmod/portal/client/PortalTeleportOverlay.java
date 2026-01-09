@@ -2,6 +2,8 @@ package com.devmod.portal.client;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,7 +22,7 @@ import com.devmod.portal.PortalColor;
  * Client-side overlay showing teleportation progress when standing in a portal.
  * Displays a colored screen overlay that fades in as the teleport timer progresses.
  */
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public final class PortalTeleportOverlay {
 
     private static final ResourceLocation LAYER_ID =
@@ -28,6 +30,7 @@ public final class PortalTeleportOverlay {
 
     // State
     private static boolean active = false;
+    @Nullable
     private static PortalColor portalColor = null;
     private static int ticksInPortal = 0;
     private static int requiredDelay = 80; // Default 4 seconds
@@ -182,6 +185,7 @@ public final class PortalTeleportOverlay {
     /**
      * Returns the current portal color, or null if not in a portal.
      */
+    @Nullable
     public static PortalColor getColor() {
         return portalColor;
     }

@@ -82,14 +82,14 @@ public class ArenaPreviewRenderer {
      * @param spawnSlotCount Number of spawn slots
      */
     public void setFromSuggestion(
-        String templateId,
-        String arenaShape,
+        @Nullable String templateId,
+        @Nullable String arenaShape,
         int size,
         boolean hasWalls,
         boolean hasHazards,
         int spawnSlotCount
     ) {
-        if (templateId == null) {
+        if (templateId == null || arenaShape == null) {
             clearMesh();
             currentTemplateId = null;
             return;

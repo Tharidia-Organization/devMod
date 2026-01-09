@@ -247,7 +247,12 @@ public record PortalData(
      * Returns true if this portal is in the same network as another.
      */
     public boolean isInSameNetwork(@Nonnull PortalData other) {
-        return hasNetwork() && other.hasNetwork() && networkName.equals(other.networkName);
+        if (!hasNetwork() || !other.hasNetwork()) {
+            return false;
+        }
+        String localNetwork = networkName;
+        String otherNetwork = other.networkName;
+        return localNetwork != null && localNetwork.equals(otherNetwork);
     }
 
     /**

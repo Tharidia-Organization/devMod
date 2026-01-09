@@ -3,8 +3,8 @@ package com.devmod.debug;
 import net.neoforged.bus.api.IEventBus;
 
 import com.devmod.DevMod;
-import com.devmod.debug.block.DebugBlocks;
 import com.devmod.debug.block.DebugBlockEntities;
+import com.devmod.debug.block.DebugBlocks;
 
 /**
  * Debug module initialization.

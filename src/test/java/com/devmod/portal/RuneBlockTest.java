@@ -1,8 +1,14 @@
 package com.devmod.portal;
 
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
 import com.devmod.TestBootstrap;
 import com.devmod.portal.block.RuneBlock;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -253,6 +259,7 @@ class RuneBlockTest {
     @DisplayName("Rune Block Instance Properties")
     class RuneBlockInstanceProperties {
 
+        @Nullable
         private RuneBlock createTestBlock(RuneType type) {
             try {
                 return new RuneBlock(type,
@@ -268,7 +275,8 @@ class RuneBlockTest {
         void hasteRuneReturnsHasteType() {
             RuneBlock hasteBlock = createTestBlock(RuneType.HASTE);
             assumeTrue(hasteBlock != null, "Skipped: Block creation requires registry initialization");
-            assertEquals(RuneType.HASTE, hasteBlock.getRuneType(),
+            RuneBlock nonNullBlock = Objects.requireNonNull(hasteBlock, "hasteBlock");
+            assertEquals(RuneType.HASTE, nonNullBlock.getRuneType(),
                 "HASTE rune block should return HASTE type");
         }
 
@@ -277,7 +285,8 @@ class RuneBlockTest {
         void gateRuneReturnsGateType() {
             RuneBlock gateBlock = createTestBlock(RuneType.GATE);
             assumeTrue(gateBlock != null, "Skipped: Block creation requires registry initialization");
-            assertEquals(RuneType.GATE, gateBlock.getRuneType(),
+            RuneBlock nonNullBlock = Objects.requireNonNull(gateBlock, "gateBlock");
+            assertEquals(RuneType.GATE, nonNullBlock.getRuneType(),
                 "GATE rune block should return GATE type");
         }
 
@@ -286,7 +295,9 @@ class RuneBlockTest {
         void runeBlocksEmitLight() {
             RuneBlock hasteBlock = createTestBlock(RuneType.HASTE);
             assumeTrue(hasteBlock != null, "Skipped: Block creation requires registry initialization");
-            assertEquals(7, hasteBlock.getLightEmission(hasteBlock.defaultBlockState(), null, null),
+            RuneBlock nonNullBlock = Objects.requireNonNull(hasteBlock, "hasteBlock");
+            assertEquals(7, nonNullBlock.getLightEmission(
+                nonNullBlock.defaultBlockState(), EmptyBlockGetter.INSTANCE, BlockPos.ZERO),
                 "Rune blocks should emit light level 7");
         }
     }

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_cross_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_cross"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_cross_slab_top"
+    }
+  }
+}

@@ -126,6 +126,7 @@ public class UsableStats implements IItemStats {
      * Save usable stats to NBT compound tag.
      * Uses short keys to minimize storage overhead.
      */
+    @Override
     public void save(CompoundTag tag) {
         // Use properties
         if (useDuration != 0) tag.putInt("UseDur", useDuration);
@@ -194,6 +195,7 @@ public class UsableStats implements IItemStats {
     /**
      * Check if all values are at defaults (no modifications).
      */
+    @Override
     public boolean isDefault() {
         return useDuration == 0
             && cooldownDuration == 0
@@ -206,6 +208,7 @@ public class UsableStats implements IItemStats {
     /**
      * Create a copy of these stats.
      */
+    @Override
     public UsableStats copy() {
         UsableStats copy = new UsableStats();
         copy.useDuration = this.useDuration;

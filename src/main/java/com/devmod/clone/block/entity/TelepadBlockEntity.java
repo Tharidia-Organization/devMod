@@ -131,7 +131,7 @@ public class TelepadBlockEntity extends BlockEntity {
             }
 
             chargeTime++;
-            chargingPlayers.put(playerId, chargeTime);
+            entry.setValue(chargeTime);
 
             // Particles every 2 ticks
             if (chargeTime % 2 == 0) {

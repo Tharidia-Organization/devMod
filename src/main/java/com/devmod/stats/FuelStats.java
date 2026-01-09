@@ -110,6 +110,7 @@ public class FuelStats implements IItemStats {
 
     public FuelStats() {}
 
+    @Override
     public FuelStats copy() {
         FuelStats copy = new FuelStats();
         copy.setBurnTime(this.getBurnTime());
@@ -127,6 +128,7 @@ public class FuelStats implements IItemStats {
     // NBT SERIALIZATION
     // ═══════════════════════════════════════════════════════════════
 
+    @Override
     public void save(CompoundTag tag) {
         tag.putInt("burnTime", burnTime);
         tag.putBoolean("overrideDefault", overrideDefault);
@@ -184,6 +186,7 @@ public class FuelStats implements IItemStats {
     /**
      * Check if these stats represent default/unmodified values.
      */
+    @Override
     public boolean isDefault() {
         return burnTime == 0 &&
                !overrideDefault &&

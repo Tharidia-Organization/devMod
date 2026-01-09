@@ -2,6 +2,7 @@ package com.devmod.runtime;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import net.minecraft.network.chat.Component;
@@ -57,7 +58,9 @@ public class NexusDummyFeedback {
         if (total >= 0) {
             msg.append(" | Total ").append(format(total));
         }
-        player.displayClientMessage(Component.literal(msg.toString()), true);
+        String message = Objects.requireNonNull(msg.toString(), "message");
+        Component component = Objects.requireNonNull(Component.literal(message), "component");
+        player.displayClientMessage(component, true);
     }
 
     private static float readFloat(Map<String, Object> stats, String key, float fallback) {

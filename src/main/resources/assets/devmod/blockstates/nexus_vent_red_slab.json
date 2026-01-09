@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_vent_red_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_vent_red"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_vent_red_slab_top"
+    }
+  }
+}

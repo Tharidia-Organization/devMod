@@ -250,6 +250,7 @@ public class ArmorStats implements IItemStats {
      * Save armor stats to NBT compound tag.
      * Uses short keys to minimize storage overhead.
      */
+    @Override
     public void save(CompoundTag tag) {
         // Only save non-default values to reduce NBT size
         if (physicalReduction != 0.0f) tag.putFloat("PhysRed", physicalReduction);
@@ -335,6 +336,7 @@ public class ArmorStats implements IItemStats {
     /**
      * Check if all values are at defaults (no modifications).
      */
+    @Override
     public boolean isDefault() {
         return physicalReduction == 0.0f
             && fireReduction == 0.0f
@@ -393,6 +395,7 @@ public class ArmorStats implements IItemStats {
     /**
      * Create a copy of these stats.
      */
+    @Override
     public ArmorStats copy() {
         ArmorStats copy = new ArmorStats();
         copy.setPhysicalReduction(this.getPhysicalReduction());
