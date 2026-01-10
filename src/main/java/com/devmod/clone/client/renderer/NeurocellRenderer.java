@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -80,8 +81,34 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
             EntityType<?> type = optType.get();
             Entity entity = entityCache.get(entityTypeString);
             if (entity == null) {
-                entity = type.create(blockEntity.getLevel());
+                // === USE CLIENT LEVEL FOR RENDERING ONLY ===
+                // This creates an entity that is NEVER added to any tick list
+                // and exists purely for visual rendering purposes
+                net.minecraft.client.multiplayer.ClientLevel clientLevel =
+                    Minecraft.getInstance().level;
+
+                if (clientLevel == null) {
+                    return; // No client level available
+                }
+
+                entity = type.create(clientLevel);
                 if (entity != null) {
+                    // === CRITICAL: Ensure entity is 100% isolated from game logic ===
+
+                    // 1. Disable ALL physics and world interaction
+                    entity.noPhysics = true;
+                    entity.setNoGravity(true);
+                    entity.setSilent(true);
+                    entity.setInvulnerable(true);
+
+                    // 2. Position far from any possible interaction
+                    // This ensures the entity's bounding box is nowhere near the player
+                    entity.setPos(0, -1000, 0);
+
+                    // 3. The entity is NEVER added to the level's entity list
+                    // It exists ONLY in our local cache - it will NEVER tick
+                    // because Level.tick() only iterates over entities in its internal lists
+
                     entityCache.put(entityTypeString, entity);
                 }
             }
@@ -106,7 +133,7 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
                 float growthScale = isCloning ? 0.05f + progress * 0.95f : 1.0f;
                 poseStack.scale(scale * growthScale, scale * growthScale, scale * growthScale);
 
-                entity.setSilent(true);
+                // Update tick for animations without adding to world
                 if (blockEntity.getLevel() != null) {
                     entity.tickCount = (int) (blockEntity.getLevel().getGameTime() % Integer.MAX_VALUE);
                 }
@@ -116,9 +143,19 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
                     living.walkAnimation.update(0, 0);
                     living.yBodyRotO = living.yBodyRot;
                     living.yHeadRotO = living.yHeadRot;
+                    // Disable hurt animation and other visual effects
+                    living.hurtTime = 0;
+                    living.deathTime = 0;
                 }
 
-                entityRenderer.render(entity, 0.0, 0.0, 0.0, 0.0f, partialTick, poseStack, buffer, LightTexture.FULL_BRIGHT);
+                // Render entity model DIRECTLY via EntityRenderer to bypass hitbox rendering
+                // EntityRenderDispatcher.render() adds debug hitbox, but EntityRenderer.render() does not
+                @SuppressWarnings("unchecked")
+                EntityRenderer<Entity> renderer = (EntityRenderer<Entity>) entityRenderer.getRenderer(entity);
+                if (renderer != null) {
+                    // Direct render call - no hitbox, no debug info
+                    renderer.render(entity, 0.0f, partialTick, poseStack, buffer, LightTexture.FULL_BRIGHT);
+                }
                 poseStack.popPose();
             }
         } catch (RuntimeException e) {

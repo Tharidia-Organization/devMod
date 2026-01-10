@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
@@ -93,8 +94,28 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
             EntityType<?> type = optType.get();
             Entity entity = entityCache.get(entityTypeString);
             if (entity == null) {
-                entity = type.create(blockEntity.getLevel());
+                // Use client level for rendering only
+                net.minecraft.client.multiplayer.ClientLevel clientLevel =
+                    Minecraft.getInstance().level;
+                if (clientLevel == null) {
+                    return;
+                }
+
+                entity = type.create(clientLevel);
                 if (entity != null) {
+                    // === CRITICAL: Ensure entity is 100% isolated from game logic ===
+                    // 1. Disable ALL physics and world interaction
+                    entity.noPhysics = true;
+                    entity.setNoGravity(true);
+                    entity.setSilent(true);
+                    entity.setInvulnerable(true);
+
+                    // 2. Position far from any possible interaction
+                    entity.setPos(0, -1000, 0);
+
+                    // 3. The entity is NEVER added to the level's entity list
+                    // It exists ONLY in our local cache - it will NEVER tick
+
                     entityCache.put(entityTypeString, entity);
                 }
             }
@@ -144,8 +165,12 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
                     living.yRotO = living.getYRot();
                 }
 
-                // Render with full brightness (max light)
-                entityRenderer.render(entity, 0.0, 0.0, 0.0, 0.0f, partialTick, poseStack, buffer, LightTexture.FULL_BRIGHT);
+                // Render entity model DIRECTLY via EntityRenderer to bypass hitbox rendering
+                @SuppressWarnings("unchecked")
+                EntityRenderer<Entity> renderer = (EntityRenderer<Entity>) entityRenderer.getRenderer(entity);
+                if (renderer != null) {
+                    renderer.render(entity, 0.0f, partialTick, poseStack, buffer, LightTexture.FULL_BRIGHT);
+                }
 
                 poseStack.popPose();
             }
