@@ -1,6 +1,8 @@
 package com.devmod.clone.item;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -61,15 +63,15 @@ public class BioscannerItem extends Item {
         // Check if already contains data
         if (hasData(stack)) {
             player.displayClientMessage(
-                Component.translatable("message.devmod.bioscanner.already_scanned")
-                    .withStyle(ChatFormatting.YELLOW),
+                Objects.requireNonNull(Component.translatable("message.devmod.bioscanner.already_scanned")
+                    .withStyle(ChatFormatting.YELLOW)),
                 true
             );
             return InteractionResult.FAIL;
         }
 
         // Create scan data using update() like Hologenica does
-        ResourceLocation entityTypeId = EntityType.getKey(target.getType());
+        ResourceLocation entityTypeId = EntityType.getKey(Objects.requireNonNull(target.getType()));
         String entityName = target.getName().getString();
         boolean isPlayerTarget = target instanceof Player;
         UUID targetUUID = isPlayerTarget ? ((Player) target).getUUID() : null;
@@ -98,18 +100,21 @@ public class BioscannerItem extends Item {
         ItemStack inventoryStack = player.getInventory().getItem(slot);
 
         // Use update() like Hologenica
-        inventoryStack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, customData -> {
-            CompoundTag tag = customData.copyTag();
-            tag.putString(TAG_ENTITY_TYPE, finalEntityType);
-            tag.putString(TAG_ENTITY_NAME, finalEntityName);
-            if (finalUUID != null) {
-                tag.putUUID(TAG_PLAYER_UUID, finalUUID);
-            }
-            if (finalNbt != null) {
-                tag.put(TAG_ENTITY_NBT, finalNbt);
-            }
-            return CustomData.of(tag);
-        });
+        inventoryStack.update(
+            Objects.requireNonNull(DataComponents.CUSTOM_DATA),
+            Objects.requireNonNull(CustomData.EMPTY),
+            customData -> {
+                CompoundTag tag = customData.copyTag();
+                tag.putString(TAG_ENTITY_TYPE, Objects.requireNonNull(finalEntityType));
+                tag.putString(TAG_ENTITY_NAME, Objects.requireNonNull(finalEntityName));
+                if (finalUUID != null) {
+                    tag.putUUID(TAG_PLAYER_UUID, finalUUID);
+                }
+                if (finalNbt != null) {
+                    tag.put(TAG_ENTITY_NBT, finalNbt);
+                }
+                return CustomData.of(tag);
+            });
 
         // Force inventory sync
         player.getInventory().setItem(slot, inventoryStack);
@@ -119,8 +124,8 @@ public class BioscannerItem extends Item {
 
         // Feedback
         player.displayClientMessage(
-            Component.translatable("message.devmod.bioscanner.scanned", target.getName())
-                .withStyle(ChatFormatting.GREEN),
+            Objects.requireNonNull(Component.translatable("message.devmod.bioscanner.scanned", target.getName())
+                .withStyle(ChatFormatting.GREEN)),
             true
         );
 
@@ -129,7 +134,7 @@ public class BioscannerItem extends Item {
             serverLevel.playSound(
                 null,
                 target.getX(), target.getY(), target.getZ(),
-                SoundEvents.BEACON_ACTIVATE,
+                Objects.requireNonNull(SoundEvents.BEACON_ACTIVATE),
                 SoundSource.PLAYERS,
                 0.5f, 1.8f
             );
@@ -141,7 +146,7 @@ public class BioscannerItem extends Item {
                 double offsetX = Math.cos(angle) * radius;
                 double offsetZ = Math.sin(angle) * radius;
                 serverLevel.sendParticles(
-                    ParticleTypes.END_ROD,
+                    Objects.requireNonNull(ParticleTypes.END_ROD),
                     target.getX() + offsetX,
                     target.getY() + Math.random() * target.getBbHeight(),
                     target.getZ() + offsetZ,
@@ -164,20 +169,20 @@ public class BioscannerItem extends Item {
     public InteractionResultHolder<ItemStack> use(@Nonnull Level level, @Nonnull Player player, @Nonnull InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
-        if (player.isShiftKeyDown() && hasData(stack)) {
+        if (player.isShiftKeyDown() && hasData(Objects.requireNonNull(stack))) {
             if (!level.isClientSide) {
                 clearData(stack);
                 player.displayClientMessage(
-                    Component.translatable("message.devmod.bioscanner.cleared")
-                        .withStyle(ChatFormatting.YELLOW),
+                    Objects.requireNonNull(Component.translatable("message.devmod.bioscanner.cleared")
+                        .withStyle(ChatFormatting.YELLOW)),
                     true
                 );
-                level.playSound(null, player.blockPosition(),
-                    SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.5f, 1.2f);
+                level.playSound(null, Objects.requireNonNull(player.blockPosition()),
+                    Objects.requireNonNull(SoundEvents.BEACON_DEACTIVATE), SoundSource.PLAYERS, 0.5f, 1.2f);
             }
-            return InteractionResultHolder.success(stack);
+            return Objects.requireNonNull(InteractionResultHolder.success(Objects.requireNonNull(stack)));
         }
-        return InteractionResultHolder.pass(stack);
+        return Objects.requireNonNull(InteractionResultHolder.pass(Objects.requireNonNull(stack)));
     }
 
     /**
@@ -185,7 +190,9 @@ public class BioscannerItem extends Item {
      */
     @Nullable
     public static CompoundTag getDataTag(@Nonnull ItemStack stack) {
-        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        CustomData customData = stack.getOrDefault(
+            Objects.requireNonNull(DataComponents.CUSTOM_DATA),
+            Objects.requireNonNull(CustomData.EMPTY));
         CompoundTag tag = customData.copyTag();
         return tag.contains(TAG_ENTITY_TYPE) ? tag : null;
     }
@@ -194,7 +201,9 @@ public class BioscannerItem extends Item {
      * Checks if the bioscanner contains scan data.
      */
     public static boolean hasData(@Nonnull ItemStack stack) {
-        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        CustomData customData = stack.getOrDefault(
+            Objects.requireNonNull(DataComponents.CUSTOM_DATA),
+            Objects.requireNonNull(CustomData.EMPTY));
         return customData.copyTag().contains(TAG_ENTITY_TYPE);
     }
 
@@ -217,10 +226,30 @@ public class BioscannerItem extends Item {
     }
 
     /**
+     * Calculate the maximum dimension (width or height) of the scanned entity.
+     * Uses EntityType's default dimensions without creating an entity instance.
+     * @return max of width and height, or 0 if no entity data
+     */
+    public static float getEntityMaxDimension(@Nonnull ItemStack stack) {
+        if (!hasData(stack)) return 0f;
+
+        String entityTypeStr = getEntityType(stack);
+        if (entityTypeStr == null) return 0f;
+
+        Optional<EntityType<?>> optType = EntityType.byString(entityTypeStr);
+        if (optType.isEmpty()) return 0f;
+
+        EntityType<?> type = optType.get();
+        float width = type.getDimensions().width();
+        float height = type.getDimensions().height();
+        return Math.max(width, height);
+    }
+
+    /**
      * Clears the bioscan data from the item.
      */
     public static void clearData(@Nonnull ItemStack stack) {
-        stack.remove(DataComponents.CUSTOM_DATA);
+        stack.remove(Objects.requireNonNull(DataComponents.CUSTOM_DATA));
     }
 
     @Override
@@ -238,33 +267,33 @@ public class BioscannerItem extends Item {
         CompoundTag tag = getDataTag(stack);
 
         if (tag != null) {
-            String entityName = tag.getString(TAG_ENTITY_NAME);
+            String entityName = Objects.requireNonNull(tag.getString(TAG_ENTITY_NAME));
             String entityType = tag.getString(TAG_ENTITY_TYPE);
 
-            tooltip.add(Component.translatable("tooltip.devmod.bioscanner.contains")
-                .withStyle(ChatFormatting.GRAY));
+            tooltip.add(Objects.requireNonNull(Component.translatable("tooltip.devmod.bioscanner.contains")
+                .withStyle(ChatFormatting.GRAY)));
 
-            tooltip.add(Component.literal("  ")
-                .append(Component.literal(entityName)
-                    .withStyle(ChatFormatting.AQUA)));
+            tooltip.add(Objects.requireNonNull(Component.literal("  ")
+                .append(Objects.requireNonNull(Component.literal(entityName)
+                    .withStyle(ChatFormatting.AQUA)))));
 
             // Extract path from resource location
             String typePath = entityType.contains(":") ?
                 entityType.substring(entityType.indexOf(":") + 1) : entityType;
-            tooltip.add(Component.literal("  ")
-                .append(Component.translatable("tooltip.devmod.bioscanner.type", typePath)
-                    .withStyle(ChatFormatting.DARK_GRAY)));
+            tooltip.add(Objects.requireNonNull(Component.literal("  ")
+                .append(Objects.requireNonNull(Component.translatable("tooltip.devmod.bioscanner.type", typePath)
+                    .withStyle(ChatFormatting.DARK_GRAY)))));
 
             if (tag.hasUUID(TAG_PLAYER_UUID)) {
-                tooltip.add(Component.literal("  ")
-                    .append(Component.translatable("tooltip.devmod.bioscanner.player")
-                        .withStyle(ChatFormatting.GOLD)));
+                tooltip.add(Objects.requireNonNull(Component.literal("  ")
+                    .append(Objects.requireNonNull(Component.translatable("tooltip.devmod.bioscanner.player")
+                        .withStyle(ChatFormatting.GOLD)))));
             }
         } else {
-            tooltip.add(Component.translatable("tooltip.devmod.bioscanner.empty")
-                .withStyle(ChatFormatting.GRAY));
-            tooltip.add(Component.translatable("tooltip.devmod.bioscanner.usage")
-                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+            tooltip.add(Objects.requireNonNull(Component.translatable("tooltip.devmod.bioscanner.empty")
+                .withStyle(ChatFormatting.GRAY)));
+            tooltip.add(Objects.requireNonNull(Component.translatable("tooltip.devmod.bioscanner.usage")
+                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC)));
         }
     }
 }

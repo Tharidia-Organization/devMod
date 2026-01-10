@@ -2942,6 +2942,7 @@
   "message.devmod.neurocell.waiting": "Waiting for scan data...",
   "message.devmod.neurocell.processing": "Processing: %s%%",
   "message.devmod.neurocell.ready": "Clone data ready: %s",
+  "message.devmod.entity_too_large": "Entity too large! Use a Large Neurocell.",
   "gui.devmod.neurocell.insert_bioscanner": "Insert Bioscanner",
   "gui.devmod.neurocell.waiting_scan": "Awaiting scan data...",
   "gui.devmod.neurocell.ready": "Ready: %s",

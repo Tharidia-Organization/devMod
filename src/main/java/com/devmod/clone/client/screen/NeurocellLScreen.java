@@ -1,5 +1,7 @@
 package com.devmod.clone.client.screen;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,8 +22,8 @@ import com.devmod.clone.menu.NeurocellLMenu;
  */
 public class NeurocellLScreen extends AbstractContainerScreen<NeurocellLMenu> {
 
-    private static final ResourceLocation TEXTURE =
-        ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/neurocell.png");
+    private static final ResourceLocation TEXTURE = Objects.requireNonNull(
+        ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/neurocell.png"));
 
     private Button clearButton;
 
@@ -36,10 +38,10 @@ public class NeurocellLScreen extends AbstractContainerScreen<NeurocellLMenu> {
         super.init();
 
         // Clear button (positioned to the right of the slot)
-        clearButton = Button.builder(
-            Component.literal("X"),
+        clearButton = Objects.requireNonNull(Button.builder(
+            Objects.requireNonNull(Component.literal("X")),
             btn -> clearBioscanner()
-        ).bounds(leftPos + 110, topPos + 33, 20, 20).build();
+        ).bounds(leftPos + 110, topPos + 33, 20, 20).build());
 
         addRenderableWidget(clearButton);
     }
@@ -59,9 +61,10 @@ public class NeurocellLScreen extends AbstractContainerScreen<NeurocellLMenu> {
         menu.clearBioscanner();
 
         // Also notify server via container action
-        if (minecraft != null && minecraft.gameMode != null) {
+        var mc = this.minecraft;
+        if (mc != null && mc.gameMode != null) {
             // Use a custom button click handler
-            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 0);
+            mc.gameMode.handleInventoryButtonClick(menu.containerId, 0);
         }
     }
 
@@ -73,7 +76,7 @@ public class NeurocellLScreen extends AbstractContainerScreen<NeurocellLMenu> {
 
     @Override
     protected void renderBg(@Nonnull GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
+        graphics.blit(Objects.requireNonNull(TEXTURE), leftPos, topPos, 0, 0, imageWidth, imageHeight);
 
         // Draw slot highlight if empty
         ItemStack stack = menu.getContainer().getItem(0);
@@ -85,10 +88,14 @@ public class NeurocellLScreen extends AbstractContainerScreen<NeurocellLMenu> {
 
     @Override
     protected void renderLabels(@Nonnull GuiGraphics graphics, int mouseX, int mouseY) {
+        var fontObj = Objects.requireNonNull(this.font);
+        var titleComp = Objects.requireNonNull(this.title);
+        var invTitle = Objects.requireNonNull(this.playerInventoryTitle);
+
         // Title
-        graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
+        graphics.drawString(fontObj, titleComp, this.titleLabelX, this.titleLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
         // Inventory label
-        graphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
+        graphics.drawString(fontObj, invTitle, this.inventoryLabelX, this.inventoryLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
 
         // Status text below the slot
         ItemStack stack = menu.getContainer().getItem(0);
@@ -96,19 +103,19 @@ public class NeurocellLScreen extends AbstractContainerScreen<NeurocellLMenu> {
         int color;
 
         if (stack.isEmpty()) {
-            status = Component.translatable("gui.devmod.neurocell.insert_bioscanner");
+            status = Objects.requireNonNull(Component.translatable("gui.devmod.neurocell.insert_bioscanner"));
             color = DesignTokens.Neurocell.STATUS_EMPTY;
         } else if (!BioscannerItem.hasData(stack)) {
-            status = Component.translatable("gui.devmod.neurocell.waiting_scan");
+            status = Objects.requireNonNull(Component.translatable("gui.devmod.neurocell.waiting_scan"));
             color = DesignTokens.Neurocell.STATUS_WAITING;
         } else {
             String entityName = BioscannerItem.getEntityName(stack);
-            status = Component.translatable("gui.devmod.neurocell.ready", entityName != null ? entityName : "Unknown");
+            status = Objects.requireNonNull(Component.translatable("gui.devmod.neurocell.ready", entityName != null ? entityName : "Unknown"));
             color = DesignTokens.Neurocell.STATUS_READY;
         }
 
         // Center the status text
-        int textWidth = this.font.width(status);
-        graphics.drawString(this.font, status, (imageWidth - textWidth) / 2, 58, color, false);
+        int textWidth = fontObj.width(status);
+        graphics.drawString(fontObj, status, (imageWidth - textWidth) / 2, 58, color, false);
     }
 }

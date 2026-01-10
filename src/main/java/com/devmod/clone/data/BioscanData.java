@@ -43,7 +43,12 @@ public record BioscanData(
             CompoundTag.CODEC.optionalFieldOf("entityNBT").forGetter(d -> Optional.ofNullable(d.entityNBT())),
             Codec.LONG.fieldOf("scanTime").forGetter(BioscanData::scanTime)
         ).apply(instance, (type, name, uuid, nbt, time) ->
-            new BioscanData(type, name, uuid.orElse(null), nbt.orElse(null), time))
+            new BioscanData(
+                Objects.requireNonNull(type),
+                Objects.requireNonNull(name),
+                uuid.orElse(null),
+                nbt.orElse(null),
+                time))
     );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, BioscanData> STREAM_CODEC = StreamCodec.of(
@@ -61,8 +66,8 @@ public record BioscanData(
             buf.writeLong(data.scanTime);
         },
         buf -> {
-            ResourceLocation entityType = buf.readResourceLocation();
-            String entityName = buf.readUtf();
+            ResourceLocation entityType = Objects.requireNonNull(buf.readResourceLocation());
+            String entityName = Objects.requireNonNull(buf.readUtf());
             UUID playerUUID = buf.readBoolean() ? buf.readUUID() : null;
             CompoundTag entityNBT = buf.readBoolean() ? ByteBufCodecs.COMPOUND_TAG.decode(buf) : null;
             long scanTime = buf.readLong();
@@ -79,8 +84,8 @@ public record BioscanData(
     public static BioscanData fromEntity(@Nonnull LivingEntity entity) {
         Objects.requireNonNull(entity, "entity");
 
-        ResourceLocation typeId = EntityType.getKey(entity.getType());
-        String name = entity.getName().getString();
+        ResourceLocation typeId = Objects.requireNonNull(EntityType.getKey(Objects.requireNonNull(entity.getType())));
+        String name = Objects.requireNonNull(entity.getName().getString());
         UUID playerUUID = null;
         CompoundTag nbt = null;
 
@@ -124,7 +129,7 @@ public record BioscanData(
      */
     @Nullable
     public EntityType<?> getEntityType() {
-        return EntityType.byString(entityTypeId.toString()).orElse(null);
+        return EntityType.byString(Objects.requireNonNull(entityTypeId.toString())).orElse(null);
     }
 
     /**
@@ -132,9 +137,9 @@ public record BioscanData(
      */
     @Nonnull
     public CompoundTag toTag() {
-        return (CompoundTag) CODEC.encodeStart(NbtOps.INSTANCE, this)
+        return Objects.requireNonNull((CompoundTag) CODEC.encodeStart(NbtOps.INSTANCE, this)
             .result()
-            .orElseGet(CompoundTag::new);
+            .orElseGet(CompoundTag::new));
     }
 
     /**

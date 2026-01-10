@@ -1,5 +1,6 @@
 package com.devmod.clone.block.entity;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -19,8 +20,10 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.MenuProvider;
@@ -40,6 +43,11 @@ import com.devmod.clone.menu.NeurocellMenu;
 public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
 
     private static final int PROCESS_TIME = 300; // 15 seconds
+    /**
+     * Maximum entity dimension (width or height) allowed in the standard 1x2 Neurocell.
+     * Entities larger than this require the NeurocellL (2x2x2) chamber.
+     */
+    public static final float MAX_ENTITY_SIZE = 1.5f;
     private static final String TAG_ENTITY_TYPE = "EntityType";
     private static final String TAG_ENTITY_NAME = "EntityName";
     private static final String TAG_PLAYER_UUID = "PlayerUUID";
@@ -48,8 +56,11 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
     private static final String TAG_BIOSCANNER = "Bioscanner";
 
     // Stored state - mirrors Hologenica's approach
-    private ItemStack storedBioscanner = ItemStack.EMPTY;
+    @Nonnull
+    private ItemStack storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
+    @Nonnull
     private String entityType = "";
+    @Nonnull
     private String entityName = "";
     private UUID playerUUID = null;
     private int cloningTime = 0;
@@ -60,7 +71,8 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public void tick() {
-        if (level == null || level.isClientSide) {
+        Level lvl = level;
+        if (lvl == null || lvl.isClientSide) {
             return;
         }
 
@@ -72,7 +84,8 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
      * Called when inventory changes - reads bioscanner data.
      */
     public void onInventoryChanged() {
-        if (level == null || level.isClientSide) {
+        Level lvl = level;
+        if (lvl == null || lvl.isClientSide) {
             return;
         }
 
@@ -94,8 +107,8 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
         String newEntityType = tag.getString(TAG_ENTITY_TYPE);
         com.devmod.DevMod.LOGGER.info("[Neurocell] newEntityType={}, currentEntityType={}", newEntityType, this.entityType);
         if (!newEntityType.equals(this.entityType)) {
-            this.entityType = newEntityType;
-            this.entityName = tag.contains(TAG_ENTITY_NAME) ? tag.getString(TAG_ENTITY_NAME) : "";
+            this.entityType = Objects.requireNonNull(newEntityType);
+            this.entityName = Objects.requireNonNull(tag.contains(TAG_ENTITY_NAME) ? tag.getString(TAG_ENTITY_NAME) : "");
             this.playerUUID = tag.hasUUID(TAG_PLAYER_UUID) ? tag.getUUID(TAG_PLAYER_UUID) : null;
             this.cloningTime = 0;
             this.hasRagdoll = true;
@@ -125,41 +138,52 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
      * Update the block's ACTIVE state and sync to both halves.
      */
     private void updateActiveState(boolean active) {
-        if (level == null || level.isClientSide) {
+        Level lvl = level;
+        if (lvl == null || lvl.isClientSide) {
             return;
         }
-        BlockState currentState = level.getBlockState(worldPosition);
-        if (currentState.hasProperty(NeurocellBlock.ACTIVE) && currentState.getValue(NeurocellBlock.ACTIVE) != active) {
+        BlockPos pos = Objects.requireNonNull(worldPosition);
+        BooleanProperty activeProp = Objects.requireNonNull(NeurocellBlock.ACTIVE);
+        BlockState currentState = lvl.getBlockState(pos);
+        if (currentState.hasProperty(activeProp) && currentState.getValue(activeProp) != active) {
             // Update lower half
-            level.setBlock(worldPosition, currentState.setValue(NeurocellBlock.ACTIVE, active), 3);
+            lvl.setBlock(pos, Objects.requireNonNull(currentState.setValue(activeProp, active)), 3);
             // Update upper half
-            BlockPos upperPos = worldPosition.above();
-            BlockState upperState = level.getBlockState(upperPos);
-            if (upperState.hasProperty(NeurocellBlock.ACTIVE)) {
-                level.setBlock(upperPos, upperState.setValue(NeurocellBlock.ACTIVE, active), 3);
+            BlockPos upperPos = Objects.requireNonNull(pos.above());
+            BlockState upperState = lvl.getBlockState(upperPos);
+            if (upperState.hasProperty(activeProp)) {
+                lvl.setBlock(upperPos, Objects.requireNonNull(upperState.setValue(activeProp, active)), 3);
             }
         }
     }
 
     /**
      * Insert a bioscanner into the neurocell.
+     * Rejects entities that are too large for the standard chamber.
      */
     public boolean insertBioscanner(@Nonnull ItemStack bioscanner) {
         if (!storedBioscanner.isEmpty()) {
             return false;
         }
-        if (!bioscanner.is(CloneItems.BIOSCANNER.get())) {
+        if (!bioscanner.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()))) {
             return false;
         }
         if (!BioscannerItem.hasData(bioscanner)) {
             return false;
         }
 
-        storedBioscanner = bioscanner.copyWithCount(1);
+        // Check entity size - giant entities require NeurocellL (2x2x2)
+        float maxDim = BioscannerItem.getEntityMaxDimension(bioscanner);
+        if (maxDim > MAX_ENTITY_SIZE) {
+            return false;
+        }
+
+        storedBioscanner = Objects.requireNonNull(bioscanner.copyWithCount(1));
         onInventoryChanged();
 
-        if (level != null) {
-            level.playSound(null, worldPosition, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.BLOCKS, 0.5f, 1.2f);
+        Level lvl = level;
+        if (lvl != null) {
+            lvl.playSound(null, Objects.requireNonNull(worldPosition), Objects.requireNonNull(SoundEvents.ITEM_FRAME_ADD_ITEM), SoundSource.BLOCKS, 0.5f, 1.2f);
         }
 
         return true;
@@ -171,15 +195,16 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
     @Nonnull
     public ItemStack extractBioscanner() {
         if (storedBioscanner.isEmpty()) {
-            return ItemStack.EMPTY;
+            return Objects.requireNonNull(ItemStack.EMPTY);
         }
 
-        ItemStack extracted = storedBioscanner.copy();
-        storedBioscanner = ItemStack.EMPTY;
+        ItemStack extracted = Objects.requireNonNull(storedBioscanner.copy());
+        storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
         clearRagdollState();
 
-        if (level != null) {
-            level.playSound(null, worldPosition, SoundEvents.ITEM_FRAME_REMOVE_ITEM, SoundSource.BLOCKS, 0.5f, 1.0f);
+        Level lvl = level;
+        if (lvl != null) {
+            lvl.playSound(null, Objects.requireNonNull(worldPosition), Objects.requireNonNull(SoundEvents.ITEM_FRAME_REMOVE_ITEM), SoundSource.BLOCKS, 0.5f, 1.0f);
         }
 
         return extracted;
@@ -264,7 +289,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
         );
 
         // Clear the neurocell
-        storedBioscanner = ItemStack.EMPTY;
+        storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
         clearRagdollState();
 
         return data;
@@ -276,29 +301,32 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
     public void showStatus(@Nonnull Player player) {
         if (storedBioscanner.isEmpty() || entityType.isEmpty()) {
             player.displayClientMessage(
-                Component.translatable("message.devmod.neurocell.empty")
-                    .withStyle(ChatFormatting.GRAY),
+                Objects.requireNonNull(Component.translatable("message.devmod.neurocell.empty")
+                    .withStyle(ChatFormatting.GRAY)),
                 true
             );
         } else if (hasRagdoll) {
             player.displayClientMessage(
-                Component.translatable("message.devmod.neurocell.ready", entityName)
-                    .withStyle(ChatFormatting.GREEN),
+                Objects.requireNonNull(Component.translatable("message.devmod.neurocell.ready", entityName)
+                    .withStyle(ChatFormatting.GREEN)),
                 true
             );
         } else {
             int percent = getProgressPercent();
             player.displayClientMessage(
-                Component.translatable("message.devmod.neurocell.processing", percent)
-                    .withStyle(ChatFormatting.YELLOW),
+                Objects.requireNonNull(Component.translatable("message.devmod.neurocell.processing", percent)
+                    .withStyle(ChatFormatting.YELLOW)),
                 true
             );
         }
     }
 
     private void syncToClient() {
-        if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        Level lvl = level;
+        if (lvl != null && !lvl.isClientSide) {
+            BlockPos pos = Objects.requireNonNull(worldPosition);
+            BlockState state = Objects.requireNonNull(getBlockState());
+            lvl.sendBlockUpdated(pos, state, state, 3);
         }
     }
 
@@ -315,22 +343,22 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt(TAG_CLONING_TIME, cloningTime);
         tag.putBoolean(TAG_HAS_RAGDOLL, hasRagdoll);
         if (!storedBioscanner.isEmpty()) {
-            tag.put(TAG_BIOSCANNER, storedBioscanner.save(registries));
+            tag.put(TAG_BIOSCANNER, Objects.requireNonNull(storedBioscanner.save(registries)));
         }
     }
 
     @Override
     protected void loadAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        entityType = tag.getString(TAG_ENTITY_TYPE);
-        entityName = tag.getString(TAG_ENTITY_NAME);
+        entityType = Objects.requireNonNull(tag.getString(TAG_ENTITY_TYPE));
+        entityName = Objects.requireNonNull(tag.getString(TAG_ENTITY_NAME));
         playerUUID = tag.hasUUID(TAG_PLAYER_UUID) ? tag.getUUID(TAG_PLAYER_UUID) : null;
         cloningTime = tag.getInt(TAG_CLONING_TIME);
         hasRagdoll = tag.getBoolean(TAG_HAS_RAGDOLL);
         if (tag.contains(TAG_BIOSCANNER)) {
-            storedBioscanner = ItemStack.parse(registries, tag.getCompound(TAG_BIOSCANNER)).orElse(ItemStack.EMPTY);
+            storedBioscanner = Objects.requireNonNull(ItemStack.parse(registries, Objects.requireNonNull(tag.getCompound(TAG_BIOSCANNER))).orElse(ItemStack.EMPTY));
         } else {
-            storedBioscanner = ItemStack.EMPTY;
+            storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
         }
     }
 
@@ -363,7 +391,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     @Nonnull
     public Component getDisplayName() {
-        return Component.translatable("block.devmod.neurocell");
+        return Objects.requireNonNull(Component.translatable("block.devmod.neurocell"));
     }
 
     @Override
@@ -385,7 +413,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
             public void setChanged() {
                 super.setChanged();
                 // Sync container back to storedBioscanner
-                storedBioscanner = this.getItem(0).copy();
+                storedBioscanner = Objects.requireNonNull(this.getItem(0).copy());
                 NeurocellBlockEntity.this.setChanged();
                 NeurocellBlockEntity.this.onInventoryChanged();
             }
@@ -394,7 +422,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
             public void setItem(int slot, @Nonnull ItemStack stack) {
                 super.setItem(slot, stack);
                 // Also sync immediately when item is set
-                storedBioscanner = stack.copy();
+                storedBioscanner = Objects.requireNonNull(stack.copy());
                 NeurocellBlockEntity.this.setChanged();
                 NeurocellBlockEntity.this.onInventoryChanged();
             }
@@ -402,9 +430,9 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
             @Override
             @Nonnull
             public ItemStack removeItem(int slot, int amount) {
-                ItemStack result = super.removeItem(slot, amount);
+                ItemStack result = Objects.requireNonNull(super.removeItem(slot, amount));
                 // Sync after removal
-                storedBioscanner = this.getItem(0).copy();
+                storedBioscanner = Objects.requireNonNull(this.getItem(0).copy());
                 NeurocellBlockEntity.this.setChanged();
                 NeurocellBlockEntity.this.onInventoryChanged();
                 return result;
@@ -413,12 +441,12 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
             @Override
             @Nonnull
             public ItemStack removeItemNoUpdate(int slot) {
-                ItemStack result = super.removeItemNoUpdate(slot);
-                storedBioscanner = this.getItem(0).copy();
+                ItemStack result = Objects.requireNonNull(super.removeItemNoUpdate(slot));
+                storedBioscanner = Objects.requireNonNull(this.getItem(0).copy());
                 return result;
             }
         };
-        container.setItem(0, storedBioscanner.copy());
+        container.setItem(0, Objects.requireNonNull(storedBioscanner.copy()));
         return container;
     }
 
@@ -434,24 +462,26 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
      */
     public void fillBioscannerFromImprinter(@Nonnull BioscanData data) {
         // Create a new bioscanner with the data
-        ItemStack newBioscanner = new ItemStack(CloneItems.BIOSCANNER.get());
+        ItemStack newBioscanner = new ItemStack(Objects.requireNonNull(CloneItems.BIOSCANNER.get()));
 
         // Set data using CUSTOM_DATA component like BioscannerItem does
-        newBioscanner.update(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-            net.minecraft.world.item.component.CustomData.EMPTY, customData -> {
+        newBioscanner.update(Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA),
+            Objects.requireNonNull(net.minecraft.world.item.component.CustomData.EMPTY), customData -> {
                 CompoundTag tag = customData.copyTag();
-                tag.putString("EntityType", data.entityTypeId().toString());
+                tag.putString("EntityType", Objects.requireNonNull(data.entityTypeId().toString()));
                 tag.putString("EntityName", data.entityName());
-                if (data.playerUUID() != null) {
-                    tag.putUUID("PlayerUUID", data.playerUUID());
+                UUID pUuid = data.playerUUID();
+                if (pUuid != null) {
+                    tag.putUUID("PlayerUUID", pUuid);
                 }
-                if (data.entityNBT() != null) {
-                    tag.put("EntityNBT", data.entityNBT());
+                CompoundTag nbt = data.entityNBT();
+                if (nbt != null) {
+                    tag.put("EntityNBT", nbt);
                 }
                 return net.minecraft.world.item.component.CustomData.of(tag);
             });
 
-        storedBioscanner = newBioscanner;
+        storedBioscanner = Objects.requireNonNull(newBioscanner);
         onInventoryChanged();
     }
 }

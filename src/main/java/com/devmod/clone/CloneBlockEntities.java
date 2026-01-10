@@ -1,6 +1,10 @@
 package com.devmod.clone;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
+
+import com.mojang.datafixers.types.Type;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -22,72 +26,80 @@ import com.devmod.clone.block.entity.TelepadBlockEntity;
 public final class CloneBlockEntities {
     private CloneBlockEntities() {}
 
+    /**
+     * Empty map used to return null via Map.get() - standard null-returning pattern.
+     * Minecraft's API is annotated @Nonnull but accepts null by design (no data fixer needed for mods).
+     */
+    private static final Map<String, Type<?>> EMPTY_TYPE_MAP = Collections.emptyMap();
+
+    /**
+     * Returns null Type for build() via Map.get() on missing key.
+     */
+    private static Type<?> noDataFixer() {
+        return EMPTY_TYPE_MAP.get("");
+    }
+
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
-        DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, DevMod.MODID);
+        DeferredRegister.create(Objects.requireNonNull(Registries.BLOCK_ENTITY_TYPE), DevMod.MODID);
 
     /**
      * The telepad block entity.
      * Handles charging and teleportation logic.
      */
-    @SuppressWarnings("DataFlowIssue")
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TelepadBlockEntity>> TELEPAD =
         BLOCK_ENTITY_TYPES.register("telepad", () ->
             BlockEntityType.Builder.of(
                 TelepadBlockEntity::new,
                 CloneBlocks.TELEPAD.get()
-            ).build(null)
+            ).build(noDataFixer())
         );
 
     /**
      * The imprinter block entity.
      * Handles automatic entity scanning.
      */
-    @SuppressWarnings("DataFlowIssue")
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ImprinterBlockEntity>> IMPRINTER =
         BLOCK_ENTITY_TYPES.register("imprinter", () ->
             BlockEntityType.Builder.of(
                 ImprinterBlockEntity::new,
                 CloneBlocks.IMPRINTER.get()
-            ).build(null)
+            ).build(noDataFixer())
         );
 
     /**
      * The neurocell block entity.
      * Handles cloning process and data preparation.
      */
-    @SuppressWarnings("DataFlowIssue")
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<NeurocellBlockEntity>> NEUROCELL =
         BLOCK_ENTITY_TYPES.register("neurocell", () ->
             BlockEntityType.Builder.of(
                 NeurocellBlockEntity::new,
                 CloneBlocks.NEUROCELL.get()
-            ).build(null)
+            ).build(noDataFixer())
         );
 
     /**
      * The reformer block entity.
      * Handles entity spawning from clone data.
      */
-    @SuppressWarnings("DataFlowIssue")
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ReformerBlockEntity>> REFORMER =
         BLOCK_ENTITY_TYPES.register("reformer", () ->
             BlockEntityType.Builder.of(
                 ReformerBlockEntity::new,
                 CloneBlocks.REFORMER.get()
-            ).build(null)
+            ).build(noDataFixer())
         );
 
     /**
      * The large neurocell block entity (3x3x3).
      * Handles cloning for larger entities.
      */
-    @SuppressWarnings("DataFlowIssue")
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<NeurocellLBlockEntity>> NEUROCELL_L =
         BLOCK_ENTITY_TYPES.register("neurocell_l", () ->
             BlockEntityType.Builder.of(
                 NeurocellLBlockEntity::new,
                 CloneBlocks.NEUROCELL_L.get()
-            ).build(null)
+            ).build(noDataFixer())
         );
 
     /**

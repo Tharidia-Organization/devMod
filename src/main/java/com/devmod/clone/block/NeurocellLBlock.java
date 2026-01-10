@@ -1,5 +1,7 @@
 package com.devmod.clone.block;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -88,7 +90,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Override
         @Nonnull
         public String getSerializedName() {
-            return name;
+            return Objects.requireNonNull(name);
         }
 
         public int getYOffset() { return yOffset; }
@@ -143,7 +145,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
     @Override
     @Nonnull
     protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
-        return CODEC;
+        return Objects.requireNonNull(CODEC);
     }
 
     public NeurocellLBlock() {
@@ -151,15 +153,15 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
             .strength(4.0f)
             .requiresCorrectToolForDrops()
             .noOcclusion()
-            .lightLevel(state -> state.getValue(ACTIVE) ? 12 : 0)
+            .lightLevel(state -> state.getValue(Objects.requireNonNull(ACTIVE)) ? 12 : 0)
             .isValidSpawn((state, level, pos, type) -> false)
             .isRedstoneConductor((state, level, pos) -> false)
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false));
-        registerDefaultState(stateDefinition.any()
-            .setValue(PART, MultiBlockPart.CENTER)
-            .setValue(FACING, Direction.NORTH)
-            .setValue(ACTIVE, false));
+        registerDefaultState(Objects.requireNonNull(stateDefinition.any()
+            .setValue(Objects.requireNonNull(PART), MultiBlockPart.CENTER)
+            .setValue(Objects.requireNonNull(FACING), Objects.requireNonNull(Direction.NORTH))
+            .setValue(Objects.requireNonNull(ACTIVE), false)));
     }
 
     @Override
@@ -171,14 +173,14 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
     @Nullable
     public BlockEntity newBlockEntity(@Nonnull BlockPos pos, @Nonnull BlockState state) {
         // Only create block entity for center block
-        return state.getValue(PART).isCenter() ? new NeurocellLBlockEntity(pos, state) : null;
+        return state.getValue(Objects.requireNonNull(PART)).isCenter() ? new NeurocellLBlockEntity(pos, state) : null;
     }
 
     @Override
     @Nonnull
     protected RenderShape getRenderShape(@Nonnull BlockState state) {
         // Only render the center block's model, others are invisible
-        return state.getValue(PART).isCenter() ? RenderShape.MODEL : RenderShape.INVISIBLE;
+        return Objects.requireNonNull(state.getValue(Objects.requireNonNull(PART)).isCenter() ? RenderShape.MODEL : RenderShape.INVISIBLE);
     }
 
     @Override
@@ -194,8 +196,8 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nonnull BlockPos pos,
         @Nonnull CollisionContext context
     ) {
-        MultiBlockPart part = state.getValue(PART);
-        Direction facing = state.getValue(FACING);
+        MultiBlockPart part = state.getValue(Objects.requireNonNull(PART));
+        Direction facing = state.getValue(Objects.requireNonNull(FACING));
 
         // Calculate the bounding box start position based on facing
         // The structure extends in different directions for each facing:
@@ -207,14 +209,14 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         double zStart = (facing == Direction.SOUTH || facing == Direction.WEST) ? -1.0 : 0.0;
 
         // Return shape offset by the part's position within the structure
-        return Shapes.box(
+        return Objects.requireNonNull(Shapes.box(
             xStart - part.getXOffset(facing),
             0.0 - part.getYOffset(),
             zStart - part.getZOffset(facing),
             xStart + 2.0 - part.getXOffset(facing),
             2.0 - part.getYOffset(),
             zStart + 2.0 - part.getZOffset(facing)
-        );
+        ));
     }
 
     @Override
@@ -222,20 +224,20 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
     public BlockState getStateForPlacement(@Nonnull BlockPlaceContext context) {
         BlockPos pos = context.getClickedPos();
         Level level = context.getLevel();
-        Direction facing = context.getHorizontalDirection().getOpposite();
+        Direction facing = Objects.requireNonNull(context.getHorizontalDirection().getOpposite());
 
         // Check if all 8 positions are available
         for (MultiBlockPart part : MultiBlockPart.values()) {
-            BlockPos partPos = part.getOffsetFromCenter(pos, facing);
+            BlockPos partPos = Objects.requireNonNull(part.getOffsetFromCenter(pos, facing));
             if (partPos.getY() >= level.getMaxBuildHeight() || !level.getBlockState(partPos).canBeReplaced(context)) {
                 return null;
             }
         }
 
-        return defaultBlockState()
-            .setValue(PART, MultiBlockPart.CENTER)
-            .setValue(FACING, facing)
-            .setValue(ACTIVE, false);
+        return Objects.requireNonNull(defaultBlockState()
+            .setValue(Objects.requireNonNull(PART), MultiBlockPart.CENTER)
+            .setValue(Objects.requireNonNull(FACING), facing)
+            .setValue(Objects.requireNonNull(ACTIVE), false));
     }
 
     @Override
@@ -246,13 +248,14 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nullable LivingEntity placer,
         @Nonnull ItemStack stack
     ) {
-        Direction facing = state.getValue(FACING);
+        Direction facing = state.getValue(Objects.requireNonNull(FACING));
+        EnumProperty<MultiBlockPart> partProp = Objects.requireNonNull(PART);
         // Place all 8 blocks
         for (MultiBlockPart part : MultiBlockPart.values()) {
             if (part.isCenter()) continue; // Center is already placed
 
-            BlockPos partPos = part.getOffsetFromCenter(pos, facing);
-            level.setBlock(partPos, state.setValue(PART, part), 3);
+            BlockPos partPos = Objects.requireNonNull(part.getOffsetFromCenter(pos, facing));
+            level.setBlock(partPos, Objects.requireNonNull(state.setValue(partProp, part)), 3);
         }
     }
 
@@ -266,16 +269,18 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nonnull BlockPos pos,
         @Nonnull BlockPos neighborPos
     ) {
+        EnumProperty<MultiBlockPart> partProp = Objects.requireNonNull(PART);
+        DirectionProperty facingProp = Objects.requireNonNull(FACING);
         // If any part of the structure is broken, this block should break too
-        MultiBlockPart part = state.getValue(PART);
-        Direction facing = state.getValue(FACING);
-        BlockPos centerPos = part.getCenterFromThis(pos, facing);
+        MultiBlockPart part = state.getValue(partProp);
+        Direction facing = state.getValue(facingProp);
+        BlockPos centerPos = Objects.requireNonNull(part.getCenterFromThis(pos, facing));
 
         // Check if center still exists
         if (!part.isCenter()) {
             BlockState centerState = level.getBlockState(centerPos);
-            if (!centerState.is(this) || centerState.getValue(PART) != MultiBlockPart.CENTER) {
-                return Blocks.AIR.defaultBlockState();
+            if (!centerState.is(this) || centerState.getValue(partProp) != MultiBlockPart.CENTER) {
+                return Objects.requireNonNull(Blocks.AIR.defaultBlockState());
             }
         }
 
@@ -284,15 +289,16 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
 
     @Override
     protected boolean canSurvive(@Nonnull BlockState state, @Nonnull LevelReader level, @Nonnull BlockPos pos) {
-        MultiBlockPart part = state.getValue(PART);
+        EnumProperty<MultiBlockPart> partProp = Objects.requireNonNull(PART);
+        MultiBlockPart part = state.getValue(partProp);
         if (part.isCenter()) {
             return true;
         }
 
-        Direction facing = state.getValue(FACING);
-        BlockPos centerPos = part.getCenterFromThis(pos, facing);
+        Direction facing = state.getValue(Objects.requireNonNull(FACING));
+        BlockPos centerPos = Objects.requireNonNull(part.getCenterFromThis(pos, facing));
         BlockState centerState = level.getBlockState(centerPos);
-        return centerState.is(this) && centerState.getValue(PART) == MultiBlockPart.CENTER;
+        return centerState.is(this) && centerState.getValue(partProp) == MultiBlockPart.CENTER;
     }
 
     @Override
@@ -305,9 +311,10 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         return null;
     }
 
+    @Nonnull
     private BlockPos getCenterPos(BlockState state, BlockPos pos) {
-        Direction facing = state.getValue(FACING);
-        return state.getValue(PART).getCenterFromThis(pos, facing);
+        Direction facing = state.getValue(Objects.requireNonNull(FACING));
+        return Objects.requireNonNull(state.getValue(Objects.requireNonNull(PART)).getCenterFromThis(pos, facing));
     }
 
     @Override
@@ -333,11 +340,11 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         }
 
         // Insert bioscanner
-        boolean isBioscanner = stack.is(CloneItems.BIOSCANNER.get());
+        boolean isBioscanner = stack.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()));
         boolean hasData = BioscannerItem.hasData(stack);
 
         if (isBioscanner && hasData) {
-            boolean inserted = neurocell.insertBioscanner(stack.copy());
+            boolean inserted = neurocell.insertBioscanner(Objects.requireNonNull(stack.copy()));
             if (inserted) {
                 if (!player.isCreative()) {
                     stack.shrink(1);
@@ -359,7 +366,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nonnull BlockHitResult hit
     ) {
         if (level.isClientSide) {
-            return InteractionResult.sidedSuccess(true);
+            return Objects.requireNonNull(InteractionResult.sidedSuccess(true));
         }
 
         BlockPos centerPos = getCenterPos(state, pos);
@@ -370,11 +377,10 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
             player.openMenu(neurocell);
         }
 
-        return InteractionResult.sidedSuccess(false);
+        return Objects.requireNonNull(InteractionResult.sidedSuccess(false));
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     protected void onRemove(
         @Nonnull BlockState state,
         @Nonnull Level level,
@@ -382,16 +388,18 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nonnull BlockState newState,
         boolean isMoving
     ) {
-        if (!state.is(newState.getBlock())) {
-            MultiBlockPart part = state.getValue(PART);
-            Direction facing = state.getValue(FACING);
-            BlockPos centerPos = part.getCenterFromThis(pos, facing);
+        if (!state.is(Objects.requireNonNull(newState.getBlock()))) {
+            EnumProperty<MultiBlockPart> partProp = Objects.requireNonNull(PART);
+            DirectionProperty facingProp = Objects.requireNonNull(FACING);
+            MultiBlockPart part = state.getValue(partProp);
+            Direction facing = state.getValue(facingProp);
+            BlockPos centerPos = Objects.requireNonNull(part.getCenterFromThis(pos, facing));
 
             // Drop contents from center block
             if (part.isCenter()) {
                 BlockEntity be = level.getBlockEntity(pos);
                 if (be instanceof NeurocellLBlockEntity neurocell) {
-                    ItemStack bioscanner = neurocell.extractBioscanner();
+                    ItemStack bioscanner = Objects.requireNonNull(neurocell.extractBioscanner());
                     if (!bioscanner.isEmpty()) {
                         Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), bioscanner);
                     }
@@ -402,10 +410,10 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
             for (MultiBlockPart otherPart : MultiBlockPart.values()) {
                 if (otherPart == part) continue;
 
-                BlockPos otherPos = otherPart.getOffsetFromCenter(centerPos, facing);
+                BlockPos otherPos = Objects.requireNonNull(otherPart.getOffsetFromCenter(centerPos, facing));
                 BlockState otherState = level.getBlockState(otherPos);
                 if (otherState.is(this)) {
-                    level.setBlock(otherPos, Blocks.AIR.defaultBlockState(), 35);
+                    level.setBlock(otherPos, Objects.requireNonNull(Blocks.AIR.defaultBlockState()), 35);
                     level.levelEvent(null, 2001, otherPos, Block.getId(otherState));
                 }
             }
@@ -415,12 +423,12 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
 
     @Override
     public boolean hasAnalogOutputSignal(@Nonnull BlockState state) {
-        return state.getValue(PART).isCenter();
+        return state.getValue(Objects.requireNonNull(PART)).isCenter();
     }
 
     @Override
     public int getAnalogOutputSignal(@Nonnull BlockState state, @Nonnull Level level, @Nonnull BlockPos pos) {
-        if (!state.getValue(PART).isCenter()) {
+        if (!state.getValue(Objects.requireNonNull(PART)).isCenter()) {
             return 0;
         }
         BlockEntity be = level.getBlockEntity(pos);

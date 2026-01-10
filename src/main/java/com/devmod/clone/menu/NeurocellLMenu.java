@@ -1,5 +1,7 @@
 package com.devmod.clone.menu;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import net.minecraft.network.FriendlyByteBuf;
@@ -38,7 +40,9 @@ public class NeurocellLMenu extends AbstractContainerMenu {
      */
     public NeurocellLMenu(int containerId, Inventory playerInv, NeurocellLBlockEntity blockEntity) {
         this(containerId, playerInv, blockEntity.getInventory(),
-             ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos()));
+             ContainerLevelAccess.create(
+                 Objects.requireNonNull(blockEntity.getLevel()),
+                 Objects.requireNonNull(blockEntity.getBlockPos())));
     }
 
     /**
@@ -46,13 +50,14 @@ public class NeurocellLMenu extends AbstractContainerMenu {
      */
     private NeurocellLMenu(int containerId, Inventory playerInv, Container container, ContainerLevelAccess access) {
         super(CloneMenus.NEUROCELL_L.get(), containerId);
-        this.container = container;
-        this.access = access;
+        var containerObj = Objects.requireNonNull(container);
+        this.container = containerObj;
+        this.access = Objects.requireNonNull(access);
 
-        checkContainerSize(container, 1);
+        checkContainerSize(containerObj, 1);
 
         // Bioscanner slot (centered at 80, 35)
-        this.addSlot(new Slot(container, 0, 80, 35) {
+        this.addSlot(new Slot(containerObj, 0, 80, 35) {
             @Override
             public boolean mayPlace(@Nonnull ItemStack stack) {
                 return stack.getItem() instanceof BioscannerItem;
@@ -65,22 +70,24 @@ public class NeurocellLMenu extends AbstractContainerMenu {
         });
 
         // Player inventory (3 rows)
+        var inv = Objects.requireNonNull(playerInv);
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInv, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+                this.addSlot(new Slot(inv, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
             }
         }
 
         // Hotbar
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInv, col, 8 + col * 18, 142));
+            this.addSlot(new Slot(inv, col, 8 + col * 18, 142));
         }
     }
 
     @Override
     @Nonnull
     public ItemStack quickMoveStack(@Nonnull Player player, int index) {
-        ItemStack result = ItemStack.EMPTY;
+        var emptyStack = Objects.requireNonNull(ItemStack.EMPTY);
+        ItemStack result = emptyStack;
         Slot slot = this.slots.get(index);
 
         if (slot.hasItem()) {
@@ -90,36 +97,36 @@ public class NeurocellLMenu extends AbstractContainerMenu {
             if (index == 0) {
                 // Moving FROM neurocell slot to player inventory
                 if (!this.moveItemStackTo(slotItem, 1, 37, true)) {
-                    return ItemStack.EMPTY;
+                    return emptyStack;
                 }
             } else if (slotItem.getItem() instanceof BioscannerItem) {
                 // Moving TO neurocell slot - only BioscannerItem allowed
                 if (!this.moveItemStackTo(slotItem, 0, 1, false)) {
-                    return ItemStack.EMPTY;
+                    return emptyStack;
                 }
             } else {
                 // Not a bioscanner - move between inventory sections
                 if (index < 28) {
                     // From main inventory to hotbar
                     if (!this.moveItemStackTo(slotItem, 28, 37, false)) {
-                        return ItemStack.EMPTY;
+                        return emptyStack;
                     }
                 } else {
                     // From hotbar to main inventory
                     if (!this.moveItemStackTo(slotItem, 1, 28, false)) {
-                        return ItemStack.EMPTY;
+                        return emptyStack;
                     }
                 }
             }
 
             if (slotItem.isEmpty()) {
-                slot.setByPlayer(ItemStack.EMPTY);
+                slot.setByPlayer(emptyStack);
             } else {
                 slot.setChanged();
             }
 
             if (slotItem.getCount() == result.getCount()) {
-                return ItemStack.EMPTY;
+                return emptyStack;
             }
 
             slot.onTake(player, slotItem);
@@ -130,7 +137,10 @@ public class NeurocellLMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(@Nonnull Player player) {
-        return stillValid(this.access, player, CloneBlocks.NEUROCELL_L.get());
+        return stillValid(
+            Objects.requireNonNull(this.access),
+            player,
+            Objects.requireNonNull(CloneBlocks.NEUROCELL_L.get()));
     }
 
     /**

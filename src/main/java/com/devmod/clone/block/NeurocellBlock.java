@@ -1,14 +1,20 @@
 package com.devmod.clone.block;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.mojang.serialization.MapCodec;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -38,7 +44,9 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
+import com.devmod.clone.CloneItems;
 import com.devmod.clone.block.entity.NeurocellBlockEntity;
+import com.devmod.clone.item.BioscannerItem;
 
 /**
  * Neurocell block - the cloning chamber.
@@ -66,7 +74,7 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
     @Override
     @Nonnull
     protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
-        return CODEC;
+        return Objects.requireNonNull(CODEC);
     }
 
     public NeurocellBlock() {
@@ -74,15 +82,15 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
             .strength(4.0f)
             .requiresCorrectToolForDrops()
             .noOcclusion()
-            .lightLevel(state -> state.getValue(ACTIVE) ? 10 : 0)
+            .lightLevel(state -> state.getValue(Objects.requireNonNull(ACTIVE)) ? 10 : 0)
             .isValidSpawn((state, level, pos, type) -> false)
             .isRedstoneConductor((state, level, pos) -> false)
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false));
-        registerDefaultState(stateDefinition.any()
-            .setValue(HALF, DoubleBlockHalf.LOWER)
-            .setValue(FACING, Direction.NORTH)
-            .setValue(ACTIVE, false));
+        registerDefaultState(Objects.requireNonNull(stateDefinition.any()
+            .setValue(Objects.requireNonNull(HALF), DoubleBlockHalf.LOWER)
+            .setValue(Objects.requireNonNull(FACING), Objects.requireNonNull(Direction.NORTH))
+            .setValue(Objects.requireNonNull(ACTIVE), false)));
     }
 
     @Override
@@ -94,7 +102,7 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
     @Nullable
     public BlockEntity newBlockEntity(@Nonnull BlockPos pos, @Nonnull BlockState state) {
         // Only create block entity for lower half
-        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? new NeurocellBlockEntity(pos, state) : null;
+        return state.getValue(Objects.requireNonNull(HALF)) == DoubleBlockHalf.LOWER ? new NeurocellBlockEntity(pos, state) : null;
     }
 
     @Override
@@ -116,7 +124,7 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
         @Nonnull BlockPos pos,
         @Nonnull CollisionContext context
     ) {
-        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? SHAPE_LOWER : SHAPE_UPPER;
+        return Objects.requireNonNull(state.getValue(Objects.requireNonNull(HALF)) == DoubleBlockHalf.LOWER ? SHAPE_LOWER : SHAPE_UPPER);
     }
 
     @Override
@@ -124,14 +132,14 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
     public BlockState getStateForPlacement(@Nonnull BlockPlaceContext context) {
         BlockPos pos = context.getClickedPos();
         Level level = context.getLevel();
-        Direction facing = context.getHorizontalDirection().getOpposite();
+        Direction facing = Objects.requireNonNull(context.getHorizontalDirection().getOpposite());
 
         // Check if there's room for upper half
-        if (pos.getY() < level.getMaxBuildHeight() - 1 && level.getBlockState(pos.above()).canBeReplaced(context)) {
+        if (pos.getY() < level.getMaxBuildHeight() - 1 && level.getBlockState(Objects.requireNonNull(pos.above())).canBeReplaced(context)) {
             return defaultBlockState()
-                .setValue(HALF, DoubleBlockHalf.LOWER)
-                .setValue(FACING, facing)
-                .setValue(ACTIVE, false);
+                .setValue(Objects.requireNonNull(HALF), DoubleBlockHalf.LOWER)
+                .setValue(Objects.requireNonNull(FACING), facing)
+                .setValue(Objects.requireNonNull(ACTIVE), false);
         }
         return null;
     }
@@ -145,7 +153,9 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
         @Nonnull ItemStack stack
     ) {
         // Place upper half with same ACTIVE state
-        level.setBlock(pos.above(), state.setValue(HALF, DoubleBlockHalf.UPPER).setValue(ACTIVE, state.getValue(ACTIVE)), 3);
+        EnumProperty<DoubleBlockHalf> halfProp = Objects.requireNonNull(HALF);
+        BooleanProperty activeProp = Objects.requireNonNull(ACTIVE);
+        level.setBlock(Objects.requireNonNull(pos.above()), Objects.requireNonNull(state.setValue(halfProp, DoubleBlockHalf.UPPER).setValue(activeProp, Objects.requireNonNull(state.getValue(activeProp)))), 3);
     }
 
     @Override
@@ -158,31 +168,33 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
         @Nonnull BlockPos pos,
         @Nonnull BlockPos neighborPos
     ) {
-        DoubleBlockHalf half = state.getValue(HALF);
+        EnumProperty<DoubleBlockHalf> halfProp = Objects.requireNonNull(HALF);
+        DoubleBlockHalf half = state.getValue(halfProp);
 
         if (direction.getAxis() == Direction.Axis.Y) {
             // Lower half checks upper
             if (half == DoubleBlockHalf.LOWER && direction == Direction.UP) {
-                return neighborState.is(this) && neighborState.getValue(HALF) == DoubleBlockHalf.UPPER
+                return Objects.requireNonNull(neighborState.is(this) && neighborState.getValue(halfProp) == DoubleBlockHalf.UPPER
                     ? state
-                    : Blocks.AIR.defaultBlockState();
+                    : Blocks.AIR.defaultBlockState());
             }
             // Upper half checks lower
             if (half == DoubleBlockHalf.UPPER && direction == Direction.DOWN) {
-                return neighborState.is(this) && neighborState.getValue(HALF) == DoubleBlockHalf.LOWER
+                return Objects.requireNonNull(neighborState.is(this) && neighborState.getValue(halfProp) == DoubleBlockHalf.LOWER
                     ? state
-                    : Blocks.AIR.defaultBlockState();
+                    : Blocks.AIR.defaultBlockState());
             }
         }
 
-        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+        return Objects.requireNonNull(super.updateShape(state, direction, neighborState, level, pos, neighborPos));
     }
 
     @Override
     protected boolean canSurvive(@Nonnull BlockState state, @Nonnull LevelReader level, @Nonnull BlockPos pos) {
-        if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
-            BlockState below = level.getBlockState(pos.below());
-            return below.is(this) && below.getValue(HALF) == DoubleBlockHalf.LOWER;
+        EnumProperty<DoubleBlockHalf> halfProp = Objects.requireNonNull(HALF);
+        if (state.getValue(halfProp) == DoubleBlockHalf.UPPER) {
+            BlockState below = level.getBlockState(Objects.requireNonNull(pos.below()));
+            return below.is(this) && below.getValue(halfProp) == DoubleBlockHalf.LOWER;
         }
         return true;
     }
@@ -199,6 +211,59 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
 
     @Override
     @Nonnull
+    protected ItemInteractionResult useItemOn(
+        @Nonnull ItemStack stack,
+        @Nonnull BlockState state,
+        @Nonnull Level level,
+        @Nonnull BlockPos pos,
+        @Nonnull Player player,
+        @Nonnull InteractionHand hand,
+        @Nonnull BlockHitResult hit
+    ) {
+        if (level.isClientSide) {
+            return ItemInteractionResult.SUCCESS;
+        }
+
+        // Get the lower position (where the block entity is)
+        EnumProperty<DoubleBlockHalf> halfProp = Objects.requireNonNull(HALF);
+        BlockPos lowerPos = state.getValue(halfProp) == DoubleBlockHalf.LOWER ? pos : Objects.requireNonNull(pos.below());
+        BlockEntity be = level.getBlockEntity(lowerPos);
+
+        if (!(be instanceof NeurocellBlockEntity neurocell)) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+
+        // Try to insert bioscanner
+        boolean isBioscanner = stack.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()));
+        boolean hasData = BioscannerItem.hasData(stack);
+
+        if (isBioscanner && hasData) {
+            // Check if entity is too large before attempting insertion
+            float maxDim = BioscannerItem.getEntityMaxDimension(stack);
+            if (maxDim > NeurocellBlockEntity.MAX_ENTITY_SIZE) {
+                // Entity too large - show message
+                player.displayClientMessage(
+                    Objects.requireNonNull(Objects.requireNonNull(Component.translatable("message.devmod.entity_too_large"))
+                        .withStyle(ChatFormatting.RED)),
+                    true
+                );
+                return ItemInteractionResult.FAIL;
+            }
+
+            boolean inserted = neurocell.insertBioscanner(Objects.requireNonNull(stack.copy()));
+            if (inserted) {
+                if (!player.isCreative()) {
+                    stack.shrink(1);
+                }
+                return ItemInteractionResult.CONSUME;
+            }
+        }
+
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    @Override
+    @Nonnull
     protected InteractionResult useWithoutItem(
         @Nonnull BlockState state,
         @Nonnull Level level,
@@ -207,11 +272,12 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
         @Nonnull BlockHitResult hit
     ) {
         if (level.isClientSide) {
-            return InteractionResult.sidedSuccess(true);
+            return Objects.requireNonNull(InteractionResult.sidedSuccess(true));
         }
 
         // Get the lower position (where the block entity is)
-        BlockPos lowerPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos : pos.below();
+        EnumProperty<DoubleBlockHalf> halfProp = Objects.requireNonNull(HALF);
+        BlockPos lowerPos = state.getValue(halfProp) == DoubleBlockHalf.LOWER ? pos : Objects.requireNonNull(pos.below());
         BlockEntity be = level.getBlockEntity(lowerPos);
 
         if (be instanceof NeurocellBlockEntity neurocell) {
@@ -219,11 +285,10 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
             player.openMenu(neurocell);
         }
 
-        return InteractionResult.sidedSuccess(false);
+        return Objects.requireNonNull(InteractionResult.sidedSuccess(false));
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     protected void onRemove(
         @Nonnull BlockState state,
         @Nonnull Level level,
@@ -231,8 +296,9 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
         @Nonnull BlockState newState,
         boolean isMoving
     ) {
-        if (!state.is(newState.getBlock())) {
-            DoubleBlockHalf half = state.getValue(HALF);
+        if (!state.is(Objects.requireNonNull(newState.getBlock()))) {
+            EnumProperty<DoubleBlockHalf> halfProp = Objects.requireNonNull(HALF);
+            DoubleBlockHalf half = state.getValue(halfProp);
 
             // Drop contents from lower half
             if (half == DoubleBlockHalf.LOWER) {
@@ -244,10 +310,10 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
             }
 
             // Remove the other half
-            BlockPos otherPos = half == DoubleBlockHalf.LOWER ? pos.above() : pos.below();
+            BlockPos otherPos = half == DoubleBlockHalf.LOWER ? Objects.requireNonNull(pos.above()) : Objects.requireNonNull(pos.below());
             BlockState otherState = level.getBlockState(otherPos);
-            if (otherState.is(this) && otherState.getValue(HALF) != half) {
-                level.setBlock(otherPos, Blocks.AIR.defaultBlockState(), 35);
+            if (otherState.is(this) && otherState.getValue(halfProp) != half) {
+                level.setBlock(otherPos, Objects.requireNonNull(Blocks.AIR.defaultBlockState()), 35);
                 level.levelEvent(null, 2001, otherPos, Block.getId(otherState));
             }
         }
@@ -256,12 +322,12 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
 
     @Override
     public boolean hasAnalogOutputSignal(@Nonnull BlockState state) {
-        return state.getValue(HALF) == DoubleBlockHalf.LOWER;
+        return state.getValue(Objects.requireNonNull(HALF)) == DoubleBlockHalf.LOWER;
     }
 
     @Override
     public int getAnalogOutputSignal(@Nonnull BlockState state, @Nonnull Level level, @Nonnull BlockPos pos) {
-        if (state.getValue(HALF) != DoubleBlockHalf.LOWER) {
+        if (state.getValue(Objects.requireNonNull(HALF)) != DoubleBlockHalf.LOWER) {
             return 0;
         }
         BlockEntity be = level.getBlockEntity(pos);

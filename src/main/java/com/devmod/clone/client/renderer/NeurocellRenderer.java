@@ -2,6 +2,7 @@ package com.devmod.clone.client.renderer;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nonnull;
@@ -19,7 +20,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -68,13 +68,14 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
         }
 
         float progress = blockEntity.getCloningProgress();
-        long gameTime = blockEntity.getLevel() != null ? blockEntity.getLevel().getGameTime() : 0;
+        var level = blockEntity.getLevel();
+        long gameTime = level != null ? level.getGameTime() : 0;
         float animTime = (gameTime + partialTick) * 0.05f;
 
         // Render entity
         try {
             Optional<EntityType<?>> optType = EntityType.byString(entityTypeString);
-            if (optType.isEmpty() || blockEntity.getLevel() == null) {
+            if (optType.isEmpty() || level == null) {
                 return;
             }
 
@@ -122,7 +123,7 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
 
                 // Slow gentle rotation for suspended-in-void effect
                 float slowRotation = animTime * 8.0f;
-                poseStack.mulPose(Axis.YP.rotationDegrees(180.0f + slowRotation));
+                poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(180.0f + slowRotation)));
 
                 float entityWidth = entity.getBbWidth();
                 float entityHeight = entity.getBbHeight();
@@ -134,8 +135,8 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
                 poseStack.scale(scale * growthScale, scale * growthScale, scale * growthScale);
 
                 // Update tick for animations without adding to world
-                if (blockEntity.getLevel() != null) {
-                    entity.tickCount = (int) (blockEntity.getLevel().getGameTime() % Integer.MAX_VALUE);
+                if (level != null) {
+                    entity.tickCount = (int) (level.getGameTime() % Integer.MAX_VALUE);
                 }
 
                 if (entity instanceof LivingEntity living) {
@@ -148,14 +149,8 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
                     living.deathTime = 0;
                 }
 
-                // Render entity model DIRECTLY via EntityRenderer to bypass hitbox rendering
-                // EntityRenderDispatcher.render() adds debug hitbox, but EntityRenderer.render() does not
-                @SuppressWarnings("unchecked")
-                EntityRenderer<Entity> renderer = (EntityRenderer<Entity>) entityRenderer.getRenderer(entity);
-                if (renderer != null) {
-                    // Direct render call - no hitbox, no debug info
-                    renderer.render(entity, 0.0f, partialTick, poseStack, buffer, LightTexture.FULL_BRIGHT);
-                }
+                // Render entity model via EntityRenderDispatcher
+                entityRenderer.render(entity, 0.0, 0.0, 0.0, 0.0f, partialTick, poseStack, buffer, LightTexture.FULL_BRIGHT);
                 poseStack.popPose();
             }
         } catch (RuntimeException e) {
@@ -169,7 +164,7 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
     }
 
     private void renderEnergyEffects(PoseStack poseStack, MultiBufferSource buffer, float animTime) {
-        VertexConsumer vc = buffer.getBuffer(RenderType.lightning());
+        VertexConsumer vc = buffer.getBuffer(Objects.requireNonNull(RenderType.lightning()));
 
         poseStack.pushPose();
         poseStack.translate(0.5, 0.5, 0.5);
@@ -191,9 +186,9 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
     private void renderScanRing(PoseStack poseStack, VertexConsumer vc, float y, float radius, float rotation) {
         poseStack.pushPose();
         poseStack.translate(0, y, 0);
-        poseStack.mulPose(Axis.YP.rotationDegrees(rotation * 50.0f));
+        poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(rotation * 50.0f)));
 
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
         int segments = 32;
 
         for (int i = 0; i < segments; i++) {
@@ -222,7 +217,7 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
     }
 
     private void renderEnergyHelix(PoseStack poseStack, VertexConsumer vc, float animTime) {
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         // Continuous smooth pulsing effect using sine wave (no pauses)
         // Cycle every 5 seconds with smooth fade in/out

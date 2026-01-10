@@ -28,7 +28,7 @@ public final class CloneCreativeTab {
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CLONE_TAB = TABS.register(
         "clone",
         () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.devmod.clone"))
+            .title(Objects.requireNonNull(Component.translatable("itemGroup.devmod.clone")))
             .withTabsBefore(CreativeModeTabs.SPAWN_EGGS)
             .icon(() -> Objects.requireNonNull(CloneItems.BIOSCANNER.get().getDefaultInstance()))
             .displayItems((parameters, output) -> {

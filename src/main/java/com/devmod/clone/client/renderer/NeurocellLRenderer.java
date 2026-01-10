@@ -2,6 +2,7 @@ package com.devmod.clone.client.renderer;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nonnull;
@@ -19,7 +20,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
@@ -74,16 +74,17 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
         }
 
         float progress = blockEntity.getCloningProgress();
-        long gameTime = blockEntity.getLevel() != null ? blockEntity.getLevel().getGameTime() : 0;
+        var level = blockEntity.getLevel();
+        long gameTime = level != null ? level.getGameTime() : 0;
         float animTime = (gameTime + partialTick) * 0.05f;
 
         // Get facing direction to calculate correct entity position
         // The glass chamber rotates with the model, so the center position changes
         Direction facing = Direction.NORTH;
-        if (blockEntity.getLevel() != null) {
-            BlockState state = blockEntity.getLevel().getBlockState(blockEntity.getBlockPos());
-            if (state.hasProperty(NeurocellLBlock.FACING)) {
-                facing = state.getValue(NeurocellLBlock.FACING);
+        if (level != null) {
+            BlockState state = level.getBlockState(Objects.requireNonNull(blockEntity.getBlockPos()));
+            if (state.hasProperty(Objects.requireNonNull(NeurocellLBlock.FACING))) {
+                facing = state.getValue(Objects.requireNonNull(NeurocellLBlock.FACING));
             }
         }
 
@@ -147,7 +148,7 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
 
                 // Slow gentle rotation for suspended-in-void effect
                 float slowRotation = animTime * 8.0f;
-                poseStack.mulPose(Axis.YP.rotationDegrees(180.0f + slowRotation));
+                poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(180.0f + slowRotation)));
 
                 // Scale to fit in glass chamber (22 pixels wide = 1.375 blocks)
                 // Quadrupeds (cow, pig, horse) have body length >> getBbWidth()
@@ -169,7 +170,6 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
                 entity.setSilent(true);
 
                 // Use world time for proper animation speed (20 ticks per second)
-                var level = blockEntity.getLevel();
                 if (level != null) {
                     entity.tickCount = (int) (level.getGameTime() % Integer.MAX_VALUE);
                 }
@@ -189,12 +189,8 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
                     living.deathTime = 0;
                 }
 
-                // Render entity model DIRECTLY via EntityRenderer to bypass hitbox rendering
-                @SuppressWarnings("unchecked")
-                EntityRenderer<Entity> renderer = (EntityRenderer<Entity>) entityRenderer.getRenderer(entity);
-                if (renderer != null) {
-                    renderer.render(entity, 0.0f, partialTick, poseStack, buffer, LightTexture.FULL_BRIGHT);
-                }
+                // Render entity model via EntityRenderDispatcher
+                entityRenderer.render(entity, 0.0, 0.0, 0.0, 0.0f, partialTick, poseStack, buffer, LightTexture.FULL_BRIGHT);
 
                 poseStack.popPose();
             }
@@ -213,7 +209,7 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
      */
     private void renderEnergyEffects(PoseStack poseStack, MultiBufferSource buffer, float animTime,
                                       float centerX, float centerZ) {
-        VertexConsumer vc = buffer.getBuffer(RenderType.lightning());
+        VertexConsumer vc = buffer.getBuffer(Objects.requireNonNull(RenderType.lightning()));
 
         poseStack.pushPose();
         // Center at entity position (adjusted for facing)
@@ -236,9 +232,9 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
     private void renderScanRing(PoseStack poseStack, VertexConsumer vc, float y, float radius, float rotation) {
         poseStack.pushPose();
         poseStack.translate(0, y, 0);
-        poseStack.mulPose(Axis.YP.rotationDegrees(rotation * 50.0f));
+        poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(rotation * 50.0f)));
 
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
         int segments = 32;
 
         for (int i = 0; i < segments; i++) {
@@ -267,7 +263,7 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
     }
 
     private void renderEnergyHelix(PoseStack poseStack, VertexConsumer vc, float animTime) {
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         // Continuous smooth pulsing effect using sine wave (no pauses)
         float cycleTime = animTime % 5.0f;

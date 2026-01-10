@@ -1,5 +1,7 @@
 package com.devmod.clone;
 
+import java.util.Objects;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 
@@ -20,7 +22,7 @@ public final class CloneMenus {
     private CloneMenus() {}
 
     public static final DeferredRegister<MenuType<?>> MENUS =
-        DeferredRegister.create(Registries.MENU, DevMod.MODID);
+        DeferredRegister.create(Objects.requireNonNull(Registries.MENU), DevMod.MODID);
 
     /**
      * Neurocell menu for bioscanner storage.
@@ -40,7 +42,7 @@ public final class CloneMenus {
      * Register all menus with the mod event bus.
      */
     public static void register(IEventBus modEventBus) {
-        MENUS.register(modEventBus);
+        MENUS.register(Objects.requireNonNull(modEventBus, "modEventBus"));
         DevMod.LOGGER.debug("[Clone] Clone menus registered");
     }
 }
