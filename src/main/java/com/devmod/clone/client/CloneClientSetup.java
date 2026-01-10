@@ -15,6 +15,7 @@ import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.CloneBlocks;
 import com.devmod.clone.CloneMenus;
 import com.devmod.clone.client.screen.NeurocellScreen;
+import com.devmod.clone.client.screen.NeurocellLScreen;
 import com.devmod.clone.client.renderer.NeurocellLRenderer;
 import com.devmod.clone.client.renderer.NeurocellRenderer;
 
@@ -64,6 +65,7 @@ public final class CloneClientSetup {
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         DevMod.LOGGER.info("[Clone] Registering menu screens...");
         event.register(CloneMenus.NEUROCELL.get(), NeurocellScreen::new);
+        event.register(CloneMenus.NEUROCELL_L.get(), NeurocellLScreen::new);
         DevMod.LOGGER.info("[Clone] Menu screens registered");
     }
 }

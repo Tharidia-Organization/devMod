@@ -38,6 +38,7 @@ public final class CloneCreativeTab {
                 // Blocks in workflow order
                 output.accept(Objects.requireNonNull(CloneItems.IMPRINTER.get()));
                 output.accept(Objects.requireNonNull(CloneItems.NEUROCELL.get()));
+                output.accept(Objects.requireNonNull(CloneItems.NEUROCELL_L.get()));
                 output.accept(Objects.requireNonNull(CloneItems.NEUROLINK.get()));
                 output.accept(Objects.requireNonNull(CloneItems.REFORMER.get()));
 

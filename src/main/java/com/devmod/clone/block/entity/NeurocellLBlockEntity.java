@@ -15,20 +15,29 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Container;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.CloneItems;
+import com.devmod.clone.block.NeurocellLBlock;
+import com.devmod.clone.block.NeurocellLBlock.MultiBlockPart;
 import com.devmod.clone.item.BioscannerItem;
+import com.devmod.clone.menu.NeurocellLMenu;
 
 /**
- * Block entity for the large neurocell cloning chamber (3x3x3).
+ * Block entity for the large neurocell cloning chamber (2x2x2).
  * Can render larger entities than the standard Neurocell.
+ * Features dual texture states (active/inactive) like the standard Neurocell.
  */
-public class NeurocellLBlockEntity extends BlockEntity {
+public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider {
 
     private static final int PROCESS_TIME = 300;
     private static final String TAG_ENTITY_TYPE = "EntityType";
@@ -75,6 +84,7 @@ public class NeurocellLBlockEntity extends BlockEntity {
             this.hasRagdoll = true;
             setChanged();
             syncToClient();
+            updateActiveState(true);
         }
     }
 
@@ -89,6 +99,26 @@ public class NeurocellLBlockEntity extends BlockEntity {
         this.hasRagdoll = false;
         setChanged();
         syncToClient();
+        updateActiveState(false);
+    }
+
+    /**
+     * Update the block's ACTIVE state and sync to all 8 parts of the structure.
+     */
+    private void updateActiveState(boolean active) {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+
+        // Update all 8 blocks of the 2x2x2 structure
+        for (MultiBlockPart part : MultiBlockPart.values()) {
+            BlockPos partPos = part.getOffsetFromCenter(worldPosition);
+            BlockState partState = level.getBlockState(partPos);
+            if (partState.hasProperty(NeurocellLBlock.ACTIVE) &&
+                partState.getValue(NeurocellLBlock.ACTIVE) != active) {
+                level.setBlock(partPos, partState.setValue(NeurocellLBlock.ACTIVE, active), 3);
+            }
+        }
     }
 
     public boolean insertBioscanner(@Nonnull ItemStack bioscanner) {
@@ -287,5 +317,69 @@ public class NeurocellLBlockEntity extends BlockEntity {
     @Override
     public void handleUpdateTag(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         loadAdditional(tag, registries);
+    }
+
+    // === MenuProvider implementation ===
+
+    @Override
+    @Nonnull
+    public Component getDisplayName() {
+        return Component.translatable("block.devmod.neurocell_l");
+    }
+
+    @Override
+    @Nullable
+    public AbstractContainerMenu createMenu(int containerId, @Nonnull Inventory playerInv, @Nonnull Player player) {
+        return new NeurocellLMenu(containerId, playerInv, this);
+    }
+
+    // === Inventory access for menu ===
+
+    /**
+     * Get the inventory container for menu access.
+     */
+    @Nonnull
+    public Container getInventory() {
+        // Create a container view that syncs bidirectionally with storedBioscanner
+        SimpleContainer container = new SimpleContainer(1) {
+            @Override
+            public void setChanged() {
+                super.setChanged();
+                // Sync container back to storedBioscanner
+                storedBioscanner = this.getItem(0).copy();
+                NeurocellLBlockEntity.this.setChanged();
+                NeurocellLBlockEntity.this.onInventoryChanged();
+            }
+
+            @Override
+            public void setItem(int slot, @Nonnull ItemStack stack) {
+                super.setItem(slot, stack);
+                // Also sync immediately when item is set
+                storedBioscanner = stack.copy();
+                NeurocellLBlockEntity.this.setChanged();
+                NeurocellLBlockEntity.this.onInventoryChanged();
+            }
+
+            @Override
+            @Nonnull
+            public ItemStack removeItem(int slot, int amount) {
+                ItemStack result = super.removeItem(slot, amount);
+                // Sync after removal
+                storedBioscanner = this.getItem(0).copy();
+                NeurocellLBlockEntity.this.setChanged();
+                NeurocellLBlockEntity.this.onInventoryChanged();
+                return result;
+            }
+
+            @Override
+            @Nonnull
+            public ItemStack removeItemNoUpdate(int slot) {
+                ItemStack result = super.removeItemNoUpdate(slot);
+                storedBioscanner = this.getItem(0).copy();
+                return result;
+            }
+        };
+        container.setItem(0, storedBioscanner.copy());
+        return container;
     }
 }

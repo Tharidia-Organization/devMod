@@ -31,6 +31,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
@@ -43,52 +44,32 @@ import com.devmod.clone.block.entity.NeurocellLBlockEntity;
 import com.devmod.clone.item.BioscannerItem;
 
 /**
- * NeurocellL block - Large cloning chamber (3x3x3).
+ * NeurocellL block - Large cloning chamber (2x2x2).
  * Can render larger entities than the standard Neurocell.
+ * Features dual texture states (active/inactive) like the standard Neurocell.
  */
 public final class NeurocellLBlock extends HorizontalDirectionalBlock implements EntityBlock {
 
     public static final MapCodec<NeurocellLBlock> CODEC = simpleCodec(p -> new NeurocellLBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
 
     /**
-     * Enum representing the 27 positions in the 3x3x3 structure.
-     * Format: Y_XZ where Y is layer (BOTTOM/MIDDLE/TOP), X is x-offset, Z is z-offset
-     * CENTER is the master block with the block entity.
+     * Enum representing the 8 positions in the 2x2x2 structure.
+     * CENTER is the master block with the block entity (lower northwest corner).
      */
     public enum MultiBlockPart implements StringRepresentable {
-        // Bottom layer (Y=0) - 9 blocks
-        CENTER("center", 0, 0, 0),           // Master block with block entity
-        BOTTOM_N("bottom_n", 0, 0, -1),
-        BOTTOM_S("bottom_s", 0, 0, 1),
-        BOTTOM_E("bottom_e", 0, 1, 0),
-        BOTTOM_W("bottom_w", 0, -1, 0),
-        BOTTOM_NE("bottom_ne", 0, 1, -1),
-        BOTTOM_NW("bottom_nw", 0, -1, -1),
-        BOTTOM_SE("bottom_se", 0, 1, 1),
-        BOTTOM_SW("bottom_sw", 0, -1, 1),
+        // Lower layer (Y=0) - 4 blocks
+        CENTER("center", 0, 0, 0),          // Master block with block entity (NW)
+        LOWER_E("lower_e", 0, 1, 0),        // East of center
+        LOWER_S("lower_s", 0, 0, 1),        // South of center
+        LOWER_SE("lower_se", 0, 1, 1),      // Southeast corner
 
-        // Middle layer (Y=1) - 9 blocks
-        MIDDLE_C("middle_c", 1, 0, 0),
-        MIDDLE_N("middle_n", 1, 0, -1),
-        MIDDLE_S("middle_s", 1, 0, 1),
-        MIDDLE_E("middle_e", 1, 1, 0),
-        MIDDLE_W("middle_w", 1, -1, 0),
-        MIDDLE_NE("middle_ne", 1, 1, -1),
-        MIDDLE_NW("middle_nw", 1, -1, -1),
-        MIDDLE_SE("middle_se", 1, 1, 1),
-        MIDDLE_SW("middle_sw", 1, -1, 1),
-
-        // Top layer (Y=2) - 9 blocks
-        TOP_C("top_c", 2, 0, 0),
-        TOP_N("top_n", 2, 0, -1),
-        TOP_S("top_s", 2, 0, 1),
-        TOP_E("top_e", 2, 1, 0),
-        TOP_W("top_w", 2, -1, 0),
-        TOP_NE("top_ne", 2, 1, -1),
-        TOP_NW("top_nw", 2, -1, -1),
-        TOP_SE("top_se", 2, 1, 1),
-        TOP_SW("top_sw", 2, -1, 1);
+        // Upper layer (Y=1) - 4 blocks
+        UPPER_C("upper_c", 1, 0, 0),        // Above center
+        UPPER_E("upper_e", 1, 1, 0),        // Above lower_e
+        UPPER_S("upper_s", 1, 0, 1),        // Above lower_s
+        UPPER_SE("upper_se", 1, 1, 1);      // Above lower_se
 
         private final String name;
         private final int yOffset;
@@ -123,6 +104,10 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         public boolean isCenter() {
             return this == CENTER;
         }
+
+        public boolean isLowerLayer() {
+            return yOffset == 0;
+        }
     }
 
     public static final EnumProperty<MultiBlockPart> PART = EnumProperty.create("part", MultiBlockPart.class);
@@ -138,19 +123,20 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
             .strength(4.0f)
             .requiresCorrectToolForDrops()
             .noOcclusion()
-            .lightLevel(state -> 12)
+            .lightLevel(state -> state.getValue(ACTIVE) ? 12 : 0)
             .isValidSpawn((state, level, pos, type) -> false)
             .isRedstoneConductor((state, level, pos) -> false)
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false));
         registerDefaultState(stateDefinition.any()
             .setValue(PART, MultiBlockPart.CENTER)
-            .setValue(FACING, Direction.NORTH));
+            .setValue(FACING, Direction.NORTH)
+            .setValue(ACTIVE, false));
     }
 
     @Override
     protected void createBlockStateDefinition(@Nonnull StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(PART, FACING);
+        builder.add(PART, FACING, ACTIVE);
     }
 
     @Override
@@ -181,13 +167,13 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nonnull CollisionContext context
     ) {
         MultiBlockPart part = state.getValue(PART);
-        // Return shape offset to cover the full 3x3x3 structure
+        // Return shape offset to cover the full 2x2x2 structure
         return Shapes.box(
-            -1.0 - part.getXOffset(),
+            0.0 - part.getXOffset(),
             0.0 - part.getYOffset(),
-            -1.0 - part.getZOffset(),
+            0.0 - part.getZOffset(),
             2.0 - part.getXOffset(),
-            3.0 - part.getYOffset(),
+            2.0 - part.getYOffset(),
             2.0 - part.getZOffset()
         );
     }
@@ -199,7 +185,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         Level level = context.getLevel();
         Direction facing = context.getHorizontalDirection().getOpposite();
 
-        // Check if all 27 positions are available
+        // Check if all 8 positions are available
         for (MultiBlockPart part : MultiBlockPart.values()) {
             BlockPos partPos = part.getOffsetFromCenter(pos);
             if (partPos.getY() >= level.getMaxBuildHeight() || !level.getBlockState(partPos).canBeReplaced(context)) {
@@ -209,7 +195,8 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
 
         return defaultBlockState()
             .setValue(PART, MultiBlockPart.CENTER)
-            .setValue(FACING, facing);
+            .setValue(FACING, facing)
+            .setValue(ACTIVE, false);
     }
 
     @Override
@@ -220,7 +207,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nullable LivingEntity placer,
         @Nonnull ItemStack stack
     ) {
-        // Place all 27 blocks
+        // Place all 8 blocks
         for (MultiBlockPart part : MultiBlockPart.values()) {
             if (part.isCenter()) continue; // Center is already placed
 
@@ -329,25 +316,18 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nonnull BlockHitResult hit
     ) {
         if (level.isClientSide) {
-            return InteractionResult.SUCCESS;
+            return InteractionResult.sidedSuccess(true);
         }
 
         BlockPos centerPos = getCenterPos(state, pos);
         BlockEntity be = level.getBlockEntity(centerPos);
 
         if (be instanceof NeurocellLBlockEntity neurocell) {
-            ItemStack extracted = neurocell.extractBioscanner();
-            if (!extracted.isEmpty()) {
-                if (!player.addItem(extracted)) {
-                    Containers.dropItemStack(level, pos.getX(), pos.getY() + 1, pos.getZ(), extracted);
-                }
-                return InteractionResult.CONSUME;
-            }
-
-            neurocell.showStatus(player);
+            // Open the GUI
+            player.openMenu(neurocell);
         }
 
-        return InteractionResult.CONSUME;
+        return InteractionResult.sidedSuccess(false);
     }
 
     @Override

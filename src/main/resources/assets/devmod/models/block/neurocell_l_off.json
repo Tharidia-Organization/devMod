@@ -1,12 +1,12 @@
 {
   "render_type": "minecraft:translucent",
   "textures": {
-    "base": "devmod:block/neurocell_base",
-    "base_top": "devmod:block/neurocell_base_top",
-    "frame": "devmod:block/neurocell_pillar",
-    "floor": "devmod:block/neurocell_floor",
-    "glass": "devmod:block/neurocell_glass",
-    "particle": "devmod:block/neurocell_base"
+    "base": "devmod:block/neurocell_base_off",
+    "base_top": "devmod:block/neurocell_base_top_off",
+    "frame": "devmod:block/neurocell_pillar_off",
+    "floor": "devmod:block/neurocell_floor_off",
+    "glass": "devmod:block/neurocell_glass_off",
+    "particle": "devmod:block/neurocell_base_off"
   },
   "elements": [
     {

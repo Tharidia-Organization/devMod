@@ -20,23 +20,19 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 
-import com.devmod.DevMod;
 import com.devmod.clone.block.entity.NeurocellLBlockEntity;
 
 /**
- * Renderer for the Large Neurocell block entity (3x3x3).
- * Renders the glass chamber structure and larger entities.
+ * Renderer for the Large Neurocell block entity (2x2x2).
+ * Renders the entity inside the chamber with energy effects.
+ * The glass chamber is now part of the block model (not rendered here).
  */
 public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEntity> {
-
-    private static final ResourceLocation NEUROCELL_TEXTURE = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "block/neurocell");
 
     private final EntityRenderDispatcher entityRenderer;
 
@@ -61,9 +57,6 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
         int light,
         int overlay
     ) {
-        // Always render the glass chamber structure
-        renderChamber(poseStack, buffer, light, overlay);
-
         // Check if we have an entity to render
         String entityTypeString = blockEntity.getEntityType();
         if (entityTypeString == null || entityTypeString.isEmpty()) {
@@ -78,14 +71,10 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
         }
 
         float progress = blockEntity.getCloningProgress();
+        long gameTime = blockEntity.getLevel() != null ? blockEntity.getLevel().getGameTime() : 0;
+        float animTime = (gameTime + partialTick) * 0.05f;
 
         try {
-            // Parse entity type
-            ResourceLocation entityTypeId = ResourceLocation.tryParse(entityTypeString);
-            if (entityTypeId == null) {
-                return;
-            }
-
             Optional<EntityType<?>> optType = EntityType.byString(entityTypeString);
             if (optType.isEmpty() || blockEntity.getLevel() == null) {
                 return;
@@ -123,20 +112,25 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
             if (entity != null) {
                 poseStack.pushPose();
 
-                // Position in center of 3x3x3 chamber
-                // Center is at (0.5, 1.5, 0.5) - middle of the structure
-                poseStack.translate(0.5, 1.5, 0.5);
+                // Position in center of 2x2x2 chamber (X/Z center at 1.0, Y just above floor)
+                // Glass chamber: [5,7,5] to [27,32,27] = 22x25 pixels = 1.375x1.5625 blocks
+                // Floor at Y=7 pixels = 0.4375 blocks, so entity at ~0.5625 like 1x2
+                float bobOffset = Mth.sin(animTime * 0.8f) * 0.03f;
+                poseStack.translate(1.0, 0.5625 + bobOffset, 1.0);
 
-                // Fixed rotation - entities face forward
-                poseStack.mulPose(Axis.YP.rotationDegrees(180.0f));
+                // Slow gentle rotation for suspended-in-void effect
+                float slowRotation = animTime * 8.0f;
+                poseStack.mulPose(Axis.YP.rotationDegrees(180.0f + slowRotation));
 
-                // Scale to fit in larger chamber (targetSize 2.5 for 3x3x3)
+                // Scale to fit in glass chamber (22 pixels wide = 1.375 blocks)
+                // Quadrupeds (cow, pig, horse) have body length >> getBbWidth()
+                // Use higher margin (1.8) to account for rotated long bodies
                 float entityWidth = entity.getBbWidth();
                 float entityHeight = entity.getBbHeight();
-                float visualMargin = 1.3f;
+                float visualMargin = 1.8f; // Accounts for quadruped body length when rotated
                 float visualWidth = entityWidth * visualMargin;
                 float maxDimension = Math.max(visualWidth, entityHeight);
-                float targetSize = 2.5f; // Much larger than standard Neurocell (0.85)
+                float targetSize = 1.0f; // Conservative to keep all entities inside glass
                 float scale = maxDimension > targetSize ? targetSize / maxDimension : 1.0f;
                 scale = Math.max(0.1f, scale);
 
@@ -163,6 +157,9 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
                     living.yHeadRotO = living.yHeadRot;
                     living.xRotO = living.getXRot();
                     living.yRotO = living.getYRot();
+                    // Disable hurt animation and other visual effects
+                    living.hurtTime = 0;
+                    living.deathTime = 0;
                 }
 
                 // Render entity model DIRECTLY via EntityRenderer to bypass hitbox rendering
@@ -177,170 +174,119 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
         } catch (RuntimeException e) {
             // Silently ignore rendering errors
         }
+
+        // Render energy effects when entity is present
+        if (isCloning || hasRagdoll) {
+            renderEnergyEffects(poseStack, buffer, animTime);
+        }
     }
 
     /**
-     * Render the glass chamber structure (3x3x3).
+     * Render energy effects around the entity (scanning rings and helix).
      */
-    @SuppressWarnings("deprecation")
-    private void renderChamber(PoseStack poseStack, MultiBufferSource buffer, int light, int overlay) {
+    private void renderEnergyEffects(PoseStack poseStack, MultiBufferSource buffer, float animTime) {
+        VertexConsumer vc = buffer.getBuffer(RenderType.lightning());
+
         poseStack.pushPose();
+        // Center X/Z at 1.0, Y at entity position (0.5625)
+        poseStack.translate(1.0, 0.5, 1.0);
 
-        // Get the texture sprite
-        TextureAtlasSprite sprite = Minecraft.getInstance()
-            .getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
-            .apply(NEUROCELL_TEXTURE);
+        // Scanning ring that moves up and down (scaled for 1.2 target size)
+        float scanY = 0.3f + 1.0f * (0.5f + 0.5f * Mth.sin(animTime * 1.2f));
+        renderScanRing(poseStack, vc, scanY, 0.55f, animTime);
 
-        VertexConsumer vertexConsumer = buffer.getBuffer(RenderType.translucent());
-        Matrix4f matrix = poseStack.last().pose();
+        // Second ring moving opposite
+        float scanY2 = 1.3f - 1.0f * (0.5f + 0.5f * Mth.sin(animTime * 1.2f));
+        renderScanRing(poseStack, vc, scanY2, 0.50f, -animTime);
 
-        // Chamber dimensions (in blocks, relative to center block)
-        float minX = -1.0f;    // One block west
-        float maxX = 2.0f;     // Two blocks east (center + one)
-        float minY = 0.0f;     // Floor at Y=0
-        float maxY = 3.0f;     // Three blocks tall
-        float minZ = -1.0f;    // One block north
-        float maxZ = 2.0f;     // Two blocks south
-
-        // Wall thickness
-        float thickness = 0.0625f; // 1 pixel
-
-        // Glass tint (slightly cyan like the neurocell)
-        int r = 180, g = 220, b = 255, a = 180;
-
-        // UV coordinates from sprite
-        float u0 = sprite.getU0();
-        float u1 = sprite.getU1();
-        float v0 = sprite.getV0();
-        float v1 = sprite.getV1();
-
-        // === FLOOR (bottom) ===
-        renderQuad(vertexConsumer, matrix,
-            minX, minY, minZ,
-            maxX, minY, minZ,
-            maxX, minY, maxZ,
-            minX, minY, maxZ,
-            0, -1, 0, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // === CEILING (top) ===
-        renderQuad(vertexConsumer, matrix,
-            minX, maxY, maxZ,
-            maxX, maxY, maxZ,
-            maxX, maxY, minZ,
-            minX, maxY, minZ,
-            0, 1, 0, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // === NORTH WALL (Z = minZ) - outside ===
-        renderQuad(vertexConsumer, matrix,
-            maxX, minY, minZ,
-            minX, minY, minZ,
-            minX, maxY, minZ,
-            maxX, maxY, minZ,
-            0, 0, -1, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // === SOUTH WALL (Z = maxZ) - outside ===
-        renderQuad(vertexConsumer, matrix,
-            minX, minY, maxZ,
-            maxX, minY, maxZ,
-            maxX, maxY, maxZ,
-            minX, maxY, maxZ,
-            0, 0, 1, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // === WEST WALL (X = minX) - outside ===
-        renderQuad(vertexConsumer, matrix,
-            minX, minY, minZ,
-            minX, minY, maxZ,
-            minX, maxY, maxZ,
-            minX, maxY, minZ,
-            -1, 0, 0, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // === EAST WALL (X = maxX) - outside ===
-        renderQuad(vertexConsumer, matrix,
-            maxX, minY, maxZ,
-            maxX, minY, minZ,
-            maxX, maxY, minZ,
-            maxX, maxY, maxZ,
-            1, 0, 0, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // === Inside faces (for proper translucency) ===
-        float inMinX = minX + thickness;
-        float inMaxX = maxX - thickness;
-        float inMinY = minY + thickness;
-        float inMaxY = maxY - thickness;
-        float inMinZ = minZ + thickness;
-        float inMaxZ = maxZ - thickness;
-
-        // Floor inside
-        renderQuad(vertexConsumer, matrix,
-            inMinX, inMinY, inMaxZ,
-            inMaxX, inMinY, inMaxZ,
-            inMaxX, inMinY, inMinZ,
-            inMinX, inMinY, inMinZ,
-            0, 1, 0, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // Ceiling inside
-        renderQuad(vertexConsumer, matrix,
-            inMinX, inMaxY, inMinZ,
-            inMaxX, inMaxY, inMinZ,
-            inMaxX, inMaxY, inMaxZ,
-            inMinX, inMaxY, inMaxZ,
-            0, -1, 0, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // North wall inside
-        renderQuad(vertexConsumer, matrix,
-            inMinX, inMinY, inMinZ + thickness,
-            inMaxX, inMinY, inMinZ + thickness,
-            inMaxX, inMaxY, inMinZ + thickness,
-            inMinX, inMaxY, inMinZ + thickness,
-            0, 0, 1, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // South wall inside
-        renderQuad(vertexConsumer, matrix,
-            inMaxX, inMinY, inMaxZ - thickness,
-            inMinX, inMinY, inMaxZ - thickness,
-            inMinX, inMaxY, inMaxZ - thickness,
-            inMaxX, inMaxY, inMaxZ - thickness,
-            0, 0, -1, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // West wall inside
-        renderQuad(vertexConsumer, matrix,
-            inMinX + thickness, inMinY, inMaxZ,
-            inMinX + thickness, inMinY, inMinZ,
-            inMinX + thickness, inMaxY, inMinZ,
-            inMinX + thickness, inMaxY, inMaxZ,
-            1, 0, 0, u0, v0, u1, v1, r, g, b, a, light, overlay);
-
-        // East wall inside
-        renderQuad(vertexConsumer, matrix,
-            inMaxX - thickness, inMinY, inMinZ,
-            inMaxX - thickness, inMinY, inMaxZ,
-            inMaxX - thickness, inMaxY, inMaxZ,
-            inMaxX - thickness, inMaxY, inMinZ,
-            -1, 0, 0, u0, v0, u1, v1, r, g, b, a, light, overlay);
+        // Rotating energy helix
+        renderEnergyHelix(poseStack, vc, animTime);
 
         poseStack.popPose();
     }
 
-    private void renderQuad(
-        VertexConsumer consumer, Matrix4f matrix,
-        float x1, float y1, float z1,
-        float x2, float y2, float z2,
-        float x3, float y3, float z3,
-        float x4, float y4, float z4,
-        float nx, float ny, float nz,
-        float u0, float v0, float u1, float v1,
-        int r, int g, int b, int a,
-        int light, int overlay
-    ) {
-        consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setUv(u0, v1).setOverlay(overlay).setLight(light).setNormal(nx, ny, nz);
-        consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setUv(u1, v1).setOverlay(overlay).setLight(light).setNormal(nx, ny, nz);
-        consumer.addVertex(matrix, x3, y3, z3).setColor(r, g, b, a).setUv(u1, v0).setOverlay(overlay).setLight(light).setNormal(nx, ny, nz);
-        consumer.addVertex(matrix, x4, y4, z4).setColor(r, g, b, a).setUv(u0, v0).setOverlay(overlay).setLight(light).setNormal(nx, ny, nz);
+    private void renderScanRing(PoseStack poseStack, VertexConsumer vc, float y, float radius, float rotation) {
+        poseStack.pushPose();
+        poseStack.translate(0, y, 0);
+        poseStack.mulPose(Axis.YP.rotationDegrees(rotation * 50.0f));
+
+        Matrix4f matrix = poseStack.last().pose();
+        int segments = 32;
+
+        for (int i = 0; i < segments; i++) {
+            float angle1 = (float) (i * 2 * Math.PI / segments);
+            float angle2 = (float) ((i + 1) * 2 * Math.PI / segments);
+
+            float x1 = Mth.cos(angle1) * radius;
+            float z1 = Mth.sin(angle1) * radius;
+            float x2 = Mth.cos(angle2) * radius;
+            float z2 = Mth.sin(angle2) * radius;
+
+            // Brightness pulse around ring
+            float brightness = 0.5f + 0.5f * Mth.sin(angle1 * 4 + rotation * 2);
+            int alpha = (int)(brightness * 220);
+            int r = 0, g = (int)(220 + brightness * 35), b = 255;
+
+            // Ring line (thin quad)
+            float h = 0.02f;
+            vc.addVertex(matrix, x1, -h, z1).setColor(r, g, b, alpha).setNormal(0, 1, 0);
+            vc.addVertex(matrix, x2, -h, z2).setColor(r, g, b, alpha).setNormal(0, 1, 0);
+            vc.addVertex(matrix, x2, h, z2).setColor(r, g, b, alpha).setNormal(0, 1, 0);
+            vc.addVertex(matrix, x1, h, z1).setColor(r, g, b, alpha).setNormal(0, 1, 0);
+        }
+
+        poseStack.popPose();
+    }
+
+    private void renderEnergyHelix(PoseStack poseStack, VertexConsumer vc, float animTime) {
+        Matrix4f matrix = poseStack.last().pose();
+
+        // Continuous smooth pulsing effect using sine wave (no pauses)
+        float cycleTime = animTime % 5.0f;
+        float fadeMultiplier = 0.5f + 0.5f * Mth.sin((cycleTime / 5.0f) * 6.28318f - 1.5708f);
+
+        // Two intertwined helixes
+        for (int helix = 0; helix < 2; helix++) {
+            float phaseOffset = helix * 3.14159f;
+
+            for (int i = 0; i < 40; i++) {
+                float t = i / 40.0f;
+                // Helix Y range matches entity position (0.1 to 1.5 above the translate point)
+                float y = 0.1f + t * 1.4f;
+                float angle = t * 6.28318f * 2 + animTime * 2.0f + phaseOffset;
+                // Radius scaled for 1.2 target size (slightly smaller than glass)
+                float radius = 0.45f + 0.04f * Mth.sin(t * 6.28f);
+
+                float x = Mth.cos(angle) * radius;
+                float z = Mth.sin(angle) * radius;
+
+                // Particle size
+                float size = 0.018f + 0.008f * Mth.sin(t * 12.56f + animTime * 3);
+
+                // Color shifts along helix
+                int r = helix == 0 ? 0 : 20;
+                int g = (int)(160 + 30 * t);
+                int b = 200;
+                int alpha = (int)((25 + 15 * (1 - t)) * fadeMultiplier);
+
+                // Front face
+                vc.addVertex(matrix, x - size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 0, 1);
+                vc.addVertex(matrix, x + size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 0, 1);
+                vc.addVertex(matrix, x + size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 0, 1);
+                vc.addVertex(matrix, x - size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 0, 1);
+
+                // Back face (reverse winding for visibility from both sides)
+                vc.addVertex(matrix, x + size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 0, -1);
+                vc.addVertex(matrix, x - size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 0, -1);
+                vc.addVertex(matrix, x - size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 0, -1);
+                vc.addVertex(matrix, x + size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 0, -1);
+            }
+        }
     }
 
     @Override
     public boolean shouldRenderOffScreen(@Nonnull NeurocellLBlockEntity blockEntity) {
-        // Render even when the block is at the edge of the screen (large block)
+        // Render even when the block is at the edge of the screen (multi-block structure)
         return true;
     }
 }

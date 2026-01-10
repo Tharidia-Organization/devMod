@@ -10,6 +10,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
 import com.devmod.clone.menu.NeurocellMenu;
+import com.devmod.clone.menu.NeurocellLMenu;
 
 /**
  * Clone module menu registrations.
@@ -27,6 +28,13 @@ public final class CloneMenus {
     public static final DeferredHolder<MenuType<?>, MenuType<NeurocellMenu>> NEUROCELL =
         MENUS.register("neurocell", () ->
             IMenuTypeExtension.create(NeurocellMenu::new));
+
+    /**
+     * NeurocellL menu for bioscanner storage (2x2x2 large chamber).
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<NeurocellLMenu>> NEUROCELL_L =
+        MENUS.register("neurocell_l", () ->
+            IMenuTypeExtension.create(NeurocellLMenu::new));
 
     /**
      * Register all menus with the mod event bus.
