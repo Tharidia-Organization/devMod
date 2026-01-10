@@ -2980,6 +2980,9 @@
   "message.devmod.reformer.waiting": "Waiting for clone data...",
   "message.devmod.reformer.not_connected": "Not connected to Neurocell!",
 
+  "block.devmod.centrifuge": "Centrifuge",
+  "container.devmod.centrifuge": "Centrifuge",
+
   "entity.devmod.player_clone": "Clone",
   "message.devmod.clone.mode_follow": "Mode: Follow",
   "message.devmod.clone.mode_guard": "Mode: Guard",

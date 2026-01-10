@@ -7,6 +7,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import com.devmod.DevMod;
+import com.devmod.clone.block.CentrifugeBlock;
 import com.devmod.clone.block.ImprinterBlock;
 import com.devmod.clone.block.NeurocellBlock;
 import com.devmod.clone.block.NeurocellLBlock;
@@ -77,6 +78,15 @@ public final class CloneBlocks {
     public static final DeferredHolder<Block, NeurocellLBlock> NEUROCELL_L = DevMod.BLOCKS.register(
         "neurocell_l",
         NeurocellLBlock::new
+    );
+
+    /**
+     * The centrifuge block.
+     * Automatic crafting machine for the clone module.
+     */
+    public static final DeferredHolder<Block, CentrifugeBlock> CENTRIFUGE = DevMod.BLOCKS.register(
+        "centrifuge",
+        CentrifugeBlock::new
     );
 
     /**

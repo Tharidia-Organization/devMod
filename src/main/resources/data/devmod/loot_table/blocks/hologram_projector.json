@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "devmod:hologram"
+          "name": "devmod:hologram_projector"
         }
       ]
     }

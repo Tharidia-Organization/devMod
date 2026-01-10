@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "devmod:block/hologram_projector"
+    },
+    "facing=south": {
+      "model": "devmod:block/hologram_projector",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "devmod:block/hologram_projector",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "devmod:block/hologram_projector",
+      "y": 90
+    }
+  }
+}

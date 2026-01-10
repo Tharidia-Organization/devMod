@@ -3,7 +3,7 @@
   "category": "misc",
   "group": "portal_igniters",
   "pattern": [
-    "D",
+    "D ",
     "FI"
   ],
   "key": {

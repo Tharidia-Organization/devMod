@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "devmod:block/entity_scanner"
+    },
+    "facing=south": {
+      "model": "devmod:block/entity_scanner",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "devmod:block/entity_scanner",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "devmod:block/entity_scanner",
+      "y": 90
+    }
+  }
+}

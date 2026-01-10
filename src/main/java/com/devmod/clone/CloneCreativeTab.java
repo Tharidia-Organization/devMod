@@ -12,6 +12,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
+import com.devmod.hologram.HologramItems;
 
 /**
  * Creative mode tab for Clone system items.
@@ -44,6 +45,12 @@ public final class CloneCreativeTab {
 
                 // Teleportation
                 output.accept(Objects.requireNonNull(CloneItems.TELEPAD.get()));
+
+                // Processing
+                output.accept(Objects.requireNonNull(CloneItems.CENTRIFUGE.get()));
+
+                // Hologram
+                output.accept(Objects.requireNonNull(HologramItems.HOLOGRAM_PROJECTOR.get()));
             })
             .build()
     );

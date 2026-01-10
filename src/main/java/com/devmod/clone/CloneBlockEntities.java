@@ -14,6 +14,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
+import com.devmod.clone.block.entity.CentrifugeBlockEntity;
 import com.devmod.clone.block.entity.ImprinterBlockEntity;
 import com.devmod.clone.block.entity.NeurocellBlockEntity;
 import com.devmod.clone.block.entity.NeurocellLBlockEntity;
@@ -99,6 +100,18 @@ public final class CloneBlockEntities {
             BlockEntityType.Builder.of(
                 NeurocellLBlockEntity::new,
                 CloneBlocks.NEUROCELL_L.get()
+            ).build(noDataFixer())
+        );
+
+    /**
+     * The centrifuge block entity.
+     * Handles automatic crafting processing.
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CentrifugeBlockEntity>> CENTRIFUGE =
+        BLOCK_ENTITY_TYPES.register("centrifuge", () ->
+            BlockEntityType.Builder.of(
+                CentrifugeBlockEntity::new,
+                CloneBlocks.CENTRIFUGE.get()
             ).build(noDataFixer())
         );
 

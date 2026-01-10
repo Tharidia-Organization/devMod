@@ -80,6 +80,22 @@ public final class DesignTokens {
     }
 
     // ===========================================================================
+    // TEXTURE ATLAS COLORS
+    // ===========================================================================
+
+    /** Colors used for dynamic texture atlas generation (entity billboards, etc.) */
+    public static final class TextureAtlas {
+        /** Fully transparent (ARGB = 0) */
+        public static final int TRANSPARENT = 0x00000000;
+        /** Light gray for placeholder checkerboard */
+        public static final int PLACEHOLDER_LIGHT = 0xFF606060;
+        /** Dark gray for placeholder checkerboard */
+        public static final int PLACEHOLDER_DARK = 0xFF404040;
+
+        private TextureAtlas() {}
+    }
+
+    // ===========================================================================
     // COLOR TOKENS - BACKGROUNDS (5 levels)
     // ===========================================================================
 

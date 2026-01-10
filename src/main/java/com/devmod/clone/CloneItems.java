@@ -72,6 +72,14 @@ public final class CloneItems {
     );
 
     /**
+     * The centrifuge block item.
+     */
+    public static final DeferredHolder<Item, BlockItem> CENTRIFUGE = DevMod.ITEMS.register(
+        "centrifuge",
+        () -> new BlockItem(java.util.Objects.requireNonNull(CloneBlocks.CENTRIFUGE.get()), new Item.Properties())
+    );
+
+    /**
      * Called during mod initialization to ensure items are registered.
      */
     public static void init() {

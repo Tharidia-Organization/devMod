@@ -11,6 +11,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
+import com.devmod.clone.menu.CentrifugeMenu;
 import com.devmod.clone.menu.NeurocellMenu;
 import com.devmod.clone.menu.NeurocellLMenu;
 
@@ -37,6 +38,13 @@ public final class CloneMenus {
     public static final DeferredHolder<MenuType<?>, MenuType<NeurocellLMenu>> NEUROCELL_L =
         MENUS.register("neurocell_l", () ->
             IMenuTypeExtension.create(NeurocellLMenu::new));
+
+    /**
+     * Centrifuge menu for automatic crafting.
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<CentrifugeMenu>> CENTRIFUGE =
+        MENUS.register("centrifuge", () ->
+            IMenuTypeExtension.create(CentrifugeMenu::new));
 
     /**
      * Register all menus with the mod event bus.
