@@ -27,6 +27,7 @@ import net.minecraft.world.MenuProvider;
 
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.CloneItems;
+import com.devmod.clone.block.NeurocellBlock;
 import com.devmod.clone.data.BioscanData;
 import com.devmod.clone.item.BioscannerItem;
 import com.devmod.clone.menu.NeurocellMenu;
@@ -102,6 +103,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
                 this.entityType, this.entityName, this.hasRagdoll);
             setChanged();
             syncToClient();
+            updateActiveState(true);
         }
     }
 
@@ -116,6 +118,27 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
         this.hasRagdoll = false;
         setChanged();
         syncToClient();
+        updateActiveState(false);
+    }
+
+    /**
+     * Update the block's ACTIVE state and sync to both halves.
+     */
+    private void updateActiveState(boolean active) {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        BlockState currentState = level.getBlockState(worldPosition);
+        if (currentState.hasProperty(NeurocellBlock.ACTIVE) && currentState.getValue(NeurocellBlock.ACTIVE) != active) {
+            // Update lower half
+            level.setBlock(worldPosition, currentState.setValue(NeurocellBlock.ACTIVE, active), 3);
+            // Update upper half
+            BlockPos upperPos = worldPosition.above();
+            BlockState upperState = level.getBlockState(upperPos);
+            if (upperState.hasProperty(NeurocellBlock.ACTIVE)) {
+                level.setBlock(upperPos, upperState.setValue(NeurocellBlock.ACTIVE, active), 3);
+            }
+        }
     }
 
     /**
@@ -356,16 +379,46 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
      */
     @Nonnull
     public Container getInventory() {
-        // Create a container view of the stored bioscanner
+        // Create a container view that syncs bidirectionally with storedBioscanner
         SimpleContainer container = new SimpleContainer(1) {
             @Override
             public void setChanged() {
                 super.setChanged();
+                // Sync container back to storedBioscanner
+                storedBioscanner = this.getItem(0).copy();
                 NeurocellBlockEntity.this.setChanged();
                 NeurocellBlockEntity.this.onInventoryChanged();
             }
+
+            @Override
+            public void setItem(int slot, @Nonnull ItemStack stack) {
+                super.setItem(slot, stack);
+                // Also sync immediately when item is set
+                storedBioscanner = stack.copy();
+                NeurocellBlockEntity.this.setChanged();
+                NeurocellBlockEntity.this.onInventoryChanged();
+            }
+
+            @Override
+            @Nonnull
+            public ItemStack removeItem(int slot, int amount) {
+                ItemStack result = super.removeItem(slot, amount);
+                // Sync after removal
+                storedBioscanner = this.getItem(0).copy();
+                NeurocellBlockEntity.this.setChanged();
+                NeurocellBlockEntity.this.onInventoryChanged();
+                return result;
+            }
+
+            @Override
+            @Nonnull
+            public ItemStack removeItemNoUpdate(int slot) {
+                ItemStack result = super.removeItemNoUpdate(slot);
+                storedBioscanner = this.getItem(0).copy();
+                return result;
+            }
         };
-        container.setItem(0, storedBioscanner);
+        container.setItem(0, storedBioscanner.copy());
         return container;
     }
 

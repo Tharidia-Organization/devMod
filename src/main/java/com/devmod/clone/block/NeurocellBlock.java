@@ -29,6 +29,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
@@ -56,6 +57,7 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
     public static final MapCodec<NeurocellBlock> CODEC = simpleCodec(p -> new NeurocellBlock());
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
 
     // Hitbox shapes - lower half extends 2 blocks up
     private static final VoxelShape SHAPE_LOWER = Shapes.box(0.0, 0.0, 0.0, 1.0, 2.0, 1.0);
@@ -72,19 +74,20 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
             .strength(4.0f)
             .requiresCorrectToolForDrops()
             .noOcclusion()
-            .lightLevel(state -> 10)
+            .lightLevel(state -> state.getValue(ACTIVE) ? 10 : 0)
             .isValidSpawn((state, level, pos, type) -> false)
             .isRedstoneConductor((state, level, pos) -> false)
             .isSuffocating((state, level, pos) -> false)
             .isViewBlocking((state, level, pos) -> false));
         registerDefaultState(stateDefinition.any()
             .setValue(HALF, DoubleBlockHalf.LOWER)
-            .setValue(FACING, Direction.NORTH));
+            .setValue(FACING, Direction.NORTH)
+            .setValue(ACTIVE, false));
     }
 
     @Override
     protected void createBlockStateDefinition(@Nonnull StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(HALF, FACING);
+        builder.add(HALF, FACING, ACTIVE);
     }
 
     @Override
@@ -127,7 +130,8 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
         if (pos.getY() < level.getMaxBuildHeight() - 1 && level.getBlockState(pos.above()).canBeReplaced(context)) {
             return defaultBlockState()
                 .setValue(HALF, DoubleBlockHalf.LOWER)
-                .setValue(FACING, facing);
+                .setValue(FACING, facing)
+                .setValue(ACTIVE, false);
         }
         return null;
     }
@@ -140,8 +144,8 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
         @Nullable LivingEntity placer,
         @Nonnull ItemStack stack
     ) {
-        // Place upper half
-        level.setBlock(pos.above(), state.setValue(HALF, DoubleBlockHalf.UPPER), 3);
+        // Place upper half with same ACTIVE state
+        level.setBlock(pos.above(), state.setValue(HALF, DoubleBlockHalf.UPPER).setValue(ACTIVE, state.getValue(ACTIVE)), 3);
     }
 
     @Override

@@ -88,8 +88,14 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
 
             if (entity != null) {
                 poseStack.pushPose();
-                poseStack.translate(0.5, 0.5625, 0.5);
-                poseStack.mulPose(Axis.YP.rotationDegrees(180.0f));
+
+                // Smooth floating bobbing effect - subtle up/down motion
+                float bobOffset = Mth.sin(animTime * 0.8f) * 0.03f;
+                poseStack.translate(0.5, 0.5625 + bobOffset, 0.5);
+
+                // Slow gentle rotation for suspended-in-void effect
+                float slowRotation = animTime * 8.0f;
+                poseStack.mulPose(Axis.YP.rotationDegrees(180.0f + slowRotation));
 
                 float entityWidth = entity.getBbWidth();
                 float entityHeight = entity.getBbHeight();
@@ -181,6 +187,12 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
     private void renderEnergyHelix(PoseStack poseStack, VertexConsumer vc, float animTime) {
         Matrix4f matrix = poseStack.last().pose();
 
+        // Continuous smooth pulsing effect using sine wave (no pauses)
+        // Cycle every 5 seconds with smooth fade in/out
+        float cycleTime = animTime % 5.0f;
+        // Sine wave from 0 to 1 and back (smooth breathing effect)
+        float fadeMultiplier = 0.5f + 0.5f * Mth.sin((cycleTime / 5.0f) * 6.28318f - 1.5708f);
+
         // Two intertwined helixes
         for (int helix = 0; helix < 2; helix++) {
             float phaseOffset = helix * 3.14159f;
@@ -189,25 +201,33 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
                 float t = i / 40.0f;
                 float y = 0.1f + t * 1.4f;
                 float angle = t * 6.28318f * 2 + animTime * 2.0f + phaseOffset;
-                float radius = 0.35f + 0.05f * Mth.sin(t * 6.28f);
+                // Smaller radius for subtler effect
+                float radius = 0.35f + 0.03f * Mth.sin(t * 6.28f);
 
                 float x = Mth.cos(angle) * radius;
                 float z = Mth.sin(angle) * radius;
 
-                // Particle size varies
-                float size = 0.015f + 0.01f * Mth.sin(t * 12.56f + animTime * 3);
+                // Smaller particle size
+                float size = 0.015f + 0.008f * Mth.sin(t * 12.56f + animTime * 3);
 
-                // Color shifts along helix
-                int r = helix == 0 ? 0 : 50;
-                int g = (int)(200 + 55 * t);
-                int b = 255;
-                int alpha = (int)(180 + 75 * (1 - t));
+                // Color shifts along helix - very subtle and not distracting
+                int r = helix == 0 ? 0 : 20;
+                int g = (int)(160 + 30 * t);
+                int b = 200;
+                // Very low alpha for ghostly subtle effect (max ~40)
+                int alpha = (int)((25 + 15 * (1 - t)) * fadeMultiplier);
 
-                // Small glowing point
-                vc.addVertex(matrix, x - size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 1, 0);
-                vc.addVertex(matrix, x + size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 1, 0);
-                vc.addVertex(matrix, x + size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 1, 0);
-                vc.addVertex(matrix, x - size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 1, 0);
+                // Front face
+                vc.addVertex(matrix, x - size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 0, 1);
+                vc.addVertex(matrix, x + size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 0, 1);
+                vc.addVertex(matrix, x + size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 0, 1);
+                vc.addVertex(matrix, x - size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 0, 1);
+
+                // Back face (reverse winding for visibility from both sides)
+                vc.addVertex(matrix, x + size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 0, -1);
+                vc.addVertex(matrix, x - size, y - size, z).setColor(r, g, b, alpha).setNormal(0, 0, -1);
+                vc.addVertex(matrix, x - size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 0, -1);
+                vc.addVertex(matrix, x + size, y + size, z).setColor(r, g, b, alpha).setNormal(0, 0, -1);
             }
         }
     }
