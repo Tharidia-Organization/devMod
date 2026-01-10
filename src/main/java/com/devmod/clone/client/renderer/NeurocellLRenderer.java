@@ -21,10 +21,13 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.util.Mth;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
+import com.devmod.clone.block.NeurocellLBlock;
 import com.devmod.clone.block.entity.NeurocellLBlockEntity;
 
 /**
@@ -74,6 +77,31 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
         long gameTime = blockEntity.getLevel() != null ? blockEntity.getLevel().getGameTime() : 0;
         float animTime = (gameTime + partialTick) * 0.05f;
 
+        // Get facing direction to calculate correct entity position
+        // The glass chamber rotates with the model, so the center position changes
+        Direction facing = Direction.NORTH;
+        if (blockEntity.getLevel() != null) {
+            BlockState state = blockEntity.getLevel().getBlockState(blockEntity.getBlockPos());
+            if (state.hasProperty(NeurocellLBlock.FACING)) {
+                facing = state.getValue(NeurocellLBlock.FACING);
+            }
+        }
+
+        // Calculate entity center position based on facing
+        // Model rotates around block center (0.5, 0.5), shifting the glass chamber position:
+        // - NORTH (0°):   center at (1.0, 1.0) - original, no rotation
+        // - SOUTH (180°): center at (0.0, 0.0) - both axes flip
+        // - EAST (90°):   center at (0.0, 1.0) - X flips
+        // - WEST (270°):  center at (1.0, 0.0) - Z flips
+        float entityCenterX = switch (facing) {
+            case SOUTH, EAST -> 0.0f;
+            default -> 1.0f;  // NORTH, WEST
+        };
+        float entityCenterZ = switch (facing) {
+            case SOUTH, WEST -> 0.0f;
+            default -> 1.0f;  // NORTH, EAST
+        };
+
         try {
             Optional<EntityType<?>> optType = EntityType.byString(entityTypeString);
             if (optType.isEmpty() || blockEntity.getLevel() == null) {
@@ -112,11 +140,10 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
             if (entity != null) {
                 poseStack.pushPose();
 
-                // Position in center of 2x2x2 chamber (X/Z center at 1.0, Y just above floor)
-                // Glass chamber: [5,7,5] to [27,32,27] = 22x25 pixels = 1.375x1.5625 blocks
+                // Position in center of glass chamber (adjusted for facing rotation)
                 // Floor at Y=7 pixels = 0.4375 blocks, so entity at ~0.5625 like 1x2
                 float bobOffset = Mth.sin(animTime * 0.8f) * 0.03f;
-                poseStack.translate(1.0, 0.5625 + bobOffset, 1.0);
+                poseStack.translate(entityCenterX, 0.5625 + bobOffset, entityCenterZ);
 
                 // Slow gentle rotation for suspended-in-void effect
                 float slowRotation = animTime * 8.0f;
@@ -177,19 +204,20 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
 
         // Render energy effects when entity is present
         if (isCloning || hasRagdoll) {
-            renderEnergyEffects(poseStack, buffer, animTime);
+            renderEnergyEffects(poseStack, buffer, animTime, entityCenterX, entityCenterZ);
         }
     }
 
     /**
      * Render energy effects around the entity (scanning rings and helix).
      */
-    private void renderEnergyEffects(PoseStack poseStack, MultiBufferSource buffer, float animTime) {
+    private void renderEnergyEffects(PoseStack poseStack, MultiBufferSource buffer, float animTime,
+                                      float centerX, float centerZ) {
         VertexConsumer vc = buffer.getBuffer(RenderType.lightning());
 
         poseStack.pushPose();
-        // Center X/Z at 1.0, Y at entity position (0.5625)
-        poseStack.translate(1.0, 0.5, 1.0);
+        // Center at entity position (adjusted for facing)
+        poseStack.translate(centerX, 0.5, centerZ);
 
         // Scanning ring that moves up and down (scaled for 1.2 target size)
         float scanY = 0.3f + 1.0f * (0.5f + 0.5f * Mth.sin(animTime * 1.2f));

@@ -110,9 +110,16 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
+        // Get facing from the center block state
+        BlockState centerState = level.getBlockState(worldPosition);
+        if (!centerState.hasProperty(NeurocellLBlock.FACING)) {
+            return;
+        }
+        net.minecraft.core.Direction facing = centerState.getValue(NeurocellLBlock.FACING);
+
         // Update all 8 blocks of the 2x2x2 structure
         for (MultiBlockPart part : MultiBlockPart.values()) {
-            BlockPos partPos = part.getOffsetFromCenter(worldPosition);
+            BlockPos partPos = part.getOffsetFromCenter(worldPosition, facing);
             BlockState partState = level.getBlockState(partPos);
             if (partState.hasProperty(NeurocellLBlock.ACTIVE) &&
                 partState.getValue(NeurocellLBlock.ACTIVE) != active) {

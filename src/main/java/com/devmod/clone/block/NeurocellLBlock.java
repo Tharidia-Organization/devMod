@@ -56,14 +56,16 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
 
     /**
      * Enum representing the 8 positions in the 2x2x2 structure.
-     * CENTER is the master block with the block entity (lower northwest corner).
+     * CENTER is the master block with the block entity.
+     * Offsets are defined for NORTH facing and rotated based on actual facing.
      */
     public enum MultiBlockPart implements StringRepresentable {
         // Lower layer (Y=0) - 4 blocks
-        CENTER("center", 0, 0, 0),          // Master block with block entity (NW)
-        LOWER_E("lower_e", 0, 1, 0),        // East of center
-        LOWER_S("lower_s", 0, 0, 1),        // South of center
-        LOWER_SE("lower_se", 0, 1, 1),      // Southeast corner
+        // Base offsets are for NORTH facing (model extends +X, +Z)
+        CENTER("center", 0, 0, 0),          // Master block with block entity
+        LOWER_E("lower_e", 0, 1, 0),        // +X from center (NORTH facing)
+        LOWER_S("lower_s", 0, 0, 1),        // +Z from center (NORTH facing)
+        LOWER_SE("lower_se", 0, 1, 1),      // +X,+Z from center (NORTH facing)
 
         // Upper layer (Y=1) - 4 blocks
         UPPER_C("upper_c", 1, 0, 0),        // Above center
@@ -73,14 +75,14 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
 
         private final String name;
         private final int yOffset;
-        private final int xOffset;
-        private final int zOffset;
+        private final int baseXOffset;  // Base offset for NORTH facing
+        private final int baseZOffset;  // Base offset for NORTH facing
 
         MultiBlockPart(String name, int yOffset, int xOffset, int zOffset) {
             this.name = name;
             this.yOffset = yOffset;
-            this.xOffset = xOffset;
-            this.zOffset = zOffset;
+            this.baseXOffset = xOffset;
+            this.baseZOffset = zOffset;
         }
 
         @Override
@@ -90,15 +92,41 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         }
 
         public int getYOffset() { return yOffset; }
-        public int getXOffset() { return xOffset; }
-        public int getZOffset() { return zOffset; }
 
-        public BlockPos getOffsetFromCenter(BlockPos centerPos) {
-            return centerPos.offset(xOffset, yOffset, zOffset);
+        /**
+         * Get the rotated X offset based on facing direction.
+         * The model rotates around the block center (0.5, 0.5), causing position shifts:
+         * - NORTH (0°):   (x, z) → (x, z)   - no change
+         * - SOUTH (180°): (x, z) → (-x, -z) - both axes flip
+         * - EAST (90° CW):  (x, z) → (-z, x)  - axes swap with Z negation
+         * - WEST (270° CW): (x, z) → (z, -x)  - axes swap with X negation
+         */
+        public int getXOffset(Direction facing) {
+            return switch (facing) {
+                case NORTH -> baseXOffset;
+                case SOUTH -> -baseXOffset;
+                case EAST -> -baseZOffset;    // X becomes -Z
+                case WEST -> baseZOffset;     // X becomes Z
+                default -> baseXOffset;
+            };
         }
 
-        public BlockPos getCenterFromThis(BlockPos thisPos) {
-            return thisPos.offset(-xOffset, -yOffset, -zOffset);
+        public int getZOffset(Direction facing) {
+            return switch (facing) {
+                case NORTH -> baseZOffset;
+                case SOUTH -> -baseZOffset;
+                case EAST -> baseXOffset;     // Z becomes X
+                case WEST -> -baseXOffset;    // Z becomes -X
+                default -> baseZOffset;
+            };
+        }
+
+        public BlockPos getOffsetFromCenter(BlockPos centerPos, Direction facing) {
+            return centerPos.offset(getXOffset(facing), yOffset, getZOffset(facing));
+        }
+
+        public BlockPos getCenterFromThis(BlockPos thisPos, Direction facing) {
+            return thisPos.offset(-getXOffset(facing), -yOffset, -getZOffset(facing));
         }
 
         public boolean isCenter() {
@@ -167,14 +195,25 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nonnull CollisionContext context
     ) {
         MultiBlockPart part = state.getValue(PART);
-        // Return shape offset to cover the full 2x2x2 structure
+        Direction facing = state.getValue(FACING);
+
+        // Calculate the bounding box start position based on facing
+        // The structure extends in different directions for each facing:
+        // - NORTH: (0,0) to (2,2) - extends +X, +Z
+        // - SOUTH: (-1,-1) to (1,1) - extends -X, -Z
+        // - EAST: (-1,0) to (1,2) - extends -X, +Z
+        // - WEST: (0,-1) to (2,1) - extends +X, -Z
+        double xStart = (facing == Direction.SOUTH || facing == Direction.EAST) ? -1.0 : 0.0;
+        double zStart = (facing == Direction.SOUTH || facing == Direction.WEST) ? -1.0 : 0.0;
+
+        // Return shape offset by the part's position within the structure
         return Shapes.box(
-            0.0 - part.getXOffset(),
+            xStart - part.getXOffset(facing),
             0.0 - part.getYOffset(),
-            0.0 - part.getZOffset(),
-            2.0 - part.getXOffset(),
+            zStart - part.getZOffset(facing),
+            xStart + 2.0 - part.getXOffset(facing),
             2.0 - part.getYOffset(),
-            2.0 - part.getZOffset()
+            zStart + 2.0 - part.getZOffset(facing)
         );
     }
 
@@ -187,7 +226,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
 
         // Check if all 8 positions are available
         for (MultiBlockPart part : MultiBlockPart.values()) {
-            BlockPos partPos = part.getOffsetFromCenter(pos);
+            BlockPos partPos = part.getOffsetFromCenter(pos, facing);
             if (partPos.getY() >= level.getMaxBuildHeight() || !level.getBlockState(partPos).canBeReplaced(context)) {
                 return null;
             }
@@ -207,11 +246,12 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         @Nullable LivingEntity placer,
         @Nonnull ItemStack stack
     ) {
+        Direction facing = state.getValue(FACING);
         // Place all 8 blocks
         for (MultiBlockPart part : MultiBlockPart.values()) {
             if (part.isCenter()) continue; // Center is already placed
 
-            BlockPos partPos = part.getOffsetFromCenter(pos);
+            BlockPos partPos = part.getOffsetFromCenter(pos, facing);
             level.setBlock(partPos, state.setValue(PART, part), 3);
         }
     }
@@ -228,7 +268,8 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
     ) {
         // If any part of the structure is broken, this block should break too
         MultiBlockPart part = state.getValue(PART);
-        BlockPos centerPos = part.getCenterFromThis(pos);
+        Direction facing = state.getValue(FACING);
+        BlockPos centerPos = part.getCenterFromThis(pos, facing);
 
         // Check if center still exists
         if (!part.isCenter()) {
@@ -248,7 +289,8 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
             return true;
         }
 
-        BlockPos centerPos = part.getCenterFromThis(pos);
+        Direction facing = state.getValue(FACING);
+        BlockPos centerPos = part.getCenterFromThis(pos, facing);
         BlockState centerState = level.getBlockState(centerPos);
         return centerState.is(this) && centerState.getValue(PART) == MultiBlockPart.CENTER;
     }
@@ -264,7 +306,8 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
     }
 
     private BlockPos getCenterPos(BlockState state, BlockPos pos) {
-        return state.getValue(PART).getCenterFromThis(pos);
+        Direction facing = state.getValue(FACING);
+        return state.getValue(PART).getCenterFromThis(pos, facing);
     }
 
     @Override
@@ -341,7 +384,8 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
     ) {
         if (!state.is(newState.getBlock())) {
             MultiBlockPart part = state.getValue(PART);
-            BlockPos centerPos = part.getCenterFromThis(pos);
+            Direction facing = state.getValue(FACING);
+            BlockPos centerPos = part.getCenterFromThis(pos, facing);
 
             // Drop contents from center block
             if (part.isCenter()) {
@@ -358,7 +402,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
             for (MultiBlockPart otherPart : MultiBlockPart.values()) {
                 if (otherPart == part) continue;
 
-                BlockPos otherPos = otherPart.getOffsetFromCenter(centerPos);
+                BlockPos otherPos = otherPart.getOffsetFromCenter(centerPos, facing);
                 BlockState otherState = level.getBlockState(otherPos);
                 if (otherState.is(this)) {
                     level.setBlock(otherPos, Blocks.AIR.defaultBlockState(), 35);
