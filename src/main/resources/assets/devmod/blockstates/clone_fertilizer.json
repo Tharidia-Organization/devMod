@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "active=false,facing=north": {"model": "devmod:block/clone_fertilizer"},
+    "active=false,facing=south": {"model": "devmod:block/clone_fertilizer", "y": 180},
+    "active=false,facing=west": {"model": "devmod:block/clone_fertilizer", "y": 270},
+    "active=false,facing=east": {"model": "devmod:block/clone_fertilizer", "y": 90},
+    "active=true,facing=north": {"model": "devmod:block/clone_fertilizer"},
+    "active=true,facing=south": {"model": "devmod:block/clone_fertilizer", "y": 180},
+    "active=true,facing=west": {"model": "devmod:block/clone_fertilizer", "y": 270},
+    "active=true,facing=east": {"model": "devmod:block/clone_fertilizer", "y": 90}
+  }
+}

@@ -1,0 +1,263 @@
+{
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "machine": "devmod:block/clone/clone_machine_base",
+    "machine_top": "devmod:block/clone/clone_machine_top",
+    "grinder": "devmod:block/clone/clone_grinder",
+    "port": "devmod:block/clone/clone_port",
+    "particle": "devmod:block/clone/clone_machine_base"
+  },
+  "elements": [
+    {
+      "comment": "=== BASE LAYER Y=0-2 ===",
+      "name": "base_bottom",
+      "from": [-8, 0, -7],
+      "to": [24, 2, 21],
+      "faces": {
+        "north": {"uv": [0, 14, 16, 16], "texture": "#machine"},
+        "east": {"uv": [0, 14, 16, 16], "texture": "#machine"},
+        "south": {"uv": [0, 14, 16, 16], "texture": "#machine"},
+        "west": {"uv": [0, 14, 16, 16], "texture": "#machine"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 16, 16], "texture": "#machine"}
+      }
+    },
+    {
+      "comment": "=== CENTRAL BODY Y=2-5 ===",
+      "name": "body_mid",
+      "from": [-7, 2, -6],
+      "to": [23, 5, 20],
+      "faces": {
+        "north": {"uv": [0, 11, 16, 14], "texture": "#machine"},
+        "east": {"uv": [0, 11, 16, 14], "texture": "#machine"},
+        "south": {"uv": [0, 11, 16, 14], "texture": "#machine"},
+        "west": {"uv": [0, 11, 16, 14], "texture": "#machine"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#machine_top"}
+      }
+    },
+    {
+      "comment": "=== TOP LAYER Y=4-7 ===",
+      "name": "body_top",
+      "from": [-8, 4, -7],
+      "to": [24, 7, 21],
+      "faces": {
+        "north": {"uv": [0, 9, 16, 12], "texture": "#machine"},
+        "east": {"uv": [0, 9, 16, 12], "texture": "#machine"},
+        "south": {"uv": [0, 9, 16, 12], "texture": "#machine"},
+        "west": {"uv": [0, 9, 16, 12], "texture": "#machine"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 16, 16], "texture": "#machine_top"}
+      }
+    },
+    {
+      "comment": "=== FRONT INPUT PORT ===",
+      "name": "input_port",
+      "from": [6, 0, -8],
+      "to": [10, 8, -6],
+      "faces": {
+        "north": {"uv": [6, 8, 10, 16], "texture": "#port"},
+        "east": {"uv": [0, 8, 2, 16], "texture": "#port"},
+        "south": {"uv": [6, 8, 10, 16], "texture": "#machine"},
+        "west": {"uv": [0, 8, 2, 16], "texture": "#port"},
+        "up": {"uv": [6, 0, 10, 2], "texture": "#port"},
+        "down": {"uv": [6, 0, 10, 2], "texture": "#machine"}
+      }
+    },
+    {
+      "comment": "=== TOP FRAME NORTH ===",
+      "name": "frame_north",
+      "from": [-8, 7, -7],
+      "to": [24, 11, -4],
+      "faces": {
+        "north": {"uv": [0, 4, 16, 8], "texture": "#machine"},
+        "east": {"uv": [13, 4, 16, 8], "texture": "#machine"},
+        "south": {"uv": [0, 4, 16, 8], "texture": "#machine"},
+        "west": {"uv": [0, 4, 3, 8], "texture": "#machine"},
+        "up": {"uv": [0, 0, 16, 3], "texture": "#machine_top"},
+        "down": {"uv": [0, 13, 16, 16], "texture": "#machine_top"}
+      }
+    },
+    {
+      "comment": "=== TOP FRAME SOUTH ===",
+      "name": "frame_south",
+      "from": [-8, 7, 18],
+      "to": [24, 11, 21],
+      "faces": {
+        "north": {"uv": [0, 4, 16, 8], "texture": "#machine"},
+        "east": {"uv": [0, 4, 3, 8], "texture": "#machine"},
+        "south": {"uv": [0, 4, 16, 8], "texture": "#machine"},
+        "west": {"uv": [13, 4, 16, 8], "texture": "#machine"},
+        "up": {"uv": [0, 13, 16, 16], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 16, 3], "texture": "#machine_top"}
+      }
+    },
+    {
+      "comment": "=== TOP FRAME WEST ===",
+      "name": "frame_west",
+      "from": [-8, 7, -4],
+      "to": [-6, 11, 18],
+      "faces": {
+        "north": {"uv": [14, 4, 16, 8], "texture": "#machine"},
+        "east": {"uv": [0, 4, 16, 8], "texture": "#machine"},
+        "south": {"uv": [0, 4, 2, 8], "texture": "#machine"},
+        "west": {"uv": [0, 4, 16, 8], "texture": "#machine"},
+        "up": {"uv": [0, 0, 2, 16], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 2, 16], "texture": "#machine_top"}
+      }
+    },
+    {
+      "comment": "=== TOP FRAME EAST ===",
+      "name": "frame_east",
+      "from": [22, 7, -4],
+      "to": [24, 11, 18],
+      "faces": {
+        "north": {"uv": [0, 4, 2, 8], "texture": "#machine"},
+        "east": {"uv": [0, 4, 16, 8], "texture": "#machine"},
+        "south": {"uv": [14, 4, 16, 8], "texture": "#machine"},
+        "west": {"uv": [0, 4, 16, 8], "texture": "#machine"},
+        "up": {"uv": [14, 0, 16, 16], "texture": "#machine_top"},
+        "down": {"uv": [14, 0, 16, 16], "texture": "#machine_top"}
+      }
+    },
+    {
+      "comment": "=== GRINDER BLADE A ===",
+      "name": "grinder_a",
+      "from": [0, 6, -1],
+      "to": [6, 12, 1],
+      "rotation": {"angle": 22.5, "axis": "y", "origin": [3, 9, 0]},
+      "faces": {
+        "north": {"uv": [5, 4, 11, 10], "texture": "#grinder"},
+        "east": {"uv": [7, 4, 9, 10], "texture": "#grinder"},
+        "south": {"uv": [5, 4, 11, 10], "texture": "#grinder"},
+        "west": {"uv": [7, 4, 9, 10], "texture": "#grinder"},
+        "up": {"uv": [5, 6, 11, 10], "texture": "#grinder"},
+        "down": {"uv": [5, 6, 11, 10], "texture": "#grinder"}
+      }
+    },
+    {
+      "comment": "=== GRINDER BLADE A EXTENSION ===",
+      "name": "grinder_a_ext",
+      "from": [0, 6, 3],
+      "to": [6, 12, 5],
+      "rotation": {"angle": 22.5, "axis": "y", "origin": [3, 9, 4]},
+      "faces": {
+        "north": {"uv": [5, 4, 11, 10], "texture": "#grinder"},
+        "east": {"uv": [7, 4, 9, 10], "texture": "#grinder"},
+        "south": {"uv": [5, 4, 11, 10], "texture": "#grinder"},
+        "west": {"uv": [7, 4, 9, 10], "texture": "#grinder"},
+        "up": {"uv": [5, 6, 11, 10], "texture": "#grinder"},
+        "down": {"uv": [5, 6, 11, 10], "texture": "#grinder"}
+      }
+    },
+    {
+      "comment": "=== GRINDER BLADE A CENTER AXLE ===",
+      "name": "grinder_a_axle",
+      "from": [2, 8, -4],
+      "to": [4, 10, 12],
+      "faces": {
+        "north": {"uv": [6, 6, 8, 8], "texture": "#grinder"},
+        "east": {"uv": [2, 6, 16, 8], "texture": "#grinder"},
+        "south": {"uv": [6, 6, 8, 8], "texture": "#grinder"},
+        "west": {"uv": [2, 6, 16, 8], "texture": "#grinder"},
+        "up": {"uv": [6, 2, 8, 16], "texture": "#grinder"},
+        "down": {"uv": [6, 2, 8, 16], "texture": "#grinder"}
+      }
+    },
+    {
+      "comment": "=== GRINDER BLADE B ===",
+      "name": "grinder_b",
+      "from": [10, 6, 1],
+      "to": [16, 12, 3],
+      "rotation": {"angle": -22.5, "axis": "y", "origin": [13, 9, 2]},
+      "faces": {
+        "north": {"uv": [5, 4, 11, 10], "texture": "#grinder"},
+        "east": {"uv": [7, 4, 9, 10], "texture": "#grinder"},
+        "south": {"uv": [5, 4, 11, 10], "texture": "#grinder"},
+        "west": {"uv": [7, 4, 9, 10], "texture": "#grinder"},
+        "up": {"uv": [5, 6, 11, 10], "texture": "#grinder"},
+        "down": {"uv": [5, 6, 11, 10], "texture": "#grinder"}
+      }
+    },
+    {
+      "comment": "=== GRINDER BLADE B EXTENSION ===",
+      "name": "grinder_b_ext",
+      "from": [10, 6, -3],
+      "to": [16, 12, -1],
+      "rotation": {"angle": -22.5, "axis": "y", "origin": [13, 9, -2]},
+      "faces": {
+        "north": {"uv": [5, 4, 11, 10], "texture": "#grinder"},
+        "east": {"uv": [7, 4, 9, 10], "texture": "#grinder"},
+        "south": {"uv": [5, 4, 11, 10], "texture": "#grinder"},
+        "west": {"uv": [7, 4, 9, 10], "texture": "#grinder"},
+        "up": {"uv": [5, 6, 11, 10], "texture": "#grinder"},
+        "down": {"uv": [5, 6, 11, 10], "texture": "#grinder"}
+      }
+    },
+    {
+      "comment": "=== GRINDER BLADE B CENTER AXLE ===",
+      "name": "grinder_b_axle",
+      "from": [12, 8, -4],
+      "to": [14, 10, 12],
+      "faces": {
+        "north": {"uv": [6, 6, 8, 8], "texture": "#grinder"},
+        "east": {"uv": [2, 6, 16, 8], "texture": "#grinder"},
+        "south": {"uv": [6, 6, 8, 8], "texture": "#grinder"},
+        "west": {"uv": [2, 6, 16, 8], "texture": "#grinder"},
+        "up": {"uv": [6, 2, 8, 16], "texture": "#grinder"},
+        "down": {"uv": [6, 2, 8, 16], "texture": "#grinder"}
+      }
+    },
+    {
+      "comment": "=== BACK PANEL ===",
+      "name": "back_panel",
+      "from": [-5, 0, 20],
+      "to": [21, 13, 22],
+      "faces": {
+        "north": {"uv": [0, 3, 16, 16], "texture": "#machine"},
+        "east": {"uv": [0, 3, 2, 16], "texture": "#machine"},
+        "south": {"uv": [0, 3, 16, 16], "texture": "#machine"},
+        "west": {"uv": [14, 3, 16, 16], "texture": "#machine"},
+        "up": {"uv": [0, 0, 16, 2], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 16, 2], "texture": "#machine"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 45, 0],
+      "scale": [0.3, 0.3, 0.3]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 225, 0],
+      "scale": [0.3, 0.3, 0.3]
+    },
+    "ground": {
+      "translation": [0, 3, 0],
+      "scale": [0.2, 0.2, 0.2]
+    },
+    "gui": {
+      "rotation": [30, 225, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "head": {
+      "translation": [0, 0, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "fixed": {
+      "rotation": [0, 0, 0],
+      "translation": [0, -5, 0],
+      "scale": [0.4, 0.4, 0.4]
+    }
+  }
+}

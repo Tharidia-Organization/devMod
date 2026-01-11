@@ -21,6 +21,7 @@ import com.devmod.clone.client.screen.CentrifugeScreen;
 import com.devmod.clone.client.screen.NeurocellScreen;
 import com.devmod.clone.client.screen.NeurocellLScreen;
 import com.devmod.clone.client.renderer.BillboardBatcher;
+import com.devmod.clone.client.renderer.CloneMachineRenderer;
 import com.devmod.clone.client.renderer.EntityBillboardAtlas;
 import com.devmod.clone.client.renderer.NeurocellLRenderer;
 import com.devmod.clone.client.renderer.NeurocellRenderer;
@@ -50,6 +51,14 @@ public final class CloneClientSetup {
             NeurocellLRenderer::new
         );
         DevMod.LOGGER.info("[Clone] Registered neurocell renderers");
+
+        // Register GeckoLib renderer for all Clone machine blocks
+        // Uses dynamic model selection based on block type
+        event.registerBlockEntityRenderer(
+            Objects.requireNonNull(CloneBlockEntities.CLONE_MACHINE.get()),
+            ctx -> new CloneMachineRenderer()
+        );
+        DevMod.LOGGER.info("[Clone] Registered GeckoLib Clone machine renderer");
 
         // Register render event handlers for billboard system
         if (!renderEventsRegistered) {

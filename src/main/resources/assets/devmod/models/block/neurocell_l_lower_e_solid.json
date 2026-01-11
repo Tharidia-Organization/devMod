@@ -1,0 +1,169 @@
+{
+  "textures": {
+    "base": "devmod:block/neurocell_l_base",
+    "base_top": "devmod:block/neurocell_l_base_top",
+    "frame": "devmod:block/neurocell_l_pillar",
+    "floor": "devmod:block/neurocell_l_floor",
+    "particle": "devmod:block/neurocell_l_base"
+  },
+  "elements": [
+    {
+      "from": [
+        18,
+        0,
+        -5
+      ],
+      "to": [
+        21,
+        3,
+        -2
+      ],
+      "comment": "=== SUPPORT FOOT NE (simmetrico) ===",
+      "name": "foot_ne",
+      "rotation": {
+        "angle": -22.5,
+        "axis": "y",
+        "origin": [
+          19.5,
+          1.5,
+          -3.5
+        ]
+      },
+      "faces": {
+        "north": {
+          "uv": [
+            13,
+            13,
+            16,
+            16
+          ],
+          "texture": "#frame"
+        },
+        "east": {
+          "uv": [
+            0,
+            13,
+            3,
+            16
+          ],
+          "texture": "#frame"
+        },
+        "south": {
+          "uv": [
+            13,
+            13,
+            16,
+            16
+          ],
+          "texture": "#frame"
+        },
+        "west": {
+          "uv": [
+            0,
+            13,
+            3,
+            16
+          ],
+          "texture": "#frame"
+        },
+        "up": {
+          "uv": [
+            13,
+            0,
+            16,
+            3
+          ],
+          "texture": "#frame"
+        },
+        "down": {
+          "uv": [
+            13,
+            0,
+            16,
+            3
+          ],
+          "texture": "#frame"
+        }
+      }
+    },
+    {
+      "from": [
+        15,
+        0,
+        -4
+      ],
+      "to": [
+        20,
+        5,
+        1
+      ],
+      "comment": "=== CORNER NODE NE (simmetrico) ===",
+      "name": "corner_ne",
+      "rotation": {
+        "angle": -45,
+        "axis": "y",
+        "origin": [
+          17.5,
+          2.5,
+          -1.5
+        ]
+      },
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": "#frame"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": "#frame"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": "#frame"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": "#frame"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": "#frame"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            5,
+            5
+          ],
+          "texture": "#frame"
+        }
+      }
+    }
+  ]
+}

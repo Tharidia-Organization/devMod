@@ -40,7 +40,7 @@ import com.devmod.clone.menu.NeurocellMenu;
  * Processes bioscan data and prepares it for the reformer.
  * Uses CUSTOM_DATA component like Hologenica for compatibility.
  */
-public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
+public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, NeurocellAccess {
 
     private static final int PROCESS_TIME = 300; // 15 seconds
     /**
@@ -451,21 +451,26 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
-     * Check if the neurocell has an empty bioscanner slot or no bioscanner.
+     * Check if the neurocell has a physical empty bioscanner inserted.
      */
     public boolean hasEmptyBioscanner() {
-        return storedBioscanner.isEmpty() || !BioscannerItem.hasData(storedBioscanner);
+        return !storedBioscanner.isEmpty()
+            && storedBioscanner.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()))
+            && !BioscannerItem.hasData(storedBioscanner);
     }
 
     /**
      * Fill the bioscanner slot from imprinter data.
      */
     public void fillBioscannerFromImprinter(@Nonnull BioscanData data) {
-        // Create a new bioscanner with the data
-        ItemStack newBioscanner = new ItemStack(Objects.requireNonNull(CloneItems.BIOSCANNER.get()));
+        if (storedBioscanner.isEmpty()
+            || !storedBioscanner.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()))
+            || BioscannerItem.hasData(storedBioscanner)) {
+            return;
+        }
 
         // Set data using CUSTOM_DATA component like BioscannerItem does
-        newBioscanner.update(Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA),
+        storedBioscanner.update(Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA),
             Objects.requireNonNull(net.minecraft.world.item.component.CustomData.EMPTY), customData -> {
                 CompoundTag tag = customData.copyTag();
                 tag.putString("EntityType", Objects.requireNonNull(data.entityTypeId().toString()));
@@ -480,8 +485,6 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider {
                 }
                 return net.minecraft.world.item.component.CustomData.of(tag);
             });
-
-        storedBioscanner = Objects.requireNonNull(newBioscanner);
         onInventoryChanged();
     }
 }

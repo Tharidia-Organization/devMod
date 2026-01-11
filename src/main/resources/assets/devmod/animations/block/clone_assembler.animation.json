@@ -1,0 +1,74 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.clone_machine.idle": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {}
+    },
+    "animation.clone_machine.active": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {
+        "robot_arm": {
+          "rotation": {
+            "0.0": [
+              -45,
+              0,
+              0
+            ],
+            "0.5": [
+              -60,
+              15,
+              0
+            ],
+            "1.0": [
+              -45,
+              0,
+              0
+            ],
+            "1.5": [
+              -60,
+              -15,
+              0
+            ],
+            "2.0": [
+              -45,
+              0,
+              0
+            ]
+          }
+        },
+        "tool_head": {
+          "scale": {
+            "0.0": [
+              1,
+              1,
+              1
+            ],
+            "0.25": [
+              1.1,
+              1.1,
+              1.1
+            ],
+            "0.5": [
+              1,
+              1,
+              1
+            ],
+            "0.75": [
+              1.1,
+              1.1,
+              1.1
+            ],
+            "1.0": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      }
+    }
+  }
+}

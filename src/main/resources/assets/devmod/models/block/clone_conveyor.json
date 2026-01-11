@@ -1,0 +1,16 @@
+{
+  "credit": "Clone Conveyor - Oritech-style item conveyor",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "machine": "devmod:block/clone/clone_machine_base",
+    "frame": "devmod:block/clone/clone_frame",
+    "grinder": "devmod:block/clone/clone_grinder",
+    "particle": "devmod:block/clone/clone_machine_base"
+  },
+  "elements": [
+    {"name": "frame_l", "from": [0, 0, 0], "to": [2, 4, 16], "faces": {"north": {"uv": [0, 0, 2, 4], "texture": "#frame"}, "east": {"uv": [0, 0, 16, 4], "texture": "#frame"}, "south": {"uv": [0, 0, 2, 4], "texture": "#frame"}, "west": {"uv": [0, 0, 16, 4], "texture": "#frame"}, "up": {"uv": [0, 0, 2, 16], "texture": "#frame"}, "down": {"uv": [0, 0, 2, 16], "texture": "#machine"}}},
+    {"name": "frame_r", "from": [14, 0, 0], "to": [16, 4, 16], "faces": {"north": {"uv": [0, 0, 2, 4], "texture": "#frame"}, "east": {"uv": [0, 0, 16, 4], "texture": "#frame"}, "south": {"uv": [0, 0, 2, 4], "texture": "#frame"}, "west": {"uv": [0, 0, 16, 4], "texture": "#frame"}, "up": {"uv": [0, 0, 2, 16], "texture": "#frame"}, "down": {"uv": [0, 0, 2, 16], "texture": "#machine"}}},
+    {"name": "belt", "from": [2, 2, 0], "to": [14, 4, 16], "faces": {"north": {"uv": [0, 0, 12, 2], "texture": "#grinder"}, "east": {"uv": [0, 0, 16, 2], "texture": "#grinder"}, "south": {"uv": [0, 0, 12, 2], "texture": "#grinder"}, "west": {"uv": [0, 0, 16, 2], "texture": "#grinder"}, "up": {"uv": [0, 0, 12, 16], "texture": "#grinder"}, "down": {"uv": [0, 0, 12, 16], "texture": "#machine"}}}
+  ],
+  "display": {"thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]}, "thirdperson_lefthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]}, "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]}, "firstperson_lefthand": {"rotation": [0, 225, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]}, "ground": {"translation": [0, 3, 0], "scale": [0.25, 0.25, 0.25]}, "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]}, "head": {"translation": [0, 0, 0], "scale": [1, 1, 1]}, "fixed": {"scale": [0.5, 0.5, 0.5]}}
+}

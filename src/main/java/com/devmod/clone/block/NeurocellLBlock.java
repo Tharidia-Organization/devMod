@@ -179,8 +179,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
     @Override
     @Nonnull
     protected RenderShape getRenderShape(@Nonnull BlockState state) {
-        // Only render the center block's model, others are invisible
-        return Objects.requireNonNull(state.getValue(Objects.requireNonNull(PART)).isCenter() ? RenderShape.MODEL : RenderShape.INVISIBLE);
+        return RenderShape.MODEL;
     }
 
     @Override

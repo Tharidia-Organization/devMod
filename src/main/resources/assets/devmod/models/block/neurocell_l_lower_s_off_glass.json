@@ -1,0 +1,78 @@
+{
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "glass_w": "devmod:block/neurocell_l_glass_off_l_w",
+    "glass_e": "devmod:block/neurocell_l_glass_off_l_e",
+    "particle": "devmod:block/neurocell_l_glass_off_l_w"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        7,
+        15
+      ],
+      "to": [
+        16,
+        16,
+        15
+      ],
+      "comment": "=== GLASS SOUTH ===",
+      "name": "glass_south",
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_e"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_w"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        7,
+        0
+      ],
+      "to": [
+        1,
+        16,
+        15
+      ],
+      "comment": "=== GLASS WEST ===",
+      "name": "glass_west",
+      "faces": {
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_w"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_e"
+        }
+      }
+    }
+  ]
+}

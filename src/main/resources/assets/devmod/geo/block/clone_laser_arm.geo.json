@@ -1,0 +1,130 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_laser_arm",
+        "texture_width": 64,
+        "texture_height": 64,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2,
+        "visible_bounds_offset": [0, 0.5, 0]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [0, 0, 0]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            {
+              "origin": [-5, 0, -5],
+              "size": [10, 3, 10],
+              "uv": [0, 0]
+            }
+          ]
+        },
+        {
+          "name": "turret_base",
+          "parent": "base",
+          "pivot": [0, 3, 0],
+          "cubes": [
+            {
+              "origin": [-4, 3, -4],
+              "size": [8, 4, 8],
+              "uv": [0, 13]
+            }
+          ]
+        },
+        {
+          "name": "turret_rotator",
+          "parent": "turret_base",
+          "pivot": [0, 7, 0],
+          "cubes": [
+            {
+              "origin": [-3, 7, -3],
+              "size": [6, 3, 6],
+              "uv": [0, 25]
+            }
+          ]
+        },
+        {
+          "name": "arm_pivot",
+          "parent": "turret_rotator",
+          "pivot": [0, 9, 0],
+          "rotation": [-30, 0, 0],
+          "cubes": [
+            {
+              "origin": [-2, 9, -2],
+              "size": [4, 2, 4],
+              "uv": [24, 0]
+            }
+          ]
+        },
+        {
+          "name": "laser_arm",
+          "parent": "arm_pivot",
+          "pivot": [0, 10, -2],
+          "cubes": [
+            {
+              "origin": [-1.5, 9.5, -8],
+              "size": [3, 3, 8],
+              "uv": [24, 6]
+            }
+          ]
+        },
+        {
+          "name": "laser_emitter",
+          "parent": "laser_arm",
+          "pivot": [0, 11, -8],
+          "cubes": [
+            {
+              "origin": [-1, 10, -10],
+              "size": [2, 2, 2],
+              "uv": [24, 17]
+            }
+          ]
+        },
+        {
+          "name": "laser_lens",
+          "parent": "laser_emitter",
+          "pivot": [0, 11, -10],
+          "cubes": [
+            {
+              "origin": [-0.5, 10.5, -11],
+              "size": [1, 1, 1],
+              "uv": [30, 17]
+            }
+          ]
+        },
+        {
+          "name": "power_cell",
+          "parent": "turret_base",
+          "pivot": [0, 5, 4],
+          "cubes": [
+            {
+              "origin": [-2, 4, 4],
+              "size": [4, 3, 2],
+              "uv": [40, 0]
+            }
+          ]
+        },
+        {
+          "name": "sensor",
+          "parent": "turret_rotator",
+          "pivot": [3, 9, 0],
+          "cubes": [
+            {
+              "origin": [3, 8, -1],
+              "size": [2, 2, 2],
+              "uv": [40, 5]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

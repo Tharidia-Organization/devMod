@@ -15,6 +15,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
 import com.devmod.clone.block.entity.CentrifugeBlockEntity;
+import com.devmod.clone.block.entity.CloneMachineBlockEntity;
 import com.devmod.clone.block.entity.ImprinterBlockEntity;
 import com.devmod.clone.block.entity.NeurocellBlockEntity;
 import com.devmod.clone.block.entity.NeurocellLBlockEntity;
@@ -112,6 +113,46 @@ public final class CloneBlockEntities {
             BlockEntityType.Builder.of(
                 CentrifugeBlockEntity::new,
                 CloneBlocks.CENTRIFUGE.get()
+            ).build(noDataFixer())
+        );
+
+    /**
+     * GeckoLib animated block entity for all Clone machine blocks.
+     * Supports Oritech-style models with unlimited rotations and animations.
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CloneMachineBlockEntity>> CLONE_MACHINE =
+        BLOCK_ENTITY_TYPES.register("clone_machine", () ->
+            BlockEntityType.Builder.of(
+                CloneMachineBlockEntity::new,
+                CloneBlocks.CLONE_PULVERIZER.get(),
+                CloneBlocks.CLONE_FOUNDRY.get(),
+                CloneBlocks.CLONE_PUMP.get(),
+                CloneBlocks.CLONE_STEAM_ENGINE.get(),
+                CloneBlocks.CLONE_LAVA_GENERATOR.get(),
+                CloneBlocks.CLONE_REFINERY.get(),
+                CloneBlocks.CLONE_SHRINKER.get(),
+                CloneBlocks.CLONE_TREEFELLER.get(),
+                CloneBlocks.CLONE_TECH_DOOR.get(),
+                CloneBlocks.CLONE_BIO_GENERATOR.get(),
+                CloneBlocks.CLONE_ASSEMBLER.get(),
+                CloneBlocks.CLONE_CENTRIFUGE_L.get(),
+                CloneBlocks.CLONE_FUEL_GENERATOR.get(),
+                CloneBlocks.CLONE_ATOMIC_FORGE.get(),
+                CloneBlocks.CLONE_LASER_ARM.get(),
+                CloneBlocks.CLONE_DRILL.get(),
+                CloneBlocks.CLONE_FERTILIZER.get(),
+                CloneBlocks.CLONE_CRUSHER.get(),
+                CloneBlocks.CLONE_SMELTER.get(),
+                CloneBlocks.CLONE_STORAGE_UNIT.get(),
+                CloneBlocks.CLONE_ENERGY_PIPE.get(),
+                CloneBlocks.CLONE_TANK.get(),
+                CloneBlocks.CLONE_BATTERY.get(),
+                CloneBlocks.CLONE_SOLAR_PANEL.get(),
+                CloneBlocks.CLONE_MOTOR.get(),
+                CloneBlocks.CLONE_CONVEYOR.get(),
+                CloneBlocks.CLONE_REACTOR.get(),
+                CloneBlocks.CLONE_PROCESSOR.get(),
+                CloneBlocks.CLONE_CHARGER.get()
             ).build(noDataFixer())
         );
 

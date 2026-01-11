@@ -1,0 +1,184 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_energy_pipe",
+        "texture_width": 64,
+        "texture_height": 64
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "core",
+          "parent": "root",
+          "pivot": [
+            0,
+            8,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -3,
+                5,
+                -3
+              ],
+              "size": [
+                6,
+                6,
+                6
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pipe_north",
+          "parent": "core",
+          "pivot": [
+            0,
+            8,
+            -3
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2,
+                6,
+                -8
+              ],
+              "size": [
+                4,
+                4,
+                5
+              ],
+              "uv": [
+                0,
+                12
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pipe_south",
+          "parent": "core",
+          "pivot": [
+            0,
+            8,
+            3
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2,
+                6,
+                3
+              ],
+              "size": [
+                4,
+                4,
+                5
+              ],
+              "uv": [
+                0,
+                12
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pipe_east",
+          "parent": "core",
+          "pivot": [
+            3,
+            8,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                3,
+                6,
+                -2
+              ],
+              "size": [
+                5,
+                4,
+                4
+              ],
+              "uv": [
+                18,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pipe_west",
+          "parent": "core",
+          "pivot": [
+            -3,
+            8,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -8,
+                6,
+                -2
+              ],
+              "size": [
+                5,
+                4,
+                4
+              ],
+              "uv": [
+                18,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "glow_core",
+          "parent": "core",
+          "pivot": [
+            0,
+            8,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                7,
+                -1
+              ],
+              "size": [
+                2,
+                2,
+                2
+              ],
+              "uv": [
+                18,
+                8
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

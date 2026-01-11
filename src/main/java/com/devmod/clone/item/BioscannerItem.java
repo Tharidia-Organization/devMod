@@ -41,6 +41,8 @@ public class BioscannerItem extends Item {
     private static final String TAG_ENTITY_NAME = "EntityName";
     private static final String TAG_PLAYER_UUID = "PlayerUUID";
     private static final String TAG_ENTITY_NBT = "EntityNBT";
+    private static final String TAG_ENTITY_WIDTH = "EntityWidth";
+    private static final String TAG_ENTITY_HEIGHT = "EntityHeight";
 
     public BioscannerItem() {
         super(new Item.Properties()
@@ -91,6 +93,8 @@ public class BioscannerItem extends Item {
         final String finalEntityName = entityName;
         final UUID finalUUID = targetUUID;
         final CompoundTag finalNbt = entityNbt;
+        final float finalWidth = target.getBbWidth();
+        final float finalHeight = target.getBbHeight();
 
         // Get the actual stack from player inventory and modify it directly
         int slot = hand == InteractionHand.MAIN_HAND ?
@@ -113,6 +117,8 @@ public class BioscannerItem extends Item {
                 if (finalNbt != null) {
                     tag.put(TAG_ENTITY_NBT, finalNbt);
                 }
+                tag.putFloat(TAG_ENTITY_WIDTH, finalWidth);
+                tag.putFloat(TAG_ENTITY_HEIGHT, finalHeight);
                 return CustomData.of(tag);
             });
 
@@ -227,11 +233,20 @@ public class BioscannerItem extends Item {
 
     /**
      * Calculate the maximum dimension (width or height) of the scanned entity.
-     * Uses EntityType's default dimensions without creating an entity instance.
+     * Uses stored scan dimensions when present; falls back to EntityType defaults.
      * @return max of width and height, or 0 if no entity data
      */
     public static float getEntityMaxDimension(@Nonnull ItemStack stack) {
         if (!hasData(stack)) return 0f;
+
+        CompoundTag tag = getDataTag(stack);
+        if (tag != null && tag.contains(TAG_ENTITY_WIDTH) && tag.contains(TAG_ENTITY_HEIGHT)) {
+            float width = tag.getFloat(TAG_ENTITY_WIDTH);
+            float height = tag.getFloat(TAG_ENTITY_HEIGHT);
+            if (width > 0f || height > 0f) {
+                return Math.max(width, height);
+            }
+        }
 
         String entityTypeStr = getEntityType(stack);
         if (entityTypeStr == null) return 0f;

@@ -51,6 +51,37 @@ public final class CloneCreativeTab {
 
                 // Hologram
                 output.accept(Objects.requireNonNull(HologramItems.HOLOGRAM_PROJECTOR.get()));
+
+                // Clone Machines (Oritech-style)
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_PULVERIZER.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_FOUNDRY.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_PUMP.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_STEAM_ENGINE.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_LAVA_GENERATOR.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_REFINERY.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_SHRINKER.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_TREEFELLER.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_TECH_DOOR.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_BIO_GENERATOR.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_ASSEMBLER.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_CENTRIFUGE_L.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_FUEL_GENERATOR.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_ATOMIC_FORGE.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_LASER_ARM.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_DRILL.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_FERTILIZER.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_CRUSHER.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_SMELTER.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_STORAGE_UNIT.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_ENERGY_PIPE.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_TANK.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_BATTERY.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_SOLAR_PANEL.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_MOTOR.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_CONVEYOR.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_REACTOR.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_PROCESSOR.get()));
+                output.accept(Objects.requireNonNull(CloneItems.CLONE_CHARGER.get()));
             })
             .build()
     );

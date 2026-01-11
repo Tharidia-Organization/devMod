@@ -1,75 +1,1380 @@
 {
-  "variants": {
-    "active=false,facing=north,part=center": { "model": "devmod:block/neurocell_l_off" },
-    "active=false,facing=south,part=center": { "model": "devmod:block/neurocell_l_off", "y": 180 },
-    "active=false,facing=west,part=center": { "model": "devmod:block/neurocell_l_off", "y": 270 },
-    "active=false,facing=east,part=center": { "model": "devmod:block/neurocell_l_off", "y": 90 },
-    "active=true,facing=north,part=center": { "model": "devmod:block/neurocell_l" },
-    "active=true,facing=south,part=center": { "model": "devmod:block/neurocell_l", "y": 180 },
-    "active=true,facing=west,part=center": { "model": "devmod:block/neurocell_l", "y": 270 },
-    "active=true,facing=east,part=center": { "model": "devmod:block/neurocell_l", "y": 90 },
-
-    "active=false,facing=north,part=lower_e": { "model": "devmod:block/neurocell_l_upper_off" },
-    "active=false,facing=south,part=lower_e": { "model": "devmod:block/neurocell_l_upper_off", "y": 180 },
-    "active=false,facing=west,part=lower_e": { "model": "devmod:block/neurocell_l_upper_off", "y": 270 },
-    "active=false,facing=east,part=lower_e": { "model": "devmod:block/neurocell_l_upper_off", "y": 90 },
-    "active=true,facing=north,part=lower_e": { "model": "devmod:block/neurocell_l_upper" },
-    "active=true,facing=south,part=lower_e": { "model": "devmod:block/neurocell_l_upper", "y": 180 },
-    "active=true,facing=west,part=lower_e": { "model": "devmod:block/neurocell_l_upper", "y": 270 },
-    "active=true,facing=east,part=lower_e": { "model": "devmod:block/neurocell_l_upper", "y": 90 },
-
-    "active=false,facing=north,part=lower_s": { "model": "devmod:block/neurocell_l_upper_off" },
-    "active=false,facing=south,part=lower_s": { "model": "devmod:block/neurocell_l_upper_off", "y": 180 },
-    "active=false,facing=west,part=lower_s": { "model": "devmod:block/neurocell_l_upper_off", "y": 270 },
-    "active=false,facing=east,part=lower_s": { "model": "devmod:block/neurocell_l_upper_off", "y": 90 },
-    "active=true,facing=north,part=lower_s": { "model": "devmod:block/neurocell_l_upper" },
-    "active=true,facing=south,part=lower_s": { "model": "devmod:block/neurocell_l_upper", "y": 180 },
-    "active=true,facing=west,part=lower_s": { "model": "devmod:block/neurocell_l_upper", "y": 270 },
-    "active=true,facing=east,part=lower_s": { "model": "devmod:block/neurocell_l_upper", "y": 90 },
-
-    "active=false,facing=north,part=lower_se": { "model": "devmod:block/neurocell_l_upper_off" },
-    "active=false,facing=south,part=lower_se": { "model": "devmod:block/neurocell_l_upper_off", "y": 180 },
-    "active=false,facing=west,part=lower_se": { "model": "devmod:block/neurocell_l_upper_off", "y": 270 },
-    "active=false,facing=east,part=lower_se": { "model": "devmod:block/neurocell_l_upper_off", "y": 90 },
-    "active=true,facing=north,part=lower_se": { "model": "devmod:block/neurocell_l_upper" },
-    "active=true,facing=south,part=lower_se": { "model": "devmod:block/neurocell_l_upper", "y": 180 },
-    "active=true,facing=west,part=lower_se": { "model": "devmod:block/neurocell_l_upper", "y": 270 },
-    "active=true,facing=east,part=lower_se": { "model": "devmod:block/neurocell_l_upper", "y": 90 },
-
-    "active=false,facing=north,part=upper_c": { "model": "devmod:block/neurocell_l_upper_off" },
-    "active=false,facing=south,part=upper_c": { "model": "devmod:block/neurocell_l_upper_off", "y": 180 },
-    "active=false,facing=west,part=upper_c": { "model": "devmod:block/neurocell_l_upper_off", "y": 270 },
-    "active=false,facing=east,part=upper_c": { "model": "devmod:block/neurocell_l_upper_off", "y": 90 },
-    "active=true,facing=north,part=upper_c": { "model": "devmod:block/neurocell_l_upper" },
-    "active=true,facing=south,part=upper_c": { "model": "devmod:block/neurocell_l_upper", "y": 180 },
-    "active=true,facing=west,part=upper_c": { "model": "devmod:block/neurocell_l_upper", "y": 270 },
-    "active=true,facing=east,part=upper_c": { "model": "devmod:block/neurocell_l_upper", "y": 90 },
-
-    "active=false,facing=north,part=upper_e": { "model": "devmod:block/neurocell_l_upper_off" },
-    "active=false,facing=south,part=upper_e": { "model": "devmod:block/neurocell_l_upper_off", "y": 180 },
-    "active=false,facing=west,part=upper_e": { "model": "devmod:block/neurocell_l_upper_off", "y": 270 },
-    "active=false,facing=east,part=upper_e": { "model": "devmod:block/neurocell_l_upper_off", "y": 90 },
-    "active=true,facing=north,part=upper_e": { "model": "devmod:block/neurocell_l_upper" },
-    "active=true,facing=south,part=upper_e": { "model": "devmod:block/neurocell_l_upper", "y": 180 },
-    "active=true,facing=west,part=upper_e": { "model": "devmod:block/neurocell_l_upper", "y": 270 },
-    "active=true,facing=east,part=upper_e": { "model": "devmod:block/neurocell_l_upper", "y": 90 },
-
-    "active=false,facing=north,part=upper_s": { "model": "devmod:block/neurocell_l_upper_off" },
-    "active=false,facing=south,part=upper_s": { "model": "devmod:block/neurocell_l_upper_off", "y": 180 },
-    "active=false,facing=west,part=upper_s": { "model": "devmod:block/neurocell_l_upper_off", "y": 270 },
-    "active=false,facing=east,part=upper_s": { "model": "devmod:block/neurocell_l_upper_off", "y": 90 },
-    "active=true,facing=north,part=upper_s": { "model": "devmod:block/neurocell_l_upper" },
-    "active=true,facing=south,part=upper_s": { "model": "devmod:block/neurocell_l_upper", "y": 180 },
-    "active=true,facing=west,part=upper_s": { "model": "devmod:block/neurocell_l_upper", "y": 270 },
-    "active=true,facing=east,part=upper_s": { "model": "devmod:block/neurocell_l_upper", "y": 90 },
-
-    "active=false,facing=north,part=upper_se": { "model": "devmod:block/neurocell_l_upper_off" },
-    "active=false,facing=south,part=upper_se": { "model": "devmod:block/neurocell_l_upper_off", "y": 180 },
-    "active=false,facing=west,part=upper_se": { "model": "devmod:block/neurocell_l_upper_off", "y": 270 },
-    "active=false,facing=east,part=upper_se": { "model": "devmod:block/neurocell_l_upper_off", "y": 90 },
-    "active=true,facing=north,part=upper_se": { "model": "devmod:block/neurocell_l_upper" },
-    "active=true,facing=south,part=upper_se": { "model": "devmod:block/neurocell_l_upper", "y": 180 },
-    "active=true,facing=west,part=upper_se": { "model": "devmod:block/neurocell_l_upper", "y": 270 },
-    "active=true,facing=east,part=upper_se": { "model": "devmod:block/neurocell_l_upper", "y": 90 }
-  }
+  "multipart": [
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_solid"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_solid",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_solid",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_solid",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_solid"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_solid",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_solid",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_solid",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_solid"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_solid",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_solid",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_solid",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_solid"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_solid",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_solid",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_solid",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "upper_c"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_c_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "upper_c"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_c_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "upper_c"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_c_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "upper_c"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_c_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "upper_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_e_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "upper_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_e_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "upper_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_e_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "upper_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_e_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "upper_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_s_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "upper_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_s_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "upper_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_s_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "upper_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_s_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "upper_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_se_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "upper_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_se_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "upper_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_se_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "upper_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_se_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_off_solid"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_off_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_off_solid",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_off_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_off_solid",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_off_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_off_solid",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_c_off_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_off_solid"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_off_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_off_solid",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_off_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_off_solid",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_off_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_off_solid",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_e_off_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_off_solid"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_off_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_off_solid",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_off_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_off_solid",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_off_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_off_solid",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_s_off_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_off_solid"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_off_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_off_solid",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_off_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_off_solid",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_off_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_off_solid",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_lower_se_off_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "upper_c"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_c_off_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "upper_c"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_c_off_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "upper_c"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_c_off_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "upper_c"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_c_off_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "upper_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_e_off_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "upper_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_e_off_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "upper_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_e_off_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "upper_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_e_off_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "upper_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_s_off_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "upper_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_s_off_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "upper_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_s_off_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "upper_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_s_off_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "upper_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_se_off_glass"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "upper_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_se_off_glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "upper_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_se_off_glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "upper_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_upper_se_off_glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_c"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_c",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_c",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_c",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_e"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_e",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_e",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_e",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_s"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_s",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_s",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_s",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "north",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_se"
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "east",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_se",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "south",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_se",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "true",
+        "facing": "west",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_se",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_c_off"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_c_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_c_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_c_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_e_off"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_e_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_e_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "lower_e"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_e_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_s_off"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_s_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_s_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "lower_s"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_s_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "north",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_se_off"
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "east",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_se_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "south",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_se_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "active": "false",
+        "facing": "west",
+        "part": "lower_se"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_platform_se_off",
+        "y": 270
+      }
+    }
+  ]
 }

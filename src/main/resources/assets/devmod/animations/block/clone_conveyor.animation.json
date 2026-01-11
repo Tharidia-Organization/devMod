@@ -1,0 +1,54 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.clone_machine.idle": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {}
+    },
+    "animation.clone_machine.active": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {
+        "roller_front": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              180,
+              0,
+              0
+            ],
+            "1.0": [
+              360,
+              0,
+              0
+            ]
+          }
+        },
+        "roller_back": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              180,
+              0,
+              0
+            ],
+            "1.0": [
+              360,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

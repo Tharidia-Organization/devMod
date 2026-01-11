@@ -1,0 +1,231 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_pulverizer",
+        "texture_width": 64,
+        "texture_height": 64,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2,
+        "visible_bounds_offset": [0, 0.5, 0]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [0, 0, 0]
+        },
+        {
+          "name": "base_plate",
+          "parent": "root",
+          "pivot": [0, 0.5, 0],
+          "cubes": [
+            {
+              "comment": "Landing pad",
+              "origin": [-7, 0, -7],
+              "size": [14, 1, 14],
+              "uv": {
+                "north": {"uv": [0, 48], "uv_size": [14, 1]},
+                "east": {"uv": [0, 48], "uv_size": [14, 1]},
+                "south": {"uv": [0, 48], "uv_size": [14, 1]},
+                "west": {"uv": [0, 48], "uv_size": [14, 1]},
+                "up": {"uv": [0, 0], "uv_size": [16, 16]},
+                "down": {"uv": [0, 0], "uv_size": [16, 16]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "chamber",
+          "parent": "root",
+          "pivot": [0, 4, 0],
+          "cubes": [
+            {
+              "comment": "Crushing chamber - main body",
+              "origin": [-6, 1, -6],
+              "size": [12, 6, 12],
+              "uv": {
+                "north": {"uv": [0, 16], "uv_size": [12, 6]},
+                "east": {"uv": [0, 16], "uv_size": [12, 6]},
+                "south": {"uv": [0, 16], "uv_size": [12, 6]},
+                "west": {"uv": [0, 16], "uv_size": [12, 6]},
+                "up": {"uv": [16, 0], "uv_size": [12, 12]},
+                "down": {"uv": [16, 0], "uv_size": [12, 12]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "roller_left",
+          "parent": "chamber",
+          "pivot": [-3, 9, 0],
+          "cubes": [
+            {
+              "comment": "Roller core - horizontal bar",
+              "origin": [-5, 8, -5],
+              "size": [4, 2, 10],
+              "uv": {
+                "north": {"uv": [0, 24], "uv_size": [4, 2]},
+                "south": {"uv": [0, 24], "uv_size": [4, 2]},
+                "east": {"uv": [0, 27], "uv_size": [10, 2]},
+                "west": {"uv": [0, 27], "uv_size": [10, 2]},
+                "up": {"uv": [0, 27], "uv_size": [10, 4]},
+                "down": {"uv": [0, 27], "uv_size": [10, 4]}
+              }
+            },
+            {
+              "comment": "Roller tooth - vertical bar",
+              "origin": [-4, 7, -5],
+              "size": [2, 4, 10],
+              "uv": {
+                "north": {"uv": [0, 24], "uv_size": [2, 4]},
+                "south": {"uv": [0, 24], "uv_size": [2, 4]},
+                "east": {"uv": [0, 27], "uv_size": [10, 4]},
+                "west": {"uv": [0, 27], "uv_size": [10, 4]},
+                "up": {"uv": [0, 27], "uv_size": [10, 2]},
+                "down": {"uv": [0, 27], "uv_size": [10, 2]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "roller_right",
+          "parent": "chamber",
+          "pivot": [3, 9, 0],
+          "cubes": [
+            {
+              "comment": "Roller core - horizontal bar",
+              "origin": [1, 8, -5],
+              "size": [4, 2, 10],
+              "uv": {
+                "north": {"uv": [0, 24], "uv_size": [4, 2]},
+                "south": {"uv": [0, 24], "uv_size": [4, 2]},
+                "east": {"uv": [0, 27], "uv_size": [10, 2]},
+                "west": {"uv": [0, 27], "uv_size": [10, 2]},
+                "up": {"uv": [0, 27], "uv_size": [10, 4]},
+                "down": {"uv": [0, 27], "uv_size": [10, 4]}
+              }
+            },
+            {
+              "comment": "Roller tooth - vertical bar",
+              "origin": [2, 7, -5],
+              "size": [2, 4, 10],
+              "uv": {
+                "north": {"uv": [0, 24], "uv_size": [2, 4]},
+                "south": {"uv": [0, 24], "uv_size": [2, 4]},
+                "east": {"uv": [0, 27], "uv_size": [10, 4]},
+                "west": {"uv": [0, 27], "uv_size": [10, 4]},
+                "up": {"uv": [0, 27], "uv_size": [10, 2]},
+                "down": {"uv": [0, 27], "uv_size": [10, 2]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "core_upper",
+          "parent": "chamber",
+          "pivot": [0, 5, 0],
+          "cubes": [
+            {
+              "comment": "Core top with energy",
+              "origin": [-5, 4, -5],
+              "size": [10, 2, 10],
+              "uv": {
+                "north": {"uv": [0, 19], "uv_size": [10, 2]},
+                "east": {"uv": [0, 19], "uv_size": [10, 2]},
+                "south": {"uv": [0, 19], "uv_size": [10, 2]},
+                "west": {"uv": [0, 19], "uv_size": [10, 2]},
+                "up": {"uv": [32, 0], "uv_size": [16, 16]},
+                "down": {"uv": [16, 0], "uv_size": [16, 16]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "support_nw",
+          "parent": "root",
+          "pivot": [-6.5, 2.5, -6.5],
+          "rotation": [0, -22.5, 0],
+          "cubes": [
+            {
+              "comment": "NW support pillar",
+              "origin": [-8, 0, -8],
+              "size": [3, 5, 3],
+              "uv": {
+                "north": {"uv": [48, 0], "uv_size": [3, 5]},
+                "east": {"uv": [51, 0], "uv_size": [3, 5]},
+                "south": {"uv": [48, 0], "uv_size": [3, 5]},
+                "west": {"uv": [51, 0], "uv_size": [3, 5]},
+                "up": {"uv": [48, 5], "uv_size": [3, 3]},
+                "down": {"uv": [48, 8], "uv_size": [3, 3]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "support_ne",
+          "parent": "root",
+          "pivot": [6.5, 2.5, -6.5],
+          "rotation": [0, 22.5, 0],
+          "cubes": [
+            {
+              "comment": "NE support pillar",
+              "origin": [5, 0, -8],
+              "size": [3, 5, 3],
+              "uv": {
+                "north": {"uv": [48, 0], "uv_size": [3, 5]},
+                "east": {"uv": [51, 0], "uv_size": [3, 5]},
+                "south": {"uv": [48, 0], "uv_size": [3, 5]},
+                "west": {"uv": [51, 0], "uv_size": [3, 5]},
+                "up": {"uv": [48, 5], "uv_size": [3, 3]},
+                "down": {"uv": [48, 8], "uv_size": [3, 3]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "support_sw",
+          "parent": "root",
+          "pivot": [-6.5, 2.5, 6.5],
+          "rotation": [0, 22.5, 0],
+          "cubes": [
+            {
+              "comment": "SW support pillar",
+              "origin": [-8, 0, 5],
+              "size": [3, 5, 3],
+              "uv": {
+                "north": {"uv": [48, 0], "uv_size": [3, 5]},
+                "east": {"uv": [51, 0], "uv_size": [3, 5]},
+                "south": {"uv": [48, 0], "uv_size": [3, 5]},
+                "west": {"uv": [51, 0], "uv_size": [3, 5]},
+                "up": {"uv": [48, 5], "uv_size": [3, 3]},
+                "down": {"uv": [48, 8], "uv_size": [3, 3]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "support_se",
+          "parent": "root",
+          "pivot": [6.5, 2.5, 6.5],
+          "rotation": [0, -22.5, 0],
+          "cubes": [
+            {
+              "comment": "SE support pillar",
+              "origin": [5, 0, 5],
+              "size": [3, 5, 3],
+              "uv": {
+                "north": {"uv": [48, 0], "uv_size": [3, 5]},
+                "east": {"uv": [51, 0], "uv_size": [3, 5]},
+                "south": {"uv": [48, 0], "uv_size": [3, 5]},
+                "west": {"uv": [51, 0], "uv_size": [3, 5]},
+                "up": {"uv": [48, 5], "uv_size": [3, 3]},
+                "down": {"uv": [48, 8], "uv_size": [3, 3]}
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "credit": "Clone Energy Pipe - Oritech-style energy conduit",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "pipe": "devmod:block/clone/clone_pipe",
+    "port": "devmod:block/clone/clone_port",
+    "particle": "devmod:block/clone/clone_pipe"
+  },
+  "elements": [
+    {
+      "name": "core",
+      "from": [5, 5, 5],
+      "to": [11, 11, 11],
+      "faces": {
+        "north": {"uv": [0, 0, 6, 6], "texture": "#pipe"},
+        "east": {"uv": [0, 0, 6, 6], "texture": "#pipe"},
+        "south": {"uv": [0, 0, 6, 6], "texture": "#pipe"},
+        "west": {"uv": [0, 0, 6, 6], "texture": "#pipe"},
+        "up": {"uv": [0, 0, 6, 6], "texture": "#pipe"},
+        "down": {"uv": [0, 0, 6, 6], "texture": "#pipe"}
+      }
+    },
+    {
+      "name": "conn_north",
+      "from": [6, 6, 0],
+      "to": [10, 10, 5],
+      "faces": {
+        "north": {"uv": [0, 0, 4, 4], "texture": "#port"},
+        "east": {"uv": [0, 0, 5, 4], "texture": "#pipe"},
+        "south": {"uv": [0, 0, 4, 4], "texture": "#pipe"},
+        "west": {"uv": [0, 0, 5, 4], "texture": "#pipe"},
+        "up": {"uv": [0, 0, 4, 5], "texture": "#pipe"},
+        "down": {"uv": [0, 0, 4, 5], "texture": "#pipe"}
+      }
+    },
+    {
+      "name": "conn_south",
+      "from": [6, 6, 11],
+      "to": [10, 10, 16],
+      "faces": {
+        "north": {"uv": [0, 0, 4, 4], "texture": "#pipe"},
+        "east": {"uv": [0, 0, 5, 4], "texture": "#pipe"},
+        "south": {"uv": [0, 0, 4, 4], "texture": "#port"},
+        "west": {"uv": [0, 0, 5, 4], "texture": "#pipe"},
+        "up": {"uv": [0, 0, 4, 5], "texture": "#pipe"},
+        "down": {"uv": [0, 0, 4, 5], "texture": "#pipe"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
+    "thirdperson_lefthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
+    "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]},
+    "firstperson_lefthand": {"rotation": [0, 225, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]},
+    "ground": {"translation": [0, 3, 0], "scale": [0.25, 0.25, 0.25]},
+    "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]},
+    "head": {"translation": [0, 0, 0], "scale": [1, 1, 1]},
+    "fixed": {"scale": [0.5, 0.5, 0.5]}
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.clone_machine.idle": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {}
+    },
+    "animation.clone_machine.active": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {
+        "cooling_fan": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              0,
+              180
+            ],
+            "1.0": [
+              0,
+              0,
+              360
+            ]
+          }
+        },
+        "status_led": {
+          "scale": {
+            "0.0": [
+              1,
+              1,
+              1
+            ],
+            "0.5": [
+              1.2,
+              1.2,
+              1.2
+            ],
+            "1.0": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      }
+    }
+  }
+}

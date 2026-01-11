@@ -1,0 +1,148 @@
+{
+  "textures": {
+    "base": "devmod:block/neurocell_l_base",
+    "base_top": "devmod:block/neurocell_l_base_top",
+    "floor": "devmod:block/neurocell_l_floor",
+    "particle": "devmod:block/neurocell_l_base"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        20,
+        1,
+        20
+      ],
+      "comment": "=== LANDING PLATFORM (40x40, overhang 4px) ===",
+      "name": "landing_pad",
+      "faces": {
+        "east": {
+          "uv": [
+            8,
+            15,
+            16,
+            16
+          ],
+          "texture": "#base"
+        },
+        "south": {
+          "uv": [
+            8,
+            15,
+            16,
+            16
+          ],
+          "texture": "#base"
+        },
+        "up": {
+          "uv": [
+            8,
+            8,
+            16,
+            16
+          ],
+          "texture": "#base_top"
+        },
+        "down": {
+          "uv": [
+            8,
+            8,
+            16,
+            16
+          ],
+          "texture": "#base"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        1,
+        0
+      ],
+      "to": [
+        17,
+        4,
+        17
+      ],
+      "comment": "=== CORE BASE (34x34, overhang 1px) ===",
+      "name": "core_base",
+      "faces": {
+        "east": {
+          "uv": [
+            8,
+            12,
+            16,
+            15
+          ],
+          "texture": "#base"
+        },
+        "south": {
+          "uv": [
+            8,
+            12,
+            16,
+            15
+          ],
+          "texture": "#base"
+        },
+        "up": {
+          "uv": [
+            8,
+            8,
+            16,
+            16
+          ],
+          "texture": "#base_top"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        4,
+        0
+      ],
+      "to": [
+        16,
+        7,
+        16
+      ],
+      "comment": "=== CORE MID (32x32) ===",
+      "name": "core_mid",
+      "faces": {
+        "east": {
+          "uv": [
+            8,
+            9,
+            16,
+            12
+          ],
+          "texture": "#base"
+        },
+        "south": {
+          "uv": [
+            8,
+            9,
+            16,
+            12
+          ],
+          "texture": "#base"
+        },
+        "up": {
+          "uv": [
+            8,
+            8,
+            16,
+            16
+          ],
+          "texture": "#floor"
+        }
+      }
+    }
+  ]
+}

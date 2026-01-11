@@ -1,0 +1,157 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_processor",
+        "texture_width": 64,
+        "texture_height": 64
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -8,
+                0,
+                -8
+              ],
+              "size": [
+                16,
+                4,
+                16
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "main_unit",
+          "parent": "base",
+          "pivot": [
+            0,
+            4,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -6,
+                4,
+                -6
+              ],
+              "size": [
+                12,
+                10,
+                12
+              ],
+              "uv": [
+                0,
+                20
+              ]
+            }
+          ]
+        },
+        {
+          "name": "screen",
+          "parent": "main_unit",
+          "pivot": [
+            0,
+            10,
+            -6
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -4,
+                7,
+                -7
+              ],
+              "size": [
+                8,
+                5,
+                1
+              ],
+              "uv": [
+                0,
+                42
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cooling_fan",
+          "parent": "main_unit",
+          "pivot": [
+            0,
+            9,
+            6
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -3,
+                6,
+                6
+              ],
+              "size": [
+                6,
+                6,
+                1
+              ],
+              "uv": [
+                18,
+                42
+              ]
+            }
+          ]
+        },
+        {
+          "name": "status_led",
+          "parent": "main_unit",
+          "pivot": [
+            5,
+            13,
+            -6
+          ],
+          "cubes": [
+            {
+              "origin": [
+                4,
+                12,
+                -7
+              ],
+              "size": [
+                2,
+                1,
+                1
+              ],
+              "uv": [
+                32,
+                42
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

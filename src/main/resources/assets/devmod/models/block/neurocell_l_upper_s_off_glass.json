@@ -1,0 +1,114 @@
+{
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "glass_w": "devmod:block/neurocell_l_glass_off_u_w",
+    "glass_e": "devmod:block/neurocell_l_glass_off_u_e",
+    "glass_ceiling_up": "devmod:block/neurocell_l_glass_off_l_w",
+    "glass_ceiling_down": "devmod:block/neurocell_l_glass_off_u_e",
+    "particle": "devmod:block/neurocell_l_glass_off_u_w"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        15
+      ],
+      "to": [
+        16,
+        16,
+        15
+      ],
+      "comment": "=== GLASS SOUTH ===",
+      "name": "glass_south",
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_e"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_w"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        0,
+        0
+      ],
+      "to": [
+        1,
+        16,
+        15
+      ],
+      "comment": "=== GLASS WEST ===",
+      "name": "glass_west",
+      "faces": {
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_w"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_e"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        15,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        15
+      ],
+      "comment": "=== GLASS CEILING ===",
+      "name": "glass_ceiling",
+      "faces": {
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_ceiling_up"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#glass_ceiling_down"
+        }
+      }
+    }
+  ]
+}

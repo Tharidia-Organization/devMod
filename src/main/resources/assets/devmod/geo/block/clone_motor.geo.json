@@ -1,0 +1,157 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_motor",
+        "texture_width": 64,
+        "texture_height": 64
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -6,
+                0,
+                -4
+              ],
+              "size": [
+                12,
+                4,
+                8
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "motor_body",
+          "parent": "base",
+          "pivot": [
+            0,
+            4,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -5,
+                4,
+                -3
+              ],
+              "size": [
+                10,
+                6,
+                6
+              ],
+              "uv": [
+                0,
+                12
+              ]
+            }
+          ]
+        },
+        {
+          "name": "shaft_housing",
+          "parent": "motor_body",
+          "pivot": [
+            5,
+            7,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                5,
+                5,
+                -2
+              ],
+              "size": [
+                3,
+                4,
+                4
+              ],
+              "uv": [
+                0,
+                24
+              ]
+            }
+          ]
+        },
+        {
+          "name": "shaft",
+          "parent": "shaft_housing",
+          "pivot": [
+            8,
+            7,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                8,
+                6,
+                -1
+              ],
+              "size": [
+                4,
+                2,
+                2
+              ],
+              "uv": [
+                0,
+                32
+              ]
+            }
+          ]
+        },
+        {
+          "name": "fan",
+          "parent": "motor_body",
+          "pivot": [
+            -5,
+            7,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -8,
+                4,
+                -3
+              ],
+              "size": [
+                3,
+                6,
+                6
+              ],
+              "uv": [
+                14,
+                24
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

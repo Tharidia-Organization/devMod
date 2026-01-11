@@ -1,0 +1,216 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_assembler",
+        "texture_width": 64,
+        "texture_height": 64
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -8,
+                0,
+                -8
+              ],
+              "size": [
+                16,
+                4,
+                16
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "work_surface",
+          "parent": "base",
+          "pivot": [
+            0,
+            4,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -6,
+                4,
+                -6
+              ],
+              "size": [
+                12,
+                2,
+                12
+              ],
+              "uv": [
+                0,
+                20
+              ]
+            }
+          ]
+        },
+        {
+          "name": "arm_base",
+          "parent": "base",
+          "pivot": [
+            0,
+            6,
+            -5
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2,
+                6,
+                -7
+              ],
+              "size": [
+                4,
+                6,
+                4
+              ],
+              "uv": [
+                24,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "robot_arm",
+          "parent": "arm_base",
+          "pivot": [
+            0,
+            12,
+            -5
+          ],
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                10,
+                -6
+              ],
+              "size": [
+                2,
+                6,
+                2
+              ],
+              "uv": [
+                24,
+                10
+              ]
+            }
+          ]
+        },
+        {
+          "name": "tool_head",
+          "parent": "robot_arm",
+          "pivot": [
+            0,
+            16,
+            -5
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1.5,
+                14,
+                -6.5
+              ],
+              "size": [
+                3,
+                2,
+                3
+              ],
+              "uv": [
+                24,
+                18
+              ]
+            }
+          ]
+        },
+        {
+          "name": "conveyor_in",
+          "parent": "base",
+          "pivot": [
+            -6,
+            5,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -8,
+                4,
+                -2
+              ],
+              "size": [
+                2,
+                2,
+                4
+              ],
+              "uv": [
+                36,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "conveyor_out",
+          "parent": "base",
+          "pivot": [
+            6,
+            5,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                6,
+                4,
+                -2
+              ],
+              "size": [
+                2,
+                2,
+                4
+              ],
+              "uv": [
+                36,
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

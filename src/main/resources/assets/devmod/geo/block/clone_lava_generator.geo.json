@@ -1,0 +1,117 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_lava_generator",
+        "texture_width": 64,
+        "texture_height": 64,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2,
+        "visible_bounds_offset": [0, 0.5, 0]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [0, 0, 0]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            {
+              "origin": [-8, 0, -8],
+              "size": [16, 4, 16],
+              "uv": [0, 0]
+            }
+          ]
+        },
+        {
+          "name": "lava_tank",
+          "parent": "base",
+          "pivot": [-4, 4, 0],
+          "cubes": [
+            {
+              "origin": [-7, 4, -4],
+              "size": [6, 10, 8],
+              "uv": [0, 20]
+            }
+          ]
+        },
+        {
+          "name": "lava_surface",
+          "parent": "lava_tank",
+          "pivot": [-4, 13, 0],
+          "cubes": [
+            {
+              "origin": [-6, 12, -3],
+              "size": [4, 2, 6],
+              "uv": [0, 38]
+            }
+          ]
+        },
+        {
+          "name": "generator_body",
+          "parent": "base",
+          "pivot": [4, 4, 0],
+          "cubes": [
+            {
+              "origin": [1, 4, -4],
+              "size": [7, 8, 8],
+              "uv": [20, 0]
+            }
+          ]
+        },
+        {
+          "name": "heat_exchanger",
+          "parent": "generator_body",
+          "pivot": [4, 12, 0],
+          "cubes": [
+            {
+              "origin": [2, 12, -3],
+              "size": [5, 3, 6],
+              "uv": [20, 16]
+            }
+          ]
+        },
+        {
+          "name": "pipe_connect",
+          "parent": "base",
+          "pivot": [0, 8, 0],
+          "cubes": [
+            {
+              "origin": [-2, 6, -2],
+              "size": [4, 4, 4],
+              "uv": [42, 0]
+            }
+          ]
+        },
+        {
+          "name": "output_port",
+          "parent": "generator_body",
+          "pivot": [8, 8, 0],
+          "cubes": [
+            {
+              "origin": [7, 6, -2],
+              "size": [2, 4, 4],
+              "uv": [42, 8]
+            }
+          ]
+        },
+        {
+          "name": "control_panel",
+          "parent": "generator_body",
+          "pivot": [4, 8, -4],
+          "cubes": [
+            {
+              "origin": [2, 6, -5],
+              "size": [4, 4, 1],
+              "uv": [42, 16]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

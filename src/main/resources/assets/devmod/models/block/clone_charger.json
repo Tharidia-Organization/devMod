@@ -1,0 +1,17 @@
+{
+  "credit": "Clone Charger - Oritech-style wireless charger",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "machine": "devmod:block/clone/clone_machine_base",
+    "machine_top": "devmod:block/clone/clone_machine_top",
+    "frame": "devmod:block/clone/clone_frame",
+    "port": "devmod:block/clone/clone_port",
+    "particle": "devmod:block/clone/clone_machine_base"
+  },
+  "elements": [
+    {"name": "base", "from": [2, 0, 2], "to": [14, 3, 14], "faces": {"north": {"uv": [0, 0, 12, 3], "texture": "#machine"}, "east": {"uv": [0, 0, 12, 3], "texture": "#machine"}, "south": {"uv": [0, 0, 12, 3], "texture": "#machine"}, "west": {"uv": [0, 0, 12, 3], "texture": "#machine"}, "up": {"uv": [0, 0, 12, 12], "texture": "#machine_top"}, "down": {"uv": [0, 0, 12, 12], "texture": "#machine"}}},
+    {"name": "coil_ring", "from": [3, 3, 3], "to": [13, 5, 13], "faces": {"north": {"uv": [0, 0, 10, 2], "texture": "#port"}, "east": {"uv": [0, 0, 10, 2], "texture": "#port"}, "south": {"uv": [0, 0, 10, 2], "texture": "#port"}, "west": {"uv": [0, 0, 10, 2], "texture": "#port"}, "up": {"uv": [0, 0, 10, 10], "texture": "#port"}, "down": {"uv": [0, 0, 10, 10], "texture": "#machine_top"}}},
+    {"name": "coil_center", "from": [6, 3, 6], "to": [10, 6, 10], "faces": {"north": {"uv": [0, 0, 4, 3], "texture": "#frame"}, "east": {"uv": [0, 0, 4, 3], "texture": "#frame"}, "south": {"uv": [0, 0, 4, 3], "texture": "#frame"}, "west": {"uv": [0, 0, 4, 3], "texture": "#frame"}, "up": {"uv": [0, 0, 4, 4], "texture": "#port"}, "down": {"uv": [0, 0, 4, 4], "texture": "#port"}}}
+  ],
+  "display": {"thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]}, "thirdperson_lefthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]}, "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]}, "firstperson_lefthand": {"rotation": [0, 225, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]}, "ground": {"translation": [0, 3, 0], "scale": [0.25, 0.25, 0.25]}, "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]}, "head": {"translation": [0, 0, 0], "scale": [1, 1, 1]}, "fixed": {"scale": [0.5, 0.5, 0.5]}}
+}

@@ -1,0 +1,45 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.clone_machine.idle": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {}
+    },
+    "animation.clone_machine.active": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {
+        "nozzle_arm": {
+          "rotation": {
+            "0.0": [
+              -30,
+              0,
+              0
+            ],
+            "0.5": [
+              -45,
+              20,
+              0
+            ],
+            "1.0": [
+              -30,
+              0,
+              0
+            ],
+            "1.5": [
+              -45,
+              -20,
+              0
+            ],
+            "2.0": [
+              -30,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

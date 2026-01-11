@@ -1,0 +1,154 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_foundry",
+        "texture_width": 64,
+        "texture_height": 64,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2.5,
+        "visible_bounds_offset": [0, 0.75, 0]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [0, 0, 0]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            {
+              "origin": [-8, 0, -8],
+              "size": [16, 6, 16],
+              "uv": [0, 0]
+            }
+          ]
+        },
+        {
+          "name": "tank_left",
+          "parent": "base",
+          "pivot": [-5, 6, 0],
+          "cubes": [
+            {
+              "origin": [-8, 6, -4],
+              "size": [6, 12, 8],
+              "uv": [0, 22]
+            }
+          ]
+        },
+        {
+          "name": "tank_right",
+          "parent": "base",
+          "pivot": [5, 6, 0],
+          "cubes": [
+            {
+              "origin": [2, 6, -4],
+              "size": [6, 12, 8],
+              "uv": [0, 22]
+            }
+          ]
+        },
+        {
+          "name": "crucible",
+          "parent": "base",
+          "pivot": [0, 6, 0],
+          "cubes": [
+            {
+              "origin": [-3, 6, -3],
+              "size": [6, 8, 6],
+              "uv": [28, 0]
+            }
+          ]
+        },
+        {
+          "name": "molten_surface",
+          "parent": "crucible",
+          "pivot": [0, 13, 0],
+          "cubes": [
+            {
+              "origin": [-2, 13, -2],
+              "size": [4, 1, 4],
+              "uv": [28, 14]
+            }
+          ]
+        },
+        {
+          "name": "arm_base",
+          "parent": "base",
+          "pivot": [0, 18, -4],
+          "cubes": [
+            {
+              "origin": [-2, 16, -6],
+              "size": [4, 4, 4],
+              "uv": [44, 0]
+            }
+          ]
+        },
+        {
+          "name": "robotic_arm",
+          "parent": "arm_base",
+          "pivot": [0, 18, -4],
+          "rotation": [0, 0, -30],
+          "cubes": [
+            {
+              "origin": [-1, 14, -5],
+              "size": [2, 6, 2],
+              "uv": [44, 8]
+            }
+          ]
+        },
+        {
+          "name": "arm_claw",
+          "parent": "robotic_arm",
+          "pivot": [0, 14, -4],
+          "cubes": [
+            {
+              "origin": [-1.5, 12, -5.5],
+              "size": [3, 2, 3],
+              "uv": [44, 16]
+            }
+          ]
+        },
+        {
+          "name": "pipe_input",
+          "parent": "tank_left",
+          "pivot": [-8, 12, 0],
+          "cubes": [
+            {
+              "origin": [-10, 10, -1],
+              "size": [2, 4, 2],
+              "uv": [52, 0]
+            }
+          ]
+        },
+        {
+          "name": "pipe_output",
+          "parent": "tank_right",
+          "pivot": [8, 12, 0],
+          "cubes": [
+            {
+              "origin": [8, 10, -1],
+              "size": [2, 4, 2],
+              "uv": [52, 0]
+            }
+          ]
+        },
+        {
+          "name": "control_panel",
+          "parent": "base",
+          "pivot": [0, 4, -8],
+          "cubes": [
+            {
+              "origin": [-3, 2, -9],
+              "size": [6, 4, 1],
+              "uv": [52, 6]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

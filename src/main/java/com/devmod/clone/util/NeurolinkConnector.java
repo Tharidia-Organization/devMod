@@ -13,9 +13,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
 import com.devmod.clone.CloneBlocks;
-import com.devmod.clone.block.entity.NeurocellBlockEntity;
+import com.devmod.clone.block.NeurocellBlock;
+import com.devmod.clone.block.NeurocellLBlock;
+import com.devmod.clone.block.entity.NeurocellAccess;
 
 /**
  * Utility for finding connected blocks via NEUROLINK cables.
@@ -34,7 +37,7 @@ public final class NeurolinkConnector {
      * @return The first connected NEUROCELL with ready data, or null if none found
      */
     @Nullable
-    public static NeurocellBlockEntity findConnectedNeurocell(Level level, BlockPos startPos) {
+    public static NeurocellAccess findConnectedNeurocell(Level level, BlockPos startPos) {
         Set<BlockPos> visited = new HashSet<>();
         Queue<BlockPos> queue = new ArrayDeque<>();
 
@@ -60,12 +63,9 @@ public final class NeurolinkConnector {
             BlockState state = level.getBlockState(current);
             Block block = state.getBlock();
 
-            // Check if it's a NEUROCELL with ready data
-            if (block == CloneBlocks.NEUROCELL.get()) {
-                BlockEntity be = level.getBlockEntity(current);
-                if (be instanceof NeurocellBlockEntity neurocell && neurocell.isDataReady()) {
-                    return neurocell;
-                }
+            NeurocellAccess neurocell = resolveNeurocellAccess(level, current, state);
+            if (neurocell != null && neurocell.isDataReady()) {
+                return neurocell;
             }
 
             // If it's a NEUROLINK, continue searching through it
@@ -98,7 +98,7 @@ public final class NeurolinkConnector {
      * @return The first connected NEUROCELL with empty bioscanner, or null if none found
      */
     @Nullable
-    public static NeurocellBlockEntity findConnectedNeurocellWithEmptyBioscanner(Level level, BlockPos startPos) {
+    public static NeurocellAccess findConnectedNeurocellWithEmptyBioscanner(Level level, BlockPos startPos) {
         Set<BlockPos> visited = new HashSet<>();
         Queue<BlockPos> queue = new ArrayDeque<>();
 
@@ -124,12 +124,9 @@ public final class NeurolinkConnector {
             BlockState state = level.getBlockState(current);
             Block block = state.getBlock();
 
-            // Check if it's a NEUROCELL with an empty bioscanner
-            if (block == CloneBlocks.NEUROCELL.get()) {
-                BlockEntity be = level.getBlockEntity(current);
-                if (be instanceof NeurocellBlockEntity neurocell && neurocell.hasEmptyBioscanner()) {
-                    return neurocell;
-                }
+            NeurocellAccess neurocell = resolveNeurocellAccess(level, current, state);
+            if (neurocell != null && neurocell.hasEmptyBioscanner()) {
+                return neurocell;
             }
 
             // If it's a NEUROLINK, continue searching through it
@@ -141,6 +138,32 @@ public final class NeurolinkConnector {
                     }
                 }
             }
+        }
+
+        return null;
+    }
+
+    @Nullable
+    private static NeurocellAccess resolveNeurocellAccess(Level level, BlockPos pos, BlockState state) {
+        Block block = state.getBlock();
+        if (block == CloneBlocks.NEUROCELL.get()) {
+            if (state.hasProperty(NeurocellBlock.HALF)
+                && state.getValue(NeurocellBlock.HALF) == DoubleBlockHalf.UPPER) {
+                pos = pos.below();
+            }
+            BlockEntity be = level.getBlockEntity(pos);
+            return be instanceof NeurocellAccess access ? access : null;
+        }
+
+        if (block == CloneBlocks.NEUROCELL_L.get()) {
+            BlockPos centerPos = pos;
+            if (state.hasProperty(NeurocellLBlock.PART) && state.hasProperty(NeurocellLBlock.FACING)) {
+                NeurocellLBlock.MultiBlockPart part = state.getValue(NeurocellLBlock.PART);
+                Direction facing = state.getValue(NeurocellLBlock.FACING);
+                centerPos = part.getCenterFromThis(pos, facing);
+            }
+            BlockEntity be = level.getBlockEntity(centerPos);
+            return be instanceof NeurocellAccess access ? access : null;
         }
 
         return null;

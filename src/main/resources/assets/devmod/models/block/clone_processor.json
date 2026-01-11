@@ -1,0 +1,18 @@
+{
+  "credit": "Clone Processor - Oritech-style data processor",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "machine": "devmod:block/clone/clone_machine_base",
+    "machine_top": "devmod:block/clone/clone_machine_top",
+    "frame": "devmod:block/clone/clone_frame",
+    "panel": "devmod:block/clone/clone_panel",
+    "port": "devmod:block/clone/clone_port",
+    "particle": "devmod:block/clone/clone_machine_base"
+  },
+  "elements": [
+    {"name": "base", "from": [0, 0, 0], "to": [16, 12, 16], "faces": {"north": {"uv": [0, 0, 16, 12], "texture": "#panel"}, "east": {"uv": [0, 0, 16, 12], "texture": "#machine"}, "south": {"uv": [0, 0, 16, 12], "texture": "#machine"}, "west": {"uv": [0, 0, 16, 12], "texture": "#machine"}, "up": {"uv": [0, 0, 16, 16], "texture": "#machine_top"}, "down": {"uv": [0, 0, 16, 16], "texture": "#machine"}}},
+    {"name": "top", "from": [2, 12, 2], "to": [14, 16, 14], "faces": {"north": {"uv": [0, 0, 12, 4], "texture": "#frame"}, "east": {"uv": [0, 0, 12, 4], "texture": "#frame"}, "south": {"uv": [0, 0, 12, 4], "texture": "#frame"}, "west": {"uv": [0, 0, 12, 4], "texture": "#frame"}, "up": {"uv": [0, 0, 12, 12], "texture": "#port"}, "down": {"uv": [0, 0, 12, 12], "texture": "#machine_top"}}},
+    {"name": "display", "from": [4, 4, -0.5], "to": [12, 10, 0], "faces": {"north": {"uv": [0, 0, 8, 6], "texture": "#port"}}}
+  ],
+  "display": {"thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]}, "thirdperson_lefthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]}, "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]}, "firstperson_lefthand": {"rotation": [0, 225, 0], "translation": [0, 0, 0], "scale": [0.4, 0.4, 0.4]}, "ground": {"translation": [0, 3, 0], "scale": [0.25, 0.25, 0.25]}, "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]}, "head": {"translation": [0, 0, 0], "scale": [1, 1, 1]}, "fixed": {"scale": [0.5, 0.5, 0.5]}}
+}

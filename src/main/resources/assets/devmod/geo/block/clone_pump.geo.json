@@ -1,0 +1,132 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_pump",
+        "texture_width": 64,
+        "texture_height": 64,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2,
+        "visible_bounds_offset": [0, 0.5, 0]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [0, 0, 0]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            {
+              "origin": [-6, 0, -6],
+              "size": [12, 3, 12],
+              "uv": [0, 0]
+            }
+          ]
+        },
+        {
+          "name": "tripod_leg1",
+          "parent": "base",
+          "pivot": [0, 3, -5],
+          "rotation": [-15, 0, 0],
+          "cubes": [
+            {
+              "origin": [-1, 3, -6],
+              "size": [2, 10, 2],
+              "uv": [0, 15]
+            }
+          ]
+        },
+        {
+          "name": "tripod_leg2",
+          "parent": "base",
+          "pivot": [-4, 3, 3],
+          "rotation": [-15, 120, 0],
+          "cubes": [
+            {
+              "origin": [-5, 3, 2],
+              "size": [2, 10, 2],
+              "uv": [0, 15]
+            }
+          ]
+        },
+        {
+          "name": "tripod_leg3",
+          "parent": "base",
+          "pivot": [4, 3, 3],
+          "rotation": [-15, -120, 0],
+          "cubes": [
+            {
+              "origin": [3, 3, 2],
+              "size": [2, 10, 2],
+              "uv": [0, 15]
+            }
+          ]
+        },
+        {
+          "name": "pump_head",
+          "parent": "root",
+          "pivot": [0, 12, 0],
+          "cubes": [
+            {
+              "origin": [-3, 10, -3],
+              "size": [6, 6, 6],
+              "uv": [24, 0]
+            }
+          ]
+        },
+        {
+          "name": "pump_arm",
+          "parent": "pump_head",
+          "pivot": [0, 13, 0],
+          "cubes": [
+            {
+              "origin": [-1, 6, -1],
+              "size": [2, 7, 2],
+              "uv": [24, 12]
+            }
+          ]
+        },
+        {
+          "name": "pump_piston",
+          "parent": "pump_arm",
+          "pivot": [0, 6, 0],
+          "cubes": [
+            {
+              "origin": [-2, 3, -2],
+              "size": [4, 3, 4],
+              "uv": [24, 21]
+            }
+          ]
+        },
+        {
+          "name": "pipe_out",
+          "parent": "pump_head",
+          "pivot": [4, 13, 0],
+          "cubes": [
+            {
+              "origin": [3, 11, -1],
+              "size": [5, 2, 2],
+              "uv": [40, 0]
+            }
+          ]
+        },
+        {
+          "name": "motor",
+          "parent": "pump_head",
+          "pivot": [-4, 13, 0],
+          "cubes": [
+            {
+              "origin": [-7, 11, -2],
+              "size": [4, 4, 4],
+              "uv": [40, 4]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

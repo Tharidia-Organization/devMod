@@ -1,0 +1,169 @@
+{
+  "credit": "Clone Bio Generator - Oritech-style biomass generator",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "machine": "devmod:block/clone/clone_machine_base",
+    "machine_top": "devmod:block/clone/clone_machine_top",
+    "tank": "devmod:block/clone/clone_tank",
+    "frame": "devmod:block/clone/clone_frame",
+    "port": "devmod:block/clone/clone_port",
+    "particle": "devmod:block/clone/clone_machine_base"
+  },
+  "elements": [
+    {
+      "name": "base",
+      "from": [1, 0, 1],
+      "to": [15, 4, 15],
+      "faces": {
+        "north": {"uv": [0, 0, 14, 4], "texture": "#machine"},
+        "east": {"uv": [0, 0, 14, 4], "texture": "#machine"},
+        "south": {"uv": [0, 0, 14, 4], "texture": "#machine"},
+        "west": {"uv": [0, 0, 14, 4], "texture": "#machine"},
+        "up": {"uv": [0, 0, 14, 14], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 14, 14], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "bio_tank",
+      "from": [3, 4, 3],
+      "to": [13, 14, 13],
+      "faces": {
+        "north": {"uv": [0, 0, 10, 10], "texture": "#tank"},
+        "east": {"uv": [0, 0, 10, 10], "texture": "#tank"},
+        "south": {"uv": [0, 0, 10, 10], "texture": "#tank"},
+        "west": {"uv": [0, 0, 10, 10], "texture": "#tank"},
+        "up": {"uv": [0, 0, 10, 10], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 10, 10], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "tank_cap",
+      "from": [5, 14, 5],
+      "to": [11, 16, 11],
+      "faces": {
+        "north": {"uv": [0, 0, 6, 2], "texture": "#frame"},
+        "east": {"uv": [0, 0, 6, 2], "texture": "#frame"},
+        "south": {"uv": [0, 0, 6, 2], "texture": "#frame"},
+        "west": {"uv": [0, 0, 6, 2], "texture": "#frame"},
+        "up": {"uv": [0, 0, 6, 6], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 6, 6], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "output_port_front",
+      "from": [6, 5, -1],
+      "to": [10, 9, 3],
+      "faces": {
+        "north": {"uv": [0, 0, 4, 4], "texture": "#port"},
+        "east": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "south": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "west": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "up": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "down": {"uv": [0, 0, 4, 4], "texture": "#frame"}
+      }
+    },
+    {
+      "name": "input_hopper",
+      "from": [4, 14, 4],
+      "to": [12, 18, 12],
+      "faces": {
+        "north": {"uv": [0, 0, 8, 4], "texture": "#frame"},
+        "east": {"uv": [0, 0, 8, 4], "texture": "#frame"},
+        "south": {"uv": [0, 0, 8, 4], "texture": "#frame"},
+        "west": {"uv": [0, 0, 8, 4], "texture": "#frame"},
+        "up": {"uv": [0, 0, 8, 8], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 8, 8], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "leg_fl",
+      "from": [0, 0, 0],
+      "to": [3, 6, 3],
+      "faces": {
+        "north": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "east": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "south": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "west": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "up": {"uv": [0, 0, 3, 3], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 3, 3], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "leg_fr",
+      "from": [13, 0, 0],
+      "to": [16, 6, 3],
+      "faces": {
+        "north": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "east": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "south": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "west": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "up": {"uv": [0, 0, 3, 3], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 3, 3], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "leg_bl",
+      "from": [0, 0, 13],
+      "to": [3, 6, 16],
+      "faces": {
+        "north": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "east": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "south": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "west": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "up": {"uv": [0, 0, 3, 3], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 3, 3], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "leg_br",
+      "from": [13, 0, 13],
+      "to": [16, 6, 16],
+      "faces": {
+        "north": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "east": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "south": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "west": {"uv": [0, 0, 3, 6], "texture": "#frame"},
+        "up": {"uv": [0, 0, 3, 3], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 3, 3], "texture": "#machine"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 45, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 225, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "ground": {
+      "translation": [0, 3, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "gui": {
+      "rotation": [30, 225, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.625, 0.625, 0.625]
+    },
+    "head": {
+      "translation": [0, 0, 0],
+      "scale": [1, 1, 1]
+    },
+    "fixed": {
+      "scale": [0.5, 0.5, 0.5]
+    }
+  }
+}

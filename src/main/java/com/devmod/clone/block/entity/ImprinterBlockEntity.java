@@ -51,7 +51,7 @@ public class ImprinterBlockEntity extends BlockEntity {
     @Nullable
     private LivingEntity currentTarget = null;
     @Nullable
-    private NeurocellBlockEntity connectedNeurocell = null;
+    private NeurocellAccess connectedNeurocell = null;
 
     public ImprinterBlockEntity(BlockPos pos, BlockState state) {
         super(CloneBlockEntities.IMPRINTER.get(), pos, state);
@@ -102,7 +102,7 @@ public class ImprinterBlockEntity extends BlockEntity {
             LivingEntity entity = findEntityOnImprinter();
             if (entity != null) {
                 // Find connected Neurocell with empty Bioscanner
-                NeurocellBlockEntity neurocell = NeurolinkConnector.findConnectedNeurocellWithEmptyBioscanner(level, worldPosition);
+                NeurocellAccess neurocell = NeurolinkConnector.findConnectedNeurocellWithEmptyBioscanner(level, worldPosition);
                 if (neurocell != null) {
                     startImprinting(entity, neurocell);
                 }
@@ -136,7 +136,7 @@ public class ImprinterBlockEntity extends BlockEntity {
         return entities.isEmpty() ? null : entities.get(0);
     }
 
-    private void startImprinting(LivingEntity entity, NeurocellBlockEntity neurocell) {
+    private void startImprinting(LivingEntity entity, NeurocellAccess neurocell) {
         currentTarget = entity;
         connectedNeurocell = neurocell;
         isImprinting = true;
@@ -324,7 +324,7 @@ public class ImprinterBlockEntity extends BlockEntity {
     /**
      * Write entity data to the bioscanner in the connected neurocell.
      */
-    private void imprintEntityDNA(NeurocellBlockEntity neurocell, LivingEntity entity) {
+    private void imprintEntityDNA(NeurocellAccess neurocell, LivingEntity entity) {
         // Use DevMod's enhanced BioscanData system
         BioscanData data = BioscanData.fromEntity(entity);
         neurocell.fillBioscannerFromImprinter(data);
@@ -359,7 +359,7 @@ public class ImprinterBlockEntity extends BlockEntity {
         }
 
         // Check for connected neurocell with empty bioscanner
-        NeurocellBlockEntity neurocell = NeurolinkConnector.findConnectedNeurocellWithEmptyBioscanner(level, worldPosition);
+        NeurocellAccess neurocell = NeurolinkConnector.findConnectedNeurocellWithEmptyBioscanner(level, worldPosition);
         if (neurocell == null) {
             player.displayClientMessage(
                 Component.translatable("message.devmod.imprinter.no_neurocell")

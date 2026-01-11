@@ -1,6 +1,6 @@
 {
 	"format_version": "1.21.6",
-	"texture_size": [64, 64],
+	"texture_size": [128, 128],
 	"textures": {
 		"0": "devmod:block/neurolink",
 		"particle": "devmod:block/neurolink"

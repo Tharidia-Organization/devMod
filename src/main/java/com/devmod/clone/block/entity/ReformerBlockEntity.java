@@ -15,7 +15,6 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -24,6 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.block.ReformerBlock;
 import com.devmod.clone.data.BioscanData;
+import com.devmod.clone.integration.CloneEntitySpawner;
 import com.devmod.clone.util.NeurolinkConnector;
 
 /**
@@ -84,14 +84,14 @@ public class ReformerBlockEntity extends BlockEntity {
         // Search for connected NEUROCELL with ready data
         if (searchCooldown <= 0) {
             searchCooldown = SEARCH_COOLDOWN;
-            NeurocellBlockEntity neurocell = NeurolinkConnector.findConnectedNeurocell(level, worldPosition);
+            NeurocellAccess neurocell = NeurolinkConnector.findConnectedNeurocell(level, worldPosition);
             if (neurocell != null) {
                 startSpawning(neurocell);
             }
         }
     }
 
-    private void startSpawning(NeurocellBlockEntity neurocell) {
+    private void startSpawning(NeurocellAccess neurocell) {
         BioscanData data = neurocell.consumeData();
         if (data == null) {
             return;
@@ -127,36 +127,9 @@ public class ReformerBlockEntity extends BlockEntity {
             return;
         }
 
-        // Spawn the entity
-        EntityType<?> entityType = pendingData.getEntityType();
-        if (entityType == null) {
-            resetSpawn();
-            return;
-        }
-
-        // Create entity
-        Entity entity;
-        if (pendingData.hasEntityNBT()) {
-            entity = EntityType.loadEntityRecursive(pendingData.entityNBT(), serverLevel, e -> {
-                e.setPos(
-                    worldPosition.getX() + 0.5,
-                    worldPosition.getY() + 1.0,
-                    worldPosition.getZ() + 0.5
-                );
-                return e;
-            });
-        } else {
-            entity = entityType.create(serverLevel);
-            if (entity != null) {
-                entity.setPos(
-                    worldPosition.getX() + 0.5,
-                    worldPosition.getY() + 1.0,
-                    worldPosition.getZ() + 0.5
-                );
-            }
-        }
-
-        if (entity != null) {
+        CloneEntitySpawner spawner = new CloneEntitySpawner(serverLevel);
+        BlockPos spawnPos = worldPosition.above();
+        if (spawner.spawnFromBioscan(spawnPos, pendingData) != null) {
             // Spawn effects
             serverLevel.sendParticles(
                 ParticleTypes.EXPLOSION,
@@ -175,9 +148,6 @@ public class ReformerBlockEntity extends BlockEntity {
             );
 
             level.playSound(null, worldPosition, SoundEvents.PLAYER_LEVELUP, SoundSource.BLOCKS, 0.8f, 1.2f);
-
-            // Add to world
-            serverLevel.addFreshEntity(entity);
         }
 
         resetSpawn();

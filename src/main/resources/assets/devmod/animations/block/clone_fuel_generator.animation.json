@@ -1,0 +1,74 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.clone_machine.idle": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {}
+    },
+    "animation.clone_machine.active": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {
+        "exhaust_1": {
+          "scale": {
+            "0.0": [
+              1,
+              1,
+              1
+            ],
+            "0.25": [
+              1.1,
+              1.2,
+              1.1
+            ],
+            "0.5": [
+              1,
+              1,
+              1
+            ],
+            "0.75": [
+              1.1,
+              1.2,
+              1.1
+            ],
+            "1.0": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        "exhaust_2": {
+          "scale": {
+            "0.0": [
+              1,
+              1,
+              1
+            ],
+            "0.5": [
+              1.1,
+              1.2,
+              1.1
+            ],
+            "1.0": [
+              1,
+              1,
+              1
+            ],
+            "1.5": [
+              1.1,
+              1.2,
+              1.1
+            ],
+            "2.0": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      }
+    }
+  }
+}

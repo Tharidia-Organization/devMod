@@ -1,0 +1,142 @@
+{
+  "credit": "Clone Tech Door - Oritech-style sliding door",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "machine": "devmod:block/clone/clone_machine_base",
+    "frame": "devmod:block/clone/clone_frame",
+    "panel": "devmod:block/clone/clone_panel",
+    "port": "devmod:block/clone/clone_port",
+    "particle": "devmod:block/clone/clone_machine_base"
+  },
+  "elements": [
+    {
+      "name": "frame_left",
+      "from": [0, 0, 6],
+      "to": [3, 32, 10],
+      "faces": {
+        "north": {"uv": [0, 0, 3, 16], "texture": "#frame"},
+        "east": {"uv": [0, 0, 4, 16], "texture": "#frame"},
+        "south": {"uv": [0, 0, 3, 16], "texture": "#frame"},
+        "west": {"uv": [0, 0, 4, 16], "texture": "#frame"},
+        "up": {"uv": [0, 0, 3, 4], "texture": "#frame"},
+        "down": {"uv": [0, 0, 3, 4], "texture": "#frame"}
+      }
+    },
+    {
+      "name": "frame_right",
+      "from": [13, 0, 6],
+      "to": [16, 32, 10],
+      "faces": {
+        "north": {"uv": [0, 0, 3, 16], "texture": "#frame"},
+        "east": {"uv": [0, 0, 4, 16], "texture": "#frame"},
+        "south": {"uv": [0, 0, 3, 16], "texture": "#frame"},
+        "west": {"uv": [0, 0, 4, 16], "texture": "#frame"},
+        "up": {"uv": [0, 0, 3, 4], "texture": "#frame"},
+        "down": {"uv": [0, 0, 3, 4], "texture": "#frame"}
+      }
+    },
+    {
+      "name": "frame_top",
+      "from": [3, 28, 6],
+      "to": [13, 32, 10],
+      "faces": {
+        "north": {"uv": [0, 0, 10, 4], "texture": "#frame"},
+        "east": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "south": {"uv": [0, 0, 10, 4], "texture": "#frame"},
+        "west": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "up": {"uv": [0, 0, 10, 4], "texture": "#frame"},
+        "down": {"uv": [0, 0, 10, 4], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "door_panel_left",
+      "from": [3, 0, 7],
+      "to": [8, 28, 9],
+      "faces": {
+        "north": {"uv": [0, 0, 5, 14], "texture": "#panel"},
+        "east": {"uv": [0, 0, 2, 14], "texture": "#machine"},
+        "south": {"uv": [0, 0, 5, 14], "texture": "#panel"},
+        "west": {"uv": [0, 0, 2, 14], "texture": "#machine"},
+        "up": {"uv": [0, 0, 5, 2], "texture": "#machine"},
+        "down": {"uv": [0, 0, 5, 2], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "door_panel_right",
+      "from": [8, 0, 7],
+      "to": [13, 28, 9],
+      "faces": {
+        "north": {"uv": [0, 0, 5, 14], "texture": "#panel"},
+        "east": {"uv": [0, 0, 2, 14], "texture": "#machine"},
+        "south": {"uv": [0, 0, 5, 14], "texture": "#panel"},
+        "west": {"uv": [0, 0, 2, 14], "texture": "#machine"},
+        "up": {"uv": [0, 0, 5, 2], "texture": "#machine"},
+        "down": {"uv": [0, 0, 5, 2], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "indicator_top",
+      "from": [6, 30, 5.5],
+      "to": [10, 32, 6],
+      "faces": {
+        "north": {"uv": [0, 0, 4, 2], "texture": "#port"}
+      }
+    },
+    {
+      "name": "indicator_bottom",
+      "from": [6, 0, 5.5],
+      "to": [10, 2, 6],
+      "faces": {
+        "north": {"uv": [0, 0, 4, 2], "texture": "#port"}
+      }
+    },
+    {
+      "name": "control_panel",
+      "from": [-1, 14, 7],
+      "to": [0, 18, 9],
+      "faces": {
+        "north": {"uv": [0, 0, 1, 4], "texture": "#port"},
+        "west": {"uv": [0, 0, 2, 4], "texture": "#port"},
+        "south": {"uv": [0, 0, 1, 4], "texture": "#port"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 45, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.3, 0.3, 0.3]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 225, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.3, 0.3, 0.3]
+    },
+    "ground": {
+      "translation": [0, 3, 0],
+      "scale": [0.2, 0.2, 0.2]
+    },
+    "gui": {
+      "rotation": [30, 225, 0],
+      "translation": [0, -2, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "head": {
+      "translation": [0, 0, 0],
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "fixed": {
+      "scale": [0.4, 0.4, 0.4]
+    }
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_solar_panel",
+        "texture_width": 64,
+        "texture_height": 64
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -3,
+                0,
+                -3
+              ],
+              "size": [
+                6,
+                4,
+                6
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pole",
+          "parent": "base",
+          "pivot": [
+            0,
+            4,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                4,
+                -1
+              ],
+              "size": [
+                2,
+                6,
+                2
+              ],
+              "uv": [
+                0,
+                10
+              ]
+            }
+          ]
+        },
+        {
+          "name": "panel_frame",
+          "parent": "pole",
+          "pivot": [
+            0,
+            10,
+            0
+          ],
+          "rotation": [
+            -30,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -7,
+                9,
+                -1
+              ],
+              "size": [
+                14,
+                1,
+                10
+              ],
+              "uv": [
+                0,
+                18
+              ]
+            }
+          ]
+        },
+        {
+          "name": "solar_cells",
+          "parent": "panel_frame",
+          "pivot": [
+            0,
+            10,
+            4
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -6,
+                10,
+                0
+              ],
+              "size": [
+                12,
+                0.5,
+                8
+              ],
+              "uv": [
+                0,
+                29
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

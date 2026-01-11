@@ -1,0 +1,130 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_steam_engine",
+        "texture_width": 64,
+        "texture_height": 64,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2,
+        "visible_bounds_offset": [0, 0.5, 0]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [0, 0, 0]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            {
+              "origin": [-8, 0, -8],
+              "size": [16, 4, 16],
+              "uv": [0, 0]
+            }
+          ]
+        },
+        {
+          "name": "boiler",
+          "parent": "base",
+          "pivot": [0, 4, -2],
+          "cubes": [
+            {
+              "origin": [-6, 4, -6],
+              "size": [12, 8, 8],
+              "uv": [0, 20]
+            }
+          ]
+        },
+        {
+          "name": "chimney",
+          "parent": "boiler",
+          "pivot": [-3, 12, -2],
+          "cubes": [
+            {
+              "origin": [-5, 12, -4],
+              "size": [4, 6, 4],
+              "uv": [32, 0]
+            }
+          ]
+        },
+        {
+          "name": "steam_cap",
+          "parent": "chimney",
+          "pivot": [-3, 18, -2],
+          "cubes": [
+            {
+              "origin": [-6, 17, -5],
+              "size": [6, 2, 6],
+              "uv": [32, 10]
+            }
+          ]
+        },
+        {
+          "name": "piston_housing",
+          "parent": "base",
+          "pivot": [0, 4, 4],
+          "cubes": [
+            {
+              "origin": [-4, 4, 2],
+              "size": [8, 6, 6],
+              "uv": [0, 36]
+            }
+          ]
+        },
+        {
+          "name": "piston",
+          "parent": "piston_housing",
+          "pivot": [0, 7, 6],
+          "cubes": [
+            {
+              "origin": [-2, 5, 8],
+              "size": [4, 4, 4],
+              "uv": [32, 18]
+            }
+          ]
+        },
+        {
+          "name": "flywheel",
+          "parent": "piston",
+          "pivot": [0, 7, 12],
+          "cubes": [
+            {
+              "origin": [-3, 4, 11],
+              "size": [6, 6, 2],
+              "uv": [44, 0]
+            }
+          ]
+        },
+        {
+          "name": "connecting_rod",
+          "parent": "flywheel",
+          "pivot": [0, 7, 12],
+          "rotation": [0, 0, 0],
+          "cubes": [
+            {
+              "origin": [-0.5, 6, 8],
+              "size": [1, 2, 4],
+              "uv": [44, 8]
+            }
+          ]
+        },
+        {
+          "name": "gauge",
+          "parent": "boiler",
+          "pivot": [0, 10, -6],
+          "cubes": [
+            {
+              "origin": [-1, 8, -7],
+              "size": [2, 3, 1],
+              "uv": [44, 12]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

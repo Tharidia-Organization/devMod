@@ -1,0 +1,83 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.clone_machine.idle": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {}
+    },
+    "animation.clone_machine.active": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {
+        "ring_1": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "1.0": [
+              0,
+              180,
+              0
+            ],
+            "2.0": [
+              0,
+              360,
+              0
+            ]
+          }
+        },
+        "ring_2": {
+          "rotation": {
+            "0.0": [
+              0,
+              90,
+              0
+            ],
+            "1.0": [
+              0,
+              270,
+              0
+            ],
+            "2.0": [
+              0,
+              450,
+              0
+            ]
+          }
+        },
+        "atomic_core": {
+          "scale": {
+            "0.0": [
+              1,
+              1,
+              1
+            ],
+            "0.5": [
+              1.1,
+              1.1,
+              1.1
+            ],
+            "1.0": [
+              1,
+              1,
+              1
+            ],
+            "1.5": [
+              1.1,
+              1.1,
+              1.1
+            ],
+            "2.0": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      }
+    }
+  }
+}

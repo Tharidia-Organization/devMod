@@ -39,13 +39,14 @@ public final class NeurolinkBlock extends Block {
     public static final BooleanProperty UP = PipeBlock.UP;
     public static final BooleanProperty DOWN = PipeBlock.DOWN;
 
-    private static final VoxelShape CORE = Block.box(5, 5, 5, 11, 11, 11);
-    private static final VoxelShape NORTH_SHAPE = Block.box(5, 5, 0, 11, 11, 5);
-    private static final VoxelShape SOUTH_SHAPE = Block.box(5, 5, 11, 11, 11, 16);
-    private static final VoxelShape EAST_SHAPE = Block.box(11, 5, 5, 16, 11, 11);
-    private static final VoxelShape WEST_SHAPE = Block.box(0, 5, 5, 5, 11, 11);
-    private static final VoxelShape UP_SHAPE = Block.box(5, 11, 5, 11, 16, 11);
-    private static final VoxelShape DOWN_SHAPE = Block.box(5, 0, 5, 11, 5, 11);
+    // VoxelShapes aligned with JSON models (Y=0-6 for horizontal, connectors at ends)
+    private static final VoxelShape CORE = Block.box(6, 0, 6, 10, 6, 10);
+    private static final VoxelShape NORTH_SHAPE = Block.box(5, 0, 0, 11, 6, 6);
+    private static final VoxelShape SOUTH_SHAPE = Block.box(5, 0, 10, 11, 6, 16);
+    private static final VoxelShape EAST_SHAPE = Block.box(10, 0, 5, 16, 6, 11);
+    private static final VoxelShape WEST_SHAPE = Block.box(0, 0, 5, 6, 6, 11);
+    private static final VoxelShape UP_SHAPE = Block.box(5, 5, 5, 11, 16, 11);
+    private static final VoxelShape DOWN_SHAPE = Block.box(6, 0, 6, 10, 1, 10);
 
     @Override
     @Nonnull

@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -23,6 +24,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -31,6 +33,7 @@ import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.CloneItems;
 import com.devmod.clone.block.NeurocellLBlock;
 import com.devmod.clone.block.NeurocellLBlock.MultiBlockPart;
+import com.devmod.clone.data.BioscanData;
 import com.devmod.clone.item.BioscannerItem;
 import com.devmod.clone.menu.NeurocellLMenu;
 
@@ -39,7 +42,7 @@ import com.devmod.clone.menu.NeurocellLMenu;
  * Can render larger entities than the standard Neurocell.
  * Features dual texture states (active/inactive) like the standard Neurocell.
  */
-public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider {
+public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, NeurocellAccess {
 
     private static final int PROCESS_TIME = 300;
     private static final String TAG_ENTITY_TYPE = "EntityType";
@@ -403,5 +406,44 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider {
         };
         container.setItem(0, Objects.requireNonNull(storedBioscanner.copy()));
         return container;
+    }
+
+    /**
+     * Check if the neurocell has a physical empty bioscanner inserted.
+     */
+    public boolean hasEmptyBioscanner() {
+        return !storedBioscanner.isEmpty()
+            && storedBioscanner.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()))
+            && !BioscannerItem.hasData(storedBioscanner);
+    }
+
+    /**
+     * Fill the bioscanner slot from imprinter data.
+     */
+    public void fillBioscannerFromImprinter(@Nonnull BioscanData data) {
+        if (storedBioscanner.isEmpty()
+            || !storedBioscanner.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()))
+            || BioscannerItem.hasData(storedBioscanner)) {
+            return;
+        }
+
+        storedBioscanner.update(
+            Objects.requireNonNull(DataComponents.CUSTOM_DATA),
+            Objects.requireNonNull(CustomData.EMPTY),
+            customData -> {
+                CompoundTag tag = customData.copyTag();
+                tag.putString("EntityType", Objects.requireNonNull(data.entityTypeId().toString()));
+                tag.putString("EntityName", data.entityName());
+                UUID pUuid = data.playerUUID();
+                if (pUuid != null) {
+                    tag.putUUID("PlayerUUID", pUuid);
+                }
+                CompoundTag nbt = data.entityNBT();
+                if (nbt != null) {
+                    tag.put("EntityNBT", nbt);
+                }
+                return CustomData.of(tag);
+            });
+        onInventoryChanged();
     }
 }

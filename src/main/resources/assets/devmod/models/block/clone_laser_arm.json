@@ -1,0 +1,117 @@
+{
+  "credit": "Clone Laser Arm - Oritech-style laser weapon",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "machine": "devmod:block/clone/clone_machine_base",
+    "machine_top": "devmod:block/clone/clone_machine_top",
+    "frame": "devmod:block/clone/clone_frame",
+    "port": "devmod:block/clone/clone_port",
+    "pipe": "devmod:block/clone/clone_pipe",
+    "particle": "devmod:block/clone/clone_machine_base"
+  },
+  "elements": [
+    {
+      "name": "base",
+      "from": [4, 0, 4],
+      "to": [12, 4, 12],
+      "faces": {
+        "north": {"uv": [0, 0, 8, 4], "texture": "#machine"},
+        "east": {"uv": [0, 0, 8, 4], "texture": "#machine"},
+        "south": {"uv": [0, 0, 8, 4], "texture": "#machine"},
+        "west": {"uv": [0, 0, 8, 4], "texture": "#machine"},
+        "up": {"uv": [0, 0, 8, 8], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 8, 8], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "turret_base",
+      "from": [5, 4, 5],
+      "to": [11, 8, 11],
+      "faces": {
+        "north": {"uv": [0, 0, 6, 4], "texture": "#frame"},
+        "east": {"uv": [0, 0, 6, 4], "texture": "#frame"},
+        "south": {"uv": [0, 0, 6, 4], "texture": "#frame"},
+        "west": {"uv": [0, 0, 6, 4], "texture": "#frame"},
+        "up": {"uv": [0, 0, 6, 6], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 6, 6], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "barrel_mount",
+      "from": [6, 6, 2],
+      "to": [10, 10, 5],
+      "faces": {
+        "north": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "east": {"uv": [0, 0, 3, 4], "texture": "#frame"},
+        "south": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "west": {"uv": [0, 0, 3, 4], "texture": "#frame"},
+        "up": {"uv": [0, 0, 4, 3], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 4, 3], "texture": "#frame"}
+      }
+    },
+    {
+      "name": "barrel",
+      "from": [7, 7, -4],
+      "to": [9, 9, 2],
+      "faces": {
+        "north": {"uv": [0, 0, 2, 2], "texture": "#port"},
+        "east": {"uv": [0, 0, 6, 2], "texture": "#pipe"},
+        "south": {"uv": [0, 0, 2, 2], "texture": "#pipe"},
+        "west": {"uv": [0, 0, 6, 2], "texture": "#pipe"},
+        "up": {"uv": [0, 0, 2, 6], "texture": "#pipe"},
+        "down": {"uv": [0, 0, 2, 6], "texture": "#pipe"}
+      }
+    },
+    {
+      "name": "power_cable",
+      "from": [7, 4, 11],
+      "to": [9, 6, 16],
+      "faces": {
+        "north": {"uv": [0, 0, 2, 2], "texture": "#pipe"},
+        "east": {"uv": [0, 0, 5, 2], "texture": "#pipe"},
+        "south": {"uv": [0, 0, 2, 2], "texture": "#port"},
+        "west": {"uv": [0, 0, 5, 2], "texture": "#pipe"},
+        "up": {"uv": [0, 0, 2, 5], "texture": "#pipe"},
+        "down": {"uv": [0, 0, 2, 5], "texture": "#pipe"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 45, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 225, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "ground": {
+      "translation": [0, 3, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "gui": {
+      "rotation": [30, 225, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.625, 0.625, 0.625]
+    },
+    "head": {
+      "translation": [0, 0, 0],
+      "scale": [1, 1, 1]
+    },
+    "fixed": {
+      "scale": [0.5, 0.5, 0.5]
+    }
+  }
+}

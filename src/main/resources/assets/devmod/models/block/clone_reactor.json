@@ -1,0 +1,21 @@
+{
+  "credit": "Clone Reactor - Oritech-style nuclear reactor",
+  "parent": "minecraft:block/block",
+  "texture_size": [32, 32],
+  "textures": {
+    "machine": "devmod:block/clone/clone_machine_base",
+    "machine_top": "devmod:block/clone/clone_machine_top",
+    "tank": "devmod:block/clone/clone_tank",
+    "frame": "devmod:block/clone/clone_frame",
+    "port": "devmod:block/clone/clone_port",
+    "particle": "devmod:block/clone/clone_machine_base"
+  },
+  "elements": [
+    {"name": "base", "from": [-2, 0, -2], "to": [18, 4, 18], "faces": {"north": {"uv": [0, 0, 10, 2], "texture": "#machine"}, "east": {"uv": [0, 0, 10, 2], "texture": "#machine"}, "south": {"uv": [0, 0, 10, 2], "texture": "#machine"}, "west": {"uv": [0, 0, 10, 2], "texture": "#machine"}, "up": {"uv": [0, 0, 10, 10], "texture": "#machine_top"}, "down": {"uv": [0, 0, 10, 10], "texture": "#machine"}}},
+    {"name": "core", "from": [2, 4, 2], "to": [14, 20, 14], "faces": {"north": {"uv": [0, 0, 6, 8], "texture": "#tank"}, "east": {"uv": [0, 0, 6, 8], "texture": "#tank"}, "south": {"uv": [0, 0, 6, 8], "texture": "#tank"}, "west": {"uv": [0, 0, 6, 8], "texture": "#tank"}, "up": {"uv": [0, 0, 6, 6], "texture": "#port"}, "down": {"uv": [0, 0, 6, 6], "texture": "#machine"}}},
+    {"name": "top", "from": [4, 20, 4], "to": [12, 24, 12], "faces": {"north": {"uv": [0, 0, 4, 2], "texture": "#frame"}, "east": {"uv": [0, 0, 4, 2], "texture": "#frame"}, "south": {"uv": [0, 0, 4, 2], "texture": "#frame"}, "west": {"uv": [0, 0, 4, 2], "texture": "#frame"}, "up": {"uv": [0, 0, 4, 4], "texture": "#port"}, "down": {"uv": [0, 0, 4, 4], "texture": "#frame"}}},
+    {"name": "pipe_l", "from": [-4, 6, 6], "to": [2, 10, 10], "faces": {"north": {"uv": [0, 0, 3, 2], "texture": "#frame"}, "east": {"uv": [0, 0, 2, 2], "texture": "#frame"}, "south": {"uv": [0, 0, 3, 2], "texture": "#frame"}, "west": {"uv": [0, 0, 2, 2], "texture": "#port"}, "up": {"uv": [0, 0, 3, 2], "texture": "#frame"}, "down": {"uv": [0, 0, 3, 2], "texture": "#frame"}}},
+    {"name": "pipe_r", "from": [14, 6, 6], "to": [20, 10, 10], "faces": {"north": {"uv": [0, 0, 3, 2], "texture": "#frame"}, "east": {"uv": [0, 0, 2, 2], "texture": "#port"}, "south": {"uv": [0, 0, 3, 2], "texture": "#frame"}, "west": {"uv": [0, 0, 2, 2], "texture": "#frame"}, "up": {"uv": [0, 0, 3, 2], "texture": "#frame"}, "down": {"uv": [0, 0, 3, 2], "texture": "#frame"}}}
+  ],
+  "display": {"thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.25, 0.25, 0.25]}, "thirdperson_lefthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.25, 0.25, 0.25]}, "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.3, 0.3, 0.3]}, "firstperson_lefthand": {"rotation": [0, 225, 0], "translation": [0, 0, 0], "scale": [0.3, 0.3, 0.3]}, "ground": {"translation": [0, 3, 0], "scale": [0.2, 0.2, 0.2]}, "gui": {"rotation": [30, 225, 0], "translation": [0, -1, 0], "scale": [0.4, 0.4, 0.4]}, "head": {"translation": [0, 0, 0], "scale": [0.6, 0.6, 0.6]}, "fixed": {"scale": [0.35, 0.35, 0.35]}}
+}

@@ -1,0 +1,157 @@
+{
+  "credit": "Clone Treefeller - Oritech-style automated harvester",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "machine": "devmod:block/clone/clone_machine_base",
+    "machine_top": "devmod:block/clone/clone_machine_top",
+    "frame": "devmod:block/clone/clone_frame",
+    "grinder": "devmod:block/clone/clone_grinder",
+    "panel": "devmod:block/clone/clone_panel",
+    "particle": "devmod:block/clone/clone_machine_base"
+  },
+  "elements": [
+    {
+      "name": "base",
+      "from": [1, 0, 1],
+      "to": [15, 5, 15],
+      "faces": {
+        "north": {"uv": [0, 0, 14, 5], "texture": "#machine"},
+        "east": {"uv": [0, 0, 14, 5], "texture": "#machine"},
+        "south": {"uv": [0, 0, 14, 5], "texture": "#machine"},
+        "west": {"uv": [0, 0, 14, 5], "texture": "#machine"},
+        "up": {"uv": [0, 0, 14, 14], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 14, 14], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "main_body",
+      "from": [2, 5, 3],
+      "to": [14, 14, 13],
+      "faces": {
+        "north": {"uv": [0, 0, 12, 9], "texture": "#panel"},
+        "east": {"uv": [0, 0, 10, 9], "texture": "#machine"},
+        "south": {"uv": [0, 0, 12, 9], "texture": "#machine"},
+        "west": {"uv": [0, 0, 10, 9], "texture": "#machine"},
+        "up": {"uv": [0, 0, 12, 10], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 12, 10], "texture": "#machine"}
+      }
+    },
+    {
+      "name": "arm_mount",
+      "from": [5, 10, -2],
+      "to": [11, 14, 3],
+      "faces": {
+        "north": {"uv": [0, 0, 6, 4], "texture": "#frame"},
+        "east": {"uv": [0, 0, 5, 4], "texture": "#frame"},
+        "south": {"uv": [0, 0, 6, 4], "texture": "#machine"},
+        "west": {"uv": [0, 0, 5, 4], "texture": "#frame"},
+        "up": {"uv": [0, 0, 6, 5], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 6, 5], "texture": "#frame"}
+      }
+    },
+    {
+      "name": "saw_arm",
+      "from": [4, 6, -6],
+      "to": [12, 10, -2],
+      "faces": {
+        "north": {"uv": [0, 0, 8, 4], "texture": "#frame"},
+        "east": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "south": {"uv": [0, 0, 8, 4], "texture": "#frame"},
+        "west": {"uv": [0, 0, 4, 4], "texture": "#frame"},
+        "up": {"uv": [0, 0, 8, 4], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 8, 4], "texture": "#frame"}
+      }
+    },
+    {
+      "name": "saw_blade",
+      "from": [6, 4, -8],
+      "to": [10, 12, -6],
+      "rotation": {"angle": 22.5, "axis": "x", "origin": [8, 8, -7]},
+      "faces": {
+        "north": {"uv": [0, 0, 4, 8], "texture": "#grinder"},
+        "east": {"uv": [0, 0, 2, 8], "texture": "#grinder"},
+        "south": {"uv": [0, 0, 4, 8], "texture": "#grinder"},
+        "west": {"uv": [0, 0, 2, 8], "texture": "#grinder"},
+        "up": {"uv": [0, 0, 4, 2], "texture": "#grinder"},
+        "down": {"uv": [0, 0, 4, 2], "texture": "#grinder"}
+      }
+    },
+    {
+      "name": "exhaust_left",
+      "from": [0, 8, 6],
+      "to": [2, 16, 10],
+      "faces": {
+        "north": {"uv": [0, 0, 2, 8], "texture": "#frame"},
+        "east": {"uv": [0, 0, 4, 8], "texture": "#frame"},
+        "south": {"uv": [0, 0, 2, 8], "texture": "#frame"},
+        "west": {"uv": [0, 0, 4, 8], "texture": "#frame"},
+        "up": {"uv": [0, 0, 2, 4], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 2, 4], "texture": "#frame"}
+      }
+    },
+    {
+      "name": "exhaust_right",
+      "from": [14, 8, 6],
+      "to": [16, 16, 10],
+      "faces": {
+        "north": {"uv": [0, 0, 2, 8], "texture": "#frame"},
+        "east": {"uv": [0, 0, 4, 8], "texture": "#frame"},
+        "south": {"uv": [0, 0, 2, 8], "texture": "#frame"},
+        "west": {"uv": [0, 0, 4, 8], "texture": "#frame"},
+        "up": {"uv": [0, 0, 2, 4], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 2, 4], "texture": "#frame"}
+      }
+    },
+    {
+      "name": "output_chute",
+      "from": [5, 2, 13],
+      "to": [11, 8, 18],
+      "faces": {
+        "north": {"uv": [0, 0, 6, 6], "texture": "#machine"},
+        "east": {"uv": [0, 0, 5, 6], "texture": "#machine"},
+        "south": {"uv": [0, 0, 6, 6], "texture": "#panel"},
+        "west": {"uv": [0, 0, 5, 6], "texture": "#machine"},
+        "up": {"uv": [0, 0, 6, 5], "texture": "#machine_top"},
+        "down": {"uv": [0, 0, 6, 5], "texture": "#machine"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 45, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 225, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "ground": {
+      "translation": [0, 3, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "gui": {
+      "rotation": [30, 225, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.625, 0.625, 0.625]
+    },
+    "head": {
+      "translation": [0, 0, 0],
+      "scale": [1, 1, 1]
+    },
+    "fixed": {
+      "scale": [0.5, 0.5, 0.5]
+    }
+  }
+}

@@ -31,6 +31,12 @@ repositories {
         url = "https://maven.teamresourceful.com/repository/maven-public/"
     }
 
+    // GeckoLib - Advanced entity and block animations
+    maven {
+        name = "GeckoLib"
+        url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
+    }
+
     // Modrinth Maven for Distant Horizons API
     maven {
         name = "Modrinth"
@@ -303,6 +309,10 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.annotation.versioning:1.1.0'
 
     // CTM removed - Athena non funzionava correttamente
+
+    // GeckoLib - Advanced entity and block model animations
+    // Enables Bedrock Edition .geo.json models with unlimited rotations, bone hierarchies, and animations
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.7.4"
 
     // DevAuth - Microsoft authentication for dev environment
     // Added as JAR in run/mods folder (not gradle dependency to avoid module conflicts)
