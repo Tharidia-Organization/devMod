@@ -1,5 +1,7 @@
 {
   "variants": {
-    "": { "model": "devmod:block/nexus_tile" }
+    "": {
+      "model": "devmod:block/nexus_tile"
+    }
   }
 }

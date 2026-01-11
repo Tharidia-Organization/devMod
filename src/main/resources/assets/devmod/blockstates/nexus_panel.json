@@ -1,5 +1,7 @@
 {
   "variants": {
-    "": { "model": "devmod:block/nexus_panel" }
+    "": {
+      "model": "devmod:block/nexus_panel"
+    }
   }
 }

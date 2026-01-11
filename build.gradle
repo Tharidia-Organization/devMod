@@ -25,6 +25,12 @@ repositories {
     // Add here additional repositories if required by some of the dependencies below.
     mavenCentral()
 
+    // Athena CTM library (Team Resourceful)
+    maven {
+        name = "TeamResourceful"
+        url = "https://maven.teamresourceful.com/repository/maven-public/"
+    }
+
     // Modrinth Maven for Distant Horizons API
     maven {
         name = "Modrinth"
@@ -295,6 +301,8 @@ dependencies {
     compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation:6.4.0'
     compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.3'
     compileOnly 'org.osgi:org.osgi.annotation.versioning:1.1.0'
+
+    // CTM removed - Athena non funzionava correttamente
 
     // DevAuth - Microsoft authentication for dev environment
     // Added as JAR in run/mods folder (not gradle dependency to avoid module conflicts)
