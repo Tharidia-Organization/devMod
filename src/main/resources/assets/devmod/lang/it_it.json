@@ -2103,5 +2103,8 @@
   "gui.devmod.error.title": "Errore Schermata",
   "gui.devmod.error.close": "Chiudi",
   "gui.devmod.error.retry": "Riprova",
-  "gui.devmod.error.render_failed": "Rendering fallito - premi ESC per chiudere"
+  "gui.devmod.error.render_failed": "Rendering fallito - premi ESC per chiudere",
+
+  "block.devmod.clone_pulverizer": "Polverizzatore Clone",
+  "item.devmod.grinder": "Macina del Polverizzatore"
 }

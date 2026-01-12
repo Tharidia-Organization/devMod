@@ -141,7 +141,7 @@ public final class ClonePulverizerBlock extends HorizontalDirectionalBlock imple
     }
 
     /**
-     * Right-click to collect output items from the discharge tray.
+     * Right-click without item: Shift+click to extract grinders, otherwise collect output.
      */
     @Override
     @Nonnull
@@ -158,6 +158,13 @@ public final class ClonePulverizerBlock extends HorizontalDirectionalBlock imple
 
         BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof ClonePulverizerBlockEntity pulverizer) {
+            // Try grinder interaction first (shift+click to extract)
+            InteractionResult grinderResult = pulverizer.handleGrinderInteraction(player, ItemStack.EMPTY);
+            if (grinderResult != InteractionResult.PASS) {
+                return grinderResult;
+            }
+
+            // Otherwise, collect output items
             ItemStack output = pulverizer.extractOutput();
             if (!output.isEmpty()) {
                 // Give item to player
@@ -170,6 +177,38 @@ public final class ClonePulverizerBlock extends HorizontalDirectionalBlock imple
         }
 
         return InteractionResult.PASS;
+    }
+
+    /**
+     * Right-click with item: Insert grinders if holding one.
+     */
+    @Override
+    @Nonnull
+    protected net.minecraft.world.ItemInteractionResult useItemOn(
+            @Nonnull ItemStack stack,
+            @Nonnull BlockState state,
+            @Nonnull Level level,
+            @Nonnull BlockPos pos,
+            @Nonnull Player player,
+            @Nonnull net.minecraft.world.InteractionHand hand,
+            @Nonnull BlockHitResult hitResult
+    ) {
+        if (level.isClientSide) {
+            return net.minecraft.world.ItemInteractionResult.SUCCESS;
+        }
+
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof ClonePulverizerBlockEntity pulverizer) {
+            // Try grinder interaction (insert if holding grinder)
+            InteractionResult grinderResult = pulverizer.handleGrinderInteraction(player, stack);
+            if (grinderResult == InteractionResult.SUCCESS) {
+                return net.minecraft.world.ItemInteractionResult.SUCCESS;
+            } else if (grinderResult == InteractionResult.CONSUME) {
+                return net.minecraft.world.ItemInteractionResult.CONSUME;
+            }
+        }
+
+        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override

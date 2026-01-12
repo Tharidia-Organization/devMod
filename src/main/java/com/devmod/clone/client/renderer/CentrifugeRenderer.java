@@ -36,20 +36,24 @@ public class CentrifugeRenderer extends GeoBlockRenderer<CentrifugeBlockEntity> 
 
     // === Rendering Constants ===
 
-    /** Height of drum center in model units (9/16 blocks from geo.json pivot) */
-    private static final float DRUM_CENTER_HEIGHT = 0.5625f;
+    /**
+     * Height of drum center in block units.
+     * Drum spans Y=13-30 in model, center at Y=21.5 → 21.5/16 = 1.34 blocks.
+     * But render origin is at block center (Y=0.5), so offset = 1.34 - 0.5 = 0.84
+     */
+    private static final float DRUM_CENTER_HEIGHT = 0.84f;
 
     /** Scale for item being processed */
-    private static final float PROCESSING_SCALE = 0.35f;
+    private static final float PROCESSING_SCALE = 0.3f;
 
     /** Spin rate for processing item (degrees per tick) */
-    private static final float SPIN_RATE = 15f;
+    private static final float SPIN_RATE = 18f;
 
     /** Vertical bob amplitude */
-    private static final float BOB_AMPLITUDE = 0.03f;
+    private static final float BOB_AMPLITUDE = 0.02f;
 
     /** Vertical bob speed */
-    private static final float BOB_SPEED = 0.1f;
+    private static final float BOB_SPEED = 0.08f;
 
     public CentrifugeRenderer() {
         super(new CentrifugeModel());

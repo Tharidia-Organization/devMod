@@ -19,6 +19,7 @@ import com.devmod.clone.block.entity.ClonePulverizerBlockEntity;
 import com.devmod.clone.client.model.ClonePulverizerModel;
 
 import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
 
 /**
@@ -59,6 +60,33 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
 
     public ClonePulverizerRenderer() {
         super(new ClonePulverizerModel());
+    }
+
+    @Override
+    public void preRender(
+            @Nonnull PoseStack poseStack,
+            @Nonnull ClonePulverizerBlockEntity entity,
+            @Nonnull BakedGeoModel model,
+            @Nonnull MultiBufferSource bufferSource,
+            @Nullable com.mojang.blaze3d.vertex.VertexConsumer buffer,
+            boolean isReRender,
+            float partialTick,
+            int packedLight,
+            int packedOverlay,
+            int colour
+    ) {
+        super.preRender(poseStack, entity, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, colour);
+
+        // Hide roller bones if grinders are not installed
+        GeoBone leftRoller = model.getBone("roller_left").orElse(null);
+        GeoBone rightRoller = model.getBone("roller_right").orElse(null);
+
+        if (leftRoller != null) {
+            leftRoller.setHidden(!entity.hasLeftGrinder());
+        }
+        if (rightRoller != null) {
+            rightRoller.setHidden(!entity.hasRightGrinder());
+        }
     }
 
     @Override

@@ -21,6 +21,7 @@ import com.devmod.clone.client.screen.CentrifugeScreen;
 import com.devmod.clone.client.screen.NeurocellScreen;
 import com.devmod.clone.client.screen.NeurocellLScreen;
 import com.devmod.clone.client.renderer.BillboardBatcher;
+import com.devmod.clone.client.renderer.CentrifugeRenderer;
 import com.devmod.clone.client.renderer.CloneMachineRenderer;
 import com.devmod.clone.client.renderer.ClonePulverizerRenderer;
 import com.devmod.clone.client.renderer.EntityBillboardAtlas;
@@ -67,6 +68,13 @@ public final class CloneClientSetup {
             ctx -> new ClonePulverizerRenderer()
         );
         DevMod.LOGGER.info("[Clone] Registered Clone Pulverizer renderer");
+
+        // Register Centrifuge renderer (GeckoLib with item rendering)
+        event.registerBlockEntityRenderer(
+            Objects.requireNonNull(CloneBlockEntities.CENTRIFUGE.get()),
+            ctx -> new CentrifugeRenderer()
+        );
+        DevMod.LOGGER.info("[Clone] Registered Centrifuge renderer");
 
         // Register render event handlers for billboard system
         if (!renderEventsRegistered) {

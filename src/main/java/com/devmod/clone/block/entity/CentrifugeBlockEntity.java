@@ -62,13 +62,14 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
     // === GeckoLib Animation ===
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-    /** Idle animation - loops when not processing. */
-    protected static final RawAnimation IDLE = RawAnimation.begin()
-            .thenLoop("animation.clone_machine.idle");
+    /** Deploy then idle - plays deploy once, then loops idle. */
+    protected static final RawAnimation DEPLOY_THEN_IDLE = RawAnimation.begin()
+            .thenPlay("animation.clone_centrifuge.deploy")
+            .thenLoop("animation.clone_centrifuge.idle");
 
     /** Active processing animation - drum spinning. */
     protected static final RawAnimation ACTIVE = RawAnimation.begin()
-            .thenLoop("animation.clone_machine.active");
+            .thenLoop("animation.clone_centrifuge.active");
 
     // === State ===
     private boolean active = false;
@@ -252,7 +253,7 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
             if (active) {
                 return state.setAndContinue(ACTIVE);
             } else {
-                return state.setAndContinue(IDLE);
+                return state.setAndContinue(DEPLOY_THEN_IDLE);
             }
         }));
     }

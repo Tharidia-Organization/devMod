@@ -7,12 +7,16 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -35,8 +39,13 @@ import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import com.devmod.clone.CloneBlockEntities;
+import com.devmod.clone.CloneItems;
+import com.devmod.clone.item.GrinderItem;
 import com.devmod.clone.recipe.CloneRecipeTypes;
 import com.devmod.clone.recipe.PulverizingRecipe;
+import com.devmod.config.Config;
+
+import net.minecraft.world.InteractionResult;
 
 /**
  * Block entity for the Clone Pulverizer machine.
@@ -51,7 +60,22 @@ import com.devmod.clone.recipe.PulverizingRecipe;
  *   <li>Hopper compatibility for automation</li>
  * </ul>
  */
-public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockEntity {
+public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockEntity, WorldlyContainer {
+
+    // Slot indices for WorldlyContainer
+    public static final int SLOT_INPUT = 0;
+    public static final int SLOT_OUTPUT = 1;
+    public static final int SLOT_GRINDER_LEFT = 2;
+    public static final int SLOT_GRINDER_RIGHT = 3;
+    private static final int INVENTORY_SIZE = 4;
+
+    // Slot access arrays for WorldlyContainer (hopper interaction)
+    private static final int[] SLOTS_FOR_UP = {SLOT_INPUT};
+    private static final int[] SLOTS_FOR_DOWN = {SLOT_OUTPUT};
+    private static final int[] SLOTS_FOR_SIDES = {SLOT_OUTPUT};
+
+    // Sound configuration
+    private static final int SOUND_INTERVAL = 20;  // Play sound every second (20 ticks)
 
     // NBT keys
     private static final String TAG_PROGRESS = "Progress";
@@ -60,6 +84,9 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     private static final String TAG_ACTIVE = "Active";
     private static final String TAG_OUTPUT_ITEM = "OutputItem";
     private static final String TAG_INVENTORY = "Inventory";
+    private static final String TAG_OPERATIONS_COUNT = "OperationsCount";
+    private static final String TAG_GRINDER_LEFT = "GrinderLeft";
+    private static final String TAG_GRINDER_RIGHT = "GrinderRight";
 
     // Animation cache
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
@@ -93,8 +120,14 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     private boolean dirtyActive = false;
     private boolean dirtyOutput = false;
 
-    // Internal inventory (1 slot for input buffer, 1 for output buffer)
-    private final SimpleContainer inventory = new SimpleContainer(2) {
+    // Sound timer for periodic crushing sounds
+    private int soundTimer = 0;
+
+    // Grinder operations counter for wear
+    private int operationsCount = 0;
+
+    // Internal inventory (input, output, grinder_left, grinder_right)
+    private final SimpleContainer inventory = new SimpleContainer(INVENTORY_SIZE) {
         @Override
         public void setChanged() {
             super.setChanged();
@@ -222,10 +255,46 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     }
 
     /**
+     * Check if the output slot can accept the given result.
+     * @param result The result item to check
+     * @return true if output can accept the item
+     */
+    private boolean canAcceptOutput(ItemStack result) {
+        if (result.isEmpty()) {
+            return true;
+        }
+
+        ItemStack current = inventory.getItem(SLOT_OUTPUT);
+
+        if (current.isEmpty()) {
+            return true;
+        }
+
+        if (!ItemStack.isSameItemSameComponents(current, result)) {
+            return false;  // Different item type
+        }
+
+        // Check if there's room for at least one more
+        return current.getCount() + result.getCount() <= current.getMaxStackSize();
+    }
+
+    /**
      * Process items in input slot.
+     * Requires both grinders to be installed.
      */
     private void processItems() {
-        ItemStack input = inventory.getItem(0);
+        Level lvl = level;
+        ItemStack input = inventory.getItem(SLOT_INPUT);
+
+        // Require both grinders to process
+        if (!hasGrinders()) {
+            if (active) {
+                setActive(false);
+            }
+            progress = 0;
+            soundTimer = 0;
+            return;
+        }
 
         if (input.isEmpty()) {
             // Nothing to process
@@ -233,6 +302,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
                 setActive(false);
             }
             progress = 0;
+            soundTimer = 0;
             processingItem = ItemStack.EMPTY;
             currentRecipe = null;
             return;
@@ -258,17 +328,52 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         processingItem = input.copyWithCount(1);
         progress++;
 
+        // Play crushing sound at intervals
+        soundTimer++;
+        if (soundTimer >= SOUND_INTERVAL && lvl != null && !lvl.isClientSide) {
+            soundTimer = 0;
+            lvl.playSound(
+                    null,
+                    worldPosition,
+                    SoundEvents.GRINDSTONE_USE,
+                    SoundSource.BLOCKS,
+                    0.5f,
+                    0.8f + (lvl.random.nextFloat() * 0.2f - 0.1f)  // Slight pitch variation
+            );
+        }
+
         // Spawn crushing particles every 5 ticks
-        if (progress % 5 == 0 && level instanceof ServerLevel serverLevel) {
+        if (progress % 5 == 0 && lvl instanceof ServerLevel serverLevel) {
             spawnCrushingParticles(serverLevel, input);
         }
 
         if (progress >= maxProgress) {
-            // Complete processing
+            // Check if output can accept the result BEFORE consuming input
+            if (!canAcceptOutput(result)) {
+                // Output full or blocked - pause processing, don't lose item
+                return;
+            }
+
+            // Complete processing - safe to consume input now
             input.shrink(1);
 
             // Add result to output slot (slot 1) - rendered visually, auto-pickup
             addToOutput(result.copy());
+
+            // Damage grinders (every OPERATIONS_PER_DAMAGE completions)
+            damageGrinders();
+
+            // Play completion sound
+            if (lvl != null && !lvl.isClientSide) {
+                lvl.playSound(
+                        null,
+                        worldPosition,
+                        SoundEvents.ITEM_PICKUP,
+                        SoundSource.BLOCKS,
+                        0.4f,
+                        1.2f
+                );
+            }
 
             progress = 0;
             processingItem = ItemStack.EMPTY;
@@ -355,6 +460,217 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
      */
     public SimpleContainer getInventory() {
         return inventory;
+    }
+
+    // === Grinder Methods ===
+
+    /**
+     * Check if both grinders are installed.
+     */
+    public boolean hasGrinders() {
+        return hasLeftGrinder() && hasRightGrinder();
+    }
+
+    /**
+     * Check if left grinder is installed.
+     */
+    public boolean hasLeftGrinder() {
+        ItemStack grinder = inventory.getItem(SLOT_GRINDER_LEFT);
+        return !grinder.isEmpty() && grinder.getItem() instanceof GrinderItem;
+    }
+
+    /**
+     * Check if right grinder is installed.
+     */
+    public boolean hasRightGrinder() {
+        ItemStack grinder = inventory.getItem(SLOT_GRINDER_RIGHT);
+        return !grinder.isEmpty() && grinder.getItem() instanceof GrinderItem;
+    }
+
+    /**
+     * Damage both grinders after processing operations.
+     * Called after every recipe completion.
+     * Uses config value for operations per damage point.
+     */
+    private void damageGrinders() {
+        operationsCount++;
+        int opsPerDamage = Config.GRINDER_OPERATIONS_PER_DAMAGE.get();
+        if (operationsCount >= opsPerDamage) {
+            operationsCount = 0;
+            damageGrinder(SLOT_GRINDER_LEFT);
+            damageGrinder(SLOT_GRINDER_RIGHT);
+        }
+    }
+
+    /**
+     * Damage a single grinder in the specified slot.
+     */
+    private void damageGrinder(int slot) {
+        ItemStack grinder = inventory.getItem(slot);
+        if (grinder.isEmpty()) return;
+
+        int damage = grinder.getDamageValue() + 1;
+        if (damage >= grinder.getMaxDamage()) {
+            // Grinder broke
+            inventory.setItem(slot, ItemStack.EMPTY);
+            Level lvl = level;
+            if (lvl != null && !lvl.isClientSide) {
+                lvl.playSound(null, worldPosition, SoundEvents.ITEM_BREAK,
+                        SoundSource.BLOCKS, 1.0f, 1.0f);
+            }
+        } else {
+            grinder.setDamageValue(damage);
+        }
+        setChanged();
+        dirtyOutput = true; // Trigger sync for grinder state
+    }
+
+    /**
+     * Handle grinder interaction from player.
+     * @param player The player interacting
+     * @param heldItem The item the player is holding
+     * @return InteractionResult indicating if interaction was handled
+     */
+    public InteractionResult handleGrinderInteraction(Player player, ItemStack heldItem) {
+        // Shift+click with empty hand = extract grinder
+        if (player.isShiftKeyDown() && heldItem.isEmpty()) {
+            return tryExtractGrinder(player);
+        }
+
+        // Holding a grinder = try to insert
+        if (heldItem.getItem() instanceof GrinderItem) {
+            return tryInsertGrinder(player, heldItem);
+        }
+
+        return InteractionResult.PASS;
+    }
+
+    /**
+     * Try to extract a grinder (right first, then left).
+     */
+    private InteractionResult tryExtractGrinder(Player player) {
+        // Try right grinder first, then left
+        for (int slot : new int[]{SLOT_GRINDER_RIGHT, SLOT_GRINDER_LEFT}) {
+            ItemStack grinder = inventory.getItem(slot);
+            if (!grinder.isEmpty()) {
+                if (!player.addItem(grinder.copy())) {
+                    // Drop if inventory full
+                    player.drop(grinder.copy(), false);
+                }
+                inventory.setItem(slot, ItemStack.EMPTY);
+                Level lvl = level;
+                if (lvl != null && !lvl.isClientSide) {
+                    lvl.playSound(null, worldPosition, SoundEvents.ITEM_PICKUP,
+                            SoundSource.BLOCKS, 1.0f, 1.0f);
+                }
+                setChanged();
+                dirtyOutput = true;
+                syncToClient();
+                return InteractionResult.SUCCESS;
+            }
+        }
+        return InteractionResult.PASS;
+    }
+
+    /**
+     * Try to insert a grinder (left first, then right).
+     */
+    private InteractionResult tryInsertGrinder(Player player, ItemStack heldItem) {
+        // Try left slot first, then right
+        for (int slot : new int[]{SLOT_GRINDER_LEFT, SLOT_GRINDER_RIGHT}) {
+            if (inventory.getItem(slot).isEmpty()) {
+                inventory.setItem(slot, heldItem.copyWithCount(1));
+                if (!player.isCreative()) {
+                    heldItem.shrink(1);
+                }
+                Level lvl = level;
+                if (lvl != null && !lvl.isClientSide) {
+                    lvl.playSound(null, worldPosition, SoundEvents.ANVIL_PLACE,
+                            SoundSource.BLOCKS, 0.5f, 1.2f);
+                }
+                setChanged();
+                dirtyOutput = true;
+                syncToClient();
+                return InteractionResult.SUCCESS;
+            }
+        }
+        return InteractionResult.PASS; // Both slots full
+    }
+
+    // === WorldlyContainer Implementation ===
+
+    @Override
+    public int[] getSlotsForFace(@Nonnull Direction side) {
+        return switch (side) {
+            case UP -> SLOTS_FOR_UP;      // Input from above
+            case DOWN -> SLOTS_FOR_DOWN;   // Output from below
+            default -> SLOTS_FOR_SIDES;    // Output from sides
+        };
+    }
+
+    @Override
+    public boolean canPlaceItemThroughFace(int slot, @Nonnull ItemStack stack, @Nullable Direction side) {
+        // Only allow input slot from above, and only if recipe exists
+        return slot == SLOT_INPUT && side == Direction.UP && findRecipe(stack).isPresent();
+    }
+
+    @Override
+    public boolean canTakeItemThroughFace(int slot, @Nonnull ItemStack stack, @Nonnull Direction side) {
+        // Only allow output slot extraction from down and sides
+        return slot == SLOT_OUTPUT && side != Direction.UP;
+    }
+
+    // === Container Interface Delegation ===
+
+    @Override
+    public int getContainerSize() {
+        return inventory.getContainerSize();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return inventory.isEmpty();
+    }
+
+    @Override
+    @Nonnull
+    public ItemStack getItem(int slot) {
+        return inventory.getItem(slot);
+    }
+
+    @Override
+    @Nonnull
+    public ItemStack removeItem(int slot, int amount) {
+        ItemStack result = inventory.removeItem(slot, amount);
+        if (slot == SLOT_OUTPUT && !result.isEmpty()) {
+            dirtyOutput = true;
+            syncToClient();
+        }
+        return result;
+    }
+
+    @Override
+    @Nonnull
+    public ItemStack removeItemNoUpdate(int slot) {
+        return inventory.removeItemNoUpdate(slot);
+    }
+
+    @Override
+    public void setItem(int slot, @Nonnull ItemStack stack) {
+        inventory.setItem(slot, stack);
+        if (slot == SLOT_OUTPUT) {
+            dirtyOutput = true;
+        }
+    }
+
+    @Override
+    public boolean stillValid(@Nonnull Player player) {
+        return inventory.stillValid(player);
+    }
+
+    @Override
+    public void clearContent() {
+        inventory.clearContent();
     }
 
     /**
@@ -509,6 +825,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         tag.putInt(TAG_PROGRESS, progress);
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
         tag.putBoolean(TAG_ACTIVE, active);
+        tag.putInt(TAG_OPERATIONS_COUNT, operationsCount);
 
         if (!processingItem.isEmpty()) {
             tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
@@ -531,6 +848,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         progress = tag.getInt(TAG_PROGRESS);
         maxProgress = tag.getInt(TAG_MAX_PROGRESS);
         active = tag.getBoolean(TAG_ACTIVE);
+        operationsCount = tag.getInt(TAG_OPERATIONS_COUNT);
 
         if (tag.contains(TAG_PROCESSING_ITEM)) {
             processingItem = ItemStack.parse(registries, tag.getCompound(TAG_PROCESSING_ITEM))
@@ -555,11 +873,21 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
 
         // Load output item (from network sync - takes priority if present)
         if (tag.contains(TAG_OUTPUT_ITEM)) {
-            inventory.setItem(1, ItemStack.parse(registries, tag.getCompound(TAG_OUTPUT_ITEM))
+            inventory.setItem(SLOT_OUTPUT, ItemStack.parse(registries, tag.getCompound(TAG_OUTPUT_ITEM))
                     .orElse(ItemStack.EMPTY));
         } else if (tag.getBoolean("OutputEmpty")) {
             // Server says output is empty - clear it on client
-            inventory.setItem(1, ItemStack.EMPTY);
+            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+        }
+
+        // Load grinder slots (from network sync for roller visibility)
+        if (tag.contains(TAG_GRINDER_LEFT)) {
+            inventory.setItem(SLOT_GRINDER_LEFT, ItemStack.parse(registries, tag.getCompound(TAG_GRINDER_LEFT))
+                    .orElse(ItemStack.EMPTY));
+        }
+        if (tag.contains(TAG_GRINDER_RIGHT)) {
+            inventory.setItem(SLOT_GRINDER_RIGHT, ItemStack.parse(registries, tag.getCompound(TAG_GRINDER_RIGHT))
+                    .orElse(ItemStack.EMPTY));
         }
     }
 
@@ -576,12 +904,21 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
             tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
         }
         // Always sync output item state (even when empty) for proper client rendering
-        ItemStack outputItem = inventory.getItem(1);
+        ItemStack outputItem = inventory.getItem(SLOT_OUTPUT);
         if (!outputItem.isEmpty()) {
             tag.put(TAG_OUTPUT_ITEM, outputItem.save(registries));
         } else {
             // Mark output as empty so client clears it
             tag.putBoolean("OutputEmpty", true);
+        }
+        // Sync grinder slots for roller bone visibility
+        ItemStack leftGrinder = inventory.getItem(SLOT_GRINDER_LEFT);
+        ItemStack rightGrinder = inventory.getItem(SLOT_GRINDER_RIGHT);
+        if (!leftGrinder.isEmpty()) {
+            tag.put(TAG_GRINDER_LEFT, leftGrinder.save(registries));
+        }
+        if (!rightGrinder.isEmpty()) {
+            tag.put(TAG_GRINDER_RIGHT, rightGrinder.save(registries));
         }
         return tag;
     }

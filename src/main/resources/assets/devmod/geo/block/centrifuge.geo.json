@@ -1,0 +1,388 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.clone_centrifuge",
+        "texture_width": 64,
+        "texture_height": 64,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2.5,
+        "visible_bounds_offset": [0, 1, 0]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [0, 0, 0]
+        },
+        {
+          "name": "base",
+          "parent": "root",
+          "pivot": [0, 0.5, 0],
+          "cubes": [
+            {
+              "comment": "Base platform - ground level",
+              "origin": [-7, 0, -7],
+              "size": [14, 1, 14],
+              "uv": {
+                "north": {"uv": [0, 48], "uv_size": [14, 1]},
+                "south": {"uv": [0, 48], "uv_size": [14, 1]},
+                "east": {"uv": [0, 48], "uv_size": [14, 1]},
+                "west": {"uv": [0, 48], "uv_size": [14, 1]},
+                "up": {"uv": [0, 0], "uv_size": [16, 16]},
+                "down": {"uv": [0, 0], "uv_size": [16, 16]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "support_nw",
+          "parent": "root",
+          "pivot": [-5, 5, -5],
+          "rotation": [0, -22.5, 0],
+          "cubes": [
+            {
+              "comment": "NW support pillar - tall to elevate chamber",
+              "origin": [-7, 0, -7],
+              "size": [3, 10, 3],
+              "uv": {
+                "north": {"uv": [48, 0], "uv_size": [3, 10]},
+                "south": {"uv": [48, 0], "uv_size": [3, 10]},
+                "east": {"uv": [48, 0], "uv_size": [3, 10]},
+                "west": {"uv": [48, 0], "uv_size": [3, 10]},
+                "up": {"uv": [48, 10], "uv_size": [3, 3]},
+                "down": {"uv": [48, 10], "uv_size": [3, 3]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "support_ne",
+          "parent": "root",
+          "pivot": [5, 5, -5],
+          "rotation": [0, 22.5, 0],
+          "cubes": [
+            {
+              "comment": "NE support pillar",
+              "origin": [4, 0, -7],
+              "size": [3, 10, 3],
+              "uv": {
+                "north": {"uv": [48, 0], "uv_size": [3, 10]},
+                "south": {"uv": [48, 0], "uv_size": [3, 10]},
+                "east": {"uv": [48, 0], "uv_size": [3, 10]},
+                "west": {"uv": [48, 0], "uv_size": [3, 10]},
+                "up": {"uv": [48, 10], "uv_size": [3, 3]},
+                "down": {"uv": [48, 10], "uv_size": [3, 3]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "support_sw",
+          "parent": "root",
+          "pivot": [-5, 5, 5],
+          "rotation": [0, 22.5, 0],
+          "cubes": [
+            {
+              "comment": "SW support pillar",
+              "origin": [-7, 0, 4],
+              "size": [3, 10, 3],
+              "uv": {
+                "north": {"uv": [48, 0], "uv_size": [3, 10]},
+                "south": {"uv": [48, 0], "uv_size": [3, 10]},
+                "east": {"uv": [48, 0], "uv_size": [3, 10]},
+                "west": {"uv": [48, 0], "uv_size": [3, 10]},
+                "up": {"uv": [48, 10], "uv_size": [3, 3]},
+                "down": {"uv": [48, 10], "uv_size": [3, 3]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "support_se",
+          "parent": "root",
+          "pivot": [5, 5, 5],
+          "rotation": [0, -22.5, 0],
+          "cubes": [
+            {
+              "comment": "SE support pillar",
+              "origin": [4, 0, 4],
+              "size": [3, 10, 3],
+              "uv": {
+                "north": {"uv": [48, 0], "uv_size": [3, 10]},
+                "south": {"uv": [48, 0], "uv_size": [3, 10]},
+                "east": {"uv": [48, 0], "uv_size": [3, 10]},
+                "west": {"uv": [48, 0], "uv_size": [3, 10]},
+                "up": {"uv": [48, 10], "uv_size": [3, 3]},
+                "down": {"uv": [48, 10], "uv_size": [3, 3]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "chamber",
+          "parent": "root",
+          "pivot": [0, 16, 0],
+          "cubes": [
+            {
+              "comment": "Chamber frame - NW pillar (elevated)",
+              "origin": [-5, 10, -5],
+              "size": [2, 12, 2],
+              "uv": {
+                "north": {"uv": [0, 16], "uv_size": [2, 12]},
+                "south": {"uv": [0, 16], "uv_size": [2, 12]},
+                "east": {"uv": [0, 16], "uv_size": [2, 12]},
+                "west": {"uv": [0, 16], "uv_size": [2, 12]},
+                "up": {"uv": [0, 16], "uv_size": [2, 2]},
+                "down": {"uv": [0, 16], "uv_size": [2, 2]}
+              }
+            },
+            {
+              "comment": "Chamber frame - NE pillar",
+              "origin": [3, 10, -5],
+              "size": [2, 12, 2],
+              "uv": {
+                "north": {"uv": [0, 16], "uv_size": [2, 12]},
+                "south": {"uv": [0, 16], "uv_size": [2, 12]},
+                "east": {"uv": [0, 16], "uv_size": [2, 12]},
+                "west": {"uv": [0, 16], "uv_size": [2, 12]},
+                "up": {"uv": [0, 16], "uv_size": [2, 2]},
+                "down": {"uv": [0, 16], "uv_size": [2, 2]}
+              }
+            },
+            {
+              "comment": "Chamber frame - SW pillar",
+              "origin": [-5, 10, 3],
+              "size": [2, 12, 2],
+              "uv": {
+                "north": {"uv": [0, 16], "uv_size": [2, 12]},
+                "south": {"uv": [0, 16], "uv_size": [2, 12]},
+                "east": {"uv": [0, 16], "uv_size": [2, 12]},
+                "west": {"uv": [0, 16], "uv_size": [2, 12]},
+                "up": {"uv": [0, 16], "uv_size": [2, 2]},
+                "down": {"uv": [0, 16], "uv_size": [2, 2]}
+              }
+            },
+            {
+              "comment": "Chamber frame - SE pillar",
+              "origin": [3, 10, 3],
+              "size": [2, 12, 2],
+              "uv": {
+                "north": {"uv": [0, 16], "uv_size": [2, 12]},
+                "south": {"uv": [0, 16], "uv_size": [2, 12]},
+                "east": {"uv": [0, 16], "uv_size": [2, 12]},
+                "west": {"uv": [0, 16], "uv_size": [2, 12]},
+                "up": {"uv": [0, 16], "uv_size": [2, 2]},
+                "down": {"uv": [0, 16], "uv_size": [2, 2]}
+              }
+            },
+            {
+              "comment": "Chamber floor - elevated platform",
+              "origin": [-4, 10, -4],
+              "size": [8, 1, 8],
+              "uv": {
+                "north": {"uv": [16, 0], "uv_size": [8, 1]},
+                "south": {"uv": [16, 0], "uv_size": [8, 1]},
+                "east": {"uv": [16, 0], "uv_size": [8, 1]},
+                "west": {"uv": [16, 0], "uv_size": [8, 1]},
+                "up": {"uv": [16, 0], "uv_size": [8, 8]},
+                "down": {"uv": [16, 0], "uv_size": [8, 8]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "drum",
+          "parent": "chamber",
+          "pivot": [0, 16, 0],
+          "cubes": [
+            {
+              "comment": "Rotating drum - visible inside elevated frame",
+              "origin": [-3, 11, -3],
+              "size": [6, 10, 6],
+              "uv": {
+                "north": {"uv": [28, 0], "uv_size": [6, 10]},
+                "south": {"uv": [28, 0], "uv_size": [6, 10]},
+                "east": {"uv": [28, 0], "uv_size": [6, 10]},
+                "west": {"uv": [28, 0], "uv_size": [6, 10]},
+                "up": {"uv": [28, 10], "uv_size": [6, 6]},
+                "down": {"uv": [28, 10], "uv_size": [6, 6]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "ring_lower",
+          "parent": "root",
+          "pivot": [0, 14, 0],
+          "cubes": [
+            {
+              "comment": "Lower ring - North bar",
+              "origin": [-4, 13, -4],
+              "size": [8, 2, 1],
+              "uv": {
+                "north": {"uv": [32, 16], "uv_size": [8, 2]},
+                "south": {"uv": [32, 16], "uv_size": [8, 2]},
+                "east": {"uv": [32, 16], "uv_size": [1, 2]},
+                "west": {"uv": [32, 16], "uv_size": [1, 2]},
+                "up": {"uv": [32, 18], "uv_size": [8, 1]},
+                "down": {"uv": [32, 18], "uv_size": [8, 1]}
+              }
+            },
+            {
+              "comment": "Lower ring - South bar",
+              "origin": [-4, 13, 3],
+              "size": [8, 2, 1],
+              "uv": {
+                "north": {"uv": [32, 16], "uv_size": [8, 2]},
+                "south": {"uv": [32, 16], "uv_size": [8, 2]},
+                "east": {"uv": [32, 16], "uv_size": [1, 2]},
+                "west": {"uv": [32, 16], "uv_size": [1, 2]},
+                "up": {"uv": [32, 18], "uv_size": [8, 1]},
+                "down": {"uv": [32, 18], "uv_size": [8, 1]}
+              }
+            },
+            {
+              "comment": "Lower ring - East bar",
+              "origin": [3, 13, -3],
+              "size": [1, 2, 6],
+              "uv": {
+                "north": {"uv": [32, 16], "uv_size": [1, 2]},
+                "south": {"uv": [32, 16], "uv_size": [1, 2]},
+                "east": {"uv": [32, 16], "uv_size": [6, 2]},
+                "west": {"uv": [32, 16], "uv_size": [6, 2]},
+                "up": {"uv": [32, 18], "uv_size": [1, 6]},
+                "down": {"uv": [32, 18], "uv_size": [1, 6]}
+              }
+            },
+            {
+              "comment": "Lower ring - West bar",
+              "origin": [-4, 13, -3],
+              "size": [1, 2, 6],
+              "uv": {
+                "north": {"uv": [32, 16], "uv_size": [1, 2]},
+                "south": {"uv": [32, 16], "uv_size": [1, 2]},
+                "east": {"uv": [32, 16], "uv_size": [6, 2]},
+                "west": {"uv": [32, 16], "uv_size": [6, 2]},
+                "up": {"uv": [32, 18], "uv_size": [1, 6]},
+                "down": {"uv": [32, 18], "uv_size": [1, 6]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "ring_upper",
+          "parent": "root",
+          "pivot": [0, 19, 0],
+          "cubes": [
+            {
+              "comment": "Upper ring - North bar",
+              "origin": [-4, 18, -4],
+              "size": [8, 2, 1],
+              "uv": {
+                "north": {"uv": [40, 16], "uv_size": [8, 2]},
+                "south": {"uv": [40, 16], "uv_size": [8, 2]},
+                "east": {"uv": [40, 16], "uv_size": [1, 2]},
+                "west": {"uv": [40, 16], "uv_size": [1, 2]},
+                "up": {"uv": [40, 18], "uv_size": [8, 1]},
+                "down": {"uv": [40, 18], "uv_size": [8, 1]}
+              }
+            },
+            {
+              "comment": "Upper ring - South bar",
+              "origin": [-4, 18, 3],
+              "size": [8, 2, 1],
+              "uv": {
+                "north": {"uv": [40, 16], "uv_size": [8, 2]},
+                "south": {"uv": [40, 16], "uv_size": [8, 2]},
+                "east": {"uv": [40, 16], "uv_size": [1, 2]},
+                "west": {"uv": [40, 16], "uv_size": [1, 2]},
+                "up": {"uv": [40, 18], "uv_size": [8, 1]},
+                "down": {"uv": [40, 18], "uv_size": [8, 1]}
+              }
+            },
+            {
+              "comment": "Upper ring - East bar",
+              "origin": [3, 18, -3],
+              "size": [1, 2, 6],
+              "uv": {
+                "north": {"uv": [40, 16], "uv_size": [1, 2]},
+                "south": {"uv": [40, 16], "uv_size": [1, 2]},
+                "east": {"uv": [40, 16], "uv_size": [6, 2]},
+                "west": {"uv": [40, 16], "uv_size": [6, 2]},
+                "up": {"uv": [40, 18], "uv_size": [1, 6]},
+                "down": {"uv": [40, 18], "uv_size": [1, 6]}
+              }
+            },
+            {
+              "comment": "Upper ring - West bar",
+              "origin": [-4, 18, -3],
+              "size": [1, 2, 6],
+              "uv": {
+                "north": {"uv": [40, 16], "uv_size": [1, 2]},
+                "south": {"uv": [40, 16], "uv_size": [1, 2]},
+                "east": {"uv": [40, 16], "uv_size": [6, 2]},
+                "west": {"uv": [40, 16], "uv_size": [6, 2]},
+                "up": {"uv": [40, 18], "uv_size": [1, 6]},
+                "down": {"uv": [40, 18], "uv_size": [1, 6]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "panel",
+          "parent": "chamber",
+          "pivot": [0, 14, -5],
+          "cubes": [
+            {
+              "comment": "Control panel frame - on elevated chamber",
+              "origin": [-3, 12, -6],
+              "size": [6, 4, 1],
+              "uv": {
+                "north": {"uv": [16, 32], "uv_size": [6, 4]},
+                "south": {"uv": [16, 32], "uv_size": [6, 4]},
+                "east": {"uv": [16, 32], "uv_size": [1, 4]},
+                "west": {"uv": [16, 32], "uv_size": [1, 4]},
+                "up": {"uv": [16, 32], "uv_size": [6, 1]},
+                "down": {"uv": [16, 32], "uv_size": [6, 1]}
+              }
+            },
+            {
+              "comment": "Screen display",
+              "origin": [-2, 13, -6.5],
+              "size": [4, 2, 0.5],
+              "uv": {
+                "north": {"uv": [32, 32], "uv_size": [4, 2]},
+                "south": {"uv": [32, 32], "uv_size": [4, 2]},
+                "east": {"uv": [32, 32], "uv_size": [1, 2]},
+                "west": {"uv": [32, 32], "uv_size": [1, 2]},
+                "up": {"uv": [32, 32], "uv_size": [4, 1]},
+                "down": {"uv": [32, 32], "uv_size": [4, 1]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "lid",
+          "parent": "root",
+          "pivot": [0, 24, 0],
+          "cubes": [
+            {
+              "comment": "Top lid cover - elevated",
+              "origin": [-5, 22, -5],
+              "size": [10, 2, 10],
+              "uv": {
+                "north": {"uv": [0, 32], "uv_size": [10, 2]},
+                "south": {"uv": [0, 32], "uv_size": [10, 2]},
+                "east": {"uv": [0, 32], "uv_size": [10, 2]},
+                "west": {"uv": [0, 32], "uv_size": [10, 2]},
+                "up": {"uv": [0, 34], "uv_size": [10, 10]},
+                "down": {"uv": [0, 34], "uv_size": [10, 10]}
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

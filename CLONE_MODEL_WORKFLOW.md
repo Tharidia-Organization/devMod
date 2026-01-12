@@ -7,23 +7,39 @@ Documento di riferimento per la creazione dei modelli animati del modulo Clone u
 ## Struttura File
 
 ```
+
+Nota: anche con GeckoLib `RenderShape.ENTITYBLOCK_ANIMATED`, il `blockstates/*.json` serve per la proprieta `facing`
+e per evitare missing model. Il `models/block/*.json` e un fallback (outline/particelle), non il render principale.
 src/main/resources/assets/devmod/
-├── geo/
-│   └── clone_pulverizer.geo.json      # Modello 3D (Bedrock format)
-├── animations/
-│   └── clone_pulverizer.animation.json # Animazioni
+├── geo/block/
+│   └── clone_pulverizer.geo.json            # Modello 3D (Bedrock format)
+├── animations/block/
+│   └── clone_pulverizer.animation.json      # Animazioni
 ├── textures/block/clone/
-│   └── clone_pulverizer.png           # Texture 64x64
+│   └── clone_pulverizer.png                 # Texture 64x64
+├── textures/item/
+│   └── clone_pulverizer.png                 # Icona inventario (16x16)
+├── models/block/
+│   └── clone_pulverizer.json                # Modello blocco (fallback/outline)
+├── models/item/
+│   └── clone_pulverizer.json                # Modello item (generated)
 └── blockstates/
-    └── clone_pulverizer.json          # Blockstate (vuoto per GeckoLib)
+    └── clone_pulverizer.json                # Varianti facing
 
 src/main/java/com/devmod/clone/
 ├── block/
-│   └── CloneMachineBlock.java         # Block class
+│   ├── CloneMachineBlock.java               # Base generica GeckoLib
+│   └── ClonePulverizerBlock.java            # Variante custom (logica+shape)
 ├── block/entity/
-│   └── CloneMachineBlockEntity.java   # BlockEntity con AnimatableBlockEntity
-└── client/renderer/
-    └── CloneMachineRenderer.java      # GeoBlockRenderer
+│   ├── CloneMachineBlockEntity.java         # BE generico per macchine statiche
+│   └── ClonePulverizerBlockEntity.java      # BE custom con logica/animazioni
+└── client/
+    ├── model/
+    │   ├── CloneMachineModel.java           # Model dinamico per macchine
+    │   └── ClonePulverizerModel.java        # Model dedicato
+    └── renderer/
+        ├── CloneMachineRenderer.java        # Renderer generico
+        └── ClonePulverizerRenderer.java     # Renderer custom (item render)
 ```
 
 ---
@@ -49,17 +65,32 @@ src/main/java/com/devmod/clone/
 }
 ```
 
+### Visible Bounds (culling)
+
+`visible_bounds_*` controlla il frustum culling di GeckoLib. Se il modello supera 1 blocco
+o ha sporgenze, aumenta `visible_bounds_width/height` e regola `visible_bounds_offset`
+per evitare che il modello scompaia a distanza.
+
 ### Gerarchia Bones (clone_pulverizer)
 
 ```
-root (pivot: [8, 0, 8])
+root (pivot: [0, 0, 0])
 ├── base_plate      # Piattaforma base - 14x1x14
-├── core_lower      # Modulo macchinario - 12x3x12
+├── chamber         # Corpo centrale - 12x6x12
+│   ├── roller_left # Braccio/rulli sinistra
+│   ├── roller_right # Braccio/rulli destra
+│   ├── feed_guide  # Guide superiori
+│   └── belt        # Nastro
 ├── core_upper      # Core energia - 10x2x10
+├── hopper          # Tramoggia superiore
+├── discharge       # Carrello uscita
+├── panel           # Pannello frontale
 ├── support_nw      # Supporto nord-ovest - 3x5x3
 ├── support_ne      # Supporto nord-est - 3x5x3
 ├── support_sw      # Supporto sud-ovest - 3x5x3
-└── support_se      # Supporto sud-est - 3x5x3
+├── support_se      # Supporto sud-est - 3x5x3
+├── item_processing # Slot virtuale per item in lavorazione
+└── item_output     # Slot virtuale per item in uscita
 ```
 
 ### Regole Pivot Points
@@ -96,6 +127,18 @@ Formula per calcolare `uv_size` in base alla dimensione del cubo:
 - North/South: `uv_size: [3, 5]`
 - East/West: `uv_size: [3, 5]`
 - Up/Down: `uv_size: [3, 3]`
+
+### Z-Fighting / Flicker (facce coplanari)
+
+Se due cubi condividono la stessa faccia sullo stesso piano, si crea flicker.
+Regola pratica: **mai due facce sovrapposte sullo stesso asse**.
+
+Fix rapido:
+- Sposta uno dei cubi di un epsilon (`0.01`) sull'asse per separare i piani.
+- In alternativa, rimuovi la faccia interna se non visibile.
+
+Esempio tipico:
+- `discharge` floor coplanare con `base_plate` (y=1) -> spostare il floor a `y=0.01`.
 
 ### Template Bone Completo
 
@@ -156,7 +199,7 @@ Esempio di bone con TUTTI i campi espansi:
 
 ### Animazione Deploy (Transformer Style)
 
-**Concetto**: La macchina si assembla dal centro quando viene piazzata.
+**Concetto**: La macchina si assembla DAL SUOLO quando viene piazzata - gli elementi emergono da sotto terra.
 
 **Timeline 4 secondi**:
 1. `0.0s` - Base plate cade dall'alto (Y=6 → Y=0)
@@ -169,6 +212,24 @@ Esempio di bone con TUTTI i campi espansi:
 - Movimenti lineari con stop bruschi
 - Supporti partono attaccati alla base (Y=0), non sospesi
 - Rotazioni da 80° a 0° per effetto "dispiegamento"
+
+**Direzioni Movimento (DAL SUOLO)**:
+- **Base/Top**: CADONO dall'ALTO (Y positivo → 0) - "atterrano" sul suolo
+- **Core/Body/Clips**: EMERGONO da SOTTO il SUOLO (Y negativo → 0) - come se fossero sepolti
+- **Pannelli/Glass**: RUOTANO (rotation X: ±90° → 0°) - si aprono
+- **Supporti**: GIÀ a livello suolo (Y=0) ma PIEGATI, si DISPIEGANO verso gli angoli
+- **MAI** entrare dai LATI (X/Z esterni senza essere sotto suolo) - rompe il concetto "assembla dal suolo"
+
+**Pattern Bounce (4 keyframes)**:
+
+```text
+T+0.00: Posizione iniziale (fuori blocco)
+T+0.XX: Overshoot (+0.2/+0.4 oltre target)
+T+0.YY: Bounce (-0.1/-0.15 indietro)
+T+0.ZZ: Settle (0, posizione finale)
+```
+
+Esempio: `[0, 6, 0] → [0, 0.3, 0] → [0, -0.15, 0] → [0, 0, 0]`
 
 ### Keyframes Supporti
 
@@ -329,6 +390,26 @@ src/main/resources/assets/devmod/textures/block/clone/clone_pulverizer.png  # Ri
 - [ ] Hopper simmetrico
 - [ ] Contrasto leggibile tra tutte le sezioni
 
+### Icona Item (inventario)
+
+Per l'icona in inventario usa un item texture 16x16 separato dal block model:
+
+```
+src/main/resources/assets/devmod/textures/item/clone_pulverizer.png
+src/main/resources/assets/devmod/models/item/clone_pulverizer.json
+```
+
+Esempio model item:
+
+```json
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "devmod:item/clone_pulverizer"
+  }
+}
+```
+
 ### Template per Nuove Macchine
 
 ```text
@@ -350,6 +431,7 @@ Vincoli tecnici:
 - Risoluzione: 64x64
 - Orientamento: il fronte è north
 - Simmetria dove richiesto
+- Z-fighting: evitare facce coplanari (offset 0.01 se necessario)
 
 UV map (x, y, w, h):
 [LISTA UV COMPLETA DELLA MACCHINA]
@@ -373,16 +455,41 @@ Criteri di accettazione:
 - Ogni sezione riconoscibile a colpo d'occhio
 - Palette coerente con Neural Cellar
 - Nessun dettaglio fuori tema
+
+Item (inventario):
+- textures/item/[nome].png (16x16)
+- models/item/[nome].json con parent `minecraft:item/generated`
 ```
 
 ---
 
 ## 4. Codice Java
 
+### Blockstates e Facing
+
+Per macchine con `HorizontalDirectionalBlock.FACING`, il blockstate deve ruotare il modello:
+
+```json
+{
+  "variants": {
+    "facing=north": {"model": "devmod:block/clone_pulverizer"},
+    "facing=south": {"model": "devmod:block/clone_pulverizer", "y": 180},
+    "facing=west": {"model": "devmod:block/clone_pulverizer", "y": 270},
+    "facing=east": {"model": "devmod:block/clone_pulverizer", "y": 90}
+  }
+}
+```
+
+Nota: con GeckoLib il render principale e' `ENTITYBLOCK_ANIMATED`, ma il blockstate resta necessario
+per rotazione/facing e per evitare warning di modello mancante.
+
 ### CloneMachineBlock.java
 
 ```java
-public class CloneMachineBlock extends Block implements EntityBlock {
+public class CloneMachineBlock extends HorizontalDirectionalBlock implements EntityBlock {
+
+    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
 
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
@@ -423,54 +530,51 @@ public class CloneMachineBlockEntity extends BlockEntity implements GeoBlockEnti
 }
 ```
 
+Nota: `CloneMachineBlockEntity` usa nomi animazione hardcoded (`animation.clone_pulverizer.deploy` e
+`animation.clone_pulverizer.active`). Per usare il renderer generico, mantieni questi nomi identici
+in ogni file `.animation.json`. Se vuoi nomi diversi o logica custom, crea un BlockEntity dedicato.
+
 ### CloneMachineRenderer.java
 
 ```java
 public class CloneMachineRenderer extends GeoBlockRenderer<CloneMachineBlockEntity> {
 
     public CloneMachineRenderer() {
-        super(new DefaultedBlockGeoModel<>(
-            ResourceLocation.fromNamespaceAndPath("devmod", "clone_pulverizer")
-        ));
+        super(new CloneMachineModel());
     }
 }
 ```
 
-### DefaultedBlockGeoModel Path Conventions
+### CloneMachineModel Path Conventions (dinamico)
 
-Quando usi `DefaultedBlockGeoModel` con un ResourceLocation, GeckoLib cerca i file in questi path:
+`CloneMachineModel` risolve i file in base al nome del blocco registrato (`blockId.getPath()`).
+Esempio per `clone_pulverizer`:
 
 ```text
-ResourceLocation("devmod", "clone_pulverizer") cerca:
-
 geo:       assets/devmod/geo/block/clone_pulverizer.geo.json
 animation: assets/devmod/animations/block/clone_pulverizer.animation.json
-texture:   assets/devmod/textures/block/clone_pulverizer.png
+texture:   assets/devmod/textures/block/clone/clone_pulverizer.png
 ```
 
-**IMPORTANTE**: Nota il sottofolder `block/` per geo e animations!
+**IMPORTANTE**: Nota il sottofolder `block/` per geo e animations, e `textures/block/clone/` per le texture.
 
-Se vuoi path custom, usa `DefaultedBlockGeoModel` con override:
+Se vuoi path custom, crea un `GeoModel` dedicato (come `ClonePulverizerModel`) e fai override espliciti:
 
 ```java
-public class CustomGeoModel extends DefaultedBlockGeoModel<MyBlockEntity> {
-    public CustomGeoModel() {
-        super(ResourceLocation.fromNamespaceAndPath("devmod", "clone_pulverizer"));
+public class ClonePulverizerModel extends GeoModel<ClonePulverizerBlockEntity> {
+    @Override
+    public ResourceLocation getModelResource(ClonePulverizerBlockEntity entity) {
+        return ResourceLocation.fromNamespaceAndPath("devmod", "geo/block/clone_pulverizer.geo.json");
     }
 
     @Override
-    public ResourceLocation getModelResource(MyBlockEntity entity) {
-        return ResourceLocation.fromNamespaceAndPath("devmod", "geo/clone_pulverizer.geo.json");
-    }
-
-    @Override
-    public ResourceLocation getTextureResource(MyBlockEntity entity) {
+    public ResourceLocation getTextureResource(ClonePulverizerBlockEntity entity) {
         return ResourceLocation.fromNamespaceAndPath("devmod", "textures/block/clone/clone_pulverizer.png");
     }
 
     @Override
-    public ResourceLocation getAnimationResource(MyBlockEntity entity) {
-        return ResourceLocation.fromNamespaceAndPath("devmod", "animations/clone_pulverizer.animation.json");
+    public ResourceLocation getAnimationResource(ClonePulverizerBlockEntity entity) {
+        return ResourceLocation.fromNamespaceAndPath("devmod", "animations/block/clone_pulverizer.animation.json");
     }
 }
 ```
@@ -542,16 +646,18 @@ Path: `assets/devmod/blockstates/clone_pulverizer.json`
 ```json
 {
   "variants": {
-    "": {
-      "model": "devmod:block/clone_pulverizer"
-    }
+    "facing=north": {"model": "devmod:block/clone_pulverizer"},
+    "facing=south": {"model": "devmod:block/clone_pulverizer", "y": 180},
+    "facing=west": {"model": "devmod:block/clone_pulverizer", "y": 270},
+    "facing=east": {"model": "devmod:block/clone_pulverizer", "y": 90}
   }
 }
 ```
 
-**NOTA**: Il blockstate punta a un model file, ma per GeckoLib il model file può essere vuoto o un placeholder. Il rendering effettivo è gestito dal `GeoBlockRenderer`.
+**NOTA**: Il blockstate punta a un model file, ma per GeckoLib il render effettivo è gestito dal `GeoBlockRenderer`.
+Il model file resta utile come fallback/outline/particelle.
 
-#### Model Placeholder (opzionale)
+#### Model Placeholder / Fallback (opzionale)
 
 Path: `assets/devmod/models/block/clone_pulverizer.json`
 
@@ -564,7 +670,8 @@ Path: `assets/devmod/models/block/clone_pulverizer.json`
 }
 ```
 
-Questo è solo un fallback per l'item form o se il renderer non è caricato.
+Questo e' un fallback per outline/particelle o se il renderer non e' caricato.
+Nel repo attuale `models/block/clone_pulverizer.json` usa texture `clone_machine_*` come placeholder.
 
 ---
 
@@ -576,13 +683,13 @@ Questo è solo un fallback per l'item form o se il renderer non è caricato.
 3. Decidere quali parti animare
 
 ### Step 2: Creare Geometria
-1. Creare file `geo/clone_[nome].geo.json`
+1. Creare file `geo/block/clone_[nome].geo.json`
 2. Definire bones con gerarchia corretta
 3. Impostare pivot points al centro di ogni cubo
 4. Mappare UV per-face alla texture
 
 ### Step 3: Creare Animazioni
-1. Creare file `animations/clone_[nome].animation.json`
+1. Creare file `animations/block/clone_[nome].animation.json`
 2. Animazione `deploy` (loop: false) - assemblaggio iniziale
 3. Animazione `active` (loop: true) - idle/funzionamento
 4. Usare solo position/rotation, NO scale
@@ -598,7 +705,9 @@ Questo è solo un fallback per l'item form o se il renderer non è caricato.
 1. Creare/riusare Block class
 2. Creare BlockEntity con AnimatableBlockEntity
 3. Registrare animazione statica (non ricreare ogni tick)
-4. Creare Renderer con DefaultedBlockGeoModel
+4. Renderer:
+   - Generico: `CloneMachineRenderer` + `CloneMachineModel`
+   - Custom: `GeoBlockRenderer` + `GeoModel` dedicato
 5. Registrare renderer in ClientSetup
 
 ### Step 6: Test
@@ -627,6 +736,10 @@ Questo è solo un fallback per l'item form o se il renderer non è caricato.
 ### Texture non corrisponde
 **Causa**: UV mapping errato o colori sbagliati
 **Soluzione**: Usare palette Neurocell esatta, creare elementi uno alla volta
+
+### Flicker / Z-fighting
+**Causa**: Facce coplanari tra cubi diversi
+**Soluzione**: Sposta uno dei cubi di 0.01 sull'asse oppure rimuovi la faccia interna
 
 ---
 
@@ -755,6 +868,7 @@ Prima di eseguire la build, verifica che tutti i file siano corretti:
 - [ ] `pivot` calcolato correttamente: `origin + (size / 2)`
 - [ ] `uv_size` corrisponde alla dimensione del cubo per ogni faccia
 - [ ] Nessuna sovrapposizione UV (a meno che intenzionale)
+- [ ] Nessuna faccia coplanare sovrapposta (evita z-fighting)
 
 ### Animazioni (.animation.json)
 
@@ -788,8 +902,10 @@ Prima di eseguire la build, verifica che tutti i file siano corretti:
 - [ ] `.geo.json` in `assets/devmod/geo/block/` (o path custom nel model)
 - [ ] `.animation.json` in `assets/devmod/animations/block/` (o path custom)
 - [ ] `.png` in `assets/devmod/textures/block/clone/`
+- [ ] Item icon in `assets/devmod/textures/item/` (16x16)
 - [ ] Blockstate in `assets/devmod/blockstates/`
 - [ ] Model placeholder in `assets/devmod/models/block/` (opzionale)
+- [ ] Model item in `assets/devmod/models/item/` (generated)
 
 ### Naming Conventions
 
@@ -797,6 +913,7 @@ Prima di eseguire la build, verifica che tutti i file siano corretti:
 - [ ] Geometry identifier: `geometry.clone_pulverizer`
 - [ ] Animazioni: `animation.clone_pulverizer.deploy`, `animation.clone_pulverizer.active`
 - [ ] Registry names: `clone_pulverizer` (snake_case)
+- [ ] Se usi `CloneMachineBlockEntity`, i nomi animazione devono restare identici per tutte le macchine
 
 ---
 
@@ -996,6 +1113,194 @@ Il modello Clone Pulverizer è ben strutturato. Ottimizzazioni possibili ma non 
 | Supports | 4 | 4 | Già ottimale |
 
 **Raccomandazione**: Non ottimizzare a meno che non ci siano problemi di performance. La leggibilità del modello è più importante.
+
+### 9.9 Create-Style Item Handling (Inventory + Visual Rendering)
+
+**Pattern**: Invece di spawnare ItemEntities nel mondo (che rimbalzano e possono essere persi), memorizzare gli item in slot di inventario e renderizzarli visivamente come fa il mod Create.
+
+#### Componenti del Pattern
+
+1. **Inventory Slot per Output** (BlockEntity)
+
+```java
+// SimpleContainer per storage
+private final SimpleContainer inventory = new SimpleContainer(2);
+// Slot 0: Processing item
+// Slot 1: Output item
+
+public ItemStack getOutputItem() {
+    return inventory.getItem(1);
+}
+```
+
+2. **Rendering Visivo in postRender()** (Renderer)
+
+```java
+private void renderOutputItem(PoseStack poseStack, ...) {
+    ItemStack outputItem = entity.getOutputItem();
+    if (outputItem.isEmpty()) return;
+
+    Level level = entity.getLevel();
+    if (level == null) return;
+
+    poseStack.pushPose();
+
+    // Posizione sul discharge tray (GeckoLib: origine al centro)
+    Direction facing = getFacing(entity.getBlockState());
+    float offsetX = 0, offsetZ = 0;
+    switch (facing) {
+        case NORTH -> offsetZ = -TRAY_OFFSET;
+        case SOUTH -> offsetZ = TRAY_OFFSET;
+        case EAST -> offsetX = -TRAY_OFFSET;
+        case WEST -> offsetX = TRAY_OFFSET;
+    }
+    poseStack.translate(offsetX, OUTPUT_HEIGHT, offsetZ);
+    poseStack.scale(OUTPUT_SCALE, OUTPUT_SCALE, OUTPUT_SCALE);
+
+    Minecraft.getInstance().getItemRenderer().renderStatic(
+        outputItem, ItemDisplayContext.FIXED,
+        packedLight, packedOverlay, poseStack, bufferSource, level, 0
+    );
+
+    poseStack.popPose();
+}
+```
+
+3. **Right-Click Pickup con `useWithoutItem()`** (Block)
+
+```java
+@Override
+protected InteractionResult useWithoutItem(
+        BlockState state, Level level, BlockPos pos,
+        Player player, BlockHitResult hitResult
+) {
+    if (level.isClientSide) {
+        return InteractionResult.SUCCESS;
+    }
+
+    BlockEntity be = level.getBlockEntity(pos);
+    if (be instanceof ClonePulverizerBlockEntity pulverizer) {
+        ItemStack output = pulverizer.extractOutput();
+        if (!output.isEmpty()) {
+            if (!player.getInventory().add(output)) {
+                player.drop(output, false);  // Inventory full
+            }
+            return InteractionResult.CONSUME;
+        }
+    }
+    return InteractionResult.PASS;
+}
+```
+
+4. **Extract con ItemStack.copy()** (BlockEntity)
+
+```java
+/**
+ * CRITICO: Fare .copy() PRIMA di clearing lo slot!
+ * Altrimenti si ritorna un ItemStack vuoto.
+ */
+public ItemStack extractOutput() {
+    ItemStack slotContent = inventory.getItem(1);
+    if (slotContent.isEmpty()) {
+        return ItemStack.EMPTY;
+    }
+
+    // IMPORTANTE: Copy before clear!
+    ItemStack output = slotContent.copy();
+    inventory.setItem(1, ItemStack.EMPTY);
+
+    dirtyOutput = true;
+    syncToClient();
+    return output;
+}
+```
+
+### 9.10 Network Sync per Slot Vuoti (OutputEmpty Flag)
+
+**Problema**: Quando un item viene rimosso da uno slot, `getUpdateTag()` tipicamente non include la chiave NBT (perché l'item è vuoto). Il client non riceve mai l'informazione che lo slot è stato svuotato, quindi l'item rimane renderizzato visivamente.
+
+**Soluzione**: Aggiungere un flag esplicito `OutputEmpty` quando lo slot è vuoto.
+
+#### getUpdateTag()
+
+```java
+@Override
+public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+    CompoundTag tag = new CompoundTag();
+
+    // Sempre includere stato active
+    tag.putBoolean(TAG_ACTIVE, active);
+
+    // Output item con flag per stato vuoto
+    ItemStack outputItem = inventory.getItem(1);
+    if (!outputItem.isEmpty()) {
+        tag.put(TAG_OUTPUT_ITEM, outputItem.save(registries));
+    } else {
+        // CRITICO: Informare il client che l'output è vuoto!
+        tag.putBoolean("OutputEmpty", true);
+    }
+
+    return tag;
+}
+```
+
+#### loadAdditional() - Gestione del Flag
+
+```java
+@Override
+protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    super.loadAdditional(tag, registries);
+
+    // ... altri dati ...
+
+    // Gestire output item con flag per stato vuoto
+    if (tag.contains(TAG_OUTPUT_ITEM)) {
+        inventory.setItem(1, ItemStack.parse(registries, tag.getCompound(TAG_OUTPUT_ITEM))
+                .orElse(ItemStack.EMPTY));
+    } else if (tag.getBoolean("OutputEmpty")) {
+        // Server dice che l'output è vuoto - clearing sul client
+        inventory.setItem(1, ItemStack.EMPTY);
+    }
+}
+```
+
+**Perché Funziona**:
+- Quando l'item c'è → `TAG_OUTPUT_ITEM` presente, client lo carica
+- Quando l'item viene rimosso → `OutputEmpty=true`, client clears lo slot
+- L'item renderizzato scompare immediatamente
+
+### 9.11 hasDeployed Flag per Animazioni One-Shot
+
+**Problema**: L'animazione `deploy` si ri-esegue ogni volta che il client riceve un sync, causando il blocco a "ri-assemblarsi" continuamente.
+
+**Soluzione**: Flag `hasDeployed` che impedisce la ri-esecuzione.
+
+```java
+// Client-side only - non sincronizzato
+private boolean hasDeployed = false;
+
+@Override
+public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+    controllers.add(new AnimationController<>(this, "main", 0, state -> {
+        if (!hasDeployed) {
+            hasDeployed = true;
+            return state.setAndContinue(DEPLOY_THEN_IDLE);
+        }
+        return state.setAndContinue(active ? ACTIVE : IDLE);
+    }));
+}
+
+// Reset quando il blocco viene re-loaded (nuovo chunk load)
+@Override
+public void setLevel(Level level) {
+    super.setLevel(level);
+    if (level.isClientSide) {
+        hasDeployed = false;  // Ri-play deploy su nuovo load
+    }
+}
+```
+
+**Alternativa**: Animation chaining con `thenPlay().thenLoop()` evita questo problema completamente (vedi 9.1).
 
 ---
 

@@ -54,6 +54,7 @@ public final class CloneCreativeTab {
 
                 // Clone Machines (Oritech-style)
                 output.accept(Objects.requireNonNull(CloneItems.CLONE_PULVERIZER.get()));
+                output.accept(Objects.requireNonNull(CloneItems.GRINDER.get())); // Pulverizer component
                 output.accept(Objects.requireNonNull(CloneItems.CLONE_FOUNDRY.get()));
                 output.accept(Objects.requireNonNull(CloneItems.CLONE_PUMP.get()));
                 output.accept(Objects.requireNonNull(CloneItems.CLONE_STEAM_ENGINE.get()));

@@ -7,6 +7,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 
 import com.devmod.DevMod;
 import com.devmod.clone.item.BioscannerItem;
+import com.devmod.clone.item.GrinderItem;
 
 /**
  * Clone module item registrations.
@@ -264,6 +265,13 @@ public final class CloneItems {
 
     public static final DeferredHolder<Item, BlockItem> CLONE_CHARGER = DevMod.ITEMS.register(
         "clone_charger", () -> new BlockItem(CloneBlocks.CLONE_CHARGER.get(), new Item.Properties()));
+
+    /**
+     * Grinder item for the Clone Pulverizer.
+     * Replaceable rollers with durability.
+     */
+    public static final DeferredHolder<Item, GrinderItem> GRINDER = DevMod.ITEMS.register(
+        "grinder", GrinderItem::new);
 
     /**
      * Called during mod initialization to ensure items are registered.

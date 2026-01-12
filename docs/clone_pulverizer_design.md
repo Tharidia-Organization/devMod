@@ -90,30 +90,71 @@ root
 
 ---
 
-## Layout Texture Attuale (64x64)
+## Layout Texture (64x64) - UV Indipendenti per Bone
+
+Ogni bone ha la sua regione UV dedicata per consentire texture individuali e highlight.
 
 ```
-+--------+--------+--------+--------+
-| BASE   | CHAMBER| CORE   | SUPPORT|
-| TOP    | TOP    | TOP    | PILLAR |
-| 0-16   | 16-28  | 32-48  | 48-64  |
-| 0-16   | 0-12   | 0-16   | 0-16   |
-+--------+--------+--------+--------+
-| CHAMBER| ROLLER | ROLLER | TOOTH  |
-| SIDE   | END    | SIDE   | TIPS   |
-| 0-12   | 0-6    | 0-10   | 0-10   |
-| 16-22  | 24-27  | 27-30  | 30-33  |
-+--------+--------+--------+--------+
-|                                   |
-|         (spazio libero)           |
-|                                   |
-+--------+--------+--------+--------+
-| BASE   |                          |
-| SIDE   |      (spazio libero)     |
-| 0-14   |                          |
-| 48-49  |                          |
-+--------+--------+--------+--------+
+Y=0-15 (Riga 0):
+┌──────────────┬────────────┬────────────┬────────────────────┐
+│  BASE_PLATE  │  CHAMBER   │ CORE_UPPER │     SUPPORTS       │
+│   [0,0]      │  [16,0]    │  [32,0]    │ NW[48,0] NE[54,0]  │
+│   14x14      │  12x12     │  10x10     │ SW[48,11] SE[58,11]│
+│  top/down    │ top/down   │ top/down   │   3x5 sides each   │
+└──────────────┴────────────┴────────────┴────────────────────┘
+
+Y=16-31 (Riga 1):
+┌──────────┬────────────┬─────────┬─────────┬──────────────────┐
+│ CHAMBER  │   HOPPER   │ROLLER_L │ROLLER_R │       BELT       │
+│  [0,16]  │  [16,16]   │ [32,16] │ [40,16] │     [48,16]      │
+│  12x6    │  14x14     │  8x14   │  8x14   │      8x8         │
+│  sides   │  walls     │  all    │  all    │   bars+wraps     │
+└──────────┴────────────┴─────────┴─────────┴──────────────────┘
+
+Y=24-31 (Riga 2 - dettagli):
+┌────────────┬────────────┬────────────┬────────────┐
+│ CORE_SIDE  │ FEED_GUIDE │   HOPPER   │            │
+│  [0,24]    │  [12,24]   │ mid[16,24] │  (free)    │
+│  10x4      │   6x8      │  10x8      │            │
+│  cyan glow │   rails    │  walls     │            │
+└────────────┴────────────┴────────────┴────────────┘
+
+Y=32-47 (Riga 3):
+┌────────────┬────────────┬──────────────────────────┐
+│  DISCHARGE │    PEGS    │         PANEL            │
+│   [0,32]   │  L[16,32]  │ frame[0,52] screen[8,52] │
+│   12x14    │  R[18,32]  │ buttons[8,56]            │
+│  floor+wall│   2x2 each │   6x4 + 4x2 + 4x1        │
+└────────────┴────────────┴──────────────────────────┘
+
+Y=48-63 (Riga 4):
+┌────────────────────────────────────────────────────┐
+│  BASE_PLATE_SIDES [0,48-51] 14x4 (N,E,S,W separate)│
+│  PANEL [0,52] frame + [8,52] screen + [8,56] btns  │
+│  FREE SPACE: [14,48] → [63,63] per dettagli extra  │
+└────────────────────────────────────────────────────┘
 ```
+
+### Mappa UV Dettagliata per Bone
+
+| Bone | UV Region | Size | Note |
+|------|-----------|------|------|
+| base_plate | [0,0] top, [0,48-51] sides | 14x14, 14x1 | 4 lati separati |
+| chamber | [16,0] top, [0,16] sides | 12x12, 12x6 | |
+| core_upper | [32,0] top, [0,24] sides | 10x10, 10x2 | Cyan glow |
+| support_nw | [48,0] | 3x5+3x3 | Indipendente |
+| support_ne | [54,0] | 3x5+3x3 | Indipendente |
+| support_sw | [48,11] | 3x5+3x3 | Indipendente |
+| support_se | [58,11] | 3x5+3x3 | Indipendente |
+| roller_left | [32,16] | 8x14 | Tutti i cubes |
+| roller_right | [40,16] | 8x14 | Tutti i cubes |
+| hopper | [16,16], [16,22], [16,24] | Multiple | Anelli separati |
+| feed_guide | [12,24] | 6x8 | 4 rail |
+| discharge | [0,32], [0,38], [0,45] | Multiple | Floor/walls/lip |
+| panel | [0,52], [8,52], [8,56] | 6x4, 4x2, 4x1 | Frame/screen/btns |
+| belt | [48,16], [48,18], [48,20] | 7x1, 1x3 | Bars/wraps |
+| peg_left | [16,32] | 2x2 | Indipendente |
+| peg_right | [18,32] | 2x2 | Indipendente |
 
 ---
 
@@ -171,4 +212,4 @@ CYAN (solo core_upper):
 
 ---
 
-*Ultimo aggiornamento: 2026-01-11*
+*Ultimo aggiornamento: 2026-01-12 - UV indipendenti per ogni bone*

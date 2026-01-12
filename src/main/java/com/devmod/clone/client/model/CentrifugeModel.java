@@ -16,11 +16,11 @@ import software.bernie.geckolib.model.GeoModel;
 public class CentrifugeModel extends GeoModel<CentrifugeBlockEntity> {
 
     private static final ResourceLocation MODEL = ResourceLocation.fromNamespaceAndPath(
-            DevMod.MODID, "geo/block/clone_centrifuge_l.geo.json");
+            DevMod.MODID, "geo/block/centrifuge.geo.json");
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
-            DevMod.MODID, "textures/block/clone/clone_centrifuge_l.png");
+            DevMod.MODID, "textures/block/clone/centrifuge.png");
     private static final ResourceLocation ANIMATION = ResourceLocation.fromNamespaceAndPath(
-            DevMod.MODID, "animations/block/clone_centrifuge_l.animation.json");
+            DevMod.MODID, "animations/block/centrifuge.animation.json");
 
     @Override
     @Nonnull

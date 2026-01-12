@@ -2986,5 +2986,8 @@
   "entity.devmod.player_clone": "Clone",
   "message.devmod.clone.mode_follow": "Mode: Follow",
   "message.devmod.clone.mode_guard": "Mode: Guard",
-  "message.devmod.clone.mode_attack": "Mode: Attack"
+  "message.devmod.clone.mode_attack": "Mode: Attack",
+
+  "block.devmod.clone_pulverizer": "Clone Pulverizer",
+  "item.devmod.grinder": "Pulverizer Grinder"
 }

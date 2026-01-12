@@ -661,7 +661,32 @@ public class Config {
                 .defineInRange("cullDistance", 64, 16, 256);
 
         BUILDER.pop();
+
+        // ============================================
+        // CLONE PULVERIZER SETTINGS
+        // ============================================
+
+        BUILDER.push("clonePulverizer");
+
+        GRINDER_DURABILITY = BUILDER
+                .comment("Maximum durability of grinder items (how many damage points before breaking)",
+                        "Total items processed before breaking = durability * operationsPerDamage")
+                .defineInRange("grinderDurability", 256, 16, 4096);
+
+        GRINDER_OPERATIONS_PER_DAMAGE = BUILDER
+                .comment("Number of items processed before applying 1 point of damage to grinders",
+                        "Higher = grinders last longer, Lower = grinders wear faster")
+                .defineInRange("operationsPerDamage", 8, 1, 64);
+
+        BUILDER.pop();
     }
+
+    // ============================================
+    // CLONE PULVERIZER CONFIG VALUES
+    // ============================================
+
+    public static final ModConfigSpec.IntValue GRINDER_DURABILITY;
+    public static final ModConfigSpec.IntValue GRINDER_OPERATIONS_PER_DAMAGE;
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 }
