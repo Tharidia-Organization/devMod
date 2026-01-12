@@ -26,7 +26,7 @@ public final class CloneRecipeTypes {
 
     // Pulverizing Recipe Type
     public static final DeferredHolder<RecipeType<?>, RecipeType<PulverizingRecipe>> PULVERIZING =
-            RECIPE_TYPES.register("pulverizing", () -> new RecipeType<>() {
+            RECIPE_TYPES.register("pulverizing", () -> new RecipeType<PulverizingRecipe>() {
                 @Override
                 public String toString() {
                     return "devmod:pulverizing";

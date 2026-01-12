@@ -82,6 +82,54 @@ root (pivot: [8, 0, 8])
 }
 ```
 
+### Regole UV Automatiche
+
+Formula per calcolare `uv_size` in base alla dimensione del cubo:
+
+| Faccia | uv_size |
+|--------|---------|
+| North/South | `[size.x, size.y]` |
+| East/West | `[size.z, size.y]` |
+| Up/Down | `[size.x, size.z]` |
+
+**Esempio**: Cubo con `size: [3, 5, 3]`
+- North/South: `uv_size: [3, 5]`
+- East/West: `uv_size: [3, 5]`
+- Up/Down: `uv_size: [3, 3]`
+
+### Template Bone Completo
+
+Esempio di bone con TUTTI i campi espansi:
+
+```json
+{
+  "name": "support_nw",
+  "parent": "root",
+  "pivot": [2.5, 3.5, 2.5],
+  "cubes": [{
+    "origin": [1, 1, 1],
+    "size": [3, 5, 3],
+    "uv": {
+      "north": {"uv": [48, 0], "uv_size": [3, 5]},
+      "south": {"uv": [51, 0], "uv_size": [3, 5]},
+      "east": {"uv": [54, 0], "uv_size": [3, 5]},
+      "west": {"uv": [57, 0], "uv_size": [3, 5]},
+      "up": {"uv": [48, 5], "uv_size": [3, 3]},
+      "down": {"uv": [48, 8], "uv_size": [3, 3]}
+    }
+  }]
+}
+```
+
+**Campi Obbligatori**:
+- `name`: identificativo univoco del bone
+- `pivot`: punto di rotazione `[x, y, z]`
+- `cubes`: array di cubi (può essere vuoto per bones di raggruppamento)
+
+**Campi Opzionali**:
+- `parent`: nome del bone genitore (default: nessuno/root)
+- `rotation`: rotazione iniziale `[rx, ry, rz]` in gradi
+
 ---
 
 ## 2. Animazioni (.animation.json)
@@ -259,7 +307,90 @@ public class CloneMachineRenderer extends GeoBlockRenderer<CloneMachineBlockEnti
 }
 ```
 
-### Registrazione Client (CloneClientSetup.java)
+### DefaultedBlockGeoModel Path Conventions
+
+Quando usi `DefaultedBlockGeoModel` con un ResourceLocation, GeckoLib cerca i file in questi path:
+
+```text
+ResourceLocation("devmod", "clone_pulverizer") cerca:
+
+geo:       assets/devmod/geo/block/clone_pulverizer.geo.json
+animation: assets/devmod/animations/block/clone_pulverizer.animation.json
+texture:   assets/devmod/textures/block/clone_pulverizer.png
+```
+
+**IMPORTANTE**: Nota il sottofolder `block/` per geo e animations!
+
+Se vuoi path custom, usa `DefaultedBlockGeoModel` con override:
+
+```java
+public class CustomGeoModel extends DefaultedBlockGeoModel<MyBlockEntity> {
+    public CustomGeoModel() {
+        super(ResourceLocation.fromNamespaceAndPath("devmod", "clone_pulverizer"));
+    }
+
+    @Override
+    public ResourceLocation getModelResource(MyBlockEntity entity) {
+        return ResourceLocation.fromNamespaceAndPath("devmod", "geo/clone_pulverizer.geo.json");
+    }
+
+    @Override
+    public ResourceLocation getTextureResource(MyBlockEntity entity) {
+        return ResourceLocation.fromNamespaceAndPath("devmod", "textures/block/clone/clone_pulverizer.png");
+    }
+
+    @Override
+    public ResourceLocation getAnimationResource(MyBlockEntity entity) {
+        return ResourceLocation.fromNamespaceAndPath("devmod", "animations/clone_pulverizer.animation.json");
+    }
+}
+```
+
+### Registrazione Completa
+
+#### CloneBlocks.java (Registrazione Block)
+
+```java
+public class CloneBlocks {
+    public static final DeferredRegister.Blocks BLOCKS =
+        DeferredRegister.createBlocks("devmod");
+
+    public static final DeferredBlock<ClonePulverizerBlock> CLONE_PULVERIZER =
+        BLOCKS.register("clone_pulverizer", () -> new ClonePulverizerBlock(
+            BlockBehaviour.Properties.of()
+                .strength(3.5f)
+                .requiresCorrectToolForDrops()
+                .noOcclusion()  // Importante per GeckoLib
+        ));
+
+    public static void register(IEventBus eventBus) {
+        BLOCKS.register(eventBus);
+    }
+}
+```
+
+#### CloneBlockEntities.java (Registrazione BlockEntity)
+
+```java
+public class CloneBlockEntities {
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
+        DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, "devmod");
+
+    public static final Supplier<BlockEntityType<ClonePulverizerBlockEntity>> CLONE_PULVERIZER =
+        BLOCK_ENTITIES.register("clone_pulverizer", () ->
+            BlockEntityType.Builder.of(
+                ClonePulverizerBlockEntity::new,
+                CloneBlocks.CLONE_PULVERIZER.get()
+            ).build(null)
+        );
+
+    public static void register(IEventBus eventBus) {
+        BLOCK_ENTITIES.register(eventBus);
+    }
+}
+```
+
+#### CloneClientSetup.java (Registrazione Renderer)
 
 ```java
 @EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -268,12 +399,43 @@ public class CloneClientSetup {
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(
-            CloneBlockEntities.CLONE_MACHINE.get(),
-            ctx -> new CloneMachineRenderer()
+            CloneBlockEntities.CLONE_PULVERIZER.get(),
+            ctx -> new ClonePulverizerRenderer()
         );
     }
 }
 ```
+
+#### Blockstate per GeckoLib (clone_pulverizer.json)
+
+Path: `assets/devmod/blockstates/clone_pulverizer.json`
+
+```json
+{
+  "variants": {
+    "": {
+      "model": "devmod:block/clone_pulverizer"
+    }
+  }
+}
+```
+
+**NOTA**: Il blockstate punta a un model file, ma per GeckoLib il model file può essere vuoto o un placeholder. Il rendering effettivo è gestito dal `GeoBlockRenderer`.
+
+#### Model Placeholder (opzionale)
+
+Path: `assets/devmod/models/block/clone_pulverizer.json`
+
+```json
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "devmod:block/clone/clone_pulverizer"
+  }
+}
+```
+
+Questo è solo un fallback per l'item form o se il renderer non è caricato.
 
 ---
 
@@ -450,7 +612,66 @@ Una volta trovato l'offset corretto per NORTH, le altre direzioni seguono:
 
 ---
 
-## 8. Modelli Completati
+## 8. Checklist Validazione Pre-Build
+
+Prima di eseguire la build, verifica che tutti i file siano corretti:
+
+### Geometria (.geo.json)
+
+- [ ] `format_version` è `"1.12.0"`
+- [ ] `geometry identifier` segue pattern `geometry.[nome_modello]`
+- [ ] `texture_width` e `texture_height` sono 64 (o potenza di 2)
+- [ ] Tutti i bones hanno `name` univoco
+- [ ] Tutti i bones con parent hanno parent esistente
+- [ ] `pivot` calcolato correttamente: `origin + (size / 2)`
+- [ ] `uv_size` corrisponde alla dimensione del cubo per ogni faccia
+- [ ] Nessuna sovrapposizione UV (a meno che intenzionale)
+
+### Animazioni (.animation.json)
+
+- [ ] `format_version` è `"1.8.0"`
+- [ ] Nomi animazioni seguono pattern `animation.[nome_modello].[nome_anim]`
+- [ ] Tutti i bones referenziati esistono nel .geo.json
+- [ ] `animation_length` impostato correttamente
+- [ ] `loop: true` solo per animazioni cicliche (idle, active)
+- [ ] `loop: false` per animazioni one-shot (deploy)
+- [ ] NO scale keyframes (solo position/rotation)
+
+### Texture (.png)
+
+- [ ] Dimensione 64x64 (o come specificato in geometry)
+- [ ] Palette colori Neurocell rispettata
+- [ ] Tutti gli UV del modello coperti
+- [ ] Formato PNG 32-bit (con alpha)
+
+### Java Code
+
+- [ ] Block registrato in DeferredRegister
+- [ ] BlockEntity registrato in DeferredRegister
+- [ ] BlockEntity implementa `GeoBlockEntity`
+- [ ] `getRenderShape()` ritorna `ENTITYBLOCK_ANIMATED`
+- [ ] Renderer registrato in `EntityRenderersEvent.RegisterRenderers`
+- [ ] `AnimatableInstanceCache` creato con `GeckoLibUtil.createInstanceCache(this)`
+- [ ] RawAnimation definita come `static final` (non ricreata ogni tick)
+
+### File System
+
+- [ ] `.geo.json` in `assets/devmod/geo/block/` (o path custom nel model)
+- [ ] `.animation.json` in `assets/devmod/animations/block/` (o path custom)
+- [ ] `.png` in `assets/devmod/textures/block/clone/`
+- [ ] Blockstate in `assets/devmod/blockstates/`
+- [ ] Model placeholder in `assets/devmod/models/block/` (opzionale)
+
+### Naming Conventions
+
+- [ ] Tutti i file usano lo stesso nome base (es. `clone_pulverizer`)
+- [ ] Geometry identifier: `geometry.clone_pulverizer`
+- [ ] Animazioni: `animation.clone_pulverizer.deploy`, `animation.clone_pulverizer.active`
+- [ ] Registry names: `clone_pulverizer` (snake_case)
+
+---
+
+## 9. Modelli Completati
 
 | Modello          | Geo | Animation | Texture | Java | Testato |
 |------------------|-----|-----------|---------|------|---------|
@@ -458,7 +679,7 @@ Una volta trovato l'offset corretto per NORTH, le altre direzioni seguono:
 
 ---
 
-## 9. Modelli Da Fare (28 rimanenti)
+## 10. Modelli Da Fare (28 rimanenti)
 
 1. clone_assembler
 2. clone_atomic_forge

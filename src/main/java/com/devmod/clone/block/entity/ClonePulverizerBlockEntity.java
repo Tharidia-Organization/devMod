@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -15,6 +14,7 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
@@ -26,7 +26,6 @@ import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -58,32 +57,41 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_MAX_PROGRESS = "MaxProgress";
     private static final String TAG_PROCESSING_ITEM = "ProcessingItem";
+    private static final String TAG_ACTIVE = "Active";
+    private static final String TAG_OUTPUT_ITEM = "OutputItem";
+    private static final String TAG_INVENTORY = "Inventory";
 
     // Animation cache
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-    // Animations - separate sequences
-    protected static final RawAnimation DEPLOY = RawAnimation.begin()
-            .thenPlay("animation.clone_pulverizer.deploy");
+    // Animations
+    /** Deploy animation - plays once on first load. */
+    protected static final RawAnimation DEPLOY_THEN_IDLE = RawAnimation.begin()
+            .thenPlay("animation.clone_pulverizer.deploy")
+            .thenLoop("animation.clone_pulverizer.idle");
 
+    /** Idle animation - loops when not processing (after deploy). */
     protected static final RawAnimation IDLE = RawAnimation.begin()
             .thenLoop("animation.clone_pulverizer.idle");
 
+    /** Active processing animation - rollers spinning. */
     protected static final RawAnimation ACTIVE = RawAnimation.begin()
             .thenLoop("animation.clone_pulverizer.active");
 
+    /** Track if deploy animation has played (prevents re-deploy on every stop). */
+    private boolean hasDeployed = false;
+
     // State
     private boolean active = false;
-    private int deployTimer = 0; // Track deploy animation progress (4 sec = 80 ticks)
-    private static final int DEPLOY_DURATION = 80; // 4 seconds
     private int progress = 0;
     private int maxProgress = PulverizingRecipe.DEFAULT_PROCESSING_TIME;
 
     // Item being processed (for rendering)
     private ItemStack processingItem = ItemStack.EMPTY;
 
-    // Track last synced output for change detection
-    private ItemStack lastSyncedOutput = ItemStack.EMPTY;
+    // Dirty flags for network sync optimization
+    private boolean dirtyActive = false;
+    private boolean dirtyOutput = false;
 
     // Internal inventory (1 slot for input buffer, 1 for output buffer)
     private final SimpleContainer inventory = new SimpleContainer(2) {
@@ -113,22 +121,17 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
             return;
         }
 
-        // Track deploy animation progress
-        if (deployTimer < DEPLOY_DURATION) {
-            deployTimer++;
-            if (deployTimer == DEPLOY_DURATION) {
-                syncToClient(); // Sync when deploy completes
-            }
-        }
-
         // 1. Detect and capture items dropped above
         detectItemsAbove();
 
-        // 2. Process items
+        // 2. Process items (output stored in slot 1)
         processItems();
 
-        // 3. Eject output
-        ejectOutput();
+        // 3. Give output to nearby players (Create-style auto-pickup)
+        giveOutputToNearbyPlayers();
+
+        // 4. Sync to client if any dirty flags set
+        syncToClient();
     }
 
     /**
@@ -247,21 +250,8 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
             maxProgress = currentRecipe.getProcessingTime();
         }
 
-        // Check if output slot can accept result
+        // Get result for this recipe
         ItemStack result = currentRecipe.getResult();
-        ItemStack output = inventory.getItem(1);
-        if (!output.isEmpty()) {
-            if (!ItemStack.isSameItemSameComponents(output, result)) {
-                // Different item in output
-                setActive(false);
-                return;
-            }
-            if (output.getCount() + result.getCount() > output.getMaxStackSize()) {
-                // Output full
-                setActive(false);
-                return;
-            }
-        }
 
         // Process
         setActive(true);
@@ -277,56 +267,88 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
             // Complete processing
             input.shrink(1);
 
-            if (output.isEmpty()) {
-                inventory.setItem(1, result.copy());
-            } else {
-                output.grow(result.getCount());
-            }
+            // Add result to output slot (slot 1) - rendered visually, auto-pickup
+            addToOutput(result.copy());
 
             progress = 0;
             processingItem = ItemStack.EMPTY;
-
-            // Sync to client
-            syncToClient();
         }
     }
 
     /**
-     * Handle output - items stay on discharge tray until picked up or extracted.
-     * Only ejects if output tray is full and new item needs to be placed.
+     * Add processed result to output slot (slot 1).
+     * Create-style: items stored in inventory, rendered visually, auto-pickup.
      */
-    private void ejectOutput() {
-        // Output stays on tray - no auto-ejection
-        // Items can be picked up by player or extracted by hopper
-        // Sync to client when output changes for rendering
+    private void addToOutput(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return;
+        }
+
+        ItemStack current = inventory.getItem(1);
+
+        if (current.isEmpty()) {
+            inventory.setItem(1, stack.copy());
+            dirtyOutput = true;
+            return;
+        }
+
+        if (ItemStack.isSameItemSameComponents(current, stack)) {
+            int space = current.getMaxStackSize() - current.getCount();
+            int toAdd = Math.min(space, stack.getCount());
+            if (toAdd > 0) {
+                current.grow(toAdd);
+                dirtyOutput = true;
+            }
+        }
+        // If can't add (different item or full), item is lost - processing should check first
+    }
+
+    /**
+     * Give output items to players standing near the discharge tray.
+     * Create-style auto-pickup: walk near = get items.
+     */
+    private void giveOutputToNearbyPlayers() {
+        Level lvl = level;
+        if (lvl == null) {
+            return;
+        }
+
         ItemStack output = inventory.getItem(1);
-        if (!output.isEmpty() && !ItemStack.isSameItemSameComponents(output, lastSyncedOutput)) {
-            lastSyncedOutput = output.copy();
-            syncToClient();
+        if (output.isEmpty()) {
+            return;
+        }
+
+        // Calculate pickup area - covers the entire block and slightly beyond
+        // This ensures players can pick up items from any side near the machine
+        double x = worldPosition.getX() + 0.5;
+        double y = worldPosition.getY();
+        double z = worldPosition.getZ() + 0.5;
+
+        // Large pickup area around the entire block (1.5 block radius)
+        AABB pickupArea = new AABB(x - 1.5, y - 0.5, z - 1.5, x + 1.5, y + 2.0, z + 1.5);
+        List<Player> players = lvl.getEntitiesOfClass(Player.class, pickupArea);
+
+        for (Player player : players) {
+            if (player.isSpectator()) {
+                continue;
+            }
+
+            // Try to give items to player
+            ItemStack toGive = output.copy();
+            if (player.getInventory().add(toGive)) {
+                // Successfully added to inventory
+                inventory.setItem(1, ItemStack.EMPTY);
+                dirtyOutput = true;
+                return;
+            } else if (toGive.getCount() < output.getCount()) {
+                // Partially added
+                output.setCount(toGive.getCount());
+                inventory.setItem(1, output);
+                dirtyOutput = true;
+            }
         }
     }
 
-    /**
-     * Get the output item for rendering on the discharge tray.
-     */
-    public ItemStack getOutputItem() {
-        return inventory.getItem(1);
-    }
-
-    /**
-     * Allow players to pick up output item by right-clicking the block.
-     * Called from block's useWithoutItem method.
-     * @return The output item if present, or empty stack
-     */
-    public ItemStack extractOutput() {
-        ItemStack output = inventory.getItem(1);
-        if (!output.isEmpty()) {
-            inventory.setItem(1, ItemStack.EMPTY);
-            syncToClient();
-            return output;
-        }
-        return ItemStack.EMPTY;
-    }
 
     /**
      * Get the internal inventory for hopper interaction.
@@ -380,22 +402,27 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     }
 
     /**
-     * Set active state and update block state if needed.
+     * Set active state and mark for sync if changed.
      */
     private void setActive(boolean newActive) {
         if (active != newActive) {
             active = newActive;
-            syncToClient();
+            dirtyActive = true;
         }
     }
 
     /**
-     * Sync block entity data to clients.
+     * Sync block entity data to clients only if dirty.
      */
     private void syncToClient() {
+        if (!dirtyActive && !dirtyOutput) {
+            return; // Nothing changed, skip sync
+        }
         Level lvl = level;
         if (lvl != null && !lvl.isClientSide) {
             lvl.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            dirtyActive = false;
+            dirtyOutput = false;
             setChanged();
         }
     }
@@ -422,41 +449,47 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         return processingItem;
     }
 
-    public int getDeployTimer() {
-        return deployTimer;
-    }
-
-    public boolean isDeployed() {
-        return deployTimer >= DEPLOY_DURATION;
+    /**
+     * Get the output item for rendering on the discharge tray.
+     */
+    public ItemStack getOutputItem() {
+        return inventory.getItem(1);
     }
 
     /**
-     * Client-side tick for animation updates.
+     * Extract the output item (for player pickup via right-click).
+     * Removes the item from the slot and returns it.
      */
-    public void clientTick() {
-        // Track deploy animation on client side too
-        if (deployTimer < DEPLOY_DURATION) {
-            deployTimer++;
+    public ItemStack extractOutput() {
+        ItemStack slotContent = inventory.getItem(1);
+        if (slotContent.isEmpty()) {
+            return ItemStack.EMPTY;
         }
+        // Make a copy before clearing the slot
+        ItemStack output = slotContent.copy();
+        inventory.setItem(1, ItemStack.EMPTY);
+        dirtyOutput = true;
+        syncToClient();
+        return output;
     }
 
     // === GeckoLib Animation ===
 
     @Override
     public void registerControllers(@Nonnull AnimatableManager.ControllerRegistrar controllers) {
-        // Single controller that handles deploy -> idle/active transition
         controllers.add(new AnimationController<>(this, "main", 0, state -> {
-            boolean isDeployed = deployTimer >= DEPLOY_DURATION;
-
-            if (!isDeployed) {
-                // Still deploying
-                return state.setAndContinue(DEPLOY);
-            }
-
-            // After deploy, switch between idle and active
             if (active) {
+                // Processing - rollers spinning
+                // Mark as deployed so we don't re-play deploy when stopping
+                hasDeployed = true;
                 return state.setAndContinue(ACTIVE);
+            } else if (!hasDeployed) {
+                // First load - play deploy animation then chain to idle
+                // DON'T set hasDeployed here! Let the animation play fully.
+                // setAndContinue will continue the same animation each frame.
+                return state.setAndContinue(DEPLOY_THEN_IDLE);
             } else {
+                // Was active before - just loop idle (no re-deploy)
                 return state.setAndContinue(IDLE);
             }
         }));
@@ -475,8 +508,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         super.saveAdditional(tag, registries);
         tag.putInt(TAG_PROGRESS, progress);
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
-        tag.putBoolean("Active", active);
-        tag.putInt("DeployTimer", deployTimer);
+        tag.putBoolean(TAG_ACTIVE, active);
 
         if (!processingItem.isEmpty()) {
             tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
@@ -490,7 +522,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
                 invTag.put("Slot" + i, stack.save(registries));
             }
         }
-        tag.put("Inventory", invTag);
+        tag.put(TAG_INVENTORY, invTag);
     }
 
     @Override
@@ -498,8 +530,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         super.loadAdditional(tag, registries);
         progress = tag.getInt(TAG_PROGRESS);
         maxProgress = tag.getInt(TAG_MAX_PROGRESS);
-        active = tag.getBoolean("Active");
-        deployTimer = tag.getInt("DeployTimer");
+        active = tag.getBoolean(TAG_ACTIVE);
 
         if (tag.contains(TAG_PROCESSING_ITEM)) {
             processingItem = ItemStack.parse(registries, tag.getCompound(TAG_PROCESSING_ITEM))
@@ -509,8 +540,8 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         }
 
         // Load inventory (only from full save, not network sync)
-        if (tag.contains("Inventory")) {
-            CompoundTag invTag = tag.getCompound("Inventory");
+        if (tag.contains(TAG_INVENTORY)) {
+            CompoundTag invTag = tag.getCompound(TAG_INVENTORY);
             for (int i = 0; i < inventory.getContainerSize(); i++) {
                 String key = "Slot" + i;
                 if (invTag.contains(key)) {
@@ -523,8 +554,8 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         }
 
         // Load output item (from network sync - takes priority if present)
-        if (tag.contains("OutputItem")) {
-            inventory.setItem(1, ItemStack.parse(registries, tag.getCompound("OutputItem"))
+        if (tag.contains(TAG_OUTPUT_ITEM)) {
+            inventory.setItem(1, ItemStack.parse(registries, tag.getCompound(TAG_OUTPUT_ITEM))
                     .orElse(ItemStack.EMPTY));
         }
     }
@@ -536,17 +567,15 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     public CompoundTag getUpdateTag(@Nonnull HolderLookup.Provider registries) {
         CompoundTag tag = super.getUpdateTag(registries);
         // Only sync what the client needs for rendering
-        tag.putInt(TAG_PROGRESS, progress);
-        tag.putInt(TAG_MAX_PROGRESS, maxProgress);
-        tag.putBoolean("Active", active);
-        tag.putInt("DeployTimer", deployTimer);
+        // Note: deployTimer NOT synced - client tracks it independently via clientTick()
+        tag.putBoolean(TAG_ACTIVE, active);
         if (!processingItem.isEmpty()) {
             tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
         }
         // Sync output item for rendering on discharge tray
         ItemStack outputItem = inventory.getItem(1);
         if (!outputItem.isEmpty()) {
-            tag.put("OutputItem", outputItem.save(registries));
+            tag.put(TAG_OUTPUT_ITEM, outputItem.save(registries));
         }
         return tag;
     }

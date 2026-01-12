@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-import com.devmod.compat.Compat;
+import net.neoforged.fml.loading.LoadingModList;
 
 public class DevModMixinPlugin implements IMixinConfigPlugin {
 
@@ -29,9 +29,14 @@ public class DevModMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         if (HEXEREI_MIXIN.equals(mixinClassName)) {
-            return Compat.isLoaded("hexerei");
+            return isModLoaded("hexerei");
         }
         return true;
+    }
+
+    private static boolean isModLoaded(String modId) {
+        LoadingModList modList = LoadingModList.get();
+        return modList != null && modList.getModFileById(modId) != null;
     }
 
     @Override

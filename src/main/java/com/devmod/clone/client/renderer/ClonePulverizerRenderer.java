@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -23,8 +24,38 @@ import software.bernie.geckolib.renderer.GeoBlockRenderer;
 /**
  * GeckoLib renderer for the Clone Pulverizer block.
  * Renders the animated model and items being processed between the rollers.
+ *
+ * <p>Coordinate System Notes (GeckoLib postRender):
+ * <ul>
+ *   <li>Origin is at block/model CENTER, not corner</li>
+ *   <li>X and Z axes are INVERTED compared to Minecraft world coordinates</li>
+ *   <li>FACING direction mapping: NORTH→-Z, SOUTH→+Z, EAST→-X, WEST→+X</li>
+ * </ul>
  */
 public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlockEntity> {
+
+    // === Rendering Constants ===
+
+    /** Height of rollers in model units (9/16 blocks) */
+    private static final float ROLLER_HEIGHT = 0.5625f;
+
+    /** Scale for item being processed */
+    private static final float PROCESSING_SCALE = 0.4f;
+
+    /** Spin rate for processing item (degrees per tick) */
+    private static final float SPIN_RATE = 10f;
+
+    /** Maximum squeeze factor (0.5 = squeeze to 50% at max progress) */
+    private static final float MAX_SQUEEZE = 0.5f;
+
+    /** Offset to discharge tray (GeckoLib coordinates - inverted) */
+    private static final float TRAY_OFFSET = 0.53f;
+
+    /** Height of output item on tray */
+    private static final float OUTPUT_HEIGHT = 0.15f;
+
+    /** Scale for output item (Create-style smaller display) */
+    private static final float OUTPUT_SCALE = 0.5f;
 
     public ClonePulverizerRenderer() {
         super(new ClonePulverizerModel());
@@ -53,8 +84,31 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
         // Render processing item between rollers
         renderProcessingItem(poseStack, entity, bufferSource, packedLight, packedOverlay, partialTick);
 
-        // Render output item on discharge tray
-        renderOutputItem(poseStack, entity, bufferSource, packedLight, packedOverlay, partialTick);
+        // Render output item on discharge tray (Create-style visual display)
+        renderOutputItem(poseStack, entity, bufferSource, packedLight, packedOverlay);
+    }
+
+    /**
+     * Get the facing direction from block state, defaulting to NORTH.
+     */
+    private Direction getFacing(BlockState state) {
+        if (state.hasProperty(HorizontalDirectionalBlock.FACING)) {
+            return state.getValue(HorizontalDirectionalBlock.FACING);
+        }
+        return Direction.NORTH;
+    }
+
+
+    /**
+     * Get Y-axis rotation for facing direction.
+     */
+    private float getFacingRotation(Direction facing) {
+        return switch (facing) {
+            case SOUTH -> 180f;
+            case WEST -> 90f;
+            case EAST -> -90f;
+            default -> 0f; // NORTH
+        };
     }
 
     /**
@@ -73,39 +127,29 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
             return;
         }
 
+        Level level = entity.getLevel();
+        if (level == null) {
+            return;
+        }
+
         poseStack.pushPose();
 
-        // Get facing direction for proper rotation
-        BlockState state = entity.getBlockState();
-        Direction facing = Direction.NORTH;
-        if (state.hasProperty(HorizontalDirectionalBlock.FACING)) {
-            facing = state.getValue(HorizontalDirectionalBlock.FACING);
-        }
+        Direction facing = getFacing(entity.getBlockState());
 
-        // Position item between the rollers (center of block, at roller height)
-        // The rollers are at Y=9 in the model (9/16 = 0.5625)
-        poseStack.translate(0.5, 0.5625, 0.5);
+        // Position item between the rollers (GeckoLib origin is at block center)
+        poseStack.translate(0, ROLLER_HEIGHT, 0);
 
         // Rotate based on block facing
-        float rotation = switch (facing) {
-            case SOUTH -> 180f;
-            case WEST -> 90f;
-            case EAST -> -90f;
-            default -> 0f; // NORTH
-        };
-        poseStack.mulPose(Axis.YP.rotationDegrees(rotation));
+        poseStack.mulPose(Axis.YP.rotationDegrees(getFacingRotation(facing)));
 
         // Spin the item based on game time for visual effect
-        if (entity.getLevel() != null) {
-            float spin = (entity.getLevel().getGameTime() + partialTick) * 10f;
-            poseStack.mulPose(Axis.YP.rotationDegrees(spin));
-        }
+        float spin = (level.getGameTime() + partialTick) * SPIN_RATE;
+        poseStack.mulPose(Axis.YP.rotationDegrees(spin));
 
         // Squeeze the item based on processing progress
         float progress = entity.getProgressPercent();
-        float squeeze = 1.0f - (progress * 0.5f); // Squeeze to 50% at max progress
-        float scale = 0.4f; // Base item scale
-        poseStack.scale(scale, scale * squeeze, scale);
+        float squeeze = 1.0f - (progress * MAX_SQUEEZE);
+        poseStack.scale(PROCESSING_SCALE, PROCESSING_SCALE * squeeze, PROCESSING_SCALE);
 
         // Render the item
         Minecraft.getInstance().getItemRenderer().renderStatic(
@@ -115,7 +159,7 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
                 packedOverlay,
                 poseStack,
                 bufferSource,
-                entity.getLevel(),
+                level,
                 0
         );
 
@@ -123,62 +167,63 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
     }
 
     /**
-     * Render the output item sitting on the discharge tray.
-     * The discharge tray position depends on block facing.
+     * Render the output item on the discharge tray.
+     * Create-style: smaller scale, fixed position, no physics.
+     *
+     * <p>GeckoLib coordinate system - axes are INVERTED:
+     * NORTH→-Z, SOUTH→+Z, EAST→-X, WEST→+X
      */
     private void renderOutputItem(
             PoseStack poseStack,
             ClonePulverizerBlockEntity entity,
             MultiBufferSource bufferSource,
             int packedLight,
-            int packedOverlay,
-            float partialTick
+            int packedOverlay
     ) {
         ItemStack outputItem = entity.getOutputItem();
         if (outputItem.isEmpty()) {
             return;
         }
 
+        Level level = entity.getLevel();
+        if (level == null) {
+            return;
+        }
+
         poseStack.pushPose();
 
-        // Get facing direction
-        BlockState state = entity.getBlockState();
-        Direction facing = Direction.NORTH;
-        if (state.hasProperty(HorizontalDirectionalBlock.FACING)) {
-            facing = state.getValue(HorizontalDirectionalBlock.FACING);
-        }
+        Direction facing = getFacing(entity.getBlockState());
 
-        // Origin is at block/model center. Discharge tray is at Z=+0.53 from center.
-        // Need to offset based on facing direction.
-        double trayOffset = 0.53; // 8.5/16 model units from center
-        double offsetX = 0;
-        double offsetZ = 0;
-
+        // GeckoLib origin is at block center
+        // Position on discharge tray with INVERTED coordinates
+        float offsetX = 0;
+        float offsetZ = 0;
         switch (facing) {
-            case NORTH -> offsetZ = -trayOffset;  // Discharge toward -Z
-            case SOUTH -> offsetZ = trayOffset;   // Discharge toward +Z
-            case EAST -> offsetX = -trayOffset;   // Discharge toward -X
-            case WEST -> offsetX = trayOffset;    // Discharge toward +X
+            case NORTH -> offsetZ = -TRAY_OFFSET;  // Inverted: back is -Z
+            case SOUTH -> offsetZ = TRAY_OFFSET;
+            case EAST -> offsetX = -TRAY_OFFSET;   // Inverted: back is -X
+            case WEST -> offsetX = TRAY_OFFSET;
+            default -> { }
         }
 
-        poseStack.translate(offsetX, 0.1, offsetZ);
+        poseStack.translate(offsetX, OUTPUT_HEIGHT, offsetZ);
 
-        // Scale down the item
-        float scale = 0.35f;
-        poseStack.scale(scale, scale, scale);
+        // Scale down for Create-style display
+        poseStack.scale(OUTPUT_SCALE, OUTPUT_SCALE, OUTPUT_SCALE);
 
-        // Render the output item
+        // Render the item
         Minecraft.getInstance().getItemRenderer().renderStatic(
                 outputItem,
-                ItemDisplayContext.GROUND,
+                ItemDisplayContext.FIXED,
                 packedLight,
                 packedOverlay,
                 poseStack,
                 bufferSource,
-                entity.getLevel(),
+                level,
                 0
         );
 
         poseStack.popPose();
     }
+
 }
