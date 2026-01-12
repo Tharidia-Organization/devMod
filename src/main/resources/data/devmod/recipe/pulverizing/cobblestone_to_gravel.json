@@ -1,0 +1,11 @@
+{
+  "type": "devmod:pulverizing",
+  "ingredient": {
+    "item": "minecraft:cobblestone"
+  },
+  "result": {
+    "id": "minecraft:gravel",
+    "count": 1
+  },
+  "processing_time": 100
+}

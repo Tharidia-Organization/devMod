@@ -1,6 +1,8 @@
 package com.devmod.clone.block.entity;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -8,6 +10,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -26,9 +29,11 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+import com.devmod.clone.CloneBlocks;
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.CloneItems;
 import com.devmod.clone.block.NeurocellLBlock;
@@ -140,6 +145,78 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
                 lvl.setBlock(partPos, Objects.requireNonNull(partState.setValue(activeProp, active)), 3);
             }
         }
+    }
+
+    /**
+     * Update the block's LINKED state based on nearby neurolink connections.
+     */
+    public void updateLinkedState() {
+        Level lvl = level;
+        if (lvl == null || lvl.isClientSide) {
+            return;
+        }
+
+        BlockPos pos = Objects.requireNonNull(worldPosition);
+        BlockState centerState = lvl.getBlockState(pos);
+        net.minecraft.world.level.block.state.properties.DirectionProperty facingProp =
+            Objects.requireNonNull(NeurocellLBlock.FACING);
+        if (!centerState.hasProperty(facingProp)) {
+            return;
+        }
+        Direction facing = centerState.getValue(facingProp);
+
+        Set<BlockPos> selfParts = new HashSet<>();
+        for (MultiBlockPart part : MultiBlockPart.values()) {
+            selfParts.add(Objects.requireNonNull(part.getOffsetFromCenter(pos, facing)));
+        }
+
+        boolean linked = false;
+        for (BlockPos partPos : selfParts) {
+            for (Direction dir : Direction.values()) {
+                BlockPos neighborPos = partPos.relative(dir);
+                BlockState neighborState = lvl.getBlockState(neighborPos);
+                if (neighborState.getBlock() != CloneBlocks.NEUROLINK.get()) {
+                    continue;
+                }
+                if (hasExternalConnection(lvl, neighborPos, selfParts)) {
+                    linked = true;
+                    break;
+                }
+            }
+            if (linked) {
+                break;
+            }
+        }
+
+        net.minecraft.world.level.block.state.properties.BooleanProperty linkedProp =
+            Objects.requireNonNull(NeurocellLBlock.LINKED);
+        for (MultiBlockPart part : MultiBlockPart.values()) {
+            BlockPos partPos = Objects.requireNonNull(part.getOffsetFromCenter(pos, facing));
+            BlockState partState = lvl.getBlockState(partPos);
+            if (partState.hasProperty(linkedProp) &&
+                partState.getValue(linkedProp) != linked) {
+                lvl.setBlock(partPos, Objects.requireNonNull(partState.setValue(linkedProp, linked)), 3);
+            }
+        }
+    }
+
+    private boolean hasExternalConnection(Level lvl, BlockPos cablePos, Set<BlockPos> selfParts) {
+        for (Direction dir : Direction.values()) {
+            BlockPos neighborPos = cablePos.relative(dir);
+            if (selfParts.contains(neighborPos)) {
+                continue;
+            }
+            BlockState neighborState = lvl.getBlockState(neighborPos);
+            Block neighbor = neighborState.getBlock();
+            if (neighbor == CloneBlocks.NEUROLINK.get()
+                || neighbor == CloneBlocks.NEUROCELL.get()
+                || neighbor == CloneBlocks.NEUROCELL_L.get()
+                || neighbor == CloneBlocks.REFORMER.get()
+                || neighbor == CloneBlocks.IMPRINTER.get()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean insertBioscanner(@Nonnull ItemStack bioscanner) {

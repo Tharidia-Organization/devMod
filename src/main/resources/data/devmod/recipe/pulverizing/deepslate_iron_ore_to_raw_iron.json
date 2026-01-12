@@ -1,0 +1,11 @@
+{
+  "type": "devmod:pulverizing",
+  "ingredient": {
+    "item": "minecraft:deepslate_iron_ore"
+  },
+  "result": {
+    "id": "minecraft:raw_iron",
+    "count": 2
+  },
+  "processing_time": 180
+}

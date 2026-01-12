@@ -100,7 +100,7 @@
       "comment": "=== CORNER NODE NE (simmetrico) ===",
       "name": "corner_ne",
       "rotation": {
-        "angle": -45,
+        "angle": 45,
         "axis": "y",
         "origin": [
           17.5,

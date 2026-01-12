@@ -339,15 +339,126 @@ public class CloneClientSetup {
 
 ---
 
-## 7. Modelli Completati
+## 7. Item Rendering in postRender (GeoBlockRenderer)
 
-| Modello | Geo | Animation | Texture | Java | Testato |
-|---------|-----|-----------|---------|------|---------|
-| clone_pulverizer | OK | OK | OK | OK | IN CORSO |
+Quando si vuole renderizzare un item in una posizione specifica del modello (es. sul discharge tray del pulverizer), bisogna capire il sistema di coordinate di GeckoLib.
+
+### Sistema di Coordinate
+
+In `GeoBlockRenderer.postRender()`:
+
+- **L'origine (0, 0, 0)** è al **centro del blocco** (non all'angolo!)
+- **Y** segue la convenzione standard: positivo verso l'alto
+- **X e Z** sono **invertiti** rispetto alle coordinate world di Minecraft
+
+### Mappatura FACING → Offset
+
+Quando il blocco ha una proprietà `FACING` (HorizontalDirectionalBlock), l'offset per posizionare un item sul retro del blocco (es. discharge tray) segue questa logica **invertita**:
+
+```java
+switch (facing) {
+    case NORTH -> offsetZ = -trayOffset;  // Item verso -Z (non +Z!)
+    case SOUTH -> offsetZ = trayOffset;   // Item verso +Z
+    case EAST -> offsetX = -trayOffset;   // Item verso -X
+    case WEST -> offsetX = trayOffset;    // Item verso +X
+}
+```
+
+**Attenzione**: Questo è l'**opposto** di quello che ci si aspetterebbe! Se il blocco "guarda NORTH" e il discharge è sul retro (sud), l'offset deve essere **negativo** in Z, non positivo.
+
+### Perché è Invertito?
+
+GeckoLib applica trasformazioni al modello Bedrock che invertono gli assi X e Z rispetto allo spazio world di Minecraft. Quando si lavora in `postRender()`, si è nello spazio trasformato del modello.
+
+### Esempio Completo: Discharge Tray
+
+```java
+private void renderOutputItem(PoseStack poseStack, ...) {
+    // Offset in unità blocco (8.5 pixel model / 16 = 0.53)
+    double trayOffset = 0.53;
+    double offsetX = 0;
+    double offsetZ = 0;
+
+    switch (facing) {
+        case NORTH -> offsetZ = -trayOffset;
+        case SOUTH -> offsetZ = trayOffset;
+        case EAST -> offsetX = -trayOffset;
+        case WEST -> offsetX = trayOffset;
+    }
+
+    // Origine già al centro, Y basso per il vassoio
+    poseStack.translate(offsetX, 0.1, offsetZ);
+
+    // Scale e render
+    poseStack.scale(0.35f, 0.35f, 0.35f);
+    Minecraft.getInstance().getItemRenderer().renderStatic(...);
+}
+```
+
+### Regole Pratiche
+
+1. **Usa (0, Y, 0) per il centro** - non (0.5, Y, 0.5)
+2. **Inverti le direzioni** - NORTH = -Z, EAST = -X
+3. **Test empirico**: se l'item appare sul lato sbagliato, inverti il segno dell'offset
+4. **Y = 0** è il fondo del blocco, Y = 1 è il top
+
+### Troubleshooting: Processo di Debug
+
+Se l'item non appare nella posizione corretta, segui questo processo:
+
+#### Step 1: Verifica che il rendering funzioni
+
+```java
+poseStack.translate(0, 1.5, 0);  // Alto sopra il blocco
+```
+
+Se l'item appare in aria sopra la macchina → il rendering funziona, problema di coordinate.
+
+#### Step 2: Trova l'origine
+
+```java
+poseStack.translate(0, 0.1, 0);  // Centro del blocco, basso
+```
+
+- Se l'item è al centro del blocco → origine corretta a (0,0,0)
+- Se l'item è in un angolo → origine spostata, aggiusta di conseguenza
+
+#### Step 3: Aggiungi offset con facing NORTH
+
+```java
+poseStack.translate(0, 0.1, 0.5);  // Test offset +Z
+```
+
+- Se l'item appare sul lato OPPOSTO a quello atteso → inverti il segno
+- Se l'item appare su un asse diverso (es. X invece di Z) → gli assi sono scambiati
+
+#### Step 4: Mappa tutte le direzioni
+
+Una volta trovato l'offset corretto per NORTH, le altre direzioni seguono:
+
+- Se NORTH usa -Z → SOUTH usa +Z
+- Se NORTH usa -Z → EAST usa -X, WEST usa +X
+
+#### Errori Comuni
+
+| Sintomo                  | Causa                               | Soluzione                 |
+|--------------------------|-------------------------------------|---------------------------|
+| Item non visibile        | Y troppo basso, dentro la geometria | Aumenta Y a 1.5 per test  |
+| Item sul lato opposto    | Segno dell'offset sbagliato         | Inverti il segno          |
+| Item su asse sbagliato   | Confusione X/Z                      | Scambia offsetX e offsetZ |
+| Item non segue rotazione | Offset non dipende da facing        | Aggiungi switch su facing |
 
 ---
 
-## 8. Modelli Da Fare (28 rimanenti)
+## 8. Modelli Completati
+
+| Modello          | Geo | Animation | Texture | Java | Testato |
+|------------------|-----|-----------|---------|------|---------|
+| clone_pulverizer | OK  | OK        | OK      | OK   | OK      |
+
+---
+
+## 9. Modelli Da Fare (28 rimanenti)
 
 1. clone_assembler
 2. clone_atomic_forge
@@ -380,4 +491,4 @@ public class CloneClientSetup {
 
 ---
 
-*Ultimo aggiornamento: 2026-01-11*
+*Ultimo aggiornamento: 2026-01-12*

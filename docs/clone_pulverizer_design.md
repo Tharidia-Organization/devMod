@@ -5,208 +5,170 @@ Riceve materiale dall'alto, lo frantuma con rulli dentati controrotanti, espelle
 
 ---
 
-## Schema Meccanico
+## Stato Attuale del Modello
 
-```
-            ┌─────────┐
-            │ HOPPER  │  ← Tramoggia di carico (imbuto)
-            └────┬────┘
-                 │
-         ┌───────┴───────┐
-         │  FEED GUIDE   │  ← Guida materiale
-         └───────┬───────┘
-                 │
-     ┌───────────┼───────────┐
-     │     ╔═══╗ │ ╔═══╗     │  ← TWIN ROLLERS (rulli dentati)
-     │     ║ ↓ ║ │ ║ ↓ ║     │
-     │     ╚═══╝ │ ╚═══╝     │
-     │           │           │
-     │   CRUSHING CHAMBER    │  ← Camera frantumazione
-     └───────────┬───────────┘
-                 │
-            ┌────┴────┐
-            │ SCREEN  │  ← Griglia vaglio
-            └────┬────┘
-                 │
-            ┌────┴────┐
-            │DISCHARGE│  ← Scarico
-            └─────────┘
+### Elementi Completati
+| # | Elemento | Bone | Dimensioni Finali | Note |
+|---|----------|------|-------------------|------|
+| 1 | Base Platform | base_plate | 14x1x14 | Griglia grigia |
+| 2 | Crushing Chamber | chamber | 12x6x12 | Pannelli industriali, apertura centrale |
+| 3 | Twin Roller Left | roller_left | 6x8x8 (croce) | Forma a T, no Z-fighting |
+| 4 | Twin Roller Right | roller_right | 6x8x8 (croce) | Offset 45° per mesh |
+| 5 | Support Pillars | support_nw/ne/sw/se | 3x5x3 | Grigi, animazione dispiegamento |
+| 6 | Hopper | hopper | 14x6x14 (imbuto) | 3 livelli: 14→10→6, sale dal basso |
+| 7 | Feed Guide | feed_guide | 6x1x6 | 4 rail che guidano materiale |
+| 8 | Discharge Chute | discharge | 6x3x7 | U-shape, esce dal blocco (Z=11) |
+| 9 | Control Panel | panel | 6x4x1 | Lato Nord, schermo cyan + pulsanti |
+| 10 | Belt Frame | belt | 14x4x6 | Telaio rettangolare esterno ai rulli |
 
-          ┌──────────┐
-          │  MOTOR   │  ← Motore laterale
-          │  ⚙️ ⚙️   │
-          └──────────┘
-```
+### Elementi Rimossi (moduli separati)
+| # | Elemento | Motivo |
+|---|----------|--------|
+| - | Motor | Modulo separato |
 
 ---
 
-## Elementi del Modello
+## Dettagli Tecnici Elementi Completati
 
-### Checklist Componenti
+### Twin Rollers - Design Finale
 
-| # | Elemento | Bone | Dimensioni | Animazione | Texture | Status |
-|---|----------|------|------------|------------|---------|--------|
-| 1 | Base Platform | base_plate | 14x1x14 | Drop dall'alto | Grigio griglia | ✅ |
-| 2 | Crushing Chamber | chamber | 12x6x12 | Emerge dal basso | Grigio pannelli | ✅ |
-| 3 | Twin Roller Left | roller_left | 3x3x10 | Rotazione continua | Grigio cilindro dentato | ✅ |
-| 4 | Twin Roller Right | roller_right | 3x3x10 | Rotazione opposta | Grigio cilindro dentato | ✅ |
-| 5 | Hopper | hopper | 8x4x8 (imbuto) | Cala dall'alto | Grigio scuro | ❌ |
-| 6 | Feed Guide | feed_guide | 6x2x6 | Emerge con chamber | Grigio | ❌ |
-| 7 | Screen/Grate | screen | 10x1x10 | Vibrazione | Grigio griglia | ❌ |
-| 8 | Discharge Chute | discharge | 4x3x6 | Si estende | Grigio scuro | ❌ |
-| 9 | Motor | motor | 6x5x4 | Nessuna | Grigio scuro | ❌ |
-| 10 | Drive Belt | belt | 1x1x6 | Movimento lineare | Nero/grigio | ❌ |
-| 11 | Control Panel | panel | 4x3x1 | Nessuna | Grigio + LED cyan | ❌ |
-| 12 | Support Legs (x4) | leg_nw/ne/sw/se | 2x2x2 | Dispiegamento | Grigio | ✅ (come supports) |
+**Struttura (forma a T senza Z-fighting)**:
+```
+        ┌───┐
+        │ V │  Y=10-13 (vertical arm top, 2x3x8)
+        │ T │
+┌───────┼───┼───────┐
+│   H   │   │   H   │  Y=8-10 (horizontal arm, 6x2x8)
+└───────┴───┴───────┘
+        │ V │
+        │ B │  Y=5-8 (vertical arm bottom, 2x3x8)
+        └───┘
+```
+
+**Posizioni**:
+- roller_left: pivot [-3, 9, 0]
+- roller_right: pivot [3, 9, 0]
+- Gap centrale: 0 unità (i denti si incastrano)
+
+**Sincronizzazione Ingranaggi**:
+- roller_left: 0° → 45° → 90° → ... → 360° (ogni 0.25s)
+- roller_right: 45° → 0° → -45° → ... → -315° (offset 45°)
+- Risultato: denti si incastrano come veri ingranaggi
+
+**UV Texture**:
+- Braccia: UV [0, 24] e [0, 27]
+- Punte denti: UV [0, 30] (più chiaro)
 
 ---
 
-## Gerarchia Bones
+## Gerarchia Bones Attuale
 
 ```
 root
-├── base_plate          # Piattaforma base
-│   ├── leg_nw          # Piedino nord-ovest
-│   ├── leg_ne          # Piedino nord-est
-│   ├── leg_sw          # Piedino sud-ovest
-│   └── leg_se          # Piedino sud-est
+├── base_plate          # 14x1x14, Y=0
 │
-├── chamber             # Camera di frantumazione
-│   ├── roller_left     # Rullo sinistro (rotazione Z)
-│   ├── roller_right    # Rullo destro (rotazione Z opposta)
-│   ├── feed_guide      # Guida alimentazione
-│   └── screen          # Griglia vaglio
+├── chamber             # 12x6x12, Y=1-7
+│   ├── roller_left     # 6x8x8 croce, pivot [-3, 9, 0]
+│   ├── roller_right    # 6x8x8 croce, pivot [3, 9, 0]
+│   ├── core_upper      # 10x2x10, Y=4-6
+│   ├── feed_guide      # 6x1x6, 4 rail guide
+│   ├── discharge       # 6x3x5, U-channel esterno
+│   └── panel           # 6x4x1, lato Nord
 │
-├── hopper              # Tramoggia superiore
+├── belt                # 14x4x6, telaio esterno ai rulli
 │
-├── discharge           # Scarico inferiore
+├── support_nw          # 3x5x3, angolo NW
+├── support_ne          # 3x5x3, angolo NE
+├── support_sw          # 3x5x3, angolo SW
+├── support_se          # 3x5x3, angolo SE
 │
-├── motor               # Motore laterale
-│   └── belt            # Cinghia trasmissione
-│
-└── panel               # Pannello controllo
+└── hopper              # Imbuto 3 livelli, Y=11-17
+    ├── top ring        # 14x2x14, Y=15-17
+    ├── middle ring     # 10x2x10, Y=13-15
+    └── bottom ring     # 6x2x6, Y=11-13
 ```
 
 ---
 
-## Animazioni
+## Layout Texture Attuale (64x64)
 
-### Deploy (assembaggio - 6 secondi)
+```
++--------+--------+--------+--------+
+| BASE   | CHAMBER| CORE   | SUPPORT|
+| TOP    | TOP    | TOP    | PILLAR |
+| 0-16   | 16-28  | 32-48  | 48-64  |
+| 0-16   | 0-12   | 0-16   | 0-16   |
++--------+--------+--------+--------+
+| CHAMBER| ROLLER | ROLLER | TOOTH  |
+| SIDE   | END    | SIDE   | TIPS   |
+| 0-12   | 0-6    | 0-10   | 0-10   |
+| 16-22  | 24-27  | 27-30  | 30-33  |
++--------+--------+--------+--------+
+|                                   |
+|         (spazio libero)           |
+|                                   |
++--------+--------+--------+--------+
+| BASE   |                          |
+| SIDE   |      (spazio libero)     |
+| 0-14   |                          |
+| 48-49  |                          |
++--------+--------+--------+--------+
+```
 
+---
+
+## Animazioni Attuali
+
+### Deploy (4 secondi)
 | Tempo | Elemento | Azione |
 |-------|----------|--------|
-| 0.0s | base_plate | Cade dall'alto (Y=8 → Y=0) |
-| 0.3s | leg_* | Si dispiegano dagli angoli |
-| 0.8s | chamber | Emerge dal centro (Y=-6 → Y=1) |
-| 1.2s | motor | Scivola lateralmente in posizione |
-| 1.5s | belt | Si estende dal motore alla camera |
-| 1.8s | discharge | Si estende verso il basso |
-| 2.2s | feed_guide | Emerge dalla camera |
-| 2.6s | hopper | Cala dall'alto sulla camera |
-| 3.0s | panel | Scivola in posizione laterale |
-| 3.2s | roller_* | Iniziano a ruotare (transizione ad active) |
+| 0.0s | base_plate | Cade (Y=6 → Y=0) |
+| 0.4s | chamber | Emerge (Y=-6 → Y=0) |
+| 0.7s | belt | Sale (Y=-6 → Y=0) |
+| 0.8s | discharge | Scivola fuori (Y=-2, Z=-5 → Y=0, Z=0) |
+| 0.9s | core_upper | Sale (Y=-3 → Y=0) |
+| 1.2s | panel | Si apre (rot X: 90° → 0°) |
+| 1.4s | support_nw | Dispiegamento |
+| 1.6s | support_ne | Dispiegamento |
+| 1.8s | support_sw | Dispiegamento |
+| 2.0s | support_se | Dispiegamento |
+| 2.6s | hopper | Sale dal basso (Y=-10 → Y=0) |
 
-### Active (funzionamento - loop 2 secondi)
-
+### Active (loop 2 secondi)
 | Elemento | Animazione |
 |----------|------------|
-| roller_left | Rotazione Z continua (360°/2s) |
-| roller_right | Rotazione Z opposta (-360°/2s) |
-| screen | Vibrazione leggera (Y ±0.05) |
-| belt | Movimento texture o leggero shake |
-| chamber | Micro-vibrazione (0.02 su tutti gli assi) |
-
----
-
-## Layout Texture (64x64)
-
-```
-+--------+--------+--------+--------+
-| BASE   | CHAMBER| CHAMBER| HOPPER |
-| TOP    | TOP    | SIDE   | SIDE   |
-| 0-16   | 16-32  | 32-48  | 48-64  |
-| 0-16   | 0-16   | 0-16   | 0-16   |
-+--------+--------+--------+--------+
-| ROLLER | ROLLER | SCREEN | DISCHG |
-| SIDE   | END    | TOP    | SIDE   |
-| 0-16   | 16-24  | 24-40  | 40-56  |
-| 16-32  | 16-24  | 16-32  | 16-32  |
-+--------+--------+--------+--------+
-| MOTOR  | MOTOR  | BELT   | PANEL  |
-| SIDE   | TOP    |        | FRONT  |
-| 0-16   | 16-28  | 28-36  | 36-48  |
-| 32-48  | 32-44  | 32-40  | 32-44  |
-+--------+--------+--------+--------+
-| LEG    | LEG    |        |        |
-| SIDE   | TOP    | (free) | (free) |
-| 0-8    | 8-16   |        |        |
-| 48-56  | 48-56  |        |        |
-+--------+--------+--------+--------+
-```
-
----
-
-## Dettagli Texture per Elemento
-
-### 1. Base Platform (✅ Completato)
-- **Top**: Griglia grigia 16x16, linee ogni 4px
-- **Side**: Bordo grigio scuro 1px
-
-### 2. Crushing Chamber (❌ Da fare)
-- **Top**: Pannello grigio con apertura centrale per rulli
-- **Side**: Pannelli industriali con bulloni, linee orizzontali
-
-### 3. Twin Rollers (❌ Da fare)
-- **Side (cilindro)**: Pattern denti verticali alternati
-- **End (cerchio)**: Cerchio con asse centrale
-
-### 4. Hopper (❌ Da fare)
-- **Side**: Forma trapezoidale, pannelli grigi con rivetti
-- **Inside**: Più scuro
-
-### 5. Feed Guide (❌ Da fare)
-- **Side**: Pannello grigio con freccia direzionale
-
-### 6. Screen/Grate (❌ Da fare)
-- **Top**: Pattern griglia fitta (linee ogni 2px)
-
-### 7. Discharge Chute (❌ Da fare)
-- **Side**: Tubo/scivolo grigio scuro
-
-### 8. Motor (❌ Da fare)
-- **Side**: Box grigio scuro con ventole
-- **Top**: Griglia ventilazione
-
-### 9. Drive Belt (❌ Da fare)
-- **All**: Nero/grigio scuro, pattern linee
-
-### 10. Control Panel (❌ Da fare)
-- **Front**: Grigio con 2-3 LED cyan, pulsante
-
-### 11. Support Legs (✅ Completato come supports)
-- **Side**: Grigio uniforme
-- **Top/Bottom**: Grigio scuro
-
----
-
-## Prossimi Step
-
-1. ❌ Aggiornare .geo.json con nuovi bones
-2. ❌ Aggiornare UV mapping per nuovi elementi
-3. ❌ Creare texture per ogni nuovo elemento
-4. ❌ Aggiornare animazione deploy
-5. ❌ Aggiungere animazione active con rotazione rulli
-6. ❌ Test in-game
+| roller_left | Rotazione Z: 0° → 360° |
+| roller_right | Rotazione Z: 45° → -315° (controrotante, offset) |
+| core_upper | Leggera oscillazione Y e rotazione |
 
 ---
 
 ## Note Tecniche
 
-- **Rulli**: Usare cilindri (cubo 3x3 ruotato o approssimazione ottagonale)
-- **Hopper**: Forma imbuto = piramide tronca invertita
-- **Vibrazione**: Offset ±0.02-0.05 blocchi, randomizzato
-- **Rotazione rulli**: 180° per secondo = aspetto realistico
+### Z-Fighting
+- **Problema**: Facce sovrapposte causano flickering
+- **Soluzione**: Mai sovrapporre cubes nello stesso bone
+- **Esempio roller**: Braccia verticali NON si sovrappongono all'orizzontale
+
+### Sincronizzazione Ingranaggi
+- **Formula**: Se gear A ruota di +X°, gear B ruota di -X°
+- **Offset**: 45° per forma a croce (4 denti = 90° tra denti)
+- **Mesh perfetto**: Quando A ha dente a 0°, B ha vuoto a 0°
+
+### Palette Colori
+```
+GRIGI:
+- EDGE_LIGHT  = (73, 78, 90)
+- MID         = (57, 61, 71)
+- DARK        = (50, 53, 61)
+- DARKER      = (40, 42, 50)
+- DARKEST     = (32, 34, 42)
+
+CYAN (solo core_upper):
+- CYAN_BRIGHT = (133, 242, 242)
+- CYAN_BORDER = (125, 220, 229)
+```
 
 ---
 
-*Creato: 2026-01-11*
+*Ultimo aggiornamento: 2026-01-11*

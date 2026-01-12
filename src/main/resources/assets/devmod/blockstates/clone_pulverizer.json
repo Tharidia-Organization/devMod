@@ -1,12 +1,8 @@
 {
   "variants": {
-    "active=false,facing=north": {"model": "devmod:block/clone_pulverizer"},
-    "active=false,facing=south": {"model": "devmod:block/clone_pulverizer", "y": 180},
-    "active=false,facing=west": {"model": "devmod:block/clone_pulverizer", "y": 270},
-    "active=false,facing=east": {"model": "devmod:block/clone_pulverizer", "y": 90},
-    "active=true,facing=north": {"model": "devmod:block/clone_pulverizer"},
-    "active=true,facing=south": {"model": "devmod:block/clone_pulverizer", "y": 180},
-    "active=true,facing=west": {"model": "devmod:block/clone_pulverizer", "y": 270},
-    "active=true,facing=east": {"model": "devmod:block/clone_pulverizer", "y": 90}
+    "facing=north": {"model": "devmod:block/clone_pulverizer"},
+    "facing=south": {"model": "devmod:block/clone_pulverizer", "y": 180},
+    "facing=west": {"model": "devmod:block/clone_pulverizer", "y": 270},
+    "facing=east": {"model": "devmod:block/clone_pulverizer", "y": 90}
   }
 }

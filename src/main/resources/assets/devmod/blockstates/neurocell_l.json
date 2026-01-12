@@ -1375,6 +1375,92 @@
         "model": "devmod:block/neurocell_l_platform_se_off",
         "y": 270
       }
+    },
+    {
+      "when": {
+        "linked": "true",
+        "facing": "north",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_leds_c_on"
+      }
+    },
+    {
+      "when": {
+        "linked": "true",
+        "facing": "east",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_leds_c_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "linked": "true",
+        "facing": "south",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_leds_c_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "linked": "true",
+        "facing": "west",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_leds_c_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "linked": "false",
+        "facing": "north",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_leds_c_off"
+      }
+    },
+    {
+      "when": {
+        "linked": "false",
+        "facing": "east",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_leds_c_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "linked": "false",
+        "facing": "south",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_leds_c_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "linked": "false",
+        "facing": "west",
+        "part": "center"
+      },
+      "apply": {
+        "model": "devmod:block/neurocell_l_leds_c_off",
+        "y": 270
+      }
     }
   ]
 }

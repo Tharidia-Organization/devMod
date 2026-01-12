@@ -16,6 +16,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import com.devmod.DevMod;
 import com.devmod.clone.block.entity.CentrifugeBlockEntity;
 import com.devmod.clone.block.entity.CloneMachineBlockEntity;
+import com.devmod.clone.block.entity.ClonePulverizerBlockEntity;
 import com.devmod.clone.block.entity.ImprinterBlockEntity;
 import com.devmod.clone.block.entity.NeurocellBlockEntity;
 import com.devmod.clone.block.entity.NeurocellLBlockEntity;
@@ -117,6 +118,18 @@ public final class CloneBlockEntities {
         );
 
     /**
+     * The clone pulverizer block entity.
+     * Handles item capture, pulverizing recipes, and output ejection.
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ClonePulverizerBlockEntity>> CLONE_PULVERIZER =
+        BLOCK_ENTITY_TYPES.register("clone_pulverizer", () ->
+            BlockEntityType.Builder.of(
+                ClonePulverizerBlockEntity::new,
+                CloneBlocks.CLONE_PULVERIZER.get()
+            ).build(noDataFixer())
+        );
+
+    /**
      * GeckoLib animated block entity for all Clone machine blocks.
      * Supports Oritech-style models with unlimited rotations and animations.
      */
@@ -124,7 +137,6 @@ public final class CloneBlockEntities {
         BLOCK_ENTITY_TYPES.register("clone_machine", () ->
             BlockEntityType.Builder.of(
                 CloneMachineBlockEntity::new,
-                CloneBlocks.CLONE_PULVERIZER.get(),
                 CloneBlocks.CLONE_FOUNDRY.get(),
                 CloneBlocks.CLONE_PUMP.get(),
                 CloneBlocks.CLONE_STEAM_ENGINE.get(),

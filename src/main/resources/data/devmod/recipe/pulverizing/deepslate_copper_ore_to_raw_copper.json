@@ -1,0 +1,11 @@
+{
+  "type": "devmod:pulverizing",
+  "ingredient": {
+    "item": "minecraft:deepslate_copper_ore"
+  },
+  "result": {
+    "id": "minecraft:raw_copper",
+    "count": 3
+  },
+  "processing_time": 180
+}

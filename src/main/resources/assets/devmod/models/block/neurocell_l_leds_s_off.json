@@ -1,0 +1,147 @@
+{
+  "textures": {
+    "green": "devmod:block/neurocell_l_led_green_off",
+    "red": "devmod:block/neurocell_l_led_red_on",
+    "particle": "devmod:block/neurocell_l_led_green_off"
+  },
+  "elements": [
+    {
+      "name": "led_green",
+      "from": [
+        -4,
+        5,
+        19
+      ],
+      "to": [
+        -3,
+        6,
+        20
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#green"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#green"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#green"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#green"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#green"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#green"
+        }
+      }
+    },
+    {
+      "name": "led_red",
+      "from": [
+        -3,
+        5,
+        19
+      ],
+      "to": [
+        -2,
+        6,
+        20
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#red"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#red"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#red"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#red"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#red"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#red"
+        }
+      }
+    }
+  ]
+}

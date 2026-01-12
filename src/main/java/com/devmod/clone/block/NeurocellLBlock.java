@@ -55,6 +55,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
     public static final MapCodec<NeurocellLBlock> CODEC = simpleCodec(p -> new NeurocellLBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
+    public static final BooleanProperty LINKED = BooleanProperty.create("linked");
 
     /**
      * Enum representing the 8 positions in the 2x2x2 structure.
@@ -153,7 +154,7 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
             .strength(4.0f)
             .requiresCorrectToolForDrops()
             .noOcclusion()
-            .lightLevel(state -> state.getValue(Objects.requireNonNull(ACTIVE)) ? 12 : 0)
+            .lightLevel(state -> state.getValue(Objects.requireNonNull(ACTIVE)) ? 12 : 5)
             .isValidSpawn((state, level, pos, type) -> false)
             .isRedstoneConductor((state, level, pos) -> false)
             .isSuffocating((state, level, pos) -> false)
@@ -161,12 +162,13 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
         registerDefaultState(Objects.requireNonNull(stateDefinition.any()
             .setValue(Objects.requireNonNull(PART), MultiBlockPart.CENTER)
             .setValue(Objects.requireNonNull(FACING), Objects.requireNonNull(Direction.NORTH))
-            .setValue(Objects.requireNonNull(ACTIVE), false)));
+            .setValue(Objects.requireNonNull(ACTIVE), false)
+            .setValue(Objects.requireNonNull(LINKED), false)));
     }
 
     @Override
     protected void createBlockStateDefinition(@Nonnull StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(PART, FACING, ACTIVE);
+        builder.add(PART, FACING, ACTIVE, LINKED);
     }
 
     @Override
@@ -255,6 +257,34 @@ public final class NeurocellLBlock extends HorizontalDirectionalBlock implements
 
             BlockPos partPos = Objects.requireNonNull(part.getOffsetFromCenter(pos, facing));
             level.setBlock(partPos, Objects.requireNonNull(state.setValue(partProp, part)), 3);
+        }
+
+        if (!level.isClientSide) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof NeurocellLBlockEntity neurocell) {
+                neurocell.updateLinkedState();
+            }
+        }
+    }
+
+    @Override
+    protected void neighborChanged(
+        @Nonnull BlockState state,
+        @Nonnull Level level,
+        @Nonnull BlockPos pos,
+        @Nonnull Block block,
+        @Nonnull BlockPos fromPos,
+        boolean isMoving
+    ) {
+        super.neighborChanged(state, level, pos, block, fromPos, isMoving);
+        if (level.isClientSide) {
+            return;
+        }
+
+        BlockPos centerPos = getCenterPos(state, pos);
+        BlockEntity be = level.getBlockEntity(centerPos);
+        if (be instanceof NeurocellLBlockEntity neurocell) {
+            neurocell.updateLinkedState();
         }
     }
 

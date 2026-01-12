@@ -4,6 +4,7 @@ import net.neoforged.bus.api.IEventBus;
 
 import com.devmod.DevMod;
 import com.devmod.clone.component.CloneComponents;
+import com.devmod.clone.recipe.CloneRecipeTypes;
 
 /**
  * Clone module initialization.
@@ -41,6 +42,9 @@ public final class CloneModule {
 
         // Register menu types
         CloneMenus.register(modEventBus);
+
+        // Register recipe types (pulverizing, etc.)
+        CloneRecipeTypes.register(modEventBus);
 
         // Register creative tab
         CloneCreativeTab.register(modEventBus);

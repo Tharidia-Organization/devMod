@@ -9,6 +9,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import com.devmod.DevMod;
 import com.devmod.clone.block.CentrifugeBlock;
 import com.devmod.clone.block.CloneMachineBlock;
+import com.devmod.clone.block.ClonePulverizerBlock;
 import com.devmod.clone.block.ImprinterBlock;
 import com.devmod.clone.block.NeurocellBlock;
 import com.devmod.clone.block.NeurocellLBlock;
@@ -94,11 +95,12 @@ public final class CloneBlocks {
 
     /**
      * Clone Pulverizer - grinding machine with rotating blades.
+     * Accepts items dropped from above, pulverizes them, and ejects results.
      * Based on Oritech pulverizer design.
      */
-    public static final DeferredHolder<Block, CloneMachineBlock> CLONE_PULVERIZER = DevMod.BLOCKS.register(
+    public static final DeferredHolder<Block, ClonePulverizerBlock> CLONE_PULVERIZER = DevMod.BLOCKS.register(
         "clone_pulverizer",
-        CloneMachineBlock::new
+        ClonePulverizerBlock::new
     );
 
     /**

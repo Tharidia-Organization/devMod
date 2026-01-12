@@ -114,6 +114,7 @@ public final class NeurolinkBlock extends Block {
 
         // Connect to clone system blocks
         return neighbor == CloneBlocks.NEUROCELL.get()
+            || neighbor == CloneBlocks.NEUROCELL_L.get()
             || neighbor == CloneBlocks.REFORMER.get();
     }
 
