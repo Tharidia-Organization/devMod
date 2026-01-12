@@ -557,6 +557,9 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         if (tag.contains(TAG_OUTPUT_ITEM)) {
             inventory.setItem(1, ItemStack.parse(registries, tag.getCompound(TAG_OUTPUT_ITEM))
                     .orElse(ItemStack.EMPTY));
+        } else if (tag.getBoolean("OutputEmpty")) {
+            // Server says output is empty - clear it on client
+            inventory.setItem(1, ItemStack.EMPTY);
         }
     }
 
@@ -572,10 +575,13 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         if (!processingItem.isEmpty()) {
             tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
         }
-        // Sync output item for rendering on discharge tray
+        // Always sync output item state (even when empty) for proper client rendering
         ItemStack outputItem = inventory.getItem(1);
         if (!outputItem.isEmpty()) {
             tag.put(TAG_OUTPUT_ITEM, outputItem.save(registries));
+        } else {
+            // Mark output as empty so client clears it
+            tag.putBoolean("OutputEmpty", true);
         }
         return tag;
     }

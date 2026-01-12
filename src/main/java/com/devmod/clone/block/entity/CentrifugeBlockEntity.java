@@ -24,6 +24,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+import software.bernie.geckolib.animatable.GeoBlockEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
+
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.block.CentrifugeBlock;
 import com.devmod.clone.menu.CentrifugeMenu;
@@ -31,11 +38,47 @@ import com.devmod.clone.menu.CentrifugeMenu;
 /**
  * Block entity for the Centrifuge automatic crafting machine.
  * Processes items in input slots and produces output.
+ *
+ * <p>Features:
+ * <ul>
+ *   <li>GeckoLib animated model with idle and active animations</li>
+ *   <li>3 input slots + 1 output slot</li>
+ *   <li>Recipe-based processing (placeholder - TODO: add CentrifugingRecipe)</li>
+ *   <li>Dirty flag network sync optimization</li>
+ * </ul>
  */
-public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider {
+public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, GeoBlockEntity {
 
-    private static final int PROCESS_TIME = 100; // 5 seconds
+    // === NBT Tag Constants ===
     private static final String TAG_PROGRESS = "Progress";
+    private static final String TAG_MAX_PROGRESS = "MaxProgress";
+    private static final String TAG_ACTIVE = "Active";
+    private static final String TAG_INVENTORY = "Inventory";
+    private static final String TAG_PROCESSING_ITEM = "ProcessingItem";
+
+    // === Processing Constants ===
+    private static final int DEFAULT_PROCESS_TIME = 100; // 5 seconds
+
+    // === GeckoLib Animation ===
+    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+
+    /** Idle animation - loops when not processing. */
+    protected static final RawAnimation IDLE = RawAnimation.begin()
+            .thenLoop("animation.clone_machine.idle");
+
+    /** Active processing animation - drum spinning. */
+    protected static final RawAnimation ACTIVE = RawAnimation.begin()
+            .thenLoop("animation.clone_machine.active");
+
+    // === State ===
+    private boolean active = false;
+    private int progress = 0;
+    private int maxProgress = DEFAULT_PROCESS_TIME;
+    private ItemStack processingItem = ItemStack.EMPTY;
+
+    // === Dirty Flags for Network Sync ===
+    private boolean dirtyActive = false;
+    private boolean dirtyInventory = false;
 
     // 3 input slots + 1 output slot
     private final SimpleContainer inventory = new SimpleContainer(4) {
@@ -43,14 +86,15 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider {
         public void setChanged() {
             super.setChanged();
             CentrifugeBlockEntity.this.setChanged();
+            CentrifugeBlockEntity.this.dirtyInventory = true;
         }
     };
-
-    private int progress = 0;
 
     public CentrifugeBlockEntity(BlockPos pos, BlockState state) {
         super(CloneBlockEntities.CENTRIFUGE.get(), pos, state);
     }
+
+    // === Server Tick ===
 
     /**
      * Server-side tick for processing.
@@ -61,33 +105,38 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        boolean wasActive = getBlockState().getValue(CentrifugeBlock.ACTIVE);
         boolean canProcess = canProcess();
 
         if (canProcess) {
+            // Start or continue processing
+            if (!active) {
+                setActive(true);
+            }
+            processingItem = inventory.getItem(0).copyWithCount(1);
             progress++;
-            if (progress >= PROCESS_TIME) {
+
+            if (progress >= maxProgress) {
                 processItem();
                 progress = 0;
-            }
-            if (!wasActive) {
-                setActiveState(true);
+                processingItem = ItemStack.EMPTY;
             }
         } else {
-            progress = 0;
-            if (wasActive) {
-                setActiveState(false);
+            // Stop processing
+            if (active) {
+                setActive(false);
             }
+            progress = 0;
+            processingItem = ItemStack.EMPTY;
         }
 
-        setChanged();
+        // Sync to client if dirty
+        syncToClient();
     }
 
     /**
-     * Check if we can process (has valid recipe).
+     * Check if we can process (has valid recipe and output space).
      */
     private boolean canProcess() {
-        // Simple example: requires item in slot 0, output slot must have space
         ItemStack input = inventory.getItem(0);
         ItemStack output = inventory.getItem(3);
 
@@ -95,14 +144,14 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider {
             return false;
         }
 
-        // Example recipe: any item -> processed version
-        // In a real implementation, this would check against a recipe registry
+        // TODO: Replace with proper recipe lookup when CentrifugingRecipe is added
+        // For now, accept any input
         if (output.isEmpty()) {
             return true;
         }
 
-        // Check if output can stack
-        return output.getCount() < output.getMaxStackSize();
+        // Check if output can stack (placeholder: iron nugget)
+        return output.is(Items.IRON_NUGGET) && output.getCount() < output.getMaxStackSize();
     }
 
     /**
@@ -116,9 +165,8 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        // Simple processing: convert input to output
-        // In a real implementation, this would use proper recipes
-        ItemStack result = new ItemStack(Items.IRON_NUGGET); // Placeholder output
+        // TODO: Replace with proper recipe result when CentrifugingRecipe is added
+        ItemStack result = new ItemStack(Items.IRON_NUGGET);
 
         if (output.isEmpty()) {
             inventory.setItem(3, result.copy());
@@ -127,16 +175,49 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         input.shrink(1);
+        dirtyInventory = true;
     }
 
-    private void setActiveState(boolean active) {
-        Level lvl = level;
-        if (lvl != null && !lvl.isClientSide) {
-            BlockState state = getBlockState();
-            if (state.getValue(CentrifugeBlock.ACTIVE) != active) {
-                lvl.setBlock(worldPosition, state.setValue(CentrifugeBlock.ACTIVE, active), 3);
+    /**
+     * Set active state with dirty flag and block state update.
+     */
+    private void setActive(boolean newActive) {
+        if (active != newActive) {
+            active = newActive;
+            dirtyActive = true;
+
+            // Update block state for light level
+            Level lvl = level;
+            if (lvl != null && !lvl.isClientSide) {
+                BlockState state = getBlockState();
+                if (state.getValue(CentrifugeBlock.ACTIVE) != active) {
+                    lvl.setBlock(worldPosition, state.setValue(CentrifugeBlock.ACTIVE, active), 3);
+                }
             }
         }
+    }
+
+    /**
+     * Sync block entity data to clients only if dirty.
+     */
+    private void syncToClient() {
+        if (!dirtyActive && !dirtyInventory) {
+            return; // Nothing changed, skip sync
+        }
+
+        Level lvl = level;
+        if (lvl != null && !lvl.isClientSide) {
+            lvl.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            dirtyActive = false;
+            dirtyInventory = false;
+            setChanged();
+        }
+    }
+
+    // === Getters ===
+
+    public boolean isActive() {
+        return active;
     }
 
     public int getProgress() {
@@ -144,15 +225,42 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public int getMaxProgress() {
-        return PROCESS_TIME;
+        return maxProgress;
     }
 
     public int getProgressPercent() {
-        return PROCESS_TIME > 0 ? (progress * 100) / PROCESS_TIME : 0;
+        return maxProgress > 0 ? (progress * 100) / maxProgress : 0;
+    }
+
+    public float getProgressFloat() {
+        return maxProgress > 0 ? (float) progress / maxProgress : 0f;
+    }
+
+    public ItemStack getProcessingItem() {
+        return processingItem;
     }
 
     public Container getInventory() {
         return inventory;
+    }
+
+    // === GeckoLib Animation ===
+
+    @Override
+    public void registerControllers(@Nonnull AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "main", 0, state -> {
+            if (active) {
+                return state.setAndContinue(ACTIVE);
+            } else {
+                return state.setAndContinue(IDLE);
+            }
+        }));
+    }
+
+    @Override
+    @Nonnull
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return cache;
     }
 
     // === MenuProvider ===
@@ -169,12 +277,18 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider {
         return new CentrifugeMenu(containerId, playerInv, this);
     }
 
-    // === NBT ===
+    // === NBT Persistence ===
 
     @Override
     protected void saveAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt(TAG_PROGRESS, progress);
+        tag.putInt(TAG_MAX_PROGRESS, maxProgress);
+        tag.putBoolean(TAG_ACTIVE, active);
+
+        if (!processingItem.isEmpty()) {
+            tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
+        }
 
         // Save inventory
         CompoundTag invTag = new CompoundTag();
@@ -184,31 +298,55 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider {
                 invTag.put("Slot" + i, stack.save(registries));
             }
         }
-        tag.put("Inventory", invTag);
+        tag.put(TAG_INVENTORY, invTag);
     }
 
     @Override
     protected void loadAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         progress = tag.getInt(TAG_PROGRESS);
+        maxProgress = tag.getInt(TAG_MAX_PROGRESS);
+        if (maxProgress <= 0) {
+            maxProgress = DEFAULT_PROCESS_TIME;
+        }
+        active = tag.getBoolean(TAG_ACTIVE);
+
+        if (tag.contains(TAG_PROCESSING_ITEM)) {
+            processingItem = ItemStack.parse(registries, tag.getCompound(TAG_PROCESSING_ITEM))
+                    .orElse(ItemStack.EMPTY);
+        } else {
+            processingItem = ItemStack.EMPTY;
+        }
 
         // Load inventory
-        CompoundTag invTag = tag.getCompound("Inventory");
-        for (int i = 0; i < inventory.getContainerSize(); i++) {
-            String key = "Slot" + i;
-            if (invTag.contains(key)) {
-                inventory.setItem(i, ItemStack.parse(registries, invTag.getCompound(key)).orElse(ItemStack.EMPTY));
-            } else {
-                inventory.setItem(i, ItemStack.EMPTY);
+        if (tag.contains(TAG_INVENTORY)) {
+            CompoundTag invTag = tag.getCompound(TAG_INVENTORY);
+            for (int i = 0; i < inventory.getContainerSize(); i++) {
+                String key = "Slot" + i;
+                if (invTag.contains(key)) {
+                    inventory.setItem(i, ItemStack.parse(registries, invTag.getCompound(key))
+                            .orElse(ItemStack.EMPTY));
+                } else {
+                    inventory.setItem(i, ItemStack.EMPTY);
+                }
             }
         }
     }
+
+    // === Network Sync ===
 
     @Override
     @Nonnull
     public CompoundTag getUpdateTag(@Nonnull HolderLookup.Provider registries) {
         CompoundTag tag = super.getUpdateTag(registries);
-        saveAdditional(tag, registries);
+        // Only sync what the client needs for rendering
+        tag.putBoolean(TAG_ACTIVE, active);
+        tag.putInt(TAG_PROGRESS, progress);
+        tag.putInt(TAG_MAX_PROGRESS, maxProgress);
+
+        if (!processingItem.isEmpty()) {
+            tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
+        }
         return tag;
     }
 

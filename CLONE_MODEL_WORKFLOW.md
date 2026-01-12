@@ -193,58 +193,187 @@ Esempio di bone con TUTTI i campi espansi:
 
 ## 3. Texture (.png 64x64)
 
-### Palette Colori (stile Neurocell)
+### Obiettivo
 
-```
-GRIGI:
-- EDGE_LIGHT  = (73, 78, 90)    # Bordi illuminati
-- MID         = (57, 61, 71)    # Pannelli medi
-- DARK        = (50, 53, 61)    # Pannelli scuri
-- DARKER      = (40, 42, 50)    # Bordi scuri
-- DARKEST     = (32, 34, 42)    # Ombre profonde
-- PANEL_DARK  = (35, 38, 48)    # Pannelli scuri
-- PANEL_MID   = (45, 49, 59)    # Pannelli medi
+Creare texture in stile Minecraft tecnico, coerente con Neural Cellar e Clone Pulverizer.
 
-CYAN (solo per core_upper):
-- CYAN_BRIGHT = (133, 242, 242) # Glow principale
-- CYAN_BORDER = (125, 220, 229) # Bordo glow
-- CYAN_DARK   = (80, 180, 190)  # Glow scuro
+### Riferimenti Palette/Stile (OBBLIGATORI)
+
+Prima di creare qualsiasi texture, campiona colori SOLO da questi file:
+
+```text
+src/main/resources/assets/devmod/textures/block/neurocell_base.png   # Base metallica
+src/main/resources/assets/devmod/textures/block/neurocell_frame.png  # Frame strutturale
+src/main/resources/assets/devmod/textures/block/neurocell_glass.png  # Teal/glow (opzionale)
+src/main/resources/assets/devmod/textures/block/clone/clone_pulverizer.png  # Riferimento iron/rubber
 ```
 
-### Layout UV (64x64)
+**REGOLA VINCOLANTE**: Usa SOLO colori presenti nei file sopra. Non inventare colori fuori palette.
 
-```
-+------------------+------------------+------------------+------------------+
-|   BASE PLATE     |   CORE LOWER     |   CORE UPPER     |    SUPPORT       |
-|      TOP         |      TOP         |      TOP         |    PILLAR        |
-|   (0-16, 0-16)   |  (16-32, 0-16)   |  (32-48, 0-16)   |  (48-64, 0-16)   |
-|   Griglia grigia |  Pannello grigio |  Core cyan glow  |  Lati grigi      |
-+------------------+------------------+------------------+------------------+
-| CORE LOWER SIDE  | CORE UPPER SIDE  |                  |                  |
-|   (0-12, 16-19)  |   (0-10, 19-21)  |                  |                  |
-|   3px grigio     |   2px cyan glow  |                  |                  |
-+------------------+------------------+------------------+------------------+
-|                                                                           |
-|                         (spazio libero per espansioni)                    |
-|                                                                           |
-+------------------+------------------+------------------+------------------+
-| BASE PLATE SIDE  |                                                        |
-|   (0-14, 48)     |                                                        |
-|   1px grigio     |                                                        |
-+------------------+------------------+------------------+------------------+
+### Palette Neural Cellar Completa
+
+#### Dark/Steel (corpo principale)
+
+```text
+#141C2A  #17202F  #1B2434  #1F2839  #232D3D  #252E3D  #282A32  #283242
+#2A3547  #2D3747  #2F3A4B  #32353D  #343F51  #374151  #393D47  #3C485A  #3E495B
 ```
 
-### Elementi Texture
+#### Teal/Energy (display, glow, indicatori)
 
-| Elemento | UV | Dimensione | Descrizione |
-|----------|-----|------------|-------------|
-| Base Plate Top | 0-16, 0-16 | 16x16 | Griglia grigia (linee ogni 4px) |
-| Core Lower Top | 16-32, 0-16 | 16x16 | Pannello smussato grigio con apertura centrale |
-| Core Upper Top | 32-48, 0-16 | 16x16 | Core circolare cyan luminoso |
-| Support Pillar | 48-64, 0-16 | 16x16 | Lati, top, bottom grigi |
-| Core Lower Side | 0-12, 16-19 | 12x3 | Fascia grigia orizzontale |
-| Core Upper Side | 0-10, 19-21 | 10x2 | Glow cyan laterale |
-| Base Plate Side | 0-14, 48-49 | 14x1 | Bordo grigio scuro |
+```text
+#21415E  #285E88  #437A9E  #68B5BE  #72C7D0  #8CF3FF  #93FFFF  #9BF5FF  #A2FFFF  #66C6D2
+```
+
+#### Grigi Generici (transizioni, dettagli)
+
+```text
+#080A0C  #0E1013  #141C2A  #151D2B  #151D2C  #1C1E22  #192130  #1B2434  #1C2535
+#1D2635  #1D2636  #24262A  #1E2737  #1E2838  #1F2838  #202939  #212A3A  #212B3B
+#222C3C  #232C3C  #232D3D  #242E3E  #262F3F  #273141  #283242  #2A3444  #2B3545
+#2D3747  #374151  #3C485A  #1C5862  #606872  #788291  #7A828C  #4096A5  #969EAA
+#72C7D0  #B2BAC6  #C6CEDA  #8CF3FF
+```
+
+### Vincoli Tecnici
+
+- **Non modificare UV o modelli**: lavora solo sul file `.png`
+- **Risoluzione**: 64x64 pixel
+- **Orientamento**: il fronte è NORTH
+- **Simmetria**: richiesta su hopper e parti principali (evita dettagli direzionali)
+- **Formato**: PNG 32-bit con alpha
+
+### UV Map Clone Pulverizer (x, y, w, h)
+
+| Elemento | Posizione | Dimensione | Descrizione |
+|----------|-----------|------------|-------------|
+| base_top | (0, 0) | 16x16 | Piattaforma base superiore |
+| chamber_top | (16, 0) | 12x12 | Camera di lavorazione superiore |
+| core_top | (32, 0) | 16x16 | Core energia superiore |
+| supports_side | (48, 0) | 3x5 | Lati supporti |
+| supports_top | (48, 5) | 3x3 | Top supporti |
+| supports_bottom | (48, 8) | 3x3 | Bottom supporti |
+| chamber_sides | (0, 16) | 12x6 | Lati camera |
+| hopper | (16, 16) | 14x10 | Tramoggia input (SIMMETRICA) |
+| rollers | (32, 16) | 8x6 | Rulli frantumazione |
+| belt | (48, 16) | 7x3 | Nastro trasportatore |
+| core_sides | (0, 24) | 10x2 | Lati core energia |
+| discharge | (0, 32) | 6x5 | Vassoio output |
+| panel_frame | (16, 32) | 6x4 | Cornice pannello |
+| screen | (32, 32) | 4x2 | Display/schermo |
+| feed_guide | (48, 32) | 6x4 | Guida alimentazione |
+| buttons | (16, 40) | 4x1 | Pulsanti controllo |
+| base_side_strip | (0, 48) | 14x1 | Striscia laterale base |
+| peg | (48, 48) | 1x1 | Piolo/connettore |
+
+### Materiali per Sezione
+
+#### Steel/Body (corpo principale)
+
+- Ramp 4-5 toni dark/steel
+- Bevel 1px esterno + 1px interno
+- Noise leggero (5-10%)
+- Colori: `#1B2434` → `#232D3D` → `#2D3747` → `#374151` → `#3C485A`
+
+#### Iron/Rollers (rulli)
+
+- Ramp metal chiaro con 1-2 pixel di specular highlight
+- Micro-segmenti leggibili
+- Colori: `#606872` → `#788291` → `#969EAA` → `#B2BAC6`
+
+#### Rubber/Belt (nastro)
+
+- Ramp nero/gomma 3 toni
+- Solchi regolari orizzontali
+- Niente highlight forti
+- Colori: `#080A0C` → `#0E1013` → `#1C1E22`
+
+#### Hopper (tramoggia)
+
+- Grigio scuro metallico
+- **SIMMETRICO** (nessun dettaglio direzionale)
+- Rientro interno leggibile
+- Colori: `#1F2839` → `#283242` → `#343F51`
+
+#### Display/UI (schermo, indicatori)
+
+- Teal acceso con 1 SOLO indicatore vicino al display
+- **Evitare teal sparso** su altre parti
+- Colori: `#21415E` → `#437A9E` → `#72C7D0` → `#8CF3FF`
+
+#### Discharge (vassoio output)
+
+- Grigio definito con slot leggibile
+- Contrasto per visibilità
+- Colori: `#232D3D` → `#2D3747` → `#374151`
+
+#### Supporti
+
+- Steel più scuro del body per stacco visivo
+- Colori: `#141C2A` → `#17202F` → `#1B2434`
+
+### Regole Estetiche
+
+1. **Shading Minecraft**: bevel sui bordi + noise leggero interno
+2. **Niente puntini teal casuali**: teal SOLO su display/indicatori
+3. **Contrasto netto tra sezioni**: ogni parte deve essere leggibile
+4. **Luce coerente**: fonte da alto-sinistra (highlight in alto/sinistra, ombre in basso/destra)
+5. **Simmetria**: hopper e parti strutturali devono essere simmetriche
+
+### Criteri di Accettazione
+
+- [ ] Ogni sezione riconoscibile a colpo d'occhio
+- [ ] Palette coerente con Neural Cellar (nessun colore fuori palette)
+- [ ] Nessun dettaglio fuori tema
+- [ ] Teal limitato a display/indicatori
+- [ ] Hopper simmetrico
+- [ ] Contrasto leggibile tra tutte le sezioni
+
+### Template per Nuove Macchine
+
+```text
+Obiettivo: rifare la texture del modello [NOME_MACCHINA] in stile Minecraft tecnico,
+coerente con Neural Cellar.
+
+Riferimenti palette/stile (obbligatori):
+- src/main/resources/assets/devmod/textures/block/neurocell_base.png
+- src/main/resources/assets/devmod/textures/block/neurocell_frame.png
+- src/main/resources/assets/devmod/textures/block/neurocell_glass.png
+- src/main/resources/assets/devmod/textures/block/clone/clone_pulverizer.png
+
+Regola palette (vincolante):
+- Usa SOLO colori presenti nei file sopra.
+- Non inventare colori fuori palette.
+
+Vincoli tecnici:
+- Non modificare UV o modelli: lavora solo su [PATH_TEXTURE_TARGET]
+- Risoluzione: 64x64
+- Orientamento: il fronte è north
+- Simmetria dove richiesto
+
+UV map (x, y, w, h):
+[LISTA UV COMPLETA DELLA MACCHINA]
+
+Materiali per sezione:
+- Steel/Body: ramp 4-5 toni dark/steel; bevel 1px; noise 5-10%
+- Iron/Rollers: ramp metal chiaro; 1-2px specular highlight
+- Rubber/Belt: ramp nero/gomma 3 toni; solchi regolari
+- Hopper: grigio scuro metallico, simmetrico
+- Display/UI: teal acceso con 1 solo indicatore
+- Discharge: grigio definito con slot leggibile
+- Supporti: steel più scuro del body
+
+Regole estetiche:
+- Shading Minecraft (bevel + noise leggero)
+- Niente puntini teal casuali
+- Contrasto netto tra sezioni
+- Luce coerente da alto-sinistra
+
+Criteri di accettazione:
+- Ogni sezione riconoscibile a colpo d'occhio
+- Palette coerente con Neural Cellar
+- Nessun dettaglio fuori tema
+```
 
 ---
 
@@ -671,7 +800,206 @@ Prima di eseguire la build, verifica che tutti i file siano corretti:
 
 ---
 
-## 9. Modelli Completati
+## 9. Best Practices Tecniche (Lezioni Apprese)
+
+Questa sezione documenta le best practices scoperte durante lo sviluppo del Clone Pulverizer attraverso analisi, test e refactoring iterativo.
+
+### 9.1 Animation Chaining (Raccomandato)
+
+**Problema**: Timer manuali per gestire transizioni tra animazioni causano:
+- Codice duplicato tra client e server
+- Rischio desync
+- Stato aggiuntivo da sincronizzare
+
+**Soluzione**: Usare animation chaining nativo di GeckoLib
+
+```java
+// EVITARE: Timer manuale
+private int deployTimer = 0;
+private static final int DEPLOY_DURATION = 80;
+protected static final RawAnimation DEPLOY = RawAnimation.begin().thenPlay("...");
+protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("...");
+
+// Controller complesso
+if (deployTimer < DEPLOY_DURATION) {
+    return state.setAndContinue(DEPLOY);
+}
+return state.setAndContinue(active ? ACTIVE : IDLE);
+```
+
+```java
+// PREFERIRE: Animation chaining
+protected static final RawAnimation DEPLOY_THEN_IDLE = RawAnimation.begin()
+    .thenPlay("animation.clone_pulverizer.deploy")
+    .thenLoop("animation.clone_pulverizer.idle");
+
+protected static final RawAnimation ACTIVE = RawAnimation.begin()
+    .thenLoop("animation.clone_pulverizer.active");
+
+// Controller semplificato
+return state.setAndContinue(active ? ACTIVE : DEPLOY_THEN_IDLE);
+```
+
+**Vantaggi**:
+- ~20 linee di codice in meno
+- Zero stato da sincronizzare per animazioni
+- GeckoLib gestisce automaticamente le transizioni
+- Nessun rischio desync client/server
+
+### 9.2 Network Sync con Dirty Flags
+
+**Problema**: `syncToClient()` chiamato ogni tick spreca banda e CPU
+
+**Soluzione**: Dirty flags pattern
+
+```java
+// Dirty flags per ogni tipo di dato sincronizzato
+private boolean dirtyActive = false;
+private boolean dirtyOutput = false;
+
+// Marcare dirty quando i dati cambiano
+private void setActive(boolean newActive) {
+    if (active != newActive) {
+        active = newActive;
+        dirtyActive = true;
+    }
+}
+
+// Sync solo se necessario
+private void syncToClient() {
+    if (!dirtyActive && !dirtyOutput) return;
+
+    Level lvl = level;
+    if (lvl != null && !lvl.isClientSide) {
+        lvl.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        dirtyActive = dirtyOutput = false;
+        setChanged();
+    }
+}
+
+// Force sync per casi speciali (es. crafting completato)
+private void forceSyncToClient() {
+    dirtyActive = dirtyOutput = true;
+    syncToClient();
+}
+```
+
+**Metriche**:
+| Metrica | Prima | Dopo |
+|---------|-------|------|
+| Sync per tick (idle) | 1-2 | 0 |
+| Sync per tick (active) | 3-5 | 0-1 |
+
+### 9.3 Costanti nel Renderer
+
+**Problema**: Magic numbers sparsi nel codice rendono difficile la manutenzione
+
+**Soluzione**: Estrarre tutte le costanti con nomi descrittivi
+
+```java
+// Costanti di rendering con commenti
+private static final float ROLLER_HEIGHT = 0.5625f;  // 9/16 model units
+private static final double TRAY_OFFSET = 0.53;      // 8.5/16 from center
+private static final double OUTPUT_HEIGHT = 0.1;
+private static final float PROCESSING_SCALE = 0.4f;
+private static final float OUTPUT_SCALE = 0.35f;
+private static final float SPIN_RATE = 10f;          // degrees per tick
+private static final float MAX_SQUEEZE = 0.5f;       // squeeze to 50%
+```
+
+### 9.4 Helper Methods per Facing
+
+**Problema**: Logica direzione duplicata in più metodi
+
+**Soluzione**: Helper method riutilizzabile
+
+```java
+/**
+ * Calculate directional offset based on facing.
+ * Uses GeckoLib's inverted coordinate system.
+ */
+private Vec3 getDirectionalOffset(Direction facing, double distance) {
+    return switch (facing) {
+        case NORTH -> new Vec3(0, 0, -distance);
+        case SOUTH -> new Vec3(0, 0, distance);
+        case EAST -> new Vec3(-distance, 0, 0);
+        case WEST -> new Vec3(distance, 0, 0);
+        default -> Vec3.ZERO;
+    };
+}
+
+private float getFacingRotation(Direction facing) {
+    return switch (facing) {
+        case SOUTH -> 180f;
+        case WEST -> 90f;
+        case EAST -> -90f;
+        default -> 0f;
+    };
+}
+```
+
+### 9.5 NBT Keys come Costanti
+
+**Problema**: Stringhe hardcoded per chiavi NBT causano errori di typo
+
+**Soluzione**: Costanti statiche
+
+```java
+private static final String TAG_PROGRESS = "Progress";
+private static final String TAG_MAX_PROGRESS = "MaxProgress";
+private static final String TAG_PROCESSING_ITEM = "ProcessingItem";
+private static final String TAG_ACTIVE = "Active";
+private static final String TAG_OUTPUT_ITEM = "OutputItem";
+private static final String TAG_INVENTORY = "Inventory";
+```
+
+### 9.6 Null Safety nel Renderer
+
+**Problema**: `entity.getLevel()` può ritornare null, causando NPE
+
+**Soluzione**: Early return pattern
+
+```java
+private void renderProcessingItem(...) {
+    ItemStack processingItem = entity.getProcessingItem();
+    if (processingItem.isEmpty()) return;
+
+    Level level = entity.getLevel();
+    if (level == null) return;  // Early exit
+
+    // Resto del codice usando 'level' cached
+    float spin = (level.getGameTime() + partialTick) * SPIN_RATE;
+    // ...
+}
+```
+
+### 9.7 Processo di Debug per Coordinate GeckoLib
+
+Quando un item renderizzato appare nella posizione sbagliata:
+
+1. **Test visibilità**: `poseStack.translate(0, 1.5, 0)` - item sopra il blocco?
+2. **Trova origine**: `poseStack.translate(0, 0.1, 0)` - item al centro?
+3. **Test asse singolo**: `poseStack.translate(0, 0.1, 0.5)` - quale direzione?
+4. **Inverti se necessario**: Se appare opposto, inverti il segno
+5. **Mappa tutte le direzioni**: Una volta trovato NORTH, le altre seguono
+
+**Regola d'oro**: In GeckoLib postRender(), gli assi X e Z sono invertiti rispetto a Minecraft world.
+
+### 9.8 Ottimizzazioni Modello .geo.json
+
+Il modello Clone Pulverizer è ben strutturato. Ottimizzazioni possibili ma non necessarie:
+
+| Parte | Cubi Attuali | Cubi Possibili | Note |
+|-------|--------------|----------------|------|
+| Hopper | 8 | 4 | Merge pareti parallele |
+| Roller arms | 8 | 6 | Merge cubi allineati |
+| Supports | 4 | 4 | Già ottimale |
+
+**Raccomandazione**: Non ottimizzare a meno che non ci siano problemi di performance. La leggibilità del modello è più importante.
+
+---
+
+## 10. Modelli Completati
 
 | Modello          | Geo | Animation | Texture | Java | Testato |
 |------------------|-----|-----------|---------|------|---------|
@@ -679,7 +1007,7 @@ Prima di eseguire la build, verifica che tutti i file siano corretti:
 
 ---
 
-## 10. Modelli Da Fare (28 rimanenti)
+## 11. Modelli Da Fare (28 rimanenti)
 
 1. clone_assembler
 2. clone_atomic_forge

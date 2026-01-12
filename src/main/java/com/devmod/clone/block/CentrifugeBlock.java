@@ -59,6 +59,8 @@ public final class CentrifugeBlock extends HorizontalDirectionalBlock implements
         super(BlockBehaviour.Properties.of()
             .strength(4.0f)
             .requiresCorrectToolForDrops()
+            .noOcclusion() // Allows seeing through transparent parts
+            .dynamicShape() // Shape can change (for GeckoLib)
             .lightLevel(state -> state.getValue(Objects.requireNonNull(ACTIVE)) ? 8 : 0));
         registerDefaultState(Objects.requireNonNull(stateDefinition.any()
             .setValue(Objects.requireNonNull(FACING), Objects.requireNonNull(Direction.NORTH))
@@ -88,12 +90,18 @@ public final class CentrifugeBlock extends HorizontalDirectionalBlock implements
     @Override
     @Nonnull
     protected RenderShape getRenderShape(@Nonnull BlockState state) {
-        return RenderShape.MODEL;
+        // Use entity rendering for GeckoLib animated model
+        return RenderShape.ENTITYBLOCK_ANIMATED;
     }
 
     @Override
     protected float getShadeBrightness(@Nonnull BlockState state, @Nonnull BlockGetter level, @Nonnull BlockPos pos) {
-        return 1.0f;
+        return 1.0f; // Full brightness for better visibility
+    }
+
+    @Override
+    public boolean propagatesSkylightDown(@Nonnull BlockState state, @Nonnull BlockGetter level, @Nonnull BlockPos pos) {
+        return true; // Allow light through transparent parts
     }
 
     @Override
