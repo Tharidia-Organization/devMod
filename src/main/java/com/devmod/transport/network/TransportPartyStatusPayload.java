@@ -2,6 +2,7 @@ package com.devmod.transport.network;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -30,24 +31,24 @@ public record TransportPartyStatusPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TransportPartyStatusPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "217"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "217")));
 
     public static final StreamCodec<ByteBuf, TransportPartyStatusPayload> STREAM_CODEC =
         StreamCodec.of(TransportPartyStatusPayload::encode, TransportPartyStatusPayload::decode);
 
     private static void encode(ByteBuf buf, TransportPartyStatusPayload payload) {
-        UUIDUtil.STREAM_CODEC.encode(buf, payload.partyId);
+        UUIDUtil.STREAM_CODEC.encode(Objects.requireNonNull(buf), Objects.requireNonNull(payload.partyId));
         buf.writeByte(payload.phase);
         buf.writeByte(payload.arrivedCount);
         buf.writeByte(payload.expectedCount);
         buf.writeByte(payload.arrivedMembers.size());
         for (UUID member : payload.arrivedMembers) {
-            UUIDUtil.STREAM_CODEC.encode(buf, member);
+            UUIDUtil.STREAM_CODEC.encode(buf, Objects.requireNonNull(member));
         }
     }
 
     private static TransportPartyStatusPayload decode(ByteBuf buf) {
-        UUID partyId = UUIDUtil.STREAM_CODEC.decode(buf);
+        UUID partyId = UUIDUtil.STREAM_CODEC.decode(Objects.requireNonNull(buf));
         int phase = buf.readByte();
         int arrivedCount = buf.readByte();
         int expectedCount = buf.readByte();
@@ -62,7 +63,7 @@ public record TransportPartyStatusPayload(
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 
     /**

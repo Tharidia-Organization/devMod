@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -122,7 +123,7 @@ public class ChargeManager {
      */
     @Nonnull
     public Optional<ChargingState> getState(@Nonnull UUID playerId) {
-        return Optional.ofNullable(chargingPlayers.get(playerId));
+        return Objects.requireNonNull(Optional.ofNullable(chargingPlayers.get(playerId)));
     }
 
     /**
@@ -156,7 +157,7 @@ public class ChargeManager {
             UUID playerId = entry.getKey();
             ChargingState state = entry.getValue();
 
-            Player player = level.getPlayerByUUID(playerId);
+            Player player = level.getPlayerByUUID(Objects.requireNonNull(playerId));
             if (player == null || !positionChecker.isOnNode(player, state.nodePos())) {
                 toRemove.add(playerId);
                 continue;
@@ -167,7 +168,7 @@ public class ChargeManager {
 
             // Check completion
             if (newState.isComplete()) {
-                completed.add(new ChargeCompleteEvent(playerId, newState.nodeId(), newState.nodePos()));
+                completed.add(new ChargeCompleteEvent(Objects.requireNonNull(playerId), newState.nodeId(), newState.nodePos()));
                 toRemove.add(playerId);
             } else {
                 updates.put(playerId, newState);

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -199,7 +200,7 @@ public final class ArrivalManager {
         }
 
         // Verify player is within arrival bounds
-        if (!session.arrivalBounds.intersects(player.getBoundingBox())) {
+        if (!session.arrivalBounds.intersects(Objects.requireNonNull(player.getBoundingBox()))) {
             LOGGER.warn("[ArrivalManager] Player {} not in arrival bounds for session {}",
                 player.getName().getString(), sessionId);
             return false;
@@ -288,7 +289,7 @@ public final class ArrivalManager {
     public List<UUID> getArrivedPlayers(@Nonnull UUID sessionId) {
         ArrivalSession session = activeSessions.get(sessionId);
         if (session == null) {
-            return List.of();
+            return Objects.requireNonNull(List.of());
         }
         return new ArrayList<>(session.arrivedPlayers);
     }
@@ -346,11 +347,11 @@ public final class ArrivalManager {
         if (session.onComplete != null) {
             try {
                 session.onComplete.accept(new ArrivalResult(
-                    session.sessionId,
+                    Objects.requireNonNull(session.sessionId),
                     success,
                     new ArrayList<>(session.arrivedPlayers),
                     session.expectedPlayers.size(),
-                    message
+                    Objects.requireNonNull(message)
                 ));
             } catch (Exception e) {
                 LOGGER.error("[ArrivalManager] Error in completion callback for {}", session.sessionId, e);
@@ -380,7 +381,7 @@ public final class ArrivalManager {
 
                 // If no expected players left, cancel
                 if (session.expectedPlayers.isEmpty()) {
-                    cancelSession(session.sessionId, "All expected players disconnected");
+                    cancelSession(Objects.requireNonNull(session.sessionId), "All expected players disconnected");
                 } else {
                     MinecraftServer server = session.destinationLevel.getServer();
                     if (server != null) {
@@ -508,7 +509,7 @@ public final class ArrivalManager {
         );
 
         for (UUID playerId : session.expectedPlayers) {
-            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
             if (player != null) {
                 TransportNetworkHandler.sendPartyStatus(player, payload);
             }

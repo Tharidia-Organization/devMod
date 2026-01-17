@@ -1,6 +1,7 @@
 package com.devmod.transport.executor;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -89,7 +90,7 @@ public class TransportEffectManager {
      * Plays a phase-specific sound at the given position.
      */
     public void playPhaseSound(@Nonnull ServerLevel level, @Nonnull BlockPos pos, @Nonnull TransportPhase phase) {
-        level.playSound(null, pos, phase.getSound(), SoundSource.BLOCKS, phase.getVolume(), phase.getPitch());
+        level.playSound(null, pos, Objects.requireNonNull(phase.getSound()), SoundSource.BLOCKS, phase.getVolume(), phase.getPitch());
     }
 
     /**
@@ -97,7 +98,7 @@ public class TransportEffectManager {
      */
     public void playPhaseSound(@Nonnull ServerLevel level, @Nonnull BlockPos pos, @Nonnull TransportPhase phase,
                                float volumeMultiplier, float pitchMultiplier) {
-        level.playSound(null, pos, phase.getSound(), SoundSource.BLOCKS,
+        level.playSound(null, pos, Objects.requireNonNull(phase.getSound()), SoundSource.BLOCKS,
             phase.getVolume() * volumeMultiplier, phase.getPitch() * pitchMultiplier);
     }
 
@@ -127,13 +128,13 @@ public class TransportEffectManager {
 
     private void spawnIdleParticles(ServerLevel level, Vec3 pos) {
         // END_ROD, count=1, spread=0.3
-        level.sendParticles(ParticleTypes.END_ROD, pos.x, pos.y + 0.5, pos.z, 1, 0.3, 0.1, 0.3, 0.01);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.END_ROD), pos.x, pos.y + 0.5, pos.z, 1, 0.3, 0.1, 0.3, 0.01);
     }
 
     private void spawnChargingParticles(ServerLevel level, Vec3 pos, TransportColor color, int moduleCount) {
         // PORTAL, count=3 + moduleCount, spread=0.5
         int count = 3 + moduleCount;
-        level.sendParticles(ParticleTypes.PORTAL, pos.x, pos.y, pos.z, count, 0.5, 0.3, 0.5, 0.05);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.PORTAL), pos.x, pos.y, pos.z, count, 0.5, 0.3, 0.5, 0.05);
 
         // Add colored dust particles based on color
         DustParticleOptions dust = new DustParticleOptions(
@@ -145,18 +146,18 @@ public class TransportEffectManager {
 
     private void spawnActiveParticles(ServerLevel level, Vec3 pos) {
         // PORTAL + END_ROD, count=10+5, spread=0.8
-        level.sendParticles(ParticleTypes.PORTAL, pos.x, pos.y, pos.z, 10, 0.8, 0.5, 0.8, 0.1);
-        level.sendParticles(ParticleTypes.END_ROD, pos.x, pos.y + 0.5, pos.z, 5, 0.5, 0.3, 0.5, 0.05);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.PORTAL), pos.x, pos.y, pos.z, 10, 0.8, 0.5, 0.8, 0.1);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.END_ROD), pos.x, pos.y + 0.5, pos.z, 5, 0.5, 0.3, 0.5, 0.05);
     }
 
     private void spawnErrorParticles(ServerLevel level, Vec3 pos) {
         // SMOKE, count=5, spread=0.3
-        level.sendParticles(ParticleTypes.SMOKE, pos.x, pos.y + 0.5, pos.z, 5, 0.3, 0.2, 0.3, 0.02);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.SMOKE), pos.x, pos.y + 0.5, pos.z, 5, 0.3, 0.2, 0.3, 0.02);
     }
 
     private void spawnCooldownParticles(ServerLevel level, Vec3 pos) {
         // Minimal particles during cooldown
-        level.sendParticles(ParticleTypes.ENCHANT, pos.x, pos.y, pos.z, 1, 0.2, 0.1, 0.2, 0.01);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.ENCHANT), pos.x, pos.y, pos.z, 1, 0.2, 0.1, 0.2, 0.01);
     }
 
     /**
@@ -164,8 +165,8 @@ public class TransportEffectManager {
      */
     public void spawnDepartureParticles(@Nonnull ServerLevel level, @Nonnull Vec3 pos) {
         // REVERSE_PORTAL + END_ROD burst
-        level.sendParticles(ParticleTypes.PORTAL, pos.x, pos.y + 0.5, pos.z, 50, 0.3, 0.5, 0.3, 0.5);
-        level.sendParticles(ParticleTypes.END_ROD, pos.x, pos.y + 0.5, pos.z, 20, 0.2, 0.3, 0.2, 0.1);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.PORTAL), pos.x, pos.y + 0.5, pos.z, 50, 0.3, 0.5, 0.3, 0.5);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.END_ROD), pos.x, pos.y + 0.5, pos.z, 20, 0.2, 0.3, 0.2, 0.1);
     }
 
     /**
@@ -173,24 +174,24 @@ public class TransportEffectManager {
      */
     public void spawnArrivalParticles(@Nonnull ServerLevel level, @Nonnull Vec3 pos) {
         // PORTAL + ENCHANT burst
-        level.sendParticles(ParticleTypes.PORTAL, pos.x, pos.y + 0.5, pos.z, 30, 0.4, 0.6, 0.4, 0.3);
-        level.sendParticles(ParticleTypes.ENCHANT, pos.x, pos.y + 0.3, pos.z, 20, 0.5, 0.4, 0.5, 0.1);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.PORTAL), pos.x, pos.y + 0.5, pos.z, 30, 0.4, 0.6, 0.4, 0.3);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.ENCHANT), pos.x, pos.y + 0.3, pos.z, 20, 0.5, 0.4, 0.5, 0.1);
     }
 
     /**
      * Spawns rift spawn particles (for RiftGate).
      */
     public void spawnRiftSpawnParticles(@Nonnull ServerLevel level, @Nonnull Vec3 pos) {
-        level.sendParticles(ParticleTypes.REVERSE_PORTAL, pos.x, pos.y, pos.z, 100, 1.5, 1.5, 1.5, 0.5);
-        level.sendParticles(ParticleTypes.END_ROD, pos.x, pos.y + 1, pos.z, 30, 1.0, 1.0, 1.0, 0.2);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.REVERSE_PORTAL), pos.x, pos.y, pos.z, 100, 1.5, 1.5, 1.5, 0.5);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.END_ROD), pos.x, pos.y + 1, pos.z, 30, 1.0, 1.0, 1.0, 0.2);
     }
 
     /**
      * Spawns rift collapse particles (for RiftGate expiration).
      */
     public void spawnRiftCollapseParticles(@Nonnull ServerLevel level, @Nonnull Vec3 pos) {
-        level.sendParticles(ParticleTypes.EXPLOSION, pos.x, pos.y + 1, pos.z, 5, 1.0, 1.0, 1.0, 0.1);
-        level.sendParticles(ParticleTypes.SMOKE, pos.x, pos.y, pos.z, 50, 2.0, 2.0, 2.0, 0.1);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.EXPLOSION), pos.x, pos.y + 1, pos.z, 5, 1.0, 1.0, 1.0, 0.1);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.SMOKE), pos.x, pos.y, pos.z, 50, 2.0, 2.0, 2.0, 0.1);
     }
 
     // ============================================================================
@@ -304,11 +305,11 @@ public class TransportEffectManager {
     ) {
         // Play start sound on tick 0
         if (currentTick == 0) {
-            playPhaseSound(level, BlockPos.containing(pos), TransportPhase.CHARGE_START);
+            playPhaseSound(level, Objects.requireNonNull(BlockPos.containing(pos)), TransportPhase.CHARGE_START);
         }
         // Play ambient sound every 10 ticks during charging
         else if (currentTick % 10 == 0 && currentTick < totalTicks) {
-            playPhaseSound(level, BlockPos.containing(pos), TransportPhase.CHARGE_TICK);
+            playPhaseSound(level, Objects.requireNonNull(BlockPos.containing(pos)), TransportPhase.CHARGE_TICK);
         }
 
         // Spawn particles every 2 ticks

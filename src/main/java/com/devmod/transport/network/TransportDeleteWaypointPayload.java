@@ -1,5 +1,6 @@
 package com.devmod.transport.network;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -24,17 +25,17 @@ public record TransportDeleteWaypointPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TransportDeleteWaypointPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "220"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "220")));
 
     public static final StreamCodec<ByteBuf, TransportDeleteWaypointPayload> STREAM_CODEC =
         StreamCodec.composite(
-            UUIDUtil.STREAM_CODEC, TransportDeleteWaypointPayload::waypointId,
+            Objects.requireNonNull(UUIDUtil.STREAM_CODEC), TransportDeleteWaypointPayload::waypointId,
             TransportDeleteWaypointPayload::new
         );
 
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 }

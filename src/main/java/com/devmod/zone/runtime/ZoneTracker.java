@@ -56,7 +56,7 @@ public final class ZoneTracker {
             seen.add(playerId);
 
             // Resolve current zone
-            Optional<ZoneDefinition> currentZoneOpt = ZoneResolver.INSTANCE.resolve(level, player.blockPosition());
+            Optional<ZoneDefinition> currentZoneOpt = ZoneResolver.INSTANCE.resolve(level, Objects.requireNonNull(player.blockPosition()));
             ZoneDefinition currentZone = currentZoneOpt.orElse(null);
 
             // Get or create player state
@@ -88,7 +88,7 @@ public final class ZoneTracker {
         if (Config.NEXUS_ZONE_CUES.get() && zone.cueSound() != null) {
             player.level().playSound(
                 null,
-                player.blockPosition(),
+                Objects.requireNonNull(player.blockPosition()),
                 zone.cueSound(),
                 SoundSource.AMBIENT,
                 0.45f, 1.1f
@@ -98,7 +98,7 @@ public final class ZoneTracker {
         // Show hint message (server-side action bar)
         if (Config.NEXUS_ZONE_HINTS.get() && !zone.hintMessage().isEmpty()) {
             player.displayClientMessage(
-                Component.literal(zone.hintMessage()),
+                Objects.requireNonNull(Component.literal(zone.hintMessage())),
                 true
             );
         }

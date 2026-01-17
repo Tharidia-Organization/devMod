@@ -32,12 +32,8 @@ import com.devmod.area.data.AreaDimensions;
 import com.devmod.area.data.AreaPalette;
 import com.devmod.area.data.AreaRegistry;
 import com.devmod.area.data.AreaShape;
-import com.devmod.area.data.BiomeGenerationConfig;
-import com.devmod.area.snapshot.AreaSnapshot;
 import com.devmod.area.snapshot.AreaSnapshotManager;
-import com.devmod.area.snapshot.AreaSnapshotRegistry;
-import com.devmod.area.template.AreaTemplate;
-import com.devmod.area.template.AreaTemplateRegistry;
+import com.devmod.area.data.BiomeGenerationConfig;
 import com.devmod.network.ChannelId;
 import com.devmod.network.PayloadValidation;
 import com.devmod.network.handlers.NetworkHandlerBase;
@@ -55,6 +51,18 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
     private static final int MAX_PALETTE_MATERIALS = 128;
     /** H-06 fix: Maximum NBT size for custom shapes (64KB) */
     private static final int MAX_CUSTOM_SHAPE_NBT_SIZE = 65_536;
+
+    // SEC-01 fix: PATH shape limits to prevent DoS
+    /** Minimum corridor width for PATH shapes */
+    private static final int MIN_PATH_WIDTH = 2;
+    /** Maximum corridor width for PATH shapes */
+    private static final int MAX_PATH_WIDTH = 32;
+    /** Maximum number of waypoints for PATH shapes */
+    private static final int MAX_PATH_WAYPOINTS = 100;
+    /** SEC-07 fix: Maximum distance from center for any waypoint coordinate */
+    private static final int MAX_PATH_WAYPOINT_DISTANCE = 500;
+    /** SEC-07 fix: Maximum distance between consecutive waypoints */
+    private static final int MAX_PATH_SEGMENT_LENGTH = 200;
 
     /**
      * Clears all cooldowns for a player (called on disconnect).
@@ -94,10 +102,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
     @Nullable private static volatile MethodHandle openEditorCentralScreenMethod;
     @Nullable private static volatile MethodHandle showAreaPreviewMethod;
     @Nullable private static volatile MethodHandle handleZoneListMethod;
-    @Nullable private static volatile MethodHandle handleTemplateListMethod;
-    @Nullable private static volatile MethodHandle handleTemplateDataMethod;
     @Nullable private static volatile MethodHandle handleSaveAreaResultMethod;
-    @Nullable private static volatile MethodHandle handleSnapshotListMethod;
     @Nullable private static volatile MethodHandle handleBuildStatusMethod;
 
     @Nullable
@@ -149,30 +154,6 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
     }
 
     @Nullable
-    private static MethodHandle getHandleTemplateListMethod() {
-        if (handleTemplateListMethod == null) {
-            synchronized (AreaNetworkHandler.class) {
-                if (handleTemplateListMethod == null) {
-                    handleTemplateListMethod = lookupMethod("handleTemplateList", TemplateListPayload.class);
-                }
-            }
-        }
-        return handleTemplateListMethod;
-    }
-
-    @Nullable
-    private static MethodHandle getHandleTemplateDataMethod() {
-        if (handleTemplateDataMethod == null) {
-            synchronized (AreaNetworkHandler.class) {
-                if (handleTemplateDataMethod == null) {
-                    handleTemplateDataMethod = lookupMethod("handleTemplateData", TemplateDataPayload.class);
-                }
-            }
-        }
-        return handleTemplateDataMethod;
-    }
-
-    @Nullable
     private static MethodHandle getHandleSaveAreaResultMethod() {
         if (handleSaveAreaResultMethod == null) {
             synchronized (AreaNetworkHandler.class) {
@@ -182,18 +163,6 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
             }
         }
         return handleSaveAreaResultMethod;
-    }
-
-    @Nullable
-    private static MethodHandle getHandleSnapshotListMethod() {
-        if (handleSnapshotListMethod == null) {
-            synchronized (AreaNetworkHandler.class) {
-                if (handleSnapshotListMethod == null) {
-                    handleSnapshotListMethod = lookupMethod("handleSnapshotList", SnapshotListPayload.class);
-                }
-            }
-        }
-        return handleSnapshotListMethod;
     }
 
     @Nullable
@@ -298,35 +267,35 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         event.registrar(ChannelId.AREA_TEMPLATE_REQUEST.asString()).playToServer(
             nn(RequestTemplateListPayload.TYPE),
             nn(RequestTemplateListPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleRequestTemplateListServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(TemplateManagementHandler::handleRequestTemplateListServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Server -> Client: Template list response
         event.registrar(ChannelId.AREA_TEMPLATE_LIST.asString()).playToClient(
             nn(TemplateListPayload.TYPE),
             nn(TemplateListPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleTemplateListClient, PayloadValidation.PayloadLimits.MEDIUM)
+            PayloadValidation.validated(TemplateManagementHandler::handleTemplateListClient, PayloadValidation.PayloadLimits.MEDIUM)
         );
 
         // Client -> Server: Load template data
         event.registrar(ChannelId.AREA_TEMPLATE_LOAD.asString()).playToServer(
             nn(LoadTemplatePayload.TYPE),
             nn(LoadTemplatePayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleLoadTemplateServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(TemplateManagementHandler::handleLoadTemplateServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Server -> Client: Template data response
         event.registrar(ChannelId.AREA_TEMPLATE_DATA.asString()).playToClient(
             nn(TemplateDataPayload.TYPE),
             nn(TemplateDataPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleTemplateDataClient, PayloadValidation.PayloadLimits.MEDIUM)
+            PayloadValidation.validated(TemplateManagementHandler::handleTemplateDataClient, PayloadValidation.PayloadLimits.MEDIUM)
         );
 
         // Client -> Server: Save area as template
         event.registrar(ChannelId.AREA_TEMPLATE_SAVE.asString()).playToServer(
             nn(SaveAreaTemplatePayload.TYPE),
             nn(SaveAreaTemplatePayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleSaveTemplateServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(TemplateManagementHandler::handleSaveTemplateServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Clone area
@@ -340,7 +309,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         event.registrar(ChannelId.AREA_TEMPLATE_DELETE.asString()).playToServer(
             nn(DeleteTemplatePayload.TYPE),
             nn(DeleteTemplatePayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleDeleteTemplateServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(TemplateManagementHandler::handleDeleteTemplateServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Delete area
@@ -361,35 +330,35 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         event.registrar(ChannelId.AREA_BUILDER_CONTROL.asString()).playToServer(
             nn(CaptureSnapshotPayload.TYPE),
             nn(CaptureSnapshotPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleCaptureSnapshotServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(SnapshotManagementHandler::handleCaptureSnapshotServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Restore snapshot
         event.registrar(ChannelId.AREA_BUILDER_CONTROL.asString()).playToServer(
             nn(RestoreSnapshotPayload.TYPE),
             nn(RestoreSnapshotPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleRestoreSnapshotServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(SnapshotManagementHandler::handleRestoreSnapshotServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Delete snapshot
         event.registrar(ChannelId.AREA_BUILDER_CONTROL.asString()).playToServer(
             nn(DeleteSnapshotPayload.TYPE),
             nn(DeleteSnapshotPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleDeleteSnapshotServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(SnapshotManagementHandler::handleDeleteSnapshotServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Request snapshot list
         event.registrar(ChannelId.AREA_BUILDER_CONTROL.asString()).playToServer(
             nn(RequestSnapshotListPayload.TYPE),
             nn(RequestSnapshotListPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleRequestSnapshotListServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(SnapshotManagementHandler::handleRequestSnapshotListServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Server -> Client: Snapshot list response
         event.registrar(ChannelId.AREA_BUILDER_FEEDBACK.asString()).playToClient(
             nn(SnapshotListPayload.TYPE),
             nn(SnapshotListPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleSnapshotListClient, PayloadValidation.PayloadLimits.MEDIUM)
+            PayloadValidation.validated(SnapshotManagementHandler::handleSnapshotListClient, PayloadValidation.PayloadLimits.MEDIUM)
         );
 
         // Client -> Server: Pause build
@@ -416,12 +385,26 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         DevMod.LOGGER.debug("Registered Area Builder network handlers");
     }
 
-    private static void enqueueWork(IPayloadContext ctx, Runnable work) {
+    /**
+     * Enqueue work on the main thread with error handling.
+     * Made public for use by extracted handler classes.
+     */
+    public static void enqueueWork(IPayloadContext ctx, Runnable work) {
         ctx.enqueueWork(Objects.requireNonNull(work))
             .exceptionally(e -> {
                 DevMod.LOGGER.error("[AreaNetwork] Error in enqueued work: {}", e.getMessage(), e);
                 return null;
             });
+    }
+
+    /**
+     * Send packet to player.
+     * Made public for use by extracted handler classes.
+     */
+    public static <T extends net.minecraft.network.protocol.common.custom.CustomPacketPayload> void sendPacket(
+            ServerPlayer player, T payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+            Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }
 
     @Nullable
@@ -565,6 +548,85 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                     player.getName().getString());
                 return null;
             }
+        } else if (shape == AreaShape.PATH) {
+            // SEC-01 fix: Validate PATH shape to prevent DoS via large pathWidth or waypoint count
+            var pathNbt = input.customShapeNbt();
+            if (pathNbt == null) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_min_waypoints")), true);
+                DevMod.LOGGER.warn("Player {} submitted PATH shape without waypoint data",
+                    player.getName().getString());
+                return null;
+            }
+
+            // Validate pathWidth bounds
+            if (pathNbt.contains(AreaShapeGenerator.NBT_PATH_WIDTH)) {
+                int pathWidth = pathNbt.getInt(AreaShapeGenerator.NBT_PATH_WIDTH);
+                if (pathWidth < MIN_PATH_WIDTH || pathWidth > MAX_PATH_WIDTH) {
+                    player.displayClientMessage(
+                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_path_width")), true);
+                    DevMod.LOGGER.warn("Player {} submitted PATH shape with invalid width: {} (allowed: {}-{})",
+                        player.getName().getString(), pathWidth, MIN_PATH_WIDTH, MAX_PATH_WIDTH);
+                    return null;
+                }
+            }
+
+            // Validate waypoint count
+            java.util.List<BlockPos> waypoints = AreaShapeGenerator.parsePathWaypoints(
+                Objects.requireNonNull(input.centerPosition()), pathNbt);
+            if (waypoints.size() < 2) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_min_waypoints")), true);
+                return null;
+            }
+            if (waypoints.size() > MAX_PATH_WAYPOINTS) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_too_many_waypoints")), true);
+                DevMod.LOGGER.warn("Player {} submitted PATH shape with {} waypoints (max: {})",
+                    player.getName().getString(), waypoints.size(), MAX_PATH_WAYPOINTS);
+                return null;
+            }
+
+            // SEC-07 fix: Validate waypoint coordinates and segment lengths BEFORE generateFloor
+            BlockPos center = Objects.requireNonNull(input.centerPosition());
+            for (int i = 0; i < waypoints.size(); i++) {
+                BlockPos wp = waypoints.get(i);
+                // Check distance from center
+                int distX = Math.abs(wp.getX() - center.getX());
+                int distZ = Math.abs(wp.getZ() - center.getZ());
+                if (distX > MAX_PATH_WAYPOINT_DISTANCE || distZ > MAX_PATH_WAYPOINT_DISTANCE) {
+                    player.displayClientMessage(
+                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_waypoint_too_far")), true);
+                    DevMod.LOGGER.warn("Player {} submitted PATH with waypoint {} at distance ({}, {}) from center (max: {})",
+                        player.getName().getString(), i, distX, distZ, MAX_PATH_WAYPOINT_DISTANCE);
+                    return null;
+                }
+                // Check segment length to next waypoint
+                if (i < waypoints.size() - 1) {
+                    BlockPos next = waypoints.get(i + 1);
+                    int segX = Math.abs(next.getX() - wp.getX());
+                    int segZ = Math.abs(next.getZ() - wp.getZ());
+                    int segLength = Math.max(segX, segZ); // Manhattan-ish for corridor
+                    if (segLength > MAX_PATH_SEGMENT_LENGTH) {
+                        player.displayClientMessage(
+                            Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_segment_too_long")), true);
+                        DevMod.LOGGER.warn("Player {} submitted PATH with segment {}->{} length {} (max: {})",
+                            player.getName().getString(), i, i + 1, segLength, MAX_PATH_SEGMENT_LENGTH);
+                        return null;
+                    }
+                }
+            }
+
+            // Validate that generated floor size is reasonable
+            int floorSize = AreaShapeGenerator.generateFloor(
+                shape, Objects.requireNonNull(input.centerPosition()), dims, pathNbt).size();
+            if (floorSize <= 0 || floorSize > MAX_CUSTOM_SHAPE_POSITIONS) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_too_large")), true);
+                DevMod.LOGGER.warn("Player {} submitted PATH shape generating {} positions (max: {})",
+                    player.getName().getString(), floorSize, MAX_CUSTOM_SHAPE_POSITIONS);
+                return null;
+            }
         }
 
         // HIGH-06 fix: Validate zone ID format before checking existence
@@ -598,7 +660,9 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         }
         var biomeConfig = input.generationType() == com.devmod.area.data.AreaGenerationType.BIOME
             ? ensureStableSeed(input.biomeConfig()) : null;
-        var customShapeNbt = shape == AreaShape.CUSTOM_NBT ? input.customShapeNbt() : null;
+        // SEC-01 fix: Also preserve customShapeNbt for PATH shapes (contains waypoints)
+        var customShapeNbt = (shape == AreaShape.CUSTOM_NBT || shape == AreaShape.PATH)
+            ? input.customShapeNbt() : null;
 
         return new AreaDefinition(
             finalId,
@@ -1041,6 +1105,15 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                 return;
             }
 
+            // SEC-08 fix: Check if snapshot restore is in progress for this area
+            if (AreaSnapshotManager.INSTANCE.isRestoringArea(Objects.requireNonNull(payload.areaId()))) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_restore_in_progress")), true);
+                DevMod.LOGGER.warn("Player {} tried to build area {} while restore is in progress",
+                    player.getName().getString(), payload.areaId());
+                return;
+            }
+
             // Use AreaBuildTaskManager - handles both immediate and multi-tick builds
             AreaBuildTaskManager.BuildStartResult result = AreaBuildTaskManager.INSTANCE.startBuild(
                 level, definition, player, payload.clearFirst(), payload.useMultiTick());
@@ -1151,176 +1224,6 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         });
     }
 
-    private static void handleRequestTemplateListServer(RequestTemplateListPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            AreaTemplateRegistry registry = AreaTemplateRegistry.get(Objects.requireNonNull(player.getServer()));
-            List<TemplateListPayload.TemplateSummary> summaries = new ArrayList<>();
-
-            for (AreaTemplate template : registry.getAllTemplates()) {
-                summaries.add(new TemplateListPayload.TemplateSummary(
-                    Objects.requireNonNull(template.id()),
-                    Objects.requireNonNull(template.name()),
-                    Objects.requireNonNull(template.description()),
-                    Objects.requireNonNull(template.author()),
-                    Objects.requireNonNull(template.shape()),
-                    template.createdAt()
-                ));
-            }
-
-            sendPacket(player, new TemplateListPayload(summaries));
-            DevMod.LOGGER.debug("[Area] Sent template list to {} ({} templates)",
-                player.getName().getString(), summaries.size());
-        });
-    }
-
-    private static void handleTemplateListClient(TemplateListPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            MethodHandle method = getHandleTemplateListMethod();
-            if (method == null) return;
-            try {
-                method.invokeExact(payload);
-            } catch (Throwable e) {
-                DevMod.LOGGER.error("Failed to handle template list", e);
-            }
-        });
-    }
-
-    private static void handleTemplateDataClient(TemplateDataPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            MethodHandle method = getHandleTemplateDataMethod();
-            if (method == null) return;
-            try {
-                method.invokeExact(payload);
-            } catch (Throwable e) {
-                DevMod.LOGGER.error("Failed to handle template data", e);
-            }
-        });
-    }
-
-    private static void handleLoadTemplateServer(LoadTemplatePayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            AreaTemplateRegistry registry = AreaTemplateRegistry.get(
-                Objects.requireNonNull(player.getServer()));
-
-            registry.getTemplate(Objects.requireNonNull(payload.templateId())).ifPresentOrElse(
-                template -> {
-                    String presetId = template.palette().presetId() != null
-                        ? template.palette().presetId() : "default";
-
-                    TemplateDataPayload response = new TemplateDataPayload(
-                        template.id(),
-                        template.generationType(),
-                        template.shape(),
-                        template.dimensions(),
-                        template.palette(),
-                        template.biomeConfig(),
-                        template.options(),
-                        presetId
-                    );
-                    sendPacket(player, response);
-                    DevMod.LOGGER.debug("[Area] Sent template data for {} to {}",
-                        template.name(), player.getName().getString());
-                },
-                () -> player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(
-                        "area.message.error_template_not_found")), true)
-            );
-        });
-    }
-
-    private static void handleSaveTemplateServer(SaveAreaTemplatePayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            // SEC-03 fix: Rate limiting for template saves
-            UUID playerId = player.getUUID();
-            long now = System.currentTimeMillis();
-            long remainingSeconds = CooldownManager.getTemplateSaveCooldownRemaining(playerId, now);
-            if (remainingSeconds > 0) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.message.error_template_cooldown", remainingSeconds)), true);
-                return;
-            }
-            CooldownManager.updateTemplateSaveCooldown(playerId, now);
-
-            // Validate payload
-            if (!payload.isValid()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_template")), true);
-                return;
-            }
-
-            AreaRegistry areaRegistry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-            AreaTemplateRegistry templateRegistry = AreaTemplateRegistry.get(Objects.requireNonNull(player.getServer()));
-
-            // Extract validated values (isValid() ensures these are non-null)
-            UUID sourceAreaId = Objects.requireNonNull(payload.sourceAreaId(), "sourceAreaId validated by isValid()");
-            String templateName = Objects.requireNonNull(payload.templateName(), "templateName validated by isValid()");
-            String description = Objects.requireNonNull(payload.description(), "description validated by isValid()");
-            String authorName = Objects.requireNonNull(player.getName().getString(), "player name");
-
-            // Get source area
-            Optional<AreaDefinition> sourceOpt = areaRegistry.getArea(sourceAreaId);
-            if (sourceOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                return;
-            }
-
-            // Check registry capacity
-            if (!templateRegistry.hasRoom()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_template_registry_full")), true);
-                return;
-            }
-
-            AreaDefinition sourceArea = Objects.requireNonNull(sourceOpt.get());
-
-            // Create and save template
-            AreaTemplate template = AreaTemplate.fromDefinition(
-                Objects.requireNonNull(sourceArea),
-                templateName,
-                description,
-                authorName
-            );
-
-            Optional<UUID> savedId = templateRegistry.saveTemplate(template);
-            if (savedId.isPresent()) {
-                UUID templateId = Objects.requireNonNull(savedId.get());
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.successTranslatable("area.message.template_saved", templateName)), true);
-                DevMod.LOGGER.info("Player {} saved template: {} ({})",
-                    authorName, templateName, templateId);
-
-                // Audit log
-                AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                    AreaAuditLog.ActionType.TEMPLATE_SAVE,
-                    templateId,
-                    templateName,
-                    player,
-                    "sourceArea=" + sourceAreaId
-                );
-            } else {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_template_save_failed")), true);
-            }
-        });
-    }
-
     private static void handleCloneAreaServer(CloneAreaPayload payload, IPayloadContext ctx) {
         enqueueWork(ctx, () -> {
             ServerPlayer player = (ServerPlayer) ctx.player();
@@ -1412,69 +1315,6 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         });
     }
 
-    private static void handleDeleteTemplateServer(DeleteTemplatePayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions (OP level 2+ required)
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            UUID templateId = payload.templateId();
-            if (templateId == null) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_template_not_found")), true);
-                return;
-            }
-
-            AreaTemplateRegistry registry = AreaTemplateRegistry.get(Objects.requireNonNull(player.getServer()));
-
-            // Check if template exists and get its info for logging
-            Optional<AreaTemplate> templateOpt = registry.getTemplate(templateId);
-            if (templateOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_template_not_found")), true);
-                return;
-            }
-
-            AreaTemplate template = templateOpt.get();
-
-            // SEC-02 fix: Check ownership - only template author or OP4+ can delete
-            String templateAuthor = template.author();
-            String playerName = player.getName().getString();
-            if (templateAuthor != null && !templateAuthor.equalsIgnoreCase(playerName) && !player.hasPermissions(4)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_not_author")), true);
-                DevMod.LOGGER.debug("[Template] Delete denied for {} - not author of template {} (author: {})",
-                    playerName, template.name(), templateAuthor);
-                return;
-            }
-
-            if (registry.deleteTemplate(templateId)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.successTranslatable("area.message.template_deleted", template.name())), true);
-                DevMod.LOGGER.info("Player {} deleted template: {} ({})",
-                    player.getName().getString(), template.name(), templateId);
-
-                // Audit log
-                AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                    AreaAuditLog.ActionType.TEMPLATE_DELETE,
-                    templateId,
-                    Objects.requireNonNull(template.name()),
-                    player,
-                    null
-                );
-            } else {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_template_delete_failed")), true);
-            }
-        });
-    }
-
     private static void handleDeleteAreaServer(DeleteAreaPayload payload, IPayloadContext ctx) {
         enqueueWork(ctx, () -> {
             ServerPlayer player = (ServerPlayer) ctx.player();
@@ -1526,6 +1366,15 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
             }
 
             String areaName = area.name();
+
+            // MED-DELETE fix: Cancel any active/pending/queued builds before deleting
+            boolean cancelledBuild = AreaBuildTaskManager.INSTANCE.cancelBuild(areaId);
+            boolean removedFromQueue = AreaBuildTaskManager.INSTANCE.removeFromQueue(areaId);
+            if (cancelledBuild || removedFromQueue) {
+                DevMod.LOGGER.info("[Area] Cancelled builds for deleted area: {} (active={}, queued={})",
+                    areaId, cancelledBuild, removedFromQueue);
+            }
+
             registry.deleteArea(areaId);
 
             player.displayClientMessage(
@@ -1625,264 +1474,6 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                 player,
                 currentMainHubId != null ? "previousMainHub=" + currentMainHubId : null
             );
-        });
-    }
-
-    // ========================================================================
-    // Snapshot Handlers
-    // ========================================================================
-
-    private static void handleCaptureSnapshotServer(CaptureSnapshotPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions (OP level 2+ required)
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            UUID areaId = payload.areaId();
-            if (areaId == null) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                return;
-            }
-
-            AreaRegistry registry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-
-            // Check if area exists
-            Optional<AreaDefinition> areaOpt = registry.getArea(areaId);
-            if (areaOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                return;
-            }
-
-            AreaDefinition area = areaOpt.get();
-            ServerLevel level = player.serverLevel();
-
-            // Validate we're in the correct dimension
-            if (!area.dimensionId().equals(level.dimension().location())) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_wrong_dimension")), true);
-                return;
-            }
-
-            // Start capture
-            String description = payload.description() != null ? payload.description() : "";
-            UUID snapshotId = AreaSnapshotManager.INSTANCE.startCapture(level, area, Objects.requireNonNull(description), player);
-
-            if (snapshotId != null) {
-                // Audit log
-                AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                    AreaAuditLog.ActionType.SNAPSHOT_CAPTURE,
-                    areaId,
-                    Objects.requireNonNull(area.name()),
-                    player,
-                    "snapshotId=" + snapshotId
-                );
-            }
-        });
-    }
-
-    private static void handleRestoreSnapshotServer(RestoreSnapshotPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions (OP level 2+ required)
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            UUID snapshotId = payload.snapshotId();
-            if (snapshotId == null) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.snapshot.not_found")), true);
-                return;
-            }
-
-            ServerLevel level = player.serverLevel();
-
-            // Get snapshot to verify dimension
-            AreaSnapshotRegistry snapshotRegistry = AreaSnapshotRegistry.get(Objects.requireNonNull(player.getServer()));
-            Optional<AreaSnapshot> snapshotOpt = snapshotRegistry.getSnapshot(snapshotId);
-            if (snapshotOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.snapshot.not_found")), true);
-                return;
-            }
-
-            AreaSnapshot snapshot = snapshotOpt.get();
-
-            // H-04 fix: Verify player has access to the area the snapshot belongs to
-            AreaRegistry areaRegistry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-            Optional<AreaDefinition> areaOpt = areaRegistry.getArea(Objects.requireNonNull(snapshot.areaId()));
-            if (areaOpt.isPresent()) {
-                AreaDefinition area = areaOpt.get();
-                UUID creatorUUID = area.creatorUUID();
-                // Must be creator or admin (OP level 4) to restore snapshots
-                if (creatorUUID != null &&
-                    !creatorUUID.equals(player.getUUID()) &&
-                    !player.hasPermissions(4)) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_ownership")), true);
-                    DevMod.LOGGER.warn("Player {} tried to restore snapshot for area {} without ownership",
-                        player.getName().getString(), snapshot.areaId());
-                    return;
-                }
-            }
-
-            // Start restore
-            boolean started = AreaSnapshotManager.INSTANCE.startRestore(Objects.requireNonNull(level), snapshotId, player);
-
-            if (started) {
-                // Audit log
-                AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                    AreaAuditLog.ActionType.SNAPSHOT_RESTORE,
-                    Objects.requireNonNull(snapshot.areaId()),
-                    Objects.requireNonNull(snapshot.areaName()),
-                    player,
-                    "snapshotId=" + snapshotId
-                );
-            }
-        });
-    }
-
-    private static void handleDeleteSnapshotServer(DeleteSnapshotPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions (OP level 2+ required)
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            UUID snapshotId = payload.snapshotId();
-            if (snapshotId == null) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.snapshot.not_found")), true);
-                return;
-            }
-
-            AreaSnapshotRegistry registry = AreaSnapshotRegistry.get(Objects.requireNonNull(player.getServer()));
-
-            // Get snapshot info for logging before deletion
-            Optional<AreaSnapshot> snapshotOpt = registry.getSnapshot(snapshotId);
-            if (snapshotOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.snapshot.not_found")), true);
-                return;
-            }
-
-            AreaSnapshot snapshot = snapshotOpt.get();
-
-            // SEC-04 fix: Verify player has access to delete the snapshot (owner or OP4)
-            AreaRegistry areaRegistry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-            Optional<AreaDefinition> areaOpt = areaRegistry.getArea(Objects.requireNonNull(snapshot.areaId()));
-            if (areaOpt.isPresent()) {
-                AreaDefinition area = areaOpt.get();
-                UUID creatorUUID = area.creatorUUID();
-                // Must be creator or admin (OP level 4) to delete snapshots
-                if (creatorUUID != null &&
-                    !creatorUUID.equals(player.getUUID()) &&
-                    !player.hasPermissions(4)) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_ownership")), true);
-                    DevMod.LOGGER.warn("Player {} tried to delete snapshot for area {} without ownership",
-                        player.getName().getString(), snapshot.areaId());
-                    return;
-                }
-            }
-
-            // Delete snapshot
-            java.nio.file.Path worldFolder = Objects.requireNonNull(player.getServer())
-                .getWorldPath(Objects.requireNonNull(net.minecraft.world.level.storage.LevelResource.ROOT));
-            boolean deleted = registry.deleteSnapshot(snapshotId, worldFolder);
-
-            if (deleted) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.snapshot.deleted")), false);
-                DevMod.LOGGER.info("Player {} deleted snapshot {} for area {}",
-                    player.getName().getString(), snapshotId, snapshot.areaName());
-
-                // Audit log
-                AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                    AreaAuditLog.ActionType.SNAPSHOT_DELETE,
-                    Objects.requireNonNull(snapshot.areaId()),
-                    Objects.requireNonNull(snapshot.areaName()),
-                    player,
-                    "snapshotId=" + snapshotId
-                );
-            } else {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.snapshot.delete_failed")), true);
-            }
-        });
-    }
-
-    private static void handleRequestSnapshotListServer(RequestSnapshotListPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            UUID areaId = payload.areaId();
-            if (areaId == null) {
-                return;
-            }
-
-            // SEC-01 fix: Permission check - only owner or OP4 can view snapshots for an area
-            AreaRegistry areaRegistry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-            Optional<AreaDefinition> areaOpt = areaRegistry.getArea(areaId);
-            if (areaOpt.isPresent()) {
-                AreaDefinition area = areaOpt.get();
-                UUID creatorUUID = area.creatorUUID();
-                if (creatorUUID != null && !creatorUUID.equals(player.getUUID()) && !player.hasPermissions(4)) {
-                    DevMod.LOGGER.debug("[Snapshot] Denied snapshot list request from {} for area {} (not owner/admin)",
-                        player.getName().getString(), areaId);
-                    return; // Silent denial - no info disclosure
-                }
-            }
-
-            AreaSnapshotRegistry registry = AreaSnapshotRegistry.get(Objects.requireNonNull(player.getServer()));
-            List<AreaSnapshot> snapshots = registry.getSnapshotsForArea(areaId);
-
-            // Convert to summaries
-            List<SnapshotListPayload.SnapshotSummary> summaries = new ArrayList<>();
-            for (AreaSnapshot snapshot : snapshots) {
-                summaries.add(new SnapshotListPayload.SnapshotSummary(
-                    snapshot.id(),
-                    snapshot.description(),
-                    snapshot.creatorName(),
-                    snapshot.createdAt(),
-                    snapshot.blockCount(),
-                    snapshot.fileSizeBytes()
-                ));
-            }
-
-            sendPacket(player, new SnapshotListPayload(areaId, summaries));
-            DevMod.LOGGER.debug("[Snapshot] Sent snapshot list to {} ({} snapshots for area {})",
-                player.getName().getString(), summaries.size(), areaId);
-        });
-    }
-
-    private static void handleSnapshotListClient(SnapshotListPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            MethodHandle method = getHandleSnapshotListMethod();
-            if (method == null) return;
-            try {
-                method.invokeExact(payload);
-            } catch (Throwable e) {
-                DevMod.LOGGER.error("Failed to handle snapshot list", e);
-            }
         });
     }
 

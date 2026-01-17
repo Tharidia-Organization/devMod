@@ -1,7 +1,13 @@
 package com.devmod.area.builder;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -11,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 
 import com.devmod.TestBootstrap;
 import com.devmod.area.data.AreaDefinition;
@@ -18,6 +25,8 @@ import com.devmod.area.data.AreaDimensions;
 import com.devmod.area.data.AreaOptions;
 import com.devmod.area.data.AreaPalette;
 import com.devmod.area.data.AreaShape;
+import com.devmod.area.snapshot.AreaSnapshotManager;
+import com.devmod.area.snapshot.AreaSnapshotRestoreTask;
 
 /**
  * Unit tests for area build queue components.
@@ -40,13 +49,13 @@ class AreaBuildQueueTest {
 
     private AreaDefinition createTestArea(String name) {
         return AreaDefinition.builder()
-            .name(name)
+            .name(Objects.requireNonNull(name))
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(32, 32, 16, 64))
             .center(new BlockPos(0, 64, 0))
-            .dimension(ResourceLocation.withDefaultNamespace("overworld"))
-            .palette(AreaPalette.empty("default"))
-            .options(AreaOptions.DEFAULT)
+            .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
+            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .options(Objects.requireNonNull(AreaOptions.DEFAULT))
             .build();
     }
 
@@ -299,14 +308,14 @@ class AreaBuildQueueTest {
         @DisplayName("isAreaQueued returns false for random UUID")
         void isAreaQueued_returnsFalseForRandomUUID() {
             AreaBuildTaskManager.INSTANCE.cleanup();
-            assertFalse(AreaBuildTaskManager.INSTANCE.isAreaQueued(UUID.randomUUID()));
+            assertFalse(AreaBuildTaskManager.INSTANCE.isAreaQueued(Objects.requireNonNull(UUID.randomUUID())));
         }
 
         @Test
         @DisplayName("getQueuePosition returns -1 for random UUID")
         void getQueuePosition_returnsMinusOneForRandomUUID() {
             AreaBuildTaskManager.INSTANCE.cleanup();
-            assertEquals(-1, AreaBuildTaskManager.INSTANCE.getQueuePosition(UUID.randomUUID()));
+            assertEquals(-1, AreaBuildTaskManager.INSTANCE.getQueuePosition(Objects.requireNonNull(UUID.randomUUID())));
         }
 
         @Test
@@ -327,7 +336,7 @@ class AreaBuildQueueTest {
         @DisplayName("removeFromQueue returns false for random UUID")
         void removeFromQueue_returnsFalseForRandomUUID() {
             AreaBuildTaskManager.INSTANCE.cleanup();
-            assertFalse(AreaBuildTaskManager.INSTANCE.removeFromQueue(UUID.randomUUID()));
+            assertFalse(AreaBuildTaskManager.INSTANCE.removeFromQueue(Objects.requireNonNull(UUID.randomUUID())));
         }
 
         @Test
@@ -355,6 +364,69 @@ class AreaBuildQueueTest {
     }
 
     // ========================================================================
+    // Snapshot Restore Guards
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Snapshot Restore Guards")
+    class SnapshotRestoreGuardTests {
+
+        @Test
+        @DisplayName("startBuild rejects when restore is active")
+        void startBuild_rejectsWhenRestoreActive() throws Exception {
+            AreaBuildTaskManager.INSTANCE.cleanup();
+            AreaSnapshotManager.INSTANCE.cleanup();
+
+            UUID areaId = Objects.requireNonNull(UUID.randomUUID());
+            AreaDefinition definition = AreaDefinition.builder()
+                .id(areaId)
+                .name("Restore Guard Area")
+                .shape(AreaShape.RECTANGULAR)
+                .dimensions(new AreaDimensions(8, 8, 4, 64))
+                .center(Objects.requireNonNull(BlockPos.ZERO))
+                .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
+                .build();
+
+            ServerLevel level = mock(ServerLevel.class);
+            when(level.getServer()).thenReturn(null);
+
+            injectActiveRestore(areaId, level);
+
+            try {
+                AreaBuildTaskManager.BuildStartResult result =
+                    AreaBuildTaskManager.INSTANCE.startBuild(level, definition, null, false);
+
+                assertEquals(AreaBuildTaskManager.BuildStartResult.ALREADY_BUILDING, result);
+            } finally {
+                AreaSnapshotManager.INSTANCE.cleanup();
+            }
+        }
+
+        private void injectActiveRestore(UUID areaId, ServerLevel level) throws Exception {
+            Map<UUID, Object> activeRestores = getActiveRestores();
+            UUID snapshotId = Objects.requireNonNull(UUID.randomUUID());
+            Object activeRestore = createActiveRestore(areaId, level);
+            activeRestores.put(snapshotId, activeRestore);
+        }
+
+        @SuppressWarnings("unchecked")
+        private Map<UUID, Object> getActiveRestores() throws Exception {
+            Field field = AreaSnapshotManager.class.getDeclaredField("activeRestores");
+            field.setAccessible(true);
+            return (Map<UUID, Object>) field.get(AreaSnapshotManager.INSTANCE);
+        }
+
+        private Object createActiveRestore(UUID areaId, ServerLevel level) throws Exception {
+            Class<?> activeRestoreClass =
+                Class.forName("com.devmod.area.snapshot.AreaSnapshotManager$ActiveRestore");
+            Constructor<?> ctor = activeRestoreClass.getDeclaredConstructor(
+                AreaSnapshotRestoreTask.class, ServerLevel.class, UUID.class, UUID.class, int.class);
+            ctor.setAccessible(true);
+            return ctor.newInstance(mock(AreaSnapshotRestoreTask.class), level, areaId, null, 0);
+        }
+    }
+
+    // ========================================================================
     // AreaBlockMapGenerator Constants
     // ========================================================================
 
@@ -367,7 +439,7 @@ class AreaBuildQueueTest {
         void estimateTotalBlocks_returnsPositive() {
             AreaDefinition area = createTestArea("Test Area");
 
-            int estimate = AreaBlockMapGenerator.estimateTotalBlocks(area);
+            int estimate = AreaBlockMapGenerator.estimateTotalBlocks(Objects.requireNonNull(area));
 
             assertTrue(estimate > 0, "Estimate should be positive");
         }
@@ -379,16 +451,16 @@ class AreaBuildQueueTest {
                 .name("Small")
                 .shape(AreaShape.RECTANGULAR)
                 .dimensions(new AreaDimensions(8, 8, 4, 64))
-                .center(BlockPos.ZERO)
-                .dimension(ResourceLocation.withDefaultNamespace("overworld"))
+                .center(Objects.requireNonNull(BlockPos.ZERO))
+                .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
                 .build();
 
             AreaDefinition large = AreaDefinition.builder()
                 .name("Large")
                 .shape(AreaShape.RECTANGULAR)
                 .dimensions(new AreaDimensions(64, 64, 32, 64))
-                .center(BlockPos.ZERO)
-                .dimension(ResourceLocation.withDefaultNamespace("overworld"))
+                .center(Objects.requireNonNull(BlockPos.ZERO))
+                .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
                 .build();
 
             int smallEstimate = AreaBlockMapGenerator.estimateTotalBlocks(small);

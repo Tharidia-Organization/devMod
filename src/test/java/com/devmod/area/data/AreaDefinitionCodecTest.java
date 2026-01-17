@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -120,9 +121,9 @@ class AreaDefinitionCodecTest {
             AreaDefinition decoded = AreaDefinition.CODEC.parse(NbtOps.INSTANCE, nbt).result().orElseThrow();
 
             assertNotNull(decoded.biomeConfig());
-            assertEquals(biomeConfig.biomeId(), decoded.biomeConfig().biomeId());
-            assertEquals(biomeConfig.seed(), decoded.biomeConfig().seed());
-            assertEquals(biomeConfig.terrainStyle(), decoded.biomeConfig().terrainStyle());
+            assertEquals(biomeConfig.biomeId(), Objects.requireNonNull(decoded.biomeConfig()).biomeId());
+            assertEquals(biomeConfig.seed(), Objects.requireNonNull(decoded.biomeConfig()).seed());
+            assertEquals(biomeConfig.terrainStyle(), Objects.requireNonNull(decoded.biomeConfig()).terrainStyle());
         }
 
         @Test
@@ -142,8 +143,8 @@ class AreaDefinitionCodecTest {
             AreaDefinition decoded = AreaDefinition.CODEC.parse(NbtOps.INSTANCE, nbt).result().orElseThrow();
 
             assertNotNull(decoded.customShapeNbt());
-            assertEquals("testValue", decoded.customShapeNbt().getString("testKey"));
-            assertEquals(42, decoded.customShapeNbt().getInt("testInt"));
+            assertEquals("testValue", Objects.requireNonNull(decoded.customShapeNbt()).getString("testKey"));
+            assertEquals(42, Objects.requireNonNull(decoded.customShapeNbt()).getInt("testInt"));
         }
 
         @Test
@@ -171,7 +172,7 @@ class AreaDefinitionCodecTest {
         void codec_missingRequiredField_fails() {
             // Create an NBT tag missing the 'name' field
             CompoundTag incompleteNbt = new CompoundTag();
-            incompleteNbt.putUUID("id", UUID.randomUUID());
+            incompleteNbt.putUUID("id", Objects.requireNonNull(UUID.randomUUID()));
             // Missing: name, generationType, shape, dimensions, etc.
 
             DataResult<AreaDefinition> result = AreaDefinition.CODEC.parse(NbtOps.INSTANCE, incompleteNbt);
@@ -213,11 +214,11 @@ class AreaDefinitionCodecTest {
         @Test
         @DisplayName("builder sets all fields correctly")
         void builder_setsAllFields() {
-            UUID id = UUID.randomUUID();
-            UUID creator = UUID.randomUUID();
+            UUID id = Objects.requireNonNull(UUID.randomUUID());
+            UUID creator = Objects.requireNonNull(UUID.randomUUID());
             BlockPos center = new BlockPos(10, 20, 30);
             AreaDimensions dims = new AreaDimensions(100, 100, 50, 64);
-            AreaPalette palette = createTestPalette();
+            AreaPalette palette = Objects.requireNonNull(createTestPalette());
             BiomeGenerationConfig biomeConfig = BiomeGenerationConfig.DEFAULT;
             CompoundTag customNbt = new CompoundTag();
             customNbt.putString("test", "value");
@@ -229,10 +230,10 @@ class AreaDefinitionCodecTest {
                 .shape(AreaShape.CIRCULAR)
                 .dimensions(dims)
                 .center(center)
-                .dimension(ResourceLocation.withDefaultNamespace("the_end"))
+                .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("the_end")))
                 .palette(palette)
                 .biomeConfig(biomeConfig)
-                .options(AreaOptions.OPEN)
+                .options(Objects.requireNonNull(AreaOptions.OPEN))
                 .creator(creator)
                 .mainHub(true)
                 .linkedZone("linked-zone-id")
@@ -323,7 +324,7 @@ class AreaDefinitionCodecTest {
         @DisplayName("withPalette creates new instance with updated palette")
         void withPalette_createsNewInstance() {
             AreaDefinition original = AreaDefinition.builder().build();
-            AreaPalette newPalette = createTestPalette();
+            AreaPalette newPalette = Objects.requireNonNull(createTestPalette());
 
             AreaDefinition updated = original.withPalette(newPalette);
 
@@ -335,7 +336,7 @@ class AreaDefinitionCodecTest {
         @DisplayName("withOptions creates new instance with updated options")
         void withOptions_createsNewInstance() {
             AreaDefinition original = AreaDefinition.builder().build();
-            AreaOptions newOptions = AreaOptions.OPEN;
+            AreaOptions newOptions = Objects.requireNonNull(AreaOptions.OPEN);
 
             AreaDefinition updated = original.withOptions(newOptions);
 
@@ -397,7 +398,7 @@ class AreaDefinitionCodecTest {
             AreaDefinition updated = original.withCustomShapeNbt(nbt);
 
             assertNotNull(updated.customShapeNbt());
-            assertEquals("value", updated.customShapeNbt().getString("key"));
+            assertEquals("value", Objects.requireNonNull(updated.customShapeNbt()).getString("key"));
             assertNull(original.customShapeNbt());
         }
     }

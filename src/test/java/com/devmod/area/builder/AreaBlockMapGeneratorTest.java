@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -52,16 +54,16 @@ class AreaBlockMapGeneratorTest {
             WallStyle wallStyle,
             AreaShape shape
     ) {
-        AreaPalette palette = createTestPalette();
+        AreaPalette palette = Objects.requireNonNull(createTestPalette());
         AreaOptions options = new AreaOptions(true, true, true, wallStyle, false, false, null);
 
         return AreaDefinition.builder()
-            .id(UUID.randomUUID())
+            .id(Objects.requireNonNull(UUID.randomUUID()))
             .name("test_area")
-            .shape(shape)
-            .dimensions(dims)
-            .center(center)
-            .palette(palette)
+            .shape(Objects.requireNonNull(shape))
+            .dimensions(Objects.requireNonNull(dims))
+            .center(Objects.requireNonNull(center))
+            .palette(Objects.requireNonNull(palette))
             .options(options)
             .build();
     }
@@ -70,14 +72,14 @@ class AreaBlockMapGeneratorTest {
      * Creates a test palette with all required materials.
      */
     private static AreaPalette createTestPalette() {
-        return AreaPalette.empty("test")
-            .withMaterial(NexusPalette.Key.FLOOR.id(), "minecraft:stone")
-            .withMaterial(NexusPalette.Key.FLOOR_ALT.id(), "minecraft:cobblestone")
-            .withMaterial(NexusPalette.Key.WALL.id(), "minecraft:stone_bricks")
-            .withMaterial(NexusPalette.Key.WALL_FRAME.id(), "minecraft:deepslate_bricks")
-            .withMaterial(NexusPalette.Key.WINDOW.id(), "minecraft:glass")
-            .withMaterial(NexusPalette.Key.CEILING.id(), "minecraft:smooth_stone")
-            .withMaterial(NexusPalette.Key.LIGHT.id(), "minecraft:glowstone");
+        return Objects.requireNonNull(AreaPalette.empty("test"))
+            .withMaterial(Objects.requireNonNull(NexusPalette.Key.FLOOR.id()), "minecraft:stone")
+            .withMaterial(Objects.requireNonNull(NexusPalette.Key.FLOOR_ALT.id()), "minecraft:cobblestone")
+            .withMaterial(Objects.requireNonNull(NexusPalette.Key.WALL.id()), "minecraft:stone_bricks")
+            .withMaterial(Objects.requireNonNull(NexusPalette.Key.WALL_FRAME.id()), "minecraft:deepslate_bricks")
+            .withMaterial(Objects.requireNonNull(NexusPalette.Key.WINDOW.id()), "minecraft:glass")
+            .withMaterial(Objects.requireNonNull(NexusPalette.Key.CEILING.id()), "minecraft:smooth_stone")
+            .withMaterial(Objects.requireNonNull(NexusPalette.Key.LIGHT.id()), "minecraft:glowstone");
     }
 
     // ========================================================================
@@ -95,11 +97,11 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 6, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             // All blocks should be wall material (stone_bricks)
             assertTrue(wallBlocks.values().stream()
-                .allMatch(state -> state.is(Blocks.STONE_BRICKS)),
+                .allMatch(state -> state.is(Objects.requireNonNull(Blocks.STONE_BRICKS))),
                 "All wall blocks should be STONE_BRICKS for SOLID style");
         }
 
@@ -110,7 +112,7 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 6, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             assertFalse(wallBlocks.isEmpty(), "Should generate wall blocks");
             BlockState expectedWall = Blocks.STONE_BRICKS.defaultBlockState();
@@ -125,7 +127,7 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 8, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             assertTrue(wallBlocks.values().stream().noneMatch(state -> state == null),
                 "SOLID style should have no null (air) positions");
@@ -149,11 +151,11 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 8, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.WINDOWED, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             // Check that middle section has windows
             long windowCount = wallBlocks.values().stream()
-                .filter(state -> state.is(Blocks.GLASS))
+                .filter(state -> state.is(Objects.requireNonNull(Blocks.GLASS)))
                 .count();
 
             assertTrue(windowCount > 0, "WINDOWED style should have glass blocks in middle section");
@@ -166,18 +168,18 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 8, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.WINDOWED, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             // relativeY = 1 should be wall (y = floorY + 1 = 65)
             // relativeY = height - 1 = 7 should be wall (y = 64 + 7 = 71)
             long bottomWallCount = wallBlocks.entrySet().stream()
                 .filter(e -> e.getKey().getY() == 65)
-                .filter(e -> e.getValue().is(Blocks.STONE_BRICKS))
+                .filter(e -> e.getValue().is(Objects.requireNonNull(Blocks.STONE_BRICKS)))
                 .count();
 
             long topWallCount = wallBlocks.entrySet().stream()
                 .filter(e -> e.getKey().getY() == 71)
-                .filter(e -> e.getValue().is(Blocks.STONE_BRICKS))
+                .filter(e -> e.getValue().is(Objects.requireNonNull(Blocks.STONE_BRICKS)))
                 .count();
 
             assertTrue(bottomWallCount > 0, "Bottom row (y=65) should have wall blocks");
@@ -193,12 +195,12 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 4, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.WINDOWED, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             // With height=4, relativeY ranges 1-3
             // Windows only when relativeY > 1 && relativeY < 3, so relativeY = 2
             long windowCount = wallBlocks.entrySet().stream()
-                .filter(e -> e.getValue().is(Blocks.GLASS))
+                .filter(e -> e.getValue().is(Objects.requireNonNull(Blocks.GLASS)))
                 .count();
 
             // Should have some windows at y=66 (relativeY=2)
@@ -212,11 +214,11 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 10, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.WINDOWED, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             // Middle section should have glass (the window block from palette)
             boolean hasGlass = wallBlocks.values().stream()
-                .anyMatch(state -> state.is(Blocks.GLASS));
+                .anyMatch(state -> state.is(Objects.requireNonNull(Blocks.GLASS)));
 
             assertTrue(hasGlass, "WINDOWED style should use GLASS (window block from palette)");
         }
@@ -239,8 +241,8 @@ class AreaBlockMapGeneratorTest {
             AreaDefinition solidArea = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
             AreaDefinition openCornersArea = createTestArea(center, dims, WallStyle.OPEN_CORNERS, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> solidBlocks = AreaBlockMapGenerator.generateWallBlocks(solidArea);
-            Map<BlockPos, BlockState> openCornersBlocks = AreaBlockMapGenerator.generateWallBlocks(openCornersArea);
+            Map<BlockPos, BlockState> solidBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(solidArea));
+            Map<BlockPos, BlockState> openCornersBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(openCornersArea));
 
             assertTrue(openCornersBlocks.size() < solidBlocks.size(),
                 "OPEN_CORNERS should have fewer blocks than SOLID (corners are air)");
@@ -255,8 +257,8 @@ class AreaBlockMapGeneratorTest {
             AreaDefinition rectArea = createTestArea(center, dims, WallStyle.OPEN_CORNERS, AreaShape.RECTANGULAR);
             AreaDefinition circArea = createTestArea(center, dims, WallStyle.OPEN_CORNERS, AreaShape.CIRCULAR);
 
-            Map<BlockPos, BlockState> rectBlocks = AreaBlockMapGenerator.generateWallBlocks(rectArea);
-            Map<BlockPos, BlockState> circBlocks = AreaBlockMapGenerator.generateWallBlocks(circArea);
+            Map<BlockPos, BlockState> rectBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(rectArea));
+            Map<BlockPos, BlockState> circBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(circArea));
 
             // For circular shape, OPEN_CORNERS should fall back to SOLID (no null positions)
             long circNullCount = circBlocks.values().stream().filter(s -> s == null).count();
@@ -276,8 +278,8 @@ class AreaBlockMapGeneratorTest {
             AreaDefinition solidCirc = createTestArea(center, dims, WallStyle.SOLID, AreaShape.CIRCULAR);
             AreaDefinition openCirc = createTestArea(center, dims, WallStyle.OPEN_CORNERS, AreaShape.CIRCULAR);
 
-            Map<BlockPos, BlockState> solidBlocks = AreaBlockMapGenerator.generateWallBlocks(solidCirc);
-            Map<BlockPos, BlockState> openBlocks = AreaBlockMapGenerator.generateWallBlocks(openCirc);
+            Map<BlockPos, BlockState> solidBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(solidCirc));
+            Map<BlockPos, BlockState> openBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(openCirc));
 
             // Both should have same blocks (OPEN_CORNERS falls back to SOLID for non-rectangular)
             assertEquals(solidBlocks.size(), openBlocks.size(),
@@ -291,7 +293,7 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(20, 20, 8, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.OPEN_CORNERS, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             // Get all wall positions that would exist for SOLID
             Set<BlockPos> allWallPositions = AreaShapeGenerator.generateWalls(
@@ -324,11 +326,11 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(20, 20, 8, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.PILLARS_ONLY, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             // All blocks should be frame (DEEPSLATE_BRICKS) at corners
             assertTrue(wallBlocks.values().stream()
-                .allMatch(state -> state.is(Blocks.DEEPSLATE_BRICKS)),
+                .allMatch(state -> state.is(Objects.requireNonNull(Blocks.DEEPSLATE_BRICKS))),
                 "PILLARS_ONLY should only place DEEPSLATE_BRICKS (frame) at corners");
         }
 
@@ -341,8 +343,8 @@ class AreaBlockMapGeneratorTest {
             AreaDefinition solidArea = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
             AreaDefinition pillarsArea = createTestArea(center, dims, WallStyle.PILLARS_ONLY, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> solidBlocks = AreaBlockMapGenerator.generateWallBlocks(solidArea);
-            Map<BlockPos, BlockState> pillarsBlocks = AreaBlockMapGenerator.generateWallBlocks(pillarsArea);
+            Map<BlockPos, BlockState> solidBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(solidArea));
+            Map<BlockPos, BlockState> pillarsBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(pillarsArea));
 
             assertTrue(pillarsBlocks.size() < solidBlocks.size(),
                 "PILLARS_ONLY should have far fewer blocks than SOLID");
@@ -357,8 +359,8 @@ class AreaBlockMapGeneratorTest {
             AreaDefinition solidHex = createTestArea(center, dims, WallStyle.SOLID, AreaShape.HEXAGONAL);
             AreaDefinition pillarsHex = createTestArea(center, dims, WallStyle.PILLARS_ONLY, AreaShape.HEXAGONAL);
 
-            Map<BlockPos, BlockState> solidBlocks = AreaBlockMapGenerator.generateWallBlocks(solidHex);
-            Map<BlockPos, BlockState> pillarsBlocks = AreaBlockMapGenerator.generateWallBlocks(pillarsHex);
+            Map<BlockPos, BlockState> solidBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(solidHex));
+            Map<BlockPos, BlockState> pillarsBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(pillarsHex));
 
             assertEquals(solidBlocks.size(), pillarsBlocks.size(),
                 "PILLARS_ONLY on hexagonal should fall back to SOLID");
@@ -371,11 +373,11 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(20, 20, 8, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.PILLARS_ONLY, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             // Frame block is DEEPSLATE_BRICKS in our test palette
             assertTrue(wallBlocks.values().stream()
-                .allMatch(state -> state.is(Blocks.DEEPSLATE_BRICKS)),
+                .allMatch(state -> state.is(Objects.requireNonNull(Blocks.DEEPSLATE_BRICKS))),
                 "PILLARS_ONLY should use DEEPSLATE_BRICKS (frame block from palette)");
         }
 
@@ -386,7 +388,7 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(20, 20, 8, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.PILLARS_ONLY, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
+            Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(Objects.requireNonNull(area));
 
             // Pillars should extend through all wall heights
             Set<Integer> yLevels = new HashSet<>();
@@ -414,14 +416,14 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 6, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> floorBlocks = AreaBlockMapGenerator.generateFloorBlocks(area);
+            Map<BlockPos, BlockState> floorBlocks = AreaBlockMapGenerator.generateFloorBlocks(Objects.requireNonNull(area));
 
             // Should have both STONE and COBBLESTONE
             long stoneCount = floorBlocks.values().stream()
-                .filter(state -> state.is(Blocks.STONE))
+                .filter(state -> state.is(Objects.requireNonNull(Blocks.STONE)))
                 .count();
             long cobbleCount = floorBlocks.values().stream()
-                .filter(state -> state.is(Blocks.COBBLESTONE))
+                .filter(state -> state.is(Objects.requireNonNull(Blocks.COBBLESTONE)))
                 .count();
 
             assertTrue(stoneCount > 0, "Checkerboard should have STONE blocks");
@@ -435,7 +437,7 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 6, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> floorBlocks = AreaBlockMapGenerator.generateFloorBlocks(area);
+            Map<BlockPos, BlockState> floorBlocks = AreaBlockMapGenerator.generateFloorBlocks(Objects.requireNonNull(area));
 
             // Verify the pattern: (x + z) % 2 == 0 uses FLOOR_ALT (COBBLESTONE)
             for (Map.Entry<BlockPos, BlockState> entry : floorBlocks.entrySet()) {
@@ -444,10 +446,10 @@ class AreaBlockMapGeneratorTest {
 
                 boolean useAlt = ((pos.getX() + pos.getZ()) % 2 == 0);
                 if (useAlt) {
-                    assertTrue(state.is(Blocks.COBBLESTONE),
+                    assertTrue(state.is(Objects.requireNonNull(Blocks.COBBLESTONE)),
                         "Position (" + pos.getX() + ", " + pos.getZ() + ") should be COBBLESTONE");
                 } else {
-                    assertTrue(state.is(Blocks.STONE),
+                    assertTrue(state.is(Objects.requireNonNull(Blocks.STONE)),
                         "Position (" + pos.getX() + ", " + pos.getZ() + ") should be STONE");
                 }
             }
@@ -460,11 +462,11 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(10, 10, 6, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> floorBlocks = AreaBlockMapGenerator.generateFloorBlocks(area);
+            Map<BlockPos, BlockState> floorBlocks = AreaBlockMapGenerator.generateFloorBlocks(Objects.requireNonNull(area));
 
             // All blocks should be either STONE or COBBLESTONE
             assertTrue(floorBlocks.values().stream()
-                .allMatch(state -> state.is(Blocks.STONE) || state.is(Blocks.COBBLESTONE)),
+                .allMatch(state -> state.is(Objects.requireNonNull(Blocks.STONE)) || state.is(Objects.requireNonNull(Blocks.COBBLESTONE))),
                 "Floor should only contain STONE or COBBLESTONE");
         }
     }
@@ -484,14 +486,14 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(32, 32, 6, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> ceilingBlocks = AreaBlockMapGenerator.generateCeilingBlocks(area);
+            Map<BlockPos, BlockState> ceilingBlocks = AreaBlockMapGenerator.generateCeilingBlocks(Objects.requireNonNull(area));
 
             // Should have both SMOOTH_STONE and GLOWSTONE
             long smoothCount = ceilingBlocks.values().stream()
-                .filter(state -> state.is(Blocks.SMOOTH_STONE))
+                .filter(state -> state.is(Objects.requireNonNull(Blocks.SMOOTH_STONE)))
                 .count();
             long glowCount = ceilingBlocks.values().stream()
-                .filter(state -> state.is(Blocks.GLOWSTONE))
+                .filter(state -> state.is(Objects.requireNonNull(Blocks.GLOWSTONE)))
                 .count();
 
             assertTrue(smoothCount > 0, "Ceiling should have SMOOTH_STONE blocks");
@@ -505,7 +507,7 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(32, 32, 6, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> ceilingBlocks = AreaBlockMapGenerator.generateCeilingBlocks(area);
+            Map<BlockPos, BlockState> ceilingBlocks = AreaBlockMapGenerator.generateCeilingBlocks(Objects.requireNonNull(area));
 
             // Verify light positions
             for (Map.Entry<BlockPos, BlockState> entry : ceilingBlocks.entrySet()) {
@@ -514,10 +516,10 @@ class AreaBlockMapGeneratorTest {
 
                 boolean isLightPos = (pos.getX() % 8 == 0) && (pos.getZ() % 8 == 0);
                 if (isLightPos) {
-                    assertTrue(state.is(Blocks.GLOWSTONE),
+                    assertTrue(state.is(Objects.requireNonNull(Blocks.GLOWSTONE)),
                         "Position (" + pos.getX() + ", " + pos.getZ() + ") should be GLOWSTONE");
                 } else {
-                    assertTrue(state.is(Blocks.SMOOTH_STONE),
+                    assertTrue(state.is(Objects.requireNonNull(Blocks.SMOOTH_STONE)),
                         "Position (" + pos.getX() + ", " + pos.getZ() + ") should be SMOOTH_STONE");
                 }
             }
@@ -530,11 +532,11 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(16, 16, 6, 64);
             AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
 
-            Map<BlockPos, BlockState> ceilingBlocks = AreaBlockMapGenerator.generateCeilingBlocks(area);
+            Map<BlockPos, BlockState> ceilingBlocks = AreaBlockMapGenerator.generateCeilingBlocks(Objects.requireNonNull(area));
 
             // All blocks should be either SMOOTH_STONE or GLOWSTONE
             assertTrue(ceilingBlocks.values().stream()
-                .allMatch(state -> state.is(Blocks.SMOOTH_STONE) || state.is(Blocks.GLOWSTONE)),
+                .allMatch(state -> state.is(Objects.requireNonNull(Blocks.SMOOTH_STONE)) || state.is(Objects.requireNonNull(Blocks.GLOWSTONE))),
                 "Ceiling should only contain SMOOTH_STONE or GLOWSTONE");
         }
     }
@@ -552,13 +554,13 @@ class AreaBlockMapGeneratorTest {
         void generatesAirForVolume() {
             BlockPos center = new BlockPos(0, 64, 0);
             AreaDimensions dims = new AreaDimensions(10, 10, 5, 64);
-            AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
+            AreaDefinition area = Objects.requireNonNull(createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR));
 
             Map<BlockPos, BlockState> clearBlocks = AreaBlockMapGenerator.generateClearBlocks(area);
 
             // All should be air
             assertTrue(clearBlocks.values().stream()
-                .allMatch(state -> state.is(Blocks.AIR)),
+                .allMatch(state -> state.is(Objects.requireNonNull(Blocks.AIR))),
                 "All clear blocks should be AIR");
         }
 
@@ -567,7 +569,7 @@ class AreaBlockMapGeneratorTest {
         void coversFullVolume() {
             BlockPos center = new BlockPos(0, 64, 0);
             AreaDimensions dims = new AreaDimensions(10, 10, 5, 64);
-            AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
+            AreaDefinition area = Objects.requireNonNull(createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR));
 
             Map<BlockPos, BlockState> clearBlocks = AreaBlockMapGenerator.generateClearBlocks(area);
 
@@ -623,7 +625,7 @@ class AreaBlockMapGeneratorTest {
         void floorBlocksInDeterministicOrder() {
             BlockPos center = new BlockPos(0, 64, 0);
             AreaDimensions dims = new AreaDimensions(10, 10, 5, 64);
-            AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
+            AreaDefinition area = Objects.requireNonNull(createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR));
 
             Map<BlockPos, BlockState> blocks1 = AreaBlockMapGenerator.generateFloorBlocks(area);
             Map<BlockPos, BlockState> blocks2 = AreaBlockMapGenerator.generateFloorBlocks(area);
@@ -652,12 +654,12 @@ class AreaBlockMapGeneratorTest {
 
             AreaOptions options = new AreaOptions(true, true, true, WallStyle.SOLID, false, false, null);
             AreaDefinition area = AreaDefinition.builder()
-                .id(UUID.randomUUID())
+                .id(Objects.requireNonNull(UUID.randomUUID()))
                 .name("estimate_test")
                 .shape(AreaShape.RECTANGULAR)
                 .dimensions(dims)
                 .center(center)
-                .palette(createTestPalette())
+                .palette(Objects.requireNonNull(createTestPalette()))
                 .options(options)
                 .build();
 
@@ -674,7 +676,7 @@ class AreaBlockMapGeneratorTest {
         void estimateBiomeBlocksReturnsVolume() {
             BlockPos center = new BlockPos(0, 64, 0);
             AreaDimensions dims = new AreaDimensions(10, 10, 8, 64);
-            AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
+            AreaDefinition area = Objects.requireNonNull(createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR));
 
             int estimate = AreaBlockMapGenerator.estimateBiomeBlocks(area);
 
@@ -687,12 +689,43 @@ class AreaBlockMapGeneratorTest {
         void estimateClearBlocksReturnsVolume() {
             BlockPos center = new BlockPos(0, 64, 0);
             AreaDimensions dims = new AreaDimensions(10, 10, 5, 64);
-            AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
+            AreaDefinition area = Objects.requireNonNull(createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR));
 
             int estimate = AreaBlockMapGenerator.estimateClearBlocks(area);
 
             // Volume = floor area * (height + 1) = 100 * 6 = 600
             assertEquals(100 * 6, estimate, "Clear estimate should be floor * (height + 1)");
+        }
+
+        @Test
+        @DisplayName("estimateTotalBlocks uses PATH width from NBT")
+        void estimateTotalBlocksPathUsesNbtWidth() {
+            BlockPos center = new BlockPos(0, 64, 0);
+            AreaDimensions dims = new AreaDimensions(20, 20, 6, 64);
+            int corridorHalfWidth = 1;
+            List<BlockPos> waypoints = List.of(center, center.offset(40, 0, 0));
+            CompoundTag pathNbt = AreaShapeGenerator.createPathNbt(center, waypoints, corridorHalfWidth);
+
+            AreaDefinition area = AreaDefinition.builder()
+                .id(Objects.requireNonNull(UUID.randomUUID()))
+                .name("path_estimate")
+                .shape(AreaShape.PATH)
+                .dimensions(Objects.requireNonNull(dims))
+                .center(Objects.requireNonNull(center))
+                .palette(Objects.requireNonNull(createTestPalette()))
+                .options(Objects.requireNonNull(AreaOptions.DEFAULT))
+                .customShapeNbt(pathNbt)
+                .build();
+
+            int floorEstimate = AreaShapeGenerator.generateFloor(AreaShape.PATH, center, dims, pathNbt).size();
+            int corridorWidth = Math.max(1, corridorHalfWidth * 2 + 1);
+            int corridorLength = floorEstimate > 0 ? (floorEstimate / corridorWidth) : 0;
+            int perimeter = 2 * (corridorLength + corridorWidth);
+            int expected = floorEstimate * 2 + perimeter * dims.height();
+
+            int estimate = AreaBlockMapGenerator.estimateTotalBlocks(area);
+
+            assertEquals(expected, estimate, "PATH estimate should use NBT corridor width");
         }
     }
 
@@ -709,7 +742,7 @@ class AreaBlockMapGeneratorTest {
         void handlesMinimumDimensions() {
             BlockPos center = new BlockPos(0, 64, 0);
             AreaDimensions dims = new AreaDimensions(8, 8, 4, 64); // Minimum allowed
-            AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
+            AreaDefinition area = Objects.requireNonNull(createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR));
 
             Map<BlockPos, BlockState> floorBlocks = AreaBlockMapGenerator.generateFloorBlocks(area);
             Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);
@@ -725,7 +758,7 @@ class AreaBlockMapGeneratorTest {
         void handlesLargeDimensions() {
             BlockPos center = new BlockPos(0, 64, 0);
             AreaDimensions dims = new AreaDimensions(128, 128, 64, 64);
-            AreaDefinition area = createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR);
+            AreaDefinition area = Objects.requireNonNull(createTestArea(center, dims, WallStyle.SOLID, AreaShape.RECTANGULAR));
 
             Map<BlockPos, BlockState> floorBlocks = AreaBlockMapGenerator.generateFloorBlocks(area);
 
@@ -740,7 +773,7 @@ class AreaBlockMapGeneratorTest {
 
             for (AreaShape shape : new AreaShape[]{AreaShape.RECTANGULAR, AreaShape.CIRCULAR, AreaShape.HEXAGONAL}) {
                 for (WallStyle style : WallStyle.values()) {
-                    AreaDefinition area = createTestArea(center, dims, style, shape);
+                    AreaDefinition area = Objects.requireNonNull(createTestArea(center, dims, style, shape));
 
                     // Should not throw
                     Map<BlockPos, BlockState> wallBlocks = AreaBlockMapGenerator.generateWallBlocks(area);

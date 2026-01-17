@@ -1,5 +1,7 @@
 package com.devmod.transport.network;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import io.netty.buffer.ByteBuf;
@@ -35,7 +37,7 @@ public record TransportConfigOpenPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TransportConfigOpenPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "210"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "210")));
 
     public static final StreamCodec<ByteBuf, TransportConfigOpenPayload> STREAM_CODEC = StreamCodec.of(
         (buf, payload) -> {
@@ -51,12 +53,12 @@ public record TransportConfigOpenPayload(
             ByteBufCodecs.VAR_INT.encode(buf, payload.frameCount);
         },
         buf -> new TransportConfigOpenPayload(
-            BlockPos.STREAM_CODEC.decode(buf),
+            Objects.requireNonNull(BlockPos.STREAM_CODEC.decode(buf)),
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
-            ByteBufCodecs.STRING_UTF8.decode(buf),
-            ByteBufCodecs.STRING_UTF8.decode(buf),
+            Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf)),
+            Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf)),
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.BOOL.decode(buf),
@@ -67,7 +69,7 @@ public record TransportConfigOpenPayload(
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 
     /**

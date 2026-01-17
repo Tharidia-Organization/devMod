@@ -53,13 +53,17 @@ import com.devmod.area.network.ZoneListPayload;
 import com.devmod.area.data.GridSettings;
 import com.devmod.client.area.widget.BiomeConfigWidget;
 import com.devmod.client.area.widget.BiomeSelectorWidget;
+import com.devmod.client.area.widget.CustomNbtWidget;
 import com.devmod.client.area.widget.DimensionsWidget;
 import com.devmod.client.area.widget.GridSettingsWidget;
 import com.devmod.client.area.widget.OptionsWidget;
 import com.devmod.client.area.widget.PaletteEditorWidget;
+import com.devmod.client.area.widget.PathWaypointWidget;
 import com.devmod.client.area.widget.ShapeConfigWidget;
 import com.devmod.client.area.widget.TemplateSelectorWidget;
 import com.devmod.client.area.widget.ZoneSelectorWidget;
+
+import net.minecraft.nbt.CompoundTag;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.BaseDevModScreen;
 import com.devmod.client.ui.editor.components.EditorButton;
@@ -114,12 +118,18 @@ public class AreaBuilderScreen extends BaseDevModScreen {
     // Widgets (created on demand per tab)
     @Nullable private EditBox nameField;
     @Nullable private ShapeConfigWidget shapeWidget;
+    @Nullable private DimensionsWidget dimensionsWidget;
     @Nullable private GridSettingsWidget gridSettingsWidget;
     @Nullable private PaletteEditorWidget paletteWidget;
     @Nullable private BiomeSelectorWidget biomeSelector;
     @Nullable private BiomeConfigWidget biomeConfigWidget;
     @Nullable private OptionsWidget optionsWidget;
     @Nullable private ZoneSelectorWidget zoneSelectorWidget;
+
+    // PATH shape data
+    @Nullable private CompoundTag pathNbt = null;
+    // CUSTOM_NBT shape data
+    @Nullable private CompoundTag customNbt = null;
 
     // Grid settings for area alignment
     private GridSettings gridSettings = GridSettings.DISABLED;
@@ -375,6 +385,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
 
         // Clear previous widgets
         shapeWidget = null;
+        dimensionsWidget = null;
         paletteWidget = null;
         biomeSelector = null;
         biomeConfigWidget = null;
@@ -404,11 +415,47 @@ public class AreaBuilderScreen extends BaseDevModScreen {
     }
 
     private void initDimensionsTab(int x, int y, int width, int height) {
+        // For PATH shape, show waypoint editor instead of standard dimensions
+        if (selectedShape == AreaShape.PATH) {
+            PathWaypointWidget widget = new PathWaypointWidget(
+                x, y, width, height,
+                nbt -> {
+                    this.pathNbt = nbt;
+                    markDirty();
+                }
+            );
+            // Load existing path data if editing an existing area
+            AreaDefinition existing = existingArea;
+            if (existing != null && existing.customShapeNbt() != null) {
+                widget.loadFromNbt(existing.customShapeNbt(), existing.centerPosition());
+            }
+            this.addRenderableWidget(widget);
+            return;
+        }
+
+        // For CUSTOM_NBT shape, show custom position editor
+        if (selectedShape == AreaShape.CUSTOM_NBT) {
+            CustomNbtWidget widget = new CustomNbtWidget(
+                x, y, width, height,
+                nbt -> {
+                    this.customNbt = nbt;
+                    markDirty();
+                }
+            );
+            // Load existing custom data if editing an existing area
+            AreaDefinition existing = existingArea;
+            if (existing != null && existing.customShapeNbt() != null) {
+                widget.loadFromNbt(existing.customShapeNbt(), existing.centerPosition());
+            }
+            this.addRenderableWidget(widget);
+            return;
+        }
+
         // Split the area: left for dimensions, right for grid settings
         int dimensionsWidth = width / 2 - 10;
         int gridWidth = width / 2 - 10;
 
-        DimensionsWidget dimWidget = new DimensionsWidget(
+        dimensionsWidget = new DimensionsWidget(
             x, y, dimensionsWidth, height,
             dimensions,
             dims -> {
@@ -416,8 +463,8 @@ public class AreaBuilderScreen extends BaseDevModScreen {
                 markDirty();
             }
         );
-        dimWidget.setGridSettings(gridSettings);
-        this.addRenderableWidget(dimWidget);
+        dimensionsWidget.setGridSettings(gridSettings);
+        this.addRenderableWidget(Objects.requireNonNull(dimensionsWidget));
 
         gridSettingsWidget = new GridSettingsWidget(
             x + dimensionsWidth + 20, y, gridWidth, height,
@@ -425,7 +472,9 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             settings -> {
                 this.gridSettings = settings;
                 // Update dimensions widget with new grid settings
-                dimWidget.setGridSettings(settings);
+                if (dimensionsWidget != null) {
+                    dimensionsWidget.setGridSettings(settings);
+                }
                 markDirty();
             }
         );
@@ -881,6 +930,14 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             adjustedDimensions.height(), adjustedDimensions.floorY());
 
         // Build the AreaDefinition
+        // For PATH or CUSTOM_NBT shapes, include the appropriate NBT as customShapeNbt
+        CompoundTag shapeNbt = null;
+        if (selectedShape == AreaShape.PATH) {
+            shapeNbt = pathNbt;
+        } else if (selectedShape == AreaShape.CUSTOM_NBT) {
+            shapeNbt = customNbt;
+        }
+
         AreaDefinition definition = AreaDefinition.builder()
             .id(Objects.requireNonNull(areaId))
             .name(Objects.requireNonNull(areaName))
@@ -895,6 +952,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             .creator(player.getUUID())
             .mainHub(isMainHub)
             .linkedZone(linkedZoneId)
+            .customShapeNbt(shapeNbt)
             .build();
 
         LOGGER.info("[AreaBuilder] Created AreaDefinition: id={}, name='{}', center={}, genType={}",

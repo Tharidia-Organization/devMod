@@ -291,7 +291,6 @@ public class AreaBuildTask implements Closeable {
                         // Wrap block placement in try-catch (H-01 fix)
                         try {
                             level.setBlock(Objects.requireNonNull(pos), Objects.requireNonNull(state), AREA_BUILD_FLAGS);
-                            blocksThisTick++;
                             totalBlocksPlaced++;
                         } catch (Exception e) {
                             // Log and continue - don't let single block failure crash the build
@@ -301,10 +300,13 @@ public class AreaBuildTask implements Closeable {
                             } else if (failedBlockCount == 11) {
                                 LOGGER.warn("[Area] Suppressing further block placement errors...");
                             }
-                            // Count as processed even if failed
-                            blocksThisTick++;
                         }
                     }
+
+                    // HIGH-BUDGET fix: Always count against tick budget when processing a position,
+                    // whether or not we actually place a block. This prevents the while loop from
+                    // running indefinitely when many air blocks are skipped in non-biome/non-clear steps.
+                    blocksThisTick++;
                 }
             }
 

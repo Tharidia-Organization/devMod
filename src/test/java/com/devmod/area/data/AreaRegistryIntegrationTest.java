@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -48,37 +49,37 @@ class AreaRegistryIntegrationTest {
 
     private AreaDefinition createTestArea(String name) {
         return AreaDefinition.builder()
-            .name(name)
+            .name(Objects.requireNonNull(name))
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(32, 32, 16, 64))
             .center(new BlockPos(0, 64, 0))
-            .dimension(ResourceLocation.withDefaultNamespace("overworld"))
-            .palette(AreaPalette.empty("default"))
-            .options(AreaOptions.DEFAULT)
+            .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
+            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .options(Objects.requireNonNull(AreaOptions.DEFAULT))
             .build();
     }
 
     private AreaDefinition createTestAreaAt(String name, BlockPos center) {
         return AreaDefinition.builder()
-            .name(name)
+            .name(Objects.requireNonNull(name))
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(32, 32, 16, center.getY()))
             .center(center)
-            .dimension(ResourceLocation.withDefaultNamespace("overworld"))
-            .palette(AreaPalette.empty("default"))
-            .options(AreaOptions.DEFAULT)
+            .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
+            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .options(Objects.requireNonNull(AreaOptions.DEFAULT))
             .build();
     }
 
     private AreaDefinition createTestAreaWithDimension(String name, ResourceLocation dimension) {
         return AreaDefinition.builder()
-            .name(name)
+            .name(Objects.requireNonNull(name))
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(32, 32, 16, 64))
             .center(new BlockPos(0, 64, 0))
-            .dimension(dimension)
-            .palette(AreaPalette.empty("default"))
-            .options(AreaOptions.DEFAULT)
+            .dimension(Objects.requireNonNull(dimension))
+            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .options(Objects.requireNonNull(AreaOptions.DEFAULT))
             .build();
     }
 
@@ -93,7 +94,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("createArea returns UUID and stores area")
         void createArea_returnsUUIDAndStores() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
 
             UUID id = registry.createArea(area);
 
@@ -108,20 +109,20 @@ class AreaRegistryIntegrationTest {
         void createArea_incrementsCount() {
             assertEquals(0, registry.getAreaCount());
 
-            registry.createArea(createTestArea("Area 1"));
+            registry.createArea(Objects.requireNonNull(createTestArea("Area 1")));
             assertEquals(1, registry.getAreaCount());
 
-            registry.createArea(createTestArea("Area 2"));
+            registry.createArea(Objects.requireNonNull(createTestArea("Area 2")));
             assertEquals(2, registry.getAreaCount());
 
-            registry.createArea(createTestArea("Area 3"));
+            registry.createArea(Objects.requireNonNull(createTestArea("Area 3")));
             assertEquals(3, registry.getAreaCount());
         }
 
         @Test
         @DisplayName("getArea returns empty for non-existent ID")
         void getArea_returnsEmptyForNonExistent() {
-            Optional<AreaDefinition> result = registry.getArea(UUID.randomUUID());
+            Optional<AreaDefinition> result = registry.getArea(Objects.requireNonNull(UUID.randomUUID()));
 
             assertTrue(result.isEmpty());
         }
@@ -129,8 +130,8 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("getAllAreas returns all registered areas")
         void getAllAreas_returnsAll() {
-            AreaDefinition area1 = createTestArea("Area 1");
-            AreaDefinition area2 = createTestArea("Area 2");
+            AreaDefinition area1 = Objects.requireNonNull(createTestArea("Area 1"));
+            AreaDefinition area2 = Objects.requireNonNull(createTestArea("Area 2"));
             registry.createArea(area1);
             registry.createArea(area2);
 
@@ -144,7 +145,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("getAllAreas returns unmodifiable collection")
         void getAllAreas_returnsUnmodifiable() {
-            registry.createArea(createTestArea("Test Area"));
+            registry.createArea(Objects.requireNonNull(createTestArea("Test Area")));
 
             Collection<AreaDefinition> all = registry.getAllAreas();
 
@@ -155,7 +156,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("deleteArea removes area from registry")
         void deleteArea_removesArea() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
             assertTrue(registry.getArea(id).isPresent());
 
@@ -168,22 +169,22 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("deleteArea handles non-existent ID gracefully")
         void deleteArea_handlesNonExistent() {
-            assertDoesNotThrow(() -> registry.deleteArea(UUID.randomUUID()));
+            assertDoesNotThrow(() -> registry.deleteArea(Objects.requireNonNull(UUID.randomUUID())));
         }
 
         @Test
         @DisplayName("deleteArea removes associated editor positions")
         void deleteArea_removesEditorPositions() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
-            ResourceLocation dim = ResourceLocation.withDefaultNamespace("overworld");
+            ResourceLocation dim = Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld"));
             BlockPos pos = new BlockPos(100, 64, 100);
-            registry.registerEditor(dim, pos, id);
-            assertTrue(registry.getAreaAtEditor(dim, pos).isPresent());
+            registry.registerEditor(Objects.requireNonNull(dim), pos, id);
+            assertTrue(registry.getAreaAtEditor(Objects.requireNonNull(dim), pos).isPresent());
 
             registry.deleteArea(id);
 
-            assertTrue(registry.getAreaAtEditor(dim, pos).isEmpty());
+            assertTrue(registry.getAreaAtEditor(Objects.requireNonNull(dim), pos).isEmpty());
         }
     }
 
@@ -198,7 +199,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("updateArea succeeds with correct revision")
         void updateArea_succeedsWithCorrectRevision() {
-            AreaDefinition area = createTestArea("Original Name");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Original Name"));
             UUID id = registry.createArea(area);
             AreaDefinition updated = area.withName("Updated Name");
 
@@ -211,7 +212,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("updateArea fails with incorrect revision")
         void updateArea_failsWithIncorrectRevision() {
-            AreaDefinition area = createTestArea("Original Name");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Original Name"));
             UUID id = registry.createArea(area);
             AreaDefinition updated = area.withName("Updated Name");
 
@@ -224,9 +225,9 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("updateArea fails for non-existent area")
         void updateArea_failsForNonExistent() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
 
-            boolean success = registry.updateArea(UUID.randomUUID(), area, 0);
+            boolean success = registry.updateArea(Objects.requireNonNull(UUID.randomUUID()), Objects.requireNonNull(area), 0);
 
             assertFalse(success);
         }
@@ -234,8 +235,8 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("withUpdate increments revision")
         void withUpdate_incrementsRevision() {
-            AreaDefinition area = createTestArea("Test Area");
-            UUID id = registry.createArea(area);
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
+            registry.createArea(area);
             assertEquals(0, area.revision());
 
             AreaDefinition updated = area.withUpdate();
@@ -246,7 +247,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("multiple updates require sequential revisions")
         void multipleUpdates_requireSequentialRevisions() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
 
             // First update (rev 0 -> 1)
@@ -294,7 +295,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("setMainHub sets hub when area exists")
         void setMainHub_setsWhenAreaExists() {
-            AreaDefinition area = createTestArea("Hub Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Hub Area"));
             UUID id = registry.createArea(area);
 
             boolean success = registry.setMainHub(id);
@@ -308,7 +309,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("setMainHub fails when area does not exist")
         void setMainHub_failsWhenAreaNotExists() {
-            boolean success = registry.setMainHub(UUID.randomUUID());
+            boolean success = registry.setMainHub(Objects.requireNonNull(UUID.randomUUID()));
 
             assertFalse(success);
             assertFalse(registry.hasMainHub());
@@ -320,9 +321,9 @@ class AreaRegistryIntegrationTest {
             AreaDefinition area = AreaDefinition.builder()
                 .name("Auto Hub")
                 .shape(AreaShape.RECTANGULAR)
-                .dimensions(AreaDimensions.DEFAULT)
-                .center(BlockPos.ZERO)
-                .dimension(ResourceLocation.withDefaultNamespace("overworld"))
+                .dimensions(Objects.requireNonNull(AreaDimensions.DEFAULT))
+                .center(Objects.requireNonNull(BlockPos.ZERO))
+                .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
                 .mainHub(true)
                 .build();
 
@@ -335,7 +336,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("deleteArea clears main hub if hub is deleted")
         void deleteArea_clearsMainHubIfDeleted() {
-            AreaDefinition area = createTestArea("Hub Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Hub Area"));
             UUID id = registry.createArea(area);
             registry.setMainHub(id);
             assertTrue(registry.hasMainHub());
@@ -349,8 +350,8 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("deleteArea does not affect hub if other area deleted")
         void deleteArea_doesNotAffectHubIfOtherDeleted() {
-            AreaDefinition hub = createTestArea("Hub Area");
-            AreaDefinition other = createTestArea("Other Area");
+            AreaDefinition hub = Objects.requireNonNull(createTestArea("Hub Area"));
+            AreaDefinition other = Objects.requireNonNull(createTestArea("Other Area"));
             UUID hubId = registry.createArea(hub);
             UUID otherId = registry.createArea(other);
             registry.setMainHub(hubId);
@@ -364,7 +365,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("updateArea can toggle main hub status")
         void updateArea_canToggleMainHubStatus() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
             assertFalse(registry.hasMainHub());
 
@@ -395,41 +396,41 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("registerEditor stores position")
         void registerEditor_storesPosition() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
-            ResourceLocation dim = ResourceLocation.withDefaultNamespace("overworld");
+            ResourceLocation dim = Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld"));
             BlockPos pos = new BlockPos(100, 64, 100);
 
-            registry.registerEditor(dim, pos, id);
+            registry.registerEditor(Objects.requireNonNull(dim), pos, id);
 
-            assertTrue(registry.getAreaAtEditor(dim, pos).isPresent());
-            assertEquals(id, registry.getAreaAtEditor(dim, pos).get());
+            assertTrue(registry.getAreaAtEditor(Objects.requireNonNull(dim), pos).isPresent());
+            assertEquals(id, registry.getAreaAtEditor(Objects.requireNonNull(dim), pos).get());
         }
 
         @Test
         @DisplayName("unregisterEditor removes position")
         void unregisterEditor_removesPosition() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
-            ResourceLocation dim = ResourceLocation.withDefaultNamespace("overworld");
+            ResourceLocation dim = Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld"));
             BlockPos pos = new BlockPos(100, 64, 100);
-            registry.registerEditor(dim, pos, id);
+            registry.registerEditor(Objects.requireNonNull(dim), pos, id);
 
-            registry.unregisterEditor(dim, pos);
+            registry.unregisterEditor(Objects.requireNonNull(dim), pos);
 
-            assertTrue(registry.getAreaAtEditor(dim, pos).isEmpty());
+            assertTrue(registry.getAreaAtEditor(Objects.requireNonNull(dim), pos).isEmpty());
         }
 
         @Test
         @DisplayName("getAreaDefinitionAtEditor returns area definition")
         void getAreaDefinitionAtEditor_returnsDefinition() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
-            ResourceLocation dim = ResourceLocation.withDefaultNamespace("overworld");
+            ResourceLocation dim = Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld"));
             BlockPos pos = new BlockPos(100, 64, 100);
-            registry.registerEditor(dim, pos, id);
+            registry.registerEditor(Objects.requireNonNull(dim), pos, id);
 
-            Optional<AreaDefinition> result = registry.getAreaDefinitionAtEditor(dim, pos);
+            Optional<AreaDefinition> result = registry.getAreaDefinitionAtEditor(Objects.requireNonNull(dim), pos);
 
             assertTrue(result.isPresent());
             assertEquals("Test Area", result.get().name());
@@ -438,9 +439,9 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("getEditorPositions returns all positions")
         void getEditorPositions_returnsAll() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
-            ResourceLocation dim = ResourceLocation.withDefaultNamespace("overworld");
+            ResourceLocation dim = Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld"));
             BlockPos pos1 = new BlockPos(100, 64, 100);
             BlockPos pos2 = new BlockPos(200, 64, 200);
             registry.registerEditor(dim, pos1, id);
@@ -449,30 +450,30 @@ class AreaRegistryIntegrationTest {
             Set<EditorKey> positions = registry.getEditorPositions();
 
             assertEquals(2, positions.size());
-            assertTrue(positions.contains(new EditorKey(dim, pos1)));
-            assertTrue(positions.contains(new EditorKey(dim, pos2)));
+            assertTrue(positions.contains(new EditorKey(Objects.requireNonNull(dim), pos1)));
+            assertTrue(positions.contains(new EditorKey(Objects.requireNonNull(dim), pos2)));
         }
 
         @Test
         @DisplayName("editors in different dimensions are separate")
         void editorsInDifferentDimensions_areSeparate() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
-            ResourceLocation overworld = ResourceLocation.withDefaultNamespace("overworld");
-            ResourceLocation nether = ResourceLocation.withDefaultNamespace("the_nether");
+            ResourceLocation overworld = Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld"));
+            ResourceLocation nether = Objects.requireNonNull(ResourceLocation.withDefaultNamespace("the_nether"));
             BlockPos pos = new BlockPos(100, 64, 100);
 
-            registry.registerEditor(overworld, pos, id);
-            registry.registerEditor(nether, pos, id);
+            registry.registerEditor(Objects.requireNonNull(overworld), pos, id);
+            registry.registerEditor(Objects.requireNonNull(nether), pos, id);
 
             assertEquals(2, registry.getEditorPositions().size());
-            assertTrue(registry.getAreaAtEditor(overworld, pos).isPresent());
-            assertTrue(registry.getAreaAtEditor(nether, pos).isPresent());
+            assertTrue(registry.getAreaAtEditor(Objects.requireNonNull(overworld), pos).isPresent());
+            assertTrue(registry.getAreaAtEditor(Objects.requireNonNull(nether), pos).isPresent());
 
             // Unregister only overworld
-            registry.unregisterEditor(overworld, pos);
-            assertTrue(registry.getAreaAtEditor(overworld, pos).isEmpty());
-            assertTrue(registry.getAreaAtEditor(nether, pos).isPresent());
+            registry.unregisterEditor(Objects.requireNonNull(overworld), pos);
+            assertTrue(registry.getAreaAtEditor(Objects.requireNonNull(overworld), pos).isEmpty());
+            assertTrue(registry.getAreaAtEditor(Objects.requireNonNull(nether), pos).isPresent());
         }
     }
 
@@ -488,7 +489,7 @@ class AreaRegistryIntegrationTest {
         @DisplayName("findAreasContaining returns matching areas")
         void findAreasContaining_returnsMatching() {
             // Area centered at (0, 64, 0) with 32x32x16 dimensions
-            AreaDefinition area = createTestAreaAt("Test Area", new BlockPos(0, 64, 0));
+            AreaDefinition area = Objects.requireNonNull(createTestAreaAt("Test Area", new BlockPos(0, 64, 0)));
             registry.createArea(area);
 
             // Position inside the area
@@ -502,7 +503,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("findAreasContaining returns empty for positions outside")
         void findAreasContaining_returnsEmptyForOutside() {
-            AreaDefinition area = createTestAreaAt("Test Area", new BlockPos(0, 64, 0));
+            AreaDefinition area = Objects.requireNonNull(createTestAreaAt("Test Area", new BlockPos(0, 64, 0)));
             registry.createArea(area);
 
             // Position far outside the area
@@ -516,8 +517,8 @@ class AreaRegistryIntegrationTest {
         @DisplayName("findAreasContaining can return multiple overlapping areas")
         void findAreasContaining_returnsMultipleOverlapping() {
             // Two overlapping areas
-            AreaDefinition area1 = createTestAreaAt("Area 1", new BlockPos(0, 64, 0));
-            AreaDefinition area2 = createTestAreaAt("Area 2", new BlockPos(10, 64, 10));
+            AreaDefinition area1 = Objects.requireNonNull(createTestAreaAt("Area 1", new BlockPos(0, 64, 0)));
+            AreaDefinition area2 = Objects.requireNonNull(createTestAreaAt("Area 2", new BlockPos(10, 64, 10)));
             registry.createArea(area1);
             registry.createArea(area2);
 
@@ -531,7 +532,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("isInsideArea correctly identifies inside positions")
         void isInsideArea_correctlyIdentifiesInside() {
-            AreaDefinition area = createTestAreaAt("Test Area", new BlockPos(0, 64, 0));
+            AreaDefinition area = Objects.requireNonNull(createTestAreaAt("Test Area", new BlockPos(0, 64, 0)));
 
             // Center should be inside
             assertTrue(registry.isInsideArea(new BlockPos(0, 70, 0), area));
@@ -543,7 +544,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("isInsideArea correctly identifies outside positions")
         void isInsideArea_correctlyIdentifiesOutside() {
-            AreaDefinition area = createTestAreaAt("Test Area", new BlockPos(0, 64, 0));
+            AreaDefinition area = Objects.requireNonNull(createTestAreaAt("Test Area", new BlockPos(0, 64, 0)));
 
             // Far away should be outside
             assertFalse(registry.isInsideArea(new BlockPos(1000, 70, 1000), area));
@@ -558,11 +559,11 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("wouldOverlap detects AABB collision")
         void wouldOverlap_detectsCollision() {
-            AreaDefinition existing = createTestAreaAt("Existing", new BlockPos(0, 64, 0));
+            AreaDefinition existing = Objects.requireNonNull(createTestAreaAt("Existing", new BlockPos(0, 64, 0)));
             registry.createArea(existing);
 
             // Overlapping area
-            AreaDefinition overlapping = createTestAreaAt("Overlapping", new BlockPos(10, 64, 10));
+            AreaDefinition overlapping = Objects.requireNonNull(createTestAreaAt("Overlapping", new BlockPos(10, 64, 10)));
 
             assertTrue(registry.wouldOverlap(overlapping));
         }
@@ -570,11 +571,11 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("wouldOverlap returns false for non-overlapping")
         void wouldOverlap_returnsFalseForNonOverlapping() {
-            AreaDefinition existing = createTestAreaAt("Existing", new BlockPos(0, 64, 0));
+            AreaDefinition existing = Objects.requireNonNull(createTestAreaAt("Existing", new BlockPos(0, 64, 0)));
             registry.createArea(existing);
 
             // Far away area
-            AreaDefinition farAway = createTestAreaAt("Far Away", new BlockPos(1000, 64, 1000));
+            AreaDefinition farAway = Objects.requireNonNull(createTestAreaAt("Far Away", new BlockPos(1000, 64, 1000)));
 
             assertFalse(registry.wouldOverlap(farAway));
         }
@@ -582,7 +583,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("wouldOverlap ignores self when updating")
         void wouldOverlap_ignoresSelf() {
-            AreaDefinition area = createTestAreaAt("Test Area", new BlockPos(0, 64, 0));
+            AreaDefinition area = Objects.requireNonNull(createTestAreaAt("Test Area", new BlockPos(0, 64, 0)));
             UUID id = registry.createArea(area);
 
             // Same area with slightly modified position should not overlap with itself
@@ -592,7 +593,7 @@ class AreaRegistryIntegrationTest {
                 .shape(AreaShape.RECTANGULAR)
                 .dimensions(new AreaDimensions(32, 32, 16, 64))
                 .center(new BlockPos(5, 64, 5))
-                .dimension(ResourceLocation.withDefaultNamespace("overworld"))
+                .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
                 .build();
 
             assertFalse(registry.wouldOverlap(updated));
@@ -601,13 +602,13 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("wouldOverlap ignores areas in different dimensions")
         void wouldOverlap_ignoresDifferentDimensions() {
-            AreaDefinition overworld = createTestAreaWithDimension("Overworld Area",
-                ResourceLocation.withDefaultNamespace("overworld"));
+            AreaDefinition overworld = Objects.requireNonNull(createTestAreaWithDimension("Overworld Area",
+                Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld"))));
             registry.createArea(overworld);
 
             // Same position but different dimension
-            AreaDefinition nether = createTestAreaWithDimension("Nether Area",
-                ResourceLocation.withDefaultNamespace("the_nether"));
+            AreaDefinition nether = Objects.requireNonNull(createTestAreaWithDimension("Nether Area",
+                Objects.requireNonNull(ResourceLocation.withDefaultNamespace("the_nether"))));
 
             assertFalse(registry.wouldOverlap(nether));
         }
@@ -636,25 +637,25 @@ class AreaRegistryIntegrationTest {
                 .name("Area 1")
                 .linkedZone("zone-1")
                 .shape(AreaShape.RECTANGULAR)
-                .dimensions(AreaDimensions.DEFAULT)
-                .center(BlockPos.ZERO)
-                .dimension(ResourceLocation.withDefaultNamespace("overworld"))
+                .dimensions(Objects.requireNonNull(AreaDimensions.DEFAULT))
+                .center(Objects.requireNonNull(BlockPos.ZERO))
+                .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
                 .build();
             AreaDefinition area2 = AreaDefinition.builder()
                 .name("Area 2")
                 .linkedZone("zone-1")
                 .shape(AreaShape.RECTANGULAR)
-                .dimensions(AreaDimensions.DEFAULT)
+                .dimensions(Objects.requireNonNull(AreaDimensions.DEFAULT))
                 .center(new BlockPos(100, 64, 100))
-                .dimension(ResourceLocation.withDefaultNamespace("overworld"))
+                .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
                 .build();
             AreaDefinition area3 = AreaDefinition.builder()
                 .name("Area 3")
                 .linkedZone("zone-2")
                 .shape(AreaShape.RECTANGULAR)
-                .dimensions(AreaDimensions.DEFAULT)
+                .dimensions(Objects.requireNonNull(AreaDimensions.DEFAULT))
                 .center(new BlockPos(200, 64, 200))
-                .dimension(ResourceLocation.withDefaultNamespace("overworld"))
+                .dimension(Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld")))
                 .build();
 
             registry.createArea(area1);
@@ -687,7 +688,7 @@ class AreaRegistryIntegrationTest {
         void createArea_incrementsVersion() {
             long initial = registry.getModificationVersion();
 
-            registry.createArea(createTestArea("Test Area"));
+            registry.createArea(Objects.requireNonNull(createTestArea("Test Area")));
 
             assertEquals(initial + 1, registry.getModificationVersion());
         }
@@ -695,7 +696,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("updateArea increments version on success")
         void updateArea_incrementsVersionOnSuccess() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
             long afterCreate = registry.getModificationVersion();
 
@@ -707,7 +708,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("updateArea does not increment version on failure")
         void updateArea_doesNotIncrementOnFailure() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
             long afterCreate = registry.getModificationVersion();
 
@@ -719,7 +720,7 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("deleteArea increments version when area exists")
         void deleteArea_incrementsVersionWhenExists() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
             long afterCreate = registry.getModificationVersion();
 
@@ -733,7 +734,7 @@ class AreaRegistryIntegrationTest {
         void deleteArea_doesNotIncrementWhenNotFound() {
             long initial = registry.getModificationVersion();
 
-            registry.deleteArea(UUID.randomUUID());
+            registry.deleteArea(Objects.requireNonNull(UUID.randomUUID()));
 
             assertEquals(initial, registry.getModificationVersion());
         }
@@ -750,57 +751,57 @@ class AreaRegistryIntegrationTest {
         @Test
         @DisplayName("save and load preserves areas")
         void saveLoad_preservesAreas() {
-            AreaDefinition area1 = createTestArea("Area 1");
-            AreaDefinition area2 = createTestArea("Area 2");
+            AreaDefinition area1 = Objects.requireNonNull(createTestArea("Area 1"));
+            AreaDefinition area2 = Objects.requireNonNull(createTestArea("Area 2"));
             registry.createArea(area1);
             registry.createArea(area2);
 
             // Save
             CompoundTag tag = new CompoundTag();
-            HolderLookup.Provider provider = mock(HolderLookup.Provider.class);
+            HolderLookup.Provider provider = Objects.requireNonNull(mock(HolderLookup.Provider.class));
             registry.save(tag, provider);
 
             // Load into new registry
             AreaRegistry loaded = AreaRegistry.load(tag, provider);
 
             assertEquals(2, loaded.getAreaCount());
-            assertTrue(loaded.getArea(area1.id()).isPresent());
-            assertTrue(loaded.getArea(area2.id()).isPresent());
-            assertEquals("Area 1", loaded.getArea(area1.id()).get().name());
-            assertEquals("Area 2", loaded.getArea(area2.id()).get().name());
+            assertTrue(loaded.getArea(Objects.requireNonNull(area1.id())).isPresent());
+            assertTrue(loaded.getArea(Objects.requireNonNull(area2.id())).isPresent());
+            assertEquals("Area 1", loaded.getArea(Objects.requireNonNull(area1.id())).get().name());
+            assertEquals("Area 2", loaded.getArea(Objects.requireNonNull(area2.id())).get().name());
         }
 
         @Test
         @DisplayName("save and load preserves editor positions")
         void saveLoad_preservesEditorPositions() {
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
-            ResourceLocation dim = ResourceLocation.withDefaultNamespace("overworld");
+            ResourceLocation dim = Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld"));
             BlockPos pos = new BlockPos(100, 64, 100);
-            registry.registerEditor(dim, pos, id);
+            registry.registerEditor(Objects.requireNonNull(dim), pos, id);
 
             // Save
             CompoundTag tag = new CompoundTag();
-            HolderLookup.Provider provider = mock(HolderLookup.Provider.class);
+            HolderLookup.Provider provider = Objects.requireNonNull(mock(HolderLookup.Provider.class));
             registry.save(tag, provider);
 
             // Load into new registry
             AreaRegistry loaded = AreaRegistry.load(tag, provider);
 
-            assertTrue(loaded.getAreaAtEditor(dim, pos).isPresent());
-            assertEquals(id, loaded.getAreaAtEditor(dim, pos).get());
+            assertTrue(loaded.getAreaAtEditor(Objects.requireNonNull(dim), pos).isPresent());
+            assertEquals(id, loaded.getAreaAtEditor(Objects.requireNonNull(dim), pos).get());
         }
 
         @Test
         @DisplayName("save and load preserves main hub")
         void saveLoad_preservesMainHub() {
-            AreaDefinition area = createTestArea("Hub Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Hub Area"));
             UUID id = registry.createArea(area);
             registry.setMainHub(id);
 
             // Save
             CompoundTag tag = new CompoundTag();
-            HolderLookup.Provider provider = mock(HolderLookup.Provider.class);
+            HolderLookup.Provider provider = Objects.requireNonNull(mock(HolderLookup.Provider.class));
             registry.save(tag, provider);
 
             // Load into new registry
@@ -814,7 +815,7 @@ class AreaRegistryIntegrationTest {
         @DisplayName("load handles empty tag gracefully")
         void load_handlesEmptyTag() {
             CompoundTag emptyTag = new CompoundTag();
-            HolderLookup.Provider provider = mock(HolderLookup.Provider.class);
+            HolderLookup.Provider provider = Objects.requireNonNull(mock(HolderLookup.Provider.class));
 
             AreaRegistry loaded = AreaRegistry.load(emptyTag, provider);
 
@@ -827,14 +828,14 @@ class AreaRegistryIntegrationTest {
         @DisplayName("load skips editor positions referencing non-existent areas")
         void load_skipsOrphanedEditorPositions() {
             // Create area and editor, save
-            AreaDefinition area = createTestArea("Test Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Test Area"));
             UUID id = registry.createArea(area);
-            ResourceLocation dim = ResourceLocation.withDefaultNamespace("overworld");
+            ResourceLocation dim = Objects.requireNonNull(ResourceLocation.withDefaultNamespace("overworld"));
             BlockPos pos = new BlockPos(100, 64, 100);
-            registry.registerEditor(dim, pos, id);
+            registry.registerEditor(Objects.requireNonNull(dim), pos, id);
 
             CompoundTag tag = new CompoundTag();
-            HolderLookup.Provider provider = mock(HolderLookup.Provider.class);
+            HolderLookup.Provider provider = Objects.requireNonNull(mock(HolderLookup.Provider.class));
             registry.save(tag, provider);
 
             // Manually corrupt the tag by removing the area but keeping editor
@@ -851,12 +852,12 @@ class AreaRegistryIntegrationTest {
         @DisplayName("load clears main hub if referenced area does not exist")
         void load_clearsOrphanedMainHub() {
             // Create area and set as hub, save
-            AreaDefinition area = createTestArea("Hub Area");
+            AreaDefinition area = Objects.requireNonNull(createTestArea("Hub Area"));
             UUID id = registry.createArea(area);
             registry.setMainHub(id);
 
             CompoundTag tag = new CompoundTag();
-            HolderLookup.Provider provider = mock(HolderLookup.Provider.class);
+            HolderLookup.Provider provider = Objects.requireNonNull(mock(HolderLookup.Provider.class));
             registry.save(tag, provider);
 
             // Manually corrupt the tag by removing the area

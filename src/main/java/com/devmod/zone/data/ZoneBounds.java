@@ -29,7 +29,8 @@ public record ZoneBounds(
         Codec.INT.fieldOf("maxY").forGetter(ZoneBounds::maxY),
         Codec.INT.fieldOf("minZ").forGetter(ZoneBounds::minZ),
         Codec.INT.fieldOf("maxZ").forGetter(ZoneBounds::maxZ)
-    ).apply(instance, ZoneBounds::new));
+    ).apply(instance, (a, b, c, d, e, f) ->
+        new ZoneBounds(a.intValue(), b.intValue(), c.intValue(), d.intValue(), e.intValue(), f.intValue())));
 
     public static final StreamCodec<FriendlyByteBuf, ZoneBounds> STREAM_CODEC = StreamCodec.of(
         (buf, bounds) -> {

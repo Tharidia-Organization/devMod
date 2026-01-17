@@ -1,5 +1,6 @@
 package com.devmod.transport.network;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -24,17 +25,17 @@ public record TransportCancelPartyPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TransportCancelPartyPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "219"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "219")));
 
     public static final StreamCodec<ByteBuf, TransportCancelPartyPayload> STREAM_CODEC =
         StreamCodec.composite(
-            UUIDUtil.STREAM_CODEC, TransportCancelPartyPayload::partyId,
+            Objects.requireNonNull(UUIDUtil.STREAM_CODEC), TransportCancelPartyPayload::partyId,
             TransportCancelPartyPayload::new
         );
 
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 }

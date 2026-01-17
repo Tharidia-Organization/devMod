@@ -1,6 +1,7 @@
 package com.devmod.zone.data;
 
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -102,15 +103,11 @@ public final class ZoneNaming {
      */
     @Nonnull
     public static String normalizeZoneId(@Nonnull String id) {
-        if (id == null) {
-            return "";
-        }
-
-        return id.toLowerCase(Locale.ROOT)
+        return Objects.requireNonNull(id.toLowerCase(Locale.ROOT)
             .trim()
             .replaceAll("[^a-z0-9_]", "_")
             .replaceAll("_+", "_")
-            .replaceAll("^_|_$", "");
+            .replaceAll("^_|_$", ""));
     }
 
     /**

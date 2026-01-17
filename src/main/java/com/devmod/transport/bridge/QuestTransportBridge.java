@@ -231,7 +231,7 @@ public final class QuestTransportBridge {
         }
 
         return ArrivalManager.INSTANCE.confirmArrival(
-            partyOpt.get(), Objects.requireNonNull(player.getUUID()), server);
+            Objects.requireNonNull(partyOpt.get()), Objects.requireNonNull(player.getUUID()), server);
     }
 
     /**

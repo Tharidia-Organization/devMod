@@ -1,5 +1,7 @@
 package com.devmod.transport.network;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import io.netty.buffer.ByteBuf;
@@ -25,20 +27,25 @@ public record TransportCountdownPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TransportCountdownPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "216"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "216")));
 
     public static final StreamCodec<ByteBuf, TransportCountdownPayload> STREAM_CODEC = StreamCodec.composite(
-        ByteBufCodecs.VAR_INT, TransportCountdownPayload::secondsRemaining,
-        ByteBufCodecs.VAR_INT, TransportCountdownPayload::totalSeconds,
-        ByteBufCodecs.VAR_INT, TransportCountdownPayload::phase,
-        ByteBufCodecs.VAR_INT, TransportCountdownPayload::colorIndex,
-        TransportCountdownPayload::new
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportCountdownPayload::secondsRemaining,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportCountdownPayload::totalSeconds,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportCountdownPayload::phase,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportCountdownPayload::colorIndex,
+        (a, b, c, d) -> new TransportCountdownPayload(
+            Objects.requireNonNull(a),
+            Objects.requireNonNull(b),
+            Objects.requireNonNull(c),
+            Objects.requireNonNull(d)
+        )
     );
 
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 
     /**

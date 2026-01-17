@@ -1,5 +1,7 @@
 package com.devmod.transport.network;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import io.netty.buffer.ByteBuf;
@@ -30,7 +32,7 @@ public record TransportStatePayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TransportStatePayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "212"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "212")));
 
     public static final StreamCodec<ByteBuf, TransportStatePayload> STREAM_CODEC = StreamCodec.of(
         (buf, payload) -> {
@@ -48,7 +50,7 @@ public record TransportStatePayload(
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
-            ByteBufCodecs.STRING_UTF8.decode(buf),
+            Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf)),
             ByteBufCodecs.VAR_INT.decode(buf)
         )
     );
@@ -56,7 +58,7 @@ public record TransportStatePayload(
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 
     /**
@@ -64,7 +66,7 @@ public record TransportStatePayload(
      */
     @Nonnull
     public TransportState getState() {
-        return TransportState.values()[Math.min(stateIndex, TransportState.values().length - 1)];
+        return Objects.requireNonNull(TransportState.values()[Math.min(stateIndex, TransportState.values().length - 1)]);
     }
 
     /**

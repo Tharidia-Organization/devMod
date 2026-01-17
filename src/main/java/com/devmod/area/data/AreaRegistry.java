@@ -3,6 +3,7 @@ package com.devmod.area.data;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -467,8 +468,8 @@ public class AreaRegistry extends SavedData {
         AreaDimensions dims = area.dimensions();
         int dy = pos.getY() - dims.floorY();
 
-        // Y bounds check
-        if (dy < 0 || dy >= dims.height()) {
+        // SEC-11 fix: Y bounds check - include ceiling layer (dy == height is valid)
+        if (dy < 0 || dy > dims.height()) {
             return false;
         }
 
@@ -477,8 +478,9 @@ public class AreaRegistry extends SavedData {
             case RECTANGULAR, CIRCULAR, HEXAGONAL, OCTAGONAL -> AreaShapeGenerator.isInside(
                 pos, Objects.requireNonNull(area.shape()), Objects.requireNonNull(center), dims);
             case CUSTOM_NBT, PATH -> {
-                // Both CUSTOM_NBT and PATH use custom floor positions
-                var floorPositions = AreaShapeGenerator.generateCustomFloor(Objects.requireNonNull(center), dims, area.customShapeNbt());
+                // SEC-02 fix: Use generateFloor which correctly dispatches to generateCustomFloor or generatePathFloor
+                var floorPositions = AreaShapeGenerator.generateFloor(
+                    Objects.requireNonNull(area.shape()), Objects.requireNonNull(center), dims, area.customShapeNbt());
                 if (floorPositions.isEmpty()) {
                     yield false;
                 }
@@ -510,11 +512,56 @@ public class AreaRegistry extends SavedData {
     }
 
     private boolean areasOverlap(@Nonnull AreaDefinition a, @Nonnull AreaDefinition b) {
-        // Simple AABB overlap check
-        BlockPos centerA = a.centerPosition();
-        BlockPos centerB = b.centerPosition();
         AreaDimensions dimsA = a.dimensions();
         AreaDimensions dimsB = b.dimensions();
+
+        // Check Y overlap first (cheapest check)
+        int minYA = dimsA.floorY();
+        int maxYA = minYA + dimsA.height();
+        int minYB = dimsB.floorY();
+        int maxYB = minYB + dimsB.height();
+        if (!(minYA <= maxYB && maxYA >= minYB)) {
+            return false; // No Y overlap, can't intersect
+        }
+
+        // SEC-07 fix: For PATH shapes, compute actual bounds from floor positions
+        // PATH corridors can extend beyond declared dimensions via waypoints
+        boolean aIsPath = a.shape() == AreaShape.PATH;
+        boolean bIsPath = b.shape() == AreaShape.PATH;
+
+        if (aIsPath || bIsPath) {
+            // For PATH shapes, do floor intersection check for accuracy
+            Set<BlockPos> floorA = AreaShapeGenerator.generateFloor(
+                Objects.requireNonNull(a.shape()),
+                Objects.requireNonNull(a.centerPosition()),
+                dimsA,
+                a.customShapeNbt()
+            );
+            Set<BlockPos> floorB = AreaShapeGenerator.generateFloor(
+                Objects.requireNonNull(b.shape()),
+                Objects.requireNonNull(b.centerPosition()),
+                dimsB,
+                b.customShapeNbt()
+            );
+
+            // SEC-09 fix: Check XZ overlap ignoring Y (Y overlap already confirmed above)
+            // Floor positions have different Y values if floorY differs, so compare only XZ
+            Set<Long> xzPositionsB = new HashSet<>();
+            for (BlockPos pos : floorB) {
+                xzPositionsB.add(((long) pos.getX() << 32) | (pos.getZ() & 0xFFFFFFFFL));
+            }
+            for (BlockPos pos : floorA) {
+                long xz = ((long) pos.getX() << 32) | (pos.getZ() & 0xFFFFFFFFL);
+                if (xzPositionsB.contains(xz)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Standard AABB overlap check for non-PATH shapes
+        BlockPos centerA = a.centerPosition();
+        BlockPos centerB = b.centerPosition();
 
         int minXA = centerA.getX() + AreaShapeGenerator.minOffset(dimsA.width());
         int maxXA = centerA.getX() + AreaShapeGenerator.maxOffset(dimsA.width());
@@ -530,14 +577,7 @@ public class AreaRegistry extends SavedData {
         boolean xOverlap = minXA <= maxXB && maxXA >= minXB;
         boolean zOverlap = minZA <= maxZB && maxZA >= minZB;
 
-        // Check Y overlap
-        int minYA = dimsA.floorY();
-        int maxYA = minYA + dimsA.height();
-        int minYB = dimsB.floorY();
-        int maxYB = minYB + dimsB.height();
-        boolean yOverlap = minYA <= maxYB && maxYA >= minYB;
-
-        return xOverlap && zOverlap && yOverlap;
+        return xOverlap && zOverlap;
     }
 
     // ========================================================================

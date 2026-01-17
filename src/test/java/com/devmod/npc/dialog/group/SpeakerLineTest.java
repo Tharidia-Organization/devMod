@@ -1,6 +1,7 @@
 package com.devmod.npc.dialog.group;
 
 import org.junit.jupiter.api.Test;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -13,7 +14,7 @@ class SpeakerLineTest {
     @Test
     void testValidCreation() {
         // Test creazione valida
-        SpeakerLine line = SpeakerLine.npc(UUID.randomUUID(), "Hello!");
+        SpeakerLine line = SpeakerLine.npc(Objects.requireNonNull(UUID.randomUUID()), "Hello!");
         assertNotNull(line);
         assertFalse(line.isPlayer());
         assertFalse(line.isNarrator());
@@ -35,7 +36,7 @@ class SpeakerLineTest {
     void testNullTextThrows() {
         NullPointerException ex = assertThrows(
             NullPointerException.class,
-            () -> new SpeakerLine(UUID.randomUUID(), null, null, null)
+            () -> new SpeakerLine(Objects.requireNonNull(UUID.randomUUID()), null, null, null)
         );
         assertEquals("text cannot be null", ex.getMessage());
     }

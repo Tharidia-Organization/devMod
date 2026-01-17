@@ -17,6 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.data.EntitySpawnConfig;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.area.data.EntitySpawnPoint;
 
 /**
@@ -74,7 +75,7 @@ public class EntitySpawnWidget extends AbstractWidget {
         // If globally disabled, show disabled message
         if (!config.globalEnabled()) {
             graphics.drawString(font,
-                Component.literal("Spawning disabled"),
+                Objects.requireNonNull(Component.literal("Spawning disabled")),
                 getX(), currentY,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED
             );
@@ -127,7 +128,7 @@ public class EntitySpawnWidget extends AbstractWidget {
         // Summary
         int totalCount = config.getTotalSpawnCount();
         graphics.drawString(font,
-            Component.literal("Total entities: " + totalCount),
+            Objects.requireNonNull(Component.literal("Total entities: " + totalCount)),
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
@@ -140,13 +141,13 @@ public class EntitySpawnWidget extends AbstractWidget {
 
         // Background
         int bgColor = isSelected ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE :
-                     (isHovered ? AreaBuilderGuiConstants.COLOR_HOVER : 0x00000000);
+                     (isHovered ? AreaBuilderGuiConstants.COLOR_HOVER : DesignTokens.AreaBuilder.TRANSPARENT);
         if (bgColor != 0) {
             graphics.fill(x, y, x + width, y + ROW_HEIGHT, bgColor);
         }
 
         // Enabled indicator
-        int indicatorColor = point.enabled() ? 0xFF44CC44 : 0xFF666666;
+        int indicatorColor = point.enabled() ? DesignTokens.AreaBuilder.INDICATOR_ENABLED : DesignTokens.AreaBuilder.INDICATOR_DISABLED;
         graphics.fill(x, y + 2, x + 4, y + ROW_HEIGHT - 2, indicatorColor);
 
         // Entity name
@@ -181,11 +182,11 @@ public class EntitySpawnWidget extends AbstractWidget {
         int removeX = x + width - BUTTON_SIZE - 4;
         boolean removeHovered = mouseX >= removeX && mouseX < removeX + BUTTON_SIZE &&
                                mouseY >= y + 6 && mouseY < y + 6 + BUTTON_SIZE;
-        int removeBgColor = removeHovered ? 0xFFCC4444 : AreaBuilderGuiConstants.COLOR_PANEL;
+        int removeBgColor = removeHovered ? DesignTokens.AreaBuilder.DANGER_BG_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
         graphics.fill(removeX, y + 6, removeX + BUTTON_SIZE, y + 6 + BUTTON_SIZE, removeBgColor);
         graphics.renderOutline(removeX, y + 6, BUTTON_SIZE, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
         graphics.drawCenteredString(font, "X", removeX + BUTTON_SIZE / 2, y + 10,
-            removeHovered ? 0xFFFFFFFF : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            removeHovered ? DesignTokens.AreaBuilder.TEXT_WHITE : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
     }
 
     private void renderToggle(GuiGraphics graphics, boolean value, int x, int y, int mouseX, int mouseY) {
@@ -285,10 +286,10 @@ public class EntitySpawnWidget extends AbstractWidget {
     private void addNewSpawnPoint() {
         // Add a zombie spawn point at area center by default
         EntitySpawnPoint newPoint = EntitySpawnPoint.create(
-            ResourceLocation.withDefaultNamespace("zombie"),
-            areaCenter
+            Objects.requireNonNull(ResourceLocation.withDefaultNamespace("zombie")),
+            Objects.requireNonNull(areaCenter)
         );
-        config = config.withSpawnPointAdded(newPoint);
+        config = config.withSpawnPointAdded(Objects.requireNonNull(newPoint));
         notifyChange();
     }
 

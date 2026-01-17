@@ -1,5 +1,7 @@
 package com.devmod.transport.network;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import io.netty.buffer.ByteBuf;
@@ -24,19 +26,23 @@ public record TransportChargeUpdatePayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TransportChargeUpdatePayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "213"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "213")));
 
     public static final StreamCodec<ByteBuf, TransportChargeUpdatePayload> STREAM_CODEC = StreamCodec.composite(
-        ByteBufCodecs.VAR_INT, TransportChargeUpdatePayload::currentCharge,
-        ByteBufCodecs.VAR_INT, TransportChargeUpdatePayload::requiredCharge,
-        ByteBufCodecs.VAR_INT, TransportChargeUpdatePayload::progressPercent,
-        TransportChargeUpdatePayload::new
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportChargeUpdatePayload::currentCharge,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportChargeUpdatePayload::requiredCharge,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportChargeUpdatePayload::progressPercent,
+        (a, b, c) -> new TransportChargeUpdatePayload(
+            Objects.requireNonNull(a),
+            Objects.requireNonNull(b),
+            Objects.requireNonNull(c)
+        )
     );
 
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 
     /**

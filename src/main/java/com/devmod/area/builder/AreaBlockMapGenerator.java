@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.area.data.AreaDefinition;
@@ -247,13 +248,22 @@ public final class AreaBlockMapGenerator {
         AreaOptions options = definition.options();
         int total = 0;
 
-        // For CUSTOM_NBT shapes, use the custom estimator
+        // SEC-03 fix: For CUSTOM_NBT and PATH shapes, compute actual floor size from NBT
         int floorEstimate;
-        if (definition.shape() == com.devmod.area.data.AreaShape.CUSTOM_NBT) {
+        com.devmod.area.data.AreaShape shape = definition.shape();
+        if (shape == com.devmod.area.data.AreaShape.CUSTOM_NBT) {
             floorEstimate = AreaShapeGenerator.estimateCustomBlockCount(definition.customShapeNbt());
+        } else if (shape == com.devmod.area.data.AreaShape.PATH) {
+            // PATH requires computing actual floor positions from waypoints
+            floorEstimate = AreaShapeGenerator.generateFloor(
+                shape,
+                Objects.requireNonNull(definition.centerPosition()),
+                Objects.requireNonNull(definition.dimensions()),
+                definition.customShapeNbt()
+            ).size();
         } else {
             floorEstimate = AreaShapeGenerator.estimateBlockCount(
-                Objects.requireNonNull(definition.shape()),
+                Objects.requireNonNull(shape),
                 Objects.requireNonNull(definition.dimensions())
             );
         }
@@ -262,8 +272,22 @@ public final class AreaBlockMapGenerator {
             total += floorEstimate;
         }
         if (options.hasWalls()) {
-            // Perimeter * height (approximate)
-            int perimeter = 2 * (definition.dimensions().width() + definition.dimensions().length());
+            // SEC-10 fix: For PATH shapes, estimate walls based on corridor length not declared dimensions
+            int perimeter;
+            if (shape == com.devmod.area.data.AreaShape.PATH) {
+                // PATH corridor perimeter ≈ 2 * (length + width) where length ≈ floor/width
+                // Use pathWidth from NBT (corridor half-width) when available.
+                CompoundTag pathNbt = definition.customShapeNbt();
+                int corridorHalfWidth = Math.max(1, definition.dimensions().width() / 2);
+                if (pathNbt != null && pathNbt.contains(AreaShapeGenerator.NBT_PATH_WIDTH)) {
+                    corridorHalfWidth = pathNbt.getInt(AreaShapeGenerator.NBT_PATH_WIDTH);
+                }
+                int corridorWidth = Math.max(1, corridorHalfWidth * 2 + 1);
+                int corridorLength = floorEstimate > 0 ? (floorEstimate / corridorWidth) : 0;
+                perimeter = 2 * (corridorLength + corridorWidth);
+            } else {
+                perimeter = 2 * (definition.dimensions().width() + definition.dimensions().length());
+            }
             total += perimeter * definition.dimensions().height();
         }
         if (options.hasCeiling()) {
@@ -283,12 +307,22 @@ public final class AreaBlockMapGenerator {
      */
     public static int estimateBiomeBlocks(@Nonnull AreaDefinition definition) {
         // For biome builds, we fill the entire volume: floor area * height
+        // SEC-05 fix: Handle PATH shapes like CUSTOM_NBT - compute actual floor size
         int floorEstimate;
-        if (definition.shape() == com.devmod.area.data.AreaShape.CUSTOM_NBT) {
+        com.devmod.area.data.AreaShape shape = definition.shape();
+        if (shape == com.devmod.area.data.AreaShape.CUSTOM_NBT) {
             floorEstimate = AreaShapeGenerator.estimateCustomBlockCount(definition.customShapeNbt());
+        } else if (shape == com.devmod.area.data.AreaShape.PATH) {
+            // PATH requires computing actual floor positions from waypoints
+            floorEstimate = AreaShapeGenerator.generateFloor(
+                shape,
+                Objects.requireNonNull(definition.centerPosition()),
+                Objects.requireNonNull(definition.dimensions()),
+                definition.customShapeNbt()
+            ).size();
         } else {
             floorEstimate = AreaShapeGenerator.estimateBlockCount(
-                Objects.requireNonNull(definition.shape()),
+                Objects.requireNonNull(shape),
                 Objects.requireNonNull(definition.dimensions())
             );
         }
@@ -346,12 +380,22 @@ public final class AreaBlockMapGenerator {
      * @return Estimated clear block count (volume)
      */
     public static int estimateClearBlocks(@Nonnull AreaDefinition definition) {
+        // SEC-06 fix: Handle PATH shapes like CUSTOM_NBT - compute actual floor size
         int floorEstimate;
-        if (definition.shape() == com.devmod.area.data.AreaShape.CUSTOM_NBT) {
+        com.devmod.area.data.AreaShape shape = definition.shape();
+        if (shape == com.devmod.area.data.AreaShape.CUSTOM_NBT) {
             floorEstimate = AreaShapeGenerator.estimateCustomBlockCount(definition.customShapeNbt());
+        } else if (shape == com.devmod.area.data.AreaShape.PATH) {
+            // PATH requires computing actual floor positions from waypoints
+            floorEstimate = AreaShapeGenerator.generateFloor(
+                shape,
+                Objects.requireNonNull(definition.centerPosition()),
+                Objects.requireNonNull(definition.dimensions()),
+                definition.customShapeNbt()
+            ).size();
         } else {
             floorEstimate = AreaShapeGenerator.estimateBlockCount(
-                Objects.requireNonNull(definition.shape()),
+                Objects.requireNonNull(shape),
                 Objects.requireNonNull(definition.dimensions())
             );
         }

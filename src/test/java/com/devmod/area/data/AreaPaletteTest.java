@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -327,7 +328,7 @@ class AreaPaletteTest {
             materials.put("wall", "minecraft:polished_blackstone");
             AreaPalette original = new AreaPalette(materials, "nether", true);
 
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
             AreaPalette.STREAM_CODEC.encode(buf, original);
 
             buf.readerIndex(0);
@@ -342,9 +343,9 @@ class AreaPaletteTest {
         @Test
         @DisplayName("stream codec handles empty palette")
         void streamCodec_emptyPalette() {
-            AreaPalette original = AreaPalette.empty("empty");
+            AreaPalette original = Objects.requireNonNull(AreaPalette.empty("empty"));
 
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
             AreaPalette.STREAM_CODEC.encode(buf, original);
 
             buf.readerIndex(0);

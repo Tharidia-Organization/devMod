@@ -62,6 +62,8 @@ public final class AreaEventHandler {
             UUID playerId = player.getUUID();
             AreaNetworkHandler.clearPlayerBuildCooldown(playerId);
             AreaBuildTaskManager.INSTANCE.cancelPlayerBuilds(playerId);
+            // MED-LOGOUT fix: Cancel any active snapshot capture/restore tasks for this player
+            com.devmod.area.snapshot.AreaSnapshotManager.INSTANCE.cancelPlayerTasks(playerId);
             DevMod.LOGGER.debug("[Area] Cleaned up build state for player: {}", playerId);
         }
     }

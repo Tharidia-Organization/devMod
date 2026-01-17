@@ -3,6 +3,7 @@ package com.devmod.transport.block.entity;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -106,7 +107,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
     @Nonnull
     public UUID getNodeId() {
-        return nodeId;
+        return Objects.requireNonNull(nodeId);
     }
 
     @Nullable
@@ -121,7 +122,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
     @Nonnull
     public TransportMode getMode() {
-        return mode;
+        return Objects.requireNonNull(mode);
     }
 
     public void setMode(@Nonnull TransportMode mode) {
@@ -132,7 +133,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
     @Nonnull
     public TransportColor getColor() {
-        return color;
+        return Objects.requireNonNull(color);
     }
 
     public void setColor(@Nonnull TransportColor color) {
@@ -144,7 +145,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
     @Nonnull
     public String getNetworkName() {
-        return networkName;
+        return Objects.requireNonNull(networkName);
     }
 
     public void setNetworkName(@Nonnull String networkName) {
@@ -155,7 +156,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
     @Nonnull
     public String getDisplayName() {
-        return displayName;
+        return Objects.requireNonNull(displayName);
     }
 
     public void setDisplayName(@Nonnull String displayName) {
@@ -166,7 +167,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
     @Nonnull
     public TransportData.NetworkSelectionMode getSelectionMode() {
-        return selectionMode;
+        return Objects.requireNonNull(selectionMode);
     }
 
     public void setSelectionMode(@Nonnull TransportData.NetworkSelectionMode selectionMode) {
@@ -196,7 +197,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
     @Nonnull
     public TransportState getCurrentState() {
-        return currentState;
+        return Objects.requireNonNull(currentState);
     }
 
     public void setCurrentState(@Nonnull TransportState state) {
@@ -205,7 +206,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
     @Nonnull
     public Set<TransportEnhancement> getActiveModules() {
-        return EnumSet.copyOf(activeModules);
+        return Objects.requireNonNull(EnumSet.copyOf(activeModules));
     }
 
     public int getFrameSegmentCount() {
@@ -237,8 +238,8 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
         // Scan horizontal directions for modules
         for (Direction dir : Direction.Plane.HORIZONTAL) {
-            BlockPos adjacentPos = worldPosition.relative(dir);
-            BlockState adjacentState = level.getBlockState(adjacentPos);
+            BlockPos adjacentPos = Objects.requireNonNull(worldPosition.relative(Objects.requireNonNull(dir)));
+            BlockState adjacentState = Objects.requireNonNull(level).getBlockState(adjacentPos);
             Block adjacentBlock = adjacentState.getBlock();
 
             if (adjacentBlock instanceof TransportModuleBlock moduleBlock) {
@@ -251,8 +252,8 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
         // Scan above for frame segments (up to 10 blocks high)
         for (int y = 1; y <= 10; y++) {
-            BlockPos abovePos = worldPosition.above(y);
-            BlockState aboveState = level.getBlockState(abovePos);
+            BlockPos abovePos = Objects.requireNonNull(worldPosition.above(y));
+            BlockState aboveState = Objects.requireNonNull(level).getBlockState(abovePos);
 
             if (aboveState.getBlock() instanceof TransportFrameBlock) {
                 frameSegmentCount++;
@@ -294,18 +295,19 @@ public class TransportCoreBlockEntity extends BlockEntity {
      * Updates the block state to reflect current configuration.
      */
     private void updateBlockState() {
-        if (level == null || level.isClientSide) {
+        var currentLevel = level;
+        if (currentLevel == null || currentLevel.isClientSide) {
             return;
         }
 
         BlockState currentBlockState = getBlockState();
         BlockState newState = currentBlockState
-            .setValue(TransportCoreBlock.COLOR, color)
-            .setValue(TransportCoreBlock.ACTIVE, hasValidDestination())
-            .setValue(TransportCoreBlock.FRAME_LEVEL, getFrameLevel());
+            .setValue(Objects.requireNonNull(TransportCoreBlock.COLOR), Objects.requireNonNull(color))
+            .setValue(Objects.requireNonNull(TransportCoreBlock.ACTIVE), hasValidDestination())
+            .setValue(Objects.requireNonNull(TransportCoreBlock.FRAME_LEVEL), getFrameLevel());
 
         if (!currentBlockState.equals(newState)) {
-            level.setBlock(worldPosition, newState, Block.UPDATE_ALL);
+            currentLevel.setBlock(Objects.requireNonNull(worldPosition), Objects.requireNonNull(newState), Block.UPDATE_ALL);
         }
     }
 
@@ -339,12 +341,12 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
         // Build TransportData from current state
         TransportData data = TransportData.createTelepad(
-            nodeId,
-            color,
-            serverLevel.dimension().location(),
-            worldPosition,
-            networkName,
-            selectionMode
+            Objects.requireNonNull(nodeId),
+            Objects.requireNonNull(color),
+            Objects.requireNonNull(serverLevel.dimension().location()),
+            Objects.requireNonNull(worldPosition),
+            Objects.requireNonNull(networkName),
+            Objects.requireNonNull(selectionMode)
         );
 
         // Apply mode-specific configuration
@@ -376,7 +378,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
             data = data.withCreatorId(creatorId);
         }
 
-        registry.register(data);
+        registry.register(Objects.requireNonNull(data));
         registryDirty = false;
     }
 
@@ -386,7 +388,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
     public void removeFromRegistry() {
         if (level instanceof ServerLevel serverLevel) {
             TransportRegistry registry = TransportRegistry.get(serverLevel);
-            registry.unregister(nodeId);
+            registry.unregister(Objects.requireNonNull(nodeId));
         }
     }
 
@@ -397,7 +399,8 @@ public class TransportCoreBlockEntity extends BlockEntity {
      * Delegates to TransportExecutor for charging management.
      */
     public void onPlayerStanding(ServerPlayer player) {
-        if (level == null || level.isClientSide) {
+        var currentLevel = level;
+        if (currentLevel == null || currentLevel.isClientSide) {
             return;
         }
 
@@ -405,28 +408,28 @@ public class TransportCoreBlockEntity extends BlockEntity {
         UUID playerId = player.getUUID();
         if (recentArrivals.containsKey(playerId)) {
             long arrivedAt = recentArrivals.get(playerId);
-            long currentTime = level.getGameTime();
+            long currentTime = currentLevel.getGameTime();
             if (currentTime - arrivedAt < cooldownTime) {
                 return;
             }
         }
 
         // Get transport data
-        if (!(level instanceof ServerLevel serverLevel)) {
+        if (!(currentLevel instanceof ServerLevel serverLevel)) {
             return;
         }
 
         TransportRegistry registry = TransportRegistry.get(serverLevel);
-        Optional<TransportData> nodeData = registry.get(nodeId);
+        Optional<TransportData> nodeData = registry.get(Objects.requireNonNull(nodeId));
 
         if (nodeData.isEmpty()) {
             // Not registered yet, update registry
             updateRegistry();
-            nodeData = registry.get(nodeId);
+            nodeData = registry.get(Objects.requireNonNull(nodeId));
         }
 
         if (nodeData.isPresent()) {
-            TransportExecutor.INSTANCE.startCharging(player, nodeData.get());
+            TransportExecutor.INSTANCE.startCharging(player, Objects.requireNonNull(nodeData.get()));
         }
     }
 
@@ -446,19 +449,19 @@ public class TransportCoreBlockEntity extends BlockEntity {
      */
     public void openConfigGui(ServerPlayer player) {
         TransportConfigOpenPayload payload = new TransportConfigOpenPayload(
-            worldPosition,
+            Objects.requireNonNull(worldPosition),
             TransportNodeType.TELEPAD.ordinal(),
-            mode.ordinal(),
-            color.getIndex(),
-            networkName,
-            displayName,
+            Objects.requireNonNull(mode).ordinal(),
+            Objects.requireNonNull(color).getIndex(),
+            Objects.requireNonNull(networkName),
+            Objects.requireNonNull(displayName),
             chargeTime,
             cooldownTime,
             hasLinkedNode(),
             frameSegmentCount
         );
 
-        PacketDistributor.sendToPlayer(player, payload);
+        PacketDistributor.sendToPlayer(Objects.requireNonNull(player), payload);
     }
 
     // === Tick ===
@@ -467,11 +470,12 @@ public class TransportCoreBlockEntity extends BlockEntity {
      * Server tick - handles state updates and cleanup.
      */
     public void tick() {
-        if (level == null || level.isClientSide) {
+        var currentLevel = level;
+        if (currentLevel == null || currentLevel.isClientSide) {
             return;
         }
 
-        long currentTime = level.getGameTime();
+        long currentTime = currentLevel.getGameTime();
 
         // Clean up old arrivals every second
         if (currentTime % 20L == 0L) {
@@ -499,17 +503,17 @@ public class TransportCoreBlockEntity extends BlockEntity {
         super.saveAdditional(tag, registries);
 
         // Identity
-        tag.putUUID("NodeId", nodeId);
+        tag.putUUID("NodeId", Objects.requireNonNull(nodeId));
         if (creatorId != null) {
             tag.putUUID("CreatorId", creatorId);
         }
 
         // Configuration
-        tag.putInt("Mode", mode.ordinal());
-        tag.putInt("Color", color.getIndex());
-        tag.putString("NetworkName", networkName);
-        tag.putString("DisplayName", displayName);
-        tag.putInt("SelectionMode", selectionMode.ordinal());
+        tag.putInt("Mode", Objects.requireNonNull(mode).ordinal());
+        tag.putInt("Color", Objects.requireNonNull(color).getIndex());
+        tag.putString("NetworkName", Objects.requireNonNull(networkName));
+        tag.putString("DisplayName", Objects.requireNonNull(displayName));
+        tag.putInt("SelectionMode", Objects.requireNonNull(selectionMode).ordinal());
 
         // Linked
         if (linkedNodeId != null) {
@@ -523,7 +527,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
         // Modules
         ListTag modulesList = new ListTag();
         for (TransportEnhancement enhancement : activeModules) {
-            modulesList.add(StringTag.valueOf(enhancement.getSerializedName()));
+            modulesList.add(StringTag.valueOf(Objects.requireNonNull(enhancement).getSerializedName()));
         }
         tag.put("ActiveModules", modulesList);
 
@@ -531,7 +535,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
         tag.putInt("FrameSegmentCount", frameSegmentCount);
 
         // State
-        tag.putInt("CurrentState", currentState.ordinal());
+        tag.putInt("CurrentState", Objects.requireNonNull(currentState).ordinal());
     }
 
     @Override
@@ -543,11 +547,11 @@ public class TransportCoreBlockEntity extends BlockEntity {
         creatorId = tag.hasUUID("CreatorId") ? tag.getUUID("CreatorId") : null;
 
         // Configuration
-        mode = TransportMode.byIndex(tag.getInt("Mode"));
-        color = TransportColor.byIndex(tag.getInt("Color"));
-        networkName = tag.getString("NetworkName");
-        displayName = tag.getString("DisplayName");
-        selectionMode = TransportData.NetworkSelectionMode.byIndex(tag.getInt("SelectionMode"));
+        mode = Objects.requireNonNull(TransportMode.byIndex(tag.getInt("Mode")));
+        color = Objects.requireNonNull(TransportColor.byIndex(tag.getInt("Color")));
+        networkName = Objects.requireNonNull(tag.getString("NetworkName"));
+        displayName = Objects.requireNonNull(tag.getString("DisplayName"));
+        selectionMode = Objects.requireNonNull(TransportData.NetworkSelectionMode.byIndex(tag.getInt("SelectionMode")));
 
         // Linked
         linkedNodeId = tag.hasUUID("LinkedNodeId") ? tag.getUUID("LinkedNodeId") : null;
@@ -573,9 +577,10 @@ public class TransportCoreBlockEntity extends BlockEntity {
         frameSegmentCount = tag.getInt("FrameSegmentCount");
 
         // State
+        TransportState[] states = TransportState.values();
         int stateIndex = tag.getInt("CurrentState");
-        if (stateIndex >= 0 && stateIndex < TransportState.values().length) {
-            currentState = TransportState.values()[stateIndex];
+        if (stateIndex >= 0 && stateIndex < states.length) {
+            currentState = Objects.requireNonNull(states[stateIndex]);
         }
     }
 
@@ -583,11 +588,11 @@ public class TransportCoreBlockEntity extends BlockEntity {
     @Nonnull
     public CompoundTag getUpdateTag(@Nonnull HolderLookup.Provider registries) {
         CompoundTag tag = super.getUpdateTag(registries);
-        tag.putInt("Color", color.getIndex());
-        tag.putString("NetworkName", networkName);
-        tag.putString("DisplayName", displayName);
+        tag.putInt("Color", Objects.requireNonNull(color).getIndex());
+        tag.putString("NetworkName", Objects.requireNonNull(networkName));
+        tag.putString("DisplayName", Objects.requireNonNull(displayName));
         tag.putInt("FrameSegmentCount", frameSegmentCount);
-        tag.putInt("CurrentState", currentState.ordinal());
+        tag.putInt("CurrentState", Objects.requireNonNull(currentState).ordinal());
         return tag;
     }
 
@@ -619,8 +624,10 @@ public class TransportCoreBlockEntity extends BlockEntity {
         updateRegistry();
         setChanged();
 
-        if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        var currentLevel = level;
+        if (currentLevel != null && !currentLevel.isClientSide) {
+            BlockState state = Objects.requireNonNull(getBlockState());
+            currentLevel.sendBlockUpdated(Objects.requireNonNull(worldPosition), state, state, Block.UPDATE_ALL);
         }
     }
 }

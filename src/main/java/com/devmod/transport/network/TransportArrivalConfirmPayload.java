@@ -1,5 +1,6 @@
 package com.devmod.transport.network;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -24,17 +25,17 @@ public record TransportArrivalConfirmPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TransportArrivalConfirmPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "218"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "218")));
 
     public static final StreamCodec<ByteBuf, TransportArrivalConfirmPayload> STREAM_CODEC =
         StreamCodec.composite(
-            UUIDUtil.STREAM_CODEC, TransportArrivalConfirmPayload::sessionId,
+            Objects.requireNonNull(UUIDUtil.STREAM_CODEC), TransportArrivalConfirmPayload::sessionId,
             TransportArrivalConfirmPayload::new
         );
 
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 }

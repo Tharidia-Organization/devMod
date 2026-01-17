@@ -1,5 +1,6 @@
 package com.devmod.zone.block.entity;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -87,8 +88,9 @@ public class ZoneMarkerBlockEntity extends BlockEntity {
         invalidateCache();
         updateCachedColor();
         setChanged();
-        if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        Level localLevel = this.level;
+        if (localLevel != null && !localLevel.isClientSide) {
+            localLevel.sendBlockUpdated(Objects.requireNonNull(worldPosition), Objects.requireNonNull(getBlockState()), Objects.requireNonNull(getBlockState()), 3);
         }
     }
 
@@ -185,9 +187,9 @@ public class ZoneMarkerBlockEntity extends BlockEntity {
             cachedColor = ZonePresets.COLOR_HUB;
             invalidateCache();
             setChanged();
-            var localLevel = this.level;
+            Level localLevel = this.level;
             if (localLevel != null && !localLevel.isClientSide) {
-                localLevel.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+                localLevel.sendBlockUpdated(Objects.requireNonNull(worldPosition), Objects.requireNonNull(getBlockState()), Objects.requireNonNull(getBlockState()), 3);
             }
             return false;
         }
@@ -220,14 +222,15 @@ public class ZoneMarkerBlockEntity extends BlockEntity {
      * Updates the cached color from the linked zone (server-side).
      */
     private void updateCachedColor() {
-        var localLevel = this.level;
-        if (localLevel == null || localLevel.isClientSide || zoneId == null) {
+        Level localLevel = this.level;
+        UUID localZoneId = this.zoneId;
+        if (localLevel == null || localLevel.isClientSide || localZoneId == null) {
             return;
         }
 
         ServerLevel serverLevel = (ServerLevel) localLevel;
         ZoneRegistry registry = ZoneRegistry.get(serverLevel.getServer());
-        registry.getZone(zoneId).ifPresent(zone -> cachedColor = zone.color());
+        registry.getZone(Objects.requireNonNull(localZoneId)).ifPresent(zone -> cachedColor = zone.color());
     }
 
     // ========================================================================

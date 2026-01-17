@@ -3,6 +3,7 @@ package com.devmod.area.network;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -44,7 +45,7 @@ class AreaPayloadEncodingTest {
             UUID areaId = UUID.randomUUID();
             BuildAreaPayload original = new BuildAreaPayload(areaId, true, true);
 
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
             BuildAreaPayload.STREAM_CODEC.encode(buf, original);
 
             buf.readerIndex(0);
@@ -120,7 +121,7 @@ class AreaPayloadEncodingTest {
             BuildStatusPayload original = new BuildStatusPayload(
                 areaId, BuildStatusPayload.Status.IN_PROGRESS, 75);
 
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
             BuildStatusPayload.STREAM_CODEC.encode(buf, original);
 
             buf.readerIndex(0);
@@ -240,7 +241,7 @@ class AreaPayloadEncodingTest {
         @DisplayName("all statuses round-trip correctly")
         void allStatuses_roundTrip() {
             UUID areaId = UUID.randomUUID();
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
 
             for (BuildStatusPayload.Status status : BuildStatusPayload.Status.values()) {
                 BuildStatusPayload original = new BuildStatusPayload(areaId, status, 50);
@@ -280,7 +281,7 @@ class AreaPayloadEncodingTest {
                 true, "minecraft:forest", "NATURAL", 12345L
             );
 
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
             AreaPreviewPayload.STREAM_CODEC.encode(buf, original);
 
             buf.readerIndex(0);
@@ -365,7 +366,7 @@ class AreaPayloadEncodingTest {
             AreaPreviewPayload.PreviewBlock original = new AreaPreviewPayload.PreviewBlock(
                 new BlockPos(10, 20, 30), AreaPreviewPayload.PreviewBlockType.WALL);
 
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
             AreaPreviewPayload.PreviewBlock.STREAM_CODEC.encode(buf, original);
 
             buf.readerIndex(0);
@@ -379,7 +380,7 @@ class AreaPayloadEncodingTest {
         @Test
         @DisplayName("all PreviewBlockTypes round-trip")
         void allPreviewBlockTypes_roundTrip() {
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
             BlockPos pos = new BlockPos(0, 0, 0);
 
             for (AreaPreviewPayload.PreviewBlockType type : AreaPreviewPayload.PreviewBlockType.values()) {
@@ -413,7 +414,7 @@ class AreaPayloadEncodingTest {
                 BlockPos.ZERO, 10, 10, 5, "RECTANGULAR", List.of(),
                 false, "", "NATURAL", 0L);
 
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
             AreaPreviewPayload.STREAM_CODEC.encode(buf, original);
 
             buf.readerIndex(0);

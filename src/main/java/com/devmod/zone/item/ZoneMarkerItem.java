@@ -1,6 +1,7 @@
 package com.devmod.zone.item;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -50,11 +51,11 @@ public class ZoneMarkerItem extends Item {
         // Require OP level 2
         if (!player.hasPermissions(2)) {
             player.displayClientMessage(
-                Component.translatable("zone.marker.no_permission"), true);
+                Objects.requireNonNull(Component.translatable("zone.marker.no_permission")), true);
             return InteractionResult.FAIL;
         }
 
-        BlockPos placePos = context.getClickedPos().relative(context.getClickedFace());
+        BlockPos placePos = Objects.requireNonNull(context.getClickedPos().relative(Objects.requireNonNull(context.getClickedFace())));
 
         // Check if position is valid for placement
         if (!level.getBlockState(placePos).canBeReplaced()) {
@@ -62,13 +63,13 @@ public class ZoneMarkerItem extends Item {
         }
 
         // Place the marker block
-        level.setBlock(placePos, ZoneBlocks.ZONE_MARKER.get().defaultBlockState(), 3);
+        level.setBlock(placePos, Objects.requireNonNull(Objects.requireNonNull(ZoneBlocks.ZONE_MARKER.get()).defaultBlockState()), 3);
 
         // Initialize block entity with component data if present
         BlockEntity be = level.getBlockEntity(placePos);
         if (be instanceof ZoneMarkerBlockEntity markerBE) {
             ItemStack stack = context.getItemInHand();
-            CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+            CustomData customData = stack.get(Objects.requireNonNull(DataComponents.CUSTOM_DATA));
             if (customData != null) {
                 CompoundTag tag = customData.copyTag();
                 if (tag.hasUUID(TAG_ZONE_ID)) {
@@ -79,12 +80,13 @@ public class ZoneMarkerItem extends Item {
         }
 
         // Play placement sound
-        level.playSound(null, placePos,
-            ZoneBlocks.ZONE_MARKER.get().defaultBlockState().getSoundType(level, placePos, null).getPlaceSound(),
-            player.getSoundSource(), 1.0f, 1.0f);
+        level.playSound(null, Objects.requireNonNull(placePos),
+            Objects.requireNonNull(Objects.requireNonNull(Objects.requireNonNull(ZoneBlocks.ZONE_MARKER.get()).defaultBlockState())
+                .getSoundType(level, Objects.requireNonNull(placePos), player).getPlaceSound()),
+            Objects.requireNonNull(player.getSoundSource()), 1.0f, 1.0f);
 
         player.displayClientMessage(
-            Component.translatable("zone.marker.placed"), true);
+            Objects.requireNonNull(Component.translatable("zone.marker.placed")), true);
 
         // Consume item in survival
         if (!player.getAbilities().instabuild) {
@@ -102,7 +104,7 @@ public class ZoneMarkerItem extends Item {
         tooltipComponents.add(Component.translatable("zone.marker.tooltip"));
 
         // Show linked zone if configured
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        CustomData customData = stack.get(Objects.requireNonNull(DataComponents.CUSTOM_DATA));
         if (customData != null) {
             CompoundTag tag = customData.copyTag();
             if (tag.contains(TAG_ZONE_NAME)) {
@@ -122,11 +124,11 @@ public class ZoneMarkerItem extends Item {
      */
     @Nonnull
     public static ItemStack createForZone(@Nonnull UUID zoneId, @Nonnull String zoneName) {
-        ItemStack stack = new ItemStack(com.devmod.zone.ZoneItems.ZONE_MARKER.get());
+        ItemStack stack = new ItemStack(Objects.requireNonNull(com.devmod.zone.ZoneItems.ZONE_MARKER.get()));
         CompoundTag tag = new CompoundTag();
         tag.putUUID(TAG_ZONE_ID, zoneId);
         tag.putString(TAG_ZONE_NAME, zoneName);
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        stack.set(Objects.requireNonNull(DataComponents.CUSTOM_DATA), CustomData.of(tag));
         return stack;
     }
 }

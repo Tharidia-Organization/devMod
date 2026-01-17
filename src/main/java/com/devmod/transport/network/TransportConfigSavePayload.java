@@ -1,5 +1,7 @@
 package com.devmod.transport.network;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import io.netty.buffer.ByteBuf;
@@ -37,22 +39,29 @@ public record TransportConfigSavePayload(
     public static final int MAX_DISPLAY_NAME_LENGTH = 48;
 
     public static final Type<TransportConfigSavePayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "211"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "211")));
 
     public static final StreamCodec<ByteBuf, TransportConfigSavePayload> STREAM_CODEC = StreamCodec.composite(
-        BlockPos.STREAM_CODEC, TransportConfigSavePayload::nodePos,
-        ByteBufCodecs.VAR_INT, TransportConfigSavePayload::modeIndex,
-        ByteBufCodecs.VAR_INT, TransportConfigSavePayload::colorIndex,
-        ByteBufCodecs.STRING_UTF8, TransportConfigSavePayload::networkName,
-        ByteBufCodecs.VAR_INT, TransportConfigSavePayload::selectionModeIndex,
-        ByteBufCodecs.STRING_UTF8, TransportConfigSavePayload::displayName,
-        TransportConfigSavePayload::new
+        Objects.requireNonNull(BlockPos.STREAM_CODEC), TransportConfigSavePayload::nodePos,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportConfigSavePayload::modeIndex,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportConfigSavePayload::colorIndex,
+        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8), TransportConfigSavePayload::networkName,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportConfigSavePayload::selectionModeIndex,
+        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8), TransportConfigSavePayload::displayName,
+        (pos, mode, color, network, selection, display) -> new TransportConfigSavePayload(
+            Objects.requireNonNull(pos),
+            Objects.requireNonNull(mode),
+            Objects.requireNonNull(color),
+            Objects.requireNonNull(network),
+            Objects.requireNonNull(selection),
+            Objects.requireNonNull(display)
+        )
     );
 
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 
     /**
@@ -76,7 +85,7 @@ public record TransportConfigSavePayload(
      */
     @Nonnull
     public NetworkSelectionMode getSelectionMode() {
-        return NetworkSelectionMode.byIndex(selectionModeIndex);
+        return Objects.requireNonNull(NetworkSelectionMode.byIndex(selectionModeIndex));
     }
 
     /**
@@ -87,7 +96,7 @@ public record TransportConfigSavePayload(
     @Nonnull
     public String getSanitizedNetworkName() {
         if (networkName.length() > MAX_NETWORK_NAME_LENGTH) {
-            return networkName.substring(0, MAX_NETWORK_NAME_LENGTH);
+            return Objects.requireNonNull(networkName.substring(0, MAX_NETWORK_NAME_LENGTH));
         }
         return networkName;
     }
@@ -100,7 +109,7 @@ public record TransportConfigSavePayload(
     @Nonnull
     public String getSanitizedDisplayName() {
         if (displayName.length() > MAX_DISPLAY_NAME_LENGTH) {
-            return displayName.substring(0, MAX_DISPLAY_NAME_LENGTH);
+            return Objects.requireNonNull(displayName.substring(0, MAX_DISPLAY_NAME_LENGTH));
         }
         return displayName;
     }

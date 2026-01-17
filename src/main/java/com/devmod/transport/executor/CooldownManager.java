@@ -2,6 +2,7 @@ package com.devmod.transport.executor;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -128,7 +129,7 @@ public class CooldownManager {
      */
     public boolean hasAnyCooldown(@Nonnull UUID entityId, @Nullable UUID nodeId, long currentTick) {
         for (CooldownType type : CooldownType.values()) {
-            if (isOnCooldown(entityId, nodeId, type, currentTick)) {
+            if (isOnCooldown(entityId, nodeId, Objects.requireNonNull(type), currentTick)) {
                 return true;
             }
         }
@@ -152,7 +153,7 @@ public class CooldownManager {
         @Nonnull CooldownType type
     ) {
         String key = buildKey(entityId, nodeId, type);
-        return Optional.ofNullable(cooldowns.get(key));
+        return Objects.requireNonNull(Optional.ofNullable(cooldowns.get(key)));
     }
 
     /**

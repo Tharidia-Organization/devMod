@@ -4008,6 +4008,24 @@ public final class DesignTokens {
         /** Warning/paused status color (orange) */
         public static final int STATUS_WARNING = 0xFFFFAA00;
 
+        // --- Delete Button Colors ---
+        /** Delete button normal (dark red) */
+        public static final int DELETE_BTN = 0xFFAA3333;
+        /** Delete button hover (bright red) */
+        public static final int DELETE_BTN_HOVER = ERROR_TEXT;
+
+        // --- Indicator Colors ---
+        /** Enabled/success indicator (green) */
+        public static final int INDICATOR_ENABLED = 0xFF44CC44;
+        /** Disabled indicator (gray) */
+        public static final int INDICATOR_DISABLED = TEXT_DISABLED;
+
+        // --- Utility Colors ---
+        /** Fully transparent */
+        public static final int TRANSPARENT = 0x00000000;
+        /** Pure white text */
+        public static final int TEXT_WHITE = 0xFFFFFFFF;
+
         // --- Overlay Colors ---
         /** Semi-transparent dark overlay for saving/loading states */
         public static final int OVERLAY_DARK = 0xA0000000;

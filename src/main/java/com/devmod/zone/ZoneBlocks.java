@@ -1,5 +1,7 @@
 package com.devmod.zone;
 
+import java.util.Objects;
+
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -23,7 +25,7 @@ public final class ZoneBlocks {
         DevMod.BLOCKS.register("zone_marker",
             () -> new ZoneMarkerBlock(BlockBehaviour.Properties.of()
                 .strength(2.0F, 6.0F)
-                .sound(SoundType.AMETHYST)
+                .sound(Objects.requireNonNull(SoundType.AMETHYST))
                 .lightLevel(state -> 5)
                 .noOcclusion())
         );

@@ -1,6 +1,7 @@
 package com.devmod.transport.executor;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,9 +78,9 @@ public final class RecoveryManager {
         long timestamp = level.getGameTime();
 
         RecoveryPoint point = new RecoveryPoint(
-            player.getUUID(),
-            dimension,
-            pos,
+            Objects.requireNonNull(player.getUUID()),
+            Objects.requireNonNull(dimension),
+            Objects.requireNonNull(pos),
             player.getYRot(),
             player.getXRot(),
             timestamp
@@ -97,7 +98,7 @@ public final class RecoveryManager {
      */
     @Nonnull
     public Optional<RecoveryPoint> getRecoveryPoint(@Nonnull UUID playerId) {
-        return Optional.ofNullable(playerRecoveryPoints.get(playerId));
+        return Objects.requireNonNull(Optional.ofNullable(playerRecoveryPoints.get(playerId)));
     }
 
     /**
@@ -119,7 +120,7 @@ public final class RecoveryManager {
         }
 
         ServerLevel destLevel = server.getLevel(
-            ResourceKey.create(Registries.DIMENSION, point.dimension())
+            Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(Registries.DIMENSION), point.dimension()))
         );
         if (destLevel == null) {
             LOGGER.error("[RecoveryManager] Cannot restore to dimension {}", point.dimension());
@@ -192,7 +193,7 @@ public final class RecoveryManager {
 
             AreaSnapshot snapshot = new AreaSnapshot(
                 snapshotId,
-                level.dimension().location(),
+                Objects.requireNonNull(level.dimension().location()),
                 basePos,
                 size,
                 template,
@@ -238,7 +239,7 @@ public final class RecoveryManager {
         }
 
         ServerLevel level = server.getLevel(
-            ResourceKey.create(Registries.DIMENSION, snapshot.dimension())
+            Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(Registries.DIMENSION), snapshot.dimension()))
         );
         if (level == null) {
             LOGGER.error("[RecoveryManager] Cannot restore to dimension {}", snapshot.dimension());
@@ -257,7 +258,7 @@ public final class RecoveryManager {
                 snapshot.basePos(),
                 snapshot.basePos(),
                 settings,
-                level.getRandom(),
+                Objects.requireNonNull(level.getRandom()),
                 PLACEMENT_FLAGS
             );
 
@@ -293,7 +294,7 @@ public final class RecoveryManager {
      */
     @Nonnull
     public Optional<AreaSnapshot> getSnapshot(@Nonnull UUID snapshotId) {
-        return Optional.ofNullable(areaSnapshots.get(snapshotId));
+        return Objects.requireNonNull(Optional.ofNullable(areaSnapshots.get(snapshotId)));
     }
 
     // =========================================================================

@@ -1,5 +1,6 @@
 package com.devmod.zone.block;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nonnull;
@@ -48,7 +49,7 @@ public class ZoneMarkerBlock extends BaseEntityBlock {
     @Override
     @Nonnull
     protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
+        return Objects.requireNonNull(CODEC);
     }
 
     @Override
@@ -70,7 +71,7 @@ public class ZoneMarkerBlock extends BaseEntityBlock {
         if (level.isClientSide) {
             return null;
         }
-        return createTickerHelper(type, ZoneBlockEntities.ZONE_MARKER.get(),
+        return createTickerHelper(type, Objects.requireNonNull(ZoneBlockEntities.ZONE_MARKER.get()),
             ZoneMarkerBlockEntity::serverTick);
     }
 
@@ -90,7 +91,7 @@ public class ZoneMarkerBlock extends BaseEntityBlock {
         // Require OP level 2 to edit zones
         if (!serverPlayer.hasPermissions(2)) {
             serverPlayer.displayClientMessage(
-                Component.translatable("zone.marker.no_permission"), true);
+                Objects.requireNonNull(Component.translatable("zone.marker.no_permission")), true);
             return InteractionResult.FAIL;
         }
 
@@ -111,7 +112,7 @@ public class ZoneMarkerBlock extends BaseEntityBlock {
             boolean canDelete = linkedZone.isPresent();
             ZoneNetworkHandler.openZoneEditor(serverPlayer, linkedZone.orElse(null), pos, canDelete);
             serverPlayer.displayClientMessage(
-                Component.translatable("zone.marker.opening"), true);
+                Objects.requireNonNull(Component.translatable("zone.marker.opening")), true);
         }
 
         return InteractionResult.CONSUME;
@@ -137,7 +138,7 @@ public class ZoneMarkerBlock extends BaseEntityBlock {
     @Override
     protected void onRemove(@Nonnull BlockState state, @Nonnull Level level,
             @Nonnull BlockPos pos, @Nonnull BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock())) {
+        if (!state.is(Objects.requireNonNull(newState.getBlock()))) {
             if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
                 ZoneRegistry registry = ZoneRegistry.get(serverLevel.getServer());
                 registry.unregisterMarker(pos);

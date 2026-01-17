@@ -1,5 +1,6 @@
 package com.devmod.transport.network;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -25,18 +26,18 @@ public record TransportWaypointSelectPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TransportWaypointSelectPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "214"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "214")));
 
     public static final StreamCodec<ByteBuf, TransportWaypointSelectPayload> STREAM_CODEC =
         StreamCodec.composite(
-            UUIDUtil.STREAM_CODEC, TransportWaypointSelectPayload::sourceNodeId,
-            UUIDUtil.STREAM_CODEC, TransportWaypointSelectPayload::destinationNodeId,
+            Objects.requireNonNull(UUIDUtil.STREAM_CODEC), TransportWaypointSelectPayload::sourceNodeId,
+            Objects.requireNonNull(UUIDUtil.STREAM_CODEC), TransportWaypointSelectPayload::destinationNodeId,
             TransportWaypointSelectPayload::new
         );
 
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 }

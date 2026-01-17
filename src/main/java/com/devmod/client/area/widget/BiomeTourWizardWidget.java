@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.data.BiomeTourConfig;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.area.data.BiomeTourSection;
 import com.devmod.area.data.BiomeTourSection.TransitionStyle;
 
@@ -128,7 +129,7 @@ public class BiomeTourWizardWidget extends AbstractWidget {
 
         // Background
         int bgColor = isSelected ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE :
-                     (isHovered ? AreaBuilderGuiConstants.COLOR_HOVER : 0x00000000);
+                     (isHovered ? AreaBuilderGuiConstants.COLOR_HOVER : DesignTokens.AreaBuilder.TRANSPARENT);
         if (bgColor != 0) {
             graphics.fill(x, y, x + width, y + ROW_HEIGHT, bgColor);
         }
@@ -163,11 +164,11 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         int removeX = x + width - BUTTON_SIZE - 4;
         boolean removeHovered = mouseX >= removeX && mouseX < removeX + BUTTON_SIZE &&
                                mouseY >= y + 4 && mouseY < y + 4 + BUTTON_SIZE;
-        int removeBgColor = removeHovered ? 0xFFCC4444 : AreaBuilderGuiConstants.COLOR_PANEL;
+        int removeBgColor = removeHovered ? DesignTokens.AreaBuilder.DANGER_BG_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
         graphics.fill(removeX, y + 4, removeX + BUTTON_SIZE, y + 4 + BUTTON_SIZE, removeBgColor);
         graphics.renderOutline(removeX, y + 4, BUTTON_SIZE, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
         graphics.drawCenteredString(font, "X", removeX + BUTTON_SIZE / 2, y + 8,
-            removeHovered ? 0xFFFFFFFF : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            removeHovered ? DesignTokens.AreaBuilder.TEXT_WHITE : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         // Transition cycle button
         int transX = x + width - BUTTON_SIZE * 2 - 8;

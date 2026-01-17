@@ -31,6 +31,7 @@ import com.devmod.area.aesthetic.AreaBuilderSounds;
 import com.devmod.area.aesthetic.AreaBuilderTiming;
 import com.devmod.area.data.AreaDefinition;
 import com.devmod.area.data.AreaRegistry;
+import com.devmod.area.snapshot.AreaSnapshotManager;
 
 /**
  * Manages multi-tick area build tasks across the server.
@@ -134,6 +135,18 @@ public final class AreaBuildTaskManager {
                 }
                 return BuildStartResult.ALREADY_BUILDING; // Reuse existing enum, semantically similar
             }
+        }
+
+        // SEC-08 fix: Block builds while a snapshot restore is in progress
+        if (AreaSnapshotManager.INSTANCE.isRestoringArea(Objects.requireNonNull(areaId))) {
+            DevMod.LOGGER.warn("[Area] Build rejected: snapshot restore in progress for area {}", areaId);
+            if (player != null) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(net.minecraft.network.chat.Component.translatable(
+                        "area.message.error_restore_in_progress")), true);
+                AreaBuilderSounds.playError(level, player);
+            }
+            return BuildStartResult.ALREADY_BUILDING; // Reuse existing enum for build rejection
         }
 
         // Check if already building this area
@@ -400,10 +413,12 @@ public final class AreaBuildTaskManager {
      * @param player        The player who initiated the build (for feedback)
      * @param forceMultiTick If true, forces multi-tick building
      * @param skipBlocks    Number of blocks to skip (already placed)
+     * @param clearFirst    If true, adds a clear step before building (MED-RESUME fix)
      * @return true if build was started successfully, false if it failed
      */
     private boolean startBuildWithSkip(@Nonnull ServerLevel level, @Nonnull AreaDefinition definition,
-                                    @Nullable ServerPlayer player, boolean forceMultiTick, int skipBlocks) {
+                                    @Nullable ServerPlayer player, boolean forceMultiTick, int skipBlocks,
+                                    boolean clearFirst) {
         // CRIT-02 fix: Validate skipBlocks parameter
         if (skipBlocks < 0) {
             DevMod.LOGGER.error("[Area] Invalid skipBlocks value {} for area '{}' - must be non-negative",
@@ -473,10 +488,15 @@ public final class AreaBuildTaskManager {
                 skipBlocks
             );
 
-            activeBuildTasks.put(definition.id(), new ActiveBuild(task, level, playerId, false, true, 0));
+            // MED-RESUME fix: Add clear step if resuming from interrupted clear
+            if (clearFirst) {
+                task.withClearStep();
+            }
 
-            DevMod.LOGGER.info("[Area] Resumed biome build for area '{}' (skipping {} blocks)",
-                definition.name(), skipBlocks);
+            activeBuildTasks.put(definition.id(), new ActiveBuild(task, level, playerId, clearFirst, true, 0));
+
+            DevMod.LOGGER.info("[Area] Resumed biome build for area '{}' (skipping {} blocks, clearFirst={})",
+                definition.name(), skipBlocks, clearFirst);
             return true;
         }
 
@@ -489,10 +509,15 @@ public final class AreaBuildTaskManager {
             skipBlocks
         );
 
-        activeBuildTasks.put(definition.id(), new ActiveBuild(task, level, playerId, false, forceMultiTick, 0));
+        // MED-RESUME fix: Add clear step if resuming from interrupted clear
+        if (clearFirst) {
+            task.withClearStep();
+        }
 
-        DevMod.LOGGER.info("[Area] Resumed build for area '{}' (skipping {} blocks)",
-            definition.name(), skipBlocks);
+        activeBuildTasks.put(definition.id(), new ActiveBuild(task, level, playerId, clearFirst, forceMultiTick, 0));
+
+        DevMod.LOGGER.info("[Area] Resumed build for area '{}' (skipping {} blocks, clearFirst={})",
+            definition.name(), skipBlocks, clearFirst);
         return true;
     }
 
@@ -814,9 +839,20 @@ public final class AreaBuildTaskManager {
     private void processQueue(@Nonnull MinecraftServer server) {
         com.devmod.area.data.AreaRegistry areaRegistry = com.devmod.area.data.AreaRegistry.get(server);
 
-        while (getInFlightBuildCount() < MAX_CONCURRENT_BUILDS && !buildQueue.isEmpty()) {
+        int attempts = buildQueue.size();
+        int processed = 0;
+
+        while (getInFlightBuildCount() < MAX_CONCURRENT_BUILDS && !buildQueue.isEmpty() && processed < attempts) {
             QueuedBuild next = buildQueue.poll();
             if (next == null) break;
+            processed++;
+
+            // SEC-08 fix: Defer queued builds if a restore is in progress for this area
+            if (AreaSnapshotManager.INSTANCE.isRestoringArea(next.areaId())) {
+                DevMod.LOGGER.info("[Area] Queued build deferred: restore in progress for area {}", next.areaId());
+                buildQueue.offer(next);
+                continue;
+            }
 
             AreaDefinition definition = areaRegistry.getArea(next.areaId()).orElse(null);
             if (definition == null) {
@@ -1042,12 +1078,29 @@ public final class AreaBuildTaskManager {
         }
 
         // Start the build with skip to resume from saved position (C-01 fix)
-        DevMod.LOGGER.info("[Area] Resuming build for area {} from {}% (skipping {} blocks)",
-            areaId, state.getProgressPercent(), state.blocksPlaced());
+        // MED-RESUME fix: Recalculate skipBlocks excluding clear step blocks and determine if clear needed
+        int skipBlocks = state.blocksPlaced();
+        boolean needsClear = false;
+        if (state.clearFirst() && !"clear".equals(state.currentStepName())) {
+            // The clear step was completed, subtract its blocks from skipBlocks
+            // since the resumed build won't include a clear step
+            int clearBlocks = AreaBlockMapGenerator.estimateClearBlocks(definition);
+            skipBlocks = Math.max(0, skipBlocks - clearBlocks);
+            DevMod.LOGGER.info("[Area] Resume: adjusting skipBlocks from {} to {} (excluding {} clear blocks)",
+                state.blocksPlaced(), skipBlocks, clearBlocks);
+        } else if (state.clearFirst() && "clear".equals(state.currentStepName())) {
+            // Was interrupted during clear - restart from beginning with clear step (clear is idempotent)
+            skipBlocks = 0;
+            needsClear = true;
+            DevMod.LOGGER.info("[Area] Resume: restarting from beginning with clear step (interrupted during clear)");
+        }
+
+        DevMod.LOGGER.info("[Area] Resuming build for area {} from {}% (skipping {} blocks, clearFirst={})",
+            areaId, state.getProgressPercent(), skipBlocks, needsClear);
 
         // Use the skip capability to resume from where we left off
         // MED-01 fix: Only remove state AFTER successful start to preserve progress on failure
-        boolean started = startBuildWithSkip(level, definition, player, state.forceMultiTick(), state.blocksPlaced());
+        boolean started = startBuildWithSkip(level, definition, player, state.forceMultiTick(), skipBlocks, needsClear);
 
         if (started) {
             stateRegistry.removeState(areaId);

@@ -25,6 +25,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.area.aesthetic.AreaBuilderSounds;
+import com.devmod.area.builder.AreaBuildTaskManager;
 import com.devmod.area.data.AreaDefinition;
 
 /**
@@ -272,6 +273,45 @@ public final class AreaSnapshotManager {
             return false;
         }
 
+        // MED-RESTORE fix: Check if there's an active build on this area
+        // Restoring while building would cause block conflicts and inconsistent state
+        UUID areaId = snapshot.areaId();
+        if (AreaBuildTaskManager.INSTANCE.isBuildingArea(areaId)) {
+            LOGGER.warn("[Snapshot] Cannot restore snapshot {} - build in progress for area {}",
+                snapshotId, areaId);
+            if (player != null) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(Component.translatable("area.snapshot.build_in_progress")), true);
+                AreaBuilderSounds.playError(level, player);
+            }
+            return false;
+        }
+
+        // SEC-08 fix: Block restore if a build is queued for this area
+        if (AreaBuildTaskManager.INSTANCE.isAreaQueued(areaId)) {
+            LOGGER.warn("[Snapshot] Cannot restore snapshot {} - build queued for area {}",
+                snapshotId, areaId);
+            if (player != null) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(Component.translatable("area.snapshot.build_in_progress")), true);
+                AreaBuilderSounds.playError(level, player);
+            }
+            return false;
+        }
+
+        // SEC-04 fix: Check if there's already a restore in progress for this area
+        // Multiple concurrent restores on the same area would cause block placement conflicts
+        if (isRestoringArea(Objects.requireNonNull(areaId))) {
+            LOGGER.warn("[Snapshot] Cannot restore snapshot {} - another restore already in progress for area {}",
+                snapshotId, areaId);
+            if (player != null) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(Component.translatable("area.snapshot.restore_in_progress")), true);
+                AreaBuilderSounds.playError(level, player);
+            }
+            return false;
+        }
+
         // Load snapshot data
         Path worldFolder = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT));
         Path snapshotFile = worldFolder.resolve(snapshot.getFilePath());
@@ -300,6 +340,7 @@ public final class AreaSnapshotManager {
         activeRestores.put(snapshotId, new ActiveRestore(
             task,
             level,
+            Objects.requireNonNull(areaId),
             player != null ? player.getUUID() : null,
             0
         ));
@@ -461,6 +502,23 @@ public final class AreaSnapshotManager {
     }
 
     /**
+     * SEC-04 fix: Checks if any restore is in progress for the given area.
+     * This prevents concurrent restores of different snapshots for the same area.
+     *
+     * @param areaId The area ID to check
+     * @return true if a restore is in progress for this area
+     */
+    public boolean isRestoringArea(@Nonnull UUID areaId) {
+        Objects.requireNonNull(areaId);
+        for (ActiveRestore restore : activeRestores.values()) {
+            if (areaId.equals(restore.areaId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Gets capture progress for an area (0-100), or -1 if not capturing.
      */
     public int getCaptureProgress(@Nonnull UUID areaId) {
@@ -550,13 +608,15 @@ public final class AreaSnapshotManager {
     private static class ActiveRestore {
         final @Nonnull AreaSnapshotRestoreTask task;
         final @Nonnull ServerLevel level;
+        final @Nonnull UUID areaId;  // SEC-04 fix: Track areaId to prevent concurrent restores on same area
         final @Nullable UUID playerId;
         volatile int lastProgress;
 
         ActiveRestore(@Nonnull AreaSnapshotRestoreTask task, @Nonnull ServerLevel level,
-                      @Nullable UUID playerId, int lastProgress) {
+                      @Nonnull UUID areaId, @Nullable UUID playerId, int lastProgress) {
             this.task = Objects.requireNonNull(task);
             this.level = Objects.requireNonNull(level);
+            this.areaId = Objects.requireNonNull(areaId);
             this.playerId = playerId;
             this.lastProgress = lastProgress;
         }
