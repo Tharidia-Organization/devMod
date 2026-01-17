@@ -3961,4 +3961,192 @@ public final class DesignTokens {
 
         private Portal() {}
     }
+
+    /**
+     * Colors for the Area Builder system UI.
+     * Includes builder screen, widgets, and toggle colors.
+     */
+    public static final class AreaBuilder {
+
+        // --- Panel Colors ---
+        /** Background color (dark with alpha) */
+        public static final int BACKGROUND = 0xCC000000;
+        /** Panel background */
+        public static final int PANEL = 0x80222222;
+        /** Border color */
+        public static final int BORDER = 0xFF444444;
+        /** Active tab color */
+        public static final int TAB_ACTIVE = Palette.ACCENT_BLUE;
+        /** Inactive tab color */
+        public static final int TAB_INACTIVE = 0xFF333333;
+        /** Hover color */
+        public static final int HOVER = 0xFF555555;
+
+        // --- Text Colors ---
+        /** Primary text (white) */
+        public static final int TEXT_PRIMARY = Palette.TEXT_PRIMARY;
+        /** Secondary text (gray) */
+        public static final int TEXT_SECONDARY = Palette.TEXT_SECONDARY;
+        /** Disabled text */
+        public static final int TEXT_DISABLED = 0xFF666666;
+        /** Muted text (dark gray) */
+        public static final int TEXT_MUTED = 0xFF888888;
+
+        // --- Danger/Warning Colors ---
+        /** Danger button background */
+        public static final int DANGER_BG = 0xFF884444;
+        /** Danger button hover background */
+        public static final int DANGER_BG_HOVER = 0xFFCC4444;
+        /** Danger icon default */
+        public static final int DANGER_ICON = 0xFFCCCCCC;
+        /** Danger icon hover */
+        public static final int DANGER_ICON_HOVER = 0xFFFFFFFF;
+        /** Warning text (red) */
+        public static final int WARNING_TEXT = DANGER_BG_HOVER;
+        /** Error text (red) */
+        public static final int ERROR_TEXT = 0xFFFF4444;
+        /** Warning/paused status color (orange) */
+        public static final int STATUS_WARNING = 0xFFFFAA00;
+
+        // --- Overlay Colors ---
+        /** Semi-transparent dark overlay for saving/loading states */
+        public static final int OVERLAY_DARK = 0xA0000000;
+
+        // --- Toggle Colors ---
+        /** Toggle ON background */
+        public static final int TOGGLE_ON = 0xFF2ecc71;
+        /** Toggle ON hover */
+        public static final int TOGGLE_ON_HOVER = 0xFF27ae60;
+        /** Toggle OFF background */
+        public static final int TOGGLE_OFF = 0xFF95a5a6;
+        /** Toggle OFF hover */
+        public static final int TOGGLE_OFF_HOVER = 0xFF7f8c8d;
+
+        // --- Selection Colors ---
+        /** Selected border (white) */
+        public static final int SELECTED_BORDER = Palette.TEXT_PRIMARY;
+        /** Selected text (white) */
+        public static final int SELECTED_TEXT = Palette.TEXT_PRIMARY;
+        /** Unselected text */
+        public static final int UNSELECTED_TEXT = Palette.TEXT_SECONDARY;
+
+        // --- Scrollbar Colors ---
+        /** Scrollbar track */
+        public static final int SCROLLBAR_TRACK = 0x40000000;
+        /** Scrollbar thumb */
+        public static final int SCROLLBAR_THUMB = 0x80FFFFFF;
+
+        // --- List Colors ---
+        /** List item default */
+        public static final int LIST_ITEM = Palette.TEXT_SECONDARY;
+        /** List mod indicator */
+        public static final int LIST_MOD_INDICATOR = 0xFF888888;
+
+        // --- Editor State Colors (RGB only, add 0xFF000000 for ARGB) ---
+        /** State colors for IDLE state */
+        public static final int STATE_IDLE_PRIMARY = 0x4a90d9;
+        public static final int STATE_IDLE_SECONDARY = 0x2c5282;
+        /** State colors for PREVIEW state */
+        public static final int STATE_PREVIEW_PRIMARY = 0xf1c40f;
+        public static final int STATE_PREVIEW_SECONDARY = 0xe67e22;
+        /** State colors for BUILDING state */
+        public static final int STATE_BUILDING_PRIMARY = 0x2ecc71;
+        public static final int STATE_BUILDING_SECONDARY = 0x27ae60;
+        /** State colors for COMPLETE state */
+        public static final int STATE_COMPLETE_PRIMARY = 0x00d4aa;
+        public static final int STATE_COMPLETE_SECONDARY = 0x008b72;
+        /** State colors for ERROR state */
+        public static final int STATE_ERROR_PRIMARY = 0xe74c3c;
+        public static final int STATE_ERROR_SECONDARY = 0xc0392b;
+        /** State colors for LOCKED state */
+        public static final int STATE_LOCKED_PRIMARY = 0x95a5a6;
+        public static final int STATE_LOCKED_SECONDARY = 0x7f8c8d;
+
+        /** Alpha mask for full opacity */
+        public static final int ALPHA_FULL = 0xFF000000;
+
+        private AreaBuilder() {}
+    }
+
+    /**
+     * Colors for the NPC system.
+     * Includes state colors, dialog screens, and glow effects.
+     */
+    public static final class Npc {
+
+        // --- State Colors (RGB only, add ALPHA_FULL for ARGB) ---
+        /** State colors for IDLE state */
+        public static final int STATE_IDLE_PRIMARY = 0x00d4aa;
+        public static final int STATE_IDLE_SECONDARY = 0x008b72;
+        /** State colors for TALKING state */
+        public static final int STATE_TALKING_PRIMARY = 0xf1c40f;
+        public static final int STATE_TALKING_SECONDARY = 0xe67e22;
+        /** State colors for THINKING state */
+        public static final int STATE_THINKING_PRIMARY = 0x3498db;
+        public static final int STATE_THINKING_SECONDARY = 0x2980b9;
+        /** State colors for ACTION state */
+        public static final int STATE_ACTION_PRIMARY = 0x2ecc71;
+        public static final int STATE_ACTION_SECONDARY = 0x27ae60;
+        /** State colors for ERROR state */
+        public static final int STATE_ERROR_PRIMARY = 0xe74c3c;
+        public static final int STATE_ERROR_SECONDARY = 0xc0392b;
+        /** State colors for UNAVAILABLE state */
+        public static final int STATE_UNAVAILABLE_PRIMARY = 0x95a5a6;
+        public static final int STATE_UNAVAILABLE_SECONDARY = 0x7f8c8d;
+
+        // --- Dialog Colors ---
+        /** Dialog text primary (white) */
+        public static final int DIALOG_TEXT_PRIMARY = 0xFFFFFFFF;
+        /** Dialog error text (red) */
+        public static final int DIALOG_ERROR_TEXT = 0xFFFF6B6B;
+        /** Dialog accent (orange) */
+        public static final int DIALOG_ACCENT = 0xFFFFAA00;
+
+        /** Alpha mask for full opacity */
+        public static final int ALPHA_FULL = 0xFF000000;
+
+        private Npc() {}
+    }
+
+    /**
+     * Colors for the Admin Instance Panel.
+     * Used for monitoring and controlling instance dimensions.
+     */
+    public static final class AdminPanel {
+        /** Panel background with transparency */
+        public static final int PANEL_BG = 0xE0181C24;
+        /** Header background */
+        public static final int HEADER_BG = 0xFF1E2530;
+        /** Stats bar background */
+        public static final int STATS_BG = 0xFF252A35;
+        /** Entry background with transparency */
+        public static final int ENTRY_BG = 0xC0202530;
+        /** Entry hover background */
+        public static final int ENTRY_HOVER = 0xE0303540;
+        /** Selection border color */
+        public static final int SELECTION = 0xFF4AAAD8;
+
+        // Instance state colors
+        /** CREATING state - gray */
+        public static final int STATE_CREATING = 0xFF888888;
+        /** READY state - cyan */
+        public static final int STATE_READY = 0xFF55FFFF;
+        /** ACTIVE state - green */
+        public static final int STATE_ACTIVE = 0xFF55FF55;
+        /** COMPLETING state - yellow */
+        public static final int STATE_COMPLETING = 0xFFFFFF55;
+        /** DESTROYING state - red */
+        public static final int STATE_DESTROYING = 0xFFFF5555;
+        /** DESTROYED state - dark gray */
+        public static final int STATE_DESTROYED = 0xFF555555;
+        /** Unknown state - white */
+        public static final int STATE_UNKNOWN = 0xFFFFFFFF;
+
+        /** Button alpha mask for unhovered state */
+        public static final int BUTTON_ALPHA_MASK = 0x80000000;
+        /** RGB mask */
+        public static final int RGB_MASK = 0xFFFFFF;
+
+        private AdminPanel() {}
+    }
 }

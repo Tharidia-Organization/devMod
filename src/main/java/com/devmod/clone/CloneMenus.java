@@ -12,8 +12,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
 import com.devmod.clone.menu.CentrifugeMenu;
-import com.devmod.clone.menu.NeurocellMenu;
 import com.devmod.clone.menu.NeurocellLMenu;
+import com.devmod.clone.menu.NeurocellMenu;
 
 /**
  * Clone module menu registrations.

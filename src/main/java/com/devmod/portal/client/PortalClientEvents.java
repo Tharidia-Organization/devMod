@@ -20,7 +20,7 @@ import com.devmod.portal.network.PortalPreviewRequestPayload;
 
 /**
  * Client-side event handlers for the custom portal system.
- * Handles tick updates for the teleportation overlay animation and portal preview raycast.
+ * Handles portal preview raycast and related client requests.
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public final class PortalClientEvents {
@@ -35,20 +35,10 @@ public final class PortalClientEvents {
     private static final long REQUEST_COOLDOWN_MS = 1000;
 
     /**
-     * Ticks the portal teleportation overlay when active.
-     * Also checks if the player is looking at a portal for preview display.
-     *
-     * <p>Note: The actual tick count is synchronized from the server via
-     * {@link com.devmod.portal.network.PortalStatePayload}, but this provides
-     * smoother interpolation between server updates.
+     * Checks if the player is looking at a portal for preview display.
      */
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        // Tick teleportation overlay
-        if (PortalTeleportOverlay.isActive()) {
-            PortalTeleportOverlay.tick();
-        }
-
         // Check if looking at a portal for preview
         checkPortalRaycast();
     }

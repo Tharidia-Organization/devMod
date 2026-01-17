@@ -24,12 +24,14 @@ public class CentrifugeModel extends GeoModel<CentrifugeBlockEntity> {
 
     @Override
     @Nonnull
+    @SuppressWarnings("removal")
     public ResourceLocation getModelResource(@Nonnull CentrifugeBlockEntity entity) {
         return MODEL;
     }
 
     @Override
     @Nonnull
+    @SuppressWarnings("removal")
     public ResourceLocation getTextureResource(@Nonnull CentrifugeBlockEntity entity) {
         return TEXTURE;
     }

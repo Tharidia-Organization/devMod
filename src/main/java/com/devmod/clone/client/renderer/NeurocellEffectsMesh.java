@@ -28,6 +28,9 @@ public final class NeurocellEffectsMesh {
 
     private static final int RING_SEGMENTS = 32;
     private static final int HELIX_PARTICLES = 40;
+    private static final float PI = (float) Math.PI;
+    private static final float TWO_PI = (float) (Math.PI * 2.0);
+    private static final float FOUR_PI = TWO_PI * 2.0f;
 
     private final List<EffectQuad> ringQuads = new ArrayList<>();
     private final List<EffectQuad> helixQuads = new ArrayList<>();
@@ -84,19 +87,19 @@ public final class NeurocellEffectsMesh {
      */
     private void buildHelixMesh() {
         for (int helix = 0; helix < 2; helix++) {
-            float phaseOffset = helix * 3.14159f;
+            float phaseOffset = helix * PI;
 
             for (int i = 0; i < HELIX_PARTICLES; i++) {
                 float t = i / (float) HELIX_PARTICLES;
                 float y = 0.1f + t * 1.4f;
-                float angle = t * 6.28318f * 2 + phaseOffset;
-                float radius = 0.35f + 0.03f * Mth.sin(t * 6.28f);
+                float angle = t * FOUR_PI + phaseOffset;
+                float radius = 0.35f + 0.03f * Mth.sin(t * TWO_PI);
 
                 float x = Mth.cos(angle) * radius;
                 float z = Mth.sin(angle) * radius;
 
                 // Particle size varies along helix
-                float size = 0.015f + 0.008f * Mth.sin(t * 12.56f);
+                float size = 0.015f + 0.008f * Mth.sin(t * FOUR_PI);
 
                 // Color based on helix and position
                 int r = helix == 0 ? 0 : 20;

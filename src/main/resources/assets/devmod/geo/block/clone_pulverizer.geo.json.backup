@@ -112,85 +112,110 @@
         {
           "name": "chamber",
           "parent": "root",
-          "pivot": [
-            0,
-            4,
-            0
-          ],
+          "pivot": [0, 4, 0],
           "cubes": [
             {
-              "comment": "Crushing chamber - main body",
-              "origin": [
-                -6,
-                1,
-                -6
-              ],
-              "size": [
-                12,
-                6,
-                12
-              ],
+              "comment": "Chamber - back wall (south)",
+              "origin": [-6, 2, 4],
+              "size": [12, 5, 2],
               "uv": {
-                "north": {
-                  "uv": [
-                    0,
-                    16
-                  ],
-                  "uv_size": [
-                    12,
-                    6
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    0,
-                    16
-                  ],
-                  "uv_size": [
-                    12,
-                    6
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    0,
-                    16
-                  ],
-                  "uv_size": [
-                    12,
-                    6
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    0,
-                    16
-                  ],
-                  "uv_size": [
-                    12,
-                    6
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    16,
-                    0
-                  ],
-                  "uv_size": [
-                    12,
-                    12
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    16,
-                    0
-                  ],
-                  "uv_size": [
-                    12,
-                    12
-                  ]
-                }
+                "north": {"uv": [0, 16], "uv_size": [12, 5]},
+                "south": {"uv": [0, 16], "uv_size": [12, 5]},
+                "east": {"uv": [0, 16], "uv_size": [2, 5]},
+                "west": {"uv": [0, 16], "uv_size": [2, 5]},
+                "up": {"uv": [16, 0], "uv_size": [12, 2]},
+                "down": {"uv": [16, 0], "uv_size": [12, 2]}
+              }
+            },
+            {
+              "comment": "Chamber - left wall (west)",
+              "origin": [-6, 2, -6],
+              "size": [2, 5, 10],
+              "uv": {
+                "north": {"uv": [0, 16], "uv_size": [2, 5]},
+                "south": {"uv": [0, 16], "uv_size": [2, 5]},
+                "east": {"uv": [0, 16], "uv_size": [10, 5]},
+                "west": {"uv": [0, 16], "uv_size": [10, 5]},
+                "up": {"uv": [16, 0], "uv_size": [2, 10]},
+                "down": {"uv": [16, 0], "uv_size": [2, 10]}
+              }
+            },
+            {
+              "comment": "Chamber - right wall (east)",
+              "origin": [4, 2, -6],
+              "size": [2, 5, 10],
+              "uv": {
+                "north": {"uv": [0, 16], "uv_size": [2, 5]},
+                "south": {"uv": [0, 16], "uv_size": [2, 5]},
+                "east": {"uv": [0, 16], "uv_size": [10, 5]},
+                "west": {"uv": [0, 16], "uv_size": [10, 5]},
+                "up": {"uv": [16, 0], "uv_size": [2, 10]},
+                "down": {"uv": [16, 0], "uv_size": [2, 10]}
+              }
+            },
+            {
+              "comment": "Chamber - front frame top (north)",
+              "origin": [-6, 5, -6],
+              "size": [12, 2, 2],
+              "uv": {
+                "north": {"uv": [0, 16], "uv_size": [12, 2]},
+                "south": {"uv": [0, 16], "uv_size": [12, 2]},
+                "east": {"uv": [0, 16], "uv_size": [2, 2]},
+                "west": {"uv": [0, 16], "uv_size": [2, 2]},
+                "up": {"uv": [16, 0], "uv_size": [12, 2]},
+                "down": {"uv": [16, 0], "uv_size": [12, 2]}
+              }
+            },
+            {
+              "comment": "Chamber - front frame bottom (north)",
+              "origin": [-6, 2, -6],
+              "size": [12, 1, 2],
+              "uv": {
+                "north": {"uv": [0, 16], "uv_size": [12, 1]},
+                "south": {"uv": [0, 16], "uv_size": [12, 1]},
+                "east": {"uv": [0, 16], "uv_size": [2, 1]},
+                "west": {"uv": [0, 16], "uv_size": [2, 1]},
+                "up": {"uv": [16, 0], "uv_size": [12, 2]},
+                "down": {"uv": [16, 0], "uv_size": [12, 2]}
+              }
+            },
+            {
+              "comment": "Chamber - floor",
+              "origin": [-4, 1, -4],
+              "size": [8, 1, 8],
+              "uv": {
+                "north": {"uv": [16, 0], "uv_size": [8, 1]},
+                "south": {"uv": [16, 0], "uv_size": [8, 1]},
+                "east": {"uv": [16, 0], "uv_size": [8, 1]},
+                "west": {"uv": [16, 0], "uv_size": [8, 1]},
+                "up": {"uv": [16, 0], "uv_size": [8, 8]},
+                "down": {"uv": [16, 0], "uv_size": [8, 8]}
+              }
+            },
+            {
+              "comment": "Roller support - left bracket",
+              "origin": [-4, 3, -2],
+              "size": [1, 3, 4],
+              "uv": {
+                "north": {"uv": [0, 0], "uv_size": [1, 3]},
+                "south": {"uv": [0, 0], "uv_size": [1, 3]},
+                "east": {"uv": [0, 0], "uv_size": [4, 3]},
+                "west": {"uv": [0, 0], "uv_size": [4, 3]},
+                "up": {"uv": [0, 0], "uv_size": [1, 4]},
+                "down": {"uv": [0, 0], "uv_size": [1, 4]}
+              }
+            },
+            {
+              "comment": "Roller support - right bracket",
+              "origin": [3, 3, -2],
+              "size": [1, 3, 4],
+              "uv": {
+                "north": {"uv": [0, 0], "uv_size": [1, 3]},
+                "south": {"uv": [0, 0], "uv_size": [1, 3]},
+                "east": {"uv": [0, 0], "uv_size": [4, 3]},
+                "west": {"uv": [0, 0], "uv_size": [4, 3]},
+                "up": {"uv": [0, 0], "uv_size": [1, 4]},
+                "down": {"uv": [0, 0], "uv_size": [1, 4]}
               }
             }
           ]
@@ -205,228 +230,108 @@
           ],
           "cubes": [
             {
-              "comment": "Roller horizontal arm",
+              "comment": "Roller core - central cylinder",
               "origin": [
                 -6,
-                8,
+                6,
                 -4
               ],
               "size": [
                 6,
+                6,
+                8
+              ],
+              "uv": {
+                "north": { "uv": [32, 16], "uv_size": [6, 6] },
+                "south": { "uv": [32, 16], "uv_size": [6, 6] },
+                "east": { "uv": [32, 16], "uv_size": [8, 6] },
+                "west": { "uv": [32, 16], "uv_size": [8, 6] },
+                "up": { "uv": [32, 16], "uv_size": [6, 8] },
+                "down": { "uv": [32, 16], "uv_size": [6, 8] }
+              }
+            },
+            {
+              "comment": "Blade west - outer grinding blade",
+              "origin": [
+                -10,
+                8,
+                -4
+              ],
+              "size": [
+                4,
                 2,
                 8
               ],
               "uv": {
-                "north": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    6,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    6,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    6
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    6
-                  ]
-                }
+                "north": { "uv": [40, 16], "uv_size": [4, 2] },
+                "south": { "uv": [40, 16], "uv_size": [4, 2] },
+                "east": { "uv": [40, 16], "uv_size": [8, 2] },
+                "west": { "uv": [40, 16], "uv_size": [8, 2] },
+                "up": { "uv": [40, 16], "uv_size": [4, 8] },
+                "down": { "uv": [40, 16], "uv_size": [4, 8] }
               }
             },
             {
-              "comment": "Roller vertical arm top",
+              "comment": "Blade east - inner grinding blade",
+              "origin": [
+                0,
+                8,
+                -4
+              ],
+              "size": [
+                4,
+                2,
+                8
+              ],
+              "uv": {
+                "north": { "uv": [40, 16], "uv_size": [4, 2] },
+                "south": { "uv": [40, 16], "uv_size": [4, 2] },
+                "east": { "uv": [40, 16], "uv_size": [8, 2] },
+                "west": { "uv": [40, 16], "uv_size": [8, 2] },
+                "up": { "uv": [40, 16], "uv_size": [4, 8] },
+                "down": { "uv": [40, 16], "uv_size": [4, 8] }
+              }
+            },
+            {
+              "comment": "Blade up - top grinding blade",
               "origin": [
                 -4,
-                10,
+                12,
                 -4
               ],
               "size": [
                 2,
-                3,
+                4,
                 8
               ],
               "uv": {
-                "north": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    3
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    3
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    3
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    3
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                }
+                "north": { "uv": [40, 16], "uv_size": [2, 4] },
+                "south": { "uv": [40, 16], "uv_size": [2, 4] },
+                "east": { "uv": [40, 16], "uv_size": [8, 4] },
+                "west": { "uv": [40, 16], "uv_size": [8, 4] },
+                "up": { "uv": [40, 16], "uv_size": [2, 8] },
+                "down": { "uv": [40, 16], "uv_size": [2, 8] }
               }
             },
             {
-              "comment": "Roller vertical arm bottom",
+              "comment": "Blade down - bottom grinding blade",
               "origin": [
                 -4,
-                5,
+                2,
                 -4
               ],
               "size": [
                 2,
-                3,
+                4,
                 8
               ],
               "uv": {
-                "north": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    3
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    3
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    3
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    3
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                }
+                "north": { "uv": [40, 16], "uv_size": [2, 4] },
+                "south": { "uv": [40, 16], "uv_size": [2, 4] },
+                "east": { "uv": [40, 16], "uv_size": [8, 4] },
+                "west": { "uv": [40, 16], "uv_size": [8, 4] },
+                "up": { "uv": [40, 16], "uv_size": [2, 8] },
+                "down": { "uv": [40, 16], "uv_size": [2, 8] }
               }
             },
             {
@@ -442,66 +347,64 @@
                 1
               ],
               "uv": {
-                "north": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                }
+                "north": { "uv": [48, 48], "uv_size": [1, 1] },
+                "south": { "uv": [48, 48], "uv_size": [1, 1] },
+                "east": { "uv": [48, 48], "uv_size": [1, 1] },
+                "west": { "uv": [48, 48], "uv_size": [1, 1] },
+                "up": { "uv": [48, 48], "uv_size": [1, 1] },
+                "down": { "uv": [48, 48], "uv_size": [1, 1] }
+              }
+            },
+            {
+              "comment": "End cap - front (north)",
+              "origin": [-5, 7, -5],
+              "size": [4, 4, 1],
+              "uv": {
+                "north": { "uv": [44, 16], "uv_size": [4, 4] },
+                "south": { "uv": [44, 16], "uv_size": [4, 4] },
+                "east": { "uv": [44, 16], "uv_size": [1, 4] },
+                "west": { "uv": [44, 16], "uv_size": [1, 4] },
+                "up": { "uv": [44, 16], "uv_size": [4, 1] },
+                "down": { "uv": [44, 16], "uv_size": [4, 1] }
+              }
+            },
+            {
+              "comment": "End cap - back (south)",
+              "origin": [-5, 7, 4],
+              "size": [4, 4, 1],
+              "uv": {
+                "north": { "uv": [44, 16], "uv_size": [4, 4] },
+                "south": { "uv": [44, 16], "uv_size": [4, 4] },
+                "east": { "uv": [44, 16], "uv_size": [1, 4] },
+                "west": { "uv": [44, 16], "uv_size": [1, 4] },
+                "up": { "uv": [44, 16], "uv_size": [4, 1] },
+                "down": { "uv": [44, 16], "uv_size": [4, 1] }
+              }
+            },
+            {
+              "comment": "Striation groove 1",
+              "origin": [-5.5, 8.5, -3],
+              "size": [5, 1, 1],
+              "uv": {
+                "north": { "uv": [48, 20], "uv_size": [5, 1] },
+                "south": { "uv": [48, 20], "uv_size": [5, 1] },
+                "east": { "uv": [48, 20], "uv_size": [1, 1] },
+                "west": { "uv": [48, 20], "uv_size": [1, 1] },
+                "up": { "uv": [48, 20], "uv_size": [5, 1] },
+                "down": { "uv": [48, 20], "uv_size": [5, 1] }
+              }
+            },
+            {
+              "comment": "Striation groove 2",
+              "origin": [-5.5, 8.5, 1],
+              "size": [5, 1, 1],
+              "uv": {
+                "north": { "uv": [48, 20], "uv_size": [5, 1] },
+                "south": { "uv": [48, 20], "uv_size": [5, 1] },
+                "east": { "uv": [48, 20], "uv_size": [1, 1] },
+                "west": { "uv": [48, 20], "uv_size": [1, 1] },
+                "up": { "uv": [48, 20], "uv_size": [5, 1] },
+                "down": { "uv": [48, 20], "uv_size": [5, 1] }
               }
             }
           ]
@@ -516,228 +419,108 @@
           ],
           "cubes": [
             {
-              "comment": "Roller horizontal arm",
+              "comment": "Roller core - central cylinder",
               "origin": [
                 0,
-                8,
+                6,
                 -4
               ],
               "size": [
                 6,
+                6,
+                8
+              ],
+              "uv": {
+                "north": { "uv": [32, 16], "uv_size": [6, 6] },
+                "south": { "uv": [32, 16], "uv_size": [6, 6] },
+                "east": { "uv": [32, 16], "uv_size": [8, 6] },
+                "west": { "uv": [32, 16], "uv_size": [8, 6] },
+                "up": { "uv": [32, 16], "uv_size": [6, 8] },
+                "down": { "uv": [32, 16], "uv_size": [6, 8] }
+              }
+            },
+            {
+              "comment": "Blade east - outer grinding blade",
+              "origin": [
+                6,
+                8,
+                -4
+              ],
+              "size": [
+                4,
                 2,
                 8
               ],
               "uv": {
-                "north": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    6,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    6,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    6
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    6
-                  ]
-                }
+                "north": { "uv": [40, 16], "uv_size": [4, 2] },
+                "south": { "uv": [40, 16], "uv_size": [4, 2] },
+                "east": { "uv": [40, 16], "uv_size": [8, 2] },
+                "west": { "uv": [40, 16], "uv_size": [8, 2] },
+                "up": { "uv": [40, 16], "uv_size": [4, 8] },
+                "down": { "uv": [40, 16], "uv_size": [4, 8] }
               }
             },
             {
-              "comment": "Roller vertical arm top",
+              "comment": "Blade west - inner grinding blade",
+              "origin": [
+                -4,
+                8,
+                -4
+              ],
+              "size": [
+                4,
+                2,
+                8
+              ],
+              "uv": {
+                "north": { "uv": [40, 16], "uv_size": [4, 2] },
+                "south": { "uv": [40, 16], "uv_size": [4, 2] },
+                "east": { "uv": [40, 16], "uv_size": [8, 2] },
+                "west": { "uv": [40, 16], "uv_size": [8, 2] },
+                "up": { "uv": [40, 16], "uv_size": [4, 8] },
+                "down": { "uv": [40, 16], "uv_size": [4, 8] }
+              }
+            },
+            {
+              "comment": "Blade up - top grinding blade",
               "origin": [
                 2,
-                10,
+                12,
                 -4
               ],
               "size": [
                 2,
-                3,
+                4,
                 8
               ],
               "uv": {
-                "north": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    3
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    3
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    3
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    3
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                }
+                "north": { "uv": [40, 16], "uv_size": [2, 4] },
+                "south": { "uv": [40, 16], "uv_size": [2, 4] },
+                "east": { "uv": [40, 16], "uv_size": [8, 4] },
+                "west": { "uv": [40, 16], "uv_size": [8, 4] },
+                "up": { "uv": [40, 16], "uv_size": [2, 8] },
+                "down": { "uv": [40, 16], "uv_size": [2, 8] }
               }
             },
             {
-              "comment": "Roller vertical arm bottom",
+              "comment": "Blade down - bottom grinding blade",
               "origin": [
                 2,
-                5,
+                2,
                 -4
               ],
               "size": [
                 2,
-                3,
+                4,
                 8
               ],
               "uv": {
-                "north": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    3
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    3
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    3
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    3
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    32,
-                    16
-                  ],
-                  "uv_size": [
-                    8,
-                    2
-                  ]
-                }
+                "north": { "uv": [40, 16], "uv_size": [2, 4] },
+                "south": { "uv": [40, 16], "uv_size": [2, 4] },
+                "east": { "uv": [40, 16], "uv_size": [8, 4] },
+                "west": { "uv": [40, 16], "uv_size": [8, 4] },
+                "up": { "uv": [40, 16], "uv_size": [2, 8] },
+                "down": { "uv": [40, 16], "uv_size": [2, 8] }
               }
             },
             {
@@ -753,66 +536,64 @@
                 1
               ],
               "uv": {
-                "north": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    48,
-                    48
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                }
+                "north": { "uv": [48, 48], "uv_size": [1, 1] },
+                "south": { "uv": [48, 48], "uv_size": [1, 1] },
+                "east": { "uv": [48, 48], "uv_size": [1, 1] },
+                "west": { "uv": [48, 48], "uv_size": [1, 1] },
+                "up": { "uv": [48, 48], "uv_size": [1, 1] },
+                "down": { "uv": [48, 48], "uv_size": [1, 1] }
+              }
+            },
+            {
+              "comment": "End cap - front (north)",
+              "origin": [1, 7, -5],
+              "size": [4, 4, 1],
+              "uv": {
+                "north": { "uv": [44, 16], "uv_size": [4, 4] },
+                "south": { "uv": [44, 16], "uv_size": [4, 4] },
+                "east": { "uv": [44, 16], "uv_size": [1, 4] },
+                "west": { "uv": [44, 16], "uv_size": [1, 4] },
+                "up": { "uv": [44, 16], "uv_size": [4, 1] },
+                "down": { "uv": [44, 16], "uv_size": [4, 1] }
+              }
+            },
+            {
+              "comment": "End cap - back (south)",
+              "origin": [1, 7, 4],
+              "size": [4, 4, 1],
+              "uv": {
+                "north": { "uv": [44, 16], "uv_size": [4, 4] },
+                "south": { "uv": [44, 16], "uv_size": [4, 4] },
+                "east": { "uv": [44, 16], "uv_size": [1, 4] },
+                "west": { "uv": [44, 16], "uv_size": [1, 4] },
+                "up": { "uv": [44, 16], "uv_size": [4, 1] },
+                "down": { "uv": [44, 16], "uv_size": [4, 1] }
+              }
+            },
+            {
+              "comment": "Striation groove 1",
+              "origin": [0.5, 8.5, -3],
+              "size": [5, 1, 1],
+              "uv": {
+                "north": { "uv": [48, 20], "uv_size": [5, 1] },
+                "south": { "uv": [48, 20], "uv_size": [5, 1] },
+                "east": { "uv": [48, 20], "uv_size": [1, 1] },
+                "west": { "uv": [48, 20], "uv_size": [1, 1] },
+                "up": { "uv": [48, 20], "uv_size": [5, 1] },
+                "down": { "uv": [48, 20], "uv_size": [5, 1] }
+              }
+            },
+            {
+              "comment": "Striation groove 2",
+              "origin": [0.5, 8.5, 1],
+              "size": [5, 1, 1],
+              "uv": {
+                "north": { "uv": [48, 20], "uv_size": [5, 1] },
+                "south": { "uv": [48, 20], "uv_size": [5, 1] },
+                "east": { "uv": [48, 20], "uv_size": [1, 1] },
+                "west": { "uv": [48, 20], "uv_size": [1, 1] },
+                "up": { "uv": [48, 20], "uv_size": [5, 1] },
+                "down": { "uv": [48, 20], "uv_size": [5, 1] }
               }
             }
           ]
@@ -907,13 +688,13 @@
           "name": "support_nw",
           "parent": "root",
           "pivot": [
-            -6.5,
+            -5.5,
             2.5,
-            -6.5
+            -5.5
           ],
           "rotation": [
             0,
-            -22.5,
+            45,
             0
           ],
           "cubes": [
@@ -925,69 +706,69 @@
                 -8
               ],
               "size": [
-                3,
                 5,
-                3
+                5,
+                5
               ],
               "uv": {
                 "north": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "east": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "south": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "west": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "up": {
                   "uv": [
-                    48,
-                    5
+                    0,
+                    0
                   ],
                   "uv_size": [
-                    3,
-                    3
+                    5,
+                    5
                   ]
                 },
                 "down": {
                   "uv": [
-                    48,
-                    8
+                    0,
+                    0
                   ],
                   "uv_size": [
-                    3,
-                    3
+                    5,
+                    5
                   ]
                 }
               }
@@ -998,87 +779,87 @@
           "name": "support_ne",
           "parent": "root",
           "pivot": [
-            6.5,
+            5.5,
             2.5,
-            -6.5
+            -5.5
           ],
           "rotation": [
             0,
-            22.5,
+            45,
             0
           ],
           "cubes": [
             {
               "comment": "NE support pillar",
               "origin": [
-                5,
+                3,
                 0,
                 -8
               ],
               "size": [
-                3,
                 5,
-                3
+                5,
+                5
               ],
               "uv": {
                 "north": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "east": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "south": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "west": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "up": {
                   "uv": [
-                    48,
-                    5
+                    0,
+                    0
                   ],
                   "uv_size": [
-                    3,
-                    3
+                    5,
+                    5
                   ]
                 },
                 "down": {
                   "uv": [
-                    48,
-                    8
+                    0,
+                    0
                   ],
                   "uv_size": [
-                    3,
-                    3
+                    5,
+                    5
                   ]
                 }
               }
@@ -1089,13 +870,13 @@
           "name": "support_sw",
           "parent": "root",
           "pivot": [
-            -6.5,
+            -5.5,
             2.5,
-            6.5
+            5.5
           ],
           "rotation": [
             0,
-            22.5,
+            45,
             0
           ],
           "cubes": [
@@ -1104,72 +885,72 @@
               "origin": [
                 -8,
                 0,
-                5
+                3
               ],
               "size": [
-                3,
                 5,
-                3
+                5,
+                5
               ],
               "uv": {
                 "north": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "east": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "south": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "west": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "up": {
                   "uv": [
-                    48,
-                    5
+                    0,
+                    0
                   ],
                   "uv_size": [
-                    3,
-                    3
+                    5,
+                    5
                   ]
                 },
                 "down": {
                   "uv": [
-                    48,
-                    8
+                    0,
+                    0
                   ],
                   "uv_size": [
-                    3,
-                    3
+                    5,
+                    5
                   ]
                 }
               }
@@ -1180,87 +961,87 @@
           "name": "support_se",
           "parent": "root",
           "pivot": [
-            6.5,
+            5.5,
             2.5,
-            6.5
+            5.5
           ],
           "rotation": [
             0,
-            -22.5,
+            45,
             0
           ],
           "cubes": [
             {
               "comment": "SE support pillar",
               "origin": [
-                5,
+                3,
                 0,
-                5
+                3
               ],
               "size": [
-                3,
                 5,
-                3
+                5,
+                5
               ],
               "uv": {
                 "north": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "east": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "south": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "west": {
                   "uv": [
-                    48,
+                    0,
                     0
                   ],
                   "uv_size": [
-                    3,
+                    5,
                     5
                   ]
                 },
                 "up": {
                   "uv": [
-                    48,
-                    5
+                    0,
+                    0
                   ],
                   "uv_size": [
-                    3,
-                    3
+                    5,
+                    5
                   ]
                 },
                 "down": {
                   "uv": [
-                    48,
-                    8
+                    0,
+                    0
                   ],
                   "uv_size": [
-                    3,
-                    3
+                    5,
+                    5
                   ]
                 }
               }
@@ -1270,921 +1051,731 @@
         {
           "name": "hopper",
           "parent": "root",
-          "pivot": [
-            0,
-            14,
-            0
-          ],
+          "pivot": [0, 21, 0],
           "cubes": [
             {
-              "comment": "Top ring - North wall",
-              "origin": [
-                -7,
-                15,
-                -7
-              ],
-              "size": [
-                14,
-                2,
-                2
-              ],
+              "comment": "Lip - North wall (14x14 outer rim, 2px tall)",
+              "origin": [-7, 24, -7],
+              "size": [14, 2, 1],
               "uv": {
-                "north": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    14,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    14,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    14,
-                    2
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    14,
-                    2
-                  ]
-                }
+                "north": {"uv": [0, 0], "uv_size": [14, 2]},
+                "south": {"uv": [0, 0], "uv_size": [14, 2]},
+                "east": {"uv": [0, 0], "uv_size": [1, 2]},
+                "west": {"uv": [0, 0], "uv_size": [1, 2]},
+                "up": {"uv": [0, 0], "uv_size": [14, 1]},
+                "down": {"uv": [0, 0], "uv_size": [14, 1]}
               }
             },
             {
-              "comment": "Top ring - South wall",
-              "origin": [
-                -7,
-                15,
-                5
-              ],
-              "size": [
-                14,
-                2,
-                2
-              ],
+              "comment": "Lip - South wall",
+              "origin": [-7, 24, 6],
+              "size": [14, 2, 1],
               "uv": {
-                "north": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    14,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    14,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    14,
-                    2
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    14,
-                    2
-                  ]
-                }
+                "north": {"uv": [0, 0], "uv_size": [14, 2]},
+                "south": {"uv": [0, 0], "uv_size": [14, 2]},
+                "east": {"uv": [0, 0], "uv_size": [1, 2]},
+                "west": {"uv": [0, 0], "uv_size": [1, 2]},
+                "up": {"uv": [0, 0], "uv_size": [14, 1]},
+                "down": {"uv": [0, 0], "uv_size": [14, 1]}
               }
             },
             {
-              "comment": "Top ring - East wall",
-              "origin": [
-                5,
-                15,
-                -5
-              ],
-              "size": [
-                2,
-                2,
-                10
-              ],
+              "comment": "Lip - East wall",
+              "origin": [6, 24, -6],
+              "size": [1, 2, 12],
               "uv": {
-                "north": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    10
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    10
-                  ]
-                }
+                "north": {"uv": [0, 0], "uv_size": [1, 2]},
+                "south": {"uv": [0, 0], "uv_size": [1, 2]},
+                "east": {"uv": [0, 0], "uv_size": [12, 2]},
+                "west": {"uv": [0, 0], "uv_size": [12, 2]},
+                "up": {"uv": [0, 0], "uv_size": [1, 12]},
+                "down": {"uv": [0, 0], "uv_size": [1, 12]}
               }
             },
             {
-              "comment": "Top ring - West wall",
-              "origin": [
-                -7,
-                15,
-                -5
-              ],
-              "size": [
-                2,
-                2,
-                10
-              ],
+              "comment": "Lip - West wall",
+              "origin": [-7, 24, -6],
+              "size": [1, 2, 12],
               "uv": {
-                "north": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    10
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    10
-                  ]
-                }
+                "north": {"uv": [0, 0], "uv_size": [1, 2]},
+                "south": {"uv": [0, 0], "uv_size": [1, 2]},
+                "east": {"uv": [0, 0], "uv_size": [12, 2]},
+                "west": {"uv": [0, 0], "uv_size": [12, 2]},
+                "up": {"uv": [0, 0], "uv_size": [1, 12]},
+                "down": {"uv": [0, 0], "uv_size": [1, 12]}
               }
             },
             {
-              "comment": "Middle ring - North wall",
-              "origin": [
-                -5,
-                13,
-                -5
-              ],
-              "size": [
-                10,
-                2,
-                2
-              ],
+              "comment": "Upper level - North wall (12x12)",
+              "origin": [-6, 22, -6],
+              "size": [12, 2, 2],
               "uv": {
-                "north": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                }
+                "north": {"uv": [16, 16], "uv_size": [12, 2]},
+                "south": {"uv": [16, 16], "uv_size": [12, 2]},
+                "east": {"uv": [16, 16], "uv_size": [2, 2]},
+                "west": {"uv": [16, 16], "uv_size": [2, 2]},
+                "up": {"uv": [16, 16], "uv_size": [12, 2]},
+                "down": {"uv": [16, 16], "uv_size": [12, 2]}
               }
             },
             {
-              "comment": "Middle ring - South wall",
-              "origin": [
-                -5,
-                13,
-                3
-              ],
-              "size": [
-                10,
-                2,
-                2
-              ],
+              "comment": "Upper level - South wall",
+              "origin": [-6, 22, 4],
+              "size": [12, 2, 2],
               "uv": {
-                "north": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    10,
-                    2
-                  ]
-                }
+                "north": {"uv": [16, 16], "uv_size": [12, 2]},
+                "south": {"uv": [16, 16], "uv_size": [12, 2]},
+                "east": {"uv": [16, 16], "uv_size": [2, 2]},
+                "west": {"uv": [16, 16], "uv_size": [2, 2]},
+                "up": {"uv": [16, 16], "uv_size": [12, 2]},
+                "down": {"uv": [16, 16], "uv_size": [12, 2]}
               }
             },
             {
-              "comment": "Middle ring - East wall",
-              "origin": [
-                3,
-                13,
-                -3
-              ],
-              "size": [
-                2,
-                2,
-                6
-              ],
+              "comment": "Upper level - East wall",
+              "origin": [4, 22, -4],
+              "size": [2, 2, 8],
               "uv": {
-                "north": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    6,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    6,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    6
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    6
-                  ]
-                }
+                "north": {"uv": [16, 16], "uv_size": [2, 2]},
+                "south": {"uv": [16, 16], "uv_size": [2, 2]},
+                "east": {"uv": [16, 16], "uv_size": [8, 2]},
+                "west": {"uv": [16, 16], "uv_size": [8, 2]},
+                "up": {"uv": [16, 16], "uv_size": [2, 8]},
+                "down": {"uv": [16, 16], "uv_size": [2, 8]}
               }
             },
             {
-              "comment": "Middle ring - West wall",
-              "origin": [
-                -5,
-                13,
-                -3
-              ],
-              "size": [
-                2,
-                2,
-                6
-              ],
+              "comment": "Upper level - West wall",
+              "origin": [-6, 22, -4],
+              "size": [2, 2, 8],
               "uv": {
-                "north": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    2
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    6,
-                    2
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    6,
-                    2
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    6
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    16,
-                    16
-                  ],
-                  "uv_size": [
-                    2,
-                    6
-                  ]
-                }
+                "north": {"uv": [16, 16], "uv_size": [2, 2]},
+                "south": {"uv": [16, 16], "uv_size": [2, 2]},
+                "east": {"uv": [16, 16], "uv_size": [8, 2]},
+                "west": {"uv": [16, 16], "uv_size": [8, 2]},
+                "up": {"uv": [16, 16], "uv_size": [2, 8]},
+                "down": {"uv": [16, 16], "uv_size": [2, 8]}
+              }
+            },
+            {
+              "comment": "Middle level - North wall (10x10)",
+              "origin": [-5, 20, -5],
+              "size": [10, 2, 2],
+              "uv": {
+                "north": {"uv": [16, 16], "uv_size": [10, 2]},
+                "south": {"uv": [16, 16], "uv_size": [10, 2]},
+                "east": {"uv": [16, 16], "uv_size": [2, 2]},
+                "west": {"uv": [16, 16], "uv_size": [2, 2]},
+                "up": {"uv": [16, 16], "uv_size": [10, 2]},
+                "down": {"uv": [16, 16], "uv_size": [10, 2]}
+              }
+            },
+            {
+              "comment": "Middle level - South wall",
+              "origin": [-5, 20, 3],
+              "size": [10, 2, 2],
+              "uv": {
+                "north": {"uv": [16, 16], "uv_size": [10, 2]},
+                "south": {"uv": [16, 16], "uv_size": [10, 2]},
+                "east": {"uv": [16, 16], "uv_size": [2, 2]},
+                "west": {"uv": [16, 16], "uv_size": [2, 2]},
+                "up": {"uv": [16, 16], "uv_size": [10, 2]},
+                "down": {"uv": [16, 16], "uv_size": [10, 2]}
+              }
+            },
+            {
+              "comment": "Middle level - East wall",
+              "origin": [3, 20, -3],
+              "size": [2, 2, 6],
+              "uv": {
+                "north": {"uv": [16, 16], "uv_size": [2, 2]},
+                "south": {"uv": [16, 16], "uv_size": [2, 2]},
+                "east": {"uv": [16, 16], "uv_size": [6, 2]},
+                "west": {"uv": [16, 16], "uv_size": [6, 2]},
+                "up": {"uv": [16, 16], "uv_size": [2, 6]},
+                "down": {"uv": [16, 16], "uv_size": [2, 6]}
+              }
+            },
+            {
+              "comment": "Middle level - West wall",
+              "origin": [-5, 20, -3],
+              "size": [2, 2, 6],
+              "uv": {
+                "north": {"uv": [16, 16], "uv_size": [2, 2]},
+                "south": {"uv": [16, 16], "uv_size": [2, 2]},
+                "east": {"uv": [16, 16], "uv_size": [6, 2]},
+                "west": {"uv": [16, 16], "uv_size": [6, 2]},
+                "up": {"uv": [16, 16], "uv_size": [2, 6]},
+                "down": {"uv": [16, 16], "uv_size": [2, 6]}
               }
             }
           ]
         },
         {
-          "name": "feed_guide",
-          "parent": "chamber",
-          "pivot": [
-            0,
-            11,
-            0
-          ],
+          "name": "band_upper",
+          "parent": "root",
+          "pivot": [0, 17, 0],
           "cubes": [
             {
-              "comment": "Guide rail - North",
-              "origin": [
-                -3,
-                10,
-                -3
-              ],
-              "size": [
-                6,
-                1,
-                1
-              ],
+              "comment": "Upper orange band - North",
+              "origin": [-7, 16, -7],
+              "size": [14, 1, 1],
               "uv": {
-                "north": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    6,
-                    1
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    6,
-                    1
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    6,
-                    1
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    6,
-                    1
-                  ]
-                }
+                "north": {"uv": [48, 32], "uv_size": [14, 1]},
+                "south": {"uv": [48, 32], "uv_size": [14, 1]},
+                "east": {"uv": [48, 32], "uv_size": [1, 1]},
+                "west": {"uv": [48, 32], "uv_size": [1, 1]},
+                "up": {"uv": [48, 32], "uv_size": [14, 1]},
+                "down": {"uv": [48, 32], "uv_size": [14, 1]}
               }
             },
             {
-              "comment": "Guide rail - South",
-              "origin": [
-                -3,
-                10,
-                2
-              ],
-              "size": [
-                6,
-                1,
-                1
-              ],
+              "comment": "Upper orange band - South",
+              "origin": [-7, 16, 6],
+              "size": [14, 1, 1],
               "uv": {
-                "north": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    6,
-                    1
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    6,
-                    1
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    6,
-                    1
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    6,
-                    1
-                  ]
-                }
+                "north": {"uv": [48, 32], "uv_size": [14, 1]},
+                "south": {"uv": [48, 32], "uv_size": [14, 1]},
+                "east": {"uv": [48, 32], "uv_size": [1, 1]},
+                "west": {"uv": [48, 32], "uv_size": [1, 1]},
+                "up": {"uv": [48, 32], "uv_size": [14, 1]},
+                "down": {"uv": [48, 32], "uv_size": [14, 1]}
               }
             },
             {
-              "comment": "Guide rail - East",
-              "origin": [
-                2,
-                10,
-                -2
-              ],
-              "size": [
-                1,
-                1,
-                4
-              ],
+              "comment": "Upper orange band - East",
+              "origin": [6, 16, -6],
+              "size": [1, 1, 12],
               "uv": {
-                "north": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    4,
-                    1
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    4,
-                    1
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    4
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    4
-                  ]
-                }
+                "north": {"uv": [48, 32], "uv_size": [1, 1]},
+                "south": {"uv": [48, 32], "uv_size": [1, 1]},
+                "east": {"uv": [48, 32], "uv_size": [12, 1]},
+                "west": {"uv": [48, 32], "uv_size": [12, 1]},
+                "up": {"uv": [48, 32], "uv_size": [1, 12]},
+                "down": {"uv": [48, 32], "uv_size": [1, 12]}
               }
             },
             {
-              "comment": "Guide rail - West",
-              "origin": [
-                -3,
-                10,
-                -2
-              ],
-              "size": [
-                1,
-                1,
-                4
-              ],
+              "comment": "Upper orange band - West",
+              "origin": [-7, 16, -6],
+              "size": [1, 1, 12],
               "uv": {
-                "north": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "south": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    1
-                  ]
-                },
-                "east": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    4,
-                    1
-                  ]
-                },
-                "west": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    4,
-                    1
-                  ]
-                },
-                "up": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    4
-                  ]
-                },
-                "down": {
-                  "uv": [
-                    48,
-                    32
-                  ],
-                  "uv_size": [
-                    1,
-                    4
-                  ]
-                }
+                "north": {"uv": [48, 32], "uv_size": [1, 1]},
+                "south": {"uv": [48, 32], "uv_size": [1, 1]},
+                "east": {"uv": [48, 32], "uv_size": [12, 1]},
+                "west": {"uv": [48, 32], "uv_size": [12, 1]},
+                "up": {"uv": [48, 32], "uv_size": [1, 12]},
+                "down": {"uv": [48, 32], "uv_size": [1, 12]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "band_middle",
+          "parent": "root",
+          "pivot": [0, 8, 0],
+          "cubes": [
+            {
+              "comment": "Middle orange band - North",
+              "origin": [-7, 7, -7],
+              "size": [14, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [14, 1]},
+                "south": {"uv": [48, 32], "uv_size": [14, 1]},
+                "east": {"uv": [48, 32], "uv_size": [1, 1]},
+                "west": {"uv": [48, 32], "uv_size": [1, 1]},
+                "up": {"uv": [48, 32], "uv_size": [14, 1]},
+                "down": {"uv": [48, 32], "uv_size": [14, 1]}
+              }
+            },
+            {
+              "comment": "Middle orange band - South",
+              "origin": [-7, 7, 6],
+              "size": [14, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [14, 1]},
+                "south": {"uv": [48, 32], "uv_size": [14, 1]},
+                "east": {"uv": [48, 32], "uv_size": [1, 1]},
+                "west": {"uv": [48, 32], "uv_size": [1, 1]},
+                "up": {"uv": [48, 32], "uv_size": [14, 1]},
+                "down": {"uv": [48, 32], "uv_size": [14, 1]}
+              }
+            },
+            {
+              "comment": "Middle orange band - East",
+              "origin": [6, 7, -6],
+              "size": [1, 1, 12],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [1, 1]},
+                "south": {"uv": [48, 32], "uv_size": [1, 1]},
+                "east": {"uv": [48, 32], "uv_size": [12, 1]},
+                "west": {"uv": [48, 32], "uv_size": [12, 1]},
+                "up": {"uv": [48, 32], "uv_size": [1, 12]},
+                "down": {"uv": [48, 32], "uv_size": [1, 12]}
+              }
+            },
+            {
+              "comment": "Middle orange band - West",
+              "origin": [-7, 7, -6],
+              "size": [1, 1, 12],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [1, 1]},
+                "south": {"uv": [48, 32], "uv_size": [1, 1]},
+                "east": {"uv": [48, 32], "uv_size": [12, 1]},
+                "west": {"uv": [48, 32], "uv_size": [12, 1]},
+                "up": {"uv": [48, 32], "uv_size": [1, 12]},
+                "down": {"uv": [48, 32], "uv_size": [1, 12]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "band_lower",
+          "parent": "root",
+          "pivot": [0, 2, 0],
+          "cubes": [
+            {
+              "comment": "Lower orange band - North",
+              "origin": [-7, 1, -7],
+              "size": [14, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [14, 1]},
+                "south": {"uv": [48, 32], "uv_size": [14, 1]},
+                "east": {"uv": [48, 32], "uv_size": [1, 1]},
+                "west": {"uv": [48, 32], "uv_size": [1, 1]},
+                "up": {"uv": [48, 32], "uv_size": [14, 1]},
+                "down": {"uv": [48, 32], "uv_size": [14, 1]}
+              }
+            },
+            {
+              "comment": "Lower orange band - South",
+              "origin": [-7, 1, 6],
+              "size": [14, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [14, 1]},
+                "south": {"uv": [48, 32], "uv_size": [14, 1]},
+                "east": {"uv": [48, 32], "uv_size": [1, 1]},
+                "west": {"uv": [48, 32], "uv_size": [1, 1]},
+                "up": {"uv": [48, 32], "uv_size": [14, 1]},
+                "down": {"uv": [48, 32], "uv_size": [14, 1]}
+              }
+            },
+            {
+              "comment": "Lower orange band - East",
+              "origin": [6, 1, -6],
+              "size": [1, 1, 12],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [1, 1]},
+                "south": {"uv": [48, 32], "uv_size": [1, 1]},
+                "east": {"uv": [48, 32], "uv_size": [12, 1]},
+                "west": {"uv": [48, 32], "uv_size": [12, 1]},
+                "up": {"uv": [48, 32], "uv_size": [1, 12]},
+                "down": {"uv": [48, 32], "uv_size": [1, 12]}
+              }
+            },
+            {
+              "comment": "Lower orange band - West",
+              "origin": [-7, 1, -6],
+              "size": [1, 1, 12],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [1, 1]},
+                "south": {"uv": [48, 32], "uv_size": [1, 1]},
+                "east": {"uv": [48, 32], "uv_size": [12, 1]},
+                "west": {"uv": [48, 32], "uv_size": [12, 1]},
+                "up": {"uv": [48, 32], "uv_size": [1, 12]},
+                "down": {"uv": [48, 32], "uv_size": [1, 12]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "panel_led",
+          "parent": "root",
+          "pivot": [-8, 4, -8],
+          "cubes": [
+            {
+              "comment": "LED panel - background frame",
+              "origin": [-9, 3, -8],
+              "size": [2, 5, 1],
+              "uv": {
+                "north": {"uv": [16, 16], "uv_size": [2, 5]},
+                "south": {"uv": [16, 16], "uv_size": [2, 5]},
+                "east": {"uv": [16, 16], "uv_size": [1, 5]},
+                "west": {"uv": [16, 16], "uv_size": [1, 5]},
+                "up": {"uv": [16, 16], "uv_size": [2, 1]},
+                "down": {"uv": [16, 16], "uv_size": [2, 1]}
+              }
+            },
+            {
+              "comment": "LED red (top) - error/stop",
+              "origin": [-8.5, 6.5, -8.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [60, 60], "uv_size": [1, 1]},
+                "south": {"uv": [60, 60], "uv_size": [1, 1]},
+                "east": {"uv": [60, 60], "uv_size": [1, 1]},
+                "west": {"uv": [60, 60], "uv_size": [1, 1]},
+                "up": {"uv": [60, 60], "uv_size": [1, 1]},
+                "down": {"uv": [60, 60], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "LED yellow (middle) - processing",
+              "origin": [-8.5, 5, -8.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [61, 60], "uv_size": [1, 1]},
+                "south": {"uv": [61, 60], "uv_size": [1, 1]},
+                "east": {"uv": [61, 60], "uv_size": [1, 1]},
+                "west": {"uv": [61, 60], "uv_size": [1, 1]},
+                "up": {"uv": [61, 60], "uv_size": [1, 1]},
+                "down": {"uv": [61, 60], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "LED green (bottom) - ready/ok",
+              "origin": [-8.5, 3.5, -8.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [62, 60], "uv_size": [1, 1]},
+                "south": {"uv": [62, 60], "uv_size": [1, 1]},
+                "east": {"uv": [62, 60], "uv_size": [1, 1]},
+                "west": {"uv": [62, 60], "uv_size": [1, 1]},
+                "up": {"uv": [62, 60], "uv_size": [1, 1]},
+                "down": {"uv": [62, 60], "uv_size": [1, 1]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "output_tray",
+          "parent": "root",
+          "pivot": [8, 2, -4],
+          "cubes": [
+            {
+              "comment": "Output tray - bottom plate",
+              "origin": [6, 2, -8],
+              "size": [4, 1, 6],
+              "uv": {
+                "north": {"uv": [0, 0], "uv_size": [4, 1]},
+                "south": {"uv": [0, 0], "uv_size": [4, 1]},
+                "east": {"uv": [0, 0], "uv_size": [6, 1]},
+                "west": {"uv": [0, 0], "uv_size": [6, 1]},
+                "up": {"uv": [0, 0], "uv_size": [4, 6]},
+                "down": {"uv": [0, 0], "uv_size": [4, 6]}
+              }
+            },
+            {
+              "comment": "Output tray - left wall",
+              "origin": [6, 2, -8],
+              "size": [1, 2, 6],
+              "uv": {
+                "north": {"uv": [16, 16], "uv_size": [1, 2]},
+                "south": {"uv": [16, 16], "uv_size": [1, 2]},
+                "east": {"uv": [16, 16], "uv_size": [6, 2]},
+                "west": {"uv": [16, 16], "uv_size": [6, 2]},
+                "up": {"uv": [16, 16], "uv_size": [1, 6]},
+                "down": {"uv": [16, 16], "uv_size": [1, 6]}
+              }
+            },
+            {
+              "comment": "Output tray - right wall",
+              "origin": [9, 2, -8],
+              "size": [1, 2, 6],
+              "uv": {
+                "north": {"uv": [16, 16], "uv_size": [1, 2]},
+                "south": {"uv": [16, 16], "uv_size": [1, 2]},
+                "east": {"uv": [16, 16], "uv_size": [6, 2]},
+                "west": {"uv": [16, 16], "uv_size": [6, 2]},
+                "up": {"uv": [16, 16], "uv_size": [1, 6]},
+                "down": {"uv": [16, 16], "uv_size": [1, 6]}
+              }
+            },
+            {
+              "comment": "Output tray - front wall",
+              "origin": [7, 2, -8],
+              "size": [2, 2, 1],
+              "uv": {
+                "north": {"uv": [16, 16], "uv_size": [2, 2]},
+                "south": {"uv": [16, 16], "uv_size": [2, 2]},
+                "east": {"uv": [16, 16], "uv_size": [1, 2]},
+                "west": {"uv": [16, 16], "uv_size": [1, 2]},
+                "up": {"uv": [16, 16], "uv_size": [2, 1]},
+                "down": {"uv": [16, 16], "uv_size": [2, 1]}
+              }
+            },
+            {
+              "comment": "Output material - crushed rocks",
+              "origin": [7, 3, -6],
+              "size": [2, 1, 3],
+              "uv": {
+                "north": {"uv": [32, 32], "uv_size": [2, 1]},
+                "south": {"uv": [32, 32], "uv_size": [2, 1]},
+                "east": {"uv": [32, 32], "uv_size": [3, 1]},
+                "west": {"uv": [32, 32], "uv_size": [3, 1]},
+                "up": {"uv": [32, 32], "uv_size": [2, 3]},
+                "down": {"uv": [32, 32], "uv_size": [2, 3]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "hazard_stripes",
+          "parent": "root",
+          "pivot": [0, 1, -7],
+          "cubes": [
+            {
+              "comment": "Hazard stripe 1 - yellow/orange",
+              "origin": [-7, 1, -7.5],
+              "size": [2, 2, 0.5],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [2, 2]},
+                "south": {"uv": [48, 32], "uv_size": [2, 2]},
+                "east": {"uv": [48, 32], "uv_size": [0.5, 2]},
+                "west": {"uv": [48, 32], "uv_size": [0.5, 2]},
+                "up": {"uv": [48, 32], "uv_size": [2, 0.5]},
+                "down": {"uv": [48, 32], "uv_size": [2, 0.5]}
+              }
+            },
+            {
+              "comment": "Hazard stripe 2 - dark",
+              "origin": [-5, 1, -7.5],
+              "size": [2, 2, 0.5],
+              "uv": {
+                "north": {"uv": [32, 48], "uv_size": [2, 2]},
+                "south": {"uv": [32, 48], "uv_size": [2, 2]},
+                "east": {"uv": [32, 48], "uv_size": [0.5, 2]},
+                "west": {"uv": [32, 48], "uv_size": [0.5, 2]},
+                "up": {"uv": [32, 48], "uv_size": [2, 0.5]},
+                "down": {"uv": [32, 48], "uv_size": [2, 0.5]}
+              }
+            },
+            {
+              "comment": "Hazard stripe 3 - yellow/orange",
+              "origin": [-3, 1, -7.5],
+              "size": [2, 2, 0.5],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [2, 2]},
+                "south": {"uv": [48, 32], "uv_size": [2, 2]},
+                "east": {"uv": [48, 32], "uv_size": [0.5, 2]},
+                "west": {"uv": [48, 32], "uv_size": [0.5, 2]},
+                "up": {"uv": [48, 32], "uv_size": [2, 0.5]},
+                "down": {"uv": [48, 32], "uv_size": [2, 0.5]}
+              }
+            },
+            {
+              "comment": "Hazard stripe 4 - dark",
+              "origin": [-1, 1, -7.5],
+              "size": [2, 2, 0.5],
+              "uv": {
+                "north": {"uv": [32, 48], "uv_size": [2, 2]},
+                "south": {"uv": [32, 48], "uv_size": [2, 2]},
+                "east": {"uv": [32, 48], "uv_size": [0.5, 2]},
+                "west": {"uv": [32, 48], "uv_size": [0.5, 2]},
+                "up": {"uv": [32, 48], "uv_size": [2, 0.5]},
+                "down": {"uv": [32, 48], "uv_size": [2, 0.5]}
+              }
+            },
+            {
+              "comment": "Hazard stripe 5 - yellow/orange",
+              "origin": [1, 1, -7.5],
+              "size": [2, 2, 0.5],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [2, 2]},
+                "south": {"uv": [48, 32], "uv_size": [2, 2]},
+                "east": {"uv": [48, 32], "uv_size": [0.5, 2]},
+                "west": {"uv": [48, 32], "uv_size": [0.5, 2]},
+                "up": {"uv": [48, 32], "uv_size": [2, 0.5]},
+                "down": {"uv": [48, 32], "uv_size": [2, 0.5]}
+              }
+            },
+            {
+              "comment": "Hazard stripe 6 - dark",
+              "origin": [3, 1, -7.5],
+              "size": [2, 2, 0.5],
+              "uv": {
+                "north": {"uv": [32, 48], "uv_size": [2, 2]},
+                "south": {"uv": [32, 48], "uv_size": [2, 2]},
+                "east": {"uv": [32, 48], "uv_size": [0.5, 2]},
+                "west": {"uv": [32, 48], "uv_size": [0.5, 2]},
+                "up": {"uv": [32, 48], "uv_size": [2, 0.5]},
+                "down": {"uv": [32, 48], "uv_size": [2, 0.5]}
+              }
+            },
+            {
+              "comment": "Hazard stripe 7 - yellow/orange",
+              "origin": [5, 1, -7.5],
+              "size": [2, 2, 0.5],
+              "uv": {
+                "north": {"uv": [48, 32], "uv_size": [2, 2]},
+                "south": {"uv": [48, 32], "uv_size": [2, 2]},
+                "east": {"uv": [48, 32], "uv_size": [0.5, 2]},
+                "west": {"uv": [48, 32], "uv_size": [0.5, 2]},
+                "up": {"uv": [48, 32], "uv_size": [2, 0.5]},
+                "down": {"uv": [48, 32], "uv_size": [2, 0.5]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "bolts",
+          "parent": "root",
+          "pivot": [0, 0, 0],
+          "cubes": [
+            {
+              "comment": "Rivet - front left at lower band",
+              "origin": [-7.5, 1.5, -7.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - front right at lower band",
+              "origin": [6.5, 1.5, -7.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - front left at middle band",
+              "origin": [-7.5, 7.5, -7.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - front right at middle band",
+              "origin": [6.5, 7.5, -7.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - front left at upper band",
+              "origin": [-7.5, 16.5, -7.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - front right at upper band",
+              "origin": [6.5, 16.5, -7.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - left side lower",
+              "origin": [-7.5, 1.5, 0],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - right side lower",
+              "origin": [6.5, 1.5, 0],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - left side middle",
+              "origin": [-7.5, 7.5, 0],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - right side middle",
+              "origin": [6.5, 7.5, 0],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - back left at lower band",
+              "origin": [-7.5, 1.5, 6.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
+              }
+            },
+            {
+              "comment": "Rivet - back right at lower band",
+              "origin": [6.5, 1.5, 6.5],
+              "size": [1, 1, 1],
+              "uv": {
+                "north": {"uv": [48, 48], "uv_size": [1, 1]},
+                "south": {"uv": [48, 48], "uv_size": [1, 1]},
+                "east": {"uv": [48, 48], "uv_size": [1, 1]},
+                "west": {"uv": [48, 48], "uv_size": [1, 1]},
+                "up": {"uv": [48, 48], "uv_size": [1, 1]},
+                "down": {"uv": [48, 48], "uv_size": [1, 1]}
               }
             }
           ]
@@ -2760,7 +2351,7 @@
           "pivot": [
             0,
             9,
-            -5.5
+            -6.5
           ],
           "cubes": [
             {
@@ -2768,7 +2359,7 @@
               "origin": [
                 -3.5,
                 9.5,
-                -6
+                -7
               ],
               "size": [
                 7,
@@ -2843,7 +2434,7 @@
               "origin": [
                 -3.5,
                 7.5,
-                -6
+                -7
               ],
               "size": [
                 7,
@@ -2918,7 +2509,7 @@
               "origin": [
                 -4.5,
                 7.5,
-                -6
+                -7
               ],
               "size": [
                 1,
@@ -2993,7 +2584,7 @@
               "origin": [
                 3.5,
                 7.5,
-                -6
+                -7
               ],
               "size": [
                 1,
@@ -3061,6 +2652,893 @@
                     1
                   ]
                 }
+              }
+            }
+          ]
+        },
+        {
+          "name": "belt_back",
+          "parent": "root",
+          "pivot": [
+            0,
+            9,
+            7
+          ],
+          "cubes": [
+            {
+              "comment": "Belt back top - connects peg tops",
+              "origin": [
+                -3.5,
+                9.5,
+                7
+              ],
+              "size": [
+                7,
+                1,
+                1
+              ],
+              "uv": {
+                "north": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    7,
+                    1
+                  ]
+                },
+                "south": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    7,
+                    1
+                  ]
+                },
+                "east": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    1
+                  ]
+                },
+                "west": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    1
+                  ]
+                },
+                "up": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    7,
+                    1
+                  ]
+                },
+                "down": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    7,
+                    1
+                  ]
+                }
+              }
+            },
+            {
+              "comment": "Belt back bottom - connects peg bottoms",
+              "origin": [
+                -3.5,
+                7.5,
+                7
+              ],
+              "size": [
+                7,
+                1,
+                1
+              ],
+              "uv": {
+                "north": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    7,
+                    1
+                  ]
+                },
+                "south": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    7,
+                    1
+                  ]
+                },
+                "east": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    1
+                  ]
+                },
+                "west": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    1
+                  ]
+                },
+                "up": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    7,
+                    1
+                  ]
+                },
+                "down": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    7,
+                    1
+                  ]
+                }
+              }
+            },
+            {
+              "comment": "Belt back left wrap - around left peg",
+              "origin": [
+                -4.5,
+                7.5,
+                7
+              ],
+              "size": [
+                1,
+                3,
+                1
+              ],
+              "uv": {
+                "north": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    3
+                  ]
+                },
+                "south": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    3
+                  ]
+                },
+                "east": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    3
+                  ]
+                },
+                "west": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    3
+                  ]
+                },
+                "up": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    1
+                  ]
+                },
+                "down": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    1
+                  ]
+                }
+              }
+            },
+            {
+              "comment": "Belt back right wrap - around right peg",
+              "origin": [
+                3.5,
+                7.5,
+                7
+              ],
+              "size": [
+                1,
+                3,
+                1
+              ],
+              "uv": {
+                "north": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    3
+                  ]
+                },
+                "south": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    3
+                  ]
+                },
+                "east": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    3
+                  ]
+                },
+                "west": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    3
+                  ]
+                },
+                "up": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    1
+                  ]
+                },
+                "down": {
+                  "uv": [
+                    48,
+                    16
+                  ],
+                  "uv_size": [
+                    1,
+                    1
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "foot_nw",
+          "parent": "root",
+          "pivot": [
+            -8.5,
+            1.5,
+            -8.5
+          ],
+          "rotation": [
+            0,
+            -22.5,
+            0
+          ],
+          "cubes": [
+            {
+              "comment": "NW foot - anti-vibration pad",
+              "origin": [
+                -10,
+                0,
+                -10
+              ],
+              "size": [
+                3,
+                3,
+                3
+              ],
+              "uv": {
+                "north": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "east": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "south": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "west": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "up": {
+                  "uv": [
+                    0,
+                    0
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "down": {
+                  "uv": [
+                    0,
+                    0
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "foot_ne",
+          "parent": "root",
+          "pivot": [
+            8.5,
+            1.5,
+            -8.5
+          ],
+          "rotation": [
+            0,
+            22.5,
+            0
+          ],
+          "cubes": [
+            {
+              "comment": "NE foot - anti-vibration pad",
+              "origin": [
+                7,
+                0,
+                -10
+              ],
+              "size": [
+                3,
+                3,
+                3
+              ],
+              "uv": {
+                "north": {
+                  "uv": [
+                    13,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "east": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "south": {
+                  "uv": [
+                    13,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "west": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "up": {
+                  "uv": [
+                    13,
+                    0
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "down": {
+                  "uv": [
+                    13,
+                    0
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "foot_sw",
+          "parent": "root",
+          "pivot": [
+            -8.5,
+            1.5,
+            8.5
+          ],
+          "rotation": [
+            0,
+            22.5,
+            0
+          ],
+          "cubes": [
+            {
+              "comment": "SW foot - anti-vibration pad",
+              "origin": [
+                -10,
+                0,
+                7
+              ],
+              "size": [
+                3,
+                3,
+                3
+              ],
+              "uv": {
+                "north": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "east": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "south": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "west": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "up": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "down": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "foot_se",
+          "parent": "root",
+          "pivot": [
+            8.5,
+            1.5,
+            8.5
+          ],
+          "rotation": [
+            0,
+            -22.5,
+            0
+          ],
+          "cubes": [
+            {
+              "comment": "SE foot - anti-vibration pad",
+              "origin": [
+                7,
+                0,
+                7
+              ],
+              "size": [
+                3,
+                3,
+                3
+              ],
+              "uv": {
+                "north": {
+                  "uv": [
+                    13,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "east": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "south": {
+                  "uv": [
+                    13,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "west": {
+                  "uv": [
+                    0,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "up": {
+                  "uv": [
+                    13,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                },
+                "down": {
+                  "uv": [
+                    13,
+                    13
+                  ],
+                  "uv_size": [
+                    3,
+                    3
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "brace_nw",
+          "parent": "root",
+          "pivot": [
+            -6,
+            4,
+            -6
+          ],
+          "cubes": [
+            {
+              "comment": "Structural brace NW - horizontal X",
+              "origin": [
+                -7,
+                3.5,
+                -7
+              ],
+              "size": [
+                2,
+                1,
+                1
+              ],
+              "uv": {
+                "north": { "uv": [48, 12], "uv_size": [2, 1] },
+                "east": { "uv": [48, 12], "uv_size": [1, 1] },
+                "south": { "uv": [48, 12], "uv_size": [2, 1] },
+                "west": { "uv": [48, 12], "uv_size": [1, 1] },
+                "up": { "uv": [48, 12], "uv_size": [2, 1] },
+                "down": { "uv": [48, 12], "uv_size": [2, 1] }
+              }
+            },
+            {
+              "comment": "Structural brace NW - horizontal Z",
+              "origin": [
+                -7,
+                3.5,
+                -7
+              ],
+              "size": [
+                1,
+                1,
+                2
+              ],
+              "uv": {
+                "north": { "uv": [48, 12], "uv_size": [1, 1] },
+                "east": { "uv": [48, 12], "uv_size": [2, 1] },
+                "south": { "uv": [48, 12], "uv_size": [1, 1] },
+                "west": { "uv": [48, 12], "uv_size": [2, 1] },
+                "up": { "uv": [48, 12], "uv_size": [1, 2] },
+                "down": { "uv": [48, 12], "uv_size": [1, 2] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "brace_ne",
+          "parent": "root",
+          "pivot": [
+            6,
+            4,
+            -6
+          ],
+          "cubes": [
+            {
+              "comment": "Structural brace NE - horizontal X",
+              "origin": [
+                5,
+                3.5,
+                -7
+              ],
+              "size": [
+                2,
+                1,
+                1
+              ],
+              "uv": {
+                "north": { "uv": [48, 12], "uv_size": [2, 1] },
+                "east": { "uv": [48, 12], "uv_size": [1, 1] },
+                "south": { "uv": [48, 12], "uv_size": [2, 1] },
+                "west": { "uv": [48, 12], "uv_size": [1, 1] },
+                "up": { "uv": [48, 12], "uv_size": [2, 1] },
+                "down": { "uv": [48, 12], "uv_size": [2, 1] }
+              }
+            },
+            {
+              "comment": "Structural brace NE - horizontal Z",
+              "origin": [
+                6,
+                3.5,
+                -7
+              ],
+              "size": [
+                1,
+                1,
+                2
+              ],
+              "uv": {
+                "north": { "uv": [48, 12], "uv_size": [1, 1] },
+                "east": { "uv": [48, 12], "uv_size": [2, 1] },
+                "south": { "uv": [48, 12], "uv_size": [1, 1] },
+                "west": { "uv": [48, 12], "uv_size": [2, 1] },
+                "up": { "uv": [48, 12], "uv_size": [1, 2] },
+                "down": { "uv": [48, 12], "uv_size": [1, 2] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "brace_sw",
+          "parent": "root",
+          "pivot": [
+            -6,
+            4,
+            6
+          ],
+          "cubes": [
+            {
+              "comment": "Structural brace SW - horizontal X",
+              "origin": [
+                -7,
+                3.5,
+                6
+              ],
+              "size": [
+                2,
+                1,
+                1
+              ],
+              "uv": {
+                "north": { "uv": [48, 12], "uv_size": [2, 1] },
+                "east": { "uv": [48, 12], "uv_size": [1, 1] },
+                "south": { "uv": [48, 12], "uv_size": [2, 1] },
+                "west": { "uv": [48, 12], "uv_size": [1, 1] },
+                "up": { "uv": [48, 12], "uv_size": [2, 1] },
+                "down": { "uv": [48, 12], "uv_size": [2, 1] }
+              }
+            },
+            {
+              "comment": "Structural brace SW - horizontal Z",
+              "origin": [
+                -7,
+                3.5,
+                5
+              ],
+              "size": [
+                1,
+                1,
+                2
+              ],
+              "uv": {
+                "north": { "uv": [48, 12], "uv_size": [1, 1] },
+                "east": { "uv": [48, 12], "uv_size": [2, 1] },
+                "south": { "uv": [48, 12], "uv_size": [1, 1] },
+                "west": { "uv": [48, 12], "uv_size": [2, 1] },
+                "up": { "uv": [48, 12], "uv_size": [1, 2] },
+                "down": { "uv": [48, 12], "uv_size": [1, 2] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "brace_se",
+          "parent": "root",
+          "pivot": [
+            6,
+            4,
+            6
+          ],
+          "cubes": [
+            {
+              "comment": "Structural brace SE - horizontal X",
+              "origin": [
+                5,
+                3.5,
+                6
+              ],
+              "size": [
+                2,
+                1,
+                1
+              ],
+              "uv": {
+                "north": { "uv": [48, 12], "uv_size": [2, 1] },
+                "east": { "uv": [48, 12], "uv_size": [1, 1] },
+                "south": { "uv": [48, 12], "uv_size": [2, 1] },
+                "west": { "uv": [48, 12], "uv_size": [1, 1] },
+                "up": { "uv": [48, 12], "uv_size": [2, 1] },
+                "down": { "uv": [48, 12], "uv_size": [2, 1] }
+              }
+            },
+            {
+              "comment": "Structural brace SE - horizontal Z",
+              "origin": [
+                6,
+                3.5,
+                5
+              ],
+              "size": [
+                1,
+                1,
+                2
+              ],
+              "uv": {
+                "north": { "uv": [48, 12], "uv_size": [1, 1] },
+                "east": { "uv": [48, 12], "uv_size": [2, 1] },
+                "south": { "uv": [48, 12], "uv_size": [1, 1] },
+                "west": { "uv": [48, 12], "uv_size": [2, 1] },
+                "up": { "uv": [48, 12], "uv_size": [1, 2] },
+                "down": { "uv": [48, 12], "uv_size": [1, 2] }
               }
             }
           ]

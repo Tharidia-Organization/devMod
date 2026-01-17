@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -17,7 +18,12 @@ import com.devmod.config.Config;
 
 /**
  * Selects spawn pads in the Nexus hub.
+ *
+ * @deprecated Use {@link com.devmod.zone.data.ZoneRegistry} and
+ * {@link com.devmod.zone.runtime.ZoneResolver#getSpawnPosition} instead.
+ * Zone spawn offsets are now defined in {@link com.devmod.zone.data.ZoneDefinition}.
  */
+@Deprecated(since = "1.21.1", forRemoval = true)
 public final class NexusSpawnManager {
     private static final AtomicInteger ROUND_ROBIN = new AtomicInteger();
     private static final Offset DEFAULT_OFFSET = new Offset(0, 0, 34);
@@ -38,6 +44,10 @@ public final class NexusSpawnManager {
         }
     }
 
+    /**
+     * @deprecated Use zone IDs from {@link com.devmod.zone.data.ZoneRegistry} instead.
+     */
+    @Deprecated(since = "1.21.1", forRemoval = true)
     public enum Zone {
         HUB("hub", "Central Hub", DEFAULT_OFFSET),
         OVERVIEW("overview", "Overview Deck", OVERVIEW_OFFSET),
@@ -125,7 +135,7 @@ public final class NexusSpawnManager {
             return hubOrigin == null ? BlockPos.ZERO
                 : hubOrigin.offset(DEFAULT_OFFSET.x(), DEFAULT_OFFSET.y(), DEFAULT_OFFSET.z());
         }
-        return hubOrigin.offset(zone.offset());
+        return hubOrigin.offset(Objects.requireNonNull(zone.offset()));
     }
 
     public static BlockPos getSpawnForPlayer(ServerPlayer player, BlockPos hubOrigin) {
@@ -135,7 +145,7 @@ public final class NexusSpawnManager {
             case ROUND_ROBIN -> nextRoundRobinOffset();
             default -> DEFAULT_OFFSET.toBlockPos();
         };
-        return hubOrigin.offset(offset);
+        return hubOrigin.offset(Objects.requireNonNull(offset));
     }
 
     private static BlockPos nextRoundRobinOffset() {

@@ -277,19 +277,14 @@ public class BlockIntegrityVerifier {
     }
 
     private boolean isWithinFloorBounds(int dx, int dz, ArenaTemplate template) {
-        ArenaTemplate.ArenaShape shape = template.arenaShape();
-        if (shape == null) {
-            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
-        }
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int minX = minOffset(sizeX);
+        int maxX = maxOffset(sizeX);
+        int minZ = minOffset(sizeZ);
+        int maxZ = maxOffset(sizeZ);
 
-        int halfX = getSizeX(template) / 2;
-        int halfZ = getSizeZ(template) / 2;
-        int radius = Math.max(halfX, halfZ);
-
-        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
-        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
-
-        return dx >= -iterHalfX && dx < iterHalfX && dz >= -iterHalfZ && dz < iterHalfZ;
+        return dx >= minX && dx <= maxX && dz >= minZ && dz <= maxZ;
     }
 
     private boolean isInArenaShape(int dx, int dz, ArenaTemplate template) {
@@ -298,11 +293,17 @@ public class BlockIntegrityVerifier {
             shape = ArenaTemplate.ArenaShape.RECTANGULAR;
         }
 
-        int halfX = getSizeX(template) / 2;
-        int halfZ = getSizeZ(template) / 2;
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int minX = minOffset(sizeX);
+        int maxX = maxOffset(sizeX);
+        int minZ = minOffset(sizeZ);
+        int maxZ = maxOffset(sizeZ);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
 
         return switch (shape) {
-            case RECTANGULAR -> dx >= -halfX && dx < halfX && dz >= -halfZ && dz < halfZ;
+            case RECTANGULAR -> dx >= minX && dx <= maxX && dz >= minZ && dz <= maxZ;
             case CIRCULAR -> {
                 int radius = Math.max(halfX, halfZ);
                 yield (dx * dx + dz * dz) <= (radius * radius);
@@ -324,13 +325,10 @@ public class BlockIntegrityVerifier {
 
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
-        int halfX = sizeX / 2;
-        int halfZ = sizeZ / 2;
-
-        int startX = -halfX;
-        int startZ = -halfZ;
-        int endX = startX + sizeX - 1;
-        int endZ = startZ + sizeZ - 1;
+        int startX = minOffset(sizeX);
+        int startZ = minOffset(sizeZ);
+        int endX = maxOffset(sizeX);
+        int endZ = maxOffset(sizeZ);
 
         int pad = thickness - 1;
 
@@ -385,5 +383,13 @@ public class BlockIntegrityVerifier {
     private int getSizeZ(ArenaTemplate template) {
         Integer sz = template.sizeZ();
         return sz != null ? sz.intValue() : template.size();
+    }
+
+    private int minOffset(int size) {
+        return -size / 2;
+    }
+
+    private int maxOffset(int size) {
+        return size - (size / 2) - 1;
     }
 }

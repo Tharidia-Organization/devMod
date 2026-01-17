@@ -1,0 +1,417 @@
+package com.devmod.client.area.widget;
+
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import javax.annotation.Nonnull;
+
+import com.google.common.primitives.Longs;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
+import com.devmod.area.data.BiomeGenerationConfig;
+import com.devmod.area.data.BiomeGenerationConfig.TerrainStyle;
+import com.devmod.client.ui.AxiomRenderer;
+
+/**
+ * Widget for configuring biome generation options.
+ * Includes seed, terrain style, and feature toggles.
+ */
+@OnlyIn(Dist.CLIENT)
+public class BiomeConfigWidget extends AbstractWidget {
+
+    private static final int ROW_HEIGHT = 24;
+    private static final int BUTTON_WIDTH = 80;
+    private static final int BUTTON_HEIGHT = 18;
+    private static final int TOGGLE_WIDTH = 40;
+    private static final int SEED_FIELD_WIDTH = 120;
+    private static final int SECTION_GAP = 8;
+
+    private BiomeGenerationConfig config;
+    private boolean biomeEnabled;
+    private final Consumer<Boolean> onBiomeEnabledChanged;
+    private final Consumer<BiomeGenerationConfig> onConfigChanged;
+
+    private final EditBox seedField;
+    private int enableToggleY;
+    private int seedLabelY;
+    private int seedFieldWidth;
+    private int seedFieldY;
+    private int randomButtonX;
+    private int terrainLabelY;
+    private int terrainButtonsY;
+    private int featureStartY;
+
+    // Terrain style buttons
+    private static final TerrainStyle[] TERRAIN_STYLES = TerrainStyle.values();
+
+    public BiomeConfigWidget(int x, int y, int width, int height,
+                            BiomeGenerationConfig initialConfig,
+                            boolean biomeEnabled,
+                            Consumer<Boolean> onBiomeEnabledChanged,
+                            Consumer<BiomeGenerationConfig> onConfigChanged) {
+        super(x, y, width, height, Component.empty());
+        this.config = initialConfig != null ? initialConfig : BiomeGenerationConfig.DEFAULT;
+        this.biomeEnabled = biomeEnabled;
+        this.onBiomeEnabledChanged = onBiomeEnabledChanged;
+        this.onConfigChanged = onConfigChanged;
+
+        seedField = new EditBox(Objects.requireNonNull(
+            net.minecraft.client.Minecraft.getInstance().font, "font"),
+            x, y, SEED_FIELD_WIDTH, AreaBuilderGuiConstants.FIELD_HEIGHT,
+            Objects.requireNonNull(Component.translatable("area.biome.seed"), "seedLabel"));
+        seedField.setMaxLength(20);
+        seedField.setBordered(false);
+        seedField.setHint(Objects.requireNonNull(
+            Component.translatable("area.biome.seed_hint"), "seedHint"));
+        seedField.setFilter(this::isValidSeedInput);
+        seedField.setResponder(this::onSeedChanged);
+        seedField.setValue(Objects.requireNonNull(
+            config.seed() == 0L ? "" : Long.toString(config.seed()), "seedValue"));
+    }
+
+    @Override
+    protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        var font = Objects.requireNonNull(
+            net.minecraft.client.Minecraft.getInstance().font, "font");
+        updateLayout(font.lineHeight);
+
+        // Enable toggle
+        renderToggle(graphics, "area.biome.enable", biomeEnabled,
+            getX(), enableToggleY, mouseX, mouseY, true);
+
+        // Tooltip for enable toggle
+        int toggleLabelWidth = font.width(
+            Objects.requireNonNull(Component.translatable("area.biome.enable"), "enableLabel")) + TOGGLE_WIDTH + 8;
+        if (mouseX >= getX() && mouseX < getX() + toggleLabelWidth &&
+            mouseY >= enableToggleY && mouseY < enableToggleY + BUTTON_HEIGHT) {
+            graphics.renderTooltip(font,
+                Objects.requireNonNull(Component.translatable("area.biome.enable.tooltip"), "enableTooltip"),
+                mouseX, mouseY);
+        }
+
+        int primaryColor = biomeEnabled
+            ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
+            : AreaBuilderGuiConstants.COLOR_TEXT_DISABLED;
+        int secondaryColor = biomeEnabled
+            ? AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
+            : AreaBuilderGuiConstants.COLOR_TEXT_DISABLED;
+
+        // Seed section
+        graphics.drawString(font,
+            Objects.requireNonNull(Component.translatable("area.biome.seed"), "seedLabel"),
+            getX(), seedLabelY,
+            primaryColor
+        );
+
+        AxiomRenderer.drawInputBackground(graphics, seedField.getX(), seedField.getY(), seedField.getWidth(),
+            seedField.getHeight(), seedField.isFocused());
+        seedField.setTextColor(primaryColor);
+        seedField.setTextColorUneditable(AreaBuilderGuiConstants.COLOR_TEXT_DISABLED);
+        seedField.render(graphics, mouseX, mouseY, partialTick);
+
+        // Random seed button
+        boolean randomHovered = biomeEnabled &&
+            mouseX >= randomButtonX && mouseX < randomButtonX + BUTTON_WIDTH &&
+            mouseY >= seedFieldY && mouseY < seedFieldY + BUTTON_HEIGHT;
+        int randomBg = biomeEnabled
+            ? (randomHovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL)
+            : AreaBuilderGuiConstants.COLOR_PANEL;
+        graphics.fill(randomButtonX, seedFieldY, randomButtonX + BUTTON_WIDTH, seedFieldY + BUTTON_HEIGHT, randomBg);
+        graphics.renderOutline(randomButtonX, seedFieldY, BUTTON_WIDTH, BUTTON_HEIGHT,
+            AreaBuilderGuiConstants.COLOR_BORDER);
+        graphics.drawCenteredString(font,
+            Objects.requireNonNull(Component.translatable("area.biome.random_seed"), "randomSeed"),
+            randomButtonX + BUTTON_WIDTH / 2, seedFieldY + 5, primaryColor);
+
+        // Terrain style section
+        graphics.drawString(font,
+            Objects.requireNonNull(Component.translatable("area.biome.terrain_style"), "terrainStyle"),
+            getX(), terrainLabelY,
+            primaryColor
+        );
+
+        // Terrain style buttons
+        int btnX = getX();
+        for (TerrainStyle style : TERRAIN_STYLES) {
+            boolean isSelected = config.terrainStyle() == style;
+            boolean isHovered = biomeEnabled &&
+                mouseX >= btnX && mouseX < btnX + BUTTON_WIDTH &&
+                mouseY >= terrainButtonsY && mouseY < terrainButtonsY + BUTTON_HEIGHT;
+
+            int bgColor;
+            if (!biomeEnabled) {
+                bgColor = AreaBuilderGuiConstants.COLOR_PANEL;
+            } else if (isSelected) {
+                bgColor = AreaBuilderGuiConstants.COLOR_TAB_ACTIVE;
+            } else if (isHovered) {
+                bgColor = AreaBuilderGuiConstants.COLOR_HOVER;
+            } else {
+                bgColor = AreaBuilderGuiConstants.COLOR_PANEL;
+            }
+
+            graphics.fill(btnX, terrainButtonsY, btnX + BUTTON_WIDTH, terrainButtonsY + BUTTON_HEIGHT, bgColor);
+            graphics.renderOutline(btnX, terrainButtonsY, BUTTON_WIDTH, BUTTON_HEIGHT,
+                isSelected ? AreaBuilderGuiConstants.COLOR_SELECTED_BORDER : AreaBuilderGuiConstants.COLOR_BORDER);
+
+            graphics.drawCenteredString(font,
+                Objects.requireNonNull(
+                    Component.translatable("area.biome.terrain." + style.getSerializedName()),
+                    "terrainLabel"),
+                btnX + BUTTON_WIDTH / 2, terrainButtonsY + 5,
+                isSelected ? primaryColor : secondaryColor);
+
+            btnX += BUTTON_WIDTH + 4;
+        }
+
+        // Feature toggles
+        renderToggle(graphics, "area.biome.generate_features", config.generateFeatures(),
+            getX(), featureStartY, mouseX, mouseY, biomeEnabled);
+
+        renderToggle(graphics, "area.biome.generate_structures", config.generateStructures(),
+            getX(), featureStartY + ROW_HEIGHT, mouseX, mouseY, biomeEnabled);
+
+        renderToggle(graphics, "area.biome.generate_ores", config.generateOres(),
+            getX(), featureStartY + ROW_HEIGHT * 2, mouseX, mouseY, biomeEnabled);
+    }
+
+    private void renderToggle(@Nonnull GuiGraphics graphics, @Nonnull String translationKey, boolean value,
+                             int x, int y, int mouseX, int mouseY, boolean enabled) {
+        var font = Objects.requireNonNull(
+            net.minecraft.client.Minecraft.getInstance().font, "font");
+
+        // Toggle button
+        int toggleX = x;
+        boolean isHovered = enabled &&
+            mouseX >= toggleX && mouseX < toggleX + TOGGLE_WIDTH &&
+            mouseY >= y && mouseY < y + BUTTON_HEIGHT;
+
+        int bgColor;
+        if (!enabled) {
+            bgColor = AreaBuilderGuiConstants.COLOR_PANEL;
+        } else {
+            bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF;
+            if (isHovered) {
+                bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON_HOVER : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF_HOVER;
+            }
+        }
+
+        graphics.fill(toggleX, y, toggleX + TOGGLE_WIDTH, y + BUTTON_HEIGHT, bgColor);
+        graphics.renderOutline(toggleX, y, TOGGLE_WIDTH, BUTTON_HEIGHT,
+            AreaBuilderGuiConstants.COLOR_BORDER);
+
+        Component toggleText = Objects.requireNonNull(
+            Component.translatable(value ? "area.toggle.on" : "area.toggle.off"), "toggleText");
+        int toggleColor = enabled ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_DISABLED;
+        graphics.drawCenteredString(font, toggleText, toggleX + TOGGLE_WIDTH / 2, y + 5, toggleColor);
+
+        // Label
+        graphics.drawString(font,
+            Objects.requireNonNull(Component.translatable(translationKey), "toggleLabel"),
+            toggleX + TOGGLE_WIDTH + 8, y + 5,
+            enabled ? AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY : AreaBuilderGuiConstants.COLOR_TEXT_DISABLED
+        );
+    }
+
+    @Override
+    public void onClick(double mouseX, double mouseY, int button) {
+        int fontHeight = Objects.requireNonNull(
+            net.minecraft.client.Minecraft.getInstance().font, "font").lineHeight;
+        updateLayout(fontHeight);
+
+        // Enable toggle
+        if (mouseX >= getX() && mouseX < getX() + TOGGLE_WIDTH &&
+            mouseY >= enableToggleY && mouseY < enableToggleY + BUTTON_HEIGHT) {
+            biomeEnabled = !biomeEnabled;
+            if (onBiomeEnabledChanged != null) {
+                onBiomeEnabledChanged.accept(biomeEnabled);
+            }
+            if (!biomeEnabled) {
+                seedField.setFocused(false);
+            }
+            return;
+        }
+
+        if (!biomeEnabled) {
+            return;
+        }
+
+        // Random seed button
+        if (mouseX >= randomButtonX && mouseX < randomButtonX + BUTTON_WIDTH &&
+            mouseY >= seedFieldY && mouseY < seedFieldY + BUTTON_HEIGHT) {
+            config = config.withRandomSeed();
+            seedField.setValue(Objects.requireNonNull(Long.toString(config.seed()), "seedString"));
+            notifyChange();
+            return;
+        }
+
+        // Terrain style buttons
+        int btnX = getX();
+        for (TerrainStyle style : TERRAIN_STYLES) {
+            if (mouseX >= btnX && mouseX < btnX + BUTTON_WIDTH &&
+                mouseY >= terrainButtonsY && mouseY < terrainButtonsY + BUTTON_HEIGHT) {
+                TerrainStyle currentStyle = Objects.requireNonNull(config.terrainStyle(), "terrainStyle");
+                if (currentStyle != style) {
+                    config = config.withTerrainStyle(Objects.requireNonNull(style, "style"));
+                    notifyChange();
+                }
+                return;
+            }
+            btnX += BUTTON_WIDTH + 4;
+        }
+
+        // Feature toggles
+        if (mouseX >= getX() && mouseX < getX() + TOGGLE_WIDTH) {
+            if (mouseY >= featureStartY && mouseY < featureStartY + BUTTON_HEIGHT) {
+                config = config.withFeatures(!config.generateFeatures());
+                notifyChange();
+                return;
+            }
+
+            if (mouseY >= featureStartY + ROW_HEIGHT && mouseY < featureStartY + ROW_HEIGHT + BUTTON_HEIGHT) {
+                config = new BiomeGenerationConfig(
+                    config.biomeId(), config.seed(), !config.generateStructures(),
+                    config.generateFeatures(), config.generateOres(),
+                    config.seaLevel(), config.terrainStyle()
+                );
+                notifyChange();
+                return;
+            }
+
+            if (mouseY >= featureStartY + ROW_HEIGHT * 2 && mouseY < featureStartY + ROW_HEIGHT * 2 + BUTTON_HEIGHT) {
+                config = new BiomeGenerationConfig(
+                    config.biomeId(), config.seed(), config.generateStructures(),
+                    config.generateFeatures(), !config.generateOres(),
+                    config.seaLevel(), config.terrainStyle()
+                );
+                notifyChange();
+            }
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int fontHeight = Objects.requireNonNull(
+            net.minecraft.client.Minecraft.getInstance().font, "font").lineHeight;
+        updateLayout(fontHeight);
+        if (biomeEnabled && seedField.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (!isMouseOver(mouseX, mouseY)) {
+            seedField.setFocused(false);
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (biomeEnabled && seedField.isFocused() && seedField.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (biomeEnabled && seedField.isFocused() && seedField.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        return super.charTyped(codePoint, modifiers);
+    }
+
+    private void updateLayout(int fontHeight) {
+        int currentY = getY();
+        enableToggleY = currentY;
+        currentY += ROW_HEIGHT + SECTION_GAP;
+
+        seedLabelY = currentY;
+        currentY += fontHeight + 3;
+
+        seedFieldY = currentY;
+        seedFieldWidth = Math.max(60, Math.min(SEED_FIELD_WIDTH, getWidth() - BUTTON_WIDTH - 10));
+        randomButtonX = getX() + seedFieldWidth + 10;
+        seedField.setX(getX());
+        seedField.setY(seedFieldY);
+        seedField.setWidth(seedFieldWidth);
+        currentY += ROW_HEIGHT + SECTION_GAP;
+
+        terrainLabelY = currentY;
+        currentY += fontHeight + 5;
+        terrainButtonsY = currentY;
+        currentY += ROW_HEIGHT + SECTION_GAP;
+
+        featureStartY = currentY;
+    }
+
+    private boolean isValidSeedInput(String text) {
+        if (text == null || text.isEmpty() || "-".equals(text)) {
+            return true;
+        }
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '-' && i == 0) {
+                continue;
+            }
+            if (!Character.isDigit(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void onSeedChanged(String text) {
+        if (text == null || text.isEmpty() || "-".equals(text)) {
+            if (config.seed() != 0L) {
+                config = config.withSeed(0L);
+                notifyChange();
+            }
+            return;
+        }
+        Long seed = Longs.tryParse(text);
+        if (seed == null) {
+            return;
+        }
+        if (config.seed() != seed) {
+            config = config.withSeed(seed);
+            notifyChange();
+        }
+    }
+
+    private void notifyChange() {
+        if (onConfigChanged != null) {
+            onConfigChanged.accept(config);
+        }
+    }
+
+    public BiomeGenerationConfig getConfig() {
+        return config;
+    }
+
+    public void setConfig(@Nonnull BiomeGenerationConfig newConfig) {
+        this.config = Objects.requireNonNull(newConfig, "newConfig");
+        seedField.setValue(Objects.requireNonNull(
+            newConfig.seed() == 0L ? "" : Long.toString(newConfig.seed()), "seedValue"));
+    }
+
+    public void setBiome(@Nonnull ResourceLocation biomeId) {
+        config = config.withBiome(Objects.requireNonNull(biomeId, "biomeId"));
+        seedField.setValue(Objects.requireNonNull(
+            config.seed() == 0L ? "" : Long.toString(config.seed()), "seedValue"));
+        notifyChange(); // Sync changes back to screen
+    }
+
+    @Override
+    protected void updateWidgetNarration(@Nonnull NarrationElementOutput narration) {
+        narration.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE,
+            Objects.requireNonNull(Component.translatable("area.biome.config.title"), "narrationTitle"));
+    }
+}

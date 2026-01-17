@@ -1,5 +1,7 @@
 package com.devmod.debug.block;
 
+import java.util.Objects;
+
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -23,7 +25,7 @@ public final class DebugBlocks {
         "entity_scanner",
         () -> new EntityScannerBlock(BlockBehaviour.Properties.of()
             .strength(2.0F, 6.0F)
-            .sound(SoundType.METAL)
+            .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(state -> 5)
             .noOcclusion())
     );

@@ -1,5 +1,9 @@
 package com.devmod.runtime;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -17,6 +21,9 @@ import net.minecraft.server.level.ServerPlayer;
 import com.devmod.config.Config;
 import com.devmod.mailbox.ticket.TicketCategory;
 import com.devmod.mailbox.ticket.TicketManager;
+import com.devmod.zone.data.ZoneDefinition;
+import com.devmod.zone.data.ZoneRegistry;
+import com.devmod.zone.runtime.ZoneResolver;
 
 /**
  * Admin commands for Nexus hub control.
@@ -37,13 +44,15 @@ public final class NexusCommand {
                         .executes(ctx -> teleport(ctx, "hub"))
                         .then(Commands.argument("zone", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
                             .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
-                                Objects.requireNonNull(NexusSpawnManager.zoneIds(), "zoneIds"), Objects.requireNonNull(builder, "builder")))
+                                Objects.requireNonNull(getZoneIds(Objects.requireNonNull(ctx.getSource().getServer())), "zoneIds"),
+                                Objects.requireNonNull(builder, "builder")))
                             .executes(ctx -> teleport(ctx, StringArgumentType.getString(ctx, "zone")))))
                     .then(Commands.literal("go")
                         .executes(ctx -> teleport(ctx, "hub"))
                         .then(Commands.argument("zone", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
                             .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
-                                Objects.requireNonNull(NexusSpawnManager.zoneIds(), "zoneIds"), Objects.requireNonNull(builder, "builder")))
+                                Objects.requireNonNull(getZoneIds(Objects.requireNonNull(ctx.getSource().getServer())), "zoneIds"),
+                                Objects.requireNonNull(builder, "builder")))
                             .executes(ctx -> teleport(ctx, StringArgumentType.getString(ctx, "zone")))))
                     .then(Commands.literal("enter")
                         .executes(ctx -> teleport(ctx, "hub")))
@@ -67,16 +76,6 @@ public final class NexusCommand {
                     .then(Commands.literal("question")
                         .then(Commands.argument("message", Objects.requireNonNull(StringArgumentType.greedyString(), "StringArgumentType.greedyString"))
                             .executes(ctx -> submitTicket(ctx, TicketCategory.QUESTION))))
-                    .then(Commands.literal("avatar")
-                        .executes(NexusCommand::avatarStatus)
-                        .then(Commands.literal("spawn")
-                            .requires(source -> source.hasPermission(2))
-                            .executes(NexusCommand::spawnAvatar))
-                        .then(Commands.literal("remove")
-                            .requires(source -> source.hasPermission(2))
-                            .executes(NexusCommand::removeAvatar))
-                        .then(Commands.literal("status")
-                            .executes(NexusCommand::avatarStatus)))
                     .then(Commands.literal("status")
                         .requires(source -> source.hasPermission(2))
                         .executes(NexusCommand::status))
@@ -89,6 +88,10 @@ public final class NexusCommand {
                     .then(Commands.literal("unlock")
                         .requires(source -> source.hasPermission(4))
                         .executes(ctx -> setLock(ctx, false)))
+                    .then(Commands.literal("admin")
+                        .then(Commands.literal("instances")
+                            .requires(source -> source.hasPermission(Config.ADMIN_PANEL_PERMISSION_LEVEL.get()))
+                            .executes(NexusCommand::openAdminInstancePanel)))
                 )
         );
     }
@@ -110,8 +113,6 @@ public final class NexusCommand {
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("§7/§fdevmod nexus riftstamp §7- spawn a RiftStamp portal (admin)")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus avatar spawn §7- respawn Nexus AI (admin)")), false);
-        source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("§7/§fdevmod nexus zones §7- list zone ids")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("§7/§fdevmod nexus status §7- show Nexus state")), false);
@@ -120,64 +121,16 @@ public final class NexusCommand {
         return 1;
     }
 
-    private static int spawnAvatar(CommandContext<CommandSourceStack> ctx) {
-        CommandSourceStack source = ctx.getSource();
-        ServerLevel level = requireNexusLevel(source);
-        if (level == null) {
-            return 0;
-        }
-        NexusAvatarManager.spawn(level, NexusDimensionManager.getHubOrigin());
-        source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§aNexus avatar spawned")), true);
-        return 1;
-    }
-
-    private static int removeAvatar(CommandContext<CommandSourceStack> ctx) {
-        CommandSourceStack source = ctx.getSource();
-        ServerLevel level = requireNexusLevel(source);
-        if (level == null) {
-            return 0;
-        }
-        NexusAvatarManager.remove(level, NexusDimensionManager.getHubOrigin());
-        source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§eNexus avatar removed")), true);
-        return 1;
-    }
-
-    private static int avatarStatus(CommandContext<CommandSourceStack> ctx) {
-        CommandSourceStack source = ctx.getSource();
-        ServerLevel level = requireNexusLevel(source);
-        if (level == null) {
-            return 0;
-        }
-        boolean present = NexusAvatarManager.hasAvatar(level, NexusDimensionManager.getHubOrigin());
-        source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§eNexus Avatar: §f" + (present ? "online" : "missing"))), false);
-        source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Name: §f" + Config.NEXUS_AVATAR_NAME.get())), false);
-        source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Skin: §f" + Config.NEXUS_AVATAR_SKIN.get())), false);
-        return 1;
-    }
-
-    private static ServerLevel requireNexusLevel(CommandSourceStack source) {
-        if (!Config.NEXUS_ENABLED.get()) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cNexus is disabled in config"), "message"));
-            return null;
-        }
-        MinecraftServer server = source.getServer();
-        NexusDimensionManager.INSTANCE.ensureNexusDimension(server);
-        ServerLevel level = server.getLevel(Objects.requireNonNull(NexusDimensionManager.NEXUS_DIMENSION, "NEXUS_DIMENSION"));
-        if (level == null) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cNexus dimension not ready"), "message"));
-        }
-        return level;
-    }
-
     private static int zones(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
+        List<String> zoneIds = getZoneIds(Objects.requireNonNull(source.getServer()));
+        if (zoneIds.isEmpty()) {
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§eZones: §f<none>")), false);
+            return 1;
+        }
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§eZones: §f" + NexusSpawnManager.zoneListLabel())), false);
+            Component.literal("§eZones: §f" + String.join(", ", zoneIds))), false);
         return 1;
     }
 
@@ -192,16 +145,40 @@ public final class NexusCommand {
             source.sendFailure(Objects.requireNonNull(Component.literal("§cPlayer required"), "message"));
             return 0;
         }
-        NexusSpawnManager.Zone zone = NexusSpawnManager.resolveZone(zoneId);
-        if (zone == null) {
+        Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolveByNameOrAlias(
+            Objects.requireNonNull(source.getServer()), Objects.requireNonNull(zoneId));
+        if (zoneOpt.isEmpty()) {
             source.sendFailure(Objects.requireNonNull(Component.literal("§cUnknown zone '" + zoneId
                 + "'. Use /devmod nexus zones"), "message"));
             return 0;
         }
-        NexusDimensionManager.INSTANCE.teleportPlayerToZone(player, zone);
+        ZoneDefinition zone = zoneOpt.get();
+        boolean success = NexusDimensionManager.INSTANCE.teleportPlayerToZone(player, zone.zoneId());
+        if (!success) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("§cFailed to teleport to '" + zone.zoneId() + "'"), "message"));
+            return 0;
+        }
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§aTeleported to §f" + zone.label())), true);
+            Component.literal("§aTeleported to §f" + zone.displayName())), true);
         return 1;
+    }
+
+    @Nonnull
+    private static ZoneRegistry getZoneRegistry(@Nonnull MinecraftServer server) {
+        ZoneRegistry registry = ZoneRegistry.get(server);
+        if (!registry.isInitialized()) {
+            registry.initializeWithLegacyZones(Objects.requireNonNull(NexusDimensionManager.getHubOrigin()));
+        }
+        return registry;
+    }
+
+    @Nonnull
+    private static List<String> getZoneIds(@Nonnull MinecraftServer server) {
+        ZoneRegistry registry = getZoneRegistry(server);
+        return Objects.requireNonNull(registry.getAllZones().stream()
+            .map(ZoneDefinition::zoneId)
+            .sorted()
+            .toList());
     }
 
     private static int returnToOrigin(CommandContext<CommandSourceStack> ctx) {
@@ -319,6 +296,22 @@ public final class NexusCommand {
         NexusDimensionManager.INSTANCE.setHubLocked(server, locked);
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal(locked ? "§eNexus locked" : "§aNexus unlocked")), false);
+        return 1;
+    }
+
+    private static int openAdminInstancePanel(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("§cPlayer required"), "message"));
+            return 0;
+        }
+
+        // Send sync data to player - client will open the screen
+        com.devmod.runtime.network.AdminInstanceNetworkHandler.sendSyncToPlayer(player);
+
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("§aOpening Instance Control Panel...")), false);
         return 1;
     }
 }

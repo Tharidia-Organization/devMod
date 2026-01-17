@@ -11,8 +11,8 @@ import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
@@ -33,8 +33,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-import com.devmod.clone.CloneBlocks;
 import com.devmod.clone.CloneBlockEntities;
+import com.devmod.clone.CloneBlocks;
 import com.devmod.clone.CloneItems;
 import com.devmod.clone.block.NeurocellLBlock;
 import com.devmod.clone.block.NeurocellLBlock.MultiBlockPart;
@@ -293,6 +293,7 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
         return (float) cloningTime / PROCESS_TIME;
     }
 
+    @Override
     public boolean isDataReady() {
         return hasRagdoll && !entityType.isEmpty();
     }
@@ -302,6 +303,7 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
     }
 
     @Nullable
+    @Override
     public com.devmod.clone.data.BioscanData consumeData() {
         if (!hasRagdoll || entityType.isEmpty() || storedBioscanner.isEmpty()) {
             return null;
@@ -488,6 +490,7 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
     /**
      * Check if the neurocell has a physical empty bioscanner inserted.
      */
+    @Override
     public boolean hasEmptyBioscanner() {
         return !storedBioscanner.isEmpty()
             && storedBioscanner.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()))
@@ -497,6 +500,7 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
     /**
      * Fill the bioscanner slot from imprinter data.
      */
+    @Override
     public void fillBioscannerFromImprinter(@Nonnull BioscanData data) {
         if (storedBioscanner.isEmpty()
             || !storedBioscanner.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()))

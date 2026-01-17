@@ -24,6 +24,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  */
 public class CloneMachineBlockEntity extends BlockEntity implements GeoBlockEntity {
 
+    @SuppressWarnings("this-escape")
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     // Animation: play deploy once, then loop active automatically
@@ -47,7 +48,7 @@ public class CloneMachineBlockEntity extends BlockEntity implements GeoBlockEnti
     }
 
     @Override
-    public void registerControllers(@Nonnull AnimatableManager.ControllerRegistrar controllers) {
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "main", 0, state -> {
             // DEPLOY_THEN_ACTIVE plays deploy once, then automatically loops active
             // GeckoLib continues the animation without restarting when same RawAnimation is returned
@@ -58,7 +59,7 @@ public class CloneMachineBlockEntity extends BlockEntity implements GeoBlockEnti
     @Override
     @Nonnull
     public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return cache;
+        return Objects.requireNonNull(cache);
     }
 
     @Override

@@ -24,6 +24,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -94,6 +95,9 @@ public class ArenaTestWizard extends Screen {
         );
         search.setHint(Objects.requireNonNull(Component.literal("Search templates...")));
         search.setResponder(this::onSearchChanged);
+        search.setBordered(false);
+        search.setTextColor(DesignTokens.Text.PRIMARY());
+        search.setTextColorUneditable(DesignTokens.Text.MUTED());
         addRenderableWidget(search);
         searchBox = search;
 
@@ -206,8 +210,17 @@ public class ArenaTestWizard extends Screen {
         // Selected template info
         renderSelectedInfo(graphics);
 
+        renderInputBackgrounds(graphics);
+
         // Render widgets (buttons, search box)
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderInputBackgrounds(GuiGraphics graphics) {
+        if (searchBox != null) {
+            AxiomRenderer.drawInputBackground(graphics, searchBox.getX(), searchBox.getY(),
+                searchBox.getWidth(), searchBox.getHeight(), searchBox.isFocused());
+        }
     }
 
     private void renderTemplateList(GuiGraphics graphics, int mouseX, int mouseY) {

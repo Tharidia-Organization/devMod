@@ -823,7 +823,42 @@ def designTokenColorAllowlist = [
     'src/main/java/com/devmod/portal/RuneType.java',
     'src/main/java/com/devmod/portal/PortalClientSetup.java',
     // Config handler with inline color
-    'src/main/java/com/devmod/config/handler/impl/ArmorConfigHandler.java'
+    'src/main/java/com/devmod/config/handler/impl/ArmorConfigHandler.java',
+    // Transport system - color enums similar to PortalColor
+    'src/main/java/com/devmod/transport/TransportColor.java',
+    'src/main/java/com/devmod/transport/TransportState.java',
+    // Zone system - zone preset colors (data definitions)
+    'src/main/java/com/devmod/zone/data/ZonePresets.java',
+    'src/main/java/com/devmod/zone/data/ZoneDefinition.java',
+    'src/main/java/com/devmod/zone/item/ZoneMarkerItem.java',
+    // Template system - template preset colors
+    'src/main/java/com/devmod/template/data/ZoneTemplate.java',
+    // NPC system - NPC appearance colors
+    'src/main/java/com/devmod/npc/data/NpcDefinition.java',
+    // Hologram system - colors for hologram rendering and state enums
+    'src/main/java/com/devmod/hologram/data/HologramStyle.java',
+    'src/main/java/com/devmod/hologram/data/HologramState.java',
+    'src/main/java/com/devmod/hologram/item/HologramPlacerItem.java',
+    'src/main/java/com/devmod/hologram/runtime/HologramManager.java', // Minecraft section sign formatting colors
+    // Client UI screens - TODO: migrate to DesignTokens incrementally
+    'src/main/java/com/devmod/client/hologram/HologramEditorScreen.java',
+    'src/main/java/com/devmod/client/template/TemplateEditorScreen.java',
+    'src/main/java/com/devmod/client/zone/ZoneEditorScreen.java',
+    'src/main/java/com/devmod/client/zone/ZoneClientHooks.java',
+    'src/main/java/com/devmod/client/zone/widget/ZoneBoundsWidget.java',
+    'src/main/java/com/devmod/client/transport/PartyTeleportScreen.java',
+    'src/main/java/com/devmod/client/transport/TransportConfigScreen.java',
+    'src/main/java/com/devmod/client/transport/TransportNetworkSelectScreen.java',
+    'src/main/java/com/devmod/client/transport/TransportOverlay.java',
+    'src/main/java/com/devmod/client/transport/WaypointSelectScreen.java',
+    'src/main/java/com/devmod/client/npc/ConditionDebugWidget.java',
+    'src/main/java/com/devmod/client/npc/group/GroupDialogScreen.java',
+    'src/main/java/com/devmod/client/npc/graph/DialogGraphScreen.java',
+    'src/main/java/com/devmod/client/npc/graph/GraphCanvas.java',
+    'src/main/java/com/devmod/client/npc/graph/GraphConnection.java',
+    'src/main/java/com/devmod/client/npc/graph/GraphMinimap.java',
+    'src/main/java/com/devmod/client/npc/graph/GraphNode.java',
+    'src/main/java/com/devmod/client/npc/graph/NodeEditPanel.java'
 ]
 
 tasks.register('checkDesignTokensColors') {

@@ -192,7 +192,7 @@ public final class RiftStampManager {
                 continue;
             }
             level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.7f, 1.0f);
-            NexusDimensionManager.INSTANCE.teleportPlayerToZone(player, NexusSpawnManager.Zone.HUB);
+            NexusDimensionManager.INSTANCE.teleportPlayerToZone(player, "hub");
         }
     }
 

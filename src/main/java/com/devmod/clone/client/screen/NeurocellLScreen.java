@@ -3,15 +3,17 @@ package com.devmod.clone.client.screen;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.clone.item.BioscannerItem;
 import com.devmod.clone.menu.NeurocellLMenu;
@@ -25,7 +27,10 @@ public class NeurocellLScreen extends AbstractContainerScreen<NeurocellLMenu> {
     private static final ResourceLocation TEXTURE = Objects.requireNonNull(
         ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/neurocell.png"));
 
-    private Button clearButton;
+    @Nullable
+    private EditorButton clearButton;
+    @Nullable
+    private EditorButtonWidget clearButtonWidget;
 
     public NeurocellLScreen(NeurocellLMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
@@ -38,21 +43,29 @@ public class NeurocellLScreen extends AbstractContainerScreen<NeurocellLMenu> {
         super.init();
 
         // Clear button (positioned to the right of the slot)
-        clearButton = Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.literal("X")),
-            btn -> clearBioscanner()
-        ).bounds(leftPos + 110, topPos + 33, 20, 20).build());
-
-        addRenderableWidget(clearButton);
+        EditorButton button = EditorButton.builder("neurocell_clear", "X")
+            .style(EditorButton.Style.DANGER)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::clearBioscanner)
+            .build();
+        clearButton = button;
+        clearButtonWidget = new EditorButtonWidget(button, leftPos + 110, topPos + 33, 20, 20);
+        addRenderableWidget(clearButtonWidget);
     }
 
     @Override
     protected void containerTick() {
         super.containerTick();
         // Update clear button visibility based on slot contents
-        if (clearButton != null) {
+        EditorButton btn = clearButton;
+        if (btn != null) {
             ItemStack stack = menu.getContainer().getItem(0);
-            clearButton.active = !stack.isEmpty() && BioscannerItem.hasData(stack);
+            boolean enabled = !stack.isEmpty() && BioscannerItem.hasData(stack);
+            btn.enabled(enabled);
+            EditorButtonWidget widget = clearButtonWidget;
+            if (widget != null) {
+                widget.active = enabled;
+            }
         }
     }
 

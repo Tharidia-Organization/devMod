@@ -78,6 +78,9 @@ public class CategoryPanel implements HubPanel {
         Component searchHint = Objects.requireNonNull(I18n.translate("devmod.testing.search_tests"), "searchHint");
         searchBox.setHint(searchHint);
         searchBox.setMaxLength(50);
+        searchBox.setBordered(false);
+        searchBox.setTextColor(DesignTokens.Text.PRIMARY());
+        searchBox.setTextColorUneditable(DesignTokens.Text.MUTED());
         @Nonnull String safeQuery = Objects.requireNonNull(
             Objects.requireNonNullElse(state.getSearchQuery(), ""),
             "searchQuery");
@@ -102,6 +105,8 @@ public class CategoryPanel implements HubPanel {
         // Search box
         searchBox.setX(x + PADDING);
         searchBox.setY(contentY);
+        AxiomRenderer.drawInputBackground(graphics, searchBox.getX(), searchBox.getY(),
+            searchBox.getWidth(), searchBox.getHeight(), searchBox.isFocused());
         searchBox.render(graphics, mouseX, mouseY, partialTick);
         contentY += SEARCH_HEIGHT + 8;
 

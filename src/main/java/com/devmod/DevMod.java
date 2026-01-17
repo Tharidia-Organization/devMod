@@ -132,8 +132,20 @@ public class DevMod {
         // Initialize Clone module (telepad, cloning system)
         com.devmod.clone.CloneModule.init(eventBus);
 
+        // Initialize NPC module (NPC spawning, dialog system)
+        com.devmod.npc.NpcModule.init(eventBus);
+
         // Initialize Debug module (entity scanner, debug tools)
         com.devmod.debug.DebugModule.init(eventBus);
+
+        // Initialize Area module (area builder, nexus editor)
+        com.devmod.area.AreaModule.init(eventBus);
+
+        // Initialize Zone module (data-driven zone marker system)
+        com.devmod.zone.ZoneModule.init(eventBus);
+
+        // Initialize Unified Transport module (Warp Core system)
+        com.devmod.transport.TransportModule.init(eventBus);
 
         // Initialize Nexus decorative blocks
         com.devmod.nexus.NexusDecorBlocks.register(eventBus);

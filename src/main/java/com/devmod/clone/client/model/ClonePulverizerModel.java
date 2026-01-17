@@ -24,12 +24,14 @@ public class ClonePulverizerModel extends GeoModel<ClonePulverizerBlockEntity> {
 
     @Override
     @Nonnull
+    @SuppressWarnings("removal")
     public ResourceLocation getModelResource(@Nonnull ClonePulverizerBlockEntity entity) {
         return MODEL;
     }
 
     @Override
     @Nonnull
+    @SuppressWarnings("removal")
     public ResourceLocation getTextureResource(@Nonnull ClonePulverizerBlockEntity entity) {
         return TEXTURE;
     }

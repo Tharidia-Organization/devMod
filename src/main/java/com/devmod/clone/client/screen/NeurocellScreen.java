@@ -1,15 +1,19 @@
 package com.devmod.clone.client.screen;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.clone.item.BioscannerItem;
 import com.devmod.clone.menu.NeurocellMenu;
@@ -23,7 +27,10 @@ public class NeurocellScreen extends AbstractContainerScreen<NeurocellMenu> {
     private static final ResourceLocation TEXTURE =
         ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/neurocell.png");
 
-    private Button clearButton;
+    @Nullable
+    private EditorButton clearButton;
+    @Nullable
+    private EditorButtonWidget clearButtonWidget;
 
     public NeurocellScreen(NeurocellMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
@@ -36,21 +43,29 @@ public class NeurocellScreen extends AbstractContainerScreen<NeurocellMenu> {
         super.init();
 
         // Clear button (positioned to the right of the slot)
-        clearButton = Button.builder(
-            Component.literal("X"),
-            btn -> clearBioscanner()
-        ).bounds(leftPos + 110, topPos + 33, 20, 20).build();
-
-        addRenderableWidget(clearButton);
+        EditorButton button = EditorButton.builder("neurocell_clear", "X")
+            .style(EditorButton.Style.DANGER)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::clearBioscanner)
+            .build();
+        clearButton = button;
+        clearButtonWidget = new EditorButtonWidget(button, leftPos + 110, topPos + 33, 20, 20);
+        addRenderableWidget(clearButtonWidget);
     }
 
     @Override
     protected void containerTick() {
         super.containerTick();
         // Update clear button visibility based on slot contents
-        if (clearButton != null) {
+        EditorButton btn = clearButton;
+        if (btn != null) {
             ItemStack stack = menu.getContainer().getItem(0);
-            clearButton.active = !stack.isEmpty() && BioscannerItem.hasData(stack);
+            boolean enabled = !stack.isEmpty() && BioscannerItem.hasData(stack);
+            btn.enabled(enabled);
+            EditorButtonWidget widget = clearButtonWidget;
+            if (widget != null) {
+                widget.active = enabled;
+            }
         }
     }
 
@@ -59,9 +74,10 @@ public class NeurocellScreen extends AbstractContainerScreen<NeurocellMenu> {
         menu.clearBioscanner();
 
         // Also notify server via container action
-        if (minecraft != null && minecraft.gameMode != null) {
+        var mc = minecraft;
+        if (mc != null && mc.gameMode != null) {
             // Use a custom button click handler
-            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 0);
+            mc.gameMode.handleInventoryButtonClick(menu.containerId, 0);
         }
     }
 
@@ -73,7 +89,7 @@ public class NeurocellScreen extends AbstractContainerScreen<NeurocellMenu> {
 
     @Override
     protected void renderBg(@Nonnull GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
+        graphics.blit(Objects.requireNonNull(TEXTURE), leftPos, topPos, 0, 0, imageWidth, imageHeight);
 
         // Draw slot highlight if empty
         ItemStack stack = menu.getContainer().getItem(0);
@@ -85,10 +101,12 @@ public class NeurocellScreen extends AbstractContainerScreen<NeurocellMenu> {
 
     @Override
     protected void renderLabels(@Nonnull GuiGraphics graphics, int mouseX, int mouseY) {
+        var renderFont = Objects.requireNonNull(this.font);
+
         // Title
-        graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
+        graphics.drawString(renderFont, Objects.requireNonNull(this.title), this.titleLabelX, this.titleLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
         // Inventory label
-        graphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
+        graphics.drawString(renderFont, Objects.requireNonNull(this.playerInventoryTitle), this.inventoryLabelX, this.inventoryLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
 
         // Status text below the slot
         ItemStack stack = menu.getContainer().getItem(0);
@@ -96,19 +114,19 @@ public class NeurocellScreen extends AbstractContainerScreen<NeurocellMenu> {
         int color;
 
         if (stack.isEmpty()) {
-            status = Component.translatable("gui.devmod.neurocell.insert_bioscanner");
+            status = Objects.requireNonNull(Component.translatable("gui.devmod.neurocell.insert_bioscanner"));
             color = DesignTokens.Neurocell.STATUS_EMPTY;
         } else if (!BioscannerItem.hasData(stack)) {
-            status = Component.translatable("gui.devmod.neurocell.waiting_scan");
+            status = Objects.requireNonNull(Component.translatable("gui.devmod.neurocell.waiting_scan"));
             color = DesignTokens.Neurocell.STATUS_WAITING;
         } else {
             String entityName = BioscannerItem.getEntityName(stack);
-            status = Component.translatable("gui.devmod.neurocell.ready", entityName != null ? entityName : "Unknown");
+            status = Objects.requireNonNull(Component.translatable("gui.devmod.neurocell.ready", entityName != null ? entityName : "Unknown"));
             color = DesignTokens.Neurocell.STATUS_READY;
         }
 
         // Center the status text
-        int textWidth = this.font.width(status);
-        graphics.drawString(this.font, status, (imageWidth - textWidth) / 2, 58, color, false);
+        int textWidth = renderFont.width(Objects.requireNonNull(status));
+        graphics.drawString(renderFont, status, (imageWidth - textWidth) / 2, 58, color, false);
     }
 }

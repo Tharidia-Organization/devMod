@@ -141,6 +141,9 @@ public class TestingHub extends Screen {
         nameField.setMaxLength(32);
         String testerName = Objects.requireNonNullElse(TestingSession.INSTANCE.getTesterName(), "");
         nameField.setValue(Objects.requireNonNull(testerName, "testerName"));
+        nameField.setBordered(false);
+        nameField.setTextColor(DesignTokens.Text.PRIMARY());
+        nameField.setTextColorUneditable(DesignTokens.Text.MUTED());
         testerNameField = nameField;
         this.addRenderableWidget(nameField);
     }
@@ -236,6 +239,11 @@ public class TestingHub extends Screen {
         // Name label
         graphics.drawString(uiFont, "Tester Name:", contentX, contentY + 6, DesignTokens.Text.SECONDARY(), false);
         contentY += 40;
+
+        if (testerNameField != null) {
+            AxiomRenderer.drawInputBackground(graphics, testerNameField.getX(), testerNameField.getY(),
+                testerNameField.getWidth(), testerNameField.getHeight(), testerNameField.isFocused());
+        }
 
         // Buttons
         int buttonWidth = 120;

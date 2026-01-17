@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.UiSounds;
@@ -72,6 +73,9 @@ public class TelepadConfigScreen extends Screen {
         nameField.setMaxLength(32);
         nameField.setValue(telepadName);
         nameField.setHint(Component.literal("Enter network name..."));
+        nameField.setBordered(false);
+        nameField.setTextColor(DesignTokens.Text.PRIMARY);
+        nameField.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(nameField);
     }
 
@@ -95,6 +99,7 @@ public class TelepadConfigScreen extends Screen {
         renderPanel(graphics);
         renderTitle(graphics);
         renderHelpText(graphics);
+        renderInputBackground(graphics);
         renderButtons(graphics, mouseX, mouseY);
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -134,6 +139,15 @@ public class TelepadConfigScreen extends Screen {
         int helpY = panelY + 90;
         graphics.drawString(font, "Telepads with the same name are linked.",
             panelX + PADDING, helpY, DesignTokens.Text.MUTED, false);
+    }
+
+    private void renderInputBackground(GuiGraphics graphics) {
+        EditBox field = nameField;
+        if (field == null) {
+            return;
+        }
+        AxiomRenderer.drawInputBackground(graphics, field.getX(), field.getY(), field.getWidth(),
+            field.getHeight(), field.isFocused());
     }
 
     private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {

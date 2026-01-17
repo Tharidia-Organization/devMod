@@ -38,7 +38,7 @@ public final class PortalBlocks {
             .noCollission()
             .noOcclusion()
             .strength(-1.0F, 3600000.0F)  // Unbreakable except by frame destruction
-            .sound(SoundType.GLASS)
+            .sound(Objects.requireNonNull(SoundType.GLASS))
             .lightLevel(state -> 11)
             .noLootTable())
     );
@@ -55,7 +55,7 @@ public final class PortalBlocks {
             RUNE_BLOCKS.put(rune, DevMod.BLOCKS.register(name,
                 () -> new RuneBlock(rune, BlockBehaviour.Properties.of()
                     .strength(1.5F, 6.0F)  // Same as stone
-                    .sound(SoundType.AMETHYST)
+                    .sound(Objects.requireNonNull(SoundType.AMETHYST))
                     .lightLevel(state -> 7)
                     .noOcclusion())));
         }
@@ -74,7 +74,7 @@ public final class PortalBlocks {
      */
     @Nonnull
     public static Map<RuneType, DeferredHolder<Block, RuneBlock>> getRuneBlocks() {
-        return RUNE_BLOCKS;
+        return Objects.requireNonNull(RUNE_BLOCKS);
     }
 
     // Convenience accessors

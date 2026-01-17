@@ -80,8 +80,9 @@ class ChannelIdCollisionTest {
 
             // Verify IDs are in reasonable range
             // Range 1-99: Core systems, 100-115: Mailbox system, 120-129: Unified notifications,
-            // 130-139: Nutrition, 140-149: Nexus, 150-159: Portal, 160-169: Hologram, 170-179: Clone
-            int maxExpected = 179;
+            // 130-139: Nutrition, 140-149: Nexus, 150-159: Portal, 160-169: Hologram, 170-179: Clone,
+            // 180-189: NPC, 190-199: Area Builder, 200-209: Zone, 210-229: Transport, 230-239: Admin Instance
+            int maxExpected = 239;
             assertTrue(id <= maxExpected,
                 String.format("Channel %s has ID %d which exceeds max expected (%d)", name, id, maxExpected));
 
@@ -143,7 +144,7 @@ class ChannelIdCollisionTest {
 
         // Verify we have a reasonable number of channels
         assertTrue(totalChannels >= 30, "Expected at least 30 registered channels");
-        assertTrue(totalChannels <= 120, "Unexpectedly high channel count: " + totalChannels);
+        assertTrue(totalChannels <= 150, "Unexpectedly high channel count: " + totalChannels);
 
         // Count by direction
         long clientToServer = java.util.Arrays.stream(ChannelId.values())

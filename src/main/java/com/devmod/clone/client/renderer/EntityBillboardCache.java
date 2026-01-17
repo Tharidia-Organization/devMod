@@ -32,11 +32,11 @@ import com.devmod.DevMod;
  */
 public final class EntityBillboardCache {
 
+    @Nullable
     private static EntityBillboardCache instance;
 
     @Nullable
     private RenderTarget renderTarget;
-    private int targetSize = 64;
 
     private EntityBillboardCache() {}
 
@@ -176,7 +176,6 @@ public final class EntityBillboardCache {
         RenderSystem.backupProjectionMatrix();
         RenderSystem.setProjectionMatrix(projectionMatrix, com.mojang.blaze3d.vertex.VertexSorting.ORTHOGRAPHIC_Z);
 
-        Matrix4f oldModelView = RenderSystem.getModelViewMatrix();
         RenderSystem.getModelViewStack().pushMatrix();
         RenderSystem.getModelViewStack().identity();
         RenderSystem.applyModelViewMatrix();

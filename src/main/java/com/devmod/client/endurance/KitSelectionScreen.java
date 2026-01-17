@@ -55,6 +55,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.notification.ClientNotificationManager;
+import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -216,6 +217,8 @@ public class KitSelectionScreen extends Screen {
     private String kitNameInput = "";
     @Nullable
     private EditBox kitNameBox;
+    @Nullable
+    private EditBox searchBox;
 
     // Slot configuration
     private static final String[] SLOT_ICONS = {
@@ -337,12 +340,15 @@ public class KitSelectionScreen extends Screen {
         final EditBox box = new EditBox(safeFont, searchX, searchY, searchWidth, 18, I18n.ui("search"));
         // Hint shows search syntax: @mod for namespace, #tag for tags, $text for tooltip
         box.setHint(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("Search... @mod #tag $tooltip")));
-        box.setBordered(true);
+        box.setBordered(false);
+        box.setTextColor(DesignTokens.Text.PRIMARY());
+        box.setTextColorUneditable(DesignTokens.Text.MUTED());
         box.setResponder(query -> {
             searchQuery = query;
             filterItems();
         });
         addRenderableWidget(box);
+        searchBox = box;
     }
 
     private boolean isSearchTabReady() {
@@ -591,6 +597,8 @@ public class KitSelectionScreen extends Screen {
         renderKitPanel(graphics, mouseX, mouseY);
         renderBottomBar(graphics, mouseX, mouseY);
 
+        renderInputBackgrounds(graphics);
+
         super.render(graphics, mouseX, mouseY, partialTick);
 
         // Render popups last (on top)
@@ -604,6 +612,13 @@ public class KitSelectionScreen extends Screen {
         // Tooltips (after popups)
         if (!showEnchantPopup && !showNameDialog) {
             renderTooltips(graphics, mouseX, mouseY);
+        }
+    }
+
+    private void renderInputBackgrounds(GuiGraphics graphics) {
+        if (searchBox != null) {
+            AxiomRenderer.drawInputBackground(graphics, searchBox.getX(), searchBox.getY(), searchBox.getWidth(),
+                searchBox.getHeight(), searchBox.isFocused());
         }
     }
 
@@ -1163,10 +1178,15 @@ public class KitSelectionScreen extends Screen {
             nameBox = new EditBox(safeFont, dialogX + 20, dialogY + 50, dialogW - 40, 20, I18n.ui("kit_name"));
             nameBox.setValue(Objects.requireNonNull(kitNameInput));
             nameBox.setHint(Objects.requireNonNull(I18n.translate("devmod.kit.enter_name")));
+            nameBox.setBordered(false);
+            nameBox.setTextColor(DesignTokens.Text.PRIMARY());
+            nameBox.setTextColorUneditable(DesignTokens.Text.MUTED());
             kitNameBox = nameBox;
             addRenderableWidget(nameBox);
         }
 
+        AxiomRenderer.drawInputBackground(graphics, nameBox.getX(), nameBox.getY(), nameBox.getWidth(),
+            nameBox.getHeight(), nameBox.isFocused());
         nameBox.render(graphics, mouseX, mouseY, 0);
 
         // Buttons

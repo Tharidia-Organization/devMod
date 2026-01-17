@@ -28,6 +28,7 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
+import com.devmod.area.builder.BiomeRegistry;
 import com.devmod.components.ArmorComponents;
 import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.endurance.EnduranceQuestManager;
@@ -114,6 +115,15 @@ public class CommonModEvents {
             LOGGER.info("[DevMod] HazardTypeRegistry initialized successfully");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize HazardTypeRegistry", e);
+        }
+
+        // Initialize BiomeRegistry with all biomes (vanilla + modded)
+        try {
+            BiomeRegistry.initialize(Objects.requireNonNull(event.getServer().registryAccess()));
+            LOGGER.info("[DevMod] BiomeRegistry initialized with {} biomes from {} categories",
+                BiomeRegistry.getTotalBiomeCount(), BiomeRegistry.getCategoryCount());
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize BiomeRegistry", e);
         }
 
         // Initialize EnduranceQuestManager
@@ -311,6 +321,14 @@ public class CommonModEvents {
             LOGGER.info("[DevMod] LeaderboardSystem saved successfully");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Error saving LeaderboardSystem", e);
+        }
+
+        // Cleanup Area build tasks
+        try {
+            com.devmod.area.AreaModule.cleanup();
+            LOGGER.info("[DevMod] AreaModule cleanup complete");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Error during AreaModule cleanup", e);
         }
 
         // Save MailboxConfig before shutdown

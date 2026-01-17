@@ -431,6 +431,22 @@ public abstract class BaseDevModScreen extends Screen {
         this.statusTicks = STATUS_DURATION_TICKS;
     }
 
+    /**
+     * Show a status message at bottom of screen.
+     */
+    protected void showStatus(String message, int color) {
+        this.statusMessage = message;
+        this.statusColor = color;
+        this.statusTicks = STATUS_DURATION_TICKS;
+    }
+
+    /**
+     * Show a success status message.
+     */
+    protected void showSuccess(String message) {
+        showStatus(message, DesignTokens.Semantic.SUCCESS);
+    }
+
     // ============================================================================
     // WIDGET HELPERS
     // ============================================================================

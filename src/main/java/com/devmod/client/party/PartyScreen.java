@@ -32,6 +32,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.endurance.KitSelectionScreen;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.EnduranceQuestRegistry;
@@ -182,6 +183,8 @@ public class PartyScreen extends Screen {
     public int getPanelWidth() { return PANEL_WIDTH; }
     public int getPanelHeight() { return PANEL_HEIGHT; }
     public int getKitRowY() { return panelY + PANEL_HEIGHT - 103; }
+    @Nullable public EditBox getInviteBox() { return inviteBox; }
+    @Nullable public EditBox getMobSearchBox() { return mobSearchBox; }
 
     public float getGlowPulse() { return glowPulse; }
     public float getTitleGlow() { return titleGlow; }
@@ -306,14 +309,16 @@ public class PartyScreen extends Screen {
         int membersPanelTop = panelY + 80;
         int membersPanelH = 200;
         int inviteSectionY = membersPanelTop + membersPanelH + 8;  // = panelY + 288
-        // Input background at: (membersPanelLeft + 5, inviteSectionY + 12) with size 140x20
-        int inviteBoxX = membersPanelLeft + 5 + 3;   // 3px inside border
-        int inviteBoxY = inviteSectionY + 12 + 3;    // 3px inside border
-        var box = new EditBox(getFont(), inviteBoxX, inviteBoxY, 130, 14,
+        // Input field aligned to standard input background size (140x20)
+        int inviteBoxX = membersPanelLeft + 5;
+        int inviteBoxY = inviteSectionY + 12;
+        var box = new EditBox(getFont(), inviteBoxX, inviteBoxY, 140, 20,
                 Objects.requireNonNull(Component.literal("Player name...")));
         box.setHint(Objects.requireNonNull(Component.literal("Enter name...")));
         box.setMaxLength(16);
         box.setBordered(false);
+        box.setTextColor(DesignTokens.Text.PRIMARY);
+        box.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(box);
         inviteBox = box;
 
@@ -330,15 +335,17 @@ public class PartyScreen extends Screen {
     private void initMobSearchBox() {
         // Mob search box - inside mob selection panel after header
         // Mob panel: panelLeft = panelX + 225, panelTop = panelY + 80
-        // Search background at: (panelLeft + 5, panelTop + 28) with size (panelW - 10) x 20
+        // Search field aligned to standard input background size (panelW - 10) x 20
         int mobPanelLeft = panelX + 225;
         int mobPanelTop = panelY + 80;
-        int mobSearchY = mobPanelTop + 28 + 3;  // 3px inside the search background
-        var searchBox = new EditBox(getFont(), mobPanelLeft + 8, mobSearchY, 140, 14,
+        int mobSearchY = mobPanelTop + 28;
+        var searchBox = new EditBox(getFont(), mobPanelLeft + 5, mobSearchY, 150, 20,
                 Objects.requireNonNull(Component.literal("Search...")));
         searchBox.setHint(Objects.requireNonNull(Component.literal("Search mobs...")));
         searchBox.setMaxLength(32);
         searchBox.setBordered(false);
+        searchBox.setTextColor(DesignTokens.Text.PRIMARY);
+        searchBox.setTextColorUneditable(DesignTokens.Text.MUTED);
         searchBox.setResponder(this::onMobSearchChanged);
         addRenderableWidget(searchBox);
         mobSearchBox = searchBox;

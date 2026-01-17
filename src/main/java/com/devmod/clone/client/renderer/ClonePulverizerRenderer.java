@@ -1,7 +1,8 @@
 package com.devmod.clone.client.renderer;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+
+import org.jetbrains.annotations.Nullable;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -67,7 +68,7 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
             @Nonnull PoseStack poseStack,
             @Nonnull ClonePulverizerBlockEntity entity,
             @Nonnull BakedGeoModel model,
-            @Nonnull MultiBufferSource bufferSource,
+            @Nullable MultiBufferSource bufferSource,
             @Nullable com.mojang.blaze3d.vertex.VertexConsumer buffer,
             boolean isReRender,
             float partialTick,
@@ -94,7 +95,7 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
             @Nonnull PoseStack poseStack,
             @Nonnull ClonePulverizerBlockEntity entity,
             @Nonnull BakedGeoModel model,
-            @Nonnull MultiBufferSource bufferSource,
+            @Nullable MultiBufferSource bufferSource,
             @Nullable com.mojang.blaze3d.vertex.VertexConsumer buffer,
             boolean isReRender,
             float partialTick,
@@ -106,6 +107,10 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
 
         // Only render items if not a re-render pass
         if (isReRender) {
+            return;
+        }
+
+        if (bufferSource == null) {
             return;
         }
 

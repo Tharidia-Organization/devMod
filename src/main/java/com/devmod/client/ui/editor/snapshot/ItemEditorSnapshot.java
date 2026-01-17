@@ -105,7 +105,7 @@ public class ItemEditorSnapshot {
         public CraftingRecipeData toRecipe() {
             if (id == null || id.isBlank()) return null;
             return CraftingRecipeData.fromJson(
-                Objects.requireNonNull(net.minecraft.resources.ResourceLocation.tryParse(id)),
+                Objects.requireNonNull(net.minecraft.resources.ResourceLocation.tryParse(Objects.requireNonNull(id))),
                 Objects.requireNonNull(json, "recipe json")
             );
         }

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -92,7 +93,7 @@ class PortalDataTest {
         @DisplayName("Portal can be unlinked")
         void portalCanBeUnlinked() {
             PortalData portal = PortalData.create(PortalColor.BLUE)
-                .linkTo(UUID.randomUUID());
+                .linkTo(Objects.requireNonNull(UUID.randomUUID()));
 
             assertTrue(portal.isLinked());
 
@@ -108,7 +109,7 @@ class PortalDataTest {
             PortalData portal = PortalData.create(PortalColor.BLUE);
             UUID originalId = portal.id();
 
-            PortalData linked = portal.linkTo(UUID.randomUUID());
+            PortalData linked = portal.linkTo(Objects.requireNonNull(UUID.randomUUID()));
 
             assertEquals(originalId, linked.id());
         }
@@ -118,7 +119,7 @@ class PortalDataTest {
         void linkingPreservesColor() {
             PortalData portal = PortalData.create(PortalColor.ORANGE);
 
-            PortalData linked = portal.linkTo(UUID.randomUUID());
+            PortalData linked = portal.linkTo(Objects.requireNonNull(UUID.randomUUID()));
 
             assertEquals(PortalColor.ORANGE, linked.color());
         }
@@ -129,7 +130,7 @@ class PortalDataTest {
             PortalData portal = PortalData.create(PortalColor.BLUE)
                 .withRune(RuneType.HASTE);
 
-            PortalData linked = portal.linkTo(UUID.randomUUID());
+            PortalData linked = portal.linkTo(Objects.requireNonNull(UUID.randomUUID()));
 
             assertTrue(linked.rune().isPresent());
             assertEquals(RuneType.HASTE, linked.rune().get());
@@ -159,8 +160,8 @@ class PortalDataTest {
             PortalData portal2 = PortalData.create(PortalColor.BLUE)
                 .withDimension(ResourceLocation.parse("minecraft:the_nether"));
 
-            assertTrue(portal1.isInterDimensional(portal2));
-            assertTrue(portal2.isInterDimensional(portal1));
+            assertTrue(portal1.isInterDimensional(Objects.requireNonNull(portal2)));
+            assertTrue(portal2.isInterDimensional(Objects.requireNonNull(portal1)));
         }
 
         @Test
@@ -171,7 +172,7 @@ class PortalDataTest {
             PortalData portal2 = PortalData.create(PortalColor.BLUE)
                 .withDimension(ResourceLocation.parse("minecraft:overworld"));
 
-            assertFalse(portal1.isInterDimensional(portal2));
+            assertFalse(portal1.isInterDimensional(Objects.requireNonNull(portal2)));
         }
 
         @Test
@@ -181,8 +182,8 @@ class PortalDataTest {
             PortalData portal2 = PortalData.create(PortalColor.BLUE)
                 .withDimension(ResourceLocation.parse("minecraft:the_nether"));
 
-            assertFalse(portal1.isInterDimensional(portal2));
-            assertFalse(portal2.isInterDimensional(portal1));
+            assertFalse(portal1.isInterDimensional(Objects.requireNonNull(portal2)));
+            assertFalse(portal2.isInterDimensional(Objects.requireNonNull(portal1)));
         }
     }
 
@@ -259,7 +260,7 @@ class PortalDataTest {
             PortalData portal = PortalData.create(PortalColor.BLUE)
                 .withFrameCount(20);
 
-            PortalData linked = portal.linkTo(UUID.randomUUID());
+            PortalData linked = portal.linkTo(Objects.requireNonNull(UUID.randomUUID()));
 
             assertEquals(20, linked.frameBlockCount());
         }
@@ -301,9 +302,9 @@ class PortalDataTest {
         @Test
         @DisplayName("Creator preserved through linking")
         void creatorPreservedThroughLinking() {
-            UUID creatorId = UUID.randomUUID();
+            UUID creatorId = Objects.requireNonNull(UUID.randomUUID());
             PortalData portal = PortalData.createWithCreator(PortalColor.BLUE, creatorId)
-                .linkTo(UUID.randomUUID());
+                .linkTo(Objects.requireNonNull(UUID.randomUUID()));
 
             assertTrue(portal.creator().isPresent());
             assertEquals(creatorId, portal.creator().get());
@@ -312,9 +313,9 @@ class PortalDataTest {
         @Test
         @DisplayName("Creator preserved through unlinking")
         void creatorPreservedThroughUnlinking() {
-            UUID creatorId = UUID.randomUUID();
+            UUID creatorId = Objects.requireNonNull(UUID.randomUUID());
             PortalData portal = PortalData.createWithCreator(PortalColor.BLUE, creatorId)
-                .linkTo(UUID.randomUUID())
+                .linkTo(Objects.requireNonNull(UUID.randomUUID()))
                 .unlink();
 
             assertTrue(portal.creator().isPresent());
@@ -345,7 +346,7 @@ class PortalDataTest {
         @Test
         @DisplayName("isOwnedBy returns true for matching creator")
         void isOwnedByReturnsTrueForMatchingCreator() {
-            UUID creatorId = UUID.randomUUID();
+            UUID creatorId = Objects.requireNonNull(UUID.randomUUID());
             PortalData portal = PortalData.createWithCreator(PortalColor.BLUE, creatorId);
 
             assertTrue(portal.isOwnedBy(creatorId));
@@ -354,8 +355,8 @@ class PortalDataTest {
         @Test
         @DisplayName("isOwnedBy returns false for non-matching creator")
         void isOwnedByReturnsFalseForNonMatchingCreator() {
-            UUID creatorId = UUID.randomUUID();
-            UUID otherId = UUID.randomUUID();
+            UUID creatorId = Objects.requireNonNull(UUID.randomUUID());
+            UUID otherId = Objects.requireNonNull(UUID.randomUUID());
             PortalData portal = PortalData.createWithCreator(PortalColor.BLUE, creatorId);
 
             assertFalse(portal.isOwnedBy(otherId));
@@ -366,7 +367,7 @@ class PortalDataTest {
         void isOwnedByReturnsFalseForNoCreator() {
             PortalData portal = PortalData.create(PortalColor.BLUE);
 
-            assertFalse(portal.isOwnedBy(UUID.randomUUID()));
+            assertFalse(portal.isOwnedBy(Objects.requireNonNull(UUID.randomUUID())));
         }
 
         @Test
@@ -394,7 +395,7 @@ class PortalDataTest {
         @DisplayName("linkTo returns new instance")
         void linkToReturnsNewInstance() {
             PortalData original = PortalData.create(PortalColor.BLUE);
-            PortalData linked = original.linkTo(UUID.randomUUID());
+            PortalData linked = original.linkTo(Objects.requireNonNull(UUID.randomUUID()));
 
             assertNotSame(original, linked);
             assertFalse(original.isLinked());
@@ -405,7 +406,7 @@ class PortalDataTest {
         @DisplayName("unlink returns new instance")
         void unlinkReturnsNewInstance() {
             PortalData original = PortalData.create(PortalColor.BLUE)
-                .linkTo(UUID.randomUUID());
+                .linkTo(Objects.requireNonNull(UUID.randomUUID()));
             PortalData unlinked = original.unlink();
 
             assertNotSame(original, unlinked);

@@ -15,26 +15,12 @@ import com.devmod.clone.entity.PlayerCloneEntity;
 
 /**
  * Entity type registrations for DevMod.
- * Currently includes the NexaEntity (Nexus hub avatar).
  */
 public final class ModEntities {
     private ModEntities() {}
 
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
-        DeferredRegister.create(Registries.ENTITY_TYPE, DevMod.MODID);
-
-    /**
-     * The Nexa entity - the Nexus hub AI avatar.
-     * A floating humanoid that greets players and provides guidance.
-     */
-    public static final DeferredHolder<EntityType<?>, EntityType<NexaEntity>> NEXA =
-        ENTITY_TYPES.register("nexa", () -> EntityType.Builder.of(NexaEntity::new, MobCategory.MISC)
-            .sized(0.6F, 1.8F)  // Same hitbox as player
-            .clientTrackingRange(10)
-            .updateInterval(2)
-            .fireImmune()
-            .build("nexa")
-        );
+        DeferredRegister.create(Objects.requireNonNull(Registries.ENTITY_TYPE), DevMod.MODID);
 
     /**
      * The Player Clone entity - a companion clone of a player.

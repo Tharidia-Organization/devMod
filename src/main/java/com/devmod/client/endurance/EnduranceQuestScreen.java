@@ -28,6 +28,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.notification.ClientNotificationManager;
+import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.BaseDevModScreen;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -237,6 +238,9 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             searchQuery = query;
             applyFilters();
         });
+        searchBoxLocal.setBordered(false);
+        searchBoxLocal.setTextColor(DesignTokens.Text.PRIMARY());
+        searchBoxLocal.setTextColorUneditable(DesignTokens.Text.MUTED());
         addRenderableWidget(Objects.requireNonNull(searchBox));
 
         // All buttons are now rendered custom via renderActionButtons()
@@ -800,6 +804,11 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         int searchLabelY = height - 45;
         graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.filters.search_label").getString(),
             10, searchLabelY, COLOR_TEXT_DIM);
+
+        if (searchBox != null) {
+            AxiomRenderer.drawInputBackground(graphics, searchBox.getX(), searchBox.getY(), searchBox.getWidth(),
+                searchBox.getHeight(), searchBox.isFocused());
+        }
     }
 
 

@@ -1,6 +1,7 @@
 package com.devmod.clone.block.entity;
 
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -89,12 +90,12 @@ public class ImprinterBlockEntity extends BlockEntity {
     }
 
     public void tick() {
-        if (level == null || level.isClientSide) {
+        var lvl = level;
+        if (lvl == null || lvl.isClientSide) {
             return;
         }
 
         // Reset entity flag each tick (will be re-set by entityInside if still present)
-        boolean hadEntity = hasEntityNearby;
         hasEntityNearby = false;
 
         if (!isImprinting) {
@@ -102,7 +103,8 @@ public class ImprinterBlockEntity extends BlockEntity {
             LivingEntity entity = findEntityOnImprinter();
             if (entity != null) {
                 // Find connected Neurocell with empty Bioscanner
-                NeurocellAccess neurocell = NeurolinkConnector.findConnectedNeurocellWithEmptyBioscanner(level, worldPosition);
+                NeurocellAccess neurocell = NeurolinkConnector.findConnectedNeurocellWithEmptyBioscanner(
+                    lvl, Objects.requireNonNull(worldPosition));
                 if (neurocell != null) {
                     startImprinting(entity, neurocell);
                 }
@@ -118,21 +120,23 @@ public class ImprinterBlockEntity extends BlockEntity {
      */
     @Nullable
     private LivingEntity findEntityOnImprinter() {
-        if (level == null) {
+        var lvl = level;
+        if (lvl == null) {
             return null;
         }
 
+        BlockPos pos = Objects.requireNonNull(worldPosition);
         // AABB directly above the imprinter block (entity must stand ON it)
         AABB checkBox = new AABB(
-            worldPosition.getX(),
-            worldPosition.getY() + 0.5,
-            worldPosition.getZ(),
-            worldPosition.getX() + 1,
-            worldPosition.getY() + 3.0,
-            worldPosition.getZ() + 1
+            pos.getX(),
+            pos.getY() + 0.5,
+            pos.getZ(),
+            pos.getX() + 1,
+            pos.getY() + 3.0,
+            pos.getZ() + 1
         );
 
-        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, checkBox);
+        List<LivingEntity> entities = lvl.getEntitiesOfClass(LivingEntity.class, checkBox);
         return entities.isEmpty() ? null : entities.get(0);
     }
 
@@ -141,17 +145,21 @@ public class ImprinterBlockEntity extends BlockEntity {
         connectedNeurocell = neurocell;
         isImprinting = true;
         imprintProgress = 0;
-        targetName = entity.getDisplayName().getString();
+        targetName = Objects.requireNonNull(entity.getDisplayName().getString());
         setChanged();
 
         // Start sound
-        level.playSound(null, worldPosition, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.5f, 1.5f);
+        var lvl = level;
+        if (lvl != null) {
+            lvl.playSound(null, Objects.requireNonNull(worldPosition),
+                Objects.requireNonNull(SoundEvents.BEACON_ACTIVATE), SoundSource.BLOCKS, 0.5f, 1.5f);
+        }
 
         // Notify player if it's them being scanned
         if (entity instanceof Player player) {
             player.displayClientMessage(
-                Component.translatable("message.devmod.imprinter.scanning_self")
-                    .withStyle(ChatFormatting.GOLD),
+                Objects.requireNonNull(Component.translatable("message.devmod.imprinter.scanning_self")
+                    .withStyle(ChatFormatting.GOLD)),
                 true
             );
         }
@@ -164,19 +172,20 @@ public class ImprinterBlockEntity extends BlockEntity {
         }
 
         // Check if target is still valid
-        if (currentTarget == null || !currentTarget.isAlive()) {
+        LivingEntity target = currentTarget;
+        if (target == null || !target.isAlive()) {
             resetImprinting();
             return;
         }
 
         // Check if target moved away
         LivingEntity entityOnBlock = findEntityOnImprinter();
-        if (entityOnBlock == null || !entityOnBlock.equals(currentTarget)) {
+        if (entityOnBlock == null || !entityOnBlock.equals(target)) {
             // Target stepped off - abort
-            if (currentTarget instanceof Player player) {
+            if (target instanceof Player player) {
                 player.displayClientMessage(
-                    Component.translatable("message.devmod.imprinter.aborted")
-                        .withStyle(ChatFormatting.RED),
+                    Objects.requireNonNull(Component.translatable("message.devmod.imprinter.aborted")
+                        .withStyle(ChatFormatting.RED)),
                     true
                 );
             }
@@ -185,10 +194,10 @@ public class ImprinterBlockEntity extends BlockEntity {
         }
 
         // Pull entity to center
-        pullEntityToCenter(currentTarget);
+        pullEntityToCenter(target);
 
         // Spawn effects
-        spawnImprintingEffects(currentTarget);
+        spawnImprintingEffects(target);
 
         imprintProgress++;
         setChanged();
@@ -203,9 +212,10 @@ public class ImprinterBlockEntity extends BlockEntity {
      * Pull the entity gently toward the center of the block.
      */
     private void pullEntityToCenter(LivingEntity entity) {
-        double centerX = worldPosition.getX() + 0.5;
-        double centerZ = worldPosition.getZ() + 0.5;
-        double targetY = worldPosition.getY() + 0.5;
+        BlockPos pos = Objects.requireNonNull(worldPosition);
+        double centerX = pos.getX() + 0.5;
+        double centerZ = pos.getZ() + 0.5;
+        double targetY = pos.getY() + 0.5;
 
         double dx = centerX - entity.getX();
         double dz = centerZ - entity.getZ();
@@ -223,13 +233,15 @@ public class ImprinterBlockEntity extends BlockEntity {
             return;
         }
 
+        BlockPos pos = Objects.requireNonNull(worldPosition);
+
         // Orbit particles (every 2 ticks)
         if (imprintProgress % 2 == 0) {
             double angle = imprintProgress * 0.2 % (Math.PI * 2);
             double x = entity.getX() + Math.cos(angle) * 1.2;
             double z = entity.getZ() + Math.sin(angle) * 1.2;
             double y = entity.getY() + serverLevel.random.nextDouble() * entity.getBbHeight();
-            serverLevel.sendParticles(ParticleTypes.ENCHANT, x, y, z, 1, 0, 0, 0, 0.1);
+            serverLevel.sendParticles(Objects.requireNonNull(ParticleTypes.ENCHANT), x, y, z, 1, 0, 0, 0, 0.1);
         }
 
         // Helix particles (every 3 ticks)
@@ -237,31 +249,35 @@ public class ImprinterBlockEntity extends BlockEntity {
             double helixAngle = imprintProgress * 0.3 % (Math.PI * 2);
             double x = entity.getX() + Math.cos(helixAngle) * 0.4;
             double z = entity.getZ() + Math.sin(helixAngle) * 0.4;
-            double y = worldPosition.getY() + 0.5 + (imprintProgress % 40) * 0.05;
-            serverLevel.sendParticles(ParticleTypes.PORTAL, x, y, z, 1, 0, 0, 0, 0);
+            double y = pos.getY() + 0.5 + (imprintProgress % 40) * 0.05;
+            serverLevel.sendParticles(Objects.requireNonNull(ParticleTypes.PORTAL), x, y, z, 1, 0, 0, 0, 0);
         }
 
         // Ambient sound (every 10 ticks)
         if (imprintProgress % 10 == 0) {
             float pitch = 1.5f + (float) imprintProgress / 60.0f * 0.5f;
-            level.playSound(null, worldPosition, SoundEvents.BEACON_AMBIENT, SoundSource.BLOCKS, 0.3f, pitch);
+            serverLevel.playSound(null, pos, Objects.requireNonNull(SoundEvents.BEACON_AMBIENT),
+                SoundSource.BLOCKS, 0.3f, pitch);
         }
     }
 
     private void completeImprinting() {
-        if (level == null || currentTarget == null || connectedNeurocell == null) {
+        var lvl = level;
+        LivingEntity target = currentTarget;
+        NeurocellAccess neurocell = connectedNeurocell;
+        if (lvl == null || target == null || neurocell == null) {
             resetImprinting();
             return;
         }
 
         // Imprint entity DNA onto the bioscanner in the neurocell
-        imprintEntityDNA(connectedNeurocell, currentTarget);
+        imprintEntityDNA(neurocell, target);
 
         // Spawn completion effects
-        spawnCompletionEffects(currentTarget);
+        spawnCompletionEffects(target);
 
         // CRITICAL: Kill/discard the entity after imprinting
-        applyImprintingConsequences(currentTarget);
+        applyImprintingConsequences(target);
 
         resetImprinting();
     }
@@ -289,13 +305,15 @@ public class ImprinterBlockEntity extends BlockEntity {
             return;
         }
 
+        BlockPos pos = Objects.requireNonNull(worldPosition);
+
         // Burst of enchanted hit particles around entity
         for (int i = 0; i < 25; i++) {
-            double offsetX = (level.random.nextDouble() - 0.5) * 0.8;
-            double offsetZ = (level.random.nextDouble() - 0.5) * 0.8;
-            double offsetY = level.random.nextDouble() * 0.5;
+            double offsetX = (serverLevel.random.nextDouble() - 0.5) * 0.8;
+            double offsetZ = (serverLevel.random.nextDouble() - 0.5) * 0.8;
+            double offsetY = serverLevel.random.nextDouble() * 0.5;
             serverLevel.sendParticles(
-                ParticleTypes.ENCHANTED_HIT,
+                Objects.requireNonNull(ParticleTypes.ENCHANTED_HIT),
                 entity.getX() + offsetX,
                 entity.getY() + offsetY,
                 entity.getZ() + offsetZ,
@@ -305,20 +323,23 @@ public class ImprinterBlockEntity extends BlockEntity {
 
         // Glow particles at imprinter
         for (int i = 0; i < 15; i++) {
-            double offsetX = (level.random.nextDouble() - 0.5) * 0.5;
-            double offsetZ = (level.random.nextDouble() - 0.5) * 0.5;
+            double offsetX = (serverLevel.random.nextDouble() - 0.5) * 0.5;
+            double offsetZ = (serverLevel.random.nextDouble() - 0.5) * 0.5;
             serverLevel.sendParticles(
-                ParticleTypes.GLOW,
-                worldPosition.getX() + 0.5 + offsetX,
-                worldPosition.getY() + 0.5,
-                worldPosition.getZ() + 0.5 + offsetZ,
+                Objects.requireNonNull(ParticleTypes.GLOW),
+                pos.getX() + 0.5 + offsetX,
+                pos.getY() + 0.5,
+                pos.getZ() + 0.5 + offsetZ,
                 1, 0, 0.3, 0, 0.02
             );
         }
 
         // Success sounds
-        level.playSound(null, entity.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.BLOCKS, 0.8f, 1.5f);
-        level.playSound(null, entity.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.6f, 1.8f);
+        BlockPos entityPos = Objects.requireNonNull(entity.blockPosition());
+        serverLevel.playSound(null, entityPos, Objects.requireNonNull(SoundEvents.EXPERIENCE_ORB_PICKUP),
+            SoundSource.BLOCKS, 0.8f, 1.5f);
+        serverLevel.playSound(null, entityPos, Objects.requireNonNull(SoundEvents.AMETHYST_BLOCK_CHIME),
+            SoundSource.BLOCKS, 0.6f, 1.8f);
     }
 
     /**
@@ -326,7 +347,7 @@ public class ImprinterBlockEntity extends BlockEntity {
      */
     private void imprintEntityDNA(NeurocellAccess neurocell, LivingEntity entity) {
         // Use DevMod's enhanced BioscanData system
-        BioscanData data = BioscanData.fromEntity(entity);
+        BioscanData data = BioscanData.fromEntity(Objects.requireNonNull(entity));
         neurocell.fillBioscannerFromImprinter(data);
     }
 
@@ -345,25 +366,27 @@ public class ImprinterBlockEntity extends BlockEntity {
      * Shows status messages about the imprinting system.
      */
     public void triggerManualScan(@Nonnull Player player) {
-        if (level == null || level.isClientSide) {
+        var lvl = level;
+        if (lvl == null || lvl.isClientSide) {
             return;
         }
 
         if (isImprinting) {
             player.displayClientMessage(
-                Component.translatable("message.devmod.imprinter.busy")
-                    .withStyle(ChatFormatting.YELLOW),
+                Objects.requireNonNull(Component.translatable("message.devmod.imprinter.busy")
+                    .withStyle(ChatFormatting.YELLOW)),
                 true
             );
             return;
         }
 
         // Check for connected neurocell with empty bioscanner
-        NeurocellAccess neurocell = NeurolinkConnector.findConnectedNeurocellWithEmptyBioscanner(level, worldPosition);
+        NeurocellAccess neurocell = NeurolinkConnector.findConnectedNeurocellWithEmptyBioscanner(
+            lvl, Objects.requireNonNull(worldPosition));
         if (neurocell == null) {
             player.displayClientMessage(
-                Component.translatable("message.devmod.imprinter.no_neurocell")
-                    .withStyle(ChatFormatting.RED),
+                Objects.requireNonNull(Component.translatable("message.devmod.imprinter.no_neurocell")
+                    .withStyle(ChatFormatting.RED)),
                 true
             );
             return;
@@ -373,8 +396,8 @@ public class ImprinterBlockEntity extends BlockEntity {
         LivingEntity entity = findEntityOnImprinter();
         if (entity == null) {
             player.displayClientMessage(
-                Component.translatable("message.devmod.imprinter.no_target")
-                    .withStyle(ChatFormatting.YELLOW),
+                Objects.requireNonNull(Component.translatable("message.devmod.imprinter.no_target")
+                    .withStyle(ChatFormatting.YELLOW)),
                 true
             );
             return;
@@ -386,8 +409,8 @@ public class ImprinterBlockEntity extends BlockEntity {
         } else {
             startImprinting(entity, neurocell);
             player.displayClientMessage(
-                Component.translatable("message.devmod.imprinter.scanning", entity.getName())
-                    .withStyle(ChatFormatting.GREEN),
+                Objects.requireNonNull(Component.translatable("message.devmod.imprinter.scanning", entity.getName())
+                    .withStyle(ChatFormatting.GREEN)),
                 true
             );
         }
@@ -400,7 +423,7 @@ public class ImprinterBlockEntity extends BlockEntity {
         super.saveAdditional(tag, provider);
         tag.putInt("ImprintProgress", imprintProgress);
         tag.putBoolean("IsImprinting", isImprinting);
-        tag.putString("TargetName", targetName);
+        tag.putString("TargetName", Objects.requireNonNull(targetName));
     }
 
     @Override
@@ -408,7 +431,7 @@ public class ImprinterBlockEntity extends BlockEntity {
         super.loadAdditional(tag, provider);
         imprintProgress = tag.getInt("ImprintProgress");
         isImprinting = tag.getBoolean("IsImprinting");
-        targetName = tag.getString("TargetName");
+        targetName = Objects.requireNonNull(tag.getString("TargetName"));
     }
 
     @Override
@@ -417,7 +440,7 @@ public class ImprinterBlockEntity extends BlockEntity {
         CompoundTag tag = super.getUpdateTag(registries);
         tag.putInt("ImprintProgress", imprintProgress);
         tag.putBoolean("IsImprinting", isImprinting);
-        tag.putString("TargetName", targetName);
+        tag.putString("TargetName", Objects.requireNonNull(targetName));
         return tag;
     }
 

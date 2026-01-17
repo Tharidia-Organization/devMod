@@ -1,1 +1,3 @@
-{"parent":"devmod:block/clone_reactor"}
+{
+  "parent": "builtin/entity"
+}

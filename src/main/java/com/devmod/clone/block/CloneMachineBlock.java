@@ -53,6 +53,7 @@ public class CloneMachineBlock extends HorizontalDirectionalBlock implements Ent
         this(createDefaultProperties(), Block.box(0, 0, 0, 16, 16, 16));
     }
 
+    @SuppressWarnings("this-escape")
     public CloneMachineBlock(Properties properties, VoxelShape shape) {
         super(properties);
         this.shape = shape;

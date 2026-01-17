@@ -16,6 +16,9 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Container;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -24,9 +27,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.Container;
-import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.MenuProvider;
 
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.CloneItems;
@@ -62,22 +62,13 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
     private String entityType = "";
     @Nonnull
     private String entityName = "";
+    @Nullable
     private UUID playerUUID = null;
     private int cloningTime = 0;
     private boolean hasRagdoll = false;
 
     public NeurocellBlockEntity(BlockPos pos, BlockState state) {
         super(CloneBlockEntities.NEUROCELL.get(), pos, state);
-    }
-
-    public void tick() {
-        Level lvl = level;
-        if (lvl == null || lvl.isClientSide) {
-            return;
-        }
-
-        // No ticker needed - Hologenica doesn't have a ticker for Neurocell
-        // The entity just displays what's in the bioscanner
     }
 
     /**
@@ -248,6 +239,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
         return (float) cloningTime / PROCESS_TIME;
     }
 
+    @Override
     public boolean isDataReady() {
         return hasRagdoll && !entityType.isEmpty();
     }
@@ -260,6 +252,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
      * Consume the data (called by REFORMER when starting clone).
      * Creates BioscanData from stored bioscanner and clears the neurocell.
      */
+    @Override
     @Nullable
     public com.devmod.clone.data.BioscanData consumeData() {
         if (!hasRagdoll || entityType.isEmpty() || storedBioscanner.isEmpty()) {
@@ -453,6 +446,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
     /**
      * Check if the neurocell has a physical empty bioscanner inserted.
      */
+    @Override
     public boolean hasEmptyBioscanner() {
         return !storedBioscanner.isEmpty()
             && storedBioscanner.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()))
@@ -462,6 +456,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
     /**
      * Fill the bioscanner slot from imprinter data.
      */
+    @Override
     public void fillBioscannerFromImprinter(@Nonnull BioscanData data) {
         if (storedBioscanner.isEmpty()
             || !storedBioscanner.is(Objects.requireNonNull(CloneItems.BIOSCANNER.get()))

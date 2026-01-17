@@ -1,3 +1,3 @@
 {
-  "parent": "devmod:block/clone_fuel_generator"
+  "parent": "builtin/entity"
 }

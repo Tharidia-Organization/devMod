@@ -103,6 +103,9 @@ public class QATestingScreen extends Screen {
         nameField.setMaxLength(50);
         nameField.setValue("Tester");
         nameField.setVisible(!sessionStarted);
+        nameField.setBordered(false);
+        nameField.setTextColor(DesignTokens.Text.PRIMARY());
+        nameField.setTextColorUneditable(DesignTokens.Text.MUTED());
         this.testerNameField = nameField;
         this.addRenderableWidget(nameField);
 
@@ -229,6 +232,8 @@ public class QATestingScreen extends Screen {
             renderTestingInterface(graphics, mouseX, mouseY);
         }
 
+        renderInputBackgrounds(graphics);
+
         // Render widgets (buttons, text fields) on top
         for (var widget : this.renderables) {
             widget.render(graphics, mouseX, mouseY, partialTick);
@@ -236,6 +241,13 @@ public class QATestingScreen extends Screen {
 
         // Render action buttons with Impact styling
         renderActionButtons(graphics, mouseX, mouseY);
+    }
+
+    private void renderInputBackgrounds(GuiGraphics graphics) {
+        if (testerNameField != null && testerNameField.isVisible()) {
+            AxiomRenderer.drawInputBackground(graphics, testerNameField.getX(), testerNameField.getY(),
+                testerNameField.getWidth(), testerNameField.getHeight(), testerNameField.isFocused());
+        }
     }
 
     private void renderStartScreen(GuiGraphics graphics) {

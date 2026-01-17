@@ -1,6 +1,10 @@
 package com.devmod.portal;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
+
+import com.mojang.serialization.Codec;
 
 import net.minecraft.util.StringRepresentable;
 
@@ -26,6 +30,8 @@ public enum PortalColor implements StringRepresentable {
     RED("red", 0xB02E26),
     BLACK("black", 0x1D1D21);
 
+    public static final Codec<PortalColor> CODEC = StringRepresentable.fromEnum(PortalColor::values);
+
     private final String id;
     private final int color;
 
@@ -37,7 +43,7 @@ public enum PortalColor implements StringRepresentable {
     @Override
     @Nonnull
     public String getSerializedName() {
-        return id;
+        return Objects.requireNonNull(id);
     }
 
     /**

@@ -54,8 +54,8 @@ public record PartySyncPayload(
             buf.writeBoolean(member.isLeader);
             buf.writeBoolean(member.isOnline);
             buf.writeBoolean(member.isSpectator);
-            buf.writeUtf(member.kitId() != null ? member.kitId() : "");
-            buf.writeUtf(member.kitLabel() != null ? member.kitLabel() : "");
+            buf.writeUtf(Objects.requireNonNull(Objects.requireNonNullElse(member.kitId(), "")));
+            buf.writeUtf(Objects.requireNonNull(Objects.requireNonNullElse(member.kitLabel(), "")));
         }
 
         buf.writeVarInt(payload.questTypeOrdinal);

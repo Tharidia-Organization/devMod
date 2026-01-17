@@ -11,8 +11,6 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
@@ -28,6 +26,7 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.actions.client.OnboardingActionPayload;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.util.I18n;
@@ -62,11 +61,14 @@ public class WelcomeScreen extends Screen {
     // === State ===
     private boolean dontShowAgain = false;
     @Nullable
-    private Checkbox dontShowCheckboxWidget;
+    private EditorToggle dontShowToggle;
     @Nullable
-    private Button tutorialButtonWidget;
+    private EditorButtonWidget tutorialButtonWidget;
     @Nullable
-    private Button skipButtonWidget;
+    private EditorButtonWidget skipButtonWidget;
+    private int dontShowToggleX;
+    private int dontShowToggleY;
+    private int dontShowToggleWidth;
     private long openTime;
     private boolean introSoundPlayed = false;
 
@@ -114,9 +116,8 @@ public class WelcomeScreen extends Screen {
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.LARGE)
             .onClick(this::startTutorial);
-        Button safeTutorialButtonWidget = Objects.requireNonNull(
-            localTutorialButton.asVanilla(panelX + 35, buttonY, buttonWidth, 28),
-            "tutorialButtonWidget");
+        EditorButtonWidget safeTutorialButtonWidget = new EditorButtonWidget(localTutorialButton,
+            panelX + 35, buttonY, buttonWidth, 28);
         tutorialButtonWidget = safeTutorialButtonWidget;
         safeTutorialButtonWidget.visible = false;
         addRenderableWidget(safeTutorialButtonWidget);
@@ -127,23 +128,19 @@ public class WelcomeScreen extends Screen {
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.LARGE)
             .onClick(this::skip);
-        Button safeSkipButtonWidget = Objects.requireNonNull(
-            localSkipButton.asVanilla(panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28),
-            "skipButtonWidget");
+        EditorButtonWidget safeSkipButtonWidget = new EditorButtonWidget(localSkipButton,
+            panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28);
         skipButtonWidget = safeSkipButtonWidget;
         safeSkipButtonWidget.visible = false;
         addRenderableWidget(safeSkipButtonWidget);
 
-        // Checkbox (using EditorToggle for consistent theming)
+        // Toggle (using EditorToggle for consistent theming)
         String dontShowLabel = Objects.requireNonNull(I18n.ui("dont_show_again").getString(), "dontShowLabel");
-        EditorToggle localDontShowCheckbox = new EditorToggle("welcome-dont-show", dontShowLabel, false)
+        dontShowToggle = new EditorToggle("welcome-dont-show", dontShowLabel, false)
             .onChange(value -> dontShowAgain = value);
-        Checkbox safeDontShowCheckboxWidget = (Checkbox) Objects.requireNonNull(
-            localDontShowCheckbox.asVanilla(panelX + 35, panelY + PANEL_HEIGHT - 40, buttonWidth * 2, 18),
-            "dontShowCheckboxWidget");
-        dontShowCheckboxWidget = safeDontShowCheckboxWidget;
-        safeDontShowCheckboxWidget.visible = false;
-        addRenderableWidget(safeDontShowCheckboxWidget);
+        dontShowToggleX = panelX + 35;
+        dontShowToggleY = panelY + PANEL_HEIGHT - 40;
+        dontShowToggleWidth = buttonWidth * 2;
 
         // Initialize background particles
         for (int i = 0; i < 30; i++) {
@@ -163,17 +160,13 @@ public class WelcomeScreen extends Screen {
 
         // Show widgets after delay
         if (elapsed > BUTTONS_REVEAL_DELAY) {
-            Button localTutorialWidget = tutorialButtonWidget;
+            EditorButtonWidget localTutorialWidget = tutorialButtonWidget;
             if (localTutorialWidget != null) {
                 localTutorialWidget.visible = true;
             }
-            Button localSkipWidget = skipButtonWidget;
+            EditorButtonWidget localSkipWidget = skipButtonWidget;
             if (localSkipWidget != null) {
                 localSkipWidget.visible = true;
-            }
-            Checkbox localCheckboxWidget = dontShowCheckboxWidget;
-            if (localCheckboxWidget != null) {
-                localCheckboxWidget.visible = true;
             }
         }
 
@@ -250,14 +243,19 @@ public class WelcomeScreen extends Screen {
         // Render widgets with fade
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float btnAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
-            if (tutorialButtonWidget != null) {
-                tutorialButtonWidget.setAlpha(btnAlpha);
+            // Capture nullable fields in local variables for thread safety
+            EditorToggle toggle = dontShowToggle;
+            EditorButtonWidget tutorialBtn = tutorialButtonWidget;
+            EditorButtonWidget skipBtn = skipButtonWidget;
+            if (toggle != null) {
+                toggle.setAlpha(btnAlpha);
+                toggle.render(safeGraphics, dontShowToggleX, dontShowToggleY, dontShowToggleWidth, mouseX, mouseY);
             }
-            if (skipButtonWidget != null) {
-                skipButtonWidget.setAlpha(btnAlpha);
+            if (tutorialBtn != null) {
+                tutorialBtn.setAlpha(btnAlpha);
             }
-            if (dontShowCheckboxWidget != null) {
-                dontShowCheckboxWidget.setAlpha(btnAlpha);
+            if (skipBtn != null) {
+                skipBtn.setAlpha(btnAlpha);
             }
         }
 
@@ -469,6 +467,18 @@ public class WelcomeScreen extends Screen {
     @Nonnull
     private Font safeFont() {
         return Objects.requireNonNull(font, "font");
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        long elapsed = System.currentTimeMillis() - openTime;
+        if (elapsed > BUTTONS_REVEAL_DELAY) {
+            EditorToggle toggle = dontShowToggle;
+            if (toggle != null && toggle.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override

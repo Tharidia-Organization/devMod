@@ -573,15 +573,23 @@ public class TemplateValidator {
         }
     }
 
+    private static int minOffset(int size) {
+        return -size / 2;
+    }
+
+    private static int maxOffset(int size) {
+        return size - (size / 2) - 1;
+    }
+
     private void validateForbiddenZones(ArenaTemplate template, List<ArenaTemplate.ForbiddenZone> zones, int sizeX, int sizeZ, List<String> errors) {
         if (zones == null) return;
         if (zones.size() > MAX_FORBIDDEN_ZONES) {
             errors.add("Too many forbiddenZones, max " + MAX_FORBIDDEN_ZONES);
         }
-        int minAllowedX = -sizeX / 2;
-        int maxAllowedX = sizeX / 2 - 1;
-        int minAllowedZ = -sizeZ / 2;
-        int maxAllowedZ = sizeZ / 2 - 1;
+        int minAllowedX = minOffset(sizeX);
+        int maxAllowedX = maxOffset(sizeX);
+        int minAllowedZ = minOffset(sizeZ);
+        int maxAllowedZ = maxOffset(sizeZ);
         for (int i = 0; i < zones.size(); i++) {
             var zone = zones.get(i);
             if (zone.min() == null || zone.max() == null || zone.min().length != 3 || zone.max().length != 3) {
@@ -840,8 +848,6 @@ public class TemplateValidator {
         int minZ;
         int maxX;
         int maxZ;
-        int halfWidth = sizeX / 2;
-        int halfDepth = sizeZ / 2;
         switch (template.origin().mode()) {
             case CORNER_NW -> {
                 minX = originX;
@@ -856,16 +862,16 @@ public class TemplateValidator {
                 maxZ = originZ;
             }
             case CENTER -> {
-                minX = originX - halfWidth;
-                maxX = originX + halfWidth - 1;
-                minZ = originZ - halfDepth;
-                maxZ = originZ + halfDepth - 1;
+                minX = originX + minOffset(sizeX);
+                maxX = originX + maxOffset(sizeX);
+                minZ = originZ + minOffset(sizeZ);
+                maxZ = originZ + maxOffset(sizeZ);
             }
             default -> {
-                minX = originX - halfWidth;
-                maxX = originX + halfWidth - 1;
-                minZ = originZ - halfDepth;
-                maxZ = originZ + halfDepth - 1;
+                minX = originX + minOffset(sizeX);
+                maxX = originX + maxOffset(sizeX);
+                minZ = originZ + minOffset(sizeZ);
+                maxZ = originZ + maxOffset(sizeZ);
             }
         }
 
@@ -878,6 +884,10 @@ public class TemplateValidator {
             maxY = Math.max(maxY, template.walls().startY() + template.walls().height());
         }
 
-        return new Bounds(minX, minY, minZ, maxX, maxY, maxZ, originX, originZ);
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+        return new Bounds(minX, minY, minZ, maxX, maxY, maxZ, originX, originZ, shape, template.ringInnerRadius());
     }
 }

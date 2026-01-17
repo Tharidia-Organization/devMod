@@ -21,7 +21,6 @@ public final class ModEntityEvents {
      */
     @SubscribeEvent
     public static void onEntityAttributeCreation(EntityAttributeCreationEvent event) {
-        event.put(ModEntities.NEXA.get(), NexaEntity.createAttributes().build());
         event.put(ModEntities.PLAYER_CLONE.get(), PlayerCloneEntity.createAttributes().build());
         DevMod.LOGGER.debug("[ModEntities] Registered entity attributes");
     }

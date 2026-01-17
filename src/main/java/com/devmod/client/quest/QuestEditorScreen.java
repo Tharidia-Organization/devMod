@@ -13,15 +13,17 @@ import javax.annotation.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.ModScreen;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.StartQuestPayload;
@@ -60,15 +62,15 @@ public class QuestEditorScreen extends ModScreen {
 
     // Button widgets (only stored for state updates - active/enabled toggling)
     @Nullable
-    private Button deleteQuestBtnWidget;
+    private EditorButtonWidget deleteQuestBtnWidget;
     @Nullable
-    private Button addTaskBtnWidget;
+    private EditorButtonWidget addTaskBtnWidget;
     @Nullable
-    private Button deleteTaskBtnWidget;
+    private EditorButtonWidget deleteTaskBtnWidget;
     @Nullable
-    private Button completeTaskBtnWidget;
+    private EditorButtonWidget completeTaskBtnWidget;
     @Nullable
-    private Button setActiveBtnWidget;
+    private EditorButtonWidget setActiveBtnWidget;
 
     // Change listener reference for cleanup
     @Nullable
@@ -87,15 +89,17 @@ public class QuestEditorScreen extends ModScreen {
     private EditBox mobSearchField;
     // Modal button widgets (EditorButton instances are transient)
     @Nullable
-    private Button startEnduranceBtnWidget;
+    private EditorButtonWidget startEnduranceBtnWidget;
     @Nullable
-    private Button cancelEnduranceBtnWidget;
+    private EditorButtonWidget cancelEnduranceBtnWidget;
     @Nullable
-    private Button wavesMinusBtnWidget;
+    private EditorButtonWidget wavesMinusBtnWidget;
     @Nullable
-    private Button wavesPlusBtnWidget;
+    private EditorButtonWidget wavesPlusBtnWidget;
     @Nullable
-    private Button endlessModeBtnWidget;
+    private EditorButtonWidget endlessModeBtnWidget;
+    @Nullable
+    private EditorButtonWidget enduranceQuestBtnWidget;
 
     // If true, opens directly to endurance modal
     private final boolean openEnduranceModalOnInit;
@@ -140,6 +144,9 @@ public class QuestEditorScreen extends ModScreen {
             }
         }
         questNoteBox.setResponder(this::onQuestNoteChanged);
+        questNoteBox.setBordered(false);
+        questNoteBox.setTextColor(DesignTokens.Text.PRIMARY);
+        questNoteBox.setTextColorUneditable(DesignTokens.Text.MUTED);
         this.questNoteField = questNoteBox;
         this.addRenderableWidget(questNoteBox);
 
@@ -155,6 +162,9 @@ public class QuestEditorScreen extends ModScreen {
             }
         }
         taskNoteBox.setResponder(this::onTaskNoteChanged);
+        taskNoteBox.setBordered(false);
+        taskNoteBox.setTextColor(DesignTokens.Text.PRIMARY);
+        taskNoteBox.setTextColorUneditable(DesignTokens.Text.MUTED);
         this.taskNoteField = taskNoteBox;
         this.addRenderableWidget(taskNoteBox);
 
@@ -162,6 +172,9 @@ public class QuestEditorScreen extends ModScreen {
         EditBox newQuestBox = new EditBox(Objects.requireNonNull(font), PADDING, height - 55, QUEST_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_quest"));
         newQuestBox.setMaxLength(50);
         newQuestBox.setHint(I18n.translate("devmod.quest.new_quest_hint"));
+        newQuestBox.setBordered(false);
+        newQuestBox.setTextColor(DesignTokens.Text.PRIMARY);
+        newQuestBox.setTextColorUneditable(DesignTokens.Text.MUTED);
         this.newQuestNameField = newQuestBox;
         this.addRenderableWidget(newQuestBox);
 
@@ -170,86 +183,90 @@ public class QuestEditorScreen extends ModScreen {
         EditBox newTaskBox = new EditBox(Objects.requireNonNull(font), taskFieldX, height - 55, TASK_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_task"));
         newTaskBox.setMaxLength(100);
         newTaskBox.setHint(I18n.translate("devmod.quest.new_task_hint"));
+        newTaskBox.setBordered(false);
+        newTaskBox.setTextColor(DesignTokens.Text.PRIMARY);
+        newTaskBox.setTextColorUneditable(DesignTokens.Text.MUTED);
         this.newTaskDescField = newTaskBox;
         this.addRenderableWidget(newTaskBox);
 
         // === Buttons ===
         // Add Quest Button (+) - no state updates needed, just register
-        this.addRenderableWidget(EditorButton.builder("quest-add", I18n.ui("add_symbol").getString())
+        EditorButton addQuestButton = EditorButton.builder("quest-add", I18n.ui("add_symbol").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.SMALL)
             .onClick(this::addNewQuest)
-            .build()
-            .asVanilla(PADDING + QUEST_LIST_WIDTH - 22, height - 55, 20, 18));
+            .build();
+        this.addRenderableWidget(new EditorButtonWidget(addQuestButton, PADDING + QUEST_LIST_WIDTH - 22, height - 55, 20, 18));
 
         // Delete Quest Button
-        Button deleteQuestWidget = EditorButton.builder("quest-delete", I18n.ui("delete_symbol").getString())
+        EditorButton deleteQuestButton = EditorButton.builder("quest-delete", I18n.ui("delete_symbol").getString())
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.SMALL)
+            .tooltip(I18n.translate("devmod.quest.delete_quest").getString())
             .onClick(this::deleteSelectedQuest)
-            .build()
-            .asVanilla(PADDING + QUEST_LIST_WIDTH - 22, contentTop, 20, 18);
-        deleteQuestWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_quest")));
+            .build();
+        EditorButtonWidget deleteQuestWidget = new EditorButtonWidget(deleteQuestButton, PADDING + QUEST_LIST_WIDTH - 22, contentTop, 20, 18);
         this.deleteQuestBtnWidget = deleteQuestWidget;
         this.addRenderableWidget(deleteQuestWidget);
 
         // Add Task Button (+)
-        Button addTaskWidget = EditorButton.builder("task-add", I18n.ui("add_symbol").getString())
+        EditorButton addTaskButton = EditorButton.builder("task-add", I18n.ui("add_symbol").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.SMALL)
             .onClick(this::addNewTask)
-            .build()
-            .asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, height - 55, 20, 18);
+            .build();
+        EditorButtonWidget addTaskWidget = new EditorButtonWidget(addTaskButton, taskFieldX + TASK_LIST_WIDTH - 22, height - 55, 20, 18);
         this.addTaskBtnWidget = addTaskWidget;
         this.addRenderableWidget(addTaskWidget);
 
         // Delete Task Button
-        Button deleteTaskWidget = EditorButton.builder("task-delete", I18n.ui("delete_symbol").getString())
+        EditorButton deleteTaskButton = EditorButton.builder("task-delete", I18n.ui("delete_symbol").getString())
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.SMALL)
+            .tooltip(I18n.translate("devmod.quest.delete_task").getString())
             .onClick(this::deleteSelectedTask)
-            .build()
-            .asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, contentTop, 20, 18);
-        deleteTaskWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_task")));
+            .build();
+        EditorButtonWidget deleteTaskWidget = new EditorButtonWidget(deleteTaskButton, taskFieldX + TASK_LIST_WIDTH - 22, contentTop, 20, 18);
         this.deleteTaskBtnWidget = deleteTaskWidget;
         this.addRenderableWidget(deleteTaskWidget);
 
         // Complete Task Button
-        Button completeTaskWidget = EditorButton.builder("task-complete", I18n.ui("complete_with_icon").getString())
+        EditorButton completeTaskButton = EditorButton.builder("task-complete", I18n.ui("complete_with_icon").getString())
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::completeSelectedTask)
-            .build()
-            .asVanilla(noteFieldX, contentTop + 150, 100, 20);
+            .build();
+        EditorButtonWidget completeTaskWidget = new EditorButtonWidget(completeTaskButton, noteFieldX, contentTop + 150, 100, 20);
         this.completeTaskBtnWidget = completeTaskWidget;
         this.addRenderableWidget(completeTaskWidget);
 
         // Set Active Quest Button
-        Button setActiveWidget = EditorButton.builder("quest-set-active", I18n.ui("activate_with_icon").getString())
+        EditorButton setActiveButton = EditorButton.builder("quest-set-active", I18n.ui("activate_with_icon").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::setActiveQuest)
-            .build()
-            .asVanilla(noteFieldX + 110, contentTop + 150, 80, 20);
+            .build();
+        EditorButtonWidget setActiveWidget = new EditorButtonWidget(setActiveButton, noteFieldX + 110, contentTop + 150, 80, 20);
         this.setActiveBtnWidget = setActiveWidget;
         this.addRenderableWidget(setActiveWidget);
 
         // Close Button
-        this.addRenderableWidget(EditorButton.builder("quest-close", I18n.ui("close").getString())
+        EditorButton closeButton = EditorButton.builder("quest-close", I18n.ui("close").getString())
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
-            .build()
-            .asVanilla(width / 2 - 50, height - 28, 100, 20));
+            .build();
+        this.addRenderableWidget(new EditorButtonWidget(closeButton, width / 2 - 50, height - 28, 100, 20));
 
         // === NEW: Endurance Quest Button === (no state updates needed)
-        Button newEnduranceWidget = EditorButton.builder("quest-endurance", I18n.ui("endurance_quest").getString())
+        EditorButton newEnduranceButton = EditorButton.builder("quest-endurance", I18n.ui("endurance_quest").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
+            .tooltip(I18n.translate("devmod.quest.create_endurance").getString())
             .onClick(this::openEnduranceModal)
-            .build()
-            .asVanilla(PADDING, height - 28, 90, 20);
-        newEnduranceWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.create_endurance")));
+            .build();
+        EditorButtonWidget newEnduranceWidget = new EditorButtonWidget(newEnduranceButton, PADDING, height - 28, 90, 20);
+        this.enduranceQuestBtnWidget = newEnduranceWidget;
         this.addRenderableWidget(newEnduranceWidget);
 
         // Initialize endurance modal components (hidden by default)
@@ -286,59 +303,58 @@ public class QuestEditorScreen extends ModScreen {
         searchBox.setHint(I18n.translate("devmod.quest.search_mobs"));
         searchBox.setResponder(this::filterMobs);
         searchBox.setVisible(false);
+        searchBox.setBordered(false);
+        searchBox.setTextColor(DesignTokens.Text.PRIMARY);
+        searchBox.setTextColorUneditable(DesignTokens.Text.MUTED);
         this.mobSearchField = searchBox;
         this.addRenderableWidget(searchBox);
 
         // Waves control buttons
-        Button wavesMinusWidget = EditorButton.builder("endurance-waves-minus", I18n.ui("minus_symbol").getString())
+        EditorButton wavesMinusButton = EditorButton.builder("endurance-waves-minus", I18n.ui("minus_symbol").getString())
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.SMALL)
             .onClick(() -> adjustWaves(-1))
-            .build()
-            .asVanilla(modalX + modalWidth - 150, modalY + modalHeight - 70, 20, 20);
+            .build();
+        EditorButtonWidget wavesMinusWidget = new EditorButtonWidget(wavesMinusButton,
+            modalX + modalWidth - 150, modalY + modalHeight - 70, 20, 20);
         wavesMinusWidget.visible = false;
         this.wavesMinusBtnWidget = wavesMinusWidget;
         this.addRenderableWidget(wavesMinusWidget);
 
-        Button wavesPlusWidget = EditorButton.builder("endurance-waves-plus", I18n.ui("plus_symbol").getString())
+        EditorButton wavesPlusButton = EditorButton.builder("endurance-waves-plus", I18n.ui("plus_symbol").getString())
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.SMALL)
             .onClick(() -> adjustWaves(1))
-            .build()
-            .asVanilla(modalX + modalWidth - 80, modalY + modalHeight - 70, 20, 20);
+            .build();
+        EditorButtonWidget wavesPlusWidget = new EditorButtonWidget(wavesPlusButton,
+            modalX + modalWidth - 80, modalY + modalHeight - 70, 20, 20);
         wavesPlusWidget.visible = false;
         this.wavesPlusBtnWidget = wavesPlusWidget;
         this.addRenderableWidget(wavesPlusWidget);
 
         // Endless mode toggle
-        Button endlessModeWidget = EditorButton.builder("endurance-endless-toggle", I18n.translate("devmod.endurance.endless_off").getString())
-            .style(EditorButton.Style.PRIMARY)
-            .size(EditorButton.Size.MEDIUM)
-            .onClick(this::toggleEndlessMode)
-            .build()
-            .asVanilla(modalX + 10, modalY + modalHeight - 70, 100, 20);
-        endlessModeWidget.visible = false;
-        this.endlessModeBtnWidget = endlessModeWidget;
-        this.addRenderableWidget(endlessModeWidget);
+        this.endlessModeBtnWidget = buildEndlessModeButton(modalX, modalY, modalHeight);
 
         // Start button
-        Button startEnduranceWidget = EditorButton.builder("endurance-start", I18n.ui("start_quest_with_icon").getString())
+        EditorButton startEnduranceButton = EditorButton.builder("endurance-start", I18n.ui("start_quest_with_icon").getString())
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.LARGE)
             .onClick(this::startEnduranceQuest)
-            .build()
-            .asVanilla(modalX + modalWidth - 110, modalY + modalHeight - 35, 100, 25);
+            .build();
+        EditorButtonWidget startEnduranceWidget = new EditorButtonWidget(startEnduranceButton,
+            modalX + modalWidth - 110, modalY + modalHeight - 35, 100, 25);
         startEnduranceWidget.visible = false;
         this.startEnduranceBtnWidget = startEnduranceWidget;
         this.addRenderableWidget(startEnduranceWidget);
 
         // Cancel button
-        Button cancelEnduranceWidget = EditorButton.builder("endurance-cancel", I18n.ui("cancel").getString())
+        EditorButton cancelEnduranceButton = EditorButton.builder("endurance-cancel", I18n.ui("cancel").getString())
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::closeEnduranceModal)
-            .build()
-            .asVanilla(modalX + 10, modalY + modalHeight - 35, 80, 25);
+            .build();
+        EditorButtonWidget cancelEnduranceWidget = new EditorButtonWidget(cancelEnduranceButton,
+            modalX + 10, modalY + modalHeight - 35, 80, 25);
         cancelEnduranceWidget.visible = false;
         this.cancelEnduranceBtnWidget = cancelEnduranceWidget;
         this.addRenderableWidget(cancelEnduranceWidget);
@@ -383,10 +399,129 @@ public class QuestEditorScreen extends ModScreen {
         int detailsWidth = width - detailsX - PADDING;
         renderDetailsPanel(graphics, detailsX, contentTop, detailsWidth);
 
+        renderInputBackgrounds(graphics);
+
         super.render(graphics, mouseX, mouseY, partialTick);
+
+        renderButtonTooltips(graphics, mouseX, mouseY);
 
         // Render endurance modal on top if open
         renderEnduranceModal(graphics, mouseX, mouseY);
+        renderEnduranceModalInputs(graphics);
+        renderEnduranceModalWidgets(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderInputBackgrounds(GuiGraphics graphics) {
+        EditBox questNoteBox = questNoteField;
+        if (questNoteBox != null) {
+            AxiomRenderer.drawInputBackground(
+                graphics,
+                questNoteBox.getX(),
+                questNoteBox.getY(),
+                questNoteBox.getWidth(),
+                questNoteBox.getHeight(),
+                questNoteBox.isFocused()
+            );
+        }
+        EditBox taskNoteBox = taskNoteField;
+        if (taskNoteBox != null) {
+            AxiomRenderer.drawInputBackground(
+                graphics,
+                taskNoteBox.getX(),
+                taskNoteBox.getY(),
+                taskNoteBox.getWidth(),
+                taskNoteBox.getHeight(),
+                taskNoteBox.isFocused()
+            );
+        }
+        EditBox newQuestBox = newQuestNameField;
+        if (newQuestBox != null) {
+            AxiomRenderer.drawInputBackground(
+                graphics,
+                newQuestBox.getX(),
+                newQuestBox.getY(),
+                newQuestBox.getWidth(),
+                newQuestBox.getHeight(),
+                newQuestBox.isFocused()
+            );
+        }
+        EditBox newTaskBox = newTaskDescField;
+        if (newTaskBox != null) {
+            AxiomRenderer.drawInputBackground(
+                graphics,
+                newTaskBox.getX(),
+                newTaskBox.getY(),
+                newTaskBox.getWidth(),
+                newTaskBox.getHeight(),
+                newTaskBox.isFocused()
+            );
+        }
+    }
+
+    private void renderButtonTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (showEnduranceModal) {
+            return;
+        }
+        renderTooltipIfActive(graphics, deleteQuestBtnWidget, mouseX, mouseY);
+        renderTooltipIfActive(graphics, deleteTaskBtnWidget, mouseX, mouseY);
+        renderTooltipIfActive(graphics, enduranceQuestBtnWidget, mouseX, mouseY);
+    }
+
+    private void renderTooltipIfActive(GuiGraphics graphics, @Nullable EditorButtonWidget widget, int mouseX, int mouseY) {
+        if (widget == null) {
+            return;
+        }
+        String tooltip = widget.getButton().activeTooltip();
+        if (tooltip != null) {
+            graphics.renderTooltip(Objects.requireNonNull(font, "font"), Component.literal(tooltip), mouseX, mouseY);
+        }
+    }
+
+    private void renderEnduranceModalInputs(GuiGraphics graphics) {
+        if (!showEnduranceModal) {
+            return;
+        }
+        EditBox searchField = mobSearchField;
+        if (searchField != null) {
+            AxiomRenderer.drawInputBackground(
+                graphics,
+                searchField.getX(),
+                searchField.getY(),
+                searchField.getWidth(),
+                searchField.getHeight(),
+                searchField.isFocused()
+            );
+        }
+    }
+
+    private void renderEnduranceModalWidgets(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (!showEnduranceModal) {
+            return;
+        }
+        EditBox searchField = mobSearchField;
+        if (searchField != null) {
+            searchField.render(graphics, mouseX, mouseY, partialTick);
+        }
+        EditorButtonWidget wavesMinusBtn = wavesMinusBtnWidget;
+        if (wavesMinusBtn != null) {
+            wavesMinusBtn.render(graphics, mouseX, mouseY, partialTick);
+        }
+        EditorButtonWidget wavesPlusBtn = wavesPlusBtnWidget;
+        if (wavesPlusBtn != null) {
+            wavesPlusBtn.render(graphics, mouseX, mouseY, partialTick);
+        }
+        EditorButtonWidget endlessModeBtn = endlessModeBtnWidget;
+        if (endlessModeBtn != null) {
+            endlessModeBtn.render(graphics, mouseX, mouseY, partialTick);
+        }
+        EditorButtonWidget startEnduranceBtn = startEnduranceBtnWidget;
+        if (startEnduranceBtn != null) {
+            startEnduranceBtn.render(graphics, mouseX, mouseY, partialTick);
+        }
+        EditorButtonWidget cancelEnduranceBtn = cancelEnduranceBtnWidget;
+        if (cancelEnduranceBtn != null) {
+            cancelEnduranceBtn.render(graphics, mouseX, mouseY, partialTick);
+        }
     }
 
     private void renderQuestListPanel(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
@@ -771,25 +906,25 @@ public class QuestEditorScreen extends ModScreen {
         QuestData quest = selectedQuest;
         QuestTask task = selectedTask;
 
-        Button deleteQuestBtn = deleteQuestBtnWidget;
+        EditorButtonWidget deleteQuestBtn = deleteQuestBtnWidget;
         if (deleteQuestBtn != null) {
-            deleteQuestBtn.active = quest != null;
+            deleteQuestBtn.getButton().setEnabled(quest != null);
         }
-        Button addTaskBtn = addTaskBtnWidget;
+        EditorButtonWidget addTaskBtn = addTaskBtnWidget;
         if (addTaskBtn != null) {
-            addTaskBtn.active = quest != null;
+            addTaskBtn.getButton().setEnabled(quest != null);
         }
-        Button deleteTaskBtn = deleteTaskBtnWidget;
+        EditorButtonWidget deleteTaskBtn = deleteTaskBtnWidget;
         if (deleteTaskBtn != null) {
-            deleteTaskBtn.active = task != null;
+            deleteTaskBtn.getButton().setEnabled(task != null);
         }
-        Button completeTaskBtn = completeTaskBtnWidget;
+        EditorButtonWidget completeTaskBtn = completeTaskBtnWidget;
         if (completeTaskBtn != null) {
-            completeTaskBtn.active = task != null && !task.isCompleted();
+            completeTaskBtn.getButton().setEnabled(task != null && !task.isCompleted());
         }
-        Button setActiveBtn = setActiveBtnWidget;
+        EditorButtonWidget setActiveBtn = setActiveBtnWidget;
         if (setActiveBtn != null) {
-            setActiveBtn.active = quest != null && quest != QuestManager.INSTANCE.getActiveQuest();
+            setActiveBtn.getButton().setEnabled(quest != null && quest != QuestManager.INSTANCE.getActiveQuest());
         }
     }
 
@@ -825,6 +960,7 @@ public class QuestEditorScreen extends ModScreen {
         if (searchField != null) {
             searchField.setValue("");
         }
+        refreshEndlessModeButton();
         updateEnduranceButtonStates();
     }
 
@@ -837,16 +973,44 @@ public class QuestEditorScreen extends ModScreen {
         // Local captures for null safety
         EditBox searchField = mobSearchField;
         if (searchField != null) searchField.setVisible(visible);
-        Button wavesMinusBtn = wavesMinusBtnWidget;
+        EditorButtonWidget wavesMinusBtn = wavesMinusBtnWidget;
         if (wavesMinusBtn != null) wavesMinusBtn.visible = visible;
-        Button wavesPlusBtn = wavesPlusBtnWidget;
+        EditorButtonWidget wavesPlusBtn = wavesPlusBtnWidget;
         if (wavesPlusBtn != null) wavesPlusBtn.visible = visible;
-        Button endlessModeBtn = endlessModeBtnWidget;
+        EditorButtonWidget endlessModeBtn = endlessModeBtnWidget;
         if (endlessModeBtn != null) endlessModeBtn.visible = visible;
-        Button startEnduranceBtn = startEnduranceBtnWidget;
+        EditorButtonWidget startEnduranceBtn = startEnduranceBtnWidget;
         if (startEnduranceBtn != null) startEnduranceBtn.visible = visible;
-        Button cancelEnduranceBtn = cancelEnduranceBtnWidget;
+        EditorButtonWidget cancelEnduranceBtn = cancelEnduranceBtnWidget;
         if (cancelEnduranceBtn != null) cancelEnduranceBtn.visible = visible;
+    }
+
+    private void refreshEndlessModeButton() {
+        int modalWidth = 400;
+        int modalHeight = 300;
+        int modalX = (width - modalWidth) / 2;
+        int modalY = (height - modalHeight) / 2;
+        buildEndlessModeButton(modalX, modalY, modalHeight);
+    }
+
+    private EditorButtonWidget buildEndlessModeButton(int modalX, int modalY, int modalHeight) {
+        EditorButtonWidget existing = endlessModeBtnWidget;
+        if (existing != null) {
+            removeWidget(existing);
+        }
+        String label = I18n.translate(enduranceEndless ? "devmod.endurance.endless_on" : "devmod.endurance.endless_off")
+            .getString();
+        EditorButton.Style style = enduranceEndless ? EditorButton.Style.SUCCESS : EditorButton.Style.PRIMARY;
+        EditorButton endlessButton = EditorButton.builder("endurance-endless-toggle", label)
+            .style(style)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::toggleEndlessMode)
+            .build();
+        EditorButtonWidget widget = new EditorButtonWidget(endlessButton, modalX + 10, modalY + modalHeight - 70, 100, 20);
+        widget.visible = showEnduranceModal;
+        endlessModeBtnWidget = widget;
+        addRenderableWidget(widget);
+        return widget;
     }
 
     private void filterMobs(String query) {
@@ -870,16 +1034,13 @@ public class QuestEditorScreen extends ModScreen {
 
     private void toggleEndlessMode() {
         enduranceEndless = !enduranceEndless;
-        Button endlessModeBtn = endlessModeBtnWidget;
-        if (endlessModeBtn != null) {
-            endlessModeBtn.setMessage(I18n.translate(enduranceEndless ? "devmod.endurance.endless_on" : "devmod.endurance.endless_off"));
-        }
+        refreshEndlessModeButton();
     }
 
     private void updateEnduranceButtonStates() {
-        Button startEnduranceBtn = startEnduranceBtnWidget;
+        EditorButtonWidget startEnduranceBtn = startEnduranceBtnWidget;
         if (startEnduranceBtn != null) {
-            startEnduranceBtn.active = selectedMob != null;
+            startEnduranceBtn.getButton().setEnabled(selectedMob != null);
         }
     }
 

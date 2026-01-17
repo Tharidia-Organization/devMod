@@ -580,10 +580,10 @@ public class ArenaBuilder {
                 maxZ = originZ + extent;
             } else {
                 int wallPad = Math.max(0, wallThickness - 1);
-                minX = originX - halfX - wallPad;
-                maxX = originX + halfX - 1 + wallPad;
-                minZ = originZ - halfZ - wallPad;
-                maxZ = originZ + halfZ - 1 + wallPad;
+                minX = originX + minOffsetX(template) - wallPad;
+                maxX = originX + maxOffsetX(template) + wallPad;
+                minZ = originZ + minOffsetZ(template) - wallPad;
+                maxZ = originZ + maxOffsetZ(template) + wallPad;
             }
 
             int minY = originY;
@@ -790,6 +790,24 @@ public class ArenaBuilder {
         return sz != null ? sz.intValue() : template.size();
     }
 
+    private int minOffsetX(ArenaTemplate template) {
+        return -getSizeX(template) / 2;
+    }
+
+    private int maxOffsetX(ArenaTemplate template) {
+        int sizeX = getSizeX(template);
+        return sizeX - (sizeX / 2) - 1;
+    }
+
+    private int minOffsetZ(ArenaTemplate template) {
+        return -getSizeZ(template) / 2;
+    }
+
+    private int maxOffsetZ(ArenaTemplate template) {
+        int sizeZ = getSizeZ(template);
+        return sizeZ - (sizeZ / 2) - 1;
+    }
+
     // === Shape-aware helpers ===
 
     /**
@@ -804,11 +822,15 @@ public class ArenaBuilder {
             shape = ArenaTemplate.ArenaShape.RECTANGULAR;
         }
 
+        int minX = minOffsetX(template);
+        int maxX = maxOffsetX(template);
+        int minZ = minOffsetZ(template);
+        int maxZ = maxOffsetZ(template);
         int halfX = getSizeX(template) / 2;
         int halfZ = getSizeZ(template) / 2;
 
         return switch (shape) {
-            case RECTANGULAR -> dx >= -halfX && dx < halfX && dz >= -halfZ && dz < halfZ;
+            case RECTANGULAR -> dx >= minX && dx <= maxX && dz >= minZ && dz <= maxZ;
             case CIRCULAR -> {
                 int radius = Math.max(halfX, halfZ);
                 yield (dx * dx + dz * dz) <= (radius * radius);
@@ -931,12 +953,16 @@ public class ArenaBuilder {
 
         // Iterate only within the combat ring + blend zone
         int maxRadius = combatRadius + blendRadius;
+        int minX = Math.max(minOffsetX(template), -maxRadius);
+        int maxX = Math.min(maxOffsetX(template), maxRadius);
+        int minZ = Math.max(minOffsetZ(template), -maxRadius);
+        int maxZ = Math.min(maxOffsetZ(template), maxRadius);
 
         int blocksPlaced = 0;
         int blendedBlocks = 0;
 
-        for (int dx = -maxRadius; dx <= maxRadius; dx++) {
-            for (int dz = -maxRadius; dz <= maxRadius; dz++) {
+        for (int dx = minX; dx <= maxX; dx++) {
+            for (int dz = minZ; dz <= maxZ; dz++) {
                 // Calculate distance from center
                 double dist = Math.sqrt(dx * dx + dz * dz);
 
@@ -1023,12 +1049,13 @@ public class ArenaBuilder {
         // Track zone floor placements for telemetry
         java.util.Map<String, Integer> zoneBlockCounts = new java.util.HashMap<>();
 
-        int radius = Math.max(halfX, halfZ);
-        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
-        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
+        int minX = minOffsetX(template);
+        int maxX = maxOffsetX(template);
+        int minZ = minOffsetZ(template);
+        int maxZ = maxOffsetZ(template);
 
-        for (int dx = -iterHalfX; dx < iterHalfX; dx++) {
-            for (int dz = -iterHalfZ; dz < iterHalfZ; dz++) {
+        for (int dx = minX; dx <= maxX; dx++) {
+            for (int dz = minZ; dz <= maxZ; dz++) {
                 if (!isInArenaShape(dx, dz, template)) {
                     continue;
                 }
@@ -1141,19 +1168,13 @@ public class ArenaBuilder {
             shape = ArenaTemplate.ArenaShape.RECTANGULAR;
         }
 
-        int sizeX = getSizeX(template);
-        int sizeZ = getSizeZ(template);
-        int halfX = sizeX / 2;
-        int halfZ = sizeZ / 2;
+        int minX = minOffsetX(template);
+        int maxX = maxOffsetX(template);
+        int minZ = minOffsetZ(template);
+        int maxZ = maxOffsetZ(template);
 
-        // For circular/ring shapes, we need to iterate in a square bounding box
-        // and check each position against the shape
-        int radius = Math.max(halfX, halfZ);
-        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
-        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
-
-        for (int dx = -iterHalfX; dx < iterHalfX; dx++) {
-            for (int dz = -iterHalfZ; dz < iterHalfZ; dz++) {
+        for (int dx = minX; dx <= maxX; dx++) {
+            for (int dz = minZ; dz <= maxZ; dz++) {
                 // Check if position is within arena shape
                 if (!isInArenaShape(dx, dz, template)) {
                     continue;
@@ -1189,26 +1210,28 @@ public class ArenaBuilder {
             shape = ArenaTemplate.ArenaShape.RECTANGULAR;
         }
 
-        int halfX = getSizeX(template) / 2;
-        int halfZ = getSizeZ(template) / 2;
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int minX = minOffsetX(template);
+        int minZ = minOffsetZ(template);
 
         return switch (shape) {
             case RECTANGULAR -> {
                 // Convert to 0-based coords for border check
-                int localX = dx + halfX;
-                int localZ = dz + halfZ;
-                boolean inBorderX = localX < borderWidth || localX >= (halfX * 2) - borderWidth;
-                boolean inBorderZ = localZ < borderWidth || localZ >= (halfZ * 2) - borderWidth;
+                int localX = dx - minX;
+                int localZ = dz - minZ;
+                boolean inBorderX = localX < borderWidth || localX >= sizeX - borderWidth;
+                boolean inBorderZ = localZ < borderWidth || localZ >= sizeZ - borderWidth;
                 yield inBorderX || inBorderZ;
             }
             case CIRCULAR -> {
-                int radius = Math.max(halfX, halfZ);
+                int radius = Math.max(sizeX, sizeZ) / 2;
                 int distSq = dx * dx + dz * dz;
                 int innerBorderSq = (radius - borderWidth) * (radius - borderWidth);
                 yield distSq >= innerBorderSq;
             }
             case RING -> {
-                int outerRadius = Math.max(halfX, halfZ);
+                int outerRadius = Math.max(sizeX, sizeZ) / 2;
                 Integer innerRadiusVal = template.ringInnerRadius();
                 int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
                 int distSq = dx * dx + dz * dz;
@@ -1284,18 +1307,13 @@ public class ArenaBuilder {
             shape = ArenaTemplate.ArenaShape.RECTANGULAR;
         }
 
-        int sizeX = getSizeX(template);
-        int sizeZ = getSizeZ(template);
-        int halfX = sizeX / 2;
-        int halfZ = sizeZ / 2;
+        int minX = minOffsetX(template);
+        int maxX = maxOffsetX(template);
+        int minZ = minOffsetZ(template);
+        int maxZ = maxOffsetZ(template);
 
-        // For circular/ring shapes, use radius as extent
-        int radius = Math.max(halfX, halfZ);
-        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
-        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
-
-        for (int dx = -iterHalfX; dx < iterHalfX; dx++) {
-            for (int dz = -iterHalfZ; dz < iterHalfZ; dz++) {
+        for (int dx = minX; dx <= maxX; dx++) {
+            for (int dz = minZ; dz <= maxZ; dz++) {
                 // Check if position is within arena shape
                 if (!isInArenaShape(dx, dz, template)) {
                     continue;
@@ -1318,20 +1336,15 @@ public class ArenaBuilder {
             shape = ArenaTemplate.ArenaShape.RECTANGULAR;
         }
 
-        int sizeX = getSizeX(template);
-        int sizeZ = getSizeZ(template);
-        int halfX = sizeX / 2;
-        int halfZ = sizeZ / 2;
-
         String material = underfloor.sameAsFloor() ? floor.material() : underfloor.material();
 
-        // For circular/ring shapes, use radius as extent
-        int radius = Math.max(halfX, halfZ);
-        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
-        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
+        int minX = minOffsetX(template);
+        int maxX = maxOffsetX(template);
+        int minZ = minOffsetZ(template);
+        int maxZ = maxOffsetZ(template);
 
-        for (int dx = -iterHalfX; dx < iterHalfX; dx++) {
-            for (int dz = -iterHalfZ; dz < iterHalfZ; dz++) {
+        for (int dx = minX; dx <= maxX; dx++) {
+            for (int dz = minZ; dz <= maxZ; dz++) {
                 // Check if position is within arena shape
                 if (!isInArenaShape(dx, dz, template)) {
                     continue;
@@ -1345,9 +1358,13 @@ public class ArenaBuilder {
     }
 
     private void placeHazards(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
-        LOGGER.debug("Placing {} hazards for template '{}'", template.hazards().size(), template.id());
+        List<ArenaTemplate.Hazard> hazards = template.hazards();
+        if (hazards == null || hazards.isEmpty()) {
+            return;
+        }
+        LOGGER.debug("Placing {} hazards for template '{}'", hazards.size(), template.id());
         int placedHazards = 0;
-        for (ArenaTemplate.Hazard hazard : template.hazards()) {
+        for (ArenaTemplate.Hazard hazard : hazards) {
             switch (hazard.type()) {
                 case "lava_ring" -> placeLavaRing(hazard, template, originX, originZ, tx);
                 case "lava_pool" -> placeLavaPool(hazard, template, originX, originZ, tx);
@@ -1409,8 +1426,10 @@ public class ArenaBuilder {
     private int resolveY(ArenaTemplate.Hazard hazard, ArenaTemplate template) {
         Integer hazardY = hazard.y();
         int baseY = hazardY != null ? hazardY : template.floor().y();
-        if (hazard.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
-            baseY += template.floor().y();
+        ArenaTemplate.SpawnSlot.YMode mode = hazard.yMode();
+        if (mode == null || mode == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+            int offset = hazardY != null ? hazardY : 0;
+            return template.floor().y() + offset;
         }
         return baseY;
     }
@@ -1539,13 +1558,15 @@ public class ArenaBuilder {
         int placed = 0;
 
         // Iterate in shape-aware manner
-        int iterHalfX = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfX : radius;
-        int iterHalfZ = (shape == ArenaTemplate.ArenaShape.RECTANGULAR) ? halfZ : radius;
+        int minX = minOffsetX(template);
+        int maxX = maxOffsetX(template);
+        int minZ = minOffsetZ(template);
+        int maxZ = maxOffsetZ(template);
 
         // Deterministic grid placement every 2 blocks until coverage met
         outer:
-        for (int dx = -iterHalfX; dx < iterHalfX; dx += 2) {
-            for (int dz = -iterHalfZ; dz < iterHalfZ; dz += 2) {
+        for (int dx = minX; dx <= maxX; dx += 2) {
+            for (int dz = minZ; dz <= maxZ; dz += 2) {
                 if (placed >= total) break outer;
                 if (!isInArenaShape(dx, dz, template)) {
                     continue;
@@ -1815,6 +1836,10 @@ public class ArenaBuilder {
         int sizeZ = getSizeZ(template);
         int halfX = sizeX / 2;
         int halfZ = sizeZ / 2;
+        int minX = -halfX;
+        int maxX = sizeX - halfX - 1;
+        int minZ = -halfZ;
+        int maxZ = sizeZ - halfZ - 1;
 
         // 1. Place explicit light sources from template
         // Note: Y coordinate in LightSource is relative to floor if floor exists
@@ -1825,7 +1850,7 @@ public class ArenaBuilder {
                     // Validate bounds before placement (pos is relative to origin)
                     int relX = pos[0];
                     int relZ = pos[2];
-                    if (relX < -halfX || relX >= halfX || relZ < -halfZ || relZ >= halfZ) {
+                    if (relX < minX || relX > maxX || relZ < minZ || relZ > maxZ) {
                         LOGGER.warn("Light source at [{}, {}, {}] is outside arena bounds, skipping",
                             pos[0], pos[1], pos[2]);
                         skippedLights++;
@@ -2425,16 +2450,10 @@ public class ArenaBuilder {
         BuildDryRun dryRun = BuildDryRunCalculator.calculate(template);
         int expectedBlocks = dryRun.totalBlocks();
 
-        Integer sizeXVal = template.sizeX();
-        Integer sizeZVal = template.sizeZ();
-        int sizeX = sizeXVal != null ? sizeXVal : template.size();
-        int sizeZ = sizeZVal != null ? sizeZVal : template.size();
-        int halfX = sizeX / 2;
-        int halfZ = sizeZ / 2;
-        int minX = originX - halfX;
-        int maxX = originX + halfX - 1;
-        int minZ = originZ - halfZ;
-        int maxZ = originZ + halfZ - 1;
+        int minX = originX + minOffsetX(template);
+        int maxX = originX + maxOffsetX(template);
+        int minZ = originZ + minOffsetZ(template);
+        int maxZ = originZ + maxOffsetZ(template);
 
         int minY = originY;
         if (template.floor() != null) {

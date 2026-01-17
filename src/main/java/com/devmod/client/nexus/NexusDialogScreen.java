@@ -7,7 +7,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -15,6 +14,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.runtime.network.NexusDialogActionPayload;
 import com.devmod.runtime.network.NexusDialogPayload.DialogOptionData;
@@ -55,7 +56,7 @@ public class NexusDialogScreen extends Screen {
     private int revealedChars = 0;
     private int tickCounter = 0;
     private boolean textFullyRevealed = false;
-    private final List<Button> optionButtons = new ArrayList<>();
+    private final List<EditorButtonWidget> optionButtons = new ArrayList<>();
 
     public NexusDialogScreen(String speakerName, List<String> lines, List<DialogOptionData> options) {
         super(Component.literal("Nexus Dialog"));
@@ -80,13 +81,16 @@ public class NexusDialogScreen extends Screen {
             DialogOptionData opt = options.get(i);
             String label = opt.icon() + " " + opt.label();
 
-            Button button = Button.builder(Objects.requireNonNull(Component.literal(label), "label"), btn -> selectOption(opt))
-                .bounds(buttonX, buttonY + i * (BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT)
+            EditorButton button = EditorButton.builder("nexus_dialog_opt_" + i, Objects.requireNonNull(label, "label"))
+                .style(EditorButton.Style.NORMAL)
+                .size(EditorButton.Size.MEDIUM)
+                .onClick(() -> selectOption(opt))
                 .build();
-
-            button.visible = textFullyRevealed;
-            optionButtons.add(button);
-            addRenderableWidget(button);
+            EditorButtonWidget widget = new EditorButtonWidget(button,
+                buttonX, buttonY + i * (BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT);
+            widget.visible = textFullyRevealed;
+            optionButtons.add(widget);
+            addRenderableWidget(widget);
         }
     }
 
@@ -108,7 +112,7 @@ public class NexusDialogScreen extends Screen {
                     revealedChars = totalChars;
 
                     // Show option buttons
-                    for (Button btn : optionButtons) {
+                    for (EditorButtonWidget btn : optionButtons) {
                         btn.visible = true;
                     }
                 }
@@ -259,7 +263,7 @@ public class NexusDialogScreen extends Screen {
         if (!textFullyRevealed && button == 0) {
             textFullyRevealed = true;
             revealedChars = getTotalCharCount();
-            for (Button btn : optionButtons) {
+            for (EditorButtonWidget btn : optionButtons) {
                 btn.visible = true;
             }
             return true;
@@ -274,7 +278,7 @@ public class NexusDialogScreen extends Screen {
             if (!textFullyRevealed) {
                 textFullyRevealed = true;
                 revealedChars = getTotalCharCount();
-                for (Button btn : optionButtons) {
+                for (EditorButtonWidget btn : optionButtons) {
                     btn.visible = true;
                 }
                 return true;
@@ -285,7 +289,7 @@ public class NexusDialogScreen extends Screen {
         if (keyCode == 32 && !textFullyRevealed) { // Space
             textFullyRevealed = true;
             revealedChars = getTotalCharCount();
-            for (Button btn : optionButtons) {
+            for (EditorButtonWidget btn : optionButtons) {
                 btn.visible = true;
             }
             return true;

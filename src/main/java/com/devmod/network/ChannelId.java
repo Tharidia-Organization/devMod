@@ -175,12 +175,80 @@ public enum ChannelId {
     // ============================================================================
     HOLOGRAM_CONFIG(160, Direction.CLIENT_TO_SERVER, "HologramConfigPayload"),
     HOLOGRAM_OPEN_SCREEN(161, Direction.SERVER_TO_CLIENT, "HologramOpenScreenPayload"),
+    HOLOGRAM_EDITOR_OPEN(162, Direction.SERVER_TO_CLIENT, "OpenHologramEditorPayload"),
+    HOLOGRAM_SAVE(163, Direction.CLIENT_TO_SERVER, "SaveHologramPayload"),
+    HOLOGRAM_DELETE(164, Direction.CLIENT_TO_SERVER, "DeleteHologramPayload"),
+    HOLOGRAM_SYNC(165, Direction.SERVER_TO_CLIENT, "HologramSyncPayload"),
 
     // ============================================================================
     // CLONE MODULE CHANNELS (170-179)
     // ============================================================================
     TELEPAD_CONFIG(170, Direction.CLIENT_TO_SERVER, "TelepadConfigPayload"),
     TELEPAD_OPEN_SCREEN(171, Direction.SERVER_TO_CLIENT, "TelepadOpenScreenPayload"),
+
+    // ============================================================================
+    // NPC SYSTEM CHANNELS (180-189)
+    // ============================================================================
+    NPC_CONFIG_OPEN(180, Direction.SERVER_TO_CLIENT, "OpenNpcConfigPayload"),
+    NPC_CONFIG_SAVE(181, Direction.CLIENT_TO_SERVER, "SaveNpcConfigPayload"),
+    NPC_DIALOG_EDITOR_OPEN(182, Direction.SERVER_TO_CLIENT, "OpenDialogEditorPayload"),
+    NPC_DIALOG_SAVE(183, Direction.CLIENT_TO_SERVER, "SaveDialogPayload"),
+    NPC_DIALOG_OPEN(184, Direction.SERVER_TO_CLIENT, "NpcDialogPayload"),
+    NPC_DIALOG_ACTION(185, Direction.CLIENT_TO_SERVER, "NpcDialogActionPayload"),
+
+    // ============================================================================
+    // AREA BUILDER CHANNELS (190-199, 205-209, 225-229)
+    // ============================================================================
+    AREA_BUILDER_OPEN(190, Direction.SERVER_TO_CLIENT, "OpenAreaBuilderPayload"),
+    AREA_EDITOR_CENTRAL_OPEN(191, Direction.SERVER_TO_CLIENT, "OpenEditorCentralPayload"),
+    AREA_SAVE(192, Direction.CLIENT_TO_SERVER, "SaveAreaPayload"),
+    AREA_BUILD(193, Direction.CLIENT_TO_SERVER, "BuildAreaPayload"),
+    AREA_PREVIEW(194, Direction.SERVER_TO_CLIENT, "AreaPreviewPayload"),
+    AREA_BUILDER_REQUEST(195, Direction.CLIENT_TO_SERVER, "RequestOpenAreaBuilderPayload"),
+    AREA_ZONE_LIST_REQUEST(196, Direction.CLIENT_TO_SERVER, "RequestZoneListPayload"),
+    AREA_ZONE_LIST(197, Direction.SERVER_TO_CLIENT, "ZoneListPayload"),
+    AREA_TEMPLATE_REQUEST(198, Direction.CLIENT_TO_SERVER, "RequestTemplateListPayload"),
+    AREA_TEMPLATE_LIST(199, Direction.SERVER_TO_CLIENT, "TemplateListPayload"),
+    AREA_TEMPLATE_LOAD(205, Direction.CLIENT_TO_SERVER, "LoadTemplatePayload"),
+    AREA_TEMPLATE_DATA(206, Direction.SERVER_TO_CLIENT, "TemplateDataPayload"),
+    AREA_TEMPLATE_SAVE(207, Direction.CLIENT_TO_SERVER, "SaveAreaTemplatePayload"),
+    AREA_CLONE(208, Direction.CLIENT_TO_SERVER, "CloneAreaPayload"),
+    AREA_TEMPLATE_DELETE(209, Direction.CLIENT_TO_SERVER, "DeleteTemplatePayload"),
+    AREA_DELETE(225, Direction.CLIENT_TO_SERVER, "DeleteAreaPayload"),
+    AREA_PROMOTE_MAIN_HUB(226, Direction.CLIENT_TO_SERVER, "PromoteMainHubPayload"),
+    AREA_SAVE_RESULT(227, Direction.SERVER_TO_CLIENT, "SaveAreaResultPayload"),
+    AREA_BUILDER_CONTROL(228, Direction.CLIENT_TO_SERVER, "AreaBuilderControlPayloads"),
+    AREA_BUILDER_FEEDBACK(229, Direction.SERVER_TO_CLIENT, "AreaBuilderFeedbackPayloads"),
+
+    // ============================================================================
+    // ZONE MARKER CHANNELS (200-204)
+    // ============================================================================
+    ZONE_EDITOR_OPEN(200, Direction.SERVER_TO_CLIENT, "OpenZoneEditorPayload"),
+    ZONE_SAVE(201, Direction.CLIENT_TO_SERVER, "SaveZonePayload"),
+    ZONE_DELETE(202, Direction.CLIENT_TO_SERVER, "DeleteZonePayload"),
+    ZONE_SYNC(203, Direction.SERVER_TO_CLIENT, "ZoneSyncPayload"),
+    ZONE_ENTER(204, Direction.SERVER_TO_CLIENT, "ZoneEnterPayload"),
+
+    // ============================================================================
+    // UNIFIED TRANSPORT CHANNELS (210-220)
+    // ============================================================================
+    TRANSPORT_CONFIG_OPEN(210, Direction.SERVER_TO_CLIENT, "TransportConfigOpenPayload"),
+    TRANSPORT_CONFIG_SAVE(211, Direction.CLIENT_TO_SERVER, "TransportConfigSavePayload"),
+    TRANSPORT_STATE(212, Direction.SERVER_TO_CLIENT, "TransportStatePayload"),
+    TRANSPORT_CHARGE_UPDATE(213, Direction.SERVER_TO_CLIENT, "TransportChargeUpdatePayload"),
+    TRANSPORT_WAYPOINT_SELECT(214, Direction.CLIENT_TO_SERVER, "TransportWaypointSelectPayload"),
+    TRANSPORT_NETWORK_LIST(215, Direction.SERVER_TO_CLIENT, "TransportNetworkListPayload"),
+    TRANSPORT_COUNTDOWN(216, Direction.SERVER_TO_CLIENT, "TransportCountdownPayload"),
+    TRANSPORT_PARTY_STATUS(217, Direction.SERVER_TO_CLIENT, "TransportPartyStatusPayload"),
+    TRANSPORT_ARRIVAL_CONFIRM(218, Direction.CLIENT_TO_SERVER, "TransportArrivalConfirmPayload"),
+    TRANSPORT_CANCEL_PARTY(219, Direction.CLIENT_TO_SERVER, "TransportCancelPartyPayload"),
+    TRANSPORT_DELETE_WAYPOINT(220, Direction.CLIENT_TO_SERVER, "TransportDeleteWaypointPayload"),
+
+    // ============================================================================
+    // ADMIN INSTANCE CHANNELS (230-239)
+    // ============================================================================
+    ADMIN_INSTANCE_SYNC(230, Direction.SERVER_TO_CLIENT, "AdminInstanceSyncPayload"),
+    ADMIN_INSTANCE_ACTION(231, Direction.CLIENT_TO_SERVER, "AdminInstanceActionPayload"),
     ;
 
     // ============================================================================

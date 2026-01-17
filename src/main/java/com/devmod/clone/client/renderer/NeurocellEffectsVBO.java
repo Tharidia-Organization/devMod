@@ -37,7 +37,11 @@ import net.minecraft.util.Mth;
  */
 public final class NeurocellEffectsVBO {
 
+    @Nullable
     private static NeurocellEffectsVBO instance;
+    private static final float TWO_PI = (float) (Math.PI * 2.0);
+    private static final float HALF_PI = (float) (Math.PI / 2.0);
+    private static final float RAD_TO_DEG = (float) (180.0 / Math.PI);
 
     @Nullable
     private VertexBuffer ringVBO;
@@ -175,7 +179,7 @@ public final class NeurocellEffectsVBO {
 
         // Render helix with pulsing alpha - scale affects helix size
         float cycleTime = animTime % 5.0f;
-        float fadeMultiplier = 0.5f + 0.5f * Mth.sin((cycleTime / 5.0f) * 6.28318f - 1.5708f);
+        float fadeMultiplier = 0.5f + 0.5f * Mth.sin((cycleTime / 5.0f) * TWO_PI - HALF_PI);
         renderHelix(poseStack, projectionMatrix, animTime * 2.0f, fadeMultiplier, scale);
 
         // Restore render state
@@ -226,7 +230,7 @@ public final class NeurocellEffectsVBO {
         }
 
         poseStack.pushPose();
-        poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(rotation * 57.2958f)));
+        poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(rotation * RAD_TO_DEG)));
         poseStack.scale(scale, 1.0f, scale); // Scale helix in XZ plane
 
         Matrix4f modelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());

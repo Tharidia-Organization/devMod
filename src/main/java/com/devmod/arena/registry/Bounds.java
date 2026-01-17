@@ -75,8 +75,8 @@ public record Bounds(
      * Half of the maximum horizontal span (used for hazard radius checks).
      */
     public int maxHorizontalRadius() {
-        int spanX = maxX - minX;
-        int spanZ = maxZ - minZ;
+        int spanX = maxX - minX + 1;
+        int spanZ = maxZ - minZ + 1;
         return Math.max(spanX, spanZ) / 2;
     }
 
@@ -112,13 +112,10 @@ public record Bounds(
         Integer sizeZVal = template.sizeZ();
         int sizeX = sizeXVal != null ? sizeXVal : template.size();
         int sizeZ = sizeZVal != null ? sizeZVal : template.size();
-        int halfX = sizeX / 2;
-        int halfZ = sizeZ / 2;
-
-        int minX = originX - halfX;
-        int maxX = originX + halfX;
-        int minZ = originZ - halfZ;
-        int maxZ = originZ + halfZ;
+        int minX = originX - (sizeX / 2);
+        int maxX = originX + (sizeX - (sizeX / 2) - 1);
+        int minZ = originZ - (sizeZ / 2);
+        int maxZ = originZ + (sizeZ - (sizeZ / 2) - 1);
 
         int minY = originY;
         int maxY = originY;

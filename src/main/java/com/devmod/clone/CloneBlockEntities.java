@@ -1,8 +1,8 @@
 package com.devmod.clone;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 import com.mojang.datafixers.types.Type;
 
@@ -30,16 +30,11 @@ public final class CloneBlockEntities {
     private CloneBlockEntities() {}
 
     /**
-     * Empty map used to return null via Map.get() - standard null-returning pattern.
-     * Minecraft's API is annotated @Nonnull but accepts null by design (no data fixer needed for mods).
+     * Returns null Type for build() when no data fixer is needed.
      */
-    private static final Map<String, Type<?>> EMPTY_TYPE_MAP = Collections.emptyMap();
-
-    /**
-     * Returns null Type for build() via Map.get() on missing key.
-     */
+    @Nullable
     private static Type<?> noDataFixer() {
-        return EMPTY_TYPE_MAP.get("");
+        return null;
     }
 
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =

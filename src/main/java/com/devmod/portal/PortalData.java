@@ -56,7 +56,7 @@ public record PortalData(
      */
     public static PortalData create(@Nonnull PortalColor color) {
         return new PortalData(
-            UUID.randomUUID(),
+            Objects.requireNonNull(UUID.randomUUID()),
             Objects.requireNonNull(color, "color"),
             null, null, null, null, 0, null, null, null, null
         );
@@ -72,7 +72,7 @@ public record PortalData(
         int frameBlockCount
     ) {
         return new PortalData(
-            UUID.randomUUID(),
+            Objects.requireNonNull(UUID.randomUUID()),
             Objects.requireNonNull(color, "color"),
             null, dimension, position, null, frameBlockCount, null, null, null, null
         );
@@ -83,7 +83,7 @@ public record PortalData(
      */
     public static PortalData createWithCreator(@Nonnull PortalColor color, @Nullable UUID creator) {
         return new PortalData(
-            UUID.randomUUID(),
+            Objects.requireNonNull(UUID.randomUUID()),
             Objects.requireNonNull(color, "color"),
             null, null, null, null, 0, creator, null, null, null
         );
@@ -108,7 +108,7 @@ public record PortalData(
         @Nonnull BlockPos destPos
     ) {
         return new PortalData(
-            UUID.randomUUID(),
+            Objects.requireNonNull(UUID.randomUUID()),
             Objects.requireNonNull(color, "color"),
             null,
             Objects.requireNonNull(sourceDim, "sourceDim"),
@@ -280,10 +280,12 @@ public record PortalData(
      * Returns true if this portal is in a different dimension than the other.
      */
     public boolean isInterDimensional(@Nonnull PortalData other) {
-        if (dim == null || other.dim == null) {
+        ResourceLocation thisDim = dim;
+        ResourceLocation otherDim = other.dim;
+        if (thisDim == null || otherDim == null) {
             return false;
         }
-        return !dim.equals(other.dim);
+        return !thisDim.equals(otherDim);
     }
 
     /**
@@ -320,14 +322,16 @@ public record PortalData(
             tag.putUUID(TAG_LINKED_ID, linkedId);
         }
 
-        if (dim != null) {
-            tag.putString(TAG_DIMENSION, dim.toString());
+        ResourceLocation localDim = dim;
+        if (localDim != null) {
+            tag.putString(TAG_DIMENSION, Objects.requireNonNull(localDim.toString()));
         }
 
-        if (pos != null) {
-            tag.putInt(TAG_POS_X, pos.getX());
-            tag.putInt(TAG_POS_Y, pos.getY());
-            tag.putInt(TAG_POS_Z, pos.getZ());
+        BlockPos localPos = pos;
+        if (localPos != null) {
+            tag.putInt(TAG_POS_X, localPos.getX());
+            tag.putInt(TAG_POS_Y, localPos.getY());
+            tag.putInt(TAG_POS_Z, localPos.getZ());
         }
 
         if (runeType != null) {
@@ -340,14 +344,16 @@ public record PortalData(
             tag.putUUID(TAG_CREATOR_ID, creatorId);
         }
 
-        if (fixedDestDim != null) {
-            tag.putString(TAG_FIXED_DEST_DIM, fixedDestDim.toString());
+        ResourceLocation localFixedDestDim = fixedDestDim;
+        if (localFixedDestDim != null) {
+            tag.putString(TAG_FIXED_DEST_DIM, Objects.requireNonNull(localFixedDestDim.toString()));
         }
 
-        if (fixedDestPos != null) {
-            tag.putInt(TAG_FIXED_DEST_X, fixedDestPos.getX());
-            tag.putInt(TAG_FIXED_DEST_Y, fixedDestPos.getY());
-            tag.putInt(TAG_FIXED_DEST_Z, fixedDestPos.getZ());
+        BlockPos localFixedDestPos = fixedDestPos;
+        if (localFixedDestPos != null) {
+            tag.putInt(TAG_FIXED_DEST_X, localFixedDestPos.getX());
+            tag.putInt(TAG_FIXED_DEST_Y, localFixedDestPos.getY());
+            tag.putInt(TAG_FIXED_DEST_Z, localFixedDestPos.getZ());
         }
 
         if (networkName != null) {
@@ -362,14 +368,14 @@ public record PortalData(
      */
     @Nonnull
     public static PortalData load(@Nonnull CompoundTag tag) {
-        UUID id = tag.getUUID(TAG_ID);
-        PortalColor color = PortalColor.byIndex(tag.getInt(TAG_COLOR));
+        UUID id = Objects.requireNonNull(tag.getUUID(TAG_ID), "Portal ID cannot be null");
+        PortalColor color = Objects.requireNonNull(PortalColor.byIndex(tag.getInt(TAG_COLOR)), "Portal color cannot be null");
 
         UUID linkedId = tag.contains(TAG_LINKED_ID) ? tag.getUUID(TAG_LINKED_ID) : null;
 
         ResourceLocation dimension = null;
         if (tag.contains(TAG_DIMENSION)) {
-            dimension = ResourceLocation.parse(tag.getString(TAG_DIMENSION));
+            dimension = ResourceLocation.parse(Objects.requireNonNull(tag.getString(TAG_DIMENSION)));
         }
 
         BlockPos position = null;
@@ -392,7 +398,7 @@ public record PortalData(
 
         ResourceLocation fixedDestDim = null;
         if (tag.contains(TAG_FIXED_DEST_DIM)) {
-            fixedDestDim = ResourceLocation.parse(tag.getString(TAG_FIXED_DEST_DIM));
+            fixedDestDim = ResourceLocation.parse(Objects.requireNonNull(tag.getString(TAG_FIXED_DEST_DIM)));
         }
 
         BlockPos fixedDestPos = null;
@@ -406,6 +412,9 @@ public record PortalData(
 
         String networkName = tag.contains(TAG_NETWORK) ? tag.getString(TAG_NETWORK) : null;
 
-        return new PortalData(id, color, linkedId, dimension, position, rune, frameCount, creator, fixedDestDim, fixedDestPos, networkName);
+        return new PortalData(
+            id, color,
+            linkedId, dimension, position, rune, frameCount, creator, fixedDestDim, fixedDestPos, networkName
+        );
     }
 }

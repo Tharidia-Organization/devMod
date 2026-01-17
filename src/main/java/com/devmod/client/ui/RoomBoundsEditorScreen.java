@@ -35,6 +35,7 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
@@ -139,52 +140,55 @@ public class RoomBoundsEditorScreen extends Screen {
         nameBox.setValue(roomName);
         nameBox.setHint(I18n.ui("enter_room_name_hint"));
         nameBox.setResponder(s -> pendingRoomName = s); // Salva mentre digita
+        nameBox.setBordered(false);
+        nameBox.setTextColor(DesignTokens.Text.PRIMARY());
+        nameBox.setTextColorUneditable(DesignTokens.Text.MUTED());
         addRenderableWidget(nameBox);
 
         // Set Point A Button
         String setPointALabel = Objects.requireNonNull(I18n.ui("set_point_a").getString(), "setPointALabel");
-        addRenderableWidget(EditorButton.builder("set-point-a", setPointALabel)
+        EditorButton setPointAButton = EditorButton.builder("set-point-a", setPointALabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(() -> invokeAction(ActionIds.UI_ROOM_BOUNDS_POINT_A))
-            .build()
-            .asVanilla(panelX + 20, panelY + 80, 130, 20));
+            .build();
+        addRenderableWidget(new EditorButtonWidget(setPointAButton, panelX + 20, panelY + 80, 130, 20));
 
         // Set Point B Button
         String setPointBLabel = Objects.requireNonNull(I18n.ui("set_point_b").getString(), "setPointBLabel");
-        addRenderableWidget(EditorButton.builder("set-point-b", setPointBLabel)
+        EditorButton setPointBButton = EditorButton.builder("set-point-b", setPointBLabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(() -> invokeAction(ActionIds.UI_ROOM_BOUNDS_POINT_B))
-            .build()
-            .asVanilla(panelX + 170, panelY + 80, 130, 20));
+            .build();
+        addRenderableWidget(new EditorButtonWidget(setPointBButton, panelX + 170, panelY + 80, 130, 20));
 
         // Save Button
         String saveLabel = Objects.requireNonNull(I18n.ui("save_room").getString(), "saveLabel");
-        addRenderableWidget(EditorButton.builder("save-room", saveLabel)
+        EditorButton saveButton = EditorButton.builder("save-room", saveLabel)
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.MEDIUM)
             .onClick(() -> invokeAction(ActionIds.UI_ROOM_BOUNDS_SAVE))
-            .build()
-            .asVanilla(panelX + 20, panelY + 200, 130, 20));
+            .build();
+        addRenderableWidget(new EditorButtonWidget(saveButton, panelX + 20, panelY + 200, 130, 20));
 
         // Cancel Button
         String cancelLabel = Objects.requireNonNull(I18n.ui("cancel").getString(), "cancelLabel");
-        addRenderableWidget(EditorButton.builder("cancel", cancelLabel)
+        EditorButton cancelButton = EditorButton.builder("cancel", cancelLabel)
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
-            .build()
-            .asVanilla(panelX + 170, panelY + 200, 130, 20));
+            .build();
+        addRenderableWidget(new EditorButtonWidget(cancelButton, panelX + 170, panelY + 200, 130, 20));
 
         // Delete Last Room Button
         String deleteLabel = Objects.requireNonNull(I18n.ui("delete_last").getString(), "deleteLabel");
-        addRenderableWidget(EditorButton.builder("delete-last-room", deleteLabel)
+        EditorButton deleteButton = EditorButton.builder("delete-last-room", deleteLabel)
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::deleteLastRoom)
-            .build()
-            .asVanilla(panelX + 20, panelY + 230, 130, 20));
+            .build();
+        addRenderableWidget(new EditorButtonWidget(deleteButton, panelX + 20, panelY + 230, 130, 20));
 
         initDialogs();
     }
@@ -461,10 +465,19 @@ public class RoomBoundsEditorScreen extends Screen {
         safeGraphics.drawCenteredString(safeFont, "Stand at corner, click 'Set Point'. Repeat for opposite corner.",
                 centerX, panelY + PANEL_HEIGHT + 5, TEXT_DIM);
 
+        renderInputBackgrounds(safeGraphics);
+
         super.render(safeGraphics, mouseX, mouseY, partialTick);
 
         // Modal overlays on top
         renderDialogs(safeGraphics, mouseX, mouseY, safeFont);
+    }
+
+    private void renderInputBackgrounds(GuiGraphics graphics) {
+        if (roomNameBox != null) {
+            AxiomRenderer.drawInputBackground(graphics, roomNameBox.getX(), roomNameBox.getY(),
+                roomNameBox.getWidth(), roomNameBox.getHeight(), roomNameBox.isFocused());
+        }
     }
 
     private int applyAlpha(int color, float alpha) {

@@ -38,6 +38,7 @@ public final class EntityBillboardAtlas {
     private static final int SPRITE_SIZE = 64;
     private static final int SPRITES_PER_ROW = ATLAS_SIZE / SPRITE_SIZE; // 16
 
+    @Nullable
     private static EntityBillboardAtlas instance;
 
     @Nullable
@@ -122,8 +123,14 @@ public final class EntityBillboardAtlas {
         int pixelY = slotY * SPRITE_SIZE;
 
         // Render entity to atlas
+        NativeImage image = atlasImage;
+        if (image == null) {
+            DevMod.LOGGER.warn("[Clone] Billboard atlas not ready for {}", entityType);
+            return null;
+        }
+
         boolean success = EntityBillboardCache.getInstance().renderEntityToAtlas(
-            entityType, atlasImage, pixelX, pixelY, SPRITE_SIZE
+            entityType, image, pixelX, pixelY, SPRITE_SIZE
         );
 
         if (!success) {

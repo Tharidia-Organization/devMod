@@ -41,6 +41,7 @@ public class EditorToggle {
     private boolean value;
     private boolean hovered = false;
     private boolean focused = false;
+    private float alpha = 1.0f;
 
     // Bounds
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
@@ -188,6 +189,7 @@ public class EditorToggle {
 
         // Label on the left
         int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
+        labelColor = applyAlpha(labelColor);
         String safeLabel = Objects.requireNonNullElse(label, "");
         safeGraphics.drawString(font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
 
@@ -213,13 +215,12 @@ public class EditorToggle {
         } else {
             trackColor = DesignTokens.Background.INPUT();
         }
-
-        safeGraphics.fill(toggleX, trackY, toggleX + TOGGLE_WIDTH, trackY + TRACK_HEIGHT, trackColor);
+        safeGraphics.fill(toggleX, trackY, toggleX + TOGGLE_WIDTH, trackY + TRACK_HEIGHT, applyAlpha(trackColor));
 
         // Border
         int borderColor = focused ? DesignTokens.Border.ACCENT() :
                          (hovered ? DesignTokens.Border.HOVER() : DesignTokens.Border.DEFAULT());
-        AxiomRenderer.drawBorder(graphics, toggleX, trackY, TOGGLE_WIDTH, TRACK_HEIGHT, borderColor);
+        AxiomRenderer.drawBorder(graphics, toggleX, trackY, TOGGLE_WIDTH, TRACK_HEIGHT, applyAlpha(borderColor));
 
         // Handle (using HANDLE_SIZE per spec Section 4.3)
         int handleX = value ?
@@ -235,8 +236,7 @@ public class EditorToggle {
         } else {
             handleColor = DesignTokens.Slider.THUMB;
         }
-
-        safeGraphics.fill(handleX, handleY, handleX + HANDLE_SIZE, handleY + HANDLE_SIZE, handleColor);
+        safeGraphics.fill(handleX, handleY, handleX + HANDLE_SIZE, handleY + HANDLE_SIZE, applyAlpha(handleColor));
 
         // State indicator text
         String stateText = value ? "ON" : "OFF";
@@ -244,7 +244,7 @@ public class EditorToggle {
             (value ? DesignTokens.Accent.GREEN() : DesignTokens.Text.MUTED()) :
             DesignTokens.Text.DISABLED();
         int stateX = toggleX - font.width(stateText) - STATE_TEXT_GAP;
-        safeGraphics.drawString(font, stateText, stateX, y + TEXT_OFFSET_Y, stateColor, false);
+        safeGraphics.drawString(font, stateText, stateX, y + TEXT_OFFSET_Y, applyAlpha(stateColor), false);
 
         return height;
     }
@@ -335,6 +335,14 @@ public class EditorToggle {
         this.focused = focused;
     }
 
+    public void setAlpha(float alpha) {
+        if (Float.isNaN(alpha)) {
+            this.alpha = 1.0f;
+            return;
+        }
+        this.alpha = Math.max(0.0f, Math.min(1.0f, alpha));
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -345,5 +353,13 @@ public class EditorToggle {
 
     public ResponsiveLayout.Rect getBounds() {
         return bounds;
+    }
+
+    private int applyAlpha(int color) {
+        int baseAlpha = (color >> 24) & 0xFF;
+        int scaled = (int) (baseAlpha * alpha);
+        if (scaled < 0) scaled = 0;
+        if (scaled > 255) scaled = 255;
+        return (scaled << 24) | (color & DesignTokens.Mask.RGB);
     }
 }

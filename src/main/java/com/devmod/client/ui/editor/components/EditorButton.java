@@ -100,6 +100,7 @@ public class EditorButton {
     private Size size = Size.MEDIUM;
     @Nullable private String icon = null;
     @Nullable private String tooltip = null;
+    @Nullable private String disabledTooltip = null; // UX-08: Tooltip shown when button is disabled
     @Nullable private String hotkeyHint = null;
     private boolean enabled = true;
     private boolean playSound = true;
@@ -108,6 +109,7 @@ public class EditorButton {
 
     // State
     private boolean hovered = false;
+    private boolean hoveredRaw = false; // UX-08: Tracks hover regardless of enabled state (for tooltips)
     private boolean pressed = false;
 
     // Bounds
@@ -151,6 +153,15 @@ public class EditorButton {
 
     public EditorButton tooltip(String tooltip) {
         this.tooltip = tooltip;
+        return this;
+    }
+
+    /**
+     * UX-08: Tooltip shown when the button is disabled.
+     * Explains why the button is disabled and/or what action is needed to enable it.
+     */
+    public EditorButton disabledTooltip(String disabledTooltip) {
+        this.disabledTooltip = disabledTooltip;
         return this;
     }
 
@@ -216,7 +227,9 @@ public class EditorButton {
         this.bounds = new ResponsiveLayout.Rect(x, y, width, height);
 
         // Check hover state
-        this.hovered = enabled && bounds.contains(mouseX, mouseY);
+        // UX-08: Track raw hover for tooltip display (works even when disabled)
+        this.hoveredRaw = bounds.contains(mouseX, mouseY);
+        this.hovered = enabled && hoveredRaw;
 
         // Palette Impact + override
         boolean active = toggleable && toggled;
@@ -475,10 +488,18 @@ public class EditorButton {
 
     /**
      * Ritorna un tooltip attivo (solo se hovered e presente).
+     * UX-08: Returns disabledTooltip when button is disabled and hovered.
      */
     @Nullable
     public String activeTooltip() {
-        return hovered ? tooltip : null;
+        if (!hoveredRaw) {
+            return null;
+        }
+        // UX-08: Show disabledTooltip when disabled, regular tooltip when enabled
+        if (!enabled && disabledTooltip != null) {
+            return disabledTooltip;
+        }
+        return tooltip;
     }
 
     public static final class Builder {
@@ -505,6 +526,12 @@ public class EditorButton {
 
         public Builder tooltip(String tooltip) {
             button.tooltip(tooltip);
+            return this;
+        }
+
+        /** UX-08: Tooltip shown when button is disabled */
+        public Builder disabledTooltip(String disabledTooltip) {
+            button.disabledTooltip(disabledTooltip);
             return this;
         }
 

@@ -3,6 +3,7 @@ package com.devmod.portal.block;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -93,37 +94,37 @@ public final class CustomPortalBlock extends Block {
 
     public CustomPortalBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any()
-            .setValue(AXIS, Direction.Axis.X)
-            .setValue(COLOR, PortalColor.BLUE)
-            .setValue(LINKED, false));
+        registerDefaultState(Objects.requireNonNull(stateDefinition.any()
+            .setValue(Objects.requireNonNull(AXIS), Direction.Axis.X)
+            .setValue(Objects.requireNonNull(COLOR), PortalColor.BLUE)
+            .setValue(Objects.requireNonNull(LINKED), false)));
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(AXIS, COLOR, LINKED);
+    protected void createBlockStateDefinition(@Nonnull StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(Objects.requireNonNull(AXIS), Objects.requireNonNull(COLOR), Objects.requireNonNull(LINKED));
     }
 
     @Override
     @Nullable
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return defaultBlockState().setValue(AXIS, context.getHorizontalDirection().getAxis());
+    public BlockState getStateForPlacement(@Nonnull BlockPlaceContext context) {
+        return defaultBlockState().setValue(Objects.requireNonNull(AXIS), Objects.requireNonNull(context.getHorizontalDirection().getAxis()));
     }
 
     @Override
     @Nonnull
-    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return state.getValue(AXIS) == Direction.Axis.Z ? Z_SHAPE : X_SHAPE;
+    public VoxelShape getShape(@Nonnull BlockState state, @Nonnull BlockGetter level, @Nonnull BlockPos pos, @Nonnull CollisionContext context) {
+        return Objects.requireNonNull(state.getValue(Objects.requireNonNull(AXIS)) == Direction.Axis.Z ? Z_SHAPE : X_SHAPE);
     }
 
     @Override
     @Nonnull
-    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return Shapes.empty();
+    public VoxelShape getCollisionShape(@Nonnull BlockState state, @Nonnull BlockGetter level, @Nonnull BlockPos pos, @Nonnull CollisionContext context) {
+        return Objects.requireNonNull(Shapes.empty());
     }
 
     @Override
-    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+    public void entityInside(@Nonnull BlockState state, @Nonnull Level level, @Nonnull BlockPos pos, @Nonnull Entity entity) {
         // Only handle server-side teleportation
         if (level.isClientSide) {
             return;
@@ -144,7 +145,7 @@ public final class CustomPortalBlock extends Block {
         // Find portal data
         ServerLevel serverLevel = (ServerLevel) level;
         PortalRegistry registry = PortalRegistry.get(serverLevel);
-        PortalColor portalColor = state.getValue(COLOR);
+        PortalColor portalColor = Objects.requireNonNull(state.getValue(Objects.requireNonNull(COLOR)));
         Optional<PortalData> portalOpt = registry.findPortalContaining(serverLevel, pos, portalColor);
 
         if (portalOpt.isEmpty()) {
@@ -205,7 +206,7 @@ public final class CustomPortalBlock extends Block {
                 if (!data.getBoolean(TAG_GATE_FEEDBACK_SHOWN)) {
                     data.putBoolean(TAG_GATE_FEEDBACK_SHOWN, true);
                     player.displayClientMessage(
-                        Component.translatable("message.devmod.portal.no_gate_rune"), true);
+                        Objects.requireNonNull(Component.translatable("message.devmod.portal.no_gate_rune")), true);
                 }
             }
             resetPortalTime(entity);
@@ -223,7 +224,7 @@ public final class CustomPortalBlock extends Block {
 
         // Play portal entry sound on first tick
         if (timeInPortal == 1) {
-            level.playSound(null, pos, SoundEvents.PORTAL_TRIGGER, SoundSource.BLOCKS, 0.5F, 1.0F);
+            level.playSound(null, pos, Objects.requireNonNull(SoundEvents.PORTAL_TRIGGER), SoundSource.BLOCKS, 0.5F, 1.0F);
             com.devmod.DevMod.LOGGER.info("[Portal] {} entered linked portal, destination: {}",
                 entity.getName().getString(), destPosOpt.get());
         }
@@ -239,7 +240,7 @@ public final class CustomPortalBlock extends Block {
             if (timeInPortal == 1 || (timeInPortal - lastSentTick) >= NETWORK_SYNC_INTERVAL) {
                 data.putInt(TAG_LAST_SENT_TICK, timeInPortal);
                 NetworkHandler.sendPortalState(player,
-                    PortalStatePayload.enterPortal(portalColor, timeInPortal, requiredDelay));
+                    PortalStatePayload.enterPortal(Objects.requireNonNull(portalColor), timeInPortal, requiredDelay));
             }
         }
 
@@ -357,7 +358,7 @@ public final class CustomPortalBlock extends Block {
         // Check cache first
         CachedRuneEffects cached = RUNE_EFFECT_CACHE.get(posKey);
         if (cached != null && (gameTime - cached.timestamp()) < RUNE_CACHE_TTL) {
-            return cached.effects();
+            return Objects.requireNonNull(cached.effects());
         }
 
         // Cache miss or expired - do the scan
@@ -367,7 +368,7 @@ public final class CustomPortalBlock extends Block {
         // Scan the portal structure and adjacent blocks for runes
         scanPortalForRunes(level, portalPos, foundRunes, visited, 0);
 
-        PortalRuneEffects effects = PortalRuneEffects.calculate(foundRunes);
+        PortalRuneEffects effects = Objects.requireNonNull(PortalRuneEffects.calculate(Objects.requireNonNull(foundRunes)));
 
         // Cache the result
         RUNE_EFFECT_CACHE.put(posKey, new CachedRuneEffects(effects, gameTime));
@@ -391,15 +392,15 @@ public final class CustomPortalBlock extends Block {
         }
         visited.add(pos);
 
-        BlockState state = level.getBlockState(pos);
+        BlockState state = level.getBlockState(Objects.requireNonNull(pos));
 
         // Check if this is a portal block - continue scanning
         if (state.getBlock() instanceof CustomPortalBlock) {
             // Check all 6 directions for more portal blocks or runes
             for (Direction dir : Direction.values()) {
-                BlockPos neighborPos = pos.relative(dir);
+                BlockPos neighborPos = Objects.requireNonNull(pos.relative(Objects.requireNonNull(dir)));
                 if (!visited.contains(neighborPos)) {
-                    BlockState neighborState = level.getBlockState(neighborPos);
+                    BlockState neighborState = level.getBlockState(Objects.requireNonNull(neighborPos));
 
                     // If neighbor is portal, continue scanning
                     if (neighborState.getBlock() instanceof CustomPortalBlock) {
@@ -424,7 +425,7 @@ public final class CustomPortalBlock extends Block {
         }
         visited.add(pos);
 
-        BlockState state = level.getBlockState(pos);
+        BlockState state = level.getBlockState(Objects.requireNonNull(pos));
 
         // Direct rune block
         if (state.getBlock() instanceof RuneBlock runeBlock) {
@@ -435,9 +436,9 @@ public final class CustomPortalBlock extends Block {
         // If this is a frame block (solid, not air, not portal), check adjacent for runes
         if (!state.isAir() && !(state.getBlock() instanceof CustomPortalBlock)) {
             for (Direction dir : Direction.values()) {
-                BlockPos adjacentPos = pos.relative(dir);
+                BlockPos adjacentPos = Objects.requireNonNull(pos.relative(Objects.requireNonNull(dir)));
                 if (!visited.contains(adjacentPos)) {
-                    BlockState adjacentState = level.getBlockState(adjacentPos);
+                    BlockState adjacentState = level.getBlockState(Objects.requireNonNull(adjacentPos));
                     if (adjacentState.getBlock() instanceof RuneBlock runeBlock) {
                         visited.add(adjacentPos);
                         foundRunes.add(runeBlock.getRuneType());
@@ -467,7 +468,7 @@ public final class CustomPortalBlock extends Block {
 
         // Play departure sound
         level.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
-            SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
+            Objects.requireNonNull(SoundEvents.ENDERMAN_TELEPORT), SoundSource.PLAYERS, 1.0F, 1.0F);
 
         if (sameDimension) {
             // Same dimension teleport - works for all entity types
@@ -479,8 +480,8 @@ public final class CustomPortalBlock extends Block {
             com.devmod.DevMod.LOGGER.info("[Portal] Cross-dimension teleport to dim={}", destDim);
 
             ServerLevel destLevel = destDim != null
-                ? level.getServer().getLevel(ResourceKey.create(
-                    net.minecraft.core.registries.Registries.DIMENSION, destDim))
+                ? level.getServer().getLevel(Objects.requireNonNull(ResourceKey.create(
+                    Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), destDim)))
                 : level;
 
             if (destLevel == null) {
@@ -497,10 +498,10 @@ public final class CustomPortalBlock extends Block {
             DimensionTransition transition = new DimensionTransition(
                 destLevel,
                 destVec,
-                net.minecraft.world.phys.Vec3.ZERO, // No momentum
+                Objects.requireNonNull(net.minecraft.world.phys.Vec3.ZERO), // No momentum
                 player.getYRot(),
                 player.getXRot(),
-                DimensionTransition.DO_NOTHING // No post-teleport action
+                Objects.requireNonNull(DimensionTransition.DO_NOTHING) // No post-teleport action
             );
 
             com.devmod.DevMod.LOGGER.info("[Portal] Using DimensionTransition to {} at {}",
@@ -519,7 +520,7 @@ public final class CustomPortalBlock extends Block {
         // Note: Non-player cross-dimension teleport is blocked in entityInside()
 
         // Play arrival sound at destination
-        level.playSound(null, destPos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
+        level.playSound(null, destPos, Objects.requireNonNull(SoundEvents.ENDERMAN_TELEPORT), SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 
     /**
@@ -553,7 +554,7 @@ public final class CustomPortalBlock extends Block {
 
         // Play departure sound
         level.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
-            SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
+            Objects.requireNonNull(SoundEvents.ENDERMAN_TELEPORT), SoundSource.PLAYERS, 1.0F, 1.0F);
 
         if (sameDimension) {
             // Same dimension teleport - works for all entity types
@@ -561,7 +562,7 @@ public final class CustomPortalBlock extends Block {
         } else if (entity instanceof ServerPlayer player) {
             // Cross-dimension teleport - only for players
             ServerLevel destLevel = level.getServer().getLevel(
-                ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, destDimRL));
+                Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), destDimRL)));
 
             if (destLevel == null) {
                 com.devmod.DevMod.LOGGER.warn("[Portal] Fixed destination level {} not found, aborting", destDimRL);
@@ -576,10 +577,10 @@ public final class CustomPortalBlock extends Block {
             DimensionTransition transition = new DimensionTransition(
                 destLevel,
                 destVec,
-                net.minecraft.world.phys.Vec3.ZERO,
+                Objects.requireNonNull(net.minecraft.world.phys.Vec3.ZERO),
                 player.getYRot(),
                 player.getXRot(),
-                DimensionTransition.DO_NOTHING
+                Objects.requireNonNull(DimensionTransition.DO_NOTHING)
             );
 
             player.changeDimension(transition);
@@ -591,21 +592,21 @@ public final class CustomPortalBlock extends Block {
         }
 
         // Play arrival sound at destination
-        level.playSound(null, destPos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
+        level.playSound(null, destPos, Objects.requireNonNull(SoundEvents.ENDERMAN_TELEPORT), SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 
     @Override
-    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+    public void animateTick(@Nonnull BlockState state, @Nonnull Level level, @Nonnull BlockPos pos, @Nonnull RandomSource random) {
         // Reduced frequency: 1/1000 chance per block per tick (was 1/100)
         // This prevents sound pool overflow with multi-block portals
         if (random.nextInt(1000) == 0) {
             level.playLocalSound(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D,
-                SoundEvents.PORTAL_AMBIENT, SoundSource.BLOCKS, 0.3F,  // Reduced volume
+                Objects.requireNonNull(SoundEvents.PORTAL_AMBIENT), SoundSource.BLOCKS, 0.3F,  // Reduced volume
                 random.nextFloat() * 0.4F + 0.8F, false);
         }
 
         // Get portal color for colored particles
-        PortalColor portalColor = state.getValue(COLOR);
+        PortalColor portalColor = state.getValue(Objects.requireNonNull(COLOR));
         org.joml.Vector3f colorVec = new org.joml.Vector3f(
             portalColor.getRed() / 255.0F,
             portalColor.getGreen() / 255.0F,
@@ -626,17 +627,17 @@ public final class CustomPortalBlock extends Block {
             if (random.nextBoolean()) {
                 level.addParticle(coloredDust, x, y, z, 0, 0.05, 0);
             } else {
-                level.addParticle(ParticleTypes.PORTAL, x, y, z, dx, dy, dz);
+                level.addParticle(Objects.requireNonNull(ParticleTypes.PORTAL), x, y, z, dx, dy, dz);
             }
         }
     }
 
     @Override
     @Nonnull
-    public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
-                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+    public BlockState updateShape(@Nonnull BlockState state, @Nonnull Direction direction, @Nonnull BlockState neighborState,
+                                   @Nonnull LevelAccessor level, @Nonnull BlockPos pos, @Nonnull BlockPos neighborPos) {
         // Break if frame is destroyed
-        Direction.Axis axis = state.getValue(AXIS);
+        Direction.Axis axis = state.getValue(Objects.requireNonNull(AXIS));
         boolean frameDirection = (axis == Direction.Axis.X)
             ? (direction == Direction.EAST || direction == Direction.WEST)
             : (direction == Direction.NORTH || direction == Direction.SOUTH);
@@ -645,16 +646,16 @@ public final class CustomPortalBlock extends Block {
             // Check if neighbor portal block still exists
             if (neighborState.isAir()) {
                 // Only break if this would disconnect the portal
-                return Blocks.AIR.defaultBlockState();
+                return Objects.requireNonNull(Blocks.AIR.defaultBlockState());
             }
         }
 
-        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+        return Objects.requireNonNull(super.updateShape(state, direction, neighborState, level, pos, neighborPos));
     }
 
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock())) {
+    public void onRemove(@Nonnull BlockState state, @Nonnull Level level, @Nonnull BlockPos pos, @Nonnull BlockState newState, boolean movedByPiston) {
+        if (!state.is(Objects.requireNonNull(newState.getBlock()))) {
             if (level instanceof ServerLevel serverLevel) {
                 PortalRegistry registry = PortalRegistry.get(serverLevel);
                 registry.getByPosition(pos).ifPresent(portal -> {
@@ -699,7 +700,7 @@ public final class CustomPortalBlock extends Block {
     }
 
     @Override
-    public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
+    public int getLightEmission(@Nonnull BlockState state, @Nonnull BlockGetter level, @Nonnull BlockPos pos) {
         return 11;
     }
 }

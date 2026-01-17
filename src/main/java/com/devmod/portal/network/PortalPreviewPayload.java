@@ -36,17 +36,18 @@ public record PortalPreviewPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<PortalPreviewPayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "portal_preview")
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "portal_preview"))
     );
 
     public static final StreamCodec<ByteBuf, PortalPreviewPayload> STREAM_CODEC = StreamCodec.composite(
-        ByteBufCodecs.VAR_LONG.map(BlockPos::of, BlockPos::asLong), PortalPreviewPayload::portalPos,
-        ByteBufCodecs.STRING_UTF8, PortalPreviewPayload::destinationName,
-        ByteBufCodecs.STRING_UTF8, PortalPreviewPayload::dimensionName,
-        ByteBufCodecs.VAR_INT, PortalPreviewPayload::distance,
-        ByteBufCodecs.VAR_INT, PortalPreviewPayload::portalColorIndex,
-        ByteBufCodecs.BOOL, PortalPreviewPayload::isFixedDestination,
-        PortalPreviewPayload::new
+        Objects.requireNonNull(ByteBufCodecs.VAR_LONG.map(l -> BlockPos.of(l.longValue()), BlockPos::asLong)), PortalPreviewPayload::portalPos,
+        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8), PortalPreviewPayload::destinationName,
+        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8), PortalPreviewPayload::dimensionName,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), PortalPreviewPayload::distance,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), PortalPreviewPayload::portalColorIndex,
+        Objects.requireNonNull(ByteBufCodecs.BOOL), PortalPreviewPayload::isFixedDestination,
+        (pos, destName, dimName, dist, colorIdx, isFixed) -> new PortalPreviewPayload(
+            pos, destName, dimName, dist.intValue(), colorIdx.intValue(), isFixed.booleanValue())
     );
 
     public PortalPreviewPayload {
@@ -68,7 +69,7 @@ public record PortalPreviewPayload(
      */
     @Nonnull
     public PortalColor getColor() {
-        return PortalColor.byIndex(portalColorIndex);
+        return Objects.requireNonNull(PortalColor.byIndex(portalColorIndex));
     }
 
     /**

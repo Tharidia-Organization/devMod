@@ -1,3 +1,3 @@
 {
-  "parent": "devmod:block/clone_refinery"
+  "parent": "builtin/entity"
 }

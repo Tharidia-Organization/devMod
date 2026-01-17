@@ -1,0 +1,155 @@
+{
+  "textures": {
+    "base": "devmod:block/neurocell_l_base",
+    "base_top": "devmod:block/neurocell_l_base_top",
+    "floor": "devmod:block/neurocell_l_floor",
+    "pillar": "devmod:block/neurocell_l_pillar",
+    "particle": "devmod:block/neurocell_l_base"
+  },
+  "elements": [
+    {
+      "comment": "=== LANDING PLATFORM ===",
+      "name": "landing_pad",
+      "from": [0, 0, 0],
+      "to": [16, 1, 16],
+      "faces": {
+        "north": {"uv": [0, 15, 16, 16], "texture": "#base"},
+        "east": {"uv": [0, 15, 16, 16], "texture": "#base"},
+        "south": {"uv": [0, 15, 16, 16], "texture": "#base"},
+        "west": {"uv": [0, 15, 16, 16], "texture": "#base"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#base_top"},
+        "down": {"uv": [0, 0, 16, 16], "texture": "#base"}
+      }
+    },
+    {
+      "comment": "=== CORE BASE (stepped) ===",
+      "name": "core_base",
+      "from": [2, 1, 2],
+      "to": [14, 4, 14],
+      "faces": {
+        "north": {"uv": [2, 12, 14, 15], "texture": "#base"},
+        "east": {"uv": [2, 12, 14, 15], "texture": "#base"},
+        "south": {"uv": [2, 12, 14, 15], "texture": "#base"},
+        "west": {"uv": [2, 12, 14, 15], "texture": "#base"},
+        "up": {"uv": [2, 2, 14, 14], "texture": "#base_top"}
+      }
+    },
+    {
+      "comment": "=== CORE MID (platform) ===",
+      "name": "core_mid",
+      "from": [3, 4, 3],
+      "to": [13, 7, 13],
+      "faces": {
+        "north": {"uv": [3, 9, 13, 12], "texture": "#base"},
+        "east": {"uv": [3, 9, 13, 12], "texture": "#base"},
+        "south": {"uv": [3, 9, 13, 12], "texture": "#base"},
+        "west": {"uv": [3, 9, 13, 12], "texture": "#base"},
+        "up": {"uv": [3, 3, 13, 13], "texture": "#floor"}
+      }
+    },
+    {
+      "comment": "=== CENTRAL PILLAR ===",
+      "name": "central_pillar",
+      "from": [5, 7, 5],
+      "to": [11, 12, 11],
+      "faces": {
+        "north": {"uv": [5, 4, 11, 9], "texture": "#pillar"},
+        "east": {"uv": [5, 4, 11, 9], "texture": "#pillar"},
+        "south": {"uv": [5, 4, 11, 9], "texture": "#pillar"},
+        "west": {"uv": [5, 4, 11, 9], "texture": "#pillar"},
+        "up": {"uv": [5, 5, 11, 11], "texture": "#floor"}
+      }
+    },
+    {
+      "comment": "=== CORNER PILLAR NW ===",
+      "name": "corner_nw",
+      "from": [0, 1, 0],
+      "to": [3, 6, 3],
+      "rotation": {"angle": -22.5, "axis": "y", "origin": [1.5, 3.5, 1.5]},
+      "faces": {
+        "north": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "east": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "south": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "west": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "up": {"uv": [0, 0, 3, 3], "texture": "#base_top"}
+      }
+    },
+    {
+      "comment": "=== CORNER PILLAR NE ===",
+      "name": "corner_ne",
+      "from": [13, 1, 0],
+      "to": [16, 6, 3],
+      "rotation": {"angle": 22.5, "axis": "y", "origin": [14.5, 3.5, 1.5]},
+      "faces": {
+        "north": {"uv": [13, 10, 16, 15], "texture": "#pillar"},
+        "east": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "south": {"uv": [13, 10, 16, 15], "texture": "#pillar"},
+        "west": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "up": {"uv": [13, 0, 16, 3], "texture": "#base_top"}
+      }
+    },
+    {
+      "comment": "=== CORNER PILLAR SW ===",
+      "name": "corner_sw",
+      "from": [0, 1, 13],
+      "to": [3, 6, 16],
+      "rotation": {"angle": 22.5, "axis": "y", "origin": [1.5, 3.5, 14.5]},
+      "faces": {
+        "north": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "east": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "south": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "west": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "up": {"uv": [0, 13, 3, 16], "texture": "#base_top"}
+      }
+    },
+    {
+      "comment": "=== CORNER PILLAR SE ===",
+      "name": "corner_se",
+      "from": [13, 1, 13],
+      "to": [16, 6, 16],
+      "rotation": {"angle": -22.5, "axis": "y", "origin": [14.5, 3.5, 14.5]},
+      "faces": {
+        "north": {"uv": [13, 10, 16, 15], "texture": "#pillar"},
+        "east": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "south": {"uv": [13, 10, 16, 15], "texture": "#pillar"},
+        "west": {"uv": [0, 10, 3, 15], "texture": "#pillar"},
+        "up": {"uv": [13, 13, 16, 16], "texture": "#base_top"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 45, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 225, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "ground": {
+      "translation": [0, 3, 0],
+      "scale": [0.25, 0.25, 0.25]
+    },
+    "gui": {
+      "rotation": [30, 225, 0],
+      "translation": [0, -1, 0],
+      "scale": [0.625, 0.625, 0.625]
+    },
+    "head": {
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "fixed": {
+      "scale": [0.5, 0.5, 0.5]
+    }
+  }
+}

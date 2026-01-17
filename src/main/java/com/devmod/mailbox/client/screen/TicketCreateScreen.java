@@ -20,6 +20,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.mailbox.client.ClientTicketCache;
+import com.devmod.mailbox.client.MailboxUiSkin;
 import com.devmod.mailbox.client.MailboxUiTheme;
 import com.devmod.mailbox.network.payload.TicketCreatePayload;
 import com.devmod.mailbox.ticket.TicketCategory;
@@ -82,6 +83,9 @@ public class TicketCreateScreen extends Screen {
             Objects.requireNonNull(Component.literal("Subject")));
         subjectBox.setMaxLength(100);
         subjectBox.setHint(Objects.requireNonNull(Component.literal("Brief summary of the issue...")));
+        subjectBox.setBordered(false);
+        subjectBox.setTextColor(MailboxUiSkin.textPrimary());
+        subjectBox.setTextColorUneditable(MailboxUiSkin.textMuted());
         addRenderableWidget(subjectBox);
         subjectField = subjectBox;
 
@@ -90,6 +94,9 @@ public class TicketCreateScreen extends Screen {
             Objects.requireNonNull(Component.literal("Description")));
         descBox.setMaxLength(1000);
         descBox.setHint(Objects.requireNonNull(Component.literal("Describe your issue in detail...")));
+        descBox.setBordered(false);
+        descBox.setTextColor(MailboxUiSkin.textPrimary());
+        descBox.setTextColorUneditable(MailboxUiSkin.textMuted());
         addRenderableWidget(descBox);
         descriptionField = descBox;
 
@@ -203,10 +210,25 @@ public class TicketCreateScreen extends Screen {
             submitButton.render(graphics, panelX + PANEL_WIDTH - 130, buttonY, 110, 24, mouseX, mouseY);
         }
 
+        renderInputBackgrounds(graphics);
+
         // Status message
         renderStatus(graphics);
 
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderInputBackgrounds(GuiGraphics graphics) {
+        renderInputBackground(graphics, subjectField);
+        renderInputBackground(graphics, descriptionField);
+    }
+
+    private void renderInputBackground(GuiGraphics graphics, @Nullable EditBox field) {
+        if (field == null) {
+            return;
+        }
+        MailboxUiSkin.drawInputBackground(graphics, field.getX(), field.getY(), field.getWidth(),
+            field.getHeight(), field.isFocused());
     }
 
     private void renderStatus(GuiGraphics graphics) {

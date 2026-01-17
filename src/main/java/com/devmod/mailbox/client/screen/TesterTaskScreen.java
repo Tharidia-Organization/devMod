@@ -8,7 +8,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -17,8 +16,10 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.mailbox.client.ClientMailboxAccess;
 import com.devmod.mailbox.client.ClientTaskCache;
+import com.devmod.mailbox.client.MailboxUiSkin;
 import com.devmod.mailbox.client.MailboxUiTheme;
 import com.devmod.mailbox.network.payload.TaskActionPayload;
 import com.devmod.mailbox.task.TestTask;
@@ -50,14 +51,20 @@ public class TesterTaskScreen extends Screen {
     private boolean showCompleted = false;
 
     // Buttons (created once in init)
-    @Nullable private Button startButton;
-    @Nullable private Button completeButton;
-    @Nullable private Button notesButton;
-    @Nullable private Button submitNotesButton;
+    @Nullable private EditorButton filterButton;
+    @Nullable private EditorButton closeButton;
+    @Nullable private EditorButton startButton;
+    @Nullable private EditorButton completeButton;
+    @Nullable private EditorButton notesButton;
+    @Nullable private EditorButton submitNotesButton;
     @Nullable private EditBox notesEditBox;
 
     // Notes editing state
     private boolean showNotesEditor = false;
+    private boolean showStartButton = false;
+    private boolean showCompleteButton = false;
+    private boolean showNotesButton = false;
+    private boolean showSubmitNotesButton = false;
 
     public TesterTaskScreen() {
         this(null, false);
@@ -82,57 +89,49 @@ public class TesterTaskScreen extends Screen {
         panelY = (height - PANEL_HEIGHT) / 2;
 
         // Filter toggle button
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-                Objects.requireNonNull(Component.translatable(showCompleted ? "devmod.tester.hide_completed" : "devmod.tester.show_completed"), "filter label"),
-                btn -> {
-                    showCompleted = !showCompleted;
-                    btn.setMessage(Objects.requireNonNull(Component.translatable(showCompleted ? "devmod.tester.hide_completed" : "devmod.tester.show_completed"), "filter label"));
-                    scrollOffset = 0;
-                    updateMaxScroll();
-                    updateActionButtons();
-                })
-            .bounds(panelX + PANEL_WIDTH - 120, panelY + 5, 110, 20)
-            .build(), "filter button"));
+        rebuildFilterButton();
 
         // Close button
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-                Objects.requireNonNull(Component.translatable("devmod.ui.close"), "close label"),
-                btn -> onClose())
-            .bounds(panelX + PANEL_WIDTH - 60, panelY + PANEL_HEIGHT - 30, 50, 20)
-            .build(), "close button"));
+        closeButton = EditorButton.builder("tester_close",
+                Objects.requireNonNull(Component.translatable("devmod.ui.close"), "close label").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::onClose)
+            .build();
 
         // Action buttons for task details (created but initially hidden)
         int detailX = panelX + PANEL_WIDTH / 2 + PADDING;
         int detailWidth = PANEL_WIDTH / 2 - PADDING * 2;
         int btnY = panelY + 35 + (PANEL_HEIGHT - 70) - 45;
-        int btnWidth = (detailWidth - 15) / 2;
+        startButton = EditorButton.builder("tester_start",
+                Objects.requireNonNull(Component.translatable("devmod.tester.start"), "start label").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(() -> {
+                if (selectedTaskId != null) {
+                    updateTaskStatus(selectedTaskId, TestTask.TaskStatus.IN_PROGRESS);
+                }
+            })
+            .build();
 
-        startButton = addRenderableWidget(Objects.requireNonNull(Button.builder(
-                Objects.requireNonNull(Component.translatable("devmod.tester.start"), "start label"),
-                btn -> {
-                    if (selectedTaskId != null) {
-                        updateTaskStatus(selectedTaskId, TestTask.TaskStatus.IN_PROGRESS);
-                    }
-                })
-            .bounds(detailX + 5, btnY, btnWidth, 20)
-            .build(), "start button"));
-
-        completeButton = addRenderableWidget(Objects.requireNonNull(Button.builder(
-                Objects.requireNonNull(Component.translatable("devmod.tester.complete"), "complete label"),
-                btn -> {
-                    if (selectedTaskId != null) {
-                        updateTaskStatus(selectedTaskId, TestTask.TaskStatus.COMPLETED);
-                    }
-                })
-            .bounds(detailX + 5, btnY, btnWidth, 20)
-            .build(), "complete button"));
+        completeButton = EditorButton.builder("tester_complete",
+                Objects.requireNonNull(Component.translatable("devmod.tester.complete"), "complete label").getString())
+            .style(EditorButton.Style.SUCCESS)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(() -> {
+                if (selectedTaskId != null) {
+                    updateTaskStatus(selectedTaskId, TestTask.TaskStatus.COMPLETED);
+                }
+            })
+            .build();
 
         // Notes button (second column, same row as start/complete)
-        notesButton = addRenderableWidget(Objects.requireNonNull(Button.builder(
-                Objects.requireNonNull(Component.translatable("devmod.tester.add_notes"), "notes label"),
-                btn -> toggleNotesEditor())
-            .bounds(detailX + btnWidth + 10, btnY, btnWidth, 20)
-            .build(), "notes button"));
+        notesButton = EditorButton.builder("tester_notes",
+                Objects.requireNonNull(Component.translatable("devmod.tester.add_notes"), "notes label").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::toggleNotesEditor)
+            .build();
 
         // Notes input area (initially hidden)
         int notesY = btnY - 60;
@@ -143,16 +142,19 @@ public class TesterTaskScreen extends Screen {
             Objects.requireNonNull(Component.translatable("devmod.tester.notes_placeholder"), "notes placeholder")
         ));
         notesBox.setMaxLength(500);
+        notesBox.setBordered(false);
+        notesBox.setTextColor(MailboxUiSkin.textPrimary());
+        notesBox.setTextColorUneditable(MailboxUiSkin.textMuted());
         notesBox.visible = false;
         notesEditBox = notesBox;
 
-        Button submitBtn = addRenderableWidget(Objects.requireNonNull(Button.builder(
-                Objects.requireNonNull(Component.translatable("devmod.tester.submit_notes"), "submit notes label"),
-                btn -> submitNotes())
-            .bounds(detailX + detailWidth - 75, notesY + 45, 70, 20)
-            .build(), "submit notes button"));
-        submitBtn.visible = false;
-        submitNotesButton = submitBtn;
+        submitNotesButton = EditorButton.builder("tester_submit_notes",
+                Objects.requireNonNull(Component.translatable("devmod.tester.submit_notes"), "submit notes label").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::submitNotes)
+            .build();
+        showSubmitNotesButton = false;
 
         applyInitialSelection();
         updateMaxScroll();
@@ -182,10 +184,7 @@ public class TesterTaskScreen extends Screen {
                 editBox.setFocused(true);
             }
         }
-        Button submitBtn = submitNotesButton;
-        if (submitBtn != null) {
-            submitBtn.visible = showNotesEditor;
-        }
+        showSubmitNotesButton = showNotesEditor;
     }
 
     /**
@@ -209,45 +208,61 @@ public class TesterTaskScreen extends Screen {
         // Hide the editor
         showNotesEditor = false;
         editBox.visible = false;
-        Button submitBtn = submitNotesButton;
-        if (submitBtn != null) submitBtn.visible = false;
+        showSubmitNotesButton = false;
     }
 
     /**
      * Update visibility of action buttons based on selected task status.
      */
     private void updateActionButtons() {
-        Button startBtn = startButton;
-        Button completeBtn = completeButton;
-        Button notesBtn = notesButton;
+        EditorButton startBtn = startButton;
+        EditorButton completeBtn = completeButton;
+        EditorButton notesBtn = notesButton;
         EditBox editBox = notesEditBox;
-        Button submitBtn = submitNotesButton;
 
         if (startBtn == null || completeBtn == null) return;
 
         // Hide notes editor when task changes
         showNotesEditor = false;
         if (editBox != null) editBox.visible = false;
-        if (submitBtn != null) submitBtn.visible = false;
+        showSubmitNotesButton = false;
 
         if (selectedTaskId == null) {
-            startBtn.visible = false;
-            completeBtn.visible = false;
-            if (notesBtn != null) notesBtn.visible = false;
+            showStartButton = false;
+            showCompleteButton = false;
+            showNotesButton = false;
             return;
         }
 
         TestTask task = ClientTaskCache.getTask(selectedTaskId);
         if (task == null) {
-            startBtn.visible = false;
-            completeBtn.visible = false;
-            if (notesBtn != null) notesBtn.visible = false;
+            showStartButton = false;
+            showCompleteButton = false;
+            showNotesButton = false;
             return;
         }
 
-        startBtn.visible = task.status() == TestTask.TaskStatus.PENDING;
-        completeBtn.visible = task.status() == TestTask.TaskStatus.IN_PROGRESS;
-        if (notesBtn != null) notesBtn.visible = true;
+        showStartButton = task.status() == TestTask.TaskStatus.PENDING;
+        showCompleteButton = task.status() == TestTask.TaskStatus.IN_PROGRESS;
+        showNotesButton = notesBtn != null;
+    }
+
+    private void rebuildFilterButton() {
+        String key = showCompleted ? "devmod.tester.hide_completed" : "devmod.tester.show_completed";
+        filterButton = EditorButton.builder("tester_filter",
+                Objects.requireNonNull(Component.translatable(key), "filter label").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .onClick(this::toggleShowCompleted)
+            .build();
+    }
+
+    private void toggleShowCompleted() {
+        showCompleted = !showCompleted;
+        rebuildFilterButton();
+        scrollOffset = 0;
+        updateMaxScroll();
+        updateActionButtons();
     }
 
     @Override
@@ -277,7 +292,55 @@ public class TesterTaskScreen extends Screen {
             renderTaskDetails(graphics);
         }
 
+        renderNotesInputBackground(graphics);
+        renderButtons(graphics, mouseX, mouseY);
+
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        EditorButton filterBtn = filterButton;
+        if (filterBtn != null) {
+            filterBtn.render(graphics, panelX + PANEL_WIDTH - 120, panelY + 5, 110, 20, mouseX, mouseY);
+        }
+
+        EditorButton closeBtn = closeButton;
+        if (closeBtn != null) {
+            closeBtn.render(graphics, panelX + PANEL_WIDTH - 60, panelY + PANEL_HEIGHT - 30, 50, 20, mouseX, mouseY);
+        }
+
+        if (selectedTaskId == null) {
+            return;
+        }
+
+        int detailX = panelX + PANEL_WIDTH / 2 + PADDING;
+        int detailWidth = PANEL_WIDTH / 2 - PADDING * 2;
+        int btnY = panelY + 35 + (PANEL_HEIGHT - 70) - 45;
+        int btnWidth = (detailWidth - 15) / 2;
+
+        if (showStartButton && startButton != null) {
+            startButton.render(graphics, detailX + 5, btnY, btnWidth, 20, mouseX, mouseY);
+        } else if (showCompleteButton && completeButton != null) {
+            completeButton.render(graphics, detailX + 5, btnY, btnWidth, 20, mouseX, mouseY);
+        }
+
+        if (showNotesButton && notesButton != null) {
+            notesButton.render(graphics, detailX + btnWidth + 10, btnY, btnWidth, 20, mouseX, mouseY);
+        }
+
+        if (showSubmitNotesButton && submitNotesButton != null) {
+            int notesY = btnY - 60;
+            submitNotesButton.render(graphics, detailX + detailWidth - 75, notesY + 45, 70, 20, mouseX, mouseY);
+        }
+    }
+
+    private void renderNotesInputBackground(GuiGraphics graphics) {
+        EditBox editBox = notesEditBox;
+        if (editBox == null || !editBox.visible) {
+            return;
+        }
+        MailboxUiSkin.drawInputBackground(graphics, editBox.getX(), editBox.getY(), editBox.getWidth(),
+            editBox.getHeight(), editBox.isFocused());
     }
 
     private void renderTaskList(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -451,6 +514,14 @@ public class TesterTaskScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button != 0) {
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
+
+        if (handleButtonClick(mouseX, mouseY, button)) {
+            return true;
+        }
+
         if (super.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -473,6 +544,66 @@ public class TesterTaskScreen extends Screen {
         }
 
         return false;
+    }
+
+    private boolean handleButtonClick(double mouseX, double mouseY, int button) {
+        EditorButton filterBtn = filterButton;
+        if (filterBtn != null && filterBtn.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+
+        EditorButton closeBtn = closeButton;
+        if (closeBtn != null && closeBtn.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+
+        if (showStartButton) {
+            EditorButton startBtn = startButton;
+            if (startBtn != null && startBtn.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+
+        if (showCompleteButton) {
+            EditorButton completeBtn = completeButton;
+            if (completeBtn != null && completeBtn.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+
+        if (showNotesButton) {
+            EditorButton notesBtn = notesButton;
+            if (notesBtn != null && notesBtn.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+
+        if (showSubmitNotesButton) {
+            EditorButton submitBtn = submitNotesButton;
+            if (submitBtn != null && submitBtn.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        EditorButton filterBtn = filterButton;
+        if (filterBtn != null) filterBtn.mouseReleased(mouseX, mouseY, button);
+        EditorButton closeBtn = closeButton;
+        if (closeBtn != null) closeBtn.mouseReleased(mouseX, mouseY, button);
+        EditorButton startBtn = startButton;
+        if (startBtn != null) startBtn.mouseReleased(mouseX, mouseY, button);
+        EditorButton completeBtn = completeButton;
+        if (completeBtn != null) completeBtn.mouseReleased(mouseX, mouseY, button);
+        EditorButton notesBtn = notesButton;
+        if (notesBtn != null) notesBtn.mouseReleased(mouseX, mouseY, button);
+        EditorButton submitBtn = submitNotesButton;
+        if (submitBtn != null) submitBtn.mouseReleased(mouseX, mouseY, button);
+
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

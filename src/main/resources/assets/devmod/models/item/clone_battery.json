@@ -1,3 +1,3 @@
 {
-  "parent": "devmod:block/clone_battery"
+  "parent": "builtin/entity"
 }

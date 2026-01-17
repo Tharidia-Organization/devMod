@@ -31,6 +31,7 @@ public class NeurocellLMenu extends AbstractContainerMenu {
     /**
      * Client-side constructor (called from network).
      */
+    @SuppressWarnings("this-escape")
     public NeurocellLMenu(int containerId, Inventory playerInv, FriendlyByteBuf buf) {
         this(containerId, playerInv, new SimpleContainer(1), ContainerLevelAccess.NULL);
     }
@@ -38,6 +39,7 @@ public class NeurocellLMenu extends AbstractContainerMenu {
     /**
      * Server-side constructor (called when opening menu).
      */
+    @SuppressWarnings("this-escape")
     public NeurocellLMenu(int containerId, Inventory playerInv, NeurocellLBlockEntity blockEntity) {
         this(containerId, playerInv, blockEntity.getInventory(),
              ContainerLevelAccess.create(
@@ -48,6 +50,7 @@ public class NeurocellLMenu extends AbstractContainerMenu {
     /**
      * Main constructor.
      */
+    @SuppressWarnings("this-escape")
     private NeurocellLMenu(int containerId, Inventory playerInv, Container container, ContainerLevelAccess access) {
         super(CloneMenus.NEUROCELL_L.get(), containerId);
         var containerObj = Objects.requireNonNull(container);

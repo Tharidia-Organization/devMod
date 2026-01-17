@@ -1,13 +1,15 @@
 package com.devmod.runtime;
-import java.util.EnumMap;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +22,9 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.Config;
-import com.devmod.entity.NexaEntity;
+import com.devmod.hologram.runtime.HologramManager;
+import com.devmod.zone.data.ZoneDefinition;
+import com.devmod.zone.runtime.ZoneResolver;
 
 /**
  * Performance optimization manager for the Nexus dimension.
@@ -37,14 +41,13 @@ public final class NexusPerformanceManager {
 
     // Entity culling settings
     private static final int CULL_CHECK_INTERVAL = 20;  // ticks between cull checks
-    private static final String LEGACY_AVATAR_TAG = "devmod_nexus_avatar";
 
-    // Player zone tracking for optimization
-    private final Map<UUID, NexusZoneLayout.Zone> playerZones = new ConcurrentHashMap<>();
+    // Player zone tracking for optimization (stores zone ID strings)
+    private final Map<UUID, String> playerZones = new ConcurrentHashMap<>();
     private final Map<UUID, Set<ChunkPos>> playerLoadedChunks = new ConcurrentHashMap<>();
 
-    // Zone chunk cache
-    private final Map<NexusSpawnManager.Zone, Set<ChunkPos>> zoneChunks = new EnumMap<>(NexusSpawnManager.Zone.class);
+    // Zone chunk cache (keyed by zone ID)
+    private final Map<String, Set<ChunkPos>> zoneChunks = new ConcurrentHashMap<>();
 
     // Culled entities tracking
     private final Set<UUID> culledEntities = ConcurrentHashMap.newKeySet();
@@ -58,7 +61,8 @@ public final class NexusPerformanceManager {
     /**
      * Initialize the performance manager with zone chunk mappings.
      */
-    public void initialize(@Nonnull BlockPos hubOrigin) {
+    public void initialize(@Nonnull ServerLevel level, @Nonnull BlockPos hubOrigin) {
+        Objects.requireNonNull(level, "level");
         Objects.requireNonNull(hubOrigin, "hubOrigin");
 
         if (initialized) {
@@ -67,11 +71,12 @@ public final class NexusPerformanceManager {
 
         LOGGER.info("[NexusPerf] Initializing performance optimizations");
 
-        // Pre-calculate chunk positions for each zone
-        for (NexusSpawnManager.Zone zone : NexusSpawnManager.Zone.values()) {
-            BlockPos zoneCenter = nn(hubOrigin.offset(nn(zone.offset(), "zone.offset")), "zoneCenter");
+        // Pre-calculate chunk positions for each zone from the registry
+        var registry = com.devmod.zone.data.ZoneRegistry.get(level.getServer());
+        for (ZoneDefinition zone : registry.getAllZones()) {
+            BlockPos zoneCenter = zone.bounds().center();
             Set<ChunkPos> chunks = calculateZoneChunks(zoneCenter);
-            zoneChunks.put(zone, chunks);
+            zoneChunks.put(zone.zoneId(), chunks);
         }
 
         initialized = true;
@@ -104,11 +109,11 @@ public final class NexusPerformanceManager {
         }
 
         if (!initialized) {
-            initialize(hubOrigin);
+            initialize(level, hubOrigin);
         }
 
         // Update player zones
-        updatePlayerZones(level, hubOrigin);
+        updatePlayerZones(level);
 
         // Entity culling check
         cullTick++;
@@ -121,13 +126,14 @@ public final class NexusPerformanceManager {
     /**
      * Update which zone each player is in.
      */
-    private void updatePlayerZones(@Nonnull ServerLevel level, @Nonnull BlockPos hubOrigin) {
+    private void updatePlayerZones(@Nonnull ServerLevel level) {
         for (ServerPlayer player : level.players()) {
-            NexusZoneLayout.Zone currentZone = nn(NexusZoneLayout.resolveZone(player.blockPosition(), hubOrigin), "currentZone");
-            NexusZoneLayout.Zone previousZone = playerZones.put(player.getUUID(), currentZone);
+            Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolve(level, player.blockPosition());
+            String currentZone = zoneOpt.map(ZoneDefinition::zoneId).orElse("outside");
+            String previousZone = playerZones.put(player.getUUID(), currentZone);
 
-            if (previousZone != null && previousZone != currentZone) {
-                onPlayerZoneChange(player, nn(previousZone, "previousZone"), nn(currentZone, "currentZone"), hubOrigin);
+            if (previousZone != null && !previousZone.equals(currentZone)) {
+                onPlayerZoneChange(player, previousZone, currentZone);
             }
         }
 
@@ -144,9 +150,8 @@ public final class NexusPerformanceManager {
      * Handle player zone change for chunk loading optimization.
      */
     private void onPlayerZoneChange(@Nonnull ServerPlayer player,
-                                     @Nonnull NexusZoneLayout.Zone oldZone,
-                                     @Nonnull NexusZoneLayout.Zone newZone,
-                                     @Nonnull BlockPos hubOrigin) {
+                                     @Nonnull String oldZone,
+                                     @Nonnull String newZone) {
         if (!Config.NEXUS_LAZY_CHUNKS_ENABLED.get()) {
             return;
         }
@@ -154,32 +159,13 @@ public final class NexusPerformanceManager {
         UUID playerId = player.getUUID();
 
         // Get chunks for new zone
-        NexusSpawnManager.Zone spawnZone = mapToSpawnZone(newZone);
-        Set<ChunkPos> newChunks = spawnZone != null ? zoneChunks.get(spawnZone) : getHubChunks(nn(hubOrigin, "hubOrigin"));
+        Set<ChunkPos> newChunks = zoneChunks.getOrDefault(newZone, getHubChunks(player.blockPosition()));
 
         // Track loaded chunks for this player
         playerLoadedChunks.put(playerId, new HashSet<>(newChunks));
 
         LOGGER.debug("[NexusPerf] Player {} moved from {} to {}, adjusted chunk set",
             player.getName().getString(), oldZone, newZone);
-    }
-
-    /**
-     * Map zone layout zone to spawn manager zone.
-     */
-    @Nonnull
-    private NexusSpawnManager.Zone mapToSpawnZone(@Nonnull NexusZoneLayout.Zone layoutZone) {
-        return switch (layoutZone) {
-            case COMBAT -> NexusSpawnManager.Zone.COMBAT;
-            case ARENA -> NexusSpawnManager.Zone.ARENA;
-            case UI -> NexusSpawnManager.Zone.UI;
-            case TELEMETRY -> NexusSpawnManager.Zone.TELEMETRY;
-            case SHOWCASE -> NexusSpawnManager.Zone.SHOWCASE;
-            case INTEGRATION -> NexusSpawnManager.Zone.INTEGRATION;
-            case SANDBOX -> NexusSpawnManager.Zone.SANDBOX;
-            case MECHANICS -> NexusSpawnManager.Zone.MECHANICS;
-            default -> NexusSpawnManager.Zone.HUB;
-        };
     }
 
     /**
@@ -276,16 +262,13 @@ public final class NexusPerformanceManager {
      * Check if an entity should never be culled.
      */
     private boolean isImportantEntity(@Nonnull Entity entity) {
-        // Never cull nexus system entities
-        if (entity instanceof NexaEntity) {
+        // Never cull NPC entities (PlayerCloneEntity in NPC mode)
+        if (entity instanceof com.devmod.clone.entity.PlayerCloneEntity clone && clone.isNpc()) {
             return true;
         }
+        // Check for hologram tags
         Set<String> tags = entity.getTags();
-        if (tags.contains(NexaEntity.NEXA_TAG) || tags.contains(LEGACY_AVATAR_TAG)) {
-            return true;
-        }
-        // Note: Portal pedestals now use real CustomPortalBlock (not entities) so no tag check needed
-        if (tags.contains(NexusHologramManager.HOLOGRAM_TAG)) {
+        if (tags.contains(HologramManager.HOLOGRAM_TAG)) {
             return true;
         }
 
@@ -318,11 +301,11 @@ public final class NexusPerformanceManager {
     }
 
     /**
-     * Get the current zone for a player.
+     * Get the current zone ID for a player.
      */
-    @Nonnull
-    public NexusZoneLayout.Zone getPlayerZone(@Nonnull UUID playerId) {
-        return nn(playerZones.getOrDefault(playerId, NexusZoneLayout.Zone.OUTSIDE), "playerZone");
+    @Nullable
+    public String getPlayerZone(@Nonnull UUID playerId) {
+        return playerZones.get(playerId);
     }
 
     /**
@@ -373,6 +356,7 @@ public final class NexusPerformanceManager {
     public void cleanup() {
         playerZones.clear();
         playerLoadedChunks.clear();
+        zoneChunks.clear();
         culledEntities.clear();
         initialized = false;
         LOGGER.debug("[NexusPerf] Cleaned up performance manager state");

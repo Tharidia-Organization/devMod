@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "devmod:block/area_editor" }
+  }
+}

@@ -1,6 +1,7 @@
 package com.devmod.clone.block.entity;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -19,10 +20,16 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+
+import com.devmod.clone.CloneBlockEntities;
+import com.devmod.clone.block.CentrifugeBlock;
+import com.devmod.clone.menu.CentrifugeMenu;
+import com.devmod.clone.recipe.CentrifugingRecipe;
+import com.devmod.clone.recipe.CloneRecipeTypes;
 
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -30,10 +37,6 @@ import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
-
-import com.devmod.clone.CloneBlockEntities;
-import com.devmod.clone.block.CentrifugeBlock;
-import com.devmod.clone.menu.CentrifugeMenu;
 
 /**
  * Block entity for the Centrifuge automatic crafting machine.
@@ -43,7 +46,7 @@ import com.devmod.clone.menu.CentrifugeMenu;
  * <ul>
  *   <li>GeckoLib animated model with idle and active animations</li>
  *   <li>3 input slots + 1 output slot</li>
- *   <li>Recipe-based processing (placeholder - TODO: add CentrifugingRecipe)</li>
+ *   <li>Recipe-based processing via CentrifugingRecipe</li>
  *   <li>Dirty flag network sync optimization</li>
  * </ul>
  */
@@ -60,6 +63,7 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
     private static final int DEFAULT_PROCESS_TIME = 100; // 5 seconds
 
     // === GeckoLib Animation ===
+    @SuppressWarnings("this-escape")
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     /** Deploy then idle - plays deploy once, then loops idle. */
@@ -76,6 +80,8 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
     private int progress = 0;
     private int maxProgress = DEFAULT_PROCESS_TIME;
     private ItemStack processingItem = ItemStack.EMPTY;
+    @Nullable
+    private CentrifugingRecipe currentRecipe = null;
 
     // === Dirty Flags for Network Sync ===
     private boolean dirtyActive = false;
@@ -139,40 +145,61 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
      */
     private boolean canProcess() {
         ItemStack input = inventory.getItem(0);
-        ItemStack output = inventory.getItem(3);
-
         if (input.isEmpty()) {
+            currentRecipe = null;
             return false;
         }
 
-        // TODO: Replace with proper recipe lookup when CentrifugingRecipe is added
-        // For now, accept any input
+        Level lvl = level;
+        if (lvl == null) {
+            return false;
+        }
+
+        // Find matching recipe
+        SingleRecipeInput recipeInput = new SingleRecipeInput(input);
+        Optional<CentrifugingRecipe> recipeOpt = lvl.getRecipeManager()
+            .getRecipeFor(Objects.requireNonNull(CloneRecipeTypes.CENTRIFUGING.get()), recipeInput, lvl)
+            .map(holder -> holder.value());
+
+        if (recipeOpt.isEmpty()) {
+            currentRecipe = null;
+            return false;
+        }
+
+        CentrifugingRecipe recipe = recipeOpt.get();
+        currentRecipe = recipe;
+        maxProgress = recipe.getProcessingTime();
+        ItemStack result = Objects.requireNonNull(recipe.getResult());
+        ItemStack output = inventory.getItem(3);
+
         if (output.isEmpty()) {
             return true;
         }
-
-        // Check if output can stack (placeholder: iron nugget)
-        return output.is(Items.IRON_NUGGET) && output.getCount() < output.getMaxStackSize();
+        return ItemStack.isSameItemSameComponents(output, Objects.requireNonNull(result))
+            && output.getCount() + result.getCount() <= output.getMaxStackSize();
     }
 
     /**
      * Process the current recipe.
      */
     private void processItem() {
-        ItemStack input = inventory.getItem(0);
-        ItemStack output = inventory.getItem(3);
+        CentrifugingRecipe recipe = currentRecipe;
+        if (recipe == null) {
+            return;
+        }
 
+        ItemStack input = inventory.getItem(0);
         if (input.isEmpty()) {
             return;
         }
 
-        // TODO: Replace with proper recipe result when CentrifugingRecipe is added
-        ItemStack result = new ItemStack(Items.IRON_NUGGET);
+        ItemStack result = Objects.requireNonNull(recipe.getResult());
+        ItemStack output = inventory.getItem(3);
 
         if (output.isEmpty()) {
-            inventory.setItem(3, result.copy());
-        } else if (output.is(result.getItem())) {
-            output.grow(1);
+            inventory.setItem(3, Objects.requireNonNull(result.copy()));
+        } else if (ItemStack.isSameItemSameComponents(output, Objects.requireNonNull(result))) {
+            output.grow(result.getCount());
         }
 
         input.shrink(1);
@@ -191,8 +218,9 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
             Level lvl = level;
             if (lvl != null && !lvl.isClientSide) {
                 BlockState state = getBlockState();
-                if (state.getValue(CentrifugeBlock.ACTIVE) != active) {
-                    lvl.setBlock(worldPosition, state.setValue(CentrifugeBlock.ACTIVE, active), 3);
+                if (state.getValue(Objects.requireNonNull(CentrifugeBlock.ACTIVE)) != active) {
+                    lvl.setBlock(Objects.requireNonNull(worldPosition),
+                        Objects.requireNonNull(state.setValue(Objects.requireNonNull(CentrifugeBlock.ACTIVE), active)), 3);
                 }
             }
         }
@@ -208,7 +236,8 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
 
         Level lvl = level;
         if (lvl != null && !lvl.isClientSide) {
-            lvl.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            BlockState currentState = Objects.requireNonNull(getBlockState());
+            lvl.sendBlockUpdated(Objects.requireNonNull(worldPosition), currentState, currentState, 3);
             dirtyActive = false;
             dirtyInventory = false;
             setChanged();
@@ -248,7 +277,7 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
     // === GeckoLib Animation ===
 
     @Override
-    public void registerControllers(@Nonnull AnimatableManager.ControllerRegistrar controllers) {
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "main", 0, state -> {
             if (active) {
                 return state.setAndContinue(ACTIVE);
@@ -261,7 +290,7 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
     @Override
     @Nonnull
     public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return cache;
+        return Objects.requireNonNull(cache);
     }
 
     // === MenuProvider ===
@@ -288,7 +317,7 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
         tag.putBoolean(TAG_ACTIVE, active);
 
         if (!processingItem.isEmpty()) {
-            tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
+            tag.put(TAG_PROCESSING_ITEM, Objects.requireNonNull(processingItem.save(registries)));
         }
 
         // Save inventory
@@ -296,7 +325,7 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
             if (!stack.isEmpty()) {
-                invTag.put("Slot" + i, stack.save(registries));
+                invTag.put("Slot" + i, Objects.requireNonNull(stack.save(registries)));
             }
         }
         tag.put(TAG_INVENTORY, invTag);
@@ -313,8 +342,9 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
         active = tag.getBoolean(TAG_ACTIVE);
 
         if (tag.contains(TAG_PROCESSING_ITEM)) {
-            processingItem = ItemStack.parse(registries, tag.getCompound(TAG_PROCESSING_ITEM))
-                    .orElse(ItemStack.EMPTY);
+            processingItem = Objects.requireNonNull(
+                ItemStack.parse(registries, Objects.requireNonNull(tag.getCompound(TAG_PROCESSING_ITEM)))
+                    .orElse(ItemStack.EMPTY));
         } else {
             processingItem = ItemStack.EMPTY;
         }
@@ -325,10 +355,11 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
             for (int i = 0; i < inventory.getContainerSize(); i++) {
                 String key = "Slot" + i;
                 if (invTag.contains(key)) {
-                    inventory.setItem(i, ItemStack.parse(registries, invTag.getCompound(key))
-                            .orElse(ItemStack.EMPTY));
+                    inventory.setItem(i, Objects.requireNonNull(
+                        ItemStack.parse(registries, Objects.requireNonNull(invTag.getCompound(key)))
+                            .orElse(ItemStack.EMPTY)));
                 } else {
-                    inventory.setItem(i, ItemStack.EMPTY);
+                    inventory.setItem(i, Objects.requireNonNull(ItemStack.EMPTY));
                 }
             }
         }
@@ -346,7 +377,7 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
 
         if (!processingItem.isEmpty()) {
-            tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
+            tag.put(TAG_PROCESSING_ITEM, Objects.requireNonNull(processingItem.save(registries)));
         }
         return tag;
     }

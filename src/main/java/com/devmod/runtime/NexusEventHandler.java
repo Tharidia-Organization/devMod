@@ -1,6 +1,7 @@
 package com.devmod.runtime;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,8 +30,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
 import com.devmod.config.Config;
-import com.devmod.entity.NexaEntity;
-import com.devmod.runtime.network.NexusNetworkHandler;
 import com.devmod.runtime.network.NexusUiPayload;
 
 @EventBusSubscriber(modid = DevMod.MODID)
@@ -40,7 +39,6 @@ public class NexusEventHandler {
     private static final long BUILD_WARNING_COOLDOWN_TICKS = 20;
     private static final Map<UUID, Long> UI_INTERACTIONS = new ConcurrentHashMap<>();
     private static final long UI_INTERACT_COOLDOWN_TICKS = 10;
-    private static final String LEGACY_AVATAR_TAG = "devmod_nexus_avatar";
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -106,9 +104,13 @@ public class NexusEventHandler {
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            BUILD_WARNINGS.remove(player.getUUID());
-            UI_INTERACTIONS.remove(player.getUUID());
-            NexusZoneTracker.clear(player.getUUID());
+            java.util.UUID playerId = player.getUUID();
+            BUILD_WARNINGS.remove(playerId);
+            UI_INTERACTIONS.remove(playerId);
+            // Use new data-driven ZoneTracker
+            if (playerId != null) {
+                com.devmod.zone.runtime.ZoneTracker.INSTANCE.clear(playerId);
+            }
         }
     }
 
@@ -135,7 +137,10 @@ public class NexusEventHandler {
         if (!Config.NEXUS_RESTRICT_BUILDING.get()) {
             return;
         }
-        if (NexusZoneLayout.isBuildAllowed(event.getPos(), NexusDimensionManager.getHubOrigin())) {
+        // Use data-driven zone system for build permission check
+        Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
+            com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolve(Objects.requireNonNull(player.serverLevel()), Objects.requireNonNull(event.getPos()));
+        if (zoneOpt.map(com.devmod.zone.data.ZoneDefinition::allowBuilding).orElse(false)) {
             return;
         }
         event.setCanceled(true);
@@ -165,7 +170,10 @@ public class NexusEventHandler {
         if (!Config.NEXUS_RESTRICT_BUILDING.get()) {
             return;
         }
-        if (NexusZoneLayout.isBuildAllowed(event.getPos(), NexusDimensionManager.getHubOrigin())) {
+        // Use data-driven zone system for build permission check
+        Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
+            com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolve(Objects.requireNonNull(player.serverLevel()), Objects.requireNonNull(event.getPos()));
+        if (zoneOpt.map(com.devmod.zone.data.ZoneDefinition::allowBuilding).orElse(false)) {
             return;
         }
         event.setCanceled(true);
@@ -192,12 +200,15 @@ public class NexusEventHandler {
 
         BlockPos pos = Objects.requireNonNull(event.getPos(), "pos");
         BlockState state = Objects.requireNonNull(event.getLevel().getBlockState(pos), "state");
-        BlockPos hubOrigin = Objects.requireNonNull(NexusDimensionManager.getHubOrigin(), "hubOrigin");
-        NexusZoneLayout.Zone zone = NexusZoneLayout.resolveZone(pos, hubOrigin);
         var lectern = Objects.requireNonNull(Blocks.LECTERN, "Blocks.LECTERN");
         var respawnAnchor = Objects.requireNonNull(Blocks.RESPAWN_ANCHOR, "Blocks.RESPAWN_ANCHOR");
 
-        if (zone == NexusZoneLayout.Zone.UI && isUiScreenBlock(state)) {
+        // Use data-driven zone system
+        Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
+            com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolve(Objects.requireNonNull(player.serverLevel()), pos);
+        String zoneId = zoneOpt.map(com.devmod.zone.data.ZoneDefinition::zoneId).orElse("");
+
+        if ("ui".equals(zoneId) && isUiScreenBlock(state)) {
             if (!consumeUiCooldown(player)) {
                 return;
             }
@@ -207,7 +218,7 @@ public class NexusEventHandler {
             return;
         }
 
-        if (zone == NexusZoneLayout.Zone.TELEMETRY && state.is(lectern)) {
+        if ("telemetry".equals(zoneId) && state.is(lectern)) {
             if (!consumeUiCooldown(player)) {
                 return;
             }
@@ -290,46 +301,4 @@ public class NexusEventHandler {
         return true;
     }
 
-    /**
-     * Handle player interaction with entities in the Nexus dimension.
-     * Handles right-click on the Nexus avatar and portal pedestals.
-     */
-    @SubscribeEvent
-    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        // Only handle on server side
-        if (event.getLevel().isClientSide()) {
-            return;
-        }
-
-        // Only handle main hand to avoid double-firing
-        if (event.getHand() != InteractionHand.MAIN_HAND) {
-            return;
-        }
-
-        // Only handle in Nexus dimension
-        if (!event.getLevel().dimension().equals(NexusDimensionManager.NEXUS_DIMENSION)) {
-            return;
-        }
-
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
-
-        // Check if target is the Nexus avatar
-        var target = Objects.requireNonNull(event.getTarget(), "event.getTarget");
-        if (target instanceof NexaEntity) {
-            return;
-        }
-
-        var tags = target.getTags();
-        if (tags.contains(NexaEntity.NEXA_TAG) || tags.contains(LEGACY_AVATAR_TAG)) {
-            NexusNetworkHandler.openGreetingDialog(player);
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.SUCCESS);
-            return;
-        }
-
-        // Note: Portal pedestals now use real CustomPortalBlock and handle teleportation
-        // via entityInside() automatically - no entity interaction needed
-    }
 }

@@ -228,6 +228,7 @@ public class Config {
     // Hologram Display settings
     public static final ModConfigSpec.BooleanValue NEXUS_HOLOGRAMS_ENABLED;
     public static final ModConfigSpec.IntValue NEXUS_HOLOGRAM_UPDATE_INTERVAL;
+    public static final ModConfigSpec.IntValue HOLOGRAM_MAX_PER_DIMENSION;
 
     // Performance settings
     public static final ModConfigSpec.BooleanValue NEXUS_PERFORMANCE_ENABLED;
@@ -643,6 +644,10 @@ public class Config {
                 .comment("Ticks between hologram content updates")
                 .defineInRange("hologramUpdateInterval", 600, 20, 6000);
 
+        HOLOGRAM_MAX_PER_DIMENSION = BUILDER
+                .comment("Maximum number of Hologram Builder holograms per dimension")
+                .defineInRange("hologramMaxPerDimension", 64, 8, 256);
+
         // Performance Optimizations
         NEXUS_PERFORMANCE_ENABLED = BUILDER
                 .comment("Enable Nexus performance optimizations")
@@ -679,6 +684,19 @@ public class Config {
                 .defineInRange("operationsPerDamage", 8, 1, 64);
 
         BUILDER.pop();
+
+        // ============================================
+        // ADMIN PANEL SETTINGS
+        // ============================================
+
+        BUILDER.push("adminPanel");
+
+        ADMIN_PANEL_PERMISSION_LEVEL = BUILDER
+                .comment("Permission level required to access the admin instance panel",
+                        "0 = all players, 1 = moderators, 2 = gamemasters, 3 = admins, 4 = owners")
+                .defineInRange("permissionLevel", 2, 0, 4);
+
+        BUILDER.pop();
     }
 
     // ============================================
@@ -687,6 +705,12 @@ public class Config {
 
     public static final ModConfigSpec.IntValue GRINDER_DURABILITY;
     public static final ModConfigSpec.IntValue GRINDER_OPERATIONS_PER_DAMAGE;
+
+    // ============================================
+    // ADMIN PANEL CONFIG VALUES
+    // ============================================
+
+    public static final ModConfigSpec.IntValue ADMIN_PANEL_PERMISSION_LEVEL;
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 }

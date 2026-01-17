@@ -358,13 +358,10 @@ public class AutosmokeRunner {
         int sizeX = templateSizeX != null ? templateSizeX : template.size();
         int sizeZ = templateSizeZ != null ? templateSizeZ : template.size();
 
-        int halfX = sizeX / 2;
-        int halfZ = sizeZ / 2;
-
-        int minX = testOriginX - halfX;
-        int maxX = testOriginX + halfX - 1;
-        int minZ = testOriginZ - halfZ;
-        int maxZ = testOriginZ + halfZ - 1;
+        int minX = testOriginX - (sizeX / 2);
+        int maxX = testOriginX + (sizeX - (sizeX / 2) - 1);
+        int minZ = testOriginZ - (sizeZ / 2);
+        int maxZ = testOriginZ + (sizeZ - (sizeZ / 2) - 1);
 
         // Calculate Y bounds
         int minY = testOriginY;

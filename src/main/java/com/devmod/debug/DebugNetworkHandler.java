@@ -20,8 +20,8 @@ import com.devmod.network.PayloadValidation;
 import static com.devmod.network.ChannelId.DEBUG_SYNC;
 import static com.devmod.network.ChannelId.DEBUG_TOGGLE;
 import static com.devmod.network.ChannelId.ENTITY_PATHING;
-import static com.devmod.network.ChannelId.ENTITY_SCAN_DATA;
 import static com.devmod.network.ChannelId.ENTITY_SCANNER_OPEN;
+import static com.devmod.network.ChannelId.ENTITY_SCAN_DATA;
 
 public class DebugNetworkHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugNetworkHandler.class);

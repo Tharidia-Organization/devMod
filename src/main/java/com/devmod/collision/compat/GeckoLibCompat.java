@@ -31,15 +31,25 @@ public final class GeckoLibCompat {
     @Nullable
     private static Method getBonePositionMethod = null;
 
+    public static boolean isGeckoLibPresent() {
+        Boolean cached = geckoLibPresent;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (GeckoLibCompat.class) {
+            if (geckoLibPresent == null) {
+                geckoLibPresent = detectGeckoLib();
+            }
+            return geckoLibPresent;
+        }
+    }
+
     /**
      * Checks if GeckoLib is present in the classpath.
      * Result is cached after first check.
      */
-    private static final boolean GECKO_LIB_PRESENT = detectGeckoLib();
-
-    public static boolean isGeckoLibPresent() {
-        return GECKO_LIB_PRESENT;
-    }
+    @Nullable
+    private static volatile Boolean geckoLibPresent = null;
 
     /**
      * Attempts to detect GeckoLib classes via reflection.
@@ -78,6 +88,9 @@ public final class GeckoLibCompat {
 
         } catch (ReflectiveOperationException | SecurityException e) {
             LOGGER.debug("[DevMod] GeckoLib detection failed: {}", e.getMessage());
+            return false;
+        } catch (LinkageError e) {
+            LOGGER.debug("[DevMod] GeckoLib linkage error: {}", e.getMessage());
             return false;
         }
     }

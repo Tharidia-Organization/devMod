@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -17,9 +18,6 @@ import net.neoforged.neoforge.common.NeoForge;
 import com.devmod.DevMod;
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.CloneMenus;
-import com.devmod.clone.client.screen.CentrifugeScreen;
-import com.devmod.clone.client.screen.NeurocellScreen;
-import com.devmod.clone.client.screen.NeurocellLScreen;
 import com.devmod.clone.client.renderer.BillboardBatcher;
 import com.devmod.clone.client.renderer.CentrifugeRenderer;
 import com.devmod.clone.client.renderer.CloneMachineRenderer;
@@ -27,6 +25,9 @@ import com.devmod.clone.client.renderer.ClonePulverizerRenderer;
 import com.devmod.clone.client.renderer.EntityBillboardAtlas;
 import com.devmod.clone.client.renderer.NeurocellLRenderer;
 import com.devmod.clone.client.renderer.NeurocellRenderer;
+import com.devmod.clone.client.screen.CentrifugeScreen;
+import com.devmod.clone.client.screen.NeurocellLScreen;
+import com.devmod.clone.client.screen.NeurocellScreen;
 
 /**
  * Client-side setup for the Clone module.

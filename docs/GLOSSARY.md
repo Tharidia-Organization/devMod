@@ -1,124 +1,87 @@
-# Glossary
+# Glossario
 
-> Last updated: 2025-12-26
-> Status: CURRENT (verified against code)
+> Ultimo aggiornamento: 2026-01-15
 
----
+## Arena
 
-## Arena System
+| Termine | Definizione | File |
+|---|---|---|
+| ArenaTemplate | Definizione template arena | `src/main/java/com/devmod/arena/registry/ArenaTemplate.java` |
+| ArenaPolicy | Regole di selezione template | `src/main/java/com/devmod/arena/policy/ArenaPolicy.java` |
+| TemplateRegistryBootstrap | Bootstrap registry + config | `src/main/java/com/devmod/arena/registry/TemplateRegistryBootstrap.java` |
+| Autosmoke | Smoke test automatico | `src/main/java/com/devmod/arena/autosmoke/` |
 
-| Term | Definition | File Reference |
-|------|------------|----------------|
-| **ArenaTemplate** | Definizione di template arena | `src/main/java/com/devmod/arena/registry/ArenaTemplate.java` |
-| **ArenaPolicy** | Regole di selezione template | `src/main/java/com/devmod/arena/policy/ArenaPolicy.java` |
-| **ResolveContext** | Contesto di risoluzione policy | `src/main/java/com/devmod/arena/policy/ResolveContext.java` |
-| **ResolvedArena** | Template + policy risolta | `src/main/java/com/devmod/arena/policy/ResolvedArena.java` |
-| **TemplateRegistryBootstrap** | Bootstrap registry + config | `src/main/java/com/devmod/arena/registry/TemplateRegistryBootstrap.java` |
-| **Autosmoke** | Smoke test automatico template | `src/main/java/com/devmod/arena/autosmoke/` |
+## Endurance
 
----
+| Termine | Definizione | File |
+|---|---|---|
+| EnduranceQuestManager | Orchestratore sessioni | `src/main/java/com/devmod/endurance/EnduranceQuestManager.java` |
+| WaveManager | Spawn e progressione wave | `src/main/java/com/devmod/endurance/WaveManager.java` |
+| PerkSystem | Perk roguelike | `src/main/java/com/devmod/endurance/PerkSystem.java` |
+| RewardSystem | Reward e shop | `src/main/java/com/devmod/endurance/RewardSystem.java` |
 
-## Endurance System
+## Combat & Collision
 
-| Term | Definition | File Reference |
-|------|------------|----------------|
-| **EnduranceQuestManager** | Orchestratore sessioni endurance | `src/main/java/com/devmod/endurance/EnduranceQuestManager.java` |
-| **WaveManager** | Spawn e progressione wave | `src/main/java/com/devmod/endurance/WaveManager.java` |
-| **PerkSystem** | Perk roguelike per wave | `src/main/java/com/devmod/endurance/PerkSystem.java` |
-| **ComboSystem** | Scoring combo/stile | `src/main/java/com/devmod/endurance/ComboSystem.java` |
-| **RewardSystem** | Reward e shop endurance | `src/main/java/com/devmod/endurance/RewardSystem.java` |
+| Termine | Definizione | File |
+|---|---|---|
+| BodyPartDefinition | Definizione hitbox per parte | `src/main/java/com/devmod/collision/bodypart/BodyPartDefinition.java` |
+| OBBRaycast | Raycast su OBB | `src/main/java/com/devmod/collision/obb/OBBRaycast.java` |
+| DamageHandler | Pipeline danni | `src/main/java/com/devmod/combat/DamageHandler.java` |
 
----
+## Clone System
 
-## Instance Runtime
+| Termine | Definizione | File |
+|---|---|---|
+| Neurocell | Camera clonazione | `src/main/java/com/devmod/clone/block/NeurocellBlock.java` |
+| Reformer | Spawner clone | `src/main/java/com/devmod/clone/block/ReformerBlock.java` |
+| Telepad | Teleport pad | `src/main/java/com/devmod/clone/block/TelepadBlock.java` |
+| PlayerCloneEntity | Entita clone | `src/main/java/com/devmod/clone/entity/PlayerCloneEntity.java` |
 
-| Term | Definition | File Reference |
-|------|------------|----------------|
-| **InstanceManager** | Lifecycle delle istanze | `src/main/java/com/devmod/runtime/InstanceManager.java` |
-| **InstanceRegistry** | Registry istanze attive | `src/main/java/com/devmod/runtime/InstanceRegistry.java` |
-| **InstanceData** | Modello istanza | `src/main/java/com/devmod/runtime/InstanceData.java` |
-| **PlayerInstanceSnapshot** | Snapshot player (NBT) | `src/main/java/com/devmod/runtime/PlayerInstanceSnapshot.java` |
-| **RecoverySystem** | Recovery post-crash | `src/main/java/com/devmod/runtime/RecoverySystem.java` |
+## Portal & Transport
 
----
+| Termine | Definizione | File |
+|---|---|---|
+| CustomPortalBlock | Blocco portale custom | `src/main/java/com/devmod/portal/block/CustomPortalBlock.java` |
+| Warp Core | Nodo trasporto | `src/main/java/com/devmod/transport/block/TransportCoreBlock.java` |
+
+## Area & Zone
+
+| Termine | Definizione | File |
+|---|---|---|
+| Area Builder | Sistema build aree | `src/main/java/com/devmod/area/` |
+| Zone Marker | Marker data-driven | `src/main/java/com/devmod/zone/` |
+
+## NPC
+
+| Termine | Definizione | File |
+|---|---|---|
+| Dialog | Sistema dialoghi | `src/main/java/com/devmod/npc/dialog/` |
+| Neurocell NPC | Item configurazione NPC | `src/main/java/com/devmod/npc/item/` |
+
+## Hologram
+
+| Termine | Definizione | File |
+|---|---|---|
+| Hologram Projector | Blocco proiettore 3D | `src/main/java/com/devmod/hologram/` |
 
 ## Telemetry
 
-| Term | Definition | File Reference |
-|------|------------|----------------|
-| **TelemetryService** | Orchestratore telemetry | `src/main/java/com/devmod/telemetry/TelemetryService.java` |
-| **TelemetryEvents** | Event hooks + tick | `src/main/java/com/devmod/telemetry/TelemetryEvents.java` |
-| **DuckDBTelemetryService** | Persistenza DuckDB | `src/main/java/com/devmod/telemetry/duckdb/DuckDBTelemetryService.java` |
-| **DuckDBBatchWriter** | Writer batch async | `src/main/java/com/devmod/telemetry/duckdb/DuckDBBatchWriter.java` |
-| **TelemetryDashboardServer** | Dashboard server | `src/main/java/com/devmod/telemetry/dashboard/TelemetryDashboardServer.java` |
+| Termine | Definizione | File |
+|---|---|---|
+| TelemetryService | Orchestratore telemetry | `src/main/java/com/devmod/telemetry/TelemetryService.java` |
+| DuckDBSchemaManager | Schema runtime DuckDB | `src/main/java/com/devmod/telemetry/duckdb/DuckDBSchemaManager.java` |
 
----
+## Network
 
-## Radial / UI
+| Termine | Definizione | File |
+|---|---|---|
+| ChannelId | ID canali payload | `src/main/java/com/devmod/network/ChannelId.java` |
+| NetworkHandler | Registrazione payload | `src/main/java/com/devmod/network/NetworkHandler.java` |
 
-| Term | Definition | File Reference |
-|------|------------|----------------|
-| **RadialMenuScreen** | Menu radiale principale | `src/main/java/com/devmod/client/ui/radial/RadialMenuScreen.java` |
-| **ActionRegistry** | Registry globale azioni | `src/main/java/com/devmod/actions/ActionRegistry.java` |
-| **RadialAction** | Definizione azione | `src/main/java/com/devmod/actions/RadialAction.java` |
-| **ItemEditorScreen** | Editor item | `src/main/java/com/devmod/client/ui/editor/ItemEditorScreen.java` |
-| **UnifiedSettingsScreen** | Settings UI | `src/main/java/com/devmod/client/ui/unified/UnifiedSettingsScreen.java` |
+## Abbreviazioni
 
----
-
-## Network / Communication
-
-| Term | Definition | File Reference |
-|------|------------|----------------|
-| **ChannelId** | Registry ID canali payload | `src/main/java/com/devmod/network/ChannelId.java` |
-| **NetworkHandler** | Registrazione payload | `src/main/java/com/devmod/network/NetworkHandler.java` |
-| **PacketValidator** | Validazione/rate limit | `src/main/java/com/devmod/network/PacketValidator.java` |
-| **StreamCodec** | Serializzazione payload | Payload classes in `src/main/java/com/devmod/` |
-
----
-
-## Mailbox System
-
-| Term | Definition | File Reference |
-|------|------------|----------------|
-| **MailboxManager** | Orchestratore mailbox | `src/main/java/com/devmod/mailbox/MailboxManager.java` |
-| **NewsManager** | Gestione news | `src/main/java/com/devmod/mailbox/news/NewsManager.java` |
-| **TestTaskManager** | Task QA | `src/main/java/com/devmod/mailbox/task/TestTaskManager.java` |
-| **DuckDbMailboxRepository** | Persistenza mailbox | `src/main/java/com/devmod/mailbox/persistence/DuckDbMailboxRepository.java` |
-| **MailboxApiServer** | API admin (Javalin) | `src/main/java/com/devmod/mailbox/api/MailboxApiServer.java` |
-
----
-
-## Config
-
-| Term | Definition | File Reference |
-|------|------------|----------------|
-| **Config** | Config comune mod | `src/main/java/com/devmod/config/Config.java` |
-| **GameMechanicsConfig** | Config meccaniche | `src/main/java/com/devmod/config/GameMechanicsConfig.java` |
-| **EditorClientConfig** | Config client editor | `src/main/java/com/devmod/config/EditorClientConfig.java` |
-| **ConfigPaths** | Path config runtime | `src/main/java/com/devmod/util/ConfigPaths.java` |
-
----
-
-## Testing
-
-| Term | Definition | File Reference |
-|------|------------|----------------|
-| **GameTest** | Framework test in-game | `src/main/java/com/devmod/gametest/` |
-| **TestingHub** | UI QA | `src/main/java/com/devmod/client/ui/hub/TestingHub.java` |
-| **QATestingScreen** | UI QA session | `src/main/java/com/devmod/client/testing/QATestingScreen.java` |
-
----
-
-## Abbreviations
-
-| Abbrev | Full Form |
-|--------|-----------|
-| **DD** | Design Decision |
-| **P0/P1/P2** | Priorita task |
-| **TTK** | Time-to-Kill |
-| **DPS** | Damage Per Second |
-| **NBT** | Named Binary Tag |
-| **NDJSON** | Newline-Delimited JSON |
-| **HUD** | Heads-Up Display |
-| **VFX** | Visual Effects |
+| Abbrev | Significato |
+|---|---|
+| DD | Design Decision |
+| TTK | Time-to-Kill |
+| DPS | Damage Per Second |

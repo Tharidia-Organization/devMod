@@ -40,6 +40,7 @@ public class CentrifugeMenu extends AbstractContainerMenu {
     /**
      * Client-side constructor (called from network).
      */
+    @SuppressWarnings("this-escape")
     public CentrifugeMenu(int containerId, Inventory playerInv, FriendlyByteBuf buf) {
         this(containerId, playerInv, new SimpleContainer(CONTAINER_SIZE), ContainerLevelAccess.NULL, new SimpleContainerData(2));
     }
@@ -47,6 +48,7 @@ public class CentrifugeMenu extends AbstractContainerMenu {
     /**
      * Server-side constructor (called when opening menu).
      */
+    @SuppressWarnings("this-escape")
     public CentrifugeMenu(int containerId, Inventory playerInv, CentrifugeBlockEntity blockEntity) {
         this(containerId, playerInv, blockEntity.getInventory(),
              ContainerLevelAccess.create(
@@ -81,6 +83,7 @@ public class CentrifugeMenu extends AbstractContainerMenu {
     /**
      * Main constructor.
      */
+    @SuppressWarnings("this-escape")
     private CentrifugeMenu(int containerId, Inventory playerInv, Container container, ContainerLevelAccess access, ContainerData data) {
         super(CloneMenus.CENTRIFUGE.get(), containerId);
         var containerObj = Objects.requireNonNull(container);

@@ -1,15 +1,14 @@
 # Assets Credits
 
-> Last updated: 2025-12-26
-> Status: NEEDS_VERIFICATION
+> Ultimo aggiornamento: 2026-01-15
 
 ## Game-Icons.net (CC BY 3.0)
-All icons from [game-icons.net](https://game-icons.net) are licensed under Creative Commons Attribution 3.0.  
-Author credits per icon:
 
-- magnifying-glass — by Lorc
-- crossed-swords — by Lorc
-- gear-hammer — by Lorc
-- trophy — by Lorc
+Icone usate nei radial menu (`src/main/resources/assets/devmod/textures/gui/icons/radial/`).
 
-Used in `src/main/resources/assets/devmod/textures/gui/icons/radial/` for radial menu macro icons.
+Autori:
+
+- magnifying-glass — Lorc
+- crossed-swords — Lorc
+- gear-hammer — Lorc
+- trophy — Lorc

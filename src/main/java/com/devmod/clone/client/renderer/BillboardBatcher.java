@@ -2,12 +2,11 @@ package com.devmod.clone.client.renderer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -19,10 +18,8 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.Vec3;
 
 /**
  * Batches billboard rendering for efficient draw calls.
@@ -41,6 +38,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class BillboardBatcher {
 
+    @Nullable
     private static BillboardBatcher instance;
 
     private final List<BillboardInstance> instances = new ArrayList<>();
@@ -127,13 +125,8 @@ public final class BillboardBatcher {
         RenderSystem.setShaderTexture(0, atlasLocation);
         RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
 
-        // Get camera position for billboard orientation
-        Vec3 cameraPos = camera.getPosition();
-        Vector3f cameraLook = camera.getLookVector();
-
         // Calculate billboard orientation (always face camera)
         float cameraYaw = camera.getYRot();
-        float cameraPitch = camera.getXRot();
 
         // Build vertex buffer
         Tesselator tesselator = Tesselator.getInstance();
@@ -145,7 +138,7 @@ public final class BillboardBatcher {
         Matrix4f pose = poseStack.last().pose();
 
         for (BillboardInstance billboard : instances) {
-            renderBillboard(builder, pose, billboard, cameraPos, cameraYaw, cameraPitch);
+            renderBillboard(builder, pose, billboard, cameraYaw);
         }
 
         // Upload and draw
@@ -166,8 +159,7 @@ public final class BillboardBatcher {
     private void renderBillboard(@Nonnull BufferBuilder builder,
                                   @Nonnull Matrix4f pose,
                                   @Nonnull BillboardInstance billboard,
-                                  @Nonnull Vec3 cameraPos,
-                                  float cameraYaw, float cameraPitch) {
+                                  float cameraYaw) {
         float x = billboard.x;
         float y = billboard.y;
         float z = billboard.z;
@@ -181,16 +173,9 @@ public final class BillboardBatcher {
 
         // Calculate right and up vectors based on camera orientation
         float yawRad = (float) Math.toRadians(-cameraYaw);
-        float pitchRad = (float) Math.toRadians(-cameraPitch);
-
         // Right vector (perpendicular to camera forward, horizontal)
         float rightX = (float) Math.cos(yawRad);
         float rightZ = (float) Math.sin(yawRad);
-
-        // Up vector (world up for cylindrical billboards)
-        float upX = 0;
-        float upY = 1;
-        float upZ = 0;
 
         // Calculate corner positions
         float dx1 = -halfSize * rightX;

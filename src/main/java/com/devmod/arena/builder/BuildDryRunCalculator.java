@@ -7,19 +7,17 @@ public final class BuildDryRunCalculator {
     private BuildDryRunCalculator() {}
 
     public static BuildDryRun calculate(ArenaTemplate template) {
-        Integer sizeXVal = template.sizeX();
-        Integer sizeZVal = template.sizeZ();
-        int sizeX = sizeXVal != null ? sizeXVal : template.size();
-        int sizeZ = sizeZVal != null ? sizeZVal : template.size();
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int arenaArea = countArenaArea(template, sizeX, sizeZ);
 
         int floorBlocks = 0;
         if (template.floor() != null) {
-            floorBlocks = sizeX * sizeZ * template.floor().thickness();
+            floorBlocks = arenaArea * template.floor().thickness();
         }
 
         int wallBlocks = 0;
         if (template.walls() != null && template.walls().enabled()) {
-            int perimeterPerLayer = 2 * (sizeX + sizeZ - 2);
             int wallLayers = template.walls().height();
             int wallThickness = template.walls().thickness();
             int overlapLayers = 0;
@@ -48,17 +46,18 @@ public final class BuildDryRunCalculator {
                 overlapLayers = countOverlap(wallStartY, wallEndY, floorStartY, floorEndY);
             }
             int effectiveWallLayers = Math.max(0, wallLayers - overlapLayers);
-            wallBlocks = perimeterPerLayer * wallThickness * effectiveWallLayers;
+            int perLayer = estimateWallBlocksPerLayer(template, sizeX, sizeZ, wallThickness);
+            wallBlocks = perLayer * effectiveWallLayers;
         }
 
         int ceilingBlocks = 0;
         if (template.ceiling() != null && template.ceiling().enabled()) {
-            ceilingBlocks = sizeX * sizeZ * template.ceiling().thickness();
+            ceilingBlocks = arenaArea * template.ceiling().thickness();
         }
 
         int underfloorBlocks = 0;
         if (template.underfloor() != null && template.floor() != null) {
-            underfloorBlocks = sizeX * sizeZ * template.underfloor().depth();
+            underfloorBlocks = arenaArea * template.underfloor().depth();
         }
 
         // Hazards: rough estimate, per-type (lava_pool/void_pit use radius^2 pi, ring uses outer^2-inner^2)
@@ -92,7 +91,7 @@ public final class BuildDryRunCalculator {
                     }
                     case "magma_floor" -> {
                         Number cov = (Number) hazard.params().getOrDefault("coverage", 0.0);
-                        hazardBlocks += (int) Math.round(sizeX * sizeZ * Math.min(0.5, cov.doubleValue()));
+                        hazardBlocks += estimateMagmaFloorBlocks(template, sizeX, sizeZ, cov.doubleValue());
                     }
                     default -> {
                         // other hazards ignored for dry-run component counts
@@ -125,10 +124,150 @@ public final class BuildDryRunCalculator {
     private static int resolveHazardY(ArenaTemplate.Hazard hazard, int floorY) {
         Integer hazardY = hazard.y();
         int baseY = hazardY != null ? hazardY : floorY;
-        if (hazard.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
-            baseY += floorY;
+        ArenaTemplate.SpawnSlot.YMode mode = hazard.yMode();
+        if (mode == null || mode == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+            int offset = hazardY != null ? hazardY : 0;
+            return floorY + offset;
         }
         return baseY;
+    }
+
+    private static int getSizeX(ArenaTemplate template) {
+        Integer sizeXVal = template.sizeX();
+        return sizeXVal != null ? sizeXVal : template.size();
+    }
+
+    private static int getSizeZ(ArenaTemplate template) {
+        Integer sizeZVal = template.sizeZ();
+        return sizeZVal != null ? sizeZVal : template.size();
+    }
+
+    private static int minOffset(int size) {
+        return -size / 2;
+    }
+
+    private static int maxOffset(int size) {
+        return size - (size / 2) - 1;
+    }
+
+    private static ArenaTemplate.ArenaShape effectiveShape(ArenaTemplate template) {
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        return shape != null ? shape : ArenaTemplate.ArenaShape.RECTANGULAR;
+    }
+
+    private static int countArenaArea(ArenaTemplate template, int sizeX, int sizeZ) {
+        int minX = minOffset(sizeX);
+        int maxX = maxOffset(sizeX);
+        int minZ = minOffset(sizeZ);
+        int maxZ = maxOffset(sizeZ);
+        int count = 0;
+        for (int dx = minX; dx <= maxX; dx++) {
+            for (int dz = minZ; dz <= maxZ; dz++) {
+                if (isInArenaShape(dx, dz, template, sizeX, sizeZ)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private static boolean isInArenaShape(int dx, int dz, ArenaTemplate template, int sizeX, int sizeZ) {
+        ArenaTemplate.ArenaShape shape = effectiveShape(template);
+        int minX = minOffset(sizeX);
+        int maxX = maxOffset(sizeX);
+        int minZ = minOffset(sizeZ);
+        int maxZ = maxOffset(sizeZ);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+
+        return switch (shape) {
+            case RECTANGULAR -> dx >= minX && dx <= maxX && dz >= minZ && dz <= maxZ;
+            case CIRCULAR -> {
+                int radius = Math.max(halfX, halfZ);
+                yield dx * dx + dz * dz <= radius * radius;
+            }
+            case RING -> {
+                int outerRadius = Math.max(halfX, halfZ);
+                Integer innerRadiusVal = template.ringInnerRadius();
+                int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+                int distSq = dx * dx + dz * dz;
+                yield distSq <= outerRadius * outerRadius && distSq >= innerRadius * innerRadius;
+            }
+        };
+    }
+
+    private static int estimateWallBlocksPerLayer(ArenaTemplate template, int sizeX, int sizeZ, int thickness) {
+        ArenaTemplate.ArenaShape shape = effectiveShape(template);
+        if (shape == ArenaTemplate.ArenaShape.RECTANGULAR) {
+            int perimeterPerLayer = 2 * (sizeX + sizeZ - 2);
+            return perimeterPerLayer * thickness;
+        }
+        return countCircularWallBlocksPerLayer(template, sizeX, sizeZ, thickness);
+    }
+
+    private static int countCircularWallBlocksPerLayer(ArenaTemplate template, int sizeX, int sizeZ, int thickness) {
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+        int radius = Math.max(halfX, halfZ);
+        int outerExtent = radius + thickness;
+        int count = 0;
+        for (int dx = -outerExtent; dx <= outerExtent; dx++) {
+            for (int dz = -outerExtent; dz <= outerExtent; dz++) {
+                if (isOnCircularBorder(dx, dz, template, thickness, sizeX, sizeZ)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private static boolean isOnCircularBorder(int dx, int dz, ArenaTemplate template, int thickness, int sizeX, int sizeZ) {
+        if (thickness <= 0) {
+            return false;
+        }
+        ArenaTemplate.ArenaShape shape = effectiveShape(template);
+        if (shape == ArenaTemplate.ArenaShape.RECTANGULAR) {
+            return false;
+        }
+
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+        int outerRadius = Math.max(halfX, halfZ);
+        int distSq = dx * dx + dz * dz;
+
+        int outerWallInnerSq = outerRadius * outerRadius;
+        int outerWallOuterSq = (outerRadius + thickness) * (outerRadius + thickness);
+        boolean onOuterWall = distSq >= outerWallInnerSq && distSq < outerWallOuterSq;
+
+        if (shape == ArenaTemplate.ArenaShape.CIRCULAR) {
+            return onOuterWall;
+        }
+
+        Integer innerRadiusVal = template.ringInnerRadius();
+        int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+        int innerWallOuterSq = innerRadius * innerRadius;
+        int innerWallInnerSq = Math.max(0, (innerRadius - thickness) * (innerRadius - thickness));
+        boolean onInnerWall = distSq <= innerWallOuterSq && distSq >= innerWallInnerSq;
+
+        return onOuterWall || onInnerWall;
+    }
+
+    private static int estimateMagmaFloorBlocks(ArenaTemplate template, int sizeX, int sizeZ, double coverage) {
+        ArenaTemplate.ArenaShape shape = effectiveShape(template);
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+        int radius = Math.max(halfX, halfZ);
+        int arenaArea;
+        if (shape == ArenaTemplate.ArenaShape.CIRCULAR) {
+            arenaArea = (int) (Math.PI * radius * radius);
+        } else if (shape == ArenaTemplate.ArenaShape.RING) {
+            Integer innerRadiusVal = template.ringInnerRadius();
+            int innerRadius = innerRadiusVal != null ? innerRadiusVal : radius / 2;
+            arenaArea = (int) (Math.PI * (radius * radius - innerRadius * innerRadius));
+        } else {
+            arenaArea = sizeX * sizeZ;
+        }
+        return (int) Math.round(arenaArea * Math.min(0.5, coverage));
     }
 
     /**
@@ -147,7 +286,7 @@ public final class BuildDryRunCalculator {
         }
 
         // Count ambient grid lights (same formula as ArenaBuilder.placeAmbientLighting)
-        if (lighting.ambientLight() && template.floor() != null) {
+        if (lighting.ambientLight() && lighting.blockLight() > 0 && template.floor() != null) {
             int targetLight = lighting.blockLight();
             // Light decreases by 1 per block, so for level 15 source to maintain level N,
             // spacing should be approximately (15 - N) * 2 to ensure overlap

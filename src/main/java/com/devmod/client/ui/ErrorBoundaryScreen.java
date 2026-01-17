@@ -11,13 +11,14 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.shared.SharedColorTokens;
 import com.devmod.util.ContextLogger;
@@ -67,9 +68,9 @@ public abstract class ErrorBoundaryScreen extends Screen {
     private static final int MAX_STACK_LINES = 5;
 
     @Nullable
-    private Button closeButton;
+    private EditorButtonWidget closeButton;
     @Nullable
-    private Button retryButton;
+    private EditorButtonWidget retryButton;
 
     protected ErrorBoundaryScreen(Component title) {
         super(title);
@@ -149,21 +150,21 @@ public abstract class ErrorBoundaryScreen extends Screen {
         int centerX = width / 2;
         int buttonY = height / 2 + 60;
 
-        closeButton = Button.builder(
-                Component.translatable("gui.devmod.error.close"),
-                b -> onClose()
-            )
-            .pos(centerX - 105, buttonY)
-            .size(100, 20)
+        EditorButton close = EditorButton.builder("error-boundary-close",
+                Component.translatable("gui.devmod.error.close").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::onClose)
             .build();
+        closeButton = new EditorButtonWidget(close, centerX - 105, buttonY, 100, 20);
 
-        retryButton = Button.builder(
-                Component.translatable("gui.devmod.error.retry"),
-                b -> attemptRecovery()
-            )
-            .pos(centerX + 5, buttonY)
-            .size(100, 20)
+        EditorButton retry = EditorButton.builder("error-boundary-retry",
+                Component.translatable("gui.devmod.error.retry").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::attemptRecovery)
             .build();
+        retryButton = new EditorButtonWidget(retry, centerX + 5, buttonY, 100, 20);
 
         addRenderableWidget(closeButton);
         addRenderableWidget(retryButton);

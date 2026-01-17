@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -50,11 +50,12 @@ public class PortalRegistry extends SavedData {
      */
     @Nonnull
     public static PortalRegistry get(@Nonnull ServerLevel level) {
-        return level.getServer().overworld().getDataStorage()
+        MinecraftServer server = Objects.requireNonNull(level.getServer(), "server");
+        return Objects.requireNonNull(server.overworld().getDataStorage()
             .computeIfAbsent(
                 new Factory<>(PortalRegistry::new, PortalRegistry::load),
                 DATA_NAME
-            );
+            ));
     }
 
     /**
@@ -94,7 +95,7 @@ public class PortalRegistry extends SavedData {
      */
     @Nonnull
     public Optional<PortalData> get(@Nonnull UUID portalId) {
-        return Optional.ofNullable(portals.get(portalId));
+        return Objects.requireNonNull(Optional.ofNullable(portals.get(portalId)));
     }
 
     /**
@@ -103,7 +104,15 @@ public class PortalRegistry extends SavedData {
     @Nonnull
     public Optional<PortalData> getByPosition(@Nonnull BlockPos pos) {
         UUID id = positionIndex.get(pos);
-        return id != null ? get(id) : Optional.empty();
+        return id != null ? get(id) : Objects.requireNonNull(Optional.empty());
+    }
+
+    /**
+     * Gets all registered portals.
+     */
+    @Nonnull
+    public java.util.Collection<PortalData> getAll() {
+        return Objects.requireNonNull(java.util.Collections.unmodifiableCollection(portals.values()));
     }
 
     /**
@@ -145,11 +154,11 @@ public class PortalRegistry extends SavedData {
 
             // Portal interior is at most 11 blocks from center in any direction
             if (dx <= 12 && dy <= 12 && dz <= 12) {
-                return Optional.of(portal);
+                return Objects.requireNonNull(Optional.of(portal));
             }
         }
 
-        return Optional.empty();
+        return Objects.requireNonNull(Optional.empty());
     }
 
     /**
@@ -281,8 +290,8 @@ public class PortalRegistry extends SavedData {
         BlockPos center = portal.position().get();
         ResourceLocation dimLoc = portal.dimension().get();
 
-        ServerLevel level = server.getLevel(ResourceKey.create(
-            net.minecraft.core.registries.Registries.DIMENSION, dimLoc));
+        ServerLevel level = server.getLevel(Objects.requireNonNull(ResourceKey.create(
+            Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), Objects.requireNonNull(dimLoc))));
         if (level == null) {
             return;
         }
@@ -300,19 +309,19 @@ public class PortalRegistry extends SavedData {
         }
         visited.add(pos);
 
-        BlockState state = level.getBlockState(pos);
+        BlockState state = level.getBlockState(Objects.requireNonNull(pos));
         if (!(state.getBlock() instanceof CustomPortalBlock)) {
             return;
         }
 
         // Update the linked state
-        if (state.getValue(CustomPortalBlock.LINKED) != linked) {
-            level.setBlock(pos, state.setValue(CustomPortalBlock.LINKED, linked), 3);
+        if (state.getValue(Objects.requireNonNull(CustomPortalBlock.LINKED)) != linked) {
+            level.setBlock(Objects.requireNonNull(pos), Objects.requireNonNull(state.setValue(Objects.requireNonNull(CustomPortalBlock.LINKED), linked)), 3);
         }
 
         // Check adjacent blocks for more portal blocks
         for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-            updatePortalBlocksRecursive(level, pos.relative(dir), linked, visited);
+            updatePortalBlocksRecursive(level, pos.relative(Objects.requireNonNull(dir)), linked, visited);
         }
     }
 
@@ -401,12 +410,12 @@ public class PortalRegistry extends SavedData {
         }
 
         if (candidates.isEmpty()) {
-            return Optional.empty();
+            return Objects.requireNonNull(Optional.empty());
         }
 
         // Pick random destination
         int index = ThreadLocalRandom.current().nextInt(candidates.size());
-        return Optional.of(candidates.get(index));
+        return Objects.requireNonNull(Optional.of(candidates.get(index)));
     }
 
     /**
@@ -489,13 +498,13 @@ public class PortalRegistry extends SavedData {
     public Optional<PortalData> findLinkCandidate(@Nonnull UUID portalId, @Nonnull PortalRuneEffects effects) {
         PortalData source = portals.get(portalId);
         if (source == null || source.isLinked()) {
-            return Optional.empty();
+            return Objects.requireNonNull(Optional.empty());
         }
 
         BlockPos sourcePos = source.position().orElse(null);
         ResourceLocation sourceDim = source.dimension().orElse(null);
         if (sourcePos == null) {
-            return Optional.empty();
+            return Objects.requireNonNull(Optional.empty());
         }
 
         List<PortalData> candidates = getUnlinkedByColor(source.color());
@@ -542,7 +551,7 @@ public class PortalRegistry extends SavedData {
             }
         }
 
-        return Optional.ofNullable(bestCandidate);
+        return Objects.requireNonNull(Optional.ofNullable(bestCandidate));
     }
 
     /**
@@ -612,7 +621,7 @@ public class PortalRegistry extends SavedData {
         if (tag.contains(TAG_PORTALS, Tag.TAG_LIST)) {
             ListTag portalList = tag.getList(TAG_PORTALS, Tag.TAG_COMPOUND);
             for (int i = 0; i < portalList.size(); i++) {
-                PortalData portal = PortalData.load(portalList.getCompound(i));
+                PortalData portal = PortalData.load(Objects.requireNonNull(portalList.getCompound(i)));
                 registry.portals.put(portal.id(), portal);
                 portal.position().ifPresent(pos -> registry.positionIndex.put(pos, portal.id()));
             }

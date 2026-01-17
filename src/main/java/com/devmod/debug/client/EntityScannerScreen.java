@@ -2,6 +2,7 @@ package com.devmod.debug.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -77,8 +78,9 @@ public class EntityScannerScreen extends Screen {
         graphics.renderOutline(panelX, panelY, panelWidth, panelHeight, DesignTokens.Border.DEFAULT);
 
         // Title
+        var renderFont = Objects.requireNonNull(this.font);
         String title = "Entity Scanner - Radius: " + scanRadius + " - Found: " + entities.size();
-        graphics.drawString(font, title, panelX + PANEL_PADDING, panelY + PANEL_PADDING, DesignTokens.Text.PRIMARY, false);
+        graphics.drawString(renderFont, title, panelX + PANEL_PADDING, panelY + PANEL_PADDING, DesignTokens.Text.PRIMARY, false);
 
         int contentY = panelY + PANEL_PADDING + 14;
         int contentHeight = panelHeight - PANEL_PADDING * 2 - 14;
@@ -99,6 +101,7 @@ public class EntityScannerScreen extends Screen {
         graphics.fill(x, y, x + width, y + height, DesignTokens.Surface.LEVEL_1);
         graphics.renderOutline(x, y, width, height, DesignTokens.Border.DEFAULT);
 
+        var renderFont = Objects.requireNonNull(this.font);
         int visibleItems = Math.min(MAX_VISIBLE_ITEMS, entities.size());
         for (int i = 0; i < visibleItems && (i + scrollOffset) < entities.size(); i++) {
             int index = i + scrollOffset;
@@ -119,7 +122,7 @@ public class EntityScannerScreen extends Screen {
 
             // Entity name
             String displayName = truncate(entity.name(), 16);
-            graphics.drawString(font, displayName, x + 4, itemY + 2, DesignTokens.Text.PRIMARY, false);
+            graphics.drawString(renderFont, displayName, x + 4, itemY + 2, DesignTokens.Text.PRIMARY, false);
 
             // Health bar
             float healthPercent = entity.maxHealth() > 0 ? entity.health() / entity.maxHealth() : 0;
@@ -139,8 +142,10 @@ public class EntityScannerScreen extends Screen {
         graphics.fill(x, y, x + width, y + height, DesignTokens.Surface.LEVEL_1);
         graphics.renderOutline(x, y, width, height, DesignTokens.Border.DEFAULT);
 
-        if (selectedEntity == null) {
-            graphics.drawString(font, "Select an entity", x + PANEL_PADDING, y + PANEL_PADDING, DesignTokens.Text.MUTED, false);
+        var renderFont = Objects.requireNonNull(this.font);
+        EntityScanDataPayload.ScannedEntity entity = selectedEntity;
+        if (entity == null) {
+            graphics.drawString(renderFont, "Select an entity", x + PANEL_PADDING, y + PANEL_PADDING, DesignTokens.Text.MUTED, false);
             return;
         }
 
@@ -148,73 +153,73 @@ public class EntityScannerScreen extends Screen {
         int lineHeight = 11;
 
         // Entity header
-        graphics.drawString(font, selectedEntity.name(), x + PANEL_PADDING, lineY, DesignTokens.Accent.PRIMARY, false);
+        graphics.drawString(renderFont, entity.name(), x + PANEL_PADDING, lineY, DesignTokens.Accent.PRIMARY, false);
         lineY += lineHeight;
-        graphics.drawString(font, selectedEntity.type(), x + PANEL_PADDING, lineY, DesignTokens.Text.SECONDARY, false);
+        graphics.drawString(renderFont, entity.type(), x + PANEL_PADDING, lineY, DesignTokens.Text.SECONDARY, false);
         lineY += lineHeight;
 
         // Position
-        String pos = String.format("Pos: %.1f, %.1f, %.1f", selectedEntity.x(), selectedEntity.y(), selectedEntity.z());
-        graphics.drawString(font, pos, x + PANEL_PADDING, lineY, DesignTokens.Text.SECONDARY, false);
+        String pos = String.format("Pos: %.1f, %.1f, %.1f", entity.x(), entity.y(), entity.z());
+        graphics.drawString(renderFont, pos, x + PANEL_PADDING, lineY, DesignTokens.Text.SECONDARY, false);
         lineY += lineHeight;
 
         // Health
-        String health = String.format("Health: %.1f / %.1f", selectedEntity.health(), selectedEntity.maxHealth());
-        graphics.drawString(font, health, x + PANEL_PADDING, lineY, DesignTokens.Text.PRIMARY, false);
+        String health = String.format("Health: %.1f / %.1f", entity.health(), entity.maxHealth());
+        graphics.drawString(renderFont, health, x + PANEL_PADDING, lineY, DesignTokens.Text.PRIMARY, false);
         lineY += lineHeight + 4;
 
         // Attributes section
-        if (!selectedEntity.attributes().isEmpty()) {
-            graphics.drawString(font, "-- Attributes --", x + PANEL_PADDING, lineY, DesignTokens.Accent.SECONDARY, false);
+        if (!entity.attributes().isEmpty()) {
+            graphics.drawString(renderFont, "-- Attributes --", x + PANEL_PADDING, lineY, DesignTokens.Accent.SECONDARY, false);
             lineY += lineHeight;
-            for (EntityScanDataPayload.AttributeData attr : selectedEntity.attributes()) {
+            for (EntityScanDataPayload.AttributeData attr : entity.attributes()) {
                 if (lineY > y + height - lineHeight) break;
                 String attrName = attr.name().replace("attribute.minecraft.", "").replace("attribute.devmod.", "");
                 String attrText = String.format("%s: %.1f (%.1f)", truncate(attrName, 20), attr.currentValue(), attr.baseValue());
-                graphics.drawString(font, attrText, x + PANEL_PADDING, lineY, DesignTokens.Text.SECONDARY, false);
+                graphics.drawString(renderFont, attrText, x + PANEL_PADDING, lineY, DesignTokens.Text.SECONDARY, false);
                 lineY += lineHeight;
             }
             lineY += 4;
         }
 
         // Equipment section
-        if (!selectedEntity.equipment().isEmpty()) {
-            graphics.drawString(font, "-- Equipment --", x + PANEL_PADDING, lineY, DesignTokens.Accent.SECONDARY, false);
+        if (!entity.equipment().isEmpty()) {
+            graphics.drawString(renderFont, "-- Equipment --", x + PANEL_PADDING, lineY, DesignTokens.Accent.SECONDARY, false);
             lineY += lineHeight;
-            for (EntityScanDataPayload.EquipmentData equip : selectedEntity.equipment()) {
+            for (EntityScanDataPayload.EquipmentData equip : entity.equipment()) {
                 if (lineY > y + height - lineHeight) break;
                 String equipText = String.format("[%s] %s", equip.slot(), truncate(equip.itemName(), 24));
-                graphics.drawString(font, equipText, x + PANEL_PADDING, lineY, DesignTokens.Text.SECONDARY, false);
+                graphics.drawString(renderFont, equipText, x + PANEL_PADDING, lineY, DesignTokens.Text.SECONDARY, false);
                 lineY += lineHeight;
             }
             lineY += 4;
         }
 
         // AI Goals section
-        if (!selectedEntity.goals().isEmpty()) {
-            graphics.drawString(font, "-- AI Goals --", x + PANEL_PADDING, lineY, DesignTokens.Accent.SECONDARY, false);
+        if (!entity.goals().isEmpty()) {
+            graphics.drawString(renderFont, "-- AI Goals --", x + PANEL_PADDING, lineY, DesignTokens.Accent.SECONDARY, false);
             lineY += lineHeight;
-            for (EntityScanDataPayload.GoalData goal : selectedEntity.goals()) {
+            for (EntityScanDataPayload.GoalData goal : entity.goals()) {
                 if (lineY > y + height - lineHeight) break;
                 int goalColor = goal.isRunning() ? DesignTokens.Semantic.SUCCESS : DesignTokens.Text.MUTED;
                 String marker = goal.isRunning() ? ">" : " ";
                 String goalText = String.format("%s[%d] %s", marker, goal.priority(), goal.name());
-                graphics.drawString(font, goalText, x + PANEL_PADDING, lineY, goalColor, false);
+                graphics.drawString(renderFont, goalText, x + PANEL_PADDING, lineY, goalColor, false);
                 lineY += lineHeight;
             }
             lineY += 4;
         }
 
         // Target Goals section
-        if (!selectedEntity.targetGoals().isEmpty()) {
-            graphics.drawString(font, "-- Target Goals --", x + PANEL_PADDING, lineY, DesignTokens.Accent.SECONDARY, false);
+        if (!entity.targetGoals().isEmpty()) {
+            graphics.drawString(renderFont, "-- Target Goals --", x + PANEL_PADDING, lineY, DesignTokens.Accent.SECONDARY, false);
             lineY += lineHeight;
-            for (EntityScanDataPayload.GoalData goal : selectedEntity.targetGoals()) {
+            for (EntityScanDataPayload.GoalData goal : entity.targetGoals()) {
                 if (lineY > y + height - lineHeight) break;
                 int goalColor = goal.isRunning() ? DesignTokens.Semantic.ERROR : DesignTokens.Text.MUTED;
                 String marker = goal.isRunning() ? ">" : " ";
                 String goalText = String.format("%s[%d] %s", marker, goal.priority(), goal.name());
-                graphics.drawString(font, goalText, x + PANEL_PADDING, lineY, goalColor, false);
+                graphics.drawString(renderFont, goalText, x + PANEL_PADDING, lineY, goalColor, false);
                 lineY += lineHeight;
             }
         }

@@ -1,8 +1,10 @@
 package com.devmod.runtime;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -28,6 +30,8 @@ import com.devmod.compat.Compat;
 import com.devmod.compat.CompatRegistry;
 import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
 import com.devmod.config.Config;
+import com.devmod.zone.data.ZoneDefinition;
+import com.devmod.zone.data.ZonePresets;
 
 /**
  * Builds the Nexus development hub layout.
@@ -89,6 +93,8 @@ public final class NexusHubBuilder {
     @Nonnull private static BlockState PAD_PURPLE = Objects.requireNonNull(Blocks.PURPLE_CONCRETE.defaultBlockState());
     @Nonnull private static BlockState AIR = Objects.requireNonNull(Blocks.AIR.defaultBlockState());
 
+    private static final Map<String, BlockPos> LEGACY_SPAWN_OFFSETS = loadLegacySpawnOffsets();
+
     private NexusHubBuilder() {}
 
     public static void refreshPalette() {
@@ -137,7 +143,8 @@ public final class NexusHubBuilder {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(origin, "origin");
         spawnCombatDummies(level, origin);
-        NexusAvatarManager.spawn(level, origin);
+        // NOTE: NexusAvatarManager.spawn() removed - hub now starts empty.
+        // Use NeurocellNpc item to spawn NPCs with the new NPC system.
     }
 
     public static void applyOptionalOverlay(ServerLevel level, BlockPos origin) {
@@ -704,7 +711,7 @@ public final class NexusHubBuilder {
     }
 
     private static void decorateArrivalDeck(ServerLevel level, Layout layout, BlockPos.MutableBlockPos pos) {
-        BlockPos offset = NexusSpawnManager.getDefaultSpawnOffset();
+        BlockPos offset = legacySpawnOffset("hub");
         int deckX = layout.originX + offset.getX();
         int deckZ = layout.originZ + offset.getZ();
         int deckY = layout.originY;
@@ -870,14 +877,14 @@ public final class NexusHubBuilder {
     }
 
     private static void placeZoneSpawnPads(ServerLevel level, Layout layout, BlockPos.MutableBlockPos pos) {
-        placeZoneSpawnPad(level, layout, NexusSpawnManager.Zone.COMBAT.offset(), PAD_RED, pos);
-        placeZoneSpawnPad(level, layout, NexusSpawnManager.Zone.ARENA.offset(), PAD_ORANGE, pos);
-        placeZoneSpawnPad(level, layout, NexusSpawnManager.Zone.UI.offset(), PAD_BLUE, pos);
-        placeZoneSpawnPad(level, layout, NexusSpawnManager.Zone.TELEMETRY.offset(), PAD_GREEN, pos);
-        placeZoneSpawnPad(level, layout, NexusSpawnManager.Zone.SHOWCASE.offset(), PAD_YELLOW, pos);
-        placeZoneSpawnPad(level, layout, NexusSpawnManager.Zone.INTEGRATION.offset(), PAD_PURPLE, pos);
-        placeZoneSpawnPad(level, layout, NexusSpawnManager.Zone.SANDBOX.offset(), GRID, pos);
-        placeZoneSpawnPad(level, layout, NexusSpawnManager.Zone.MECHANICS.offset(), METAL, pos);
+        placeZoneSpawnPad(level, layout, legacySpawnOffset("combat"), PAD_RED, pos);
+        placeZoneSpawnPad(level, layout, legacySpawnOffset("arena"), PAD_ORANGE, pos);
+        placeZoneSpawnPad(level, layout, legacySpawnOffset("ui"), PAD_BLUE, pos);
+        placeZoneSpawnPad(level, layout, legacySpawnOffset("telemetry"), PAD_GREEN, pos);
+        placeZoneSpawnPad(level, layout, legacySpawnOffset("showcase"), PAD_YELLOW, pos);
+        placeZoneSpawnPad(level, layout, legacySpawnOffset("integration"), PAD_PURPLE, pos);
+        placeZoneSpawnPad(level, layout, legacySpawnOffset("sandbox"), GRID, pos);
+        placeZoneSpawnPad(level, layout, legacySpawnOffset("mechanics"), METAL, pos);
     }
 
     private static void placeZoneSpawnPad(ServerLevel level, Layout layout, BlockPos offset, @Nonnull BlockState padState,
@@ -968,7 +975,7 @@ public final class NexusHubBuilder {
     }
 
     private static void placeOverviewDeck(ServerLevel level, Layout layout, BlockPos.MutableBlockPos pos) {
-        BlockPos offset = NexusSpawnManager.Zone.OVERVIEW.offset();
+        BlockPos offset = legacySpawnOffset("overview");
         int centerX = layout.originX + offset.getX();
         int centerZ = layout.originZ + offset.getZ();
         int deckY = layout.originY + offset.getY();
@@ -1410,7 +1417,7 @@ public final class NexusHubBuilder {
     }
 
     private static void spawnCombatDummies(ServerLevel level, BlockPos origin) {
-        BlockPos center = NexusSpawnManager.getSpawnForZone(origin, NexusSpawnManager.Zone.COMBAT);
+        BlockPos center = origin.offset(legacySpawnOffset("combat"));
         int floorY = center.getY();
         int centerX = center.getX();
         int dummyZ = center.getZ() - 8;
@@ -1428,6 +1435,27 @@ public final class NexusHubBuilder {
     private static void spawnDummy(ServerLevel level, BlockPos pos, String id) {
         DummmmmmyCompat.removeDummy(level, id);
         DummmmmmyCompat.spawnDummy(level, pos, id);
+    }
+
+    private static Map<String, BlockPos> loadLegacySpawnOffsets() {
+        Map<String, BlockPos> offsets = new HashMap<>();
+        for (ZoneDefinition zone : ZonePresets.createLegacyZones(BlockPos.ZERO)) {
+            BlockPos spawnOffset = zone.spawnOffset();
+            if (spawnOffset != null) {
+                offsets.put(zone.zoneId(), spawnOffset);
+            }
+        }
+        return offsets;
+    }
+
+    @Nonnull
+    private static BlockPos legacySpawnOffset(@Nonnull String zoneId) {
+        BlockPos offset = LEGACY_SPAWN_OFFSETS.get(zoneId);
+        if (offset == null) {
+            LOGGER.warn("[NexusHubBuilder] Missing legacy spawn offset for zone '{}'", zoneId);
+            return BlockPos.ZERO;
+        }
+        return offset;
     }
 
     private static void decorateUiRoom(ServerLevel level, int minX, int minZ, int maxX, int maxZ,

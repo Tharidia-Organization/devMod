@@ -419,11 +419,10 @@ public class RecoverySystem {
         }
     }
 
-    @SuppressWarnings("NullAway") // LevelResource.ROOT is a static final constant, never null
     private void cleanupOrphanedDimensionFolders(MinecraftServer server) {
         // This will be implemented when DynamicDimensionManager is ready
         // For now, just log what we would do
-        Path worldPath = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
+        Path worldPath = server.getWorldPath(Objects.requireNonNull(net.minecraft.world.level.storage.LevelResource.ROOT));
         Path dimensionsDir = worldPath.resolve("dimensions").resolve("devmod");
 
         if (!Files.exists(dimensionsDir)) return;

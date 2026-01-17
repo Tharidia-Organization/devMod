@@ -1,5 +1,7 @@
 package com.devmod.clone;
 
+import java.util.Objects;
+
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -16,6 +18,7 @@ import com.devmod.clone.block.NeurocellLBlock;
 import com.devmod.clone.block.NeurolinkBlock;
 import com.devmod.clone.block.ReformerBlock;
 import com.devmod.clone.block.TelepadBlock;
+import com.devmod.runtime.block.AdminTerminalBlock;
 
 /**
  * Clone module block registrations.
@@ -32,7 +35,7 @@ public final class CloneBlocks {
         "telepad",
         () -> new TelepadBlock(BlockBehaviour.Properties.of()
             .strength(2.0F, 6.0F)
-            .sound(SoundType.METAL)
+            .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(state -> 5)
             .noOcclusion())
     );
@@ -312,6 +315,15 @@ public final class CloneBlocks {
 
     public static final DeferredHolder<Block, CloneMachineBlock> CLONE_CHARGER = DevMod.BLOCKS.register(
         "clone_charger", CloneMachineBlock::new);
+
+    // ==================== ADMIN BLOCKS ====================
+
+    /**
+     * Admin Terminal - opens the instance control panel.
+     * Requires admin permission to interact.
+     */
+    public static final DeferredHolder<Block, AdminTerminalBlock> ADMIN_TERMINAL = DevMod.BLOCKS.register(
+        "admin_terminal", () -> new AdminTerminalBlock());
 
     /**
      * Called during mod initialization to ensure blocks are registered.

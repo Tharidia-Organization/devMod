@@ -2814,7 +2814,7 @@ public class EnduranceQuestManager {
                 if (cleanupSession == null) {
                     cleanupSession = session;
                 }
-                ServerPlayer player = server != null ? server.getPlayerList().getPlayer(memberId) : null;
+                ServerPlayer player = server != null ? server.getPlayerList().getPlayer(Objects.requireNonNull(memberId)) : null;
 
                 if (player != null) {
                     try {

@@ -169,6 +169,9 @@ public abstract class ModScreen extends Screen {
         EditBox box = new EditBox(Objects.requireNonNull(font), x, y, fieldWidth, 20, Objects.requireNonNull(Component.empty()));
         box.setValue(Objects.requireNonNull(initialValue));
         box.setFilter(s -> s.isEmpty() || s.matches("-?\\d*\\.?\\d*"));
+        box.setBordered(false);
+        box.setTextColor(DesignTokens.Text.PRIMARY());
+        box.setTextColorUneditable(DesignTokens.Text.MUTED());
         return box;
     }
 
@@ -179,6 +182,9 @@ public abstract class ModScreen extends Screen {
         EditBox box = new EditBox(Objects.requireNonNull(font), x, y, fieldWidth, 20, Objects.requireNonNull(Component.empty()));
         box.setValue(Objects.requireNonNull(String.valueOf(initialValue)));
         box.setFilter(s -> s.isEmpty() || s.matches("-?\\d*"));
+        box.setBordered(false);
+        box.setTextColor(DesignTokens.Text.PRIMARY());
+        box.setTextColorUneditable(DesignTokens.Text.MUTED());
         return box;
     }
 
@@ -189,6 +195,9 @@ public abstract class ModScreen extends Screen {
         EditBox box = new EditBox(Objects.requireNonNull(font), x, y, fieldWidth, 20, Objects.requireNonNull(Component.empty()));
         box.setValue(Objects.requireNonNull(initialValue));
         box.setMaxLength(maxLength);
+        box.setBordered(false);
+        box.setTextColor(DesignTokens.Text.PRIMARY());
+        box.setTextColorUneditable(DesignTokens.Text.MUTED());
         return box;
     }
 
@@ -220,6 +229,17 @@ public abstract class ModScreen extends Screen {
     protected void renderLabelValue(GuiGraphics graphics, String label, String value, int x, int y) {
         graphics.drawString(Objects.requireNonNull(font), label + ":", x, y, DesignTokens.Text.MUTED(), false);
         graphics.drawString(Objects.requireNonNull(font), value, x + font.width(label + ": "), y, DesignTokens.Text.PRIMARY(), false);
+    }
+
+    /**
+     * Draw the standard input background behind a field.
+     */
+    protected void renderInputBackground(GuiGraphics graphics, EditBox field) {
+        if (field == null) {
+            return;
+        }
+        AxiomRenderer.drawInputBackground(graphics, field.getX(), field.getY(), field.getWidth(), field.getHeight(),
+            field.isFocused());
     }
 
     /**

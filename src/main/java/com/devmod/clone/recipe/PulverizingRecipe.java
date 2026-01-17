@@ -1,5 +1,9 @@
 package com.devmod.clone.recipe;
 
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -40,13 +44,14 @@ public class PulverizingRecipe implements Recipe<SingleRecipeInput> {
     }
 
     @Override
-    public boolean matches(SingleRecipeInput input, Level level) {
+    public boolean matches(@Nonnull SingleRecipeInput input, @Nonnull Level level) {
         return ingredient.test(input.getItem(0));
     }
 
     @Override
-    public ItemStack assemble(SingleRecipeInput input, HolderLookup.Provider registries) {
-        return result.copy();
+    @Nonnull
+    public ItemStack assemble(@Nonnull SingleRecipeInput input, @Nonnull HolderLookup.Provider registries) {
+        return Objects.requireNonNull(result.copy());
     }
 
     @Override
@@ -55,8 +60,9 @@ public class PulverizingRecipe implements Recipe<SingleRecipeInput> {
     }
 
     @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
-        return result.copy();
+    @Nonnull
+    public ItemStack getResultItem(@Nonnull HolderLookup.Provider registries) {
+        return Objects.requireNonNull(result.copy());
     }
 
     @Override
@@ -98,20 +104,20 @@ public class PulverizingRecipe implements Recipe<SingleRecipeInput> {
         // Codec for JSON deserialization
         public static final MapCodec<PulverizingRecipe> CODEC = RecordCodecBuilder.mapCodec(instance ->
                 instance.group(
-                        Ingredient.CODEC_NONEMPTY.fieldOf("ingredient").forGetter(PulverizingRecipe::getIngredient),
-                        ItemStack.STRICT_CODEC.fieldOf("result").forGetter(r -> r.result),
-                        Codec.INT.optionalFieldOf("processing_time", DEFAULT_PROCESSING_TIME)
+                        Objects.requireNonNull(Ingredient.CODEC_NONEMPTY).fieldOf("ingredient").forGetter(PulverizingRecipe::getIngredient),
+                        Objects.requireNonNull(ItemStack.STRICT_CODEC).fieldOf("result").forGetter(r -> r.result),
+                        Objects.requireNonNull(Codec.INT).optionalFieldOf("processing_time", DEFAULT_PROCESSING_TIME)
                                 .forGetter(PulverizingRecipe::getProcessingTime)
-                ).apply(instance, PulverizingRecipe::new)
+                ).apply(instance, (ing, res, time) -> new PulverizingRecipe(ing, res, time.intValue()))
         );
 
         // Stream codec for network sync
         public static final StreamCodec<RegistryFriendlyByteBuf, PulverizingRecipe> STREAM_CODEC =
                 StreamCodec.composite(
-                        Ingredient.CONTENTS_STREAM_CODEC, PulverizingRecipe::getIngredient,
-                        ItemStack.STREAM_CODEC, r -> r.result,
-                        ByteBufCodecs.INT, PulverizingRecipe::getProcessingTime,
-                        PulverizingRecipe::new
+                        Objects.requireNonNull(Ingredient.CONTENTS_STREAM_CODEC), PulverizingRecipe::getIngredient,
+                        Objects.requireNonNull(ItemStack.STREAM_CODEC), r -> r.result,
+                        Objects.requireNonNull(ByteBufCodecs.INT), PulverizingRecipe::getProcessingTime,
+                        (ing, res, time) -> new PulverizingRecipe(ing, res, time.intValue())
                 );
 
         @Override

@@ -12,6 +12,7 @@ import org.joml.Vector3f;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.util.Mth;
@@ -51,7 +52,6 @@ public class PartyScreenRenderer {
     private static final int COLOR_PANEL_BG = DesignTokens.Bg.LEVEL_1;
     private static final int COLOR_PANEL_HEADER = DesignTokens.Surface.LEVEL_1;
     private static final int COLOR_BORDER_SUBTLE = DesignTokens.Stroke.MUTED;
-    private static final int COLOR_INPUT_BG = DesignTokens.Surface.LEVEL_0;
     private static final int COLOR_TAB_ACTIVE = DesignTokens.Party.TAB_ACTIVE;
     private static final int COLOR_TAB_HOVER = DesignTokens.Surface.LEVEL_1;
     private static final int COLOR_TAB_DEFAULT = DesignTokens.Surface.LEVEL_0;
@@ -442,8 +442,11 @@ public class PartyScreenRenderer {
         graphics.drawString(f, "> INVITE PLAYER", panelLeft + 5, inviteSectionY, COLOR_TEXT_DIM, false);
 
         // Input background
-        graphics.fill(panelLeft + 5, inviteSectionY + 12, panelLeft + 145, inviteSectionY + 32, COLOR_INPUT_BG);
-        AxiomRenderer.drawBorder(graphics, panelLeft + 5, inviteSectionY + 12, 140, 20, COLOR_BORDER_SUBTLE);
+        EditBox inviteBox = screen.getInviteBox();
+        if (inviteBox != null && inviteBox.visible) {
+            AxiomRenderer.drawInputBackground(graphics, inviteBox.getX(), inviteBox.getY(), inviteBox.getWidth(),
+                inviteBox.getHeight(), inviteBox.isFocused());
+        }
 
         return hoveredMemberIndex;
     }
@@ -530,11 +533,14 @@ public class PartyScreenRenderer {
         graphics.drawString(f, "SELECT ENEMY", panelLeft + 8, panelTop + 7, COLOR_GLOW_CYAN, false);
 
         // Search background
-        int searchY = panelTop + 28;
-        graphics.fill(panelLeft + 5, searchY, panelLeft + panelW - 5, searchY + 20, COLOR_INPUT_BG);
-        AxiomRenderer.drawBorder(graphics, panelLeft + 5, searchY, panelW - 10, 20, COLOR_BORDER_SUBTLE);
+        EditBox searchBox = screen.getMobSearchBox();
+        if (searchBox != null && searchBox.visible) {
+            AxiomRenderer.drawInputBackground(graphics, searchBox.getX(), searchBox.getY(), searchBox.getWidth(),
+                searchBox.getHeight(), searchBox.isFocused());
+        }
 
         // Namespace filter buttons (All / MC / Mods)
+        int searchY = panelTop + 28;
         int nsFilterY = searchY + 25;
         int nsBtnX = panelLeft + 5;
 

@@ -54,8 +54,12 @@ import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
+import com.devmod.hologram.network.DeleteHologramPayload;
 import com.devmod.hologram.network.HologramConfigPayload;
 import com.devmod.hologram.network.HologramOpenScreenPayload;
+import com.devmod.hologram.network.HologramSyncPayload;
+import com.devmod.hologram.network.OpenHologramEditorPayload;
+import com.devmod.hologram.network.SaveHologramPayload;
 import com.devmod.mailbox.network.payload.TicketActionPayload;
 import com.devmod.mailbox.network.payload.TicketCreatePayload;
 import com.devmod.mailbox.network.payload.TicketSyncPayload;
@@ -102,7 +106,11 @@ import static com.devmod.network.ChannelId.FUEL_STATS;
 import static com.devmod.network.ChannelId.GAME_MECHANICS_SYNC;
 import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.HOLOGRAM_CONFIG;
+import static com.devmod.network.ChannelId.HOLOGRAM_DELETE;
+import static com.devmod.network.ChannelId.HOLOGRAM_EDITOR_OPEN;
 import static com.devmod.network.ChannelId.HOLOGRAM_OPEN_SCREEN;
+import static com.devmod.network.ChannelId.HOLOGRAM_SAVE;
+import static com.devmod.network.ChannelId.HOLOGRAM_SYNC;
 import static com.devmod.network.ChannelId.IMPACT_SYNC;
 import static com.devmod.network.ChannelId.INSTANCE_LOADING;
 import static com.devmod.network.ChannelId.INVITE_RESPONSE;
@@ -963,7 +971,7 @@ public class NetworkHandler {
                 }, PayloadLimits.SMALL)
         );
 
-        // Hologram open screen (server -> client)
+        // Hologram open screen (server -> client) - 3D Projector
         event.registrar(HOLOGRAM_OPEN_SCREEN.asString()).playToClient(
                 nn(HologramOpenScreenPayload.TYPE),
                 nn(HologramOpenScreenPayload.STREAM_CODEC),
@@ -973,6 +981,54 @@ public class NetworkHandler {
                             withClientHooks(hooks -> hooks.handleHologramOpenScreen(payload)));
                     }
                 }, PayloadLimits.SMALL)
+        );
+
+        // Hologram Editor (TextDisplay Builder System) - Channels 162-165
+
+        // Open hologram editor (server -> client)
+        event.registrar(HOLOGRAM_EDITOR_OPEN.asString()).playToClient(
+                nn(OpenHologramEditorPayload.TYPE),
+                nn(OpenHologramEditorPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            com.devmod.client.hologram.HologramClientHandler.handleOpenEditor(payload));
+                    }
+                }, PayloadLimits.MEDIUM)
+        );
+
+        // Save hologram (client -> server)
+        event.registrar(HOLOGRAM_SAVE.asString()).playToServer(
+                nn(SaveHologramPayload.TYPE),
+                nn(SaveHologramPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        handleHologramSave(player, payload);
+                    }
+                }, PayloadLimits.MEDIUM)
+        );
+
+        // Delete hologram (client -> server)
+        event.registrar(HOLOGRAM_DELETE.asString()).playToServer(
+                nn(DeleteHologramPayload.TYPE),
+                nn(DeleteHologramPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        handleHologramDelete(player, payload);
+                    }
+                }, PayloadLimits.SMALL)
+        );
+
+        // Hologram sync (server -> client) - broadcast updates
+        event.registrar(HOLOGRAM_SYNC.asString()).playToClient(
+                nn(HologramSyncPayload.TYPE),
+                nn(HologramSyncPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        enqueueWork(context, () ->
+                            com.devmod.client.hologram.HologramClientHandler.handleSync(payload));
+                    }
+                }, PayloadLimits.MEDIUM)
         );
 
         // ===================================================================
@@ -1001,6 +1057,31 @@ public class NetworkHandler {
                     }
                 }, PayloadLimits.SMALL)
         );
+
+        // ===================================================================
+        // NPC SYSTEM CHANNELS (180-189) - Delegated to domain registrar
+        // ===================================================================
+        com.devmod.npc.network.NpcNetworkHandler.INSTANCE.registerPayloads(event);
+
+        // ===================================================================
+        // AREA BUILDER CHANNELS (190-199) - Delegated to domain registrar
+        // ===================================================================
+        com.devmod.area.network.AreaNetworkHandler.INSTANCE.registerPayloads(event);
+
+        // ===================================================================
+        // ZONE MARKER CHANNELS (200-209) - Delegated to domain registrar
+        // ===================================================================
+        com.devmod.zone.network.ZoneNetworkHandler.INSTANCE.registerPayloads(event);
+
+        // ===================================================================
+        // UNIFIED TRANSPORT CHANNELS (210-220) - Delegated to domain registrar
+        // ===================================================================
+        com.devmod.transport.network.TransportNetworkHandler.INSTANCE.registerPayloads(event);
+
+        // ===================================================================
+        // ADMIN INSTANCE CHANNELS (230-239) - Delegated to domain registrar
+        // ===================================================================
+        com.devmod.runtime.network.AdminInstanceNetworkHandler.INSTANCE.registerPayloads(event);
     }
 
     // ===================================================================
@@ -1152,7 +1233,7 @@ public class NetworkHandler {
      * Looks up the portal data and sends back destination information.
      */
     private static void handlePortalPreviewRequest(ServerPlayer player, PortalPreviewRequestPayload request) {
-        var level = player.serverLevel();
+        var level = Objects.requireNonNull(player.serverLevel(), "serverLevel");
         var registry = com.devmod.portal.PortalRegistry.get(level);
         var blockState = level.getBlockState(request.portalPos());
 
@@ -1161,7 +1242,10 @@ public class NetworkHandler {
             return;
         }
 
-        var color = blockState.getValue(com.devmod.portal.block.CustomPortalBlock.COLOR);
+        var color = Objects.requireNonNull(
+            blockState.getValue(Objects.requireNonNull(com.devmod.portal.block.CustomPortalBlock.COLOR)),
+            "portal color"
+        );
 
         // Find the portal data
         var portalOpt = registry.findPortalContaining(level, request.portalPos(), color);
@@ -1176,8 +1260,10 @@ public class NetworkHandler {
 
         if (portal.hasFixedDestination()) {
             // Fixed destination (Nexus zone portal)
-            String zoneName = getFixedDestinationName(portal);
-            String dimName = getDimensionDisplayName(portal.fixedDestinationDimension().orElse(null));
+            String zoneName = Objects.requireNonNull(
+                getFixedDestinationName(player.getServer(), portal), "zoneName");
+            String dimName = Objects.requireNonNull(
+                getDimensionDisplayName(portal.fixedDestinationDimension().orElse(null)), "dimName");
             response = PortalPreviewPayload.forFixedDestination(
                 request.portalPos(), zoneName, dimName, color);
         } else if (portal.isLinked()) {
@@ -1187,8 +1273,9 @@ public class NetworkHandler {
                 return;
             }
             var linked = linkedOpt.get();
-            String ownerName = getLinkedPortalName(linked);
-            String dimName = getDimensionDisplayName(linked.dimension().orElse(null));
+            String ownerName = Objects.requireNonNull(getLinkedPortalName(linked), "ownerName");
+            String dimName = Objects.requireNonNull(
+                getDimensionDisplayName(linked.dimension().orElse(null)), "dimName");
             int distance = calculateDistance(portal, linked);
             response = PortalPreviewPayload.forLinkedPortal(
                 request.portalPos(), ownerName, dimName, distance, color);
@@ -1203,20 +1290,23 @@ public class NetworkHandler {
     /**
      * Get display name for a fixed destination portal (Nexus zone).
      */
-    private static String getFixedDestinationName(com.devmod.portal.PortalData portal) {
+    private static String getFixedDestinationName(@Nullable MinecraftServer server,
+                                                  com.devmod.portal.PortalData portal) {
         // Try to determine zone from destination position
         var destPos = portal.fixedDestination().orElse(null);
-        if (destPos != null) {
+        if (server != null && destPos != null) {
+            var hubOrigin = Objects.requireNonNull(
+                com.devmod.runtime.NexusDimensionManager.getHubOrigin(), "hubOrigin");
             var zone = com.devmod.runtime.NexusPortalManager.INSTANCE.getZoneAtPosition(
-                com.devmod.runtime.NexusDimensionManager.getHubOrigin(), destPos);
+                server, hubOrigin, destPos);
             if (zone != null) {
-                return zone.label();
+                return zone.displayName();
             }
         }
         return "Portal Destination";
     }
 
-    /**
+    /*
      * Get display name for a linked portal.
      */
     private static String getLinkedPortalName(com.devmod.portal.PortalData portal) {
@@ -1228,7 +1318,7 @@ public class NetworkHandler {
         return "Linked Portal";
     }
 
-    /**
+    /*
      * Get display name for a dimension.
      */
     private static String getDimensionDisplayName(@Nullable net.minecraft.resources.ResourceLocation dim) {
@@ -1245,11 +1335,12 @@ public class NetworkHandler {
         return path.substring(0, 1).toUpperCase(Locale.ROOT) + path.substring(1).replace("_", " ");
     }
 
-    /**
+    /*
      * Calculate distance between two portals.
      * Returns -1 if cross-dimension.
      */
     private static int calculateDistance(com.devmod.portal.PortalData from, com.devmod.portal.PortalData to) {
+        Objects.requireNonNull(to, "to");
         if (from.isInterDimensional(to)) {
             return -1;
         }
@@ -1280,7 +1371,7 @@ public class NetworkHandler {
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }
 
-    /**
+    /*
      * Handle client request for season pass data.
      */
     private static void handleRequestSeasonPass(
@@ -1301,12 +1392,12 @@ public class NetworkHandler {
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }
 
-    /**
+    /*
      * Handle hologram configuration from client.
      */
     private static void handleHologramConfig(ServerPlayer player, HologramConfigPayload payload) {
         var level = player.serverLevel();
-        var pos = payload.pos();
+        var pos = Objects.requireNonNull(payload.pos(), "pos");
 
         // Validate distance (max 8 blocks)
         if (player.blockPosition().distManhattan(pos) > 8) {
@@ -1344,12 +1435,107 @@ public class NetworkHandler {
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }
 
-    /**
+    /*
+     * Handle hologram save from client.
+     */
+    private static void handleHologramSave(ServerPlayer player, SaveHologramPayload payload) {
+        var server = player.getServer();
+        if (server == null) return;
+
+        // Permission check
+        if (!player.hasPermissions(2)) {
+            return;
+        }
+
+        var registry = com.devmod.hologram.data.HologramRegistry.get(server);
+        var existingOpt = registry.getHologram(payload.hologramId());
+        if (existingOpt.isEmpty()) {
+            return;
+        }
+
+        var existing = existingOpt.get();
+
+        // Optimistic locking check
+        if (existing.revision() != payload.expectedRevision()) {
+            player.displayClientMessage(
+                Objects.requireNonNull(
+                    net.minecraft.network.chat.Component.translatable("message.devmod.hologram.error.revision_conflict")),
+                true
+            );
+            return;
+        }
+
+        // Update hologram using the withUpdate method
+        var updated = Objects.requireNonNull(
+            existing.withUpdate(payload.lines(), payload.style(), payload.options()), "updated");
+
+        var hologramId = Objects.requireNonNull(existing.id(), "hologramId");
+        registry.updateHologram(hologramId, updated, payload.expectedRevision());
+
+        // Update entity: despawn and respawn
+        var serverLevel = Objects.requireNonNull(player.serverLevel(), "serverLevel");
+        com.devmod.hologram.runtime.HologramManager.INSTANCE.despawnHologram(serverLevel, hologramId);
+        com.devmod.hologram.runtime.HologramManager.INSTANCE.spawnHologram(serverLevel, updated);
+
+        // Feedback
+        player.displayClientMessage(
+            Objects.requireNonNull(
+                net.minecraft.network.chat.Component.translatable("message.devmod.hologram.saved")),
+            true
+        );
+    }
+
+    /*
+     * Handle hologram delete from client.
+     */
+    private static void handleHologramDelete(ServerPlayer player, DeleteHologramPayload payload) {
+        var server = player.getServer();
+        if (server == null) return;
+
+        // Permission check
+        if (!player.hasPermissions(2)) {
+            return;
+        }
+
+        var registry = com.devmod.hologram.data.HologramRegistry.get(server);
+        var existingOpt = registry.getHologram(payload.hologramId());
+        if (existingOpt.isEmpty()) {
+            return;
+        }
+
+        var existing = existingOpt.get();
+
+        // Check if locked
+        if (existing.options().locked()) {
+            player.displayClientMessage(
+                Objects.requireNonNull(
+                    net.minecraft.network.chat.Component.translatable("message.devmod.hologram.error.locked")),
+                true
+            );
+            return;
+        }
+
+        // Despawn entity
+        var serverLevel = Objects.requireNonNull(player.serverLevel(), "serverLevel");
+        com.devmod.hologram.runtime.HologramManager.INSTANCE.despawnHologram(serverLevel, payload.hologramId());
+
+        // Remove from registry
+        registry.deleteHologram(payload.hologramId());
+
+        // Feedback
+        player.displayClientMessage(
+            Objects.requireNonNull(
+                net.minecraft.network.chat.Component.translatable("message.devmod.hologram.removed")),
+            true
+        );
+    }
+
+    /*
      * Handle telepad configuration from client.
      */
     private static void handleTelepadConfig(ServerPlayer player, TelepadConfigPayload payload) {
         var level = player.serverLevel();
-        var pos = payload.pos();
+        var pos = Objects.requireNonNull(payload.pos(), "pos");
 
         // Validate distance (max 8 blocks)
         if (player.blockPosition().distManhattan(pos) > 8) {

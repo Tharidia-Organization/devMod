@@ -9,7 +9,6 @@ import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -17,6 +16,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 @OnlyIn(Dist.CLIENT)
@@ -67,37 +68,43 @@ public class OpenExternalConfirmScreen extends Screen {
         int buttonY = dialogY + DIALOG_HEIGHT - BUTTON_HEIGHT - 15;
 
         // Open in Browser button
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.ui.open_external.open_browser")),
-            button -> openInBrowser()
-        ).bounds(
+        EditorButton openButton = EditorButton.builder("open-external-browser",
+                Component.translatable("devmod.ui.open_external.open_browser").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::openInBrowser)
+            .build();
+        addRenderableWidget(new EditorButtonWidget(openButton,
             dialogX + (DIALOG_WIDTH - BUTTON_WIDTH * 2 - BUTTON_SPACING) / 2,
             buttonY,
             BUTTON_WIDTH,
-            BUTTON_HEIGHT
-        ).build()));
+            BUTTON_HEIGHT));
 
         // Copy URL button
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.ui.open_external.copy_url")),
-            button -> copyToClipboard()
-        ).bounds(
+        EditorButton copyButton = EditorButton.builder("open-external-copy",
+                Component.translatable("devmod.ui.open_external.copy_url").getString())
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::copyToClipboard)
+            .build();
+        addRenderableWidget(new EditorButtonWidget(copyButton,
             dialogX + (DIALOG_WIDTH - BUTTON_WIDTH * 2 - BUTTON_SPACING) / 2 + BUTTON_WIDTH + BUTTON_SPACING,
             buttonY,
             BUTTON_WIDTH,
-            BUTTON_HEIGHT
-        ).build()));
+            BUTTON_HEIGHT));
 
         // Cancel button (small, below)
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.translatable("gui.cancel")),
-            button -> onClose()
-        ).bounds(
+        EditorButton cancelButton = EditorButton.builder("open-external-cancel",
+                Component.translatable("gui.cancel").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::onClose)
+            .build();
+        addRenderableWidget(new EditorButtonWidget(cancelButton,
             (width - 60) / 2,
             buttonY + BUTTON_HEIGHT + 5,
             60,
-            BUTTON_HEIGHT
-        ).build()));
+            BUTTON_HEIGHT));
     }
 
     @Override

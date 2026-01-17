@@ -144,6 +144,9 @@ public class MobEquipmentScreen extends Screen {
         if (value == null) value = "";
         field.setValue(value);
         field.setMaxLength(64);
+        field.setBordered(false);
+        field.setTextColor(DesignTokens.Text.PRIMARY());
+        field.setTextColorUneditable(DesignTokens.Text.MUTED());
         field.setResponder(text -> {
             clearError();
             updateButtonStates();
@@ -239,6 +242,8 @@ public class MobEquipmentScreen extends Screen {
         applyButton.render(graphics, buttonsX, contentY, buttonWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
         backButton.render(graphics, backX, contentY, buttonWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
+        renderInputBackgrounds(graphics);
+
         // Render widgets (EditBoxes)
         super.render(graphics, mouseX, mouseY, partialTick);
 
@@ -274,6 +279,22 @@ public class MobEquipmentScreen extends Screen {
 
         if (showingConfirmDialog) {
             renderConfirmDialog(graphics, mouseX, mouseY);
+        }
+    }
+
+    private void renderInputBackgrounds(GuiGraphics graphics) {
+        renderInputBackground(graphics, mainHand);
+        renderInputBackground(graphics, offHand);
+        renderInputBackground(graphics, head);
+        renderInputBackground(graphics, chest);
+        renderInputBackground(graphics, legs);
+        renderInputBackground(graphics, feet);
+    }
+
+    private void renderInputBackground(GuiGraphics graphics, @Nullable EditBox field) {
+        if (field != null) {
+            AxiomRenderer.drawInputBackground(graphics, field.getX(), field.getY(), field.getWidth(), field.getHeight(),
+                field.isFocused());
         }
     }
 

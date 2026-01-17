@@ -1,5 +1,9 @@
 package com.devmod.clone.recipe;
 
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -18,11 +22,11 @@ public final class CloneRecipeTypes {
 
     // Recipe Types Registry
     public static final DeferredRegister<RecipeType<?>> RECIPE_TYPES =
-            DeferredRegister.create(Registries.RECIPE_TYPE, DevMod.MODID);
+            DeferredRegister.create(Objects.requireNonNull(Registries.RECIPE_TYPE, "RECIPE_TYPE registry key"), DevMod.MODID);
 
     // Recipe Serializers Registry
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
-            DeferredRegister.create(Registries.RECIPE_SERIALIZER, DevMod.MODID);
+            DeferredRegister.create(Objects.requireNonNull(Registries.RECIPE_SERIALIZER, "RECIPE_SERIALIZER registry key"), DevMod.MODID);
 
     // Pulverizing Recipe Type
     public static final DeferredHolder<RecipeType<?>, RecipeType<PulverizingRecipe>> PULVERIZING =
@@ -37,11 +41,25 @@ public final class CloneRecipeTypes {
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<PulverizingRecipe>> PULVERIZING_SERIALIZER =
             RECIPE_SERIALIZERS.register("pulverizing", PulverizingRecipe.Serializer::new);
 
+    // Centrifuging Recipe Type
+    public static final DeferredHolder<RecipeType<?>, RecipeType<CentrifugingRecipe>> CENTRIFUGING =
+            RECIPE_TYPES.register("centrifuging", () -> new RecipeType<CentrifugingRecipe>() {
+                @Override
+                public String toString() {
+                    return "devmod:centrifuging";
+                }
+            });
+
+    // Centrifuging Recipe Serializer
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<CentrifugingRecipe>> CENTRIFUGING_SERIALIZER =
+            RECIPE_SERIALIZERS.register("centrifuging", CentrifugingRecipe.Serializer::new);
+
     /**
      * Register all recipe types and serializers.
      * Call from CloneModule.init().
      */
-    public static void register(IEventBus modEventBus) {
+    public static void register(@Nonnull IEventBus modEventBus) {
+        Objects.requireNonNull(modEventBus, "modEventBus");
         RECIPE_TYPES.register(modEventBus);
         RECIPE_SERIALIZERS.register(modEventBus);
         DevMod.LOGGER.info("[Clone] Recipe types registered");

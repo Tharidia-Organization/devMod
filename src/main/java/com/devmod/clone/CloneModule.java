@@ -1,5 +1,7 @@
 package com.devmod.clone;
 
+import javax.annotation.Nonnull;
+
 import net.neoforged.bus.api.IEventBus;
 
 import com.devmod.DevMod;
@@ -28,7 +30,7 @@ public final class CloneModule {
      * Initialize the clone module.
      * Call from DevMod constructor after BLOCKS/ITEMS registries are set up.
      */
-    public static void init(IEventBus modEventBus) {
+    public static void init(@Nonnull IEventBus modEventBus) {
         // Initialize component registry
         CloneComponents.init();
         CloneComponents.COMPONENTS.register(modEventBus);

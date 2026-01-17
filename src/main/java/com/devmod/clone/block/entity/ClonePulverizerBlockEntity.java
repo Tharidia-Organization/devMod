@@ -1,6 +1,7 @@
 package com.devmod.clone.block.entity;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nonnull;
@@ -9,12 +10,16 @@ import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -26,10 +31,13 @@ import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.core.particles.ItemParticleOption;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.AABB;
+
+import com.devmod.clone.CloneBlockEntities;
+import com.devmod.clone.item.GrinderItem;
+import com.devmod.clone.recipe.CloneRecipeTypes;
+import com.devmod.clone.recipe.PulverizingRecipe;
+import com.devmod.config.Config;
 
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -37,15 +45,6 @@ import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
-
-import com.devmod.clone.CloneBlockEntities;
-import com.devmod.clone.CloneItems;
-import com.devmod.clone.item.GrinderItem;
-import com.devmod.clone.recipe.CloneRecipeTypes;
-import com.devmod.clone.recipe.PulverizingRecipe;
-import com.devmod.config.Config;
-
-import net.minecraft.world.InteractionResult;
 
 /**
  * Block entity for the Clone Pulverizer machine.
@@ -89,6 +88,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     private static final String TAG_GRINDER_RIGHT = "GrinderRight";
 
     // Animation cache
+    @SuppressWarnings("this-escape")
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     // Animations
@@ -229,21 +229,22 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
      * Add item to input slot.
      * @return Remaining items that couldn't be added
      */
+    @Nonnull
     private ItemStack addToInput(ItemStack stack) {
         ItemStack current = inventory.getItem(0);
 
         if (current.isEmpty()) {
-            inventory.setItem(0, stack.copy());
-            return ItemStack.EMPTY;
+            inventory.setItem(0, Objects.requireNonNull(stack.copy()));
+            return Objects.requireNonNull(ItemStack.EMPTY);
         }
 
-        if (ItemStack.isSameItemSameComponents(current, stack)) {
+        if (ItemStack.isSameItemSameComponents(current, Objects.requireNonNull(stack))) {
             int space = current.getMaxStackSize() - current.getCount();
             int toAdd = Math.min(space, stack.getCount());
             current.grow(toAdd);
 
             if (toAdd >= stack.getCount()) {
-                return ItemStack.EMPTY;
+                return Objects.requireNonNull(ItemStack.EMPTY);
             } else {
                 ItemStack remaining = stack.copy();
                 remaining.shrink(toAdd);
@@ -309,19 +310,21 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         }
 
         // Find recipe if not cached
-        if (currentRecipe == null || !currentRecipe.getIngredient().test(input)) {
+        PulverizingRecipe cachedRecipe = currentRecipe;
+        if (cachedRecipe == null || !cachedRecipe.getIngredient().test(input)) {
             Optional<PulverizingRecipe> recipe = findRecipe(input);
             if (recipe.isEmpty()) {
                 // No valid recipe
                 setActive(false);
                 return;
             }
-            currentRecipe = recipe.get();
-            maxProgress = currentRecipe.getProcessingTime();
+            cachedRecipe = recipe.get();
+            currentRecipe = cachedRecipe;
+            maxProgress = cachedRecipe.getProcessingTime();
         }
 
         // Get result for this recipe
-        ItemStack result = currentRecipe.getResult();
+        ItemStack result = Objects.requireNonNull(cachedRecipe.getResult());
 
         // Process
         setActive(true);
@@ -334,8 +337,8 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
             soundTimer = 0;
             lvl.playSound(
                     null,
-                    worldPosition,
-                    SoundEvents.GRINDSTONE_USE,
+                    Objects.requireNonNull(worldPosition),
+                    Objects.requireNonNull(SoundEvents.GRINDSTONE_USE),
                     SoundSource.BLOCKS,
                     0.5f,
                     0.8f + (lvl.random.nextFloat() * 0.2f - 0.1f)  // Slight pitch variation
@@ -367,8 +370,8 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
             if (lvl != null && !lvl.isClientSide) {
                 lvl.playSound(
                         null,
-                        worldPosition,
-                        SoundEvents.ITEM_PICKUP,
+                        Objects.requireNonNull(worldPosition),
+                        Objects.requireNonNull(SoundEvents.ITEM_PICKUP),
                         SoundSource.BLOCKS,
                         0.4f,
                         1.2f
@@ -392,7 +395,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         ItemStack current = inventory.getItem(1);
 
         if (current.isEmpty()) {
-            inventory.setItem(1, stack.copy());
+            inventory.setItem(1, Objects.requireNonNull(stack.copy()));
             dirtyOutput = true;
             return;
         }
@@ -439,10 +442,10 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
             }
 
             // Try to give items to player
-            ItemStack toGive = output.copy();
+            ItemStack toGive = Objects.requireNonNull(output.copy());
             if (player.getInventory().add(toGive)) {
                 // Successfully added to inventory
-                inventory.setItem(1, ItemStack.EMPTY);
+                inventory.setItem(1, Objects.requireNonNull(ItemStack.EMPTY));
                 dirtyOutput = true;
                 return;
             } else if (toGive.getCount() < output.getCount()) {
@@ -512,10 +515,11 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         int damage = grinder.getDamageValue() + 1;
         if (damage >= grinder.getMaxDamage()) {
             // Grinder broke
-            inventory.setItem(slot, ItemStack.EMPTY);
+            inventory.setItem(slot, Objects.requireNonNull(ItemStack.EMPTY));
             Level lvl = level;
             if (lvl != null && !lvl.isClientSide) {
-                lvl.playSound(null, worldPosition, SoundEvents.ITEM_BREAK,
+                lvl.playSound(null, Objects.requireNonNull(worldPosition),
+                        Objects.requireNonNull(SoundEvents.ITEM_BREAK),
                         SoundSource.BLOCKS, 1.0f, 1.0f);
             }
         } else {
@@ -553,14 +557,15 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         for (int slot : new int[]{SLOT_GRINDER_RIGHT, SLOT_GRINDER_LEFT}) {
             ItemStack grinder = inventory.getItem(slot);
             if (!grinder.isEmpty()) {
-                if (!player.addItem(grinder.copy())) {
+                if (!player.addItem(Objects.requireNonNull(grinder.copy()))) {
                     // Drop if inventory full
-                    player.drop(grinder.copy(), false);
+                    player.drop(Objects.requireNonNull(grinder.copy()), false);
                 }
-                inventory.setItem(slot, ItemStack.EMPTY);
+                inventory.setItem(slot, Objects.requireNonNull(ItemStack.EMPTY));
                 Level lvl = level;
                 if (lvl != null && !lvl.isClientSide) {
-                    lvl.playSound(null, worldPosition, SoundEvents.ITEM_PICKUP,
+                    lvl.playSound(null, Objects.requireNonNull(worldPosition),
+                            Objects.requireNonNull(SoundEvents.ITEM_PICKUP),
                             SoundSource.BLOCKS, 1.0f, 1.0f);
                 }
                 setChanged();
@@ -579,13 +584,14 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         // Try left slot first, then right
         for (int slot : new int[]{SLOT_GRINDER_LEFT, SLOT_GRINDER_RIGHT}) {
             if (inventory.getItem(slot).isEmpty()) {
-                inventory.setItem(slot, heldItem.copyWithCount(1));
+                inventory.setItem(slot, Objects.requireNonNull(heldItem.copyWithCount(1)));
                 if (!player.isCreative()) {
                     heldItem.shrink(1);
                 }
                 Level lvl = level;
                 if (lvl != null && !lvl.isClientSide) {
-                    lvl.playSound(null, worldPosition, SoundEvents.ANVIL_PLACE,
+                    lvl.playSound(null, Objects.requireNonNull(worldPosition),
+                            Objects.requireNonNull(SoundEvents.ANVIL_PLACE),
                             SoundSource.BLOCKS, 0.5f, 1.2f);
                 }
                 setChanged();
@@ -635,13 +641,13 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     @Override
     @Nonnull
     public ItemStack getItem(int slot) {
-        return inventory.getItem(slot);
+        return Objects.requireNonNull(inventory.getItem(slot));
     }
 
     @Override
     @Nonnull
     public ItemStack removeItem(int slot, int amount) {
-        ItemStack result = inventory.removeItem(slot, amount);
+        ItemStack result = Objects.requireNonNull(inventory.removeItem(slot, amount));
         if (slot == SLOT_OUTPUT && !result.isEmpty()) {
             dirtyOutput = true;
             syncToClient();
@@ -652,7 +658,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     @Override
     @Nonnull
     public ItemStack removeItemNoUpdate(int slot) {
-        return inventory.removeItemNoUpdate(slot);
+        return Objects.requireNonNull(inventory.removeItemNoUpdate(slot));
     }
 
     @Override
@@ -683,7 +689,8 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         double z = worldPosition.getZ() + 0.5;
 
         // Create item particle option
-        ItemParticleOption particleOption = new ItemParticleOption(ParticleTypes.ITEM, item);
+        ItemParticleOption particleOption = new ItemParticleOption(
+            Objects.requireNonNull(ParticleTypes.ITEM), Objects.requireNonNull(item));
 
         // Spawn several particles with random spread
         for (int i = 0; i < 3; i++) {
@@ -711,9 +718,9 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         }
 
         RecipeManager recipeManager = lvl.getRecipeManager();
-        SingleRecipeInput recipeInput = new SingleRecipeInput(input);
+        SingleRecipeInput recipeInput = new SingleRecipeInput(Objects.requireNonNull(input));
 
-        return recipeManager.getRecipeFor(CloneRecipeTypes.PULVERIZING.get(), recipeInput, lvl)
+        return recipeManager.getRecipeFor(Objects.requireNonNull(CloneRecipeTypes.PULVERIZING.get()), recipeInput, lvl)
                 .map(RecipeHolder::value);
     }
 
@@ -736,7 +743,8 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         }
         Level lvl = level;
         if (lvl != null && !lvl.isClientSide) {
-            lvl.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            BlockState currentState = Objects.requireNonNull(getBlockState());
+            lvl.sendBlockUpdated(Objects.requireNonNull(worldPosition), currentState, currentState, 3);
             dirtyActive = false;
             dirtyOutput = false;
             setChanged();
@@ -776,14 +784,15 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
      * Extract the output item (for player pickup via right-click).
      * Removes the item from the slot and returns it.
      */
+    @Nonnull
     public ItemStack extractOutput() {
         ItemStack slotContent = inventory.getItem(1);
         if (slotContent.isEmpty()) {
-            return ItemStack.EMPTY;
+            return Objects.requireNonNull(ItemStack.EMPTY);
         }
         // Make a copy before clearing the slot
-        ItemStack output = slotContent.copy();
-        inventory.setItem(1, ItemStack.EMPTY);
+        ItemStack output = Objects.requireNonNull(slotContent.copy());
+        inventory.setItem(1, Objects.requireNonNull(ItemStack.EMPTY));
         dirtyOutput = true;
         syncToClient();
         return output;
@@ -792,7 +801,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     // === GeckoLib Animation ===
 
     @Override
-    public void registerControllers(@Nonnull AnimatableManager.ControllerRegistrar controllers) {
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "main", 0, state -> {
             if (active) {
                 // Processing - rollers spinning
@@ -814,7 +823,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
     @Override
     @Nonnull
     public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return cache;
+        return Objects.requireNonNull(cache);
     }
 
     // === NBT Persistence ===
@@ -828,7 +837,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         tag.putInt(TAG_OPERATIONS_COUNT, operationsCount);
 
         if (!processingItem.isEmpty()) {
-            tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
+            tag.put(TAG_PROCESSING_ITEM, Objects.requireNonNull(processingItem.save(registries)));
         }
 
         // Save inventory
@@ -836,7 +845,7 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
             if (!stack.isEmpty()) {
-                invTag.put("Slot" + i, stack.save(registries));
+                invTag.put("Slot" + i, Objects.requireNonNull(stack.save(registries)));
             }
         }
         tag.put(TAG_INVENTORY, invTag);
@@ -851,8 +860,9 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         operationsCount = tag.getInt(TAG_OPERATIONS_COUNT);
 
         if (tag.contains(TAG_PROCESSING_ITEM)) {
-            processingItem = ItemStack.parse(registries, tag.getCompound(TAG_PROCESSING_ITEM))
-                    .orElse(ItemStack.EMPTY);
+            processingItem = Objects.requireNonNull(
+                ItemStack.parse(registries, Objects.requireNonNull(tag.getCompound(TAG_PROCESSING_ITEM)))
+                    .orElse(ItemStack.EMPTY));
         } else {
             processingItem = ItemStack.EMPTY;
         }
@@ -863,31 +873,35 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
             for (int i = 0; i < inventory.getContainerSize(); i++) {
                 String key = "Slot" + i;
                 if (invTag.contains(key)) {
-                    inventory.setItem(i, ItemStack.parse(registries, invTag.getCompound(key))
-                            .orElse(ItemStack.EMPTY));
+                    inventory.setItem(i, Objects.requireNonNull(
+                        ItemStack.parse(registries, Objects.requireNonNull(invTag.getCompound(key)))
+                            .orElse(ItemStack.EMPTY)));
                 } else {
-                    inventory.setItem(i, ItemStack.EMPTY);
+                    inventory.setItem(i, Objects.requireNonNull(ItemStack.EMPTY));
                 }
             }
         }
 
         // Load output item (from network sync - takes priority if present)
         if (tag.contains(TAG_OUTPUT_ITEM)) {
-            inventory.setItem(SLOT_OUTPUT, ItemStack.parse(registries, tag.getCompound(TAG_OUTPUT_ITEM))
-                    .orElse(ItemStack.EMPTY));
+            inventory.setItem(SLOT_OUTPUT, Objects.requireNonNull(
+                ItemStack.parse(registries, Objects.requireNonNull(tag.getCompound(TAG_OUTPUT_ITEM)))
+                    .orElse(ItemStack.EMPTY)));
         } else if (tag.getBoolean("OutputEmpty")) {
             // Server says output is empty - clear it on client
-            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+            inventory.setItem(SLOT_OUTPUT, Objects.requireNonNull(ItemStack.EMPTY));
         }
 
         // Load grinder slots (from network sync for roller visibility)
         if (tag.contains(TAG_GRINDER_LEFT)) {
-            inventory.setItem(SLOT_GRINDER_LEFT, ItemStack.parse(registries, tag.getCompound(TAG_GRINDER_LEFT))
-                    .orElse(ItemStack.EMPTY));
+            inventory.setItem(SLOT_GRINDER_LEFT, Objects.requireNonNull(
+                ItemStack.parse(registries, Objects.requireNonNull(tag.getCompound(TAG_GRINDER_LEFT)))
+                    .orElse(ItemStack.EMPTY)));
         }
         if (tag.contains(TAG_GRINDER_RIGHT)) {
-            inventory.setItem(SLOT_GRINDER_RIGHT, ItemStack.parse(registries, tag.getCompound(TAG_GRINDER_RIGHT))
-                    .orElse(ItemStack.EMPTY));
+            inventory.setItem(SLOT_GRINDER_RIGHT, Objects.requireNonNull(
+                ItemStack.parse(registries, Objects.requireNonNull(tag.getCompound(TAG_GRINDER_RIGHT)))
+                    .orElse(ItemStack.EMPTY)));
         }
     }
 
@@ -901,12 +915,12 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         // Note: deployTimer NOT synced - client tracks it independently via clientTick()
         tag.putBoolean(TAG_ACTIVE, active);
         if (!processingItem.isEmpty()) {
-            tag.put(TAG_PROCESSING_ITEM, processingItem.save(registries));
+            tag.put(TAG_PROCESSING_ITEM, Objects.requireNonNull(processingItem.save(registries)));
         }
         // Always sync output item state (even when empty) for proper client rendering
         ItemStack outputItem = inventory.getItem(SLOT_OUTPUT);
         if (!outputItem.isEmpty()) {
-            tag.put(TAG_OUTPUT_ITEM, outputItem.save(registries));
+            tag.put(TAG_OUTPUT_ITEM, Objects.requireNonNull(outputItem.save(registries)));
         } else {
             // Mark output as empty so client clears it
             tag.putBoolean("OutputEmpty", true);
@@ -915,10 +929,10 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         ItemStack leftGrinder = inventory.getItem(SLOT_GRINDER_LEFT);
         ItemStack rightGrinder = inventory.getItem(SLOT_GRINDER_RIGHT);
         if (!leftGrinder.isEmpty()) {
-            tag.put(TAG_GRINDER_LEFT, leftGrinder.save(registries));
+            tag.put(TAG_GRINDER_LEFT, Objects.requireNonNull(leftGrinder.save(registries)));
         }
         if (!rightGrinder.isEmpty()) {
-            tag.put(TAG_GRINDER_RIGHT, rightGrinder.save(registries));
+            tag.put(TAG_GRINDER_RIGHT, Objects.requireNonNull(rightGrinder.save(registries)));
         }
         return tag;
     }

@@ -23,7 +23,6 @@ public final class ClientEntityEvents {
      */
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ModEntities.NEXA.get(), NexaEntityRenderer::new);
         event.registerEntityRenderer(ModEntities.PLAYER_CLONE.get(), PlayerCloneEntityRenderer::new);
         DevMod.LOGGER.debug("[ModEntities] Registered entity renderers");
     }

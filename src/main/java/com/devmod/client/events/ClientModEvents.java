@@ -39,6 +39,7 @@ import com.devmod.client.testing.QAEventTracker;
 import com.devmod.client.testing.QANotificationSystem;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.testing.TutorialManager;
+import com.devmod.client.transport.TransportClientPayloadHooks;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.combat.HitHelper;
@@ -60,6 +61,7 @@ public class ClientModEvents {
     private static final ResourceLocation QA_NOTIFICATIONS_ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "qa_notifications"));
     private static final ResourceLocation RESONANCE_HUD_ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "resonance_hud"));
     private static final ResourceLocation CONTRACT_HUD_ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "contract_hud"));
+    private static final ResourceLocation TRANSPORT_HUD_ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "transport_hud"));
 
     // Track if profile listener is registered
     private static boolean profileListenerRegistered = false;
@@ -71,6 +73,7 @@ public class ClientModEvents {
         event.registerAboveAll(Objects.requireNonNull(QA_NOTIFICATIONS_ID), new QANotificationsLayer());
         event.registerAboveAll(Objects.requireNonNull(RESONANCE_HUD_ID), Objects.requireNonNull(com.devmod.client.overlay.ResonanceHudOverlay.INSTANCE));
         event.registerAboveAll(Objects.requireNonNull(CONTRACT_HUD_ID), Objects.requireNonNull(com.devmod.client.overlay.ContractHudOverlay.INSTANCE));
+        event.registerAboveAll(Objects.requireNonNull(TRANSPORT_HUD_ID), Objects.requireNonNull(TransportClientPayloadHooks.getOverlay()));
         com.devmod.client.overlay.CombatFlowHudOverlay.registerGuiLayers(event);
 
         // Register profile listener for notifications (once)

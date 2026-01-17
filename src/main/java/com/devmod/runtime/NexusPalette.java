@@ -40,6 +40,8 @@ public final class NexusPalette {
         FLOOR("floor"),
         FLOOR_ALT("floor_alt"),
         FLOOR_HUB("floor_hub"),
+        /** H-13 fix: Dedicated ceiling key for proper ceiling material */
+        CEILING("ceiling"),
         GRID("grid"),
         ACCENT("accent"),
         WALL("wall"),
@@ -133,6 +135,8 @@ public final class NexusPalette {
         map.put(Key.FLOOR, Blocks.SMOOTH_STONE.defaultBlockState());
         map.put(Key.FLOOR_ALT, Blocks.POLISHED_ANDESITE.defaultBlockState());
         map.put(Key.FLOOR_HUB, Blocks.CALCITE.defaultBlockState());
+        // H-13 fix: Dedicated ceiling material (defaults to same as floor for backward compat)
+        map.put(Key.CEILING, Blocks.SMOOTH_STONE.defaultBlockState());
         map.put(Key.GRID, Blocks.POLISHED_ANDESITE.defaultBlockState());
         map.put(Key.ACCENT, Blocks.WAXED_EXPOSED_COPPER.defaultBlockState());
         map.put(Key.WALL, Blocks.SMOOTH_SANDSTONE.defaultBlockState());
@@ -246,7 +250,7 @@ public final class NexusPalette {
             if (state == null) {
                 continue;
             }
-            ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+            ResourceLocation id = BuiltInRegistries.BLOCK.getKey(Objects.requireNonNull(state.getBlock()));
             data.put(key.id(), id.toString());
         }
 
@@ -261,7 +265,7 @@ public final class NexusPalette {
         if (value == null || value.isBlank()) {
             return fallback;
         }
-        ResourceLocation location = ResourceLocation.tryParse(value.trim());
+        ResourceLocation location = ResourceLocation.tryParse(Objects.requireNonNull(value.trim()));
         if (location == null) {
             LOGGER.warn("[Nexus] Invalid block id '{}' in palette", value);
             return fallback;

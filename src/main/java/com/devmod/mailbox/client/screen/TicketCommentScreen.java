@@ -19,6 +19,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.UiSounds;
 import com.devmod.mailbox.client.ClientTicketCache.TicketData;
+import com.devmod.mailbox.client.MailboxUiSkin;
 import com.devmod.mailbox.client.MailboxUiTheme;
 import com.devmod.mailbox.network.payload.TicketActionPayload;
 
@@ -86,6 +87,9 @@ public class TicketCommentScreen extends Screen {
         field.setMaxLength(1000);
         field.setHint(Objects.requireNonNull(Component.translatable("devmod.ticket.comment.placeholder")));
         field.setFocused(true);
+        field.setBordered(false);
+        field.setTextColor(MailboxUiSkin.textPrimary());
+        field.setTextColorUneditable(MailboxUiSkin.textMuted());
         addRenderableWidget(field);
         commentField = field;
 
@@ -135,9 +139,20 @@ public class TicketCommentScreen extends Screen {
             submitButton.render(graphics, panelX + PANEL_WIDTH - 105, buttonY, 90, 22, mouseX, mouseY);
         }
 
+        renderInputBackground(graphics);
+
         renderStatus(graphics);
 
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderInputBackground(GuiGraphics graphics) {
+        EditBox field = commentField;
+        if (field == null) {
+            return;
+        }
+        MailboxUiSkin.drawInputBackground(graphics, field.getX(), field.getY(), field.getWidth(),
+            field.getHeight(), field.isFocused());
     }
 
     private void renderStatus(GuiGraphics graphics) {

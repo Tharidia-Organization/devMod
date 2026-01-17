@@ -43,6 +43,9 @@ import com.devmod.mixin.MinecraftServerAccessor;
 import com.devmod.runtime.biome.ZoneBiomeSource;
 import com.devmod.runtime.generator.ArenaChunkGenerator;
 import com.devmod.runtime.generator.ArenaFlatChunkGenerator;
+import com.devmod.zone.data.ZoneDefinition;
+import com.devmod.zone.data.ZoneRegistry;
+import com.devmod.zone.runtime.ZoneResolver;
 
 public class NexusDimensionManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(NexusDimensionManager.class);
@@ -139,17 +142,15 @@ public class NexusDimensionManager {
         }
 
         if (hasPlayers) {
-            NexusZoneTracker.tick(level);
+            // Use new data-driven ZoneTracker
+            com.devmod.zone.runtime.ZoneTracker.INSTANCE.tick(level);
         }
-
-        // Animate the Nexus avatar (floating, particles)
-        NexusAvatarManager.tick(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
 
         // Tick portal particles
         NexusPortalManager.INSTANCE.tick(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
 
         // Tick hologram updates
-        NexusHologramManager.INSTANCE.tick(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        com.devmod.hologram.runtime.HologramManager.INSTANCE.tick(level);
 
         // Tick performance optimizations
         NexusPerformanceManager.INSTANCE.tick(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
@@ -405,11 +406,14 @@ public class NexusDimensionManager {
         // Initialize portal pedestals (entity markers for teleportation)
         NexusPortalManager.INSTANCE.initialize(nn(level, "level"), nn(HUB_ORIGIN, "HUB_ORIGIN"));
 
-        // Initialize holographic displays
-        NexusHologramManager.INSTANCE.initialize(nn(level, "level"), nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        // Migrate legacy holograms to new Hologram Builder system
+        com.devmod.hologram.runtime.HologramMigration.migrateFromLegacy(level.getServer());
+
+        // Initialize Hologram Builder system
+        com.devmod.hologram.runtime.HologramManager.INSTANCE.initializeLevel(level);
 
         // Initialize performance manager
-        NexusPerformanceManager.INSTANCE.initialize(nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        NexusPerformanceManager.INSTANCE.initialize(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
 
         // Spawn avatar and other entities
         NexusHubBuilder.postBuildEntities(level, HUB_ORIGIN);
@@ -436,7 +440,8 @@ public class NexusDimensionManager {
     }
 
     private void finalizeBuild(ServerLevel level, NexusHubSavedData data, int version) {
-        level.setDefaultSpawnPos(nn(NexusSpawnManager.getDefaultSpawn(nn(HUB_ORIGIN, "HUB_ORIGIN")), "defaultSpawn"), 180.0f);
+        BlockPos defaultSpawn = resolveHubSpawn(level.getServer());
+        level.setDefaultSpawnPos(nn(defaultSpawn, "defaultSpawn"), 180.0f);
         data.markBuilt(version);
         level.save(null, true, false);
         applyRuntimeConfig(level);
@@ -446,11 +451,69 @@ public class NexusDimensionManager {
         // Initialize portal pedestals
         NexusPortalManager.INSTANCE.initialize(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
 
-        // Initialize holographic displays
-        NexusHologramManager.INSTANCE.initialize(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        // Initialize Hologram Builder system
+        com.devmod.hologram.runtime.HologramManager.INSTANCE.initializeLevel(level);
+
+        // Create preset holograms for new hub
+        com.devmod.hologram.runtime.HologramMigration.createPresetHolograms(
+            level.getServer(), nn(HUB_ORIGIN, "HUB_ORIGIN"));
 
         // Initialize performance manager
-        NexusPerformanceManager.INSTANCE.initialize(nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        NexusPerformanceManager.INSTANCE.initialize(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
+
+        // Initialize area registry with main hub
+        initializeAreaRegistry(level);
+    }
+
+    /**
+     * Initializes the Area Registry with the main hub definition.
+     * Places the Editor Central block if not present.
+     */
+    private void initializeAreaRegistry(ServerLevel level) {
+        try {
+            var registry = com.devmod.area.data.AreaRegistry.get(level.getServer());
+
+            // Check if main hub already exists
+            if (registry.hasMainHub()) {
+                LOGGER.debug("[Nexus] Main hub area already registered");
+                return;
+            }
+
+            // Place Editor Central block at a visible location near spawn
+            // Position: center of hub, on the main platform
+            BlockPos editorCentralPos = Objects.requireNonNull(HUB_ORIGIN.offset(0, 1, 5));
+
+            // Check if position is suitable (air or replaceable)
+            var currentState = level.getBlockState(editorCentralPos);
+            if (currentState.isAir() || currentState.canBeReplaced()) {
+                var editorCentralBlock = com.devmod.area.AreaBlocks.NEXUS_EDITOR_CENTRAL.get();
+                level.setBlock(editorCentralPos, Objects.requireNonNull(editorCentralBlock.defaultBlockState()), 3);
+                LOGGER.info("[Nexus] Placed Editor Central block at {}", editorCentralPos);
+            }
+
+            // Create main hub AreaDefinition
+            var dimensions = new com.devmod.area.data.AreaDimensions(80, 80, 32, HUB_ORIGIN.getY());
+            var palette = com.devmod.area.builder.AreaPalettePresets.fromPreset("default");
+            var options = com.devmod.area.data.AreaOptions.DEFAULT;
+
+            var mainHubDef = com.devmod.area.data.AreaDefinition.builder()
+                .name("Nexus Hub")
+                .generationType(com.devmod.area.data.AreaGenerationType.CUSTOM)
+                .shape(com.devmod.area.data.AreaShape.RECTANGULAR)
+                .dimensions(dimensions)
+                .center(Objects.requireNonNull(HUB_ORIGIN))
+                .dimension(Objects.requireNonNull(NEXUS_DIMENSION.location()))
+                .palette(palette)
+                .options(Objects.requireNonNull(options))
+                .mainHub(true)
+                .build();
+
+            registry.createArea(mainHubDef);
+            LOGGER.info("[Nexus] Registered main hub area: {}", mainHubDef.id());
+
+        } catch (Exception e) {
+            LOGGER.error("[Nexus] Failed to initialize area registry", e);
+        }
     }
 
     public boolean requestRebuild(MinecraftServer server, boolean ignoreLock) {
@@ -522,22 +585,43 @@ public class NexusDimensionManager {
             return;
         }
 
-        BlockPos spawn = NexusSpawnManager.getSpawnForPlayer(player, HUB_ORIGIN);
+        ensureLegacyZonesInitialized(server);
+        Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.selectSpawnZone(server, player);
+        BlockPos spawn = zoneOpt.map(this::resolveZoneSpawn)
+            .orElse(nn(HUB_ORIGIN, "HUB_ORIGIN"));
         teleportPlayerTo(level, player, spawn);
     }
 
-    public void teleportPlayerToZone(net.minecraft.server.level.ServerPlayer player, NexusSpawnManager.Zone zone) {
-        if (player == null || zone == null) {
-            return;
+    /**
+     * Teleports a player to a zone by string ID (data-driven).
+     * Uses {@link com.devmod.zone.runtime.ZoneResolver} to resolve zone.
+     *
+     * @param player The player to teleport
+     * @param zoneId The zone ID or alias (e.g., "combat", "sandbox", "home")
+     * @return true if teleport succeeded, false if zone not found
+     */
+    public boolean teleportPlayerToZone(net.minecraft.server.level.ServerPlayer player, String zoneId) {
+        if (player == null || zoneId == null || zoneId.isBlank()) {
+            return false;
         }
         MinecraftServer server = player.getServer();
         if (server == null) {
-            return;
+            return false;
         }
         if (!server.isSameThread()) {
-            server.execute(() -> teleportPlayerToZone(player, zone));
-            return;
+            server.execute(() -> teleportPlayerToZone(player, zoneId));
+            return false;
         }
+
+        ensureLegacyZonesInitialized(server);
+        java.util.Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
+            com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolveByNameOrAlias(server, zoneId);
+        if (zoneOpt.isEmpty()) {
+            return false;
+        }
+
+        com.devmod.zone.data.ZoneDefinition zone = zoneOpt.get();
+        BlockPos spawn = resolveZoneSpawn(zone);
 
         if (!player.level().dimension().equals(NEXUS_DIMENSION)) {
             NexusReturnSavedData.get(server).recordReturn(player);
@@ -549,11 +633,11 @@ public class NexusDimensionManager {
             level = server.getLevel(nn(NEXUS_DIMENSION, "NEXUS_DIMENSION"));
         }
         if (level == null) {
-            return;
+            return false;
         }
 
-        BlockPos spawn = NexusSpawnManager.getSpawnForZone(HUB_ORIGIN, zone);
         teleportPlayerTo(level, player, spawn);
+        return true;
     }
 
     public boolean teleportPlayerToReturn(net.minecraft.server.level.ServerPlayer player) {
@@ -599,6 +683,30 @@ public class NexusDimensionManager {
         );
     }
 
+    private void ensureLegacyZonesInitialized(@Nonnull MinecraftServer server) {
+        ZoneRegistry registry = ZoneRegistry.get(server);
+        if (!registry.isInitialized()) {
+            registry.initializeWithLegacyZones(nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        }
+    }
+
+    @Nonnull
+    private BlockPos resolveZoneSpawn(@Nonnull ZoneDefinition zone) {
+        BlockPos spawn = zone.getAbsoluteSpawn(nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        return spawn != null ? spawn : zone.bounds().center();
+    }
+
+    @Nonnull
+    private BlockPos resolveHubSpawn(@Nullable MinecraftServer server) {
+        if (server == null) {
+            return nn(HUB_ORIGIN, "HUB_ORIGIN");
+        }
+        ensureLegacyZonesInitialized(server);
+        Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolveById(server, "hub");
+        return Objects.requireNonNull(zoneOpt.map(this::resolveZoneSpawn)
+            .orElse(nn(HUB_ORIGIN, "HUB_ORIGIN")));
+    }
+
     public void shutdown(MinecraftServer server) {
         if (server == null) {
             return;
@@ -611,8 +719,7 @@ public class NexusDimensionManager {
         if (level != null) {
             clearForcedChunks(level);
             NexusPortalManager.INSTANCE.cleanup(level);
-            NexusHologramManager.INSTANCE.cleanup(level);
-            NexusAvatarManager.cleanup(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
+            com.devmod.hologram.runtime.HologramManager.INSTANCE.cleanupLevel(level);
         }
         NexusPerformanceManager.INSTANCE.cleanup();
         buildTask = null;

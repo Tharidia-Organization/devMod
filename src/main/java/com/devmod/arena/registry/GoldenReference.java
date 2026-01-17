@@ -58,11 +58,10 @@ public record GoldenReference(
         Bounds floor = new Bounds(-40, 64, -40, 39, 64, 39, 0, 0);
         Bounds ceiling = new Bounds(-40, 76, -40, 39, 76, 39, 0, 0);
 
-        int size = 80;
-        int floorBlocks = size * size * 1; // 6,400
-        int wallBlocks = (2 * (size + size - 2)) * 12; // perimeter * (height - floor overlap) = 316 * 12 = 3,792
-        int ceilingBlocks = size * size * 1; // 6,400
-        int underfloorBlocks = size * size * 3; // 19,200
+        int floorBlocks = 5023; // circular area (r=40) with shape mask
+        int wallBlocks = 2832; // circular border count per layer * 12
+        int ceilingBlocks = 5023; // circular area (r=40) with shape mask
+        int underfloorBlocks = 15069; // circular area * 3
         int hazardBlocks = 0; // lava ring overlays the floor, so unique blocks are already counted in floor blocks
         // Lighting: blockLight=12, spacing=8, grid=10x10=100 ambient + 1 explicit
         int lightingBlocks = 101;

@@ -1,18 +1,22 @@
 package com.devmod.arena.builder;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.arena.budget.BackpressureManager;
 import com.devmod.arena.budget.BuildBudget;
@@ -24,6 +28,9 @@ import com.devmod.arena.performance.PerformanceBudgetEnforcer;
 import com.devmod.arena.performance.PerformanceBudgetEnforcer.PerformanceAction;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.devmod.arena.zone.ArenaZone;
+import com.devmod.arena.zone.ZoneEnvironment;
+import com.devmod.arena.zone.ZoneLayout;
 
 public class AsyncArenaBuilder {
 
@@ -50,7 +57,7 @@ public class AsyncArenaBuilder {
 
     // Active builds
     private final Queue<AsyncBuild> activeBuildQueue = new ConcurrentLinkedQueue<>();
-    private final Map<UUID, AsyncBuild> buildsByArenaId = new LinkedHashMap<>();
+    private final Map<UUID, AsyncBuild> buildsByArenaId = new ConcurrentHashMap<>();
 
     // Statistics
     private long totalBlocksPlaced = 0;
@@ -174,6 +181,19 @@ public class AsyncArenaBuilder {
 
         if (buildsByArenaId.containsKey(arenaId)) {
             LOGGER.warn("Build already in progress for arena {}", arenaId);
+            return false;
+        }
+
+        String unsupportedReason = validateTemplateForAsync(template);
+        if (unsupportedReason != null) {
+            LOGGER.warn("Async build rejected for template {}: {}", template.id(), unsupportedReason);
+            telemetry.emit("arena.async_build.unsupported_template", Map.of(
+                "arenaId", arenaId.toString(),
+                "templateId", template.id(),
+                "reason", unsupportedReason
+            ));
+            callback.accept(AsyncBuildResult.failure(arenaId, template.id(),
+                "unsupported_template: " + unsupportedReason, 0, 0));
             return false;
         }
 
@@ -561,6 +581,65 @@ public class AsyncArenaBuilder {
         return buildsByArenaId.size();
     }
 
+    private static String validateTemplateForAsync(ArenaTemplate template) {
+        if (template.structureNbt() != null) {
+            return "structureNbt not supported in async builder";
+        }
+        if (template.hazards() != null) {
+            for (ArenaTemplate.Hazard hazard : template.hazards()) {
+                if ("custom".equals(hazard.type())) {
+                    return "custom hazards not supported in async builder";
+                }
+            }
+        }
+        return null;
+    }
+
+    private static int getSizeX(ArenaTemplate template) {
+        Integer sizeXVal = template.sizeX();
+        return sizeXVal != null ? sizeXVal : template.size();
+    }
+
+    private static int getSizeZ(ArenaTemplate template) {
+        Integer sizeZVal = template.sizeZ();
+        return sizeZVal != null ? sizeZVal : template.size();
+    }
+
+    private static int minOffset(int size) {
+        return -size / 2;
+    }
+
+    private static int maxOffset(int size) {
+        return size - (size / 2) - 1;
+    }
+
+    private static boolean isInArenaShape(int dx, int dz, ArenaTemplate template, int sizeX, int sizeZ) {
+        ArenaTemplate.ArenaShape shape = template.arenaShape();
+        if (shape == null) {
+            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+        }
+
+        int minX = minOffset(sizeX);
+        int maxX = maxOffset(sizeX);
+        int minZ = minOffset(sizeZ);
+        int maxZ = maxOffset(sizeZ);
+
+        return switch (shape) {
+            case RECTANGULAR -> dx >= minX && dx <= maxX && dz >= minZ && dz <= maxZ;
+            case CIRCULAR -> {
+                int radius = Math.max(sizeX, sizeZ) / 2;
+                yield dx * dx + dz * dz <= radius * radius;
+            }
+            case RING -> {
+                int outerRadius = Math.max(sizeX, sizeZ) / 2;
+                Integer innerRadiusVal = template.ringInnerRadius();
+                int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+                int distSq = dx * dx + dz * dz;
+                yield distSq <= outerRadius * outerRadius && distSq >= innerRadius * innerRadius;
+            }
+        };
+    }
+
     public BackpressureManager.BackpressureStatus getBackpressureStatus() {
         return backpressure.getStatus();
     }
@@ -682,34 +761,959 @@ public class AsyncArenaBuilder {
             return null;
         }
 
+        @SuppressWarnings("UnusedVariable")
         private static List<BlockPlacement> computePlacements(
                 ArenaTemplate template, int originX, int originY, int originZ) {
             List<BlockPlacement> placements = new ArrayList<>();
 
-            // Floor
-            if (template.floor() != null) {
-                var floor = template.floor();
-                Integer sizeXVal = template.sizeX();
-                Integer sizeZVal = template.sizeZ();
-                int sizeX = sizeXVal != null ? sizeXVal : template.size();
-                int sizeZ = sizeZVal != null ? sizeZVal : template.size();
-                int halfX = sizeX / 2;
-                int halfZ = sizeZ / 2;
+            ArenaTemplate.BuildSettings.Order buildOrder = resolveBuildOrder(template);
+            if (buildOrder == ArenaTemplate.BuildSettings.Order.WALLS_FIRST) {
+                if (template.walls() != null && template.walls().enabled()) {
+                    buildWalls(template, originX, originZ, placements);
+                }
+                if (template.floor() != null) {
+                    buildFloor(template, originX, originZ, placements);
+                }
+            } else {
+                if (template.floor() != null) {
+                    buildFloor(template, originX, originZ, placements);
+                }
+                if (template.walls() != null && template.walls().enabled()) {
+                    buildWalls(template, originX, originZ, placements);
+                }
+            }
 
-                for (int dx = -halfX; dx <= halfX; dx++) {
-                    for (int dz = -halfZ; dz <= halfZ; dz++) {
-                        for (int dy = 0; dy < floor.thickness(); dy++) {
-                            placements.add(new BlockPlacement(
-                                originX + dx, originY + floor.y() + dy, originZ + dz, floor.material()
-                            ));
+            ArenaTemplate.TerrainSettings terrainSettings = template.terrainSettings();
+            boolean isDynamicTerrain = terrainSettings != null
+                && terrainSettings.type() == ArenaTemplate.TerrainSettings.TerrainType.DYNAMIC;
+
+            if (template.ceiling() != null && template.ceiling().enabled() && !isDynamicTerrain) {
+                buildCeiling(template, originX, originZ, placements);
+            }
+
+            if (template.underfloor() != null && !isDynamicTerrain) {
+                buildUnderfloor(template, originX, originZ, placements);
+            }
+
+            if (template.hazards() != null && !template.hazards().isEmpty()) {
+                placeHazards(template, originX, originZ, placements);
+            }
+
+            if (template.lighting() != null) {
+                placeLighting(template, originX, originZ, placements);
+            }
+
+            return placements;
+        }
+
+        private static ArenaTemplate.BuildSettings.Order resolveBuildOrder(ArenaTemplate template) {
+            if (template.buildSettings() == null || template.buildSettings().buildOrder() == null) {
+                return ArenaTemplate.BuildSettings.Order.FLOOR_FIRST;
+            }
+            return template.buildSettings().buildOrder();
+        }
+
+        private static void buildFloor(ArenaTemplate template, int originX, int originZ, List<BlockPlacement> placements) {
+            if (template.floor() == null) {
+                return;
+            }
+
+            ArenaTemplate.TerrainSettings terrainSettings = template.terrainSettings();
+            if (terrainSettings != null
+                && terrainSettings.type() == ArenaTemplate.TerrainSettings.TerrainType.DYNAMIC) {
+                buildDynamicTerrainFloor(template, originX, originZ, terrainSettings, placements);
+                return;
+            }
+
+            ArenaTemplate.ZoneSettings zoneSettings = template.zoneSettings();
+            if (zoneSettings != null && zoneSettings.enabled() && !zoneSettings.zones().isEmpty()) {
+                boolean hasZoneFloorMaterials = zoneSettings.zones().stream()
+                    .anyMatch(z -> {
+                        String mat = z.floorMaterial();
+                        return mat != null && !mat.isEmpty();
+                    });
+                if (hasZoneFloorMaterials) {
+                    buildZoneAwareFloor(template, originX, originZ, zoneSettings, placements);
+                    return;
+                }
+            }
+
+            buildTemplateFloor(template, originX, originZ, placements);
+        }
+
+        private static void buildWalls(ArenaTemplate template, int originX, int originZ, List<BlockPlacement> placements) {
+            ArenaTemplate.Walls walls = template.walls();
+            if (walls == null || !walls.enabled()) {
+                return;
+            }
+
+            ArenaTemplate.ArenaShape shape = template.arenaShape();
+            if (shape == null) {
+                shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+            }
+
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int halfX = sizeX / 2;
+            int halfZ = sizeZ / 2;
+
+            if (shape == ArenaTemplate.ArenaShape.RECTANGULAR) {
+                int startX = originX - halfX;
+                int startZ = originZ - halfZ;
+                int endX = startX + sizeX - 1;
+                int endZ = startZ + sizeZ - 1;
+
+                for (int dy = 0; dy < walls.height(); dy++) {
+                    int worldY = walls.startY() + dy;
+
+                    for (int t = 0; t < walls.thickness(); t++) {
+                        for (int x = startX; x <= endX; x++) {
+                            addBlock(x, worldY, startZ - t, walls.material(), placements);
+                            addBlock(x, worldY, endZ + t, walls.material(), placements);
+                        }
+                    }
+
+                    for (int t = 0; t < walls.thickness(); t++) {
+                        for (int z = startZ + 1; z <= endZ - 1; z++) {
+                            addBlock(startX - t, worldY, z, walls.material(), placements);
+                            addBlock(endX + t, worldY, z, walls.material(), placements);
+                        }
+                    }
+                }
+            } else {
+                int radius = Math.max(halfX, halfZ);
+                int outerExtent = radius + walls.thickness();
+
+                for (int dy = 0; dy < walls.height(); dy++) {
+                    int worldY = walls.startY() + dy;
+
+                    for (int dx = -outerExtent; dx <= outerExtent; dx++) {
+                        for (int dz = -outerExtent; dz <= outerExtent; dz++) {
+                            if (isOnCircularBorder(dx, dz, template, walls.thickness())) {
+                                addBlock(originX + dx, worldY, originZ + dz, walls.material(), placements);
+                            }
                         }
                     }
                 }
             }
+        }
 
-            // Additional structures would be added here...
+        private static void buildCeiling(ArenaTemplate template, int originX, int originZ, List<BlockPlacement> placements) {
+            ArenaTemplate.Ceiling ceiling = template.ceiling();
+            if (ceiling == null || !ceiling.enabled()) {
+                return;
+            }
 
-            return placements;
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int minX = minOffsetX(template);
+            int maxX = maxOffsetX(template);
+            int minZ = minOffsetZ(template);
+            int maxZ = maxOffsetZ(template);
+
+            for (int dx = minX; dx <= maxX; dx++) {
+                for (int dz = minZ; dz <= maxZ; dz++) {
+                    if (!isInArenaShape(dx, dz, template, sizeX, sizeZ)) {
+                        continue;
+                    }
+                    for (int dy = 0; dy < ceiling.thickness(); dy++) {
+                        addBlock(originX + dx, ceiling.y() + dy, originZ + dz, ceiling.material(), placements);
+                    }
+                }
+            }
+        }
+
+        private static void buildUnderfloor(ArenaTemplate template, int originX, int originZ, List<BlockPlacement> placements) {
+            ArenaTemplate.Underfloor underfloor = template.underfloor();
+            ArenaTemplate.Floor floor = template.floor();
+            if (underfloor == null || floor == null) {
+                return;
+            }
+
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int minX = minOffsetX(template);
+            int maxX = maxOffsetX(template);
+            int minZ = minOffsetZ(template);
+            int maxZ = maxOffsetZ(template);
+
+            String material = underfloor.sameAsFloor() ? floor.material() : underfloor.material();
+
+            for (int dx = minX; dx <= maxX; dx++) {
+                for (int dz = minZ; dz <= maxZ; dz++) {
+                    if (!isInArenaShape(dx, dz, template, sizeX, sizeZ)) {
+                        continue;
+                    }
+                    for (int dy = 1; dy <= underfloor.depth(); dy++) {
+                        addBlock(originX + dx, floor.y() - dy, originZ + dz, material, placements);
+                    }
+                }
+            }
+        }
+
+        private static void placeHazards(ArenaTemplate template, int originX, int originZ, List<BlockPlacement> placements) {
+            List<ArenaTemplate.Hazard> hazards = template.hazards();
+            if (hazards == null || hazards.isEmpty()) {
+                return;
+            }
+            for (ArenaTemplate.Hazard hazard : hazards) {
+                switch (hazard.type()) {
+                    case "lava_ring" -> placeLavaRing(hazard, template, originX, originZ, placements);
+                    case "lava_pool" -> placeLavaPool(hazard, template, originX, originZ, placements);
+                    case "void_pit" -> placeVoidPit(hazard, template, originX, originZ, placements);
+                    case "spike_trap" -> placeSpikeTrap(hazard, template, originX, originZ, placements);
+                    case "fire_zone" -> placeFireZone(hazard, template, originX, originZ, placements);
+                    case "magma_floor" -> placeMagmaFloor(hazard, template, originX, originZ, placements);
+                    case "falling_blocks" -> placeFallingBlocks(hazard, template, originX, originZ, placements);
+                    case "custom" -> LOGGER.warn("Custom hazard '{}' skipped in async builder", hazard.type());
+                    default -> LOGGER.debug("Hazard type '{}' has no placement implementation", hazard.type());
+                }
+            }
+        }
+
+        private static void placeLighting(ArenaTemplate template, int originX, int originZ, List<BlockPlacement> placements) {
+            ArenaTemplate.ZoneSettings zoneSettings = template.zoneSettings();
+            if (zoneSettings != null && zoneSettings.enabled() && !zoneSettings.zones().isEmpty()) {
+                placeZoneAwareLighting(template, originX, originZ, zoneSettings, placements);
+                return;
+            }
+
+            placeTemplateLighting(template, originX, originZ, placements);
+        }
+
+        private static void buildDynamicTerrainFloor(ArenaTemplate template, int originX, int originZ,
+                                                     ArenaTemplate.TerrainSettings terrainSettings,
+                                                     List<BlockPlacement> placements) {
+            ArenaTemplate.Floor floor = template.floor();
+            if (floor == null) {
+                return;
+            }
+
+            ArenaTemplate.TerrainSettings.DynamicSettings dynamicSettings = terrainSettings.dynamic();
+            if (dynamicSettings == null) {
+                dynamicSettings = ArenaTemplate.TerrainSettings.DynamicSettings.proxyOverworld();
+            }
+
+            int templateRadius = Math.max(getSizeX(template), getSizeZ(template)) / 2;
+            int combatRadius = Math.min(dynamicSettings.combatRingRadius(), templateRadius);
+            int blendRadius = dynamicSettings.blendRadius();
+
+            if (combatRadius < dynamicSettings.combatRingRadius()) {
+                LOGGER.warn("Template '{}': combatRingRadius {} exceeds template size {}, clamped to {}",
+                    template.id(), dynamicSettings.combatRingRadius(), templateRadius * 2, combatRadius);
+            }
+
+            int maxRadius = combatRadius + blendRadius;
+            int minX = Math.max(minOffsetX(template), -maxRadius);
+            int maxX = Math.min(maxOffsetX(template), maxRadius);
+            int minZ = Math.max(minOffsetZ(template), -maxRadius);
+            int maxZ = Math.min(maxOffsetZ(template), maxRadius);
+
+            for (int dx = minX; dx <= maxX; dx++) {
+                for (int dz = minZ; dz <= maxZ; dz++) {
+                    double dist = Math.sqrt(dx * dx + dz * dz);
+                    if (dist > maxRadius) {
+                        continue;
+                    }
+
+                    double blendFactor = 1.0;
+                    if (dist > combatRadius) {
+                        blendFactor = 1.0 - ((dist - combatRadius) / blendRadius);
+                        blendFactor = Math.max(0.0, Math.min(1.0, blendFactor));
+                    }
+
+                    if (blendFactor < 1.0) {
+                        long posHash = ((long) dx * 31 + dz) ^ template.id().hashCode();
+                        double threshold = (posHash & 0xFFFF) / 65536.0;
+                        if (threshold > blendFactor) {
+                            continue;
+                        }
+                    }
+
+                    for (int dy = 0; dy < floor.thickness(); dy++) {
+                        int worldX = originX + dx;
+                        int worldY = floor.y() + dy;
+                        int worldZ = originZ + dz;
+
+                        String material = floor.material();
+                        if (dist <= combatRadius && floor.borderMaterial() != null && floor.borderWidth() > 0) {
+                            if (dist >= combatRadius - floor.borderWidth()) {
+                                material = floor.borderMaterial();
+                            }
+                        }
+
+                        addBlock(worldX, worldY, worldZ, material, placements);
+                    }
+                }
+            }
+        }
+
+        private static void buildZoneAwareFloor(ArenaTemplate template, int originX, int originZ,
+                                                ArenaTemplate.ZoneSettings zoneSettings,
+                                                List<BlockPlacement> placements) {
+            ArenaTemplate.Floor floor = template.floor();
+            if (floor == null) {
+                return;
+            }
+
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int halfX = sizeX / 2;
+            int halfZ = sizeZ / 2;
+
+            ZoneLayout layout = buildZoneLayoutWithEnvironments(zoneSettings, halfX, halfZ);
+
+            int minX = minOffsetX(template);
+            int maxX = maxOffsetX(template);
+            int minZ = minOffsetZ(template);
+            int maxZ = maxOffsetZ(template);
+
+            for (int dx = minX; dx <= maxX; dx++) {
+                for (int dz = minZ; dz <= maxZ; dz++) {
+                    if (!isInArenaShape(dx, dz, template, sizeX, sizeZ)) {
+                        continue;
+                    }
+
+                    String material = floor.material();
+                    Optional<ArenaZone> zone = layout.getZoneAt(dx, dz);
+                    if (zone.isPresent()) {
+                        Optional<ResourceLocation> zoneMaterial = zone.get().environment().floorMaterial();
+                        if (zoneMaterial.isPresent()) {
+                            material = zoneMaterial.get().toString();
+                        }
+                    }
+
+                    if (floor.borderMaterial() != null && floor.borderWidth() > 0) {
+                        boolean inBorder = isOnFloorBorder(dx, dz, template, floor.borderWidth());
+                        if (inBorder) {
+                            material = floor.borderMaterial();
+                        }
+                    }
+
+                    for (int dy = 0; dy < floor.thickness(); dy++) {
+                        int worldX = originX + dx;
+                        int worldY = floor.y() + dy;
+                        int worldZ = originZ + dz;
+                        addBlock(worldX, worldY, worldZ, material, placements);
+                    }
+                }
+            }
+        }
+
+        private static ZoneLayout buildZoneLayoutWithEnvironments(ArenaTemplate.ZoneSettings settings,
+                                                                  int halfX,
+                                                                  int halfZ) {
+            List<ArenaTemplate.ZoneSettings.ZoneDefinition> zones = settings.zones();
+            int zoneCount = zones.size();
+            ZoneLayout.Builder builder = ZoneLayout.builder(Math.max(halfX, halfZ));
+
+            if (zoneCount == 1) {
+                builder.strategy(ZoneLayout.LayoutStrategy.SINGLE);
+                ArenaTemplate.ZoneSettings.ZoneDefinition def = zones.get(0);
+                ArenaZone zone = ArenaZone.rectangular(def.name(), -halfX, -halfZ, halfX, halfZ)
+                    .withEnvironment(createZoneEnvironment(def));
+                builder.addZone(zone);
+            } else if (zoneCount == 2) {
+                builder.strategy(ZoneLayout.LayoutStrategy.STRIPED_VERTICAL);
+                ArenaTemplate.ZoneSettings.ZoneDefinition def0 = zones.get(0);
+                ArenaTemplate.ZoneSettings.ZoneDefinition def1 = zones.get(1);
+                builder.addZone(ArenaZone.rectangular(def0.name(), -halfX, -halfZ, 0, halfZ)
+                    .withEnvironment(createZoneEnvironment(def0)));
+                builder.addZone(ArenaZone.rectangular(def1.name(), 0, -halfZ, halfX, halfZ)
+                    .withEnvironment(createZoneEnvironment(def1)));
+            } else if (zoneCount <= 4) {
+                builder.strategy(ZoneLayout.LayoutStrategy.QUADRANT);
+                if (zones.size() >= 1) {
+                    builder.addZone(ArenaZone.rectangular(zones.get(0).name(), 0, -halfZ, halfX, 0)
+                        .withEnvironment(createZoneEnvironment(zones.get(0))));
+                }
+                if (zones.size() >= 2) {
+                    builder.addZone(ArenaZone.rectangular(zones.get(1).name(), -halfX, -halfZ, 0, 0)
+                        .withEnvironment(createZoneEnvironment(zones.get(1))));
+                }
+                if (zones.size() >= 3) {
+                    builder.addZone(ArenaZone.rectangular(zones.get(2).name(), -halfX, 0, 0, halfZ)
+                        .withEnvironment(createZoneEnvironment(zones.get(2))));
+                }
+                if (zones.size() >= 4) {
+                    builder.addZone(ArenaZone.rectangular(zones.get(3).name(), 0, 0, halfX, halfZ)
+                        .withEnvironment(createZoneEnvironment(zones.get(3))));
+                }
+            } else {
+                builder.strategy(ZoneLayout.LayoutStrategy.SINGLE);
+                builder.addZone(ArenaZone.rectangular("main", -halfX, -halfZ, halfX, halfZ));
+            }
+
+            return builder.build();
+        }
+
+        private static ZoneEnvironment createZoneEnvironment(ArenaTemplate.ZoneSettings.ZoneDefinition zoneDef) {
+            Optional<ResourceLocation> biome = Optional.empty();
+            String biomeStr = zoneDef.biome();
+            if (biomeStr != null && !biomeStr.isEmpty()) {
+                biome = Optional.of(ResourceLocation.parse(biomeStr));
+            }
+
+            Optional<ResourceLocation> floorMaterial = Optional.empty();
+            String floorStr = zoneDef.floorMaterial();
+            if (floorStr != null && !floorStr.isEmpty()) {
+                floorMaterial = Optional.of(ResourceLocation.parse(floorStr));
+            }
+
+            Integer skyLightVal = zoneDef.skyLight();
+            Integer blockLightVal = zoneDef.blockLight();
+            int skyLight = skyLightVal != null ? skyLightVal.intValue() : 15;
+            int blockLight = blockLightVal != null ? blockLightVal.intValue() : 0;
+            boolean placeSources = blockLight > 0;
+            ZoneEnvironment.LightingConfig lighting = new ZoneEnvironment.LightingConfig(skyLight, blockLight, placeSources);
+
+            ZoneEnvironment.TimeConfig time = ZoneEnvironment.TimeConfig.ANY;
+            String timeStr = zoneDef.time();
+            if (timeStr != null && !timeStr.isEmpty()) {
+                try {
+                    time = ZoneEnvironment.TimeConfig.valueOf(timeStr.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    LOGGER.warn("Unknown time config '{}' for zone '{}', using ANY", timeStr, zoneDef.name());
+                }
+            }
+
+            return new ZoneEnvironment(biome, floorMaterial, lighting, time);
+        }
+
+        private static void buildTemplateFloor(ArenaTemplate template, int originX, int originZ,
+                                               List<BlockPlacement> placements) {
+            ArenaTemplate.Floor floor = template.floor();
+            if (floor == null) {
+                return;
+            }
+
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int minX = minOffsetX(template);
+            int maxX = maxOffsetX(template);
+            int minZ = minOffsetZ(template);
+            int maxZ = maxOffsetZ(template);
+
+            for (int dx = minX; dx <= maxX; dx++) {
+                for (int dz = minZ; dz <= maxZ; dz++) {
+                    if (!isInArenaShape(dx, dz, template, sizeX, sizeZ)) {
+                        continue;
+                    }
+
+                    for (int dy = 0; dy < floor.thickness(); dy++) {
+                        int worldX = originX + dx;
+                        int worldY = floor.y() + dy;
+                        int worldZ = originZ + dz;
+
+                        String material = floor.material();
+                        if (floor.borderMaterial() != null && floor.borderWidth() > 0) {
+                            boolean inBorder = isOnFloorBorder(dx, dz, template, floor.borderWidth());
+                            if (inBorder) {
+                                material = floor.borderMaterial();
+                            }
+                        }
+
+                        addBlock(worldX, worldY, worldZ, material, placements);
+                    }
+                }
+            }
+        }
+
+        private static boolean isOnFloorBorder(int dx, int dz, ArenaTemplate template, int borderWidth) {
+            ArenaTemplate.ArenaShape shape = template.arenaShape();
+            if (shape == null) {
+                shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+            }
+
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int minX = minOffsetX(template);
+            int minZ = minOffsetZ(template);
+
+            return switch (shape) {
+                case RECTANGULAR -> {
+                    int localX = dx - minX;
+                    int localZ = dz - minZ;
+                    boolean inBorderX = localX < borderWidth || localX >= sizeX - borderWidth;
+                    boolean inBorderZ = localZ < borderWidth || localZ >= sizeZ - borderWidth;
+                    yield inBorderX || inBorderZ;
+                }
+                case CIRCULAR -> {
+                    int radius = Math.max(sizeX, sizeZ) / 2;
+                    int distSq = dx * dx + dz * dz;
+                    int innerBorderSq = (radius - borderWidth) * (radius - borderWidth);
+                    yield distSq >= innerBorderSq;
+                }
+                case RING -> {
+                    int outerRadius = Math.max(sizeX, sizeZ) / 2;
+                    Integer innerRadiusVal = template.ringInnerRadius();
+                    int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+                    int distSq = dx * dx + dz * dz;
+                    int outerBorderSq = (outerRadius - borderWidth) * (outerRadius - borderWidth);
+                    int innerBorderSq = (innerRadius + borderWidth) * (innerRadius + borderWidth);
+                    yield distSq >= outerBorderSq || distSq <= innerBorderSq;
+                }
+            };
+        }
+
+        private static boolean isOnCircularBorder(int dx, int dz, ArenaTemplate template, int thickness) {
+            ArenaTemplate.ArenaShape shape = template.arenaShape();
+            if (shape == null || shape == ArenaTemplate.ArenaShape.RECTANGULAR) {
+                return false;
+            }
+
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int halfX = sizeX / 2;
+            int halfZ = sizeZ / 2;
+            int outerRadius = Math.max(halfX, halfZ);
+            int distSq = dx * dx + dz * dz;
+
+            int outerWallInnerSq = outerRadius * outerRadius;
+            int outerWallOuterSq = (outerRadius + thickness) * (outerRadius + thickness);
+            boolean onOuterWall = distSq >= outerWallInnerSq && distSq < outerWallOuterSq;
+
+            if (shape == ArenaTemplate.ArenaShape.CIRCULAR) {
+                return onOuterWall;
+            }
+
+            Integer innerRadiusVal = template.ringInnerRadius();
+            int innerRadius = innerRadiusVal != null ? innerRadiusVal : outerRadius / 2;
+            int innerWallOuterSq = innerRadius * innerRadius;
+            int innerWallInnerSq = Math.max(0, (innerRadius - thickness) * (innerRadius - thickness));
+            boolean onInnerWall = distSq <= innerWallOuterSq && distSq >= innerWallInnerSq;
+
+            return onOuterWall || onInnerWall;
+        }
+
+        private static int resolveY(ArenaTemplate.Hazard hazard, ArenaTemplate template) {
+            Integer hazardY = hazard.y();
+            int baseY = hazardY != null ? hazardY : template.floor().y();
+            ArenaTemplate.SpawnSlot.YMode mode = hazard.yMode();
+            if (mode == null || mode == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+                int offset = hazardY != null ? hazardY : 0;
+                return template.floor().y() + offset;
+            }
+            return baseY;
+        }
+
+        private static int[] resolveCenter(ArenaTemplate.Hazard hazard, ArenaTemplate template, int originX, int originZ) {
+            Object centerObj = hazard.params() != null ? hazard.params().get("center") : null;
+            if (centerObj instanceof List<?> list && list.size() == 3) {
+                int[] c = new int[3];
+                for (int i = 0; i < 3; i++) {
+                    Object v = list.get(i);
+                    c[i] = v instanceof Number n ? n.intValue() : 0;
+                }
+                return c;
+            }
+            return new int[]{originX, resolveY(hazard, template), originZ};
+        }
+
+        private static void placeLavaRing(ArenaTemplate.Hazard hazard, ArenaTemplate template,
+                                          int originX, int originZ, List<BlockPlacement> placements) {
+            int inner = ((Number) hazard.params().getOrDefault("innerRadius", 1)).intValue();
+            int outer = ((Number) hazard.params().getOrDefault("outerRadius", inner + 1)).intValue();
+            int y = resolveY(hazard, template);
+            int[] center = resolveCenter(hazard, template, originX, originZ);
+            String material = (String) hazard.params().getOrDefault("material", "minecraft:lava");
+
+            for (int dx = -outer; dx <= outer; dx++) {
+                for (int dz = -outer; dz <= outer; dz++) {
+                    int r2 = dx * dx + dz * dz;
+                    if (r2 >= inner * inner && r2 <= outer * outer) {
+                        addBlock(center[0] + dx, y, center[2] + dz, material, placements);
+                    }
+                }
+            }
+        }
+
+        private static void placeLavaPool(ArenaTemplate.Hazard hazard, ArenaTemplate template,
+                                          int originX, int originZ, List<BlockPlacement> placements) {
+            int radius = ((Number) hazard.params().getOrDefault("radius", 3)).intValue();
+            int y = resolveY(hazard, template);
+            int[] center = resolveCenter(hazard, template, originX, originZ);
+            String material = (String) hazard.params().getOrDefault("material", "minecraft:lava");
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (dx * dx + dz * dz <= radius * radius) {
+                        addBlock(center[0] + dx, y, center[2] + dz, material, placements);
+                    }
+                }
+            }
+        }
+
+        private static void placeVoidPit(ArenaTemplate.Hazard hazard, ArenaTemplate template,
+                                         int originX, int originZ, List<BlockPlacement> placements) {
+            int radius = ((Number) hazard.params().getOrDefault("radius", 3)).intValue();
+            int depth = ((Number) hazard.params().getOrDefault("depth", 10)).intValue();
+            int yTop = resolveY(hazard, template);
+            int[] center = resolveCenter(hazard, template, originX, originZ);
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (dx * dx + dz * dz <= radius * radius) {
+                        for (int dy = 0; dy < depth; dy++) {
+                            addBlock(center[0] + dx, yTop - dy, center[2] + dz,
+                                "minecraft:void_air", placements);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void placeSpikeTrap(ArenaTemplate.Hazard hazard, ArenaTemplate template,
+                                           int originX, int originZ, List<BlockPlacement> placements) {
+            Object positionsObj = hazard.params() != null ? hazard.params().get("positions") : null;
+            if (!(positionsObj instanceof List<?> positions)) {
+                return;
+            }
+            String material = (String) hazard.params().getOrDefault("material", "minecraft:iron_bars");
+            for (Object posObj : positions) {
+                if (posObj instanceof List<?> p && p.size() == 3) {
+                    int x = ((Number) p.get(0)).intValue() + originX;
+                    int y = resolveY(hazard, template);
+                    int z = ((Number) p.get(2)).intValue() + originZ;
+                    addBlock(x, y, z, material, placements);
+                }
+            }
+        }
+
+        private static void placeFireZone(ArenaTemplate.Hazard hazard, ArenaTemplate template,
+                                          int originX, int originZ, List<BlockPlacement> placements) {
+            Object minObj = hazard.params() != null ? hazard.params().get("min") : null;
+            Object maxObj = hazard.params() != null ? hazard.params().get("max") : null;
+            if (!(minObj instanceof List<?> min) || !(maxObj instanceof List<?> max)
+                || min.size() != 3 || max.size() != 3) {
+                return;
+            }
+            int minX = ((Number) min.get(0)).intValue() + originX;
+            int minY = resolveY(hazard, template);
+            int minZ = ((Number) min.get(2)).intValue() + originZ;
+            int maxX = ((Number) max.get(0)).intValue() + originX;
+            int maxZ = ((Number) max.get(2)).intValue() + originZ;
+            String block = (String) hazard.params().getOrDefault("block", "minecraft:fire");
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    addBlock(x, minY, z, block, placements);
+                }
+            }
+        }
+
+        private static void placeMagmaFloor(ArenaTemplate.Hazard hazard, ArenaTemplate template,
+                                            int originX, int originZ, List<BlockPlacement> placements) {
+            double coverage = ((Number) hazard.params().getOrDefault("coverage", 0.1d)).doubleValue();
+            ArenaTemplate.ArenaShape shape = template.arenaShape();
+            if (shape == null) {
+                shape = ArenaTemplate.ArenaShape.RECTANGULAR;
+            }
+
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int halfX = sizeX / 2;
+            int halfZ = sizeZ / 2;
+            int y = resolveY(hazard, template);
+
+            int arenaArea;
+            int radius = Math.max(halfX, halfZ);
+            if (shape == ArenaTemplate.ArenaShape.CIRCULAR) {
+                arenaArea = (int) (Math.PI * radius * radius);
+            } else if (shape == ArenaTemplate.ArenaShape.RING) {
+                Integer innerRadiusVal = template.ringInnerRadius();
+                int innerRadius = innerRadiusVal != null ? innerRadiusVal : radius / 2;
+                arenaArea = (int) (Math.PI * (radius * radius - innerRadius * innerRadius));
+            } else {
+                arenaArea = sizeX * sizeZ;
+            }
+
+            int total = (int) Math.round(arenaArea * Math.min(coverage, 0.5));
+            String block = (String) hazard.params().getOrDefault("block", "minecraft:magma_block");
+            int placed = 0;
+
+            int minX = minOffsetX(template);
+            int maxX = maxOffsetX(template);
+            int minZ = minOffsetZ(template);
+            int maxZ = maxOffsetZ(template);
+
+            outer:
+            for (int dx = minX; dx <= maxX; dx += 2) {
+                for (int dz = minZ; dz <= maxZ; dz += 2) {
+                    if (placed >= total) {
+                        break outer;
+                    }
+                    if (!isInArenaShape(dx, dz, template, sizeX, sizeZ)) {
+                        continue;
+                    }
+                    addBlock(originX + dx, y, originZ + dz, block, placements);
+                    placed++;
+                }
+            }
+        }
+
+        private static void placeFallingBlocks(ArenaTemplate.Hazard hazard, ArenaTemplate template,
+                                               int originX, int originZ, List<BlockPlacement> placements) {
+            Object areaObj = hazard.params() != null ? hazard.params().get("area") : null;
+            String blockType = (String) hazard.params().getOrDefault("blockType", "minecraft:sand");
+            int count = ((Number) hazard.params().getOrDefault("count", 5)).intValue();
+            int interval = ((Number) hazard.params().getOrDefault("interval", 20)).intValue();
+
+            int verticalSpacing = Math.max(1, interval / 10);
+
+            if (areaObj instanceof List<?> area && area.size() == 3) {
+                int centerX = ((Number) area.get(0)).intValue() + originX;
+                int centerZ = ((Number) area.get(2)).intValue() + originZ;
+                int y = resolveY(hazard, template);
+                for (int i = 0; i < count; i++) {
+                    addBlock(centerX, y + (i * verticalSpacing), centerZ, blockType, placements);
+                }
+            } else {
+                int y = resolveY(hazard, template);
+                for (int i = 0; i < count; i++) {
+                    addBlock(originX, y + (i * verticalSpacing), originZ, blockType, placements);
+                }
+            }
+        }
+
+        private static void placeZoneAwareLighting(ArenaTemplate template, int originX, int originZ,
+                                                   ArenaTemplate.ZoneSettings zoneSettings,
+                                                   List<BlockPlacement> placements) {
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int halfX = sizeX / 2;
+            int halfZ = sizeZ / 2;
+            int floorY = template.floor() != null ? template.floor().y() : 64;
+
+            ZoneLayout layout = buildZoneLayoutFromSettings(zoneSettings, halfX, halfZ);
+
+            for (ArenaTemplate.ZoneSettings.ZoneDefinition zoneDef : zoneSettings.zones()) {
+                ZoneEnvironment environment = createZoneEnvironment(zoneDef);
+                if (!environment.lighting().placeLightSources() && environment.lighting().blockLight() <= 0) {
+                    continue;
+                }
+
+                ArenaZone zone = layout.zones().stream()
+                    .filter(z -> z.name().equals(zoneDef.name()))
+                    .findFirst()
+                    .orElse(null);
+
+                if (zone == null) {
+                    LOGGER.warn("Zone '{}' not found in layout, skipping lighting", zoneDef.name());
+                    continue;
+                }
+
+                placeZoneLighting(zone, originX, originZ, floorY,
+                    environment.lighting().blockLight(), template, placements);
+            }
+        }
+
+        private static int placeZoneLighting(ArenaZone zone, int originX, int originZ, int floorY,
+                                             int targetLight, ArenaTemplate template,
+                                             List<BlockPlacement> placements) {
+            ArenaZone.ZoneBounds bounds = zone.bounds();
+
+            int spacing = Math.max(4, Math.min(20, (15 - targetLight) * 2 + 2));
+
+            int lightY = floorY + 1;
+            if (template.ceiling() != null && template.ceiling().enabled()) {
+                int ceilingThickness = Math.max(1, template.ceiling().thickness());
+                lightY = template.ceiling().y() - ceilingThickness;
+            } else if (template.walls() != null && template.walls().enabled()) {
+                lightY = template.walls().startY() + template.walls().height() - 2;
+            }
+
+            String lightBlock = selectLightBlock(targetLight);
+            int placedCount = 0;
+
+            int startX = originX + bounds.x1();
+            int endX = originX + bounds.x2();
+            int startZ = originZ + bounds.z1();
+            int endZ = originZ + bounds.z2();
+
+            for (int x = startX + spacing / 2; x < endX; x += spacing) {
+                for (int z = startZ + spacing / 2; z < endZ; z += spacing) {
+                    if (zone.contains(x - originX, z - originZ)) {
+                        addBlock(x, lightY, z, lightBlock, placements);
+                        placedCount++;
+                    }
+                }
+            }
+
+            return placedCount;
+        }
+
+        private static ZoneLayout buildZoneLayoutFromSettings(ArenaTemplate.ZoneSettings settings,
+                                                              int halfX,
+                                                              int halfZ) {
+            List<ArenaTemplate.ZoneSettings.ZoneDefinition> zones = settings.zones();
+            int zoneCount = zones.size();
+
+            ZoneLayout.Builder builder = ZoneLayout.builder(Math.max(halfX, halfZ));
+
+            if (zoneCount == 1) {
+                builder.strategy(ZoneLayout.LayoutStrategy.SINGLE);
+                ArenaTemplate.ZoneSettings.ZoneDefinition def = zones.get(0);
+                builder.addZone(ArenaZone.rectangular(def.name(), -halfX, -halfZ, halfX, halfZ));
+            } else if (zoneCount == 2) {
+                builder.strategy(ZoneLayout.LayoutStrategy.STRIPED_VERTICAL);
+                ArenaTemplate.ZoneSettings.ZoneDefinition def0 = zones.get(0);
+                ArenaTemplate.ZoneSettings.ZoneDefinition def1 = zones.get(1);
+                builder.addZone(ArenaZone.rectangular(def0.name(), -halfX, -halfZ, 0, halfZ));
+                builder.addZone(ArenaZone.rectangular(def1.name(), 0, -halfZ, halfX, halfZ));
+            } else if (zoneCount <= 4) {
+                builder.strategy(ZoneLayout.LayoutStrategy.QUADRANT);
+                if (zones.size() >= 1) {
+                    builder.addZone(ArenaZone.rectangular(zones.get(0).name(), 0, -halfZ, halfX, 0));
+                }
+                if (zones.size() >= 2) {
+                    builder.addZone(ArenaZone.rectangular(zones.get(1).name(), -halfX, -halfZ, 0, 0));
+                }
+                if (zones.size() >= 3) {
+                    builder.addZone(ArenaZone.rectangular(zones.get(2).name(), -halfX, 0, 0, halfZ));
+                }
+                if (zones.size() >= 4) {
+                    builder.addZone(ArenaZone.rectangular(zones.get(3).name(), 0, 0, halfX, halfZ));
+                }
+            } else {
+                builder.strategy(ZoneLayout.LayoutStrategy.SINGLE);
+                builder.addZone(ArenaZone.rectangular("main", -halfX, -halfZ, halfX, halfZ));
+            }
+
+            return builder.build();
+        }
+
+        private static void placeTemplateLighting(ArenaTemplate template, int originX, int originZ,
+                                                  List<BlockPlacement> placements) {
+            ArenaTemplate.Lighting lighting = template.lighting();
+            if (lighting == null) {
+                return;
+            }
+
+            int placedLights = 0;
+            int skippedLights = 0;
+
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int halfX = sizeX / 2;
+            int halfZ = sizeZ / 2;
+            int minX = -halfX;
+            int maxX = sizeX - halfX - 1;
+            int minZ = -halfZ;
+            int maxZ = sizeZ - halfZ - 1;
+
+            if (lighting.lightSources() != null && !lighting.lightSources().isEmpty()) {
+                for (ArenaTemplate.Lighting.LightSource lightSource : lighting.lightSources()) {
+                    int[] pos = lightSource.pos();
+                    if (pos != null && pos.length == 3) {
+                        int relX = pos[0];
+                        int relZ = pos[2];
+                        if (relX < minX || relX > maxX || relZ < minZ || relZ > maxZ) {
+                            skippedLights++;
+                            continue;
+                        }
+
+                        int x = originX + pos[0];
+                        int y = pos[1];
+                        int z = originZ + pos[2];
+
+                        if (template.floor() != null) {
+                            y = template.floor().y() + pos[1];
+                        }
+
+                        addBlock(x, y, z, lightSource.block(), placements);
+                        placedLights++;
+                    }
+                }
+            }
+
+            if (lighting.ambientLight() && lighting.blockLight() > 0) {
+                placedLights += placeAmbientLighting(template, originX, originZ, lighting.blockLight(), placements);
+            }
+
+            if (placedLights > 0 && LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Placed {} light sources for template '{}'", placedLights, template.id());
+            }
+
+            if (skippedLights > 0) {
+                LOGGER.warn("Skipped {} light sources outside arena bounds for template '{}'",
+                    skippedLights, template.id());
+            }
+        }
+
+        private static int placeAmbientLighting(ArenaTemplate template, int originX, int originZ,
+                                                int targetLight, List<BlockPlacement> placements) {
+            int sizeX = getSizeX(template);
+            int sizeZ = getSizeZ(template);
+            int startX = originX - (sizeX / 2);
+            int startZ = originZ - (sizeZ / 2);
+
+            int lightY;
+            if (template.floor() != null) {
+                lightY = template.floor().y() + 1;
+            } else if (template.ceiling() != null && template.ceiling().enabled()) {
+                int ceilingThickness = Math.max(1, template.ceiling().thickness());
+                lightY = template.ceiling().y() - ceilingThickness;
+            } else if (template.walls() != null && template.walls().enabled()) {
+                lightY = template.walls().startY() + Math.max(1, template.walls().height() / 2);
+            } else {
+                lightY = 65;
+            }
+
+            if (template.ceiling() != null && template.ceiling().enabled()) {
+                int ceilingThickness = Math.max(1, template.ceiling().thickness());
+                lightY = template.ceiling().y() - ceilingThickness;
+            } else if (template.floor() != null && template.walls() != null && template.walls().enabled()) {
+                lightY = template.walls().startY() + template.walls().height() - 2;
+            }
+
+            int spacing = Math.max(4, Math.min(20, (15 - targetLight) * 2 + 2));
+            String lightBlock = selectLightBlock(targetLight);
+
+            int placedCount = 0;
+            for (int dx = spacing / 2; dx < sizeX; dx += spacing) {
+                for (int dz = spacing / 2; dz < sizeZ; dz += spacing) {
+                    int x = startX + dx;
+                    int z = startZ + dz;
+                    addBlock(x, lightY, z, lightBlock, placements);
+                    placedCount++;
+                }
+            }
+
+            return placedCount;
+        }
+
+        private static String selectLightBlock(int targetLight) {
+            if (targetLight >= 14) {
+                return "minecraft:sea_lantern";
+            } else if (targetLight >= 11) {
+                return "minecraft:glowstone";
+            } else if (targetLight >= 8) {
+                return "minecraft:lantern";
+            } else if (targetLight >= 5) {
+                return "minecraft:soul_lantern";
+            } else if (targetLight >= 1) {
+                return "minecraft:redstone_torch";
+            } else {
+                return "minecraft:redstone_torch";
+            }
+        }
+
+        private static int minOffsetX(ArenaTemplate template) {
+            return minOffset(getSizeX(template));
+        }
+
+        private static int maxOffsetX(ArenaTemplate template) {
+            return maxOffset(getSizeX(template));
+        }
+
+        private static int minOffsetZ(ArenaTemplate template) {
+            return minOffset(getSizeZ(template));
+        }
+
+        private static int maxOffsetZ(ArenaTemplate template) {
+            return maxOffset(getSizeZ(template));
+        }
+
+        private static void addBlock(int x, int y, int z, String material, List<BlockPlacement> placements) {
+            placements.add(new BlockPlacement(x, y, z, material));
         }
     }
 

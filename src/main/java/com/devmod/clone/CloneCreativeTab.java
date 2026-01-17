@@ -13,6 +13,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
 import com.devmod.hologram.HologramItems;
+import com.devmod.npc.item.NpcItems;
 
 /**
  * Creative mode tab for Clone system items.
@@ -33,8 +34,12 @@ public final class CloneCreativeTab {
             .withTabsBefore(CreativeModeTabs.SPAWN_EGGS)
             .icon(() -> Objects.requireNonNull(CloneItems.BIOSCANNER.get().getDefaultInstance()))
             .displayItems((parameters, output) -> {
+                // Admin Tools
+                output.accept(Objects.requireNonNull(CloneItems.ADMIN_TERMINAL.get()));
+
                 // Tools
                 output.accept(Objects.requireNonNull(CloneItems.BIOSCANNER.get()));
+                output.accept(Objects.requireNonNull(NpcItems.NEUROCELL_NPC.get()));
 
                 // Blocks in workflow order
                 output.accept(Objects.requireNonNull(CloneItems.IMPRINTER.get()));

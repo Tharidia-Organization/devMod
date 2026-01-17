@@ -1,67 +1,39 @@
-# DevMod Features
+# Feature DevMod
 
-> Last updated: 2025-12-26
-> Status: CURRENT (verified against code)
+> Ultimo aggiornamento: 2026-01-15
 
-Inventario sintetico delle feature presenti nel codice attuale. Per dettagli, vedere i dossier in `docs/areas/` e `docs/subsystems/`.
+## Gameplay e Testing
 
----
+- Endurance quest a wave con perk, reward, shop e challenge.
+- Arena template con policy e build asincroni.
+- Combat tuning con body-part detection e OBB hitbox.
 
-## Arena Templates (com.devmod.arena)
-- Registry + policy resolution (`ArenaTemplateRegistry`, `ArenaPolicyRegistry`, `PolicyResolver`).
-- Build transazionale sync/async (`TemplateArenaBuilder`, `AsyncArenaBuilder`).
-- Autosmoke + report (`AutosmokeRunner`, `AutosmokeScheduler`).
-- Telemetry/alerting arena (`ArenaTelemetry`, `AlertRouter`).
+## Tooling in-game
 
-## Endurance Quests (com.devmod.endurance)
-- Quest lifecycle e sessioni (`EnduranceQuestManager`, `EnduranceEventHandler`).
-- Wave progression + boss waves (`WaveManager`, `BossWaveSystem`).
-- Perk + combo + reward (`PerkSystem`, `ComboSystem`, `RewardSystem`).
-- UI dedicata (`EnduranceQuestScreen`, `PerkSelectionScreen`, `KitSelectionScreen`).
+- Menu radiale per accesso rapido agli strumenti.
+- Editor per weapon/armor/recipe e preset.
+- Overlay di debug, profiling e HUD impatti.
 
-## Instance Runtime (com.devmod.runtime)
-- Instance lifecycle + registry (`InstanceManager`, `InstanceRegistry`, `InstanceData`).
-- Snapshot e recovery player (`PlayerInstanceSnapshot`, `RecoverySystem`).
-- Event wiring (`InstanceEventHandler`).
+## Sistemi world
 
-## Party System (com.devmod.party)
-- Gestione party, inviti e sync (`PartyManager`, `PartyData`, `PartyInvite`).
-- Payload e handler (`Party*Payload`, `PartyNetworkHandler`).
-- UI (`PartyScreen`).
+- Nexus hub con palette dedicata e dimension management.
+- Area Builder e Nexus Editor Central.
+- Zone Marker e editor zone data-driven.
+- Portali custom con rune e preview.
+- Trasporto unificato (Warp Core + moduli).
 
-## Combat & Damage (com.devmod.combat, com.devmod.damage)
-- Calcolo danno + body-part detection (`DamageHandler`, `HitHelper`, `DamageBreakdown`).
-- Tracking e hooks (`DamageTracker`, `HitData`).
+## Contenuti e moduli specializzati
 
-## Telemetry & Analytics (com.devmod.telemetry)
-- Event tracking + tick pipeline (`TelemetryEvents`, `TelemetryService`).
-- Persistenza DuckDB (`DuckDBTelemetryService`, `DuckDBBatchWriter`).
-- Dashboard server (`TelemetryDashboardServer`).
+- Clone system (telepad, neurocell, reformer, macchine GeckoLib).
+- NPC con dialog system, editor UI (/npc dialog edit) e dialoghi custom persistenti.
+- Hologram projector con preview 3D di terrain.
 
-## Mailbox / News / Tasks (com.devmod.mailbox)
-- Messaggistica + news + task (`MailboxManager`, `NewsManager`, `TestTaskManager`).
-- Persistenza DuckDB (`DuckDbMailboxRepository`).
-- API admin (Javalin) (`MailboxApiServer`).
-- UI client (`MailboxScreen`, `NewsScreen`, `TesterTaskScreen`).
+## Telemetry e operazioni
 
-## Editor & Tools (client UI)
-- Item editor (`ItemEditorScreen`).
-- Unified settings (`UnifiedSettingsScreen`).
-- Radial actions (`RadialMenuScreen`, `ActionRegistry`).
-- Testing hub + QA (`TestingHub`, `QATestingScreen`).
+- Telemetry NDJSON + DuckDB.
+- Dashboard locale per analytics.
+- Mailbox/news/task/ticket con admin panel web.
 
-## Network & Config
-- Packet registry + handlers (`ChannelId`, `NetworkHandler`).
-- Validation + rate limits (`PacketValidator`).
-- Config files e override (`Config`, `GameMechanicsConfig`, `GameplayOverridesManager`).
+## Compatibilita
 
----
-
-## Cross-References
-- [[PROJECT_TOPOLOGY]]
-- [[ENTRYPOINTS]]
-- [[areas/arena/README]]
-- [[areas/endurance/README]]
-- [[areas/instance/README]]
-- [[areas/telemetry/README]]
-- [[areas/mailbox/README]]
+- Integrazioni soft con mod esterne (Pehkui, Better Combat, GeckoLib e altro).

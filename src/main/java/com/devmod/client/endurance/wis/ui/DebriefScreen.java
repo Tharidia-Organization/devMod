@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -16,7 +17,6 @@ import com.google.gson.GsonBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -30,7 +30,10 @@ import com.devmod.client.endurance.wis.CombatEvent;
 import com.devmod.client.endurance.wis.WaveIntelligenceManager;
 import com.devmod.client.endurance.wis.WaveTelemetryCollector;
 import com.devmod.client.input.KeyInputHandler;
+import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.BaseDevModScreen;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.PartyWaveStats;
 import com.devmod.mailbox.client.ClientTicketCache;
@@ -100,14 +103,14 @@ public class DebriefScreen extends BaseDevModScreen {
     private final int waveNumber;
 
     // UI components - initialized in initContent(), never null after init
-    private final List<Button> tabButtons = new ArrayList<>();
-    private Button continueButton;
-    private Button submitTicketButton;
+    private final List<EditorButtonWidget> tabButtons = new ArrayList<>();
+    private EditorButtonWidget continueButton;
+    private EditorButtonWidget submitTicketButton;
     @Nullable private EditBox ticketSubjectField;
     @Nullable private EditBox ticketNotesField;
     // Timeline navigation buttons (UX: visual controls for accessibility)
-    private Button timelinePrevButton;
-    private Button timelineNextButton;
+    private EditorButtonWidget timelinePrevButton;
+    private EditorButtonWidget timelineNextButton;
 
     // Scroll state for content
     private int scrollOffset = 0;
@@ -178,61 +181,73 @@ public class DebriefScreen extends BaseDevModScreen {
         for (int i = 0; i < Tab.values().length; i++) {
             Tab tab = Tab.values()[i];
             int tabX = tabStartX + i * (tabWidth + TAB_GAP);
-            Button tabBtn = Button.builder(
-                Objects.requireNonNull(Component.literal(tab.icon + " ")
-                    .append(Component.translatable(tab.labelKey))),
-                btn -> {
+            String tabLabel = tab.icon + " " + Component.translatable(tab.labelKey).getString();
+            EditorButton tabBtn = EditorButton.builder("debrief-tab-" + tab.name().toLowerCase(Locale.ROOT), tabLabel)
+                .style(EditorButton.Style.GHOST)
+                .size(EditorButton.Size.MEDIUM)
+                .onClick(() -> {
                     activeTab = tab;
                     scrollOffset = 0;
                     updateButtonVisibility();
                 })
-                .bounds(tabX, tabY, tabWidth, TAB_HEIGHT)
                 .build();
-            tabButtons.add(tabBtn);
-            addRenderableWidget(Objects.requireNonNull(tabBtn));
+            EditorButtonWidget tabWidget = new EditorButtonWidget(tabBtn, tabX, tabY, tabWidth, TAB_HEIGHT);
+            tabButtons.add(tabWidget);
+            addRenderableWidget(tabWidget);
         }
 
         // Continue button
-        continueButton = Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.action.continue")),
-            btn -> {
+        EditorButton continueBtn = EditorButton.builder("debrief-continue",
+                Component.translatable("devmod.endurance.debrief.action.continue").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(() -> {
                 WaveIntelligenceManager.INSTANCE.skipDebrief();
                 onClose();
             })
-            .bounds(centerX - ACTION_BUTTON_WIDTH / 2, actionButtonY, ACTION_BUTTON_WIDTH, actionButtonHeight)
             .build();
-        addRenderableWidget(Objects.requireNonNull(continueButton));
+        continueButton = new EditorButtonWidget(continueBtn,
+            centerX - ACTION_BUTTON_WIDTH / 2, actionButtonY, ACTION_BUTTON_WIDTH, actionButtonHeight);
+        addRenderableWidget(continueButton);
 
         // Submit ticket button (only in Report tab)
-        submitTicketButton = Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.action.submit_ticket")),
-            btn -> submitTicket())
-            .bounds(centerX - ACTION_BUTTON_WIDTH / 2, actionButtonY, ACTION_BUTTON_WIDTH, actionButtonHeight)
+        EditorButton submitBtn = EditorButton.builder("debrief-submit-ticket",
+                Component.translatable("devmod.endurance.debrief.action.submit_ticket").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::submitTicket)
             .build();
+        submitTicketButton = new EditorButtonWidget(submitBtn,
+            centerX - ACTION_BUTTON_WIDTH / 2, actionButtonY, ACTION_BUTTON_WIDTH, actionButtonHeight);
         submitTicketButton.visible = false;
-        addRenderableWidget(Objects.requireNonNull(submitTicketButton));
+        addRenderableWidget(submitTicketButton);
 
         // Timeline navigation buttons (UX: accessible visual controls)
         // UX Q3: Position adjacent with small gap (no 140px hole)
         int timelineNavY = contentY + contentHeight - actionButtonHeight - DesignTokens.Space._4;
         int buttonWidth = 60;
         int buttonGap = DesignTokens.Space._3;
-        timelinePrevButton = Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.action.prev")),
-            btn -> {
+        EditorButton prevBtn = EditorButton.builder("debrief-timeline-prev",
+                Component.translatable("devmod.endurance.debrief.action.prev").getString())
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.SMALL)
+            .onClick(() -> {
                 if (timelinePage > 0) {
                     timelinePage--;
                     updateTimelineButtonState(); // UX Q8: Update enabled state
                 }
             })
-            .bounds(centerX - buttonWidth - buttonGap / 2, timelineNavY, buttonWidth, actionButtonHeight - 4)
             .build();
+        timelinePrevButton = new EditorButtonWidget(prevBtn,
+            centerX - buttonWidth - buttonGap / 2, timelineNavY, buttonWidth, actionButtonHeight - 4);
         timelinePrevButton.visible = false;
-        addRenderableWidget(Objects.requireNonNull(timelinePrevButton));
+        addRenderableWidget(timelinePrevButton);
 
-        timelineNextButton = Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.action.next")),
-            btn -> {
+        EditorButton nextBtn = EditorButton.builder("debrief-timeline-next",
+                Component.translatable("devmod.endurance.debrief.action.next").getString())
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.SMALL)
+            .onClick(() -> {
                 List<CombatEvent> events = collector.getEvents();
                 int totalPages = Math.max(1, (events.size() + TIMELINE_PAGE_SIZE - 1) / TIMELINE_PAGE_SIZE);
                 if (timelinePage < totalPages - 1) {
@@ -240,10 +255,11 @@ public class DebriefScreen extends BaseDevModScreen {
                     updateTimelineButtonState(); // UX Q8: Update enabled state
                 }
             })
-            .bounds(centerX + buttonGap / 2, timelineNavY, buttonWidth, actionButtonHeight - 4)
             .build();
+        timelineNextButton = new EditorButtonWidget(nextBtn,
+            centerX + buttonGap / 2, timelineNavY, buttonWidth, actionButtonHeight - 4);
         timelineNextButton.visible = false;
-        addRenderableWidget(Objects.requireNonNull(timelineNextButton));
+        addRenderableWidget(timelineNextButton);
 
         // Ticket fields (report tab)
         EditBox subjectField = new EditBox(font, contentX, contentY, contentWidth, 20,
@@ -253,6 +269,9 @@ public class DebriefScreen extends BaseDevModScreen {
             "devmod.endurance.debrief.report.subject.placeholder")));
         subjectField.setValue(Objects.requireNonNull(
             Component.translatable("devmod.endurance.debrief.report.subject.default", waveNumber)).getString());
+        subjectField.setBordered(false);
+        subjectField.setTextColor(DesignTokens.Text.PRIMARY);
+        subjectField.setTextColorUneditable(DesignTokens.Text.MUTED);
         subjectField.visible = false;
         addRenderableWidget(subjectField);
         ticketSubjectField = subjectField;
@@ -262,6 +281,9 @@ public class DebriefScreen extends BaseDevModScreen {
         notesField.setMaxLength(TICKET_NOTES_MAX);
         notesField.setHint(Objects.requireNonNull(Component.translatable(
             "devmod.endurance.debrief.report.notes.placeholder")));
+        notesField.setBordered(false);
+        notesField.setTextColor(DesignTokens.Text.PRIMARY);
+        notesField.setTextColorUneditable(DesignTokens.Text.MUTED);
         notesField.visible = false;
         addRenderableWidget(notesField);
         ticketNotesField = notesField;
@@ -297,7 +319,7 @@ public class DebriefScreen extends BaseDevModScreen {
         if (submitTicketButton != null) {
             submitTicketButton.visible = reportTab;
             // Fix #5: Disable button after submission
-            submitTicketButton.active = !ticketSubmitted;
+            submitTicketButton.getButton().setEnabled(!ticketSubmitted);
         }
         if (ticketSubjectField != null) {
             ticketSubjectField.visible = reportTab;
@@ -366,8 +388,8 @@ public class DebriefScreen extends BaseDevModScreen {
         }
 
         // Disable Prev at first page, Next at last page
-        timelinePrevButton.active = timelinePage > 0;
-        timelineNextButton.active = timelinePage < totalPages - 1;
+        timelinePrevButton.getButton().setEnabled(timelinePage > 0);
+        timelineNextButton.getButton().setEnabled(timelinePage < totalPages - 1);
     }
 
     @Override
@@ -416,6 +438,19 @@ public class DebriefScreen extends BaseDevModScreen {
         // Fix #3: Render scroll indicator if content overflows
         if (maxScrollOffset > 0) {
             renderScrollIndicator(graphics, contentX + contentWidth - 8, contentY, 6, contentHeight);
+        }
+
+        renderInputBackgrounds(graphics);
+    }
+
+    private void renderInputBackgrounds(GuiGraphics graphics) {
+        if (ticketSubjectField != null && ticketSubjectField.visible) {
+            AxiomRenderer.drawInputBackground(graphics, ticketSubjectField.getX(), ticketSubjectField.getY(),
+                ticketSubjectField.getWidth(), ticketSubjectField.getHeight(), ticketSubjectField.isFocused());
+        }
+        if (ticketNotesField != null && ticketNotesField.visible) {
+            AxiomRenderer.drawInputBackground(graphics, ticketNotesField.getX(), ticketNotesField.getY(),
+                ticketNotesField.getWidth(), ticketNotesField.getHeight(), ticketNotesField.isFocused());
         }
     }
 

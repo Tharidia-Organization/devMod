@@ -39,15 +39,20 @@ public class GeckoLibModuleCompat extends BaseCompatModule {
 
     @Override
     protected void doInitCommon() throws Exception {
-        // Check using collision compat first
-        if (!GeckoLibCompat.isGeckoLibPresent()) {
-            throw new Exception("GeckoLib not present according to collision compat");
+        // Attempt class detection via collision compat, but don't hard-fail on early classpath timing.
+        boolean detected = GeckoLibCompat.isGeckoLibPresent();
+        if (!detected) {
+            warn("GeckoLib classes not detected yet; continuing with limited compatibility");
         }
 
-        // Load additional API classes
+        // Load additional API classes (best-effort)
         loadAdditionalApi();
 
-        info("GeckoLib detected and initialized");
+        if (detected) {
+            info("GeckoLib detected and initialized");
+        } else {
+            info("GeckoLib compat initialized (class detection pending)");
+        }
     }
 
     /**
