@@ -1,0 +1,10 @@
+{
+  "type": "devmod:foundry_entity_melting",
+  "entity": "minecraft:guardian",
+  "result": {
+    "fluid": "devmod:molten_electrum",
+    "amount": 35
+  },
+  "damage": 3,
+  "cooldown": 20
+}

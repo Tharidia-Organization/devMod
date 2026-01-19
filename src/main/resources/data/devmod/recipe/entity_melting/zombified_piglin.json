@@ -1,0 +1,10 @@
+{
+  "type": "devmod:foundry_entity_melting",
+  "entity": "minecraft:zombified_piglin",
+  "result": {
+    "fluid": "devmod:molten_gold",
+    "amount": 25
+  },
+  "damage": 2,
+  "cooldown": 20
+}

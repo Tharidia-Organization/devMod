@@ -1,0 +1,10 @@
+{
+  "type": "devmod:foundry_entity_melting",
+  "entity_tag": "devmod:copper_golems",
+  "result": {
+    "fluid": "devmod:molten_copper",
+    "amount": 200
+  },
+  "damage": 4,
+  "cooldown": 20
+}

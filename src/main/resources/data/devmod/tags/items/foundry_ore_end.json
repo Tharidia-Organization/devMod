@@ -1,0 +1,24 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "alltheores:end_tin_ore", "required": false },
+    { "id": "alltheores:end_lead_ore", "required": false },
+    { "id": "alltheores:end_silver_ore", "required": false },
+    { "id": "alltheores:end_nickel_ore", "required": false },
+    { "id": "alltheores:end_aluminum_ore", "required": false },
+    { "id": "alltheores:end_osmium_ore", "required": false },
+    { "id": "alltheores:end_uranium_ore", "required": false },
+    { "id": "alltheores:end_zinc_ore", "required": false },
+    { "id": "alltheores:end_platinum_ore", "required": false },
+    { "id": "alltheores:end_iron_ore", "required": false },
+    { "id": "alltheores:end_gold_ore", "required": false },
+    { "id": "alltheores:end_copper_ore", "required": false },
+    { "id": "alltheores:end_coal_ore", "required": false },
+    { "id": "alltheores:end_diamond_ore", "required": false },
+    { "id": "alltheores:end_emerald_ore", "required": false },
+    { "id": "alltheores:end_lapis_ore", "required": false },
+    { "id": "alltheores:end_redstone_ore", "required": false },
+    { "id": "ae2:quartz_cluster", "required": false },
+    { "id": "ae2:damaged_budding_quartz", "required": false }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "max_level": 1,
+  "slot_type": "trait",
+  "slots": 0,
+  "bonuses": {},
+  "abilities": {
+    "passive": {
+      "effect": "alloying_bonus",
+      "description": "Material provides bonuses when used in alloying recipes"
+    }
+  },
+  "description": "Master of alloys - improves purity, efficiency and speed when alloying"
+}

@@ -1,0 +1,10 @@
+{
+  "type": "devmod:foundry_entity_melting",
+  "entity": "minecraft:iron_golem",
+  "result": {
+    "fluid": "devmod:molten_iron",
+    "amount": 250
+  },
+  "damage": 5,
+  "cooldown": 20
+}

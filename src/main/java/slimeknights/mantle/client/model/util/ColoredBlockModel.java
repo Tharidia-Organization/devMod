@@ -21,6 +21,7 @@ import net.minecraft.client.resources.model.SimpleBakedModel.Builder;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.util.GsonHelper;
 import net.neoforged.neoforge.client.ForgeHooksClient;
 import net.neoforged.neoforge.client.model.IQuadTransformer;
 import net.neoforged.neoforge.client.model.QuadTransformers;
@@ -28,11 +29,6 @@ import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
 import net.neoforged.neoforge.client.model.geometry.IGeometryLoader;
 import org.joml.Vector3f;
 import slimeknights.mantle.Mantle;
-import slimeknights.mantle.data.loadable.Loadable;
-import slimeknights.mantle.data.loadable.common.ColorLoadable;
-import slimeknights.mantle.data.loadable.primitive.BooleanLoadable;
-import slimeknights.mantle.data.loadable.primitive.IntLoadable;
-import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.util.LogicHelper;
 
 import javax.annotation.Nullable;
@@ -154,12 +150,6 @@ public class ColoredBlockModel extends SimpleBlockModel {
    */
   public record ColorData(int color, @Deprecated int luminosity, @Nullable Boolean uvlock) {
     public static final ColorData DEFAULT = new ColorData(-1, -1, null);
-    public static final RecordLoadable<ColorData> LOADABLE = RecordLoadable.create(
-      ColorLoadable.ALPHA.defaultField("color", false, ColorData::color),
-      IntLoadable.range(-1, 15).defaultField("luminosity", -1, ColorData::luminosity),
-      BooleanLoadable.INSTANCE.nullableField("uvlock", ColorData::uvlock),
-      ColorData::new);
-    public static final Loadable<List<ColorData>> LIST_LOADABLE = LOADABLE.list(0);
 
     /** Gets the UV lock for the given part */
     public boolean isUvLock(boolean defaultLock) {
@@ -169,18 +159,11 @@ public class ColoredBlockModel extends SimpleBlockModel {
       return uvlock;
     }
 
-    /** @deprecated use {@link #LOADABLE} */
-    @Deprecated(forRemoval = true)
     public static ColorData fromJson(JsonObject json) {
-      return LOADABLE.deserialize(json);
-    }
-
-    /** @deprecated use {@link #LOADABLE} */
-    @Deprecated(forRemoval = true)
-    public JsonObject toJson() {
-      JsonObject json = new JsonObject();
-      LOADABLE.serialize(this, json);
-      return json;
+      int color = json.has("color") ? json.get("color").getAsInt() : -1;
+      int luminosity = json.has("luminosity") ? json.get("luminosity").getAsInt() : -1;
+      Boolean uvlock = json.has("uvlock") ? json.get("uvlock").getAsBoolean() : null;
+      return new ColorData(color, luminosity, uvlock);
     }
   }
 
@@ -190,7 +173,17 @@ public class ColoredBlockModel extends SimpleBlockModel {
   /** Deserializes the model from JSON */
   public static ColoredBlockModel deserialize(JsonObject json, JsonDeserializationContext context) {
     SimpleBlockModel model = SimpleBlockModel.deserialize(json, context);
-    List<ColorData> colorData = ColorData.LIST_LOADABLE.getOrDefault(json, "colors", List.of());
+    List<ColorData> colorData = List.of();
+    if (json.has("colors")) {
+      var array = json.getAsJsonArray("colors");
+      if (!array.isEmpty()) {
+        var parsed = new java.util.ArrayList<ColorData>(array.size());
+        for (int i = 0; i < array.size(); i++) {
+          parsed.add(ColorData.fromJson(GsonHelper.convertToJsonObject(array.get(i), "colors[" + i + "]")));
+        }
+        colorData = List.copyOf(parsed);
+      }
+    }
     return new ColoredBlockModel(model, colorData);
   }
 

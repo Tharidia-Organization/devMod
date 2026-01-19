@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "minecraft:deepslate_gold_ore"
+  },
+  "result": {
+    "fluid": "devmod:molten_gold",
+    "amount": 288
+  },
+  "time": 280,
+  "temperature": 950
+}

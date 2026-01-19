@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "minecraft:raw_copper"
+  },
+  "result": {
+    "fluid": "devmod:molten_copper",
+    "amount": 144
+  },
+  "time": 180,
+  "temperature": 700
+}

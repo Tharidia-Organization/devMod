@@ -1,0 +1,13 @@
+{
+  "ingredient": {
+    "item": "minecraft:quartz"
+  },
+  "max_level": 2,
+  "specialization": "devmod:alloyist",
+  "bonuses": {
+    "durability": 20,
+    "mining_speed": 0.05
+  },
+  "slot_type": "upgrade",
+  "slots": 1
+}

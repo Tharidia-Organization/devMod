@@ -1,5 +1,6 @@
 package slimeknights.mantle.client.model.util;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -17,6 +18,7 @@ import net.minecraft.client.resources.model.UnbakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 import net.neoforged.neoforge.client.ForgeRenderTypes;
 import net.neoforged.neoforge.client.RenderTypeGroup;
 import net.neoforged.neoforge.client.model.CompositeModel;
@@ -27,12 +29,6 @@ import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
 import net.neoforged.neoforge.client.model.geometry.UnbakedGeometryHelper;
 import net.neoforged.neoforge.client.model.pipeline.QuadBakingVertexConsumer;
 import net.neoforged.neoforge.client.model.pipeline.TransformingVertexPipeline;
-import slimeknights.mantle.data.loadable.Loadable;
-import slimeknights.mantle.data.loadable.Loadables;
-import slimeknights.mantle.data.loadable.common.ColorLoadable;
-import slimeknights.mantle.data.loadable.primitive.BooleanLoadable;
-import slimeknights.mantle.data.loadable.primitive.IntLoadable;
-import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.util.ItemLayerPixels;
 import slimeknights.mantle.util.LogicHelper;
 import slimeknights.mantle.util.ReversedListBuilder;
@@ -497,14 +493,6 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
    */
   public record LayerData(int color, int luminosity, boolean noTint, @Nullable ResourceLocation renderType) {
     public static final LayerData DEFAULT = new LayerData(-1, 0, false, null);
-    public static final RecordLoadable<LayerData> LOADABLE = RecordLoadable.create(
-      ColorLoadable.ALPHA.defaultField("color", false, LayerData::color),
-      // TODO: rename this field?
-      IntLoadable.range(0, 15).defaultField("luminosity", 0, LayerData::luminosity),
-      BooleanLoadable.INSTANCE.defaultField("no_tint", false, false, LayerData::noTint),
-      Loadables.RESOURCE_LOCATION.nullableField("render_type", LayerData::renderType),
-      LayerData::new);
-    public static final Loadable<List<LayerData>> LIST_LOADABLE = LOADABLE.list(1);
 
     /** Gets the render type for this layer from the context, falling back to the passed type if not requested */
     public RenderTypeGroup getRenderType(IGeometryBakingContext context, RenderTypeGroup defaultType) {
@@ -514,23 +502,31 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
       return context.getRenderType(renderType);
     }
 
-    /** @deprecated use {@link #LOADABLE} */
-    @Deprecated(forRemoval = true)
     public static LayerData fromJson(JsonObject json) {
-      return LOADABLE.deserialize(json);
-    }
-
-    /** @deprecated use {@link #LOADABLE} */
-    @Deprecated(forRemoval = true)
-    public JsonObject toJson() {
-      JsonObject json = new JsonObject();
-      LOADABLE.serialize(this, json);
-      return json;
+      int color = json.has("color") ? json.get("color").getAsInt() : -1;
+      int luminosity = json.has("luminosity") ? json.get("luminosity").getAsInt() : 0;
+      boolean noTint = json.has("no_tint") && json.get("no_tint").getAsBoolean();
+      ResourceLocation renderType = null;
+      if (json.has("render_type")) {
+        renderType = ResourceLocation.parse(json.get("render_type").getAsString());
+      }
+      return new LayerData(color, luminosity, noTint, renderType);
     }
   }
 
   /** Deserializes this model from JSON */
   public static MantleItemLayerModel deserialize(JsonObject json, JsonDeserializationContext context) {
-    return new MantleItemLayerModel(LayerData.LIST_LOADABLE.getOrDefault(json, "layers", List.of()));
+    List<LayerData> layers = List.of();
+    if (json.has("layers")) {
+      JsonArray array = GsonHelper.getAsJsonArray(json, "layers");
+      if (!array.isEmpty()) {
+        List<LayerData> parsed = new ArrayList<>(array.size());
+        for (int i = 0; i < array.size(); i++) {
+          parsed.add(LayerData.fromJson(GsonHelper.convertToJsonObject(array.get(i), "layers[" + i + "]")));
+        }
+        layers = List.copyOf(parsed);
+      }
+    }
+    return new MantleItemLayerModel(layers);
   }
 }

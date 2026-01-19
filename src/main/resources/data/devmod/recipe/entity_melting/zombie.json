@@ -1,0 +1,10 @@
+{
+  "type": "devmod:foundry_entity_melting",
+  "entity": "minecraft:zombie",
+  "result": {
+    "fluid": "devmod:molten_iron",
+    "amount": 15
+  },
+  "damage": 2,
+  "cooldown": 20
+}
